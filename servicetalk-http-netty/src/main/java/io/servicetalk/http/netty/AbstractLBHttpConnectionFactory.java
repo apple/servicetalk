@@ -133,9 +133,8 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
                     final ReservableRequestConcurrencyController concurrencyController =
                             newConcurrencyController(maxConcurrency, onClosing);
                     return new LoadBalancedStreamingHttpConnection(protocolBinding.apply(filteredConnection),
-                            concurrencyController, executionContext.executionStrategy(),
-                            connectStrategy instanceof HttpExecutionStrategy ?
-                                    (HttpExecutionStrategy) connectStrategy : HttpExecutionStrategies.anyStrategy());
+                            concurrencyController, connectStrategy instanceof HttpExecutionStrategy ?
+                                    (HttpExecutionStrategy) connectStrategy : HttpExecutionStrategies.offloadNone());
                 });
     }
 

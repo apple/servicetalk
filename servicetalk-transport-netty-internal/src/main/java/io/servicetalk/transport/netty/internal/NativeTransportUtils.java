@@ -29,6 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static io.netty.util.internal.PlatformDependent.normalizedArch;
+import static java.lang.Boolean.getBoolean;
 
 /**
  * Utility to check availability of Netty <a href="https://netty.io/wiki/native-transports.html">native transports</a>.
@@ -39,6 +40,8 @@ import static io.netty.util.internal.PlatformDependent.normalizedArch;
 final class NativeTransportUtils {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NativeTransportUtils.class);
+    private static final String NETTY_NO_NATIVE_NAME = "io.netty.transport.noNative";
+    private static final boolean NETTY_NO_NATIVE = getBoolean(NETTY_NO_NATIVE_NAME);
 
     private static final boolean IS_LINUX;
     private static final boolean IS_OSX_OR_BSD;
@@ -49,9 +52,9 @@ final class NativeTransportUtils {
         IS_OSX_OR_BSD = "osx".equals(os) || os.contains("bsd");
 
         if (IS_LINUX && !Epoll.isAvailable()) {
-            logUnavailability("epoll", os, Epoll.unavailabilityCause());
+            reactOnUnavailability("epoll", os, Epoll.unavailabilityCause());
         } else if (IS_OSX_OR_BSD && !KQueue.isAvailable()) {
-            logUnavailability("kqueue", "osx", KQueue.unavailabilityCause());
+            reactOnUnavailability("kqueue", "osx", KQueue.unavailabilityCause());
         }
     }
 
@@ -59,10 +62,17 @@ final class NativeTransportUtils {
         // No instances
     }
 
-    private static void logUnavailability(final String transport, final String os, final Throwable cause) {
-        LOGGER.warn("Can not load \"io.netty:netty-transport-native-{}:$nettyVersion:{}-{}\", it may impact " +
-                        "performance of the application. See https://netty.io/wiki/native-transports.html",
-                transport, os, normalizedArch(), cause);
+    private static void reactOnUnavailability(final String transport, final String os, final Throwable cause) {
+        if (NETTY_NO_NATIVE) {
+            LOGGER.info("io.netty:netty-transport-native-{} is explicitly disabled with \"-D{}=true\". Note that it " +
+                    "may impact responsiveness, reliability, and performance of the application. For more information" +
+                    ", see https://netty.io/wiki/native-transports.html", transport, NETTY_NO_NATIVE_NAME);
+            return;
+        }
+        throw new IllegalStateException("Can not load \"io.netty:netty-transport-native-" + transport +
+                ":$nettyVersion:" + os + '-' + normalizedArch() + "\", it may impact responsiveness, reliability, " +
+                "and performance of the application. Explicitly set \"-D" + NETTY_NO_NATIVE_NAME + "=true\" if this " +
+                "is intentional. For more information, see https://netty.io/wiki/native-transports.html", cause);
     }
 
     /**

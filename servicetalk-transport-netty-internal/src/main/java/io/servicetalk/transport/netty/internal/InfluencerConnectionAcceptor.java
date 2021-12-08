@@ -15,15 +15,11 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.transport.api.ConnectExecutionStrategy;
 import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionAcceptorFactory;
 import io.servicetalk.transport.api.DelegatingConnectionAcceptor;
 import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
-
-import static io.servicetalk.concurrent.api.Completable.completed;
-import static io.servicetalk.transport.api.ConnectExecutionStrategy.anyStrategy;
 
 /**
  * A contract that defines the connection acceptance criterion.
@@ -34,20 +30,10 @@ import static io.servicetalk.transport.api.ConnectExecutionStrategy.anyStrategy;
 public interface InfluencerConnectionAcceptor extends ConnectionAcceptor,
                                                       ExecutionStrategyInfluencer<ConnectExecutionStrategy> {
 
-    /**
-     * ACCEPT all connections.
-     */
-    InfluencerConnectionAcceptor ACCEPT_ALL = withStrategy((context) -> completed(), anyStrategy());
-
-    @Override
-    default Completable closeAsync() {
-        return completed();
-    }
-
     @Override
     default ConnectExecutionStrategy requiredOffloads() {
         // "safe" default -- implementations are expected to override
-        return ConnectExecutionStrategy.offload();
+        return ConnectExecutionStrategy.offloadAll();
     }
 
     /**

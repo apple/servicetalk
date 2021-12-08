@@ -48,6 +48,7 @@ import io.servicetalk.http.api.HttpPayloadWriter;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseFactory;
+import io.servicetalk.http.api.HttpServerContext;
 import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -57,12 +58,12 @@ import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceToOffloadedStreamingHttpService;
 import io.servicetalk.oio.api.PayloadWriter;
 import io.servicetalk.transport.api.IoThreadFactory;
-import io.servicetalk.transport.api.ServerContext;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.SocketAddress;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -94,6 +95,7 @@ import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.unmodifiableMap;
+import static java.util.Objects.requireNonNull;
 
 /**
  * A router that can route <a href="https://www.grpc.io">gRPC</a> requests to a user provided
@@ -128,7 +130,7 @@ final class GrpcRouter {
         this.executionStrategies = unmodifiableMap(executionStrategies);
     }
 
-    Single<ServerContext> bind(final ServerBinder binder, final GrpcExecutionContext executionContext) {
+    Single<GrpcServerContext> bind(final ServerBinder binder, final GrpcExecutionContext executionContext) {
         final CompositeCloseable closeable = AsyncCloseables.newCompositeCloseable();
         final Map<String, StreamingHttpService> allRoutes = new HashMap<>();
         populateRoutes(executionContext, allRoutes, routes, closeable, executionStrategies);
@@ -159,7 +161,7 @@ final class GrpcRouter {
             public Completable closeAsyncGracefully() {
                 return closeable.closeAsyncGracefully();
             }
-        });
+        }).map(httpServerContext -> new DefaultGrpcServerContext(httpServerContext, executionContext));
     }
 
     private static void populateRoutes(final GrpcExecutionContext executionContext,
@@ -173,7 +175,7 @@ final class GrpcRouter {
             final StreamingHttpService route = closeable.append(adapterHolder.adaptor());
             final GrpcExecutionStrategy routeStrategy = executionStrategies.getOrDefault(path, null);
             final HttpExecutionStrategy missing = null == routeStrategy ?
-                    HttpExecutionStrategies.noOffloadsStrategy() :
+                    HttpExecutionStrategies.offloadNever() :
                     executionContext.executionStrategy().missing(routeStrategy);
             verifyNoOverrides(allRoutes.put(path,
                     null != routeStrategy && missing.isRequestResponseOffloaded() ?
@@ -186,6 +188,62 @@ final class GrpcRouter {
                     path, emptyMap());
             LOGGER.debug("route strategy for path={} : ctx={} route={} → using={}",
                     path, executionContext.executionStrategy(), routeStrategy, missing);
+        }
+    }
+
+    private static final class DefaultGrpcServerContext implements GrpcServerContext {
+
+        private final HttpServerContext delegate;
+        private final GrpcExecutionContext executionContext;
+
+        DefaultGrpcServerContext(final HttpServerContext delegate, final GrpcExecutionContext executionContext) {
+            this.delegate = requireNonNull(delegate);
+            this.executionContext = requireNonNull(executionContext);
+        }
+
+        @Override
+        public Completable closeAsync() {
+            return delegate.closeAsync();
+        }
+
+        @Override
+        public Completable closeAsyncGracefully() {
+            return delegate.closeAsyncGracefully();
+        }
+
+        @Override
+        public Completable onClose() {
+            return delegate.onClose();
+        }
+
+        @Override
+        public SocketAddress listenAddress() {
+            return delegate.listenAddress();
+        }
+
+        @Override
+        public GrpcExecutionContext executionContext() {
+            return executionContext;
+        }
+
+        @Override
+        public void awaitShutdown() {
+            delegate.awaitShutdown();
+        }
+
+        @Override
+        public void close() throws Exception {
+            delegate.close();
+        }
+
+        @Override
+        public void closeGracefully() throws Exception {
+            delegate.closeGracefully();
+        }
+
+        @Override
+        public void acceptConnections(final boolean accept) {
+            delegate.acceptConnections(accept);
         }
     }
 

@@ -130,7 +130,7 @@ public final class ContentCodingHttpServiceFilter implements StreamingHttpServic
     @Override
     public HttpExecutionStrategy requiredOffloads() {
         // No influence since we do not block.
-        return HttpExecutionStrategies.anyStrategy();
+        return HttpExecutionStrategies.offloadNone();
     }
 
     private static void encodePayloadContentIfAvailable(final HttpHeaders requestHeaders,

@@ -68,12 +68,12 @@ public interface ConnectionAcceptorFactory extends ExecutionStrategyInfluencer<C
      *
      * <p>The strategy returned will be applied to the connection acceptor instance returned by
      * {@link #create(ConnectionAcceptor)}. If offloading is not required then override to return
-     * {@link ConnectExecutionStrategy#anyStrategy()}
+     * {@link ConnectExecutionStrategy#offloadNone()}
      */
     @Override
     default ConnectExecutionStrategy requiredOffloads() {
         // safe default--implementations are expected to override
-        return ConnectExecutionStrategy.offload();
+        return ConnectExecutionStrategy.offloadAll();
     }
 
     /**

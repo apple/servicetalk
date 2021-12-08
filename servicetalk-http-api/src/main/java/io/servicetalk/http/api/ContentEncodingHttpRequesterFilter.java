@@ -78,7 +78,7 @@ public final class ContentEncodingHttpRequesterFilter implements
     @Override
     public HttpExecutionStrategy requiredOffloads() {
         // No influence since we do not block.
-        return HttpExecutionStrategies.anyStrategy();
+        return HttpExecutionStrategies.offloadNone();
     }
 
     private Single<StreamingHttpResponse> applyEncodingAndDecoding(final StreamingHttpRequester delegate,

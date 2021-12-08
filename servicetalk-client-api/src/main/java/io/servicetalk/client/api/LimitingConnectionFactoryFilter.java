@@ -51,7 +51,7 @@ public final class LimitingConnectionFactoryFilter<ResolvedAddress, C extends Li
 
     @Override
     public ExecutionStrategy requiredOffloads() {
-        return ExecutionStrategy.anyStrategy();
+        return ExecutionStrategy.offloadNone();
     }
 
     /**

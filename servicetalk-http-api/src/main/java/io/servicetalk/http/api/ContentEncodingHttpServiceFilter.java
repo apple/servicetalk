@@ -130,7 +130,7 @@ public final class ContentEncodingHttpServiceFilter implements StreamingHttpServ
     @Override
     public HttpExecutionStrategy requiredOffloads() {
         // No influence since we do not block.
-        return HttpExecutionStrategies.anyStrategy();
+        return HttpExecutionStrategies.offloadNone();
     }
 
     private static boolean isPassThrough(final HttpRequestMethod method, final StreamingHttpResponse response) {

@@ -48,7 +48,7 @@ public interface ConnectionFactoryFilter<ResolvedAddress, C extends ListenableAs
      * @return a function that always returns its input {@link ConnectionFactory}.
      */
     static <RA, C extends ListenableAsyncCloseable> ConnectionFactoryFilter<RA, C> identity() {
-        return withStrategy(original -> original, ExecutionStrategy.anyStrategy());
+        return withStrategy(original -> original, ExecutionStrategy.offloadNone());
     }
 
     /**
@@ -87,7 +87,7 @@ public interface ConnectionFactoryFilter<ResolvedAddress, C extends ListenableAs
     @Override
     default ExecutionStrategy requiredOffloads() {
         // safe default--implementations are expected to override if offloading is required.
-        return ConnectExecutionStrategy.anyStrategy();
+        return ConnectExecutionStrategy.offloadAll();
     }
 
     /**

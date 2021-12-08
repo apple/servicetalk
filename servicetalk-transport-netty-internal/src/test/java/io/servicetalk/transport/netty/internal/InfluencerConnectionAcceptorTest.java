@@ -39,8 +39,8 @@ class InfluencerConnectionAcceptorTest {
 
     @Test
     void withStrategyRequiredOffloads() {
-        ConnectionAcceptorFactory factory = withStrategy(original -> original, ConnectExecutionStrategy.offload());
-        assertThat("unexpected strategy", factory.requiredOffloads(), is(ConnectExecutionStrategy.offload()));
+        ConnectionAcceptorFactory factory = withStrategy(original -> original, ConnectExecutionStrategy.offloadAll());
+        assertThat("unexpected strategy", factory.requiredOffloads(), is(ConnectExecutionStrategy.offloadAll()));
 
         InfluencerConnectionAcceptor acceptor =
                 InfluencerConnectionAcceptor.withStrategy(factory.create(ACCEPT_ALL), factory.requiredOffloads());

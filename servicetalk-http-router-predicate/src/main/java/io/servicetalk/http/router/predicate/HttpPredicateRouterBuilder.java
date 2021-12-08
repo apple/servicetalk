@@ -277,10 +277,10 @@ public final class HttpPredicateRouterBuilder implements RouteStarter {
         }
 
         private HttpExecutionStrategy serviceOffloads(final Object service) {
-            return null != strategy ?
-                    strategy : service instanceof ExecutionStrategyInfluencer ?
-                        HttpExecutionStrategy.from(((ExecutionStrategyInfluencer) service).requiredOffloads()) :
-                        defaultStrategy();
+            return null != strategy ? strategy :
+                    service instanceof ExecutionStrategyInfluencer ?
+                            HttpExecutionStrategy.from(((ExecutionStrategyInfluencer) service).requiredOffloads()) :
+                            defaultStrategy();
         }
 
         private RouteStarter thenRouteTo0(final StreamingHttpService route,

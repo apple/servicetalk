@@ -61,7 +61,7 @@ import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
-import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.router.predicate.PredicateRouterOffloadingTest.RouteServiceType.ASYNC_AGGREGATED;
 import static io.servicetalk.http.router.predicate.PredicateRouterOffloadingTest.RouteServiceType.BLOCKING_AGGREGATED;
@@ -134,7 +134,7 @@ class PredicateRouterOffloadingTest {
         final HttpPredicateRouterBuilder routerBuilder = newRouterBuilder();
         serverBuilder.executor(executionContextRule.executor());
         routeServiceType.addThreadRecorderService(
-                routerBuilder.when(this::recordRouterThread).executionStrategy(noOffloadsStrategy()),
+                routerBuilder.when(this::recordRouterThread).executionStrategy(offloadNever()),
                 this::recordThread);
         final BlockingHttpClient client = buildServerAndClient(routerBuilder.buildStreaming());
         client.request(client.get("/"));
@@ -148,7 +148,7 @@ class PredicateRouterOffloadingTest {
     void routeOffloadedAndNotPredicate(RouteServiceType routeServiceType) throws Exception {
         this.routeServiceType = routeServiceType;
         final HttpPredicateRouterBuilder routerBuilder = newRouterBuilder();
-        serverBuilder.executionStrategy(noOffloadsStrategy()).executor(executionContextRule.executor());
+        serverBuilder.executionStrategy(offloadNever()).executor(executionContextRule.executor());
         routeServiceType.addThreadRecorderService(
                 routerBuilder.when(this::recordRouterThread)
                         .executionStrategy(defaultStrategy()),
@@ -164,7 +164,7 @@ class PredicateRouterOffloadingTest {
     void routeDefaultAndPredicateNotOffloaded(RouteServiceType routeServiceType) throws Exception {
         this.routeServiceType = routeServiceType;
         final HttpPredicateRouterBuilder routerBuilder = newRouterBuilder();
-        serverBuilder.executionStrategy(noOffloadsStrategy());
+        serverBuilder.executionStrategy(offloadNever());
         routeServiceType.addThreadRecorderService(
                 routerBuilder.when(this::recordRouterThread),
                 this::recordThread);
@@ -180,9 +180,9 @@ class PredicateRouterOffloadingTest {
         this.routeServiceType = routeServiceType;
         assumeSafeToDisableOffloading(routeServiceType);
         final HttpPredicateRouterBuilder routerBuilder = newRouterBuilder();
-        serverBuilder.executionStrategy(noOffloadsStrategy());
+        serverBuilder.executionStrategy(offloadNever());
         routeServiceType.addThreadRecorderService(
-                routerBuilder.when(this::recordRouterThread).executionStrategy(noOffloadsStrategy()),
+                routerBuilder.when(this::recordRouterThread).executionStrategy(offloadNever()),
                 this::recordThread);
         final BlockingHttpClient client = buildServerAndClient(routerBuilder.buildStreaming());
         client.request(client.get("/"));

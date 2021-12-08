@@ -53,16 +53,13 @@ final class LoadBalancedStreamingHttpConnection implements FilterableStreamingHt
                    ExecutionStrategyInfluencer<HttpExecutionStrategy> {
     private final ReservableRequestConcurrencyController limiter;
     private final FilterableStreamingHttpLoadBalancedConnection filteredConnection;
-    private final HttpExecutionStrategy streamingStrategy;
     private final HttpExecutionStrategy connectStrategy;
 
     LoadBalancedStreamingHttpConnection(FilterableStreamingHttpLoadBalancedConnection filteredConnection,
                                         ReservableRequestConcurrencyController limiter,
-                                        HttpExecutionStrategy streamingStrategy,
                                         HttpExecutionStrategy connectStrategy) {
         this.filteredConnection = filteredConnection;
         this.limiter = requireNonNull(limiter);
-        this.streamingStrategy = streamingStrategy;
         this.connectStrategy = connectStrategy;
     }
 

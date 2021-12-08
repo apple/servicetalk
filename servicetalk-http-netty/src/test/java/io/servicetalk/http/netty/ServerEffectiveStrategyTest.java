@@ -22,6 +22,7 @@ import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpServerBuilder;
+import io.servicetalk.http.api.HttpServerContext;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -31,7 +32,6 @@ import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import io.servicetalk.oio.api.PayloadWriter;
 import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
-import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -44,11 +44,11 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
-import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadAll;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
 import static io.servicetalk.http.netty.InvokingThreadsRecorder.IO_EXECUTOR_NAME_PREFIX;
 import static io.servicetalk.http.netty.InvokingThreadsRecorder.noStrategy;
-import static io.servicetalk.http.netty.InvokingThreadsRecorder.userStrategyNoVerify;
+import static io.servicetalk.http.netty.InvokingThreadsRecorder.userStrategy;
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.lang.Character.isDigit;
 import static java.util.Objects.requireNonNull;
@@ -70,9 +70,9 @@ class ServerEffectiveStrategyTest {
         userStrategyWithFilter(serviceType ->
                 new Params(serviceType, true, defaultStrategy(), Offloads.ALL)),
         userStrategyNoOffloadsNoFilter(serviceType ->
-                new Params(serviceType, false, noOffloadsStrategy(), Offloads.NONE)),
+                new Params(serviceType, false, offloadNever(), Offloads.NONE)),
         userStrategyNoOffloadsWithFilter(serviceType ->
-                new Params(serviceType, true, noOffloadsStrategy(), Offloads.NONE)),
+                new Params(serviceType, true, offloadNever(), Offloads.NONE)),
         customUserStrategyNoFilter(serviceType ->
                 new Params(serviceType, false, customStrategyBuilder().offloadAll().build(), Offloads.ALL)),
         customUserStrategyWithFilter(serviceType ->
@@ -148,7 +148,7 @@ class ServerEffectiveStrategyTest {
         Params(final ServiceType serviceType, boolean addFilter,
                @Nullable final HttpExecutionStrategy strategy, final Offloads expectedOffloads) {
             this.addFilter = addFilter;
-            this.invokingThreadsRecorder = null == strategy ? noStrategy() : userStrategyNoVerify(strategy);
+            this.invokingThreadsRecorder = null == strategy ? noStrategy() : userStrategy(strategy);
             offloadPoints = expectedOffloads.forServiceType(serviceType);
             nonOffloadPoints = EnumSet.complementOf(offloadPoints);
         }
@@ -254,7 +254,7 @@ class ServerEffectiveStrategyTest {
             invokingThreadsRecorder.close();
         }
 
-        private void initState(Function<HttpServerBuilder, Single<ServerContext>> serverStarter) {
+        private void initState(Function<HttpServerBuilder, Single<HttpServerContext>> serverStarter) {
             invokingThreadsRecorder.init((ioExecutor, serverBuilder) -> {
                 serverBuilder.ioExecutor(ioExecutor)
                         .appendServiceFilter(new ServiceInvokingThreadRecorder(invokingThreadsRecorder));
@@ -297,7 +297,7 @@ class ServerEffectiveStrategyTest {
         @Override
         public HttpExecutionStrategy requiredOffloads() {
             // No influence since we do not block.
-            return HttpExecutionStrategies.anyStrategy();
+            return HttpExecutionStrategies.offloadNone();
         }
 
         @Override

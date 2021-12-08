@@ -22,6 +22,7 @@ import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpServerBuilder;
+import io.servicetalk.http.api.HttpServerContext;
 import io.servicetalk.http.api.ReservedBlockingHttpConnection;
 import io.servicetalk.http.api.ReservedBlockingStreamingHttpConnection;
 import io.servicetalk.http.api.ReservedHttpConnection;
@@ -193,7 +194,7 @@ class ExecutionStrategyInContextTest {
     }
 
     private SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> initClientAndServer(
-        Function<HttpServerBuilder, Single<ServerContext>> serverStarter, boolean customStrategy)
+            Function<HttpServerBuilder, Single<HttpServerContext>> serverStarter, boolean customStrategy)
             throws Exception {
         HttpServerBuilder serverBuilder = HttpServers.forAddress(localAddress(0));
         if (customStrategy) {

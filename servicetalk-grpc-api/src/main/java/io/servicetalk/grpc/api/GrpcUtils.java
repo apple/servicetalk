@@ -39,7 +39,6 @@ import io.servicetalk.http.api.HttpSerializer;
 import io.servicetalk.http.api.StatelessTrailersTransformer;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
-import io.servicetalk.http.api.TrailersTransformer;
 import io.servicetalk.serializer.api.Deserializer;
 import io.servicetalk.serializer.api.SerializationException;
 import io.servicetalk.serializer.api.Serializer;
@@ -96,7 +95,7 @@ final class GrpcUtils {
     private static final GrpcStatus STATUS_OK = GrpcStatus.fromCodeValue(GrpcStatusCode.OK.value());
     private static final BufferDecoderGroup EMPTY_BUFFER_DECODER_GROUP = new BufferDecoderGroupBuilder().build();
 
-    private static final TrailersTransformer<Object, Buffer> ENSURE_GRPC_STATUS_RECEIVED =
+    private static final StatelessTrailersTransformer<Buffer> ENSURE_GRPC_STATUS_RECEIVED =
             new StatelessTrailersTransformer<Buffer>() {
                 @Override
                 protected HttpHeaders payloadComplete(final HttpHeaders trailers) {

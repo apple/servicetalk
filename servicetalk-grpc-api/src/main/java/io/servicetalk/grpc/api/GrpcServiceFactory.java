@@ -18,10 +18,10 @@ package io.servicetalk.grpc.api;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.BlockingHttpService;
 import io.servicetalk.http.api.BlockingStreamingHttpService;
+import io.servicetalk.http.api.HttpServerContext;
 import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.ExecutionContext;
-import io.servicetalk.transport.api.ServerContext;
 
 /**
  * A factory for binding a <a href="https://www.grpc.io">gRPC</a> service to a server using a {@link ServerBinder}.
@@ -68,7 +68,7 @@ public abstract class GrpcServiceFactory<Service extends GrpcService> {
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
-    public final Single<ServerContext> bind(final ServerBinder binder, final ExecutionContext<?> executionContext) {
+    public final Single<GrpcServerContext> bind(final ServerBinder binder, final ExecutionContext<?> executionContext) {
         return routes.bind(binder, DefaultGrpcExecutionContext.from(executionContext));
     }
 
@@ -87,7 +87,7 @@ public abstract class GrpcServiceFactory<Service extends GrpcService> {
          * @return A {@link Single} that completes when the server is successfully started or terminates with an error
          * if the server could not be started.
          */
-        Single<ServerContext> bind(HttpService service);
+        Single<HttpServerContext> bind(HttpService service);
 
         /**
          * Binds a {@link StreamingHttpService} to the associated server.
@@ -98,7 +98,7 @@ public abstract class GrpcServiceFactory<Service extends GrpcService> {
          * @return A {@link Single} that completes when the server is successfully started or terminates with an error
          * if the server could not be started.
          */
-        Single<ServerContext> bindStreaming(StreamingHttpService service);
+        Single<HttpServerContext> bindStreaming(StreamingHttpService service);
 
         /**
          * Binds a {@link BlockingHttpService} to the associated server.
@@ -109,7 +109,7 @@ public abstract class GrpcServiceFactory<Service extends GrpcService> {
          * @return A {@link Single} that completes when the server is successfully started or terminates with an error
          * if the server could not be started.
          */
-        Single<ServerContext> bindBlocking(BlockingHttpService service);
+        Single<HttpServerContext> bindBlocking(BlockingHttpService service);
 
         /**
          * Binds a {@link BlockingStreamingHttpService} to the associated server.
@@ -120,7 +120,7 @@ public abstract class GrpcServiceFactory<Service extends GrpcService> {
          * @return A {@link Single} that completes when the server is successfully started or terminates with an error
          * if the server could not be started.
          */
-        Single<ServerContext> bindBlockingStreaming(BlockingStreamingHttpService service);
+        Single<HttpServerContext> bindBlockingStreaming(BlockingStreamingHttpService service);
     }
 
     private static final class MergedServiceFactory extends GrpcServiceFactory {

@@ -17,17 +17,14 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.api.IoExecutor;
 
 /**
  * Default implementation of {@link HttpExecutionContext}.
  */
-public final class DefaultHttpExecutionContext implements HttpExecutionContext {
-
-    private final BufferAllocator bufferAllocator;
-    private final IoExecutor ioExecutor;
-    private final Executor executor;
-    private final HttpExecutionStrategy executionStrategy;
+public final class DefaultHttpExecutionContext extends DefaultExecutionContext<HttpExecutionStrategy>
+        implements HttpExecutionContext {
 
     /**
      * Create a new instance.
@@ -41,29 +38,6 @@ public final class DefaultHttpExecutionContext implements HttpExecutionContext {
                                        final IoExecutor ioExecutor,
                                        final Executor executor,
                                        final HttpExecutionStrategy executionStrategy) {
-        this.bufferAllocator = bufferAllocator;
-        this.ioExecutor = ioExecutor;
-        this.executor = executor;
-        this.executionStrategy = executionStrategy;
-    }
-
-    @Override
-    public BufferAllocator bufferAllocator() {
-        return bufferAllocator;
-    }
-
-    @Override
-    public IoExecutor ioExecutor() {
-        return ioExecutor;
-    }
-
-    @Override
-    public Executor executor() {
-        return executor;
-    }
-
-    @Override
-    public HttpExecutionStrategy executionStrategy() {
-        return executionStrategy;
+        super(bufferAllocator, ioExecutor, executor, executionStrategy);
     }
 }

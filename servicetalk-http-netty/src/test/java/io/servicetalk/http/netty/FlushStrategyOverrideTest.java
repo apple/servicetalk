@@ -52,7 +52,7 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.ExecutionContextExtension.immediate;
@@ -76,14 +76,14 @@ class FlushStrategyOverrideTest {
         service = new FlushingService();
         serverCtx = HttpServers.forAddress(localAddress(0))
                 .ioExecutor(ctx.ioExecutor())
-                .executionStrategy(noOffloadsStrategy())
+                .executionStrategy(offloadNever())
                 .listenStreaming(service)
                 .toFuture().get();
         InetSocketAddress serverAddr = (InetSocketAddress) serverCtx.listenAddress();
         client = forSingleAddress(new NoopSD(serverAddr), serverAddr)
                 .hostHeaderFallback(false)
                 .ioExecutor(ctx.ioExecutor())
-                .executionStrategy(noOffloadsStrategy())
+                .executionStrategy(offloadNever())
                 .unresolvedAddressToHost(InetSocketAddress::getHostString)
                 .buildStreaming();
         conn = client.reserveConnection(client.get("/")).toFuture().get();

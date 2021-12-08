@@ -13,28 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.transport.api;
+package io.servicetalk.grpc.api;
+
+import io.servicetalk.transport.api.ServerContext;
 
 /**
- * package private constants for special Execution Strategies
+ * Context of a gRPC server.
  */
-enum SpecialExecutionStrategy implements ExecutionStrategy {
-    /**
-     * Does not require any offloads
-     */
-    NO_OFFLOADS {
-        @Override
-        public boolean isCloseOffloaded() {
-            return false;
-        }
-    },
-    /**
-     * Offload all invocations
-     */
-    OFFLOAD_ALL {
-        @Override
-        public boolean isCloseOffloaded() {
-            return true;
-        }
-    }
+public interface GrpcServerContext extends ServerContext {
+
+    @Override
+    GrpcExecutionContext executionContext();
 }

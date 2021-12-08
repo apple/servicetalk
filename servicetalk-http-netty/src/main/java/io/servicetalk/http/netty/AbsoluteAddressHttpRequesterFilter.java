@@ -78,7 +78,7 @@ final class AbsoluteAddressHttpRequesterFilter implements StreamingHttpClientFil
     @Override
     public HttpExecutionStrategy requiredOffloads() {
         // No influence since we do not block.
-        return HttpExecutionStrategies.anyStrategy();
+        return HttpExecutionStrategies.offloadNone();
     }
 
     private Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,

@@ -21,10 +21,10 @@ import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 
 import java.time.Duration;
 import java.util.concurrent.TimeoutException;
@@ -38,7 +38,7 @@ import static java.time.Duration.ofNanos;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
-abstract class AbstractTimeoutHttpFilter implements ExecutionStrategyInfluencer<HttpExecutionStrategy> {
+abstract class AbstractTimeoutHttpFilter implements HttpExecutionStrategyInfluencer {
     /**
      * Establishes the timeout for a given request.
      */
@@ -89,7 +89,7 @@ abstract class AbstractTimeoutHttpFilter implements ExecutionStrategyInfluencer<
 
     @Override
     public final HttpExecutionStrategy requiredOffloads() {
-        return HttpExecutionStrategies.anyStrategy();
+        return HttpExecutionStrategies.offloadNone();
     }
 
     /**
