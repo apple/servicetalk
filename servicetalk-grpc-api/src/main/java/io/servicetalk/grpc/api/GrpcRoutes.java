@@ -31,7 +31,6 @@ import io.servicetalk.router.api.NoOffloadsRouteExecutionStrategy;
 import io.servicetalk.router.api.RouteExecutionStrategy;
 import io.servicetalk.router.api.RouteExecutionStrategyFactory;
 import io.servicetalk.transport.api.ExecutionContext;
-import io.servicetalk.transport.api.ServerContext;
 
 import java.lang.reflect.Method;
 import java.util.List;
@@ -99,7 +98,7 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
-    final Single<ServerContext> bind(final ServerBinder binder, final GrpcExecutionContext executionContext) {
+    final Single<GrpcServerContext> bind(final ServerBinder binder, final GrpcExecutionContext executionContext) {
         if (!errors.isEmpty()) {
             throw new IllegalStateException("Invalid execution strategy configuration found:\n" + errors);
         }

@@ -32,11 +32,11 @@ import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpServerBuilder;
+import io.servicetalk.http.api.HttpServerContext;
 import io.servicetalk.http.api.StatelessTrailersTransformer;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -305,7 +305,7 @@ class ContentHeadersTest extends AbstractNettyHttpServerTest {
     }
 
     @Override
-    Single<ServerContext> listen(final HttpServerBuilder builder) {
+    Single<HttpServerContext> listen(final HttpServerBuilder builder) {
         return testDefinition.listen(builder);
     }
 
@@ -406,7 +406,7 @@ class ContentHeadersTest extends AbstractNettyHttpServerTest {
             this.expectation = expectation;
         }
 
-        abstract Single<ServerContext> listen(HttpServerBuilder builder);
+        abstract Single<HttpServerContext> listen(HttpServerBuilder builder);
 
         abstract void runTest(StreamingHttpConnection connection) throws Exception;
     }
@@ -427,7 +427,7 @@ class ContentHeadersTest extends AbstractNettyHttpServerTest {
         }
 
         @Override
-        Single<ServerContext> listen(final HttpServerBuilder builder) {
+        Single<HttpServerContext> listen(final HttpServerBuilder builder) {
             // service needs to check the request
             return builder.listenStreaming((ctx, request, rf) -> {
                 final HttpHeaders headers = request.headers();
@@ -499,13 +499,13 @@ class ContentHeadersTest extends AbstractNettyHttpServerTest {
         }
 
         @Override
-        Single<ServerContext> listen(final HttpServerBuilder builder) {
+        Single<HttpServerContext> listen(final HttpServerBuilder builder) {
             // service needs to generate the response
             return builder.listenStreaming((ctx, request, rf) -> {
                 final HttpMetaData metadata = modifier.apply(responseSupplier.get());
                 return succeeded((metadata instanceof StreamingHttpResponse) ?
                         (StreamingHttpResponse) metadata : ((HttpResponse) metadata).toStreamingResponse());
-            });
+            }).map(identity());
         }
 
         @Override
@@ -534,7 +534,7 @@ class ContentHeadersTest extends AbstractNettyHttpServerTest {
         }
 
         @Override
-        Single<ServerContext> listen(final HttpServerBuilder builder) {
+        Single<HttpServerContext> listen(final HttpServerBuilder builder) {
             // service needs to generate the response
             final HttpMetaData metadata = modifier.apply(responseSupplier.get());
             BlockingStreamingHttpResponse streamingResponse = (metadata instanceof StreamingHttpResponse) ?

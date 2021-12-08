@@ -22,6 +22,7 @@ import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpServerBuilder;
+import io.servicetalk.http.api.HttpServerContext;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -31,7 +32,6 @@ import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import io.servicetalk.oio.api.PayloadWriter;
 import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
-import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -254,7 +254,7 @@ class ServerEffectiveStrategyTest {
             invokingThreadsRecorder.close();
         }
 
-        private void initState(Function<HttpServerBuilder, Single<ServerContext>> serverStarter) {
+        private void initState(Function<HttpServerBuilder, Single<HttpServerContext>> serverStarter) {
             invokingThreadsRecorder.init((ioExecutor, serverBuilder) -> {
                 serverBuilder.ioExecutor(ioExecutor)
                         .appendServiceFilter(new ServiceInvokingThreadRecorder(invokingThreadsRecorder));

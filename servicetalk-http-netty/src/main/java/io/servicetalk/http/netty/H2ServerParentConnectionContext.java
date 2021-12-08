@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.http.api.HttpExecutionContext;
+import io.servicetalk.http.api.HttpServerContext;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.netty.NettyHttpServer.NettyHttpServerConnection;
 import io.servicetalk.tcp.netty.internal.ReadOnlyTcpServerConfig;
@@ -79,12 +80,12 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
         return listenAddress;
     }
 
-    static Single<ServerContext> bind(final HttpExecutionContext executionContext,
-                                      final ReadOnlyHttpServerConfig config,
-                                      final SocketAddress listenAddress,
-                                      @Nullable final InfluencerConnectionAcceptor connectionAcceptor,
-                                      final StreamingHttpService service,
-                                      final boolean drainRequestPayloadBody) {
+    static Single<HttpServerContext> bind(final HttpExecutionContext executionContext,
+                                          final ReadOnlyHttpServerConfig config,
+                                          final SocketAddress listenAddress,
+                                          @Nullable final InfluencerConnectionAcceptor connectionAcceptor,
+                                          final StreamingHttpService service,
+                                          final boolean drainRequestPayloadBody) {
         if (config.h2Config() == null) {
             return failed(newH2ConfigException());
         }
@@ -98,7 +99,7 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                 .map(delegate -> {
                     LOGGER.debug("Started HTTP/2 server with prior-knowledge for address {}", delegate.listenAddress());
                     // The ServerContext returned by TcpServerBinder takes care of closing the connectionAcceptor.
-                    return new NettyHttpServer.NettyHttpServerContext(delegate, service);
+                    return new NettyHttpServer.NettyHttpServerContext(delegate, service, executionContext);
                 });
     }
 
