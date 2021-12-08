@@ -52,9 +52,9 @@ final class NativeTransportUtils {
         IS_OSX_OR_BSD = "osx".equals(os) || os.contains("bsd");
 
         if (IS_LINUX && !Epoll.isAvailable()) {
-            logUnavailability("epoll", os, Epoll.unavailabilityCause());
+            reactOnUnavailability("epoll", os, Epoll.unavailabilityCause());
         } else if (IS_OSX_OR_BSD && !KQueue.isAvailable()) {
-            logUnavailability("kqueue", "osx", KQueue.unavailabilityCause());
+            reactOnUnavailability("kqueue", "osx", KQueue.unavailabilityCause());
         }
     }
 
@@ -62,20 +62,17 @@ final class NativeTransportUtils {
         // No instances
     }
 
-    private static void logUnavailability(final String transport, final String os, final Throwable cause) {
+    private static void reactOnUnavailability(final String transport, final String os, final Throwable cause) {
         if (NETTY_NO_NATIVE) {
             LOGGER.info("io.netty:netty-transport-native-{} is explicitly disabled with \"-D{}=true\". Note that it " +
                     "may impact responsiveness, reliability, and performance of the application. For more information" +
                     ", see https://netty.io/wiki/native-transports.html", transport, NETTY_NO_NATIVE_NAME);
             return;
         }
-        LOGGER.warn("Can not load \"io.netty:netty-transport-native-{}:$nettyVersion:{}-{}\", it may impact " +
-                        "responsiveness, reliability, and performance of the application. In future releases " +
-                        "ServiceTalk will fail to start without transport-native library unless \"-D{}=true\" system " +
-                        "property is explicitly set. For more information, see " +
-                        "https://netty.io/wiki/native-transports.html",
-                transport, os, normalizedArch(), NETTY_NO_NATIVE_NAME, cause);
-        // FIXME: 0.42 - throw an exception and adjust the message
+        throw new IllegalStateException("Can not load \"io.netty:netty-transport-native-" + transport +
+                ":$nettyVersion:" + os + '-' + normalizedArch() + "\", it may impact responsiveness, reliability, " +
+                "and performance of the application. Explicitly set \"-D" + NETTY_NO_NATIVE_NAME + "=true\" if this " +
+                "is intentional. For more information, see https://netty.io/wiki/native-transports.html", cause);
     }
 
     /**
