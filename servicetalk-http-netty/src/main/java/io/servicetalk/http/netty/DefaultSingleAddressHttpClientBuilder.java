@@ -20,7 +20,6 @@ import io.servicetalk.buffer.api.CharSequences;
 import io.servicetalk.client.api.AutoRetryStrategyProvider;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
-import io.servicetalk.client.api.DefaultAutoRetryStrategyProvider.Builder;
 import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.ServiceDiscoverer;
@@ -122,15 +121,15 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     @Nullable
     private StreamingHttpClientFilterFactory clientFilterFactory;
     @Nullable
-    private AutoRetryStrategyProvider autoRetry = new Builder().build();
+    private AutoRetryStrategyProvider autoRetry = new io.servicetalk.client.api.DefaultAutoRetryStrategyProvider.Builder().build();
     private ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> connectionFactoryFilter =
             ConnectionFactoryFilter.identity();
 
-    //TODO to be removed when auto-retry is removed.
+    //FIXME: 0.42 - to be removed when auto-retry is removed.
     @Deprecated
     boolean customAutoRetry;
 
-    //TODO to be removed when auto-retry is removed.
+    //FIXME: 0.42 - to be removed when auto-retry is removed.
     @Deprecated
     boolean retryingFilterAppended;
 
@@ -350,7 +349,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                 lbClient = new AutoRetryFilter(lbClient,
                         ctx.builder.autoRetry.newStrategy(lb.eventStream(), ctx.sdStatus));
             } else if (ctx.builder.autoRetry != null && !ctx.builder.retryingFilterAppended) {
-                ctx.builder.retryingHttpRequesterFilter = new RetryingHttpRequesterFilterBuilder().build();
+                ctx.builder.retryingHttpRequesterFilter = new RetryingHttpRequesterFilter.Builder().build();
                 currClientFilterFactory = appendFilter(currClientFilterFactory,
                         ctx.builder.retryingHttpRequesterFilter);
             }
@@ -534,6 +533,10 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
             final AutoRetryStrategyProvider autoRetryStrategyProvider) {
         autoRetry = autoRetryStrategyProvider == DISABLE_AUTO_RETRIES ? null :
                 requireNonNull(autoRetryStrategyProvider);
+        if (retryingFilterAppended && autoRetryStrategyProvider != DISABLE_AUTO_RETRIES) {
+            throw new IllegalStateException("Retrying HTTP requester filter (or AutoRetry) was already found in " +
+                    "the filter chain, only a single instance of that is allowed.");
+        }
         customAutoRetry = autoRetryStrategyProvider != DISABLE_AUTO_RETRIES;
         retryingFilterAppended = autoRetryStrategyProvider != DISABLE_AUTO_RETRIES;
         return this;
@@ -556,9 +559,9 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     public DefaultSingleAddressHttpClientBuilder<U, R> appendClientFilter(
             final StreamingHttpClientFilterFactory factory) {
         requireNonNull(factory);
-        // TODO 0.42 remove this extra test with class-name
+        // FIXME 0.42 - remove extra check
         if (factory instanceof RetryingHttpRequesterFilter ||
-                factory.getClass().getSimpleName().contains("RetryingHttpRequesterFilter")) {
+                factory instanceof io.servicetalk.http.utils.RetryingHttpRequesterFilter) {
             if (retryingFilterAppended) {
                 throw new IllegalStateException("Retrying HTTP requester filter (or AutoRetry) was already found in " +
                         "the filter chain, only a single instance of that is allowed.");

@@ -44,7 +44,8 @@ import static java.util.Objects.requireNonNull;
  * @param <Filter> the type of retrying filter to build
  * @param <Meta> the type of meta-data for {@link #retryFor(BiPredicate)}
  * @see RetryStrategies
- * @deprecated Moving forward ServiceTalk will remove this abstraction. Please rely on the protocol specific filter.
+ * @deprecated Moving forward ServiceTalk will remove this abstraction. Please rely on the protocol specific filter,
+ * like {@code io.servicetalk.http.netty.RetryingHttpRequesterFilter}.
  */
 @Deprecated
 public abstract class AbstractRetryingFilterBuilder<Builder
@@ -236,7 +237,7 @@ public abstract class AbstractRetryingFilterBuilder<Builder
      *
      * @param <Meta> the type of meta-data for {@link #retryFor(BiPredicate)}
      * @deprecated Moving forward ServiceTalk will remove this abstraction. Please rely on the protocol specific
-     * filter and builder.
+     * filter, like {@code io.servicetalk.http.netty.RetryingHttpRequesterFilter}
      */
     @Deprecated
     public static final class ReadOnlyRetryableSettings<Meta> {

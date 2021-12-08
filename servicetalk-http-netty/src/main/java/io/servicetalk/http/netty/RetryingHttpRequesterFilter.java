@@ -15,8 +15,9 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.client.api.LoadBalancerReadySubscriber;
+import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.NoAvailableHostException;
+import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
@@ -44,6 +45,7 @@ import java.time.Duration;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
@@ -56,6 +58,7 @@ import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponential
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoffFullJitter;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HeaderUtils.DEFAULT_HEADER_FILTER;
+import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolicy.ofInstant;
 import static java.time.Duration.ZERO;
 import static java.time.Duration.ofDays;
 import static java.util.Objects.requireNonNull;
@@ -67,13 +70,13 @@ import static java.util.Objects.requireNonNull;
  * as part of a service response if needed.
  * <p>
  * The two behaviors can have different criteria, as defined from the relevant Builder methods (i.e.
- * {@link RetryingHttpRequesterFilterBuilder#retryRequests(BiFunction)}
- * or {@link RetryingHttpRequesterFilterBuilder#retryResponses(Function)}).
+ * {@link Builder#retryRequests(BiFunction)}
+ * or {@link Builder#retryResponses(Function)}).
  * Both return a {@link BackOffPolicy} when the request or the response is matching the conditions, which allows
  * control of the retry backoff period independently.
  * Similarly, max-retries for each flow can be set in the {@link BackOffPolicy}, as well
  * as a total max-retries to be respected by both flows, as set in
- * {@link RetryingHttpRequesterFilterBuilder#maxTotalRetries(int)}.
+ * {@link Builder#maxTotalRetries(int)}.
  * <p>
  * If the existing preset of {@link BackOffPolicy backoff policies} aren't enough to meet your expectations, the
  * class is extendable.
@@ -161,11 +164,11 @@ public final class RetryingHttpRequesterFilter
         };
     }
 
-    public void inject(final Publisher<Object> lbEventStream) {
+    void inject(final Publisher<Object> lbEventStream) {
         this.lbEventStream = lbEventStream;
     }
 
-    public void inject(final Completable sdStatus) {
+    void inject(final Completable sdStatus) {
         this.sdStatus = ignoreSdErrors ? null : sdStatus;
     }
 
@@ -243,7 +246,11 @@ public final class RetryingHttpRequesterFilter
         }
     }
 
-    private static final class StacklessRetryResponseException extends RuntimeException {
+    /**
+     * This exception indicates response that matched the retrying rules of the {@link RetryingHttpRequesterFilter}
+     * and will-be/was retried.
+     */
+    public static final class StacklessRetryResponseException extends RuntimeException {
 
         private final BackOffPolicy backOffPolicy;
         private final HttpResponseMetaData metaData;
@@ -490,7 +497,7 @@ public final class RetryingHttpRequesterFilter
         private boolean retryRetryableExceptions = true;
         private boolean retryIdempotentRequests;
         private boolean retryDelayedRetries;
-        private BackOffPolicy backOffPolicy = BackOffPolicy.ofInstant();
+        private BackOffPolicy backOffPolicy = ofInstant();
 
         /**
          * The retrying-filter will evaluate for {@link RetryableException}s in the request flow.
@@ -572,7 +579,7 @@ public final class RetryingHttpRequesterFilter
      * retrying through a {@link RetryingHttpRequesterFilter retrying-filter}.
      * <p>
      * Constant delay returned from {@link #delay()} will only be considered if the
-     * {@link RetryingHttpRequesterFilterBuilder#retryRequests(BiFunction)} evaluates to {@code true} for a particular
+     * {@link Builder#retryRequests(BiFunction)} evaluates to {@code true} for a particular
      * request failure.
      */
     public interface DelayedRetry {
@@ -586,5 +593,166 @@ public final class RetryingHttpRequesterFilter
          * @return The {@link Duration} to apply as constant delay when retrying.
          */
         Duration delay();
+    }
+
+    /**
+     * A builder for {@link RetryingHttpRequesterFilter}, which puts an upper bound on retry attempts.
+     * To configure the maximum number of retry attempts see {@link #maxTotalRetries(int)}.
+     */
+    public static final class Builder {
+        private boolean waitForLb = true;
+        private boolean ignoreSdErrors;
+
+        private int maxRetries = 3;
+
+        @Nullable
+        private Function<HttpResponseMetaData, BackOffPolicy> retryForResponsesMapper;
+
+        @Nullable
+        private BiFunction<HttpRequestMetaData, Throwable, BackOffPolicy>
+                retryForRequestsMapper = new DefaultRequestRetryPolicyBuilder().build();
+
+        /**
+         * By default, automatic retries wait for the associated {@link LoadBalancer} to be ready before triggering a
+         * retry for requests. This behavior may add latency to requests till the time the load balancer is ready
+         * instead of failing fast. This method allows controlling that behavior.
+         *
+         * @param waitForLb Whether to wait for the {@link LoadBalancer} to be ready before retrying requests.
+         * @return {@code this}.
+         */
+        public Builder waitForLoadBalancer(final boolean waitForLb) {
+            this.waitForLb = waitForLb;
+            return this;
+        }
+
+        /**
+         * By default, fail a request if the last signal from the associated {@link ServiceDiscoverer} was an error.
+         * This method disables that behavior.
+         *
+         * @param ignoreSdErrors ignore {@link ServiceDiscoverer} errors when evaluating a request failure.
+         * @return {@code this}.
+         */
+        public Builder ignoreServiceDiscovererErrors(final boolean ignoreSdErrors) {
+            this.ignoreSdErrors = ignoreSdErrors;
+            return this;
+        }
+
+        /**
+         * Set the maximum number of allowed retry operations before giving up, applied as total max across both
+         * {@link #retryRequests(BiFunction)} and {@link #retryResponses(Function)}.
+         *
+         * @param maxRetries Maximum number of allowed retries before giving up
+         * @return {@code this}
+         */
+        public Builder maxTotalRetries(final int maxRetries) {
+            if (maxRetries <= 0) {
+                throw new IllegalArgumentException("maxRetries: " + maxRetries + " (expected: >0)");
+            }
+            this.maxRetries = maxRetries;
+            return this;
+        }
+
+        /**
+         * Overrides the default criterion for determining which responses should be retried.
+         * <strong>It's important that this {@link Function} doesn't block to avoid performance impacts.</strong>
+         *
+         * @param mapper {@link Function} that checks whether a given {@link HttpResponseMetaData meta-data} should
+         * be retried, producing a {@link BackOffPolicy} in such cases.
+         * @return {@code this}
+         */
+        public Builder retryResponses(
+                final Function<HttpResponseMetaData, BackOffPolicy> mapper) {
+            this.retryForResponsesMapper = requireNonNull(mapper);
+            return this;
+        }
+
+        /**
+         * Overrides the default criterion for determining which responses should be retried.
+         * <strong>It's important that this {@link Function} doesn't block to avoid performance impacts.</strong>
+         *
+         * @param predicate {@link Predicate} that checks whether a given {@link HttpResponseMetaData meta-data} should
+         * be retried. Retries are immediate.
+         * @return {@code this}
+         */
+        public Builder retryResponses(
+                final Predicate<HttpResponseMetaData> predicate) {
+            this.retryForResponsesMapper = metaData -> predicate.test(metaData) ? ofInstant() : null;
+            return this;
+        }
+
+        /**
+         * Overrides the default criterion for determining which responses should be retried.
+         * <strong>It's important that this {@link Function} doesn't block to avoid performance impacts.</strong>
+         *
+         * @param predicate {@link Predicate} that checks whether a given {@link HttpResponseMetaData meta-data} should
+         * be retried. Retries are immediate.
+         * @param backOffPolicy {@link BackOffPolicy} the retry behaviour if the predicate matched the response.
+         * @return {@code this}
+         */
+        public Builder retryResponses(
+                final Predicate<HttpResponseMetaData> predicate, final BackOffPolicy backOffPolicy) {
+            this.retryForResponsesMapper = metaData -> predicate.test(metaData) ? backOffPolicy : null;
+            return this;
+        }
+
+        /**
+         * Overrides the default criterion for determining which requests or errors should be retried.
+         * <strong>It's important that this {@link Function} doesn't block to avoid performance impacts.</strong>
+         *
+         * <p>
+         * Descriptive APIs to construct retry behaviour for requests can be accessed through
+         * {@link DefaultRequestRetryPolicyBuilder}.
+         *
+         * @param mapper {@link BiFunction} that checks whether a given combination of
+         * {@link HttpRequestMetaData meta-data} and {@link Throwable cause} should be retried, producing a
+         * {@link BackOffPolicy} in such cases.
+         * @return {@code this}
+         */
+        public Builder retryRequests(
+                final BiFunction<HttpRequestMetaData, Throwable, BackOffPolicy> mapper) {
+            this.retryForRequestsMapper = requireNonNull(mapper);
+            return this;
+        }
+
+        /**
+         * Overrides the default criterion for determining which requests or errors should be retried.
+         * <strong>It's important that this {@link Function} doesn't block to avoid performance impacts.</strong>
+         *
+         * @param predicate {@link BiPredicate} that checks whether a given combination of
+         * {@link HttpRequestMetaData meta-data} and {@link Throwable cause} should be retried. Retries will be
+         * immediate.
+         * @return {@code this}
+         */
+        public Builder retryRequests(final BiPredicate<HttpRequestMetaData, Throwable> predicate) {
+            this.retryForRequestsMapper = (requestMetaData, throwable)
+                    -> predicate.test(requestMetaData, throwable) ? ofInstant() : null;
+            return this;
+        }
+
+        /**
+         * Overrides the default criterion for determining which requests or errors should be retried.
+         * <strong>It's important that this {@link Function} doesn't block to avoid performance impacts.</strong>
+         *
+         * @param predicate {@link BiPredicate} that checks whether a given combination of
+         * {@link HttpRequestMetaData meta-data} and {@link Throwable cause} should be retried.
+         * @param backOff {@link BackOffPolicy} the retry policy if the predicate matched the request/error combo.
+         * @return {@code this}
+         */
+        public Builder retryRequests(final BiPredicate<HttpRequestMetaData, Throwable> predicate,
+                                     final BackOffPolicy backOff) {
+            this.retryForRequestsMapper = (requestMetaData, throwable)
+                    -> predicate.test(requestMetaData, throwable) ? backOff : null;
+            return this;
+        }
+
+        /**
+         * Builds a retrying {@link RetryingHttpRequesterFilter} with this' builders configuration.
+         *
+         * @return A new retrying {@link RetryingHttpRequesterFilter}
+         */
+        public RetryingHttpRequesterFilter build() {
+            return new RetryingHttpRequesterFilter(waitForLb, ignoreSdErrors, maxRetries, retryForResponsesMapper,
+                    retryForRequestsMapper);
+        }
     }
 }

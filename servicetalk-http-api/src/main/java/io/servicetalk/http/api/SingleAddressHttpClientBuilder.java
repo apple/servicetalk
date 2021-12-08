@@ -274,7 +274,8 @@ public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<
      * @return {@code this}
      * @see io.servicetalk.client.api.DefaultAutoRetryStrategyProvider
      * @deprecated {@link io.servicetalk.client.api.AutoRetryStrategyProvider.AutoRetryStrategy} is going away in
-     * future ServiceTalk releases. Similar behavior is offered through the RetryingHttpRequesterFilter.
+     * future ServiceTalk releases. Similar behavior is offered through
+     * {@code io.servicetalk.http.netty.RetryingHttpRequesterFilter}.
      */
     @Deprecated
     SingleAddressHttpClientBuilder<U, R> autoRetryStrategy(AutoRetryStrategyProvider autoRetryStrategyProvider);

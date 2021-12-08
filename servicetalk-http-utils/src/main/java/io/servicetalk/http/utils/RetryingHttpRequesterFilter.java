@@ -46,7 +46,8 @@ import static io.servicetalk.concurrent.api.Completable.failed;
  * A filter to enable retries for HTTP requests.
  *
  * @see RetryStrategies
- * @deprecated A replacement retrying http filter is available with the same name under `io.servicetalk.http.netty`
+ * @deprecated A replacement retrying http filter is available through
+ * {@code io.servicetalk.http.netty.RetryingHttpRequesterFilter}
  */
 @Deprecated
 public final class RetryingHttpRequesterFilter implements StreamingHttpClientFilterFactory,
@@ -60,15 +61,9 @@ public final class RetryingHttpRequesterFilter implements StreamingHttpClientFil
 
     private Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                   final StreamingHttpRequest request,
-                                                  final BiIntFunction<Throwable, Completable> retryStrategy,
-                                                  final Executor executor) {
+                                                  final BiIntFunction<Throwable, Completable> retryStrategy) {
         return delegate.request(request).retryWhen((count, t) -> {
             if (settings.isRetryable(request, t)) {
-                if (settings.evaluateDelayedRetries() && t instanceof DelayedRetry) {
-                   final Duration constant = ((DelayedRetry) t).delay();
-                   return retryStrategy.apply(count, t).concat(executor.timer(constant));
-                }
-
                 return retryStrategy.apply(count, t);
             }
             return failed(t);
@@ -86,7 +81,7 @@ public final class RetryingHttpRequesterFilter implements StreamingHttpClientFil
             @Override
             protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                             final StreamingHttpRequest request) {
-                return RetryingHttpRequesterFilter.this.request(delegate, request, retryStrategy, executor);
+                return RetryingHttpRequesterFilter.this.request(delegate, request, retryStrategy);
             }
         };
     }
@@ -101,7 +96,7 @@ public final class RetryingHttpRequesterFilter implements StreamingHttpClientFil
 
             @Override
             public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-                return RetryingHttpRequesterFilter.this.request(delegate(), request, retryStrategy, executor);
+                return RetryingHttpRequesterFilter.this.request(delegate(), request, retryStrategy);
             }
        };
     }
@@ -115,27 +110,12 @@ public final class RetryingHttpRequesterFilter implements StreamingHttpClientFil
     /**
      * A builder for {@link RetryingHttpRequesterFilter}, which puts an upper bound on retry attempts.
      * To configure the maximum number of retry attempts see {@link #maxRetries(int)}.
-     * @deprecated A replacement retrying http filter is available with the same name under `io.servicetalk.http.netty`
+     * @deprecated A replacement retrying http filter builder is available through
+     * {@code io.servicetalk.http.netty.RetryingHttpRequesterFilterBuilder}
      */
     @Deprecated
     public static final class Builder
             extends AbstractRetryingFilterBuilder<Builder, RetryingHttpRequesterFilter, HttpRequestMetaData> {
-
-        /**
-         * The retrying-filter will also evaluate the {@link DelayedRetry} marker interface
-         * of an exception and use the provided {@link DelayedRetry#delay() constant-delay} in the retry period.
-         * In case a max-delay was set in this builder, the {@link DelayedRetry#delay() constant-delay} overrides
-         * it and takes precedence.
-         *
-         * @param evaluate Evaluate the {@link Throwable errors} for the {@link DelayedRetry} marker interface, and
-         * if matched, then use the {@link DelayedRetry#delay() constant-delay} additionally to the backoff
-         * strategy in use.
-         * @return {@code this}.
-         */
-        public Builder evaluateDelayedRetries(final boolean evaluate) {
-            this.evaluateDelayedRetries = evaluate;
-            return this;
-        }
 
         @Override
         protected RetryingHttpRequesterFilter build(
@@ -159,29 +139,5 @@ public final class RetryingHttpRequesterFilter implements StreamingHttpClientFil
             return defaultRetryForPredicate().or((meta, throwable) ->
                     throwable instanceof IOException && meta.method().properties().isIdempotent());
         }
-    }
-
-    /**
-     * An interface that enhances any {@link Exception} to provide a constant {@link Duration delay} to be applied when
-     * retrying through a {@link RetryingHttpRequesterFilter retrying-filter}.
-     * <p>
-     * Constant delay returned from {@link #delay()} will only be considered if the
-     * {@link RetryingHttpRequesterFilter.Builder#evaluateDelayedRetries(boolean)} is set to {@code true}.
-     * @deprecated A replacement retrying http filter is available with the same name under `io.servicetalk.http
-     * .netty.RetryingHttpRequesterFilter`
-     */
-    @Deprecated
-    public interface DelayedRetry {
-
-        /**
-         * A constant delay to apply in milliseconds.
-         * The total delay for the retry logic will be the sum of this value and the result of the
-         * {@link io.servicetalk.concurrent.api.RetryStrategies retry-strategy} in-use. Consider using 'full-jitter'
-         * flavours from the {@link io.servicetalk.concurrent.api.RetryStrategies retry-strategies} to avoid having
-         * another constant delay applied per-retry.
-         *
-         * @return The {@link Duration} to apply as constant delay when retrying.
-         */
-        Duration delay();
     }
 }

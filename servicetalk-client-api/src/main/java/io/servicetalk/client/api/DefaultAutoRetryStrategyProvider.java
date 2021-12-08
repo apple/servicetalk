@@ -30,7 +30,10 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 
 /**
  * Default implementation for {@link AutoRetryStrategyProvider}.
+ * @deprecated The capabilities of the auto-retry have been introduced under a new universal retrying filter,
+ * available from {@code io.servicetalk.http.netty.RetryingHttpRequesterFilter}.
  */
+@Deprecated
 public final class DefaultAutoRetryStrategyProvider implements AutoRetryStrategyProvider {
     private final int maxRetryCount;
     private final boolean waitForLb;
@@ -57,7 +60,10 @@ public final class DefaultAutoRetryStrategyProvider implements AutoRetryStrategy
 
     /**
      * A builder for {@link DefaultAutoRetryStrategyProvider}.
+     * @deprecated The capabilities of the auto-retry have been introduced under a new universal retrying filter,
+     * available from {@code io.servicetalk.http.netty.RetryingHttpRequesterFilter}.
      */
+    @Deprecated
     public static final class Builder {
         private boolean waitForLb = true;
         private boolean ignoreSdErrors;
