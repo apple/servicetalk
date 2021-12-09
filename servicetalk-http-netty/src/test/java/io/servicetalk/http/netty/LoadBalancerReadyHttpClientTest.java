@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.client.api.DefaultAutoRetryStrategyProvider.Builder;
 import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestCompletable;
@@ -34,6 +33,7 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponses;
 import io.servicetalk.http.api.TestStreamingHttpClient;
+import io.servicetalk.http.netty.RetryingHttpRequesterFilter.ContextAwareRetryingHttpClientFilter;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -185,8 +185,12 @@ class LoadBalancerReadyHttpClientTest {
 
     private static StreamingHttpClientFilterFactory newAutomaticRetryFilterFactory(
             TestPublisher<Object> loadBalancerPublisher, TestCompletable sdStatusCompletable) {
-        return next -> new AutoRetryFilter(next, new Builder().maxRetries(1).build()
-                .newStrategy(loadBalancerPublisher, sdStatusCompletable));
+        final RetryingHttpRequesterFilter filter = new RetryingHttpRequesterFilter.Builder().maxTotalRetries(1).build();
+        return client -> {
+            final ContextAwareRetryingHttpClientFilter f = (ContextAwareRetryingHttpClientFilter) filter.create(client);
+            f.inject(loadBalancerPublisher, sdStatusCompletable);
+            return f;
+        };
     }
 
     private static final class DeferredSuccessSupplier<T> implements Supplier<Single<T>> {

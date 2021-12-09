@@ -77,8 +77,9 @@ import static java.util.Objects.requireNonNull;
 public final class RetryingHttpRequesterFilter
         implements StreamingHttpClientFilterFactory, ExecutionStrategyInfluencer<HttpExecutionStrategy> {
 
-    public static final RetryingHttpRequesterFilter DISABLED_RETRIES =
-            new RetryingHttpRequesterFilter(false, true, 0, null, (__, ___) -> NO_RETRIES);
+    private static final RetryingHttpRequesterFilter DISABLE_RETRIES =
+            new RetryingHttpRequesterFilter(false, true, 0, null,
+                    (__, ___) -> NO_RETRIES);
 
     private final boolean waitForLb;
     private final boolean ignoreSdErrors;
@@ -225,7 +226,7 @@ public final class RetryingHttpRequesterFilter
      * re-attempted.
      */
     public static RetryingHttpRequesterFilter disableAutoRetries() {
-        return DISABLED_RETRIES;
+        return DISABLE_RETRIES;
     }
 
     /**
