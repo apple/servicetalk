@@ -29,8 +29,6 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
-import io.servicetalk.http.api.HttpRequestMetaData;
-import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.utils.RetryingHttpRequesterFilter;
 import io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory;
@@ -47,9 +45,7 @@ import org.junit.jupiter.api.Test;
 import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiPredicate;
 import java.util.function.Predicate;
-
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.defer;
@@ -57,14 +53,16 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.netty.HttpClients.forResolvedAddress;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.http.netty.HttpServers.forAddress;
-import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.*;
+import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolicy.NO_RETRIES;
+import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolicy.ofInstant;
+import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.Builder;
+import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.HttpResponseException;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.time.Duration.ofSeconds;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
 class RetryingHttpRequesterFilterTest {
@@ -118,7 +116,6 @@ class RetryingHttpRequesterFilterTest {
             failingClient.request(failingClient.get("/"));
             fail("Request is expected to fail.");
         } catch (Exception e) {
-            e.printStackTrace();
             assertThat("Unexpected exception.", e, instanceOf(RetryableException.class));
             assertThat("Unexpected calls to select.", lbSelectInvoked.get(), is(2));
         }
@@ -127,8 +124,10 @@ class RetryingHttpRequesterFilterTest {
     @Test
     void requestRetryingPredicate() {
         failingClient = failingConnClientBuilder
-                .appendClientFilter(new Builder().retryRequests((BiPredicate<HttpRequestMetaData, Throwable>)
-                        (requestMetaData, throwable) -> requestMetaData.requestTarget().equals("/retried")).build())
+                .appendClientFilter(new Builder()
+                        .retryRetryableExceptions((requestMetaData, e) -> NO_RETRIES)
+                        .retryOther((requestMetaData, throwable) ->
+                                requestMetaData.requestTarget().equals("/retry") ? ofInstant() : NO_RETRIES).build())
                 .buildBlocking();
         try {
             failingClient.request(failingClient.get("/"));
@@ -139,7 +138,7 @@ class RetryingHttpRequesterFilterTest {
         }
 
         try {
-            failingClient.request(failingClient.get("/retried"));
+            failingClient.request(failingClient.get("/retry"));
             fail("Request is expected to fail.");
         } catch (Exception e) {
             assertThat("Unexpected exception.", e, instanceOf(RetryableException.class));
@@ -152,12 +151,13 @@ class RetryingHttpRequesterFilterTest {
     void responseRetryingPredicate() {
         normalClient = normalClientBuilder
                 .appendClientFilter(new Builder()
+                        .responseMapper(metaData -> metaData.headers().contains(RETRYABLE_HEADER) ?
+                                    new HttpResponseException(metaData) : null)
                         // Disable request retrying
-                        .retryRequests((BiPredicate<HttpRequestMetaData, Throwable>)
-                                (requestMetaData, throwable) -> false)
+                        .retryRetryableExceptions((requestMetaData, e) -> NO_RETRIES)
                         // Retry only responses marked so
-                        .retryResponses((Predicate<HttpResponseMetaData>)
-                                metaData -> metaData.headers().get(RETRYABLE_HEADER) != null)
+                        .retryOther((requestMetaData, throwable) ->
+                                throwable instanceof HttpResponseException ? ofInstant() : NO_RETRIES)
                         .build())
                 .buildBlocking();
         try {
@@ -165,7 +165,7 @@ class RetryingHttpRequesterFilterTest {
             fail("Request is expected to fail.");
         } catch (Exception e) {
             e.printStackTrace();
-            assertThat("Unexpected exception.", e, instanceOf(StacklessRetryResponseException.class));
+            assertThat("Unexpected exception.", e, instanceOf(HttpResponseException.class));
             assertThat("Unexpected calls to select.", lbSelectInvoked.get(), is(4));
         }
     }
@@ -231,7 +231,7 @@ class RetryingHttpRequesterFilterTest {
 
         @Override
         public ExecutionStrategy requiredOffloads() {
-            return ExecutionStrategy.anyStrategy();
+            return ExecutionStrategy.offloadNone();
         }
     }
 

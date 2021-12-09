@@ -30,6 +30,7 @@ import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 /**
  * Designed to listen for {@link LoadBalancerReadyEvent}s and provide notification when a {@link LoadBalancerReadyEvent}
  * returns {@code true} from {@link LoadBalancerReadyEvent#isReady()}.
+ * @deprecated internal class replaced with {@code io.servicetalk.http.netty.LoadBalancerReadySubscriber}
  */
 //FIXME 0.42 - To be removed
 @Deprecated

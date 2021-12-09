@@ -37,7 +37,6 @@ import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
 import java.io.IOException;
-import java.time.Duration;
 import java.util.function.BiPredicate;
 
 import static io.servicetalk.concurrent.api.Completable.failed;
@@ -104,7 +103,7 @@ public final class RetryingHttpRequesterFilter implements StreamingHttpClientFil
     @Override
     public HttpExecutionStrategy requiredOffloads() {
         // No influence since we do not block.
-        return HttpExecutionStrategies.anyStrategy();
+        return HttpExecutionStrategies.offloadNone();
     }
 
     /**
