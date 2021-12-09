@@ -58,6 +58,7 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HeaderUtils.DEFAULT_HEADER_FILTER;
 import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolicy.NO_RETRIES;
 import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolicy.ofInstant;
+import static java.lang.Integer.MAX_VALUE;
 import static java.time.Duration.ZERO;
 import static java.time.Duration.ofDays;
 import static java.util.Objects.requireNonNull;
@@ -80,6 +81,10 @@ import static java.util.Objects.requireNonNull;
  */
 public final class RetryingHttpRequesterFilter
         implements StreamingHttpClientFilterFactory, ExecutionStrategyInfluencer<HttpExecutionStrategy> {
+
+    public static final RetryingHttpRequesterFilter DISABLE_RETRIES =
+            new RetryingHttpRequesterFilter(false, true, 0, null,
+                (__, ___) -> NO_RETRIES);
 
     private final boolean waitForLb;
     private final boolean ignoreSdErrors;
@@ -305,6 +310,16 @@ public final class RetryingHttpRequesterFilter
         }
 
         /**
+         * Creates a new {@link BackOffPolicy} that retries failures instantly up-to provided max retries.
+         * 
+         * @param maxRetries the number of retry attempts for this {@link BackOffPolicy}.
+         * @return a new {@link BackOffPolicy} that retries failures instantly up-to provided max retries.
+         */
+        public static BackOffPolicy ofInstant(final int maxRetries) {
+            return new BackOffPolicy(null, ZERO, null, null, false, maxRetries);
+        }
+
+        /**
          * Special {@link BackOffPolicy} that signals that no retries will be attempted.
          * @return a special {@link BackOffPolicy} that signals that no retries will be attempted.
          */
@@ -520,7 +535,7 @@ public final class RetryingHttpRequesterFilter
         private boolean waitForLb = true;
         private boolean ignoreSdErrors;
 
-        private int maxRetries = 3;
+        private int maxRetries = MAX_VALUE;
 
         @Nullable
         private Function<HttpResponseMetaData, HttpResponseException> responseMapper;
@@ -572,7 +587,10 @@ public final class RetryingHttpRequesterFilter
         /**
          * Set the maximum number of allowed retry operations before giving up, applied as total max across all retry
          * functions (see. {@link #retryDelayedRetries(BiFunction)}, {@link #retryIdempotentRequests(BiFunction)},
-         * {@link #retryRetryableExceptions(BiFunction)}, {@link #retryOther(BiFunction)}).
+         * {@link #retryRetryableExceptions(BiFunction)}, {@link #retryResponses(BiFunction)},
+         * {@link #retryOther(BiFunction)}).
+         *
+         * If not set, max total retries will be infinite.
          *
          * @param maxRetries Maximum number of allowed retries before giving up
          * @return {@code this}
