@@ -48,4 +48,10 @@
     </Or>
     <Bug pattern="EI_EXPOSE_REP2"/>
   </Match>
+
+  <!-- Intentional -->
+  <Match>
+    <Class name="io.servicetalk.http.netty.RetryingHttpRequesterFilter$HttpResponseException"/>
+    <Bug pattern="EI_EXPOSE_REP2"/>
+  </Match>
 </FindBugsFilter>
