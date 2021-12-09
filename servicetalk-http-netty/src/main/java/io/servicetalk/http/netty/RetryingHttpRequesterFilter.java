@@ -55,6 +55,7 @@ import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBac
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoffDeltaJitter;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoffFullJitter;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.http.api.HeaderUtils.DEFAULT_HEADER_FILTER;
 import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolicy.NO_RETRIES;
 import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolicy.ofInstant;
 import static java.time.Duration.ZERO;
@@ -245,6 +246,7 @@ public final class RetryingHttpRequesterFilter
         public final String message;
 
         public HttpResponseException(final String message, final HttpResponseMetaData metaData) {
+            super(message);
             this.metaData = requireNonNull(metaData);
             this.message = requireNonNull(message);
         }
@@ -256,20 +258,16 @@ public final class RetryingHttpRequesterFilter
 
         @Override
         public String toString() {
-            return "HttpResponseException{" +
-                    "metaData=" + metaData +
-                    ", message='" + message + '\'' +
-                    '}';
+            return super.toString() +
+                ", metaData=" + metaData.toString(DEFAULT_HEADER_FILTER) +
+                ", message='" + message + '\'';
         }
     }
 
     /**
      * Definition and presets of retry backoff policies.
-     * <p>
-     * If the existing preset of {@link BackOffPolicy backoff policies} aren't enough to meet your expectations, the
-     * class is extendable.
      */
-    public static class BackOffPolicy {
+    public static final class BackOffPolicy {
 
         private static final Duration FULL_JITTER = ofDays(1024);
         public static final BackOffPolicy NO_RETRIES = ofNoRetries();
@@ -675,6 +673,7 @@ public final class RetryingHttpRequesterFilter
         /**
          * Support additional criteria for determining which requests or errors should be
          * retried.
+         * To disable retries you can return {@link BackOffPolicy#NO_RETRIES} from the {@code mapper}.
          * <strong>It's important that this {@link Function} doesn't block to avoid performance impacts.</strong>
 
          * @param mapper {@link BiFunction} that checks whether a given combination of
