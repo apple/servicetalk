@@ -25,7 +25,6 @@ import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.http.utils.RetryingHttpRequesterFilter;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
@@ -67,6 +66,7 @@ import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.http.netty.HttpServers.forAddress;
+import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolicy.ofConstantBackoffFullJitter;
 import static io.servicetalk.logging.api.LogLevel.TRACE;
 import static io.servicetalk.transport.api.HostAndPort.of;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
@@ -133,9 +133,7 @@ class MalformedDataAfterHttpMessageTest {
                 // garbage data, which won't be a RetryableException. We may also see an exception from flush if the
                 // read closed the connection and then attempt to write on the same connection.
                 .appendClientFilter(new RetryingHttpRequesterFilter.Builder()
-                        .maxRetries(MAX_VALUE)
-                        .retryFor((req, cause) -> true)
-                        .buildWithConstantBackoffFullJitter(ofNanos(1)))
+                        .retryOther((req, cause) -> ofConstantBackoffFullJitter(ofNanos(1), MAX_VALUE)).build())
                 .appendConnectionFilter(connection -> new StreamingHttpConnectionFilter(connection) {
                     @Override
                     public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {

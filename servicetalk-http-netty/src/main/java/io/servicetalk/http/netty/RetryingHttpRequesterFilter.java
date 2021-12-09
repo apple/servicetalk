@@ -83,7 +83,7 @@ public final class RetryingHttpRequesterFilter
 
     public static final RetryingHttpRequesterFilter DISABLE_RETRIES =
             new RetryingHttpRequesterFilter(false, true, 0, null,
-                (__, ___) -> NO_RETRIES);
+                    (__, ___) -> NO_RETRIES);
 
     private final boolean waitForLb;
     private final boolean ignoreSdErrors;

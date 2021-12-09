@@ -47,7 +47,6 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.client.api.AutoRetryStrategyProvider.DISABLE_AUTO_RETRIES;
 import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
@@ -117,7 +116,7 @@ class H2ConcurrencyControllerTest {
             .ioExecutor(CTX.ioExecutor())
             .executor(CTX.executor())
             .executionStrategy(defaultStrategy())
-            .autoRetryStrategy(DISABLE_AUTO_RETRIES)    // All exceptions should be propagated
+            .appendClientFilter(RetryingHttpRequesterFilter.DISABLE_RETRIES)    // All exceptions should be propagated
             .appendConnectionFilter(MulticastTransportEventsStreamingHttpConnectionFilter::new)
             .appendConnectionFilter(connection -> new StreamingHttpConnectionFilter(connection) {
                 @Override

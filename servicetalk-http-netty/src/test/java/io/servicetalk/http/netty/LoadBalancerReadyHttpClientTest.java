@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.client.api.DefaultAutoRetryStrategyProvider.Builder;
 import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestCompletable;
@@ -185,8 +184,10 @@ class LoadBalancerReadyHttpClientTest {
 
     private static StreamingHttpClientFilterFactory newAutomaticRetryFilterFactory(
             TestPublisher<Object> loadBalancerPublisher, TestCompletable sdStatusCompletable) {
-        return next -> new AutoRetryFilter(next, new Builder().maxRetries(1).build()
-                .newStrategy(loadBalancerPublisher, sdStatusCompletable));
+        final RetryingHttpRequesterFilter filter = new RetryingHttpRequesterFilter.Builder().maxTotalRetries(1).build();
+        filter.inject(loadBalancerPublisher);
+        filter.inject(sdStatusCompletable);
+        return filter;
     }
 
     private static final class DeferredSuccessSupplier<T> implements Supplier<Single<T>> {

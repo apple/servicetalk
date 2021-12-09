@@ -31,7 +31,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
 import static io.netty.util.internal.PlatformDependent.normalizedOs;
-import static io.servicetalk.client.api.AutoRetryStrategyProvider.DISABLE_AUTO_RETRIES;
 import static io.servicetalk.client.api.LimitingConnectionFactoryFilter.withMax;
 import static io.servicetalk.concurrent.api.BlockingTestUtils.await;
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitely;
@@ -69,7 +68,7 @@ class ConnectionAcceptingNettyHttpServerTest extends AbstractNettyHttpServerTest
     protected SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> newClientBuilder() {
         return super.newClientBuilder()
                 .appendConnectionFactoryFilter(withMax(5))
-                .autoRetryStrategy(DISABLE_AUTO_RETRIES)
+                .appendClientFilter(RetryingHttpRequesterFilter.DISABLE_RETRIES)
                 .enableWireLogging("servicetalk-tests-wire-logger", TRACE, TRUE::booleanValue);
     }
 
