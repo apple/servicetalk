@@ -152,12 +152,11 @@ class RetryingHttpRequesterFilterTest {
         normalClient = normalClientBuilder
                 .appendClientFilter(new Builder()
                         .responseMapper(metaData -> metaData.headers().contains(RETRYABLE_HEADER) ?
-                                    new HttpResponseException(metaData) : null)
+                                    new HttpResponseException("Retryable header", metaData) : null)
                         // Disable request retrying
                         .retryRetryableExceptions((requestMetaData, e) -> NO_RETRIES)
                         // Retry only responses marked so
-                        .retryOther((requestMetaData, throwable) ->
-                                throwable instanceof HttpResponseException ? ofInstant() : NO_RETRIES)
+                        .retryResponses((requestMetaData, throwable) -> ofInstant())
                         .build())
                 .buildBlocking();
         try {
