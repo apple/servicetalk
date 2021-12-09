@@ -144,7 +144,7 @@ class RetryingHttpRequesterFilterTest {
             fail("Request is expected to fail.");
         } catch (Exception e) {
             assertThat("Unexpected exception.", e, instanceOf(RetryableException.class));
-            // 1 Run + 3 Retries + 1 residual count from previous request + account for LB readiness    
+            // 1 Run + 3 Retries + 1 residual count from previous request + account for LB readiness
             assertThat("Unexpected calls to select.", (double) lbSelectInvoked.get(), closeTo(5.0, 1.0));
         }
     }

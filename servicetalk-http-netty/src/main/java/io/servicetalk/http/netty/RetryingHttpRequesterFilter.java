@@ -237,7 +237,7 @@ public final class RetryingHttpRequesterFilter
      * {@link HttpResponseException}s are user-provided errors, resulting from an {@link HttpRequestMetaData}, through
      * the {@link Builder#responseMapper(Function)}.
      */
-    public final static class HttpResponseException extends RuntimeException {
+    public static final class HttpResponseException extends RuntimeException {
 
         private static final long serialVersionUID = -7182949760823647710L;
 
