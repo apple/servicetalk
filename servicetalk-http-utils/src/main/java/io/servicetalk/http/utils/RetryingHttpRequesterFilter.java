@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,7 +44,10 @@ import static io.servicetalk.concurrent.api.Completable.failed;
  * A filter to enable retries for HTTP requests.
  *
  * @see RetryStrategies
+ * @deprecated A replacement retrying http filter is available through
+ * {@code io.servicetalk.http.netty.RetryingHttpRequesterFilter}
  */
+@Deprecated
 public final class RetryingHttpRequesterFilter implements StreamingHttpClientFilterFactory,
                                                           StreamingHttpConnectionFilterFactory,
                                                           HttpExecutionStrategyInfluencer {
@@ -107,7 +110,10 @@ public final class RetryingHttpRequesterFilter implements StreamingHttpClientFil
     /**
      * A builder for {@link RetryingHttpRequesterFilter}, which puts an upper bound on retry attempts.
      * To configure the maximum number of retry attempts see {@link #maxRetries(int)}.
+     * @deprecated A replacement retrying http filter builder is available through
+     * {@code io.servicetalk.http.netty.RetryingHttpRequesterFilterBuilder}
      */
+    @Deprecated
     public static final class Builder
             extends AbstractRetryingFilterBuilder<Builder, RetryingHttpRequesterFilter, HttpRequestMetaData> {
 

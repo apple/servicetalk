@@ -33,7 +33,6 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.utils.RedirectingHttpRequesterFilter;
-import io.servicetalk.http.utils.RetryingHttpRequesterFilter;
 
 /**
  * An HTTP requester filter that tracks events during request/response lifecycle.
