@@ -57,7 +57,6 @@ import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponential
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HeaderUtils.DEFAULT_HEADER_FILTER;
 import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolicy.NO_RETRIES;
-import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolicy.ofInstant;
 import static java.lang.Integer.MAX_VALUE;
 import static java.time.Duration.ZERO;
 import static java.time.Duration.ofDays;
@@ -264,8 +263,7 @@ public final class RetryingHttpRequesterFilter
         @Override
         public String toString() {
             return super.toString() +
-                ", metaData=" + metaData.toString(DEFAULT_HEADER_FILTER) +
-                ", message='" + message + '\'';
+                ", metaData=" + metaData.toString(DEFAULT_HEADER_FILTER);
         }
     }
 
@@ -305,17 +303,17 @@ public final class RetryingHttpRequesterFilter
          * Creates a new {@link BackOffPolicy} that retries failures instantly up-to 3 max retries.
          * @return a new {@link BackOffPolicy} that retries failures instantly up-to 3 max retries.
          */
-        public static BackOffPolicy ofInstant() {
+        public static BackOffPolicy ofImmediate() {
             return new BackOffPolicy(null, ZERO, null, null, false, 3);
         }
 
         /**
          * Creates a new {@link BackOffPolicy} that retries failures instantly up-to provided max retries.
-         * 
+         *
          * @param maxRetries the number of retry attempts for this {@link BackOffPolicy}.
          * @return a new {@link BackOffPolicy} that retries failures instantly up-to provided max retries.
          */
-        public static BackOffPolicy ofInstant(final int maxRetries) {
+        public static BackOffPolicy ofImmediate(final int maxRetries) {
             return new BackOffPolicy(null, ZERO, null, null, false, maxRetries);
         }
 
@@ -541,7 +539,7 @@ public final class RetryingHttpRequesterFilter
         private Function<HttpResponseMetaData, HttpResponseException> responseMapper;
 
         private BiFunction<HttpRequestMetaData, RetryableException, BackOffPolicy>
-                retryRetryableExceptions = (requestMetaData, e) -> ofInstant();
+                retryRetryableExceptions = (requestMetaData, e) -> BackOffPolicy.ofImmediate();
 
         @Nullable
         private BiFunction<HttpRequestMetaData, IOException, BackOffPolicy>
