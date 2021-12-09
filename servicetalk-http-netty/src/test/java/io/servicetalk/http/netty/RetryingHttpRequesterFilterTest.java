@@ -61,6 +61,7 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.time.Duration.ofSeconds;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -134,7 +135,8 @@ class RetryingHttpRequesterFilterTest {
             fail("Request is expected to fail.");
         } catch (Exception e) {
             assertThat("Unexpected exception.", e, instanceOf(RetryableException.class));
-            assertThat("Unexpected calls to select.", lbSelectInvoked.get(), is(1));
+            // Account for LB readiness
+            assertThat("Unexpected calls to select.", (double) lbSelectInvoked.get(), closeTo(1.0, 1.0));
         }
 
         try {
@@ -142,8 +144,8 @@ class RetryingHttpRequesterFilterTest {
             fail("Request is expected to fail.");
         } catch (Exception e) {
             assertThat("Unexpected exception.", e, instanceOf(RetryableException.class));
-            // 1 Run + 3 Retries + 1 residual count from previous request
-            assertThat("Unexpected calls to select.", lbSelectInvoked.get(), is(5));
+            // 1 Run + 3 Retries + 1 residual count from previous request + account for LB readiness    
+            assertThat("Unexpected calls to select.", (double) lbSelectInvoked.get(), closeTo(5.0, 1.0));
         }
     }
 
