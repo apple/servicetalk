@@ -41,6 +41,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.context.api.ContextMap.Key.newKey;
@@ -169,6 +170,11 @@ class HttpTransportObserverAsyncContextTest extends AbstractNettyHttpServerTest 
 
         @Override
         public ConnectionObserver onNewConnection() {
+            throw new UnsupportedOperationException("This deprecated method is not expected to be invoked");
+        }
+
+        @Override
+        public ConnectionObserver onNewConnection(@Nullable final Object localAddress, final Object remoteAddress) {
             // Use String.valueOf(...) here and in all other callbacks to prevent passing `null` value to the
             // ConcurrentHashMap which does not allow `null` values:
             storageMap.put("onNewConnection", valueOf(AsyncContext.get(key)));
