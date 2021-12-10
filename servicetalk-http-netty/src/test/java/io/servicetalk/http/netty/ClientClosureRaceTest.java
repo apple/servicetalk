@@ -179,10 +179,10 @@ class ClientClosureRaceTest {
                 .appendClientFilter(retryBuilder
                         .retryOther((md, t) ->
                                 // This test has the server intentionally hard-close the connection after responding
-                                // to the first request, however some tests use pipelining and may write multiple requests
-                                // on the same connection which would result in a non-retryable exception. Since this test
-                                // doesn't care about idempotency it should always retry.
-                           ofConstantBackoffFullJitter(ofNanos(1), MAX_VALUE)
+                                // to the first request, however some tests use pipelining and may write multiple
+                                // requests on the same connection which would result in a non-retryable exception.
+                                // Since this test doesn't care about idempotency it should always retry.
+                                ofConstantBackoffFullJitter(ofNanos(1), MAX_VALUE)
                         ).build());
     }
 }

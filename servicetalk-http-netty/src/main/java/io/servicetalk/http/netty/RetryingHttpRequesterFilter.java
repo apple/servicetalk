@@ -81,6 +81,9 @@ import static java.util.Objects.requireNonNull;
 public final class RetryingHttpRequesterFilter
         implements StreamingHttpClientFilterFactory, ExecutionStrategyInfluencer<HttpExecutionStrategy> {
 
+    /**
+     * Retrying filter that disables any form of retry behaviour. All types of failures will not be re-attempted.
+     */
     public static final RetryingHttpRequesterFilter DISABLE_RETRIES =
             new RetryingHttpRequesterFilter(false, true, 0, null,
                     (__, ___) -> NO_RETRIES);
@@ -128,8 +131,9 @@ public final class RetryingHttpRequesterFilter
         return single.retryWhen(retryStrategy(executor, request));
     }
 
-    private BiIntFunction<Throwable, Completable> retryStrategy(final Executor executor,
-                                                                final HttpRequestMetaData requestMetaData) {
+    // Visible for testing
+    BiIntFunction<Throwable, Completable> retryStrategy(final Executor executor,
+                                                        final HttpRequestMetaData requestMetaData) {
         return (count, t) -> {
             if (count > maxTotalRetries) {
                 return failed(t);
@@ -273,6 +277,10 @@ public final class RetryingHttpRequesterFilter
     public static final class BackOffPolicy {
 
         private static final Duration FULL_JITTER = ofDays(1024);
+
+        /**
+         * Special {@link BackOffPolicy} to signal no retries.
+         */
         public static final BackOffPolicy NO_RETRIES = ofNoRetries();
 
         @Nullable
