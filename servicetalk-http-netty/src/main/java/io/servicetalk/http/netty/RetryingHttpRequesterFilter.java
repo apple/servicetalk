@@ -97,9 +97,6 @@ public final class RetryingHttpRequesterFilter
     @Nullable
     private Publisher<Object> lbEventStream;
     @Nullable
-    private LoadBalancerReadySubscriber loadBalancerReadySubscriber;
-
-    @Nullable
     private Completable sdStatus;
 
     RetryingHttpRequesterFilter(
@@ -113,51 +110,6 @@ public final class RetryingHttpRequesterFilter
         this.retryFor = retryFor;
     }
 
-    private Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                  final StreamingHttpRequest request,
-                                                  final Executor executor) {
-        Single<StreamingHttpResponse> single = delegate.request(request);
-        if (responseMapper != null) {
-            single = single.map(resp -> {
-                final HttpResponseException exception = responseMapper.apply(resp);
-                if (exception != null) {
-                    throw exception;
-                }
-
-                return resp;
-            });
-        }
-
-        return single.retryWhen(retryStrategy(executor, request));
-    }
-
-    // Visible for testing
-    BiIntFunction<Throwable, Completable> retryStrategy(final Executor executor,
-                                                        final HttpRequestMetaData requestMetaData) {
-        return (count, t) -> {
-            if (count > maxTotalRetries) {
-                return failed(t);
-            }
-
-            if (loadBalancerReadySubscriber != null && t instanceof NoAvailableHostException) {
-                final Completable onHostsAvailable = loadBalancerReadySubscriber.onHostsAvailable();
-                return sdStatus == null ? onHostsAvailable : onHostsAvailable.ambWith(sdStatus);
-            }
-
-            final BackOffPolicy backOffPolicy = retryFor.apply(requestMetaData, t);
-            if (backOffPolicy != NO_RETRIES) {
-                if (t instanceof DelayedRetry) {
-                    final Duration constant = ((DelayedRetry) t).delay();
-                    return backOffPolicy.newStrategy(executor).apply(count, t).concat(executor.timer(constant));
-                }
-
-                return backOffPolicy.newStrategy(executor).apply(count, t);
-            }
-
-            return failed(t);
-        };
-    }
-
     void inject(final Publisher<Object> lbEventStream) {
         this.lbEventStream = lbEventStream;
     }
@@ -168,7 +120,7 @@ public final class RetryingHttpRequesterFilter
 
     @Override
     public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {
-        return new ContextAwareClientFilter(client);
+        return new ContextAwareRetryingHttpClientFilter(client);
     }
 
     @Override
@@ -177,19 +129,22 @@ public final class RetryingHttpRequesterFilter
         return HttpExecutionStrategies.offloadNone();
     }
 
-    private final class ContextAwareClientFilter extends StreamingHttpClientFilter {
+    final class ContextAwareRetryingHttpClientFilter extends StreamingHttpClientFilter {
 
         @Nullable
         private AsyncCloseable closeAsync;
 
         private final Executor executor;
 
+        @Nullable
+        private LoadBalancerReadySubscriber loadBalancerReadySubscriber;
+
         /**
          * Create a new instance.
          *
          * @param delegate The {@link FilterableStreamingHttpClient} to delegate all calls to.
          */
-        private ContextAwareClientFilter(final FilterableStreamingHttpClient delegate) {
+        private ContextAwareRetryingHttpClientFilter(final FilterableStreamingHttpClient delegate) {
             super(delegate);
             this.executor = delegate.executionContext().executor();
             init();
@@ -203,11 +158,39 @@ public final class RetryingHttpRequesterFilter
                     loadBalancerReadySubscriber.cancel();
                     return completed();
                 });
+                Thread.dumpStack();
                 toSource(lbEventStream).subscribe(loadBalancerReadySubscriber);
             } else {
                 loadBalancerReadySubscriber = null;
                 closeAsync = emptyAsyncCloseable();
             }
+        }
+
+        // Visible for testing
+        BiIntFunction<Throwable, Completable> retryStrategy(final Executor executor,
+                                                            final HttpRequestMetaData requestMetaData) {
+            return (count, t) -> {
+                if (count > maxTotalRetries) {
+                    return failed(t);
+                }
+
+                if (loadBalancerReadySubscriber != null && t instanceof NoAvailableHostException) {
+                    final Completable onHostsAvailable = loadBalancerReadySubscriber.onHostsAvailable();
+                    return sdStatus == null ? onHostsAvailable : onHostsAvailable.ambWith(sdStatus);
+                }
+
+                final BackOffPolicy backOffPolicy = retryFor.apply(requestMetaData, t);
+                if (backOffPolicy != NO_RETRIES) {
+                    if (t instanceof DelayedRetry) {
+                        final Duration constant = ((DelayedRetry) t).delay();
+                        return backOffPolicy.newStrategy(executor).apply(count, t).concat(executor.timer(constant));
+                    }
+
+                    return backOffPolicy.newStrategy(executor).apply(count, t);
+                }
+
+                return failed(t);
+            };
         }
 
         @Override
@@ -220,7 +203,19 @@ public final class RetryingHttpRequesterFilter
         @Override
         protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                         final StreamingHttpRequest request) {
-            return RetryingHttpRequesterFilter.this.request(delegate(), request, executor);
+            Single<StreamingHttpResponse> single = delegate.request(request);
+            if (responseMapper != null) {
+                single = single.map(resp -> {
+                    final HttpResponseException exception = responseMapper.apply(resp);
+                    if (exception != null) {
+                        throw exception;
+                    }
+
+                    return resp;
+                });
+            }
+
+            return single.retryWhen(retryStrategy(executor, request));
         }
 
         @Override
