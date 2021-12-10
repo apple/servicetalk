@@ -80,6 +80,7 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.close;
 import static io.servicetalk.transport.netty.internal.ChannelSet.CHANNEL_CLOSEABLE_KEY;
+import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.CHANNEL_CLOSED_INBOUND;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static io.servicetalk.transport.netty.internal.Flush.composeFlushes;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.fromNettyEventLoop;
@@ -376,6 +377,12 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         } else {
             if ((closeReason = this.closeReason) != null) {
                 throwable = wrapWithCloseReason(closeReason, t);
+                if (closeReason == CHANNEL_CLOSED_INBOUND && t instanceof StacklessClosedChannelException &&
+                        !NativeTransportUtils.isEpollAvailable() && !NativeTransportUtils.isKQueueAvailable()) {
+                    throwable = new StacklessClosedChannelException("Observed closed channel after an attempt to " +
+                            "write. Make sure the native transport is available, see logs produced by " +
+                            NativeTransportUtils.class.getName(), throwable);
+                }
             } else {
                 throwable = enrichProtocolError.apply(t);
             }

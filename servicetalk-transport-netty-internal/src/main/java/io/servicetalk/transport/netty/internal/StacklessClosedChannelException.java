@@ -18,6 +18,9 @@ package io.servicetalk.transport.netty.internal;
 import io.servicetalk.concurrent.internal.ThrowableUtils;
 
 import java.nio.channels.ClosedChannelException;
+import javax.annotation.Nullable;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * {@link ClosedChannelException} that will not not fill in the stacktrace but use a cheaper way of producing
@@ -26,7 +29,22 @@ import java.nio.channels.ClosedChannelException;
 public final class StacklessClosedChannelException extends ClosedChannelException {
     private static final long serialVersionUID = -5021225720136487769L;
 
-    private StacklessClosedChannelException() { }
+    @Nullable
+    private final String message;
+
+    private StacklessClosedChannelException() {
+        message = null;
+    }
+
+    StacklessClosedChannelException(final String message, final Throwable cause) {
+        this.message = requireNonNull(message);
+        initCause(cause);
+    }
+
+    @Override
+    public String getMessage() {
+        return message == null ? super.getMessage() : message;
+    }
 
     @Override
     public Throwable fillInStackTrace() {
