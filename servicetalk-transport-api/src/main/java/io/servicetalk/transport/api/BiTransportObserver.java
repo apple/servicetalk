@@ -22,6 +22,7 @@ import io.servicetalk.transport.api.ConnectionObserver.SecurityHandshakeObserver
 import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
 import io.servicetalk.transport.api.ConnectionObserver.WriteObserver;
 
+import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
 import static io.servicetalk.transport.api.TransportObservers.asSafeObserver;
@@ -222,7 +223,7 @@ final class BiTransportObserver implements TransportObserver {
         }
 
         @Override
-        public void itemRead(final Object item) {
+        public void itemRead(@Nullable final Object item) {
             first.itemRead(item);
             second.itemRead(item);
         }
@@ -269,7 +270,7 @@ final class BiTransportObserver implements TransportObserver {
         }
 
         @Override
-        public void itemReceived(final Object item) {
+        public void itemReceived(@Nullable final Object item) {
             first.itemReceived(item);
             second.itemReceived(item);
         }
@@ -287,7 +288,7 @@ final class BiTransportObserver implements TransportObserver {
         }
 
         @Override
-        public void itemWritten(final Object item) {
+        public void itemWritten(@Nullable final Object item) {
             first.itemWritten(item);
             second.itemWritten(item);
         }

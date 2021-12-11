@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
+import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
 import static java.util.Objects.requireNonNull;
@@ -219,7 +220,7 @@ final class CatchAllTransportObserver implements TransportObserver {
         }
 
         @Override
-        public void itemRead(final Object item) {
+        public void itemRead(@Nullable final Object item) {
             safeReport(() -> observer.itemRead(item), observer, "item read");
         }
 
@@ -258,7 +259,7 @@ final class CatchAllTransportObserver implements TransportObserver {
         }
 
         @Override
-        public void itemReceived(final Object item) {
+        public void itemReceived(@Nullable final Object item) {
             safeReport(() -> observer.itemReceived(item), observer, "item received");
         }
 
@@ -273,7 +274,7 @@ final class CatchAllTransportObserver implements TransportObserver {
         }
 
         @Override
-        public void itemWritten(final Object item) {
+        public void itemWritten(@Nullable final Object item) {
             safeReport(() -> observer.itemWritten(item), observer, "item written");
         }
 

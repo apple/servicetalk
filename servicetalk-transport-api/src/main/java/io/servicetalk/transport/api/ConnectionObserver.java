@@ -15,6 +15,7 @@
  */
 package io.servicetalk.transport.api;
 
+import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
 /**
@@ -226,7 +227,7 @@ public interface ConnectionObserver {
          *
          * @param item an item that was read
          */
-        default void itemRead(Object item) {
+        default void itemRead(@Nullable Object item) {
             itemRead(); // FIXME: 0.42 - remove default impl
         }
 
@@ -279,7 +280,7 @@ public interface ConnectionObserver {
          *
          * @param item received item
          */
-        default void itemReceived(Object item) {
+        default void itemReceived(@Nullable Object item) {
             itemReceived(); // FIXME: 0.42 - remove default impl
         }
 
@@ -303,7 +304,7 @@ public interface ConnectionObserver {
          *
          * @param item written item
          */
-        default void itemWritten(Object item) {
+        default void itemWritten(@Nullable Object item) {
             itemWritten();  // FIXME: 0.42 - remove default impl
         }
 
