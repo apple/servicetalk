@@ -287,9 +287,9 @@ final class BiTransportObserver implements TransportObserver {
         }
 
         @Override
-        public void itemWritten(final Object item, final long size) {
-            first.itemWritten(item, size);
-            second.itemWritten(item, size);
+        public void itemWritten(final Object item) {
+            first.itemWritten(item);
+            second.itemWritten(item);
         }
 
         @Override

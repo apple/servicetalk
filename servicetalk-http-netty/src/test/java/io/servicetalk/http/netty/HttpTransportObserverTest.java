@@ -224,7 +224,7 @@ class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
         verify(clientWriteObserver, atLeastOnce()).requestedToWrite(anyLong());
         verify(clientWriteObserver, atLeastOnce()).itemReceived(any());
         verify(clientWriteObserver, atLeastOnce()).onFlushRequest();
-        verify(clientWriteObserver, atLeastOnce()).itemWritten(any(), anyLong());
+        verify(clientWriteObserver, atLeastOnce()).itemWritten(any());
         verify(clientWriteObserver, atLeastOnce()).itemFlushed();
         verify(clientWriteObserver).writeComplete();
 
@@ -239,7 +239,7 @@ class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
         verify(serverWriteObserver, atLeastOnce()).requestedToWrite(anyLong());
         verify(serverWriteObserver, atLeastOnce()).itemReceived(any());
         verify(serverWriteObserver, atLeastOnce()).onFlushRequest();
-        verify(serverWriteObserver, atLeastOnce()).itemWritten(any(), anyLong());
+        verify(serverWriteObserver, atLeastOnce()).itemWritten(any());
         verify(serverWriteObserver, atLeastOnce()).itemFlushed();
 
         verify(clientReadObserver, atLeastOnce()).requestedToRead(anyLong());
@@ -289,7 +289,7 @@ class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
         verify(clientWriteObserver, atLeastOnce()).requestedToWrite(anyLong());
         verify(clientWriteObserver, atLeastOnce()).itemReceived(any());
         verify(clientWriteObserver, atLeastOnce()).onFlushRequest();
-        verify(clientWriteObserver, atLeastOnce()).itemWritten(any(), anyLong());
+        verify(clientWriteObserver, atLeastOnce()).itemWritten(any());
         verify(clientWriteObserver, atLeastOnce()).itemFlushed();
         verify(clientWriteObserver).writeComplete();
 
@@ -305,7 +305,7 @@ class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
         verify(serverWriteObserver, atLeastOnce()).requestedToWrite(anyLong());
         verify(serverWriteObserver, atLeastOnce()).itemReceived(any());
         verify(serverWriteObserver, atLeastOnce()).onFlushRequest();
-        verify(serverWriteObserver, atLeastOnce()).itemWritten(any(), anyLong());
+        verify(serverWriteObserver, atLeastOnce()).itemWritten(any());
         verify(serverWriteObserver, atLeastOnce()).itemFlushed();
         verify(serverWriteObserver, atLeastOnce()).writeFailed(DELIBERATE_EXCEPTION);
 
@@ -370,7 +370,7 @@ class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
         verify(clientWriteObserver, atLeastOnce()).requestedToWrite(anyLong());
         verify(clientWriteObserver, atLeastOnce()).itemReceived(any());
         verify(clientWriteObserver, atLeastOnce()).onFlushRequest();
-        verify(clientWriteObserver, atLeastOnce()).itemWritten(any(), anyLong());
+        verify(clientWriteObserver, atLeastOnce()).itemWritten(any());
         verify(clientWriteObserver, atLeastOnce()).itemFlushed();
         verify(clientWriteObserver).writeFailed(DELIBERATE_EXCEPTION);
 

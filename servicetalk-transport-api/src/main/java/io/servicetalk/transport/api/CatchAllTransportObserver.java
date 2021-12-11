@@ -273,8 +273,8 @@ final class CatchAllTransportObserver implements TransportObserver {
         }
 
         @Override
-        public void itemWritten(final Object item, final long size) {
-            safeReport(() -> observer.itemWritten(item, size), observer, "item written");
+        public void itemWritten(final Object item) {
+            safeReport(() -> observer.itemWritten(item), observer, "item written");
         }
 
         @Override

@@ -223,7 +223,7 @@ final class NoopTransportObserver implements TransportObserver {
         }
 
         @Override
-        public void itemWritten(final Object item, final long size) {
+        public void itemWritten(final Object item) {
         }
 
         @Override

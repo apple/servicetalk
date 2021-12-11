@@ -130,7 +130,7 @@ public class AbstractTransportObserverTest extends AbstractTcpServerTest {
         verify(writeObserver, atLeastOnce()).requestedToWrite(anyLong());
         verify(writeObserver).itemReceived(any());
         verify(writeObserver).onFlushRequest();
-        verify(writeObserver).itemWritten(any(), anyLong());
+        verify(writeObserver).itemWritten(any());
         verify(writeObserver).itemFlushed();
         if (completeExpected) {
             verify(writeObserver).writeComplete();

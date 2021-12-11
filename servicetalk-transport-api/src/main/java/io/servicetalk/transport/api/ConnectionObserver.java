@@ -293,7 +293,7 @@ public interface ConnectionObserver {
          * <p>
          * Content of the written items should be inspected at the higher level API when these items are produced.
          *
-         * @deprecated Use {@link #itemWritten(Object, long)}
+         * @deprecated Use {@link #itemWritten(Object)}
          */
         @Deprecated
         void itemWritten();
@@ -302,9 +302,8 @@ public interface ConnectionObserver {
          * Callback when an item is serialized and written to the socket.
          *
          * @param item written item
-         * @param size resulting size of the serialized item
          */
-        default void itemWritten(Object item, long size) {
+        default void itemWritten(Object item) {
             itemWritten();  // FIXME: 0.42 - remove default impl
         }
 

@@ -167,7 +167,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
             long capacityBefore = channel.bytesBeforeUnwritable();
             promise.writeNext(msg);
             long capacityAfter = channel.bytesBeforeUnwritable();
-            observer.itemWritten(msg, capacityBefore - capacityAfter);
+            observer.itemWritten(msg);
             demandEstimator.onItemWrite(msg, capacityBefore, capacityAfter);
             requestMoreIfRequired(subscription, capacityAfter);
         }

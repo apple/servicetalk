@@ -337,7 +337,7 @@ class HttpTransportObserverAsyncContextTest extends AbstractNettyHttpServerTest 
             }
 
             @Override
-            public void itemWritten(final Object item, final long size) {
+            public void itemWritten(final Object item) {
             }
 
             @Override
