@@ -215,8 +215,20 @@ public interface ConnectionObserver {
          * Invokes when a new item is read.
          * <p>
          * Content of the read items should be inspected at the higher level API when these items are consumed.
+         *
+         * @deprecated Use {@link #itemRead(Object)}
          */
+        @Deprecated
         void itemRead();
+
+        /**
+         * Invokes when a new item is read.
+         *
+         * @param item an item that was read
+         */
+        default void itemRead(Object item) {
+            itemRead(); // FIXME: 0.42 - remove default impl
+        }
 
         /**
          * Callback when the read operation fails with an {@link Throwable error}.
@@ -256,8 +268,20 @@ public interface ConnectionObserver {
          * Callback when an item is received and ready to be written.
          * <p>
          * Content of the received items should be inspected at the higher level API when these items are produced.
+         *
+         * @deprecated Use {{@link #itemReceived(Object)}}
          */
+        @Deprecated
         void itemReceived();
+
+        /**
+         * Callback when an item is received and ready to be written.
+         *
+         * @param item received item
+         */
+        default void itemReceived(Object item) {
+            itemReceived(); // FIXME: 0.42 - remove default impl
+        }
 
         /**
          * Callback when flush operation is requested.
@@ -268,8 +292,28 @@ public interface ConnectionObserver {
          * Callback when an item is written to the transport.
          * <p>
          * Content of the written items should be inspected at the higher level API when these items are produced.
+         *
+         * @deprecated Use {@link #itemWritten(Object, long)}
          */
+        @Deprecated
         void itemWritten();
+
+        /**
+         * Callback when an item is serialized and written to the socket.
+         *
+         * @param item written item
+         * @param size resulting size of the serialized item
+         */
+        default void itemWritten(Object item, long size) {
+            itemWritten();  // FIXME: 0.42 - remove default impl
+        }
+
+        /**
+         * Callback when an item is flushed to the network. Items are flushed in order they have been written.
+         */
+        default void itemFlushed() {
+            // FIXME: 0.42 - remove default impl
+        }
 
         /**
          * Callback when the write operation fails with an {@link Throwable error}.

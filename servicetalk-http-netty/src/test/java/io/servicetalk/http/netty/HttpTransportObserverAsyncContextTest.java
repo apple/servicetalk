@@ -287,6 +287,11 @@ class HttpTransportObserverAsyncContextTest extends AbstractNettyHttpServerTest 
             }
 
             @Override
+            public void itemRead(final Object item) {
+                storageMap.put("itemRead", valueOf(AsyncContext.get(key)));
+            }
+
+            @Override
             public void readFailed(final Throwable cause) {
                 storageMap.put("readFailed", valueOf(AsyncContext.get(key)));
             }
@@ -315,6 +320,11 @@ class HttpTransportObserverAsyncContextTest extends AbstractNettyHttpServerTest 
             }
 
             @Override
+            public void itemReceived(final Object item) {
+                storageMap.put("itemReceived", valueOf(AsyncContext.get(key)));
+            }
+
+            @Override
             public void onFlushRequest() {
                 storageMap.put("onFlushRequest", valueOf(AsyncContext.get(key)));
             }
@@ -324,6 +334,14 @@ class HttpTransportObserverAsyncContextTest extends AbstractNettyHttpServerTest 
             // class local variable.
             @Override
             public void itemWritten() {
+            }
+
+            @Override
+            public void itemWritten(final Object item, final long size) {
+            }
+
+            @Override
+            public void itemFlushed() {
             }
 
             @Override

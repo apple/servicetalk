@@ -222,26 +222,28 @@ class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
         verifyNewReadAndNewWrite(2);
 
         verify(clientWriteObserver, atLeastOnce()).requestedToWrite(anyLong());
-        verify(clientWriteObserver, atLeastOnce()).itemReceived();
+        verify(clientWriteObserver, atLeastOnce()).itemReceived(any());
         verify(clientWriteObserver, atLeastOnce()).onFlushRequest();
-        verify(clientWriteObserver, atLeastOnce()).itemWritten();
+        verify(clientWriteObserver, atLeastOnce()).itemWritten(any(), anyLong());
+        verify(clientWriteObserver, atLeastOnce()).itemFlushed();
         verify(clientWriteObserver).writeComplete();
 
         verify(serverReadObserver, await()).readComplete();
         verify(serverReadObserver, atLeastOnce()).requestedToRead(anyLong());
-        verify(serverReadObserver, atLeastOnce()).itemRead();
+        verify(serverReadObserver, atLeastOnce()).itemRead(any());
 
         if (protocol == HTTP_2) {
             // HTTP/1.x has a single write publisher across all requests that does not complete after each response
             verify(serverWriteObserver, await()).writeComplete();
         }
         verify(serverWriteObserver, atLeastOnce()).requestedToWrite(anyLong());
-        verify(serverWriteObserver, atLeastOnce()).itemReceived();
+        verify(serverWriteObserver, atLeastOnce()).itemReceived(any());
         verify(serverWriteObserver, atLeastOnce()).onFlushRequest();
-        verify(serverWriteObserver, atLeastOnce()).itemWritten();
+        verify(serverWriteObserver, atLeastOnce()).itemWritten(any(), anyLong());
+        verify(serverWriteObserver, atLeastOnce()).itemFlushed();
 
         verify(clientReadObserver, atLeastOnce()).requestedToRead(anyLong());
-        verify(clientReadObserver, atLeastOnce()).itemRead();
+        verify(clientReadObserver, atLeastOnce()).itemRead(any());
         verify(clientReadObserver).readComplete();
 
         if (protocol == HTTP_2) {
@@ -285,13 +287,14 @@ class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
         verifyNewReadAndNewWrite(1);
 
         verify(clientWriteObserver, atLeastOnce()).requestedToWrite(anyLong());
-        verify(clientWriteObserver, atLeastOnce()).itemReceived();
+        verify(clientWriteObserver, atLeastOnce()).itemReceived(any());
         verify(clientWriteObserver, atLeastOnce()).onFlushRequest();
-        verify(clientWriteObserver, atLeastOnce()).itemWritten();
+        verify(clientWriteObserver, atLeastOnce()).itemWritten(any(), anyLong());
+        verify(clientWriteObserver, atLeastOnce()).itemFlushed();
         verify(clientWriteObserver).writeComplete();
 
         verify(serverReadObserver, atLeastOnce()).requestedToRead(anyLong());
-        verify(serverReadObserver, atLeastOnce()).itemRead();
+        verify(serverReadObserver, atLeastOnce()).itemRead(any());
         if (serverReadCompletes) {
             verify(serverReadObserver).readComplete();
         } else {
@@ -300,13 +303,14 @@ class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
         }
 
         verify(serverWriteObserver, atLeastOnce()).requestedToWrite(anyLong());
-        verify(serverWriteObserver, atLeastOnce()).itemReceived();
+        verify(serverWriteObserver, atLeastOnce()).itemReceived(any());
         verify(serverWriteObserver, atLeastOnce()).onFlushRequest();
-        verify(serverWriteObserver, atLeastOnce()).itemWritten();
+        verify(serverWriteObserver, atLeastOnce()).itemWritten(any(), anyLong());
+        verify(serverWriteObserver, atLeastOnce()).itemFlushed();
         verify(serverWriteObserver, atLeastOnce()).writeFailed(DELIBERATE_EXCEPTION);
 
         verify(clientReadObserver, atLeastOnce()).requestedToRead(anyLong());
-        verify(clientReadObserver, atLeastOnce()).itemRead();
+        verify(clientReadObserver, atLeastOnce()).itemRead(any());
         verify(clientReadObserver).readFailed(any(causeType));
 
         if (protocol == HTTP_1) {
@@ -364,9 +368,10 @@ class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
         // After all "closed" events have been received, verify all other events in between. Otherwise, there is a risk
         // of race between verification and events.
         verify(clientWriteObserver, atLeastOnce()).requestedToWrite(anyLong());
-        verify(clientWriteObserver, atLeastOnce()).itemReceived();
+        verify(clientWriteObserver, atLeastOnce()).itemReceived(any());
         verify(clientWriteObserver, atLeastOnce()).onFlushRequest();
-        verify(clientWriteObserver, atLeastOnce()).itemWritten();
+        verify(clientWriteObserver, atLeastOnce()).itemWritten(any(), anyLong());
+        verify(clientWriteObserver, atLeastOnce()).itemFlushed();
         verify(clientWriteObserver).writeFailed(DELIBERATE_EXCEPTION);
 
         if (protocol == HTTP_1) {
@@ -375,7 +380,7 @@ class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
             verify(serverReadObserver, await()).readFailed(any(H2StreamResetException.class));
         }
         verify(serverReadObserver, atLeastOnce()).requestedToRead(anyLong());
-        verify(serverReadObserver, atLeastOnce()).itemRead();
+        verify(serverReadObserver, atLeastOnce()).itemRead(any());
         verify(serverReadObserver, atMostOnce()).readCancelled();
 
         verify(serverWriteObserver, atLeastOnce()).requestedToWrite(anyLong());
