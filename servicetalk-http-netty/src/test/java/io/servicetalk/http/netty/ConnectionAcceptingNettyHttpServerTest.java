@@ -38,6 +38,7 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED;
+import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.disableAutoRetries;
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_ECHO;
 import static io.servicetalk.logging.api.LogLevel.TRACE;
 import static io.servicetalk.transport.api.ServiceTalkSocketOptions.CONNECT_TIMEOUT;
@@ -68,7 +69,7 @@ class ConnectionAcceptingNettyHttpServerTest extends AbstractNettyHttpServerTest
     protected SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> newClientBuilder() {
         return super.newClientBuilder()
                 .appendConnectionFactoryFilter(withMax(5))
-                .appendClientFilter(RetryingHttpRequesterFilter.DISABLE_RETRIES)
+                .appendClientFilter(disableAutoRetries())
                 .enableWireLogging("servicetalk-tests-wire-logger", TRACE, TRUE::booleanValue);
     }
 

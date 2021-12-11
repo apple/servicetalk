@@ -97,8 +97,8 @@ import static java.util.Objects.requireNonNull;
 final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddressHttpClientBuilder<U, R> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultSingleAddressHttpClientBuilder.class);
-    private static final RetryingHttpRequesterFilter DEFAULT_AUTO_RETRIES =
-            new RetryingHttpRequesterFilter.Builder().build();
+    private static final RetryingHttpRequesterFilter.Builder DEFAULT_AUTO_RETRIES =
+            new RetryingHttpRequesterFilter.Builder();
 
     static final Duration SD_RETRY_STRATEGY_INIT_DURATION = ofSeconds(10);
     static final Duration SD_RETRY_STRATEGY_JITTER = ofSeconds(5);
@@ -335,7 +335,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
             FilterableStreamingHttpClient lbClient = closeOnException.prepend(
                     new LoadBalancedStreamingHttpClient(executionContext, lb, reqRespFactory));
             if (ctx.builder.retryingHttpRequesterFilter == null) {
-                ctx.builder.retryingHttpRequesterFilter = DEFAULT_AUTO_RETRIES;
+                ctx.builder.retryingHttpRequesterFilter = DEFAULT_AUTO_RETRIES.build();
                 currClientFilterFactory = appendFilter(currClientFilterFactory,
                         ctx.builder.retryingHttpRequesterFilter);
             }

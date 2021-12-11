@@ -53,6 +53,7 @@ import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolic
 import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolicy.ofImmediate;
 import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.Builder;
 import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.HttpResponseException;
+import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.disableAutoRetries;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -107,7 +108,7 @@ class RetryingHttpRequesterFilterTest {
     @Test
     void disableAutoRetry() {
         failingClient = failingConnClientBuilder
-                .appendClientFilter(RetryingHttpRequesterFilter.DISABLE_RETRIES)
+                .appendClientFilter(disableAutoRetries())
                 .buildBlocking();
         Exception e = assertThrows(Exception.class, () -> failingClient.request(failingClient.get("/")));
         assertThat(e, instanceOf(RetryableException.class));

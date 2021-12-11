@@ -43,6 +43,7 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
 import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolicy.NO_RETRIES;
+import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.disableAutoRetries;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -117,7 +118,7 @@ class RetryingHttpRequesterFilterAutoRetryStrategiesTest {
 
     @Test
     void disableAll() {
-        final ContextAwareRetryingHttpClientFilter filter = newFilter(RetryingHttpRequesterFilter.DISABLE_RETRIES);
+        final ContextAwareRetryingHttpClientFilter filter = newFilter(disableAutoRetries());
         Completable retry = applyRetry(filter, 1, RETRYABLE_EXCEPTION);
         toSource(retry).subscribe(retrySubscriber);
         verifyRetryResultError(RETRYABLE_EXCEPTION);

@@ -31,7 +31,6 @@ import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponseMetaData;
-import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -74,19 +73,12 @@ import static java.util.Objects.requireNonNull;
  * as a total max-retries to be respected by both flows, as set in
  * {@link Builder#maxTotalRetries(int)}.
  * <p>
- * Note that applying this filter on a client it will automatically disable the use of
- * {@link SingleAddressHttpClientBuilder#appendClientFilter(StreamingHttpClientFilterFactory)}.
+ * <strong>This filter factory instances hold state, and are not supposed to be shared. Always use the
+ * {@link Builder#build()} to create a new instance.</strong>
  * @see RetryStrategies
  */
 public final class RetryingHttpRequesterFilter
         implements StreamingHttpClientFilterFactory, ExecutionStrategyInfluencer<HttpExecutionStrategy> {
-
-    /**
-     * Retrying filter that disables any form of retry behaviour. All types of failures will not be re-attempted.
-     */
-    public static final RetryingHttpRequesterFilter DISABLE_RETRIES =
-            new RetryingHttpRequesterFilter(false, true, 0, null,
-                    (__, ___) -> NO_RETRIES);
 
     private final boolean waitForLb;
     private final boolean ignoreSdErrors;
@@ -158,7 +150,6 @@ public final class RetryingHttpRequesterFilter
                     loadBalancerReadySubscriber.cancel();
                     return completed();
                 });
-                Thread.dumpStack();
                 toSource(lbEventStream).subscribe(loadBalancerReadySubscriber);
             } else {
                 loadBalancerReadySubscriber = null;
@@ -236,6 +227,16 @@ public final class RetryingHttpRequesterFilter
     }
 
     /**
+     * Retrying filter that disables any form of retry behaviour. All types of failures will not be re-attempted.
+     * @return a retrying filter that disables any form of retry behaviour. All types of failures will not be
+     * re-attempted.
+     */
+    public static RetryingHttpRequesterFilter disableAutoRetries() {
+        return new RetryingHttpRequesterFilter(false, true, 0, null,
+                (__, ___) -> NO_RETRIES);
+    }
+
+    /**
      * This exception indicates response that matched the retrying rules of the {@link RetryingHttpRequesterFilter}
      * and will-be/was retried.
      * {@link HttpResponseException}s are user-provided errors, resulting from an {@link HttpRequestMetaData}, through
@@ -300,6 +301,18 @@ public final class RetryingHttpRequesterFilter
             this.timerExecutor = timerExecutor;
             this.exponential = exponential;
             this.maxRetries = maxRetries > 0 ? maxRetries : (exponential ? 2 : 1);
+        }
+
+        @Override
+        public String toString() {
+            return "BackOffPolicy{" +
+                    "initialDelay=" + initialDelay +
+                    ", jitter=" + jitter +
+                    ", maxDelay=" + maxDelay +
+                    ", timerExecutor=" + timerExecutor +
+                    ", exponential=" + exponential +
+                    ", maxRetries=" + maxRetries +
+                    '}';
         }
 
         /**
@@ -542,7 +555,7 @@ public final class RetryingHttpRequesterFilter
         private Function<HttpResponseMetaData, HttpResponseException> responseMapper;
 
         private BiFunction<HttpRequestMetaData, RetryableException, BackOffPolicy>
-                retryRetryableExceptions = (requestMetaData, e) -> BackOffPolicy.ofImmediate();
+                retryRetryableExceptions = (requestMetaData, e) -> BackOffPolicy.ofImmediate(4);
 
         @Nullable
         private BiFunction<HttpRequestMetaData, IOException, BackOffPolicy>

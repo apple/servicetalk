@@ -55,6 +55,7 @@ import static io.servicetalk.http.netty.H2PriorKnowledgeFeatureParityTest.bindH2
 import static io.servicetalk.http.netty.HttpClients.forResolvedAddress;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2;
 import static io.servicetalk.http.netty.HttpsProxyTest.safeClose;
+import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.disableAutoRetries;
 import static io.servicetalk.http.netty.StreamObserverTest.safeSync;
 import static io.servicetalk.logging.api.LogLevel.TRACE;
 import static io.servicetalk.transport.api.HostAndPort.of;
@@ -116,7 +117,7 @@ class H2ConcurrencyControllerTest {
             .ioExecutor(CTX.ioExecutor())
             .executor(CTX.executor())
             .executionStrategy(defaultStrategy())
-            .appendClientFilter(RetryingHttpRequesterFilter.DISABLE_RETRIES)    // All exceptions should be propagated
+            .appendClientFilter(disableAutoRetries())    // All exceptions should be propagated
             .appendConnectionFilter(MulticastTransportEventsStreamingHttpConnectionFilter::new)
             .appendConnectionFilter(connection -> new StreamingHttpConnectionFilter(connection) {
                 @Override
