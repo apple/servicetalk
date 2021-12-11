@@ -199,10 +199,6 @@ public final class NoopTransportObserver implements TransportObserver {
         }
 
         @Override
-        public void itemRead() {
-        }
-
-        @Override
         public void itemRead(@Nullable final Object item) {
         }
 
@@ -235,19 +231,11 @@ public final class NoopTransportObserver implements TransportObserver {
         }
 
         @Override
-        public void itemReceived() {
-        }
-
-        @Override
         public void itemReceived(@Nullable final Object item) {
         }
 
         @Override
         public void onFlushRequest() {
-        }
-
-        @Override
-        public void itemWritten() {
         }
 
         @Override

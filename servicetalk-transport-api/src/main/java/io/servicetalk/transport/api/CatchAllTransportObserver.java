@@ -215,11 +215,6 @@ final class CatchAllTransportObserver implements TransportObserver {
         }
 
         @Override
-        public void itemRead() {
-            safeReport(observer::itemRead, observer, "item read");
-        }
-
-        @Override
         public void itemRead(@Nullable final Object item) {
             safeReport(() -> observer.itemRead(item), observer, "item read");
         }
@@ -254,11 +249,6 @@ final class CatchAllTransportObserver implements TransportObserver {
         }
 
         @Override
-        public void itemReceived() {
-            safeReport(observer::itemReceived, observer, "item received");
-        }
-
-        @Override
         public void itemReceived(@Nullable final Object item) {
             safeReport(() -> observer.itemReceived(item), observer, "item received");
         }
@@ -266,11 +256,6 @@ final class CatchAllTransportObserver implements TransportObserver {
         @Override
         public void onFlushRequest() {
             safeReport(observer::onFlushRequest, observer, "flush request");
-        }
-
-        @Override
-        public void itemWritten() {
-            safeReport(observer::itemWritten, observer, "item written");
         }
 
         @Override
