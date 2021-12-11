@@ -40,11 +40,6 @@ public final class NoopTransportObserver implements TransportObserver {
     }
 
     @Override
-    public ConnectionObserver onNewConnection() {
-        return NoopConnectionObserver.INSTANCE;
-    }
-
-    @Override
     public ConnectionObserver onNewConnection(@Nullable final Object localAddress, final Object remoteAddress) {
         return NoopConnectionObserver.INSTANCE;
     }

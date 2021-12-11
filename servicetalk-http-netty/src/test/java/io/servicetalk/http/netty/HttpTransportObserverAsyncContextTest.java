@@ -169,11 +169,6 @@ class HttpTransportObserverAsyncContextTest extends AbstractNettyHttpServerTest 
         }
 
         @Override
-        public ConnectionObserver onNewConnection() {
-            throw new UnsupportedOperationException("This deprecated method is not expected to be invoked");
-        }
-
-        @Override
         public ConnectionObserver onNewConnection(@Nullable final Object localAddress, final Object remoteAddress) {
             // Use String.valueOf(...) here and in all other callbacks to prevent passing `null` value to the
             // ConcurrentHashMap which does not allow `null` values:
