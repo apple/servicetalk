@@ -41,6 +41,7 @@ import io.servicetalk.transport.api.RetryableException;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.ConcurrentModificationException;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import javax.annotation.Nullable;
@@ -103,10 +104,16 @@ public final class RetryingHttpRequesterFilter
     }
 
     void inject(final Publisher<Object> lbEventStream) {
+        if (this.lbEventStream != null) {
+            throw new ConcurrentModificationException();
+        }
         this.lbEventStream = lbEventStream;
     }
 
     void inject(final Completable sdStatus) {
+        if (this.sdStatus != null) {
+            throw new ConcurrentModificationException();
+        }
         this.sdStatus = ignoreSdErrors ? null : sdStatus;
     }
 
