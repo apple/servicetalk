@@ -138,7 +138,7 @@ public final class StrategyInfluencerChainBuilder implements ExecutionStrategyIn
         HttpExecutionStrategy influenced = influencers.isEmpty() ?
                 transportStrategy :
                 transportStrategy.merge(requiredOffloads());
-        return HttpExecutionStrategyInfluencer.newInfluencer(influenced);
+        return newInfluencer(influenced);
     }
 
     /**
@@ -151,8 +151,8 @@ public final class StrategyInfluencerChainBuilder implements ExecutionStrategyIn
         HttpExecutionStrategy strategy = influencers.stream()
                 .map(ExecutionStrategyInfluencer::requiredOffloads)
                 .map(HttpExecutionStrategy::from)
-                .reduce(HttpExecutionStrategies.anyStrategy(), HttpExecutionStrategy::merge);
-        return HttpExecutionStrategyInfluencer.newInfluencer(strategy);
+                .reduce(HttpExecutionStrategies.offloadNone(), HttpExecutionStrategy::merge);
+        return newInfluencer(strategy);
     }
 
     /**
@@ -166,6 +166,22 @@ public final class StrategyInfluencerChainBuilder implements ExecutionStrategyIn
                 .map(ExecutionStrategyInfluencer::requiredOffloads)
                 .map(HttpExecutionStrategy::from)
                 .reduce(HttpExecutionStrategy::merge)
-                .orElse(HttpExecutionStrategies.anyStrategy());
+                .orElse(HttpExecutionStrategies.offloadNone());
+    }
+
+    /**
+     * Creates an instance of {@link HttpExecutionStrategyInfluencer} that requires the provided strategy.
+     *
+     * @param requiredStrategy The required strategy of the influencer to be created.
+     * @return an instance of {@link HttpExecutionStrategyInfluencer} that requires the provided strategy.
+     */
+    private static HttpExecutionStrategyInfluencer newInfluencer(HttpExecutionStrategy requiredStrategy) {
+        return new HttpExecutionStrategyInfluencer() {
+
+            @Override
+            public HttpExecutionStrategy requiredOffloads() {
+                return requiredStrategy;
+            }
+        };
     }
 }

@@ -17,6 +17,8 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.transport.api.ExecutionStrategy;
 
+import static io.servicetalk.http.api.HttpExecutionStrategies.HttpOffload.OFFLOAD_CLOSE;
+import static io.servicetalk.http.api.HttpExecutionStrategies.HttpOffload.OFFLOAD_EVENT;
 import static io.servicetalk.http.api.HttpExecutionStrategies.HttpOffload.OFFLOAD_RECEIVE_DATA;
 import static io.servicetalk.http.api.HttpExecutionStrategies.HttpOffload.OFFLOAD_RECEIVE_META;
 import static io.servicetalk.http.api.HttpExecutionStrategies.HttpOffload.OFFLOAD_SEND;
@@ -30,6 +32,15 @@ public interface HttpExecutionStrategy extends ExecutionStrategy {
 
     @Override
     default boolean hasOffloads() {
+        return ExecutionStrategy.super.hasOffloads() || isEventOffloaded() || isRequestResponseOffloaded();
+    }
+
+    /**
+     * Returns {@code true} if any portion of request/response path is offloaded for this {@link HttpExecutionStrategy}.
+     *
+     * @return {@code true} if any portion of request/response path is offloaded for this {@link HttpExecutionStrategy}.
+     */
+    default boolean isRequestResponseOffloaded() {
         return isSendOffloaded() || isMetadataReceiveOffloaded() || isDataReceiveOffloaded();
     }
 
@@ -53,6 +64,13 @@ public interface HttpExecutionStrategy extends ExecutionStrategy {
      * @return {@code true} if send offloading is enabled for this {@link HttpExecutionStrategy}.
      */
     boolean isSendOffloaded();
+
+    /**
+     * Returns {@code true} if event offloading is enabled for this {@link HttpExecutionStrategy}.
+     *
+     * @return {@code true} if event offloading is enabled for this {@link HttpExecutionStrategy}.
+     */
+    boolean isEventOffloaded();
 
     /**
      * Merges the passed {@link HttpExecutionStrategy} with {@code this} {@link HttpExecutionStrategy} and return the
@@ -87,6 +105,12 @@ public interface HttpExecutionStrategy extends ExecutionStrategy {
         if (other.isDataReceiveOffloaded() && !this.isDataReceiveOffloaded()) {
             effectiveOffloads |= OFFLOAD_RECEIVE_DATA.mask();
         }
+        if (other.isEventOffloaded() && !this.isEventOffloaded()) {
+            effectiveOffloads |= OFFLOAD_EVENT.mask();
+        }
+        if (other.isCloseOffloaded() && !this.isCloseOffloaded()) {
+            effectiveOffloads |= OFFLOAD_CLOSE.mask();
+        }
 
         return DefaultHttpExecutionStrategy.fromMask(effectiveOffloads);
     }
@@ -99,9 +123,7 @@ public interface HttpExecutionStrategy extends ExecutionStrategy {
      */
     static HttpExecutionStrategy from(ExecutionStrategy strategy) {
         return (strategy instanceof HttpExecutionStrategy) ?
-                ((HttpExecutionStrategy) strategy) :
-                strategy.hasOffloads() ?
-                        HttpExecutionStrategyInfluencer.defaultStreamingInfluencer().requiredOffloads() :
-                        HttpExecutionStrategies.anyStrategy();
+                (HttpExecutionStrategy) strategy :
+                strategy.hasOffloads() ? HttpExecutionStrategies.offloadAll() : HttpExecutionStrategies.offloadNone();
     }
 }

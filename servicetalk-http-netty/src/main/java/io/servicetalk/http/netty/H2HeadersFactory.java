@@ -40,17 +40,6 @@ public final class H2HeadersFactory implements HttpHeadersFactory {
 
     /**
      * Create an instance of the factory with the default array size hint.
-     * @param validateNames {@code true} to validate header/trailer names.
-     * @param validateCookies {@code true} to validate cookie contents when parsing.
-     * @deprecated Use {@link #H2HeadersFactory(boolean, boolean, boolean)}.
-     */
-    @Deprecated
-    public H2HeadersFactory(final boolean validateNames, final boolean validateCookies) {
-        this(validateNames, validateCookies, DEFAULT_VALIDATE_VALUES);
-    }
-
-    /**
-     * Create an instance of the factory with the default array size hint.
      *
      * @param validateNames {@code true} to validate header/trailer names.
      * @param validateCookies {@code true} to validate cookie contents when parsing.
@@ -59,20 +48,6 @@ public final class H2HeadersFactory implements HttpHeadersFactory {
     public H2HeadersFactory(final boolean validateNames, final boolean validateCookies,
                             final boolean validateValues) {
         this(validateNames, validateCookies, validateValues, 16, 4);
-    }
-
-    /**
-     * Create an instance of the factory.
-     * @param validateNames {@code true} to validate header/trailer names.
-     * @param validateCookies {@code true} to validate cookie contents when parsing.
-     * @param headersArraySizeHint A hint as to how large the hash data structure should be for the headers.
-     * @param trailersArraySizeHint A hint as to how large the hash data structure should be for the trailers.
-     * @deprecated Use {@link #H2HeadersFactory(boolean, boolean, boolean, int, int)}.
-     */
-    @Deprecated
-    public H2HeadersFactory(final boolean validateNames, final boolean validateCookies,
-                            final int headersArraySizeHint, final int trailersArraySizeHint) {
-        this(validateNames, validateCookies, DEFAULT_VALIDATE_VALUES, headersArraySizeHint, trailersArraySizeHint);
     }
 
     /**

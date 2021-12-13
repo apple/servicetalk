@@ -27,6 +27,7 @@ import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
+import io.servicetalk.http.netty.NettyHttpServer.NettyHttpServerContext;
 import io.servicetalk.tcp.netty.internal.ReadOnlyTcpServerConfig;
 import io.servicetalk.tcp.netty.internal.TcpServerBinder;
 import io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer;
@@ -50,7 +51,7 @@ import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
-import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
@@ -81,7 +82,7 @@ class FlushStrategyOnServerTest {
     private BlockingHttpClient client;
 
     private enum Param {
-        NO_OFFLOAD(noOffloadsStrategy()),
+        NO_OFFLOAD(offloadNever()),
         DEFAULT(defaultStrategy()),
         OFFLOAD_ALL(customStrategyBuilder().offloadAll().build());
         private final HttpExecutionStrategy executionStrategy;
@@ -120,7 +121,8 @@ class FlushStrategyOnServerTest {
                                     .andThen((channel1 -> channel1.pipeline().addLast(interceptor))), service,
                             true, connectionObserver),
                     connection -> connection.process(true))
-                    .map(delegate -> new NettyHttpServer.NettyHttpServerContext(delegate, service)).toFuture().get();
+                    .map(delegate -> new NettyHttpServerContext(delegate, service, httpExecutionContext))
+                    .toFuture().get();
         } catch (Exception e) {
             fail(e);
         }

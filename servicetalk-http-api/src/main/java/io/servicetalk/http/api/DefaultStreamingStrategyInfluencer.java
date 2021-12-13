@@ -17,8 +17,10 @@ package io.servicetalk.http.api;
 
 import static io.servicetalk.http.api.DefaultHttpExecutionStrategy.OFFLOAD_ALL_STRATEGY;
 
+@Deprecated
 final class DefaultStreamingStrategyInfluencer implements HttpExecutionStrategyInfluencer {
 
+    @Deprecated
     static final HttpExecutionStrategyInfluencer DEFAULT_STREAMING_STRATEGY_INFLUENCER =
             new DefaultStreamingStrategyInfluencer();
 

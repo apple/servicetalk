@@ -29,6 +29,7 @@ import io.servicetalk.http.api.HttpLifecycleObserver;
 import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpServerBuilder;
+import io.servicetalk.http.api.HttpServerContext;
 import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -39,14 +40,13 @@ import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.serializer.api.SerializationException;
-import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionAcceptorFactory;
 import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 import io.servicetalk.transport.api.IoExecutor;
-import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServerSslConfig;
 import io.servicetalk.transport.api.TransportObserver;
+import io.servicetalk.transport.netty.internal.InfluencerConnectionAcceptor;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,7 +65,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
-import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
@@ -78,6 +78,9 @@ import static java.util.Objects.requireNonNull;
 final class DefaultHttpServerBuilder implements HttpServerBuilder {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultHttpServerBuilder.class);
+
+    private static final HttpExecutionStrategy REQRESP_OFFLOADS = HttpExecutionStrategies.customStrategyBuilder()
+            .offloadReceiveMetadata().offloadReceiveData().offloadSend().build();
 
     @Nullable
     private ConnectionAcceptorFactory connectionAcceptorFactory;
@@ -126,6 +129,15 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
         return obj;
     }
 
+    private static HttpExecutionStrategy requiredOffloads(Object anything, HttpExecutionStrategy defaultOffloads) {
+        if (anything instanceof ExecutionStrategyInfluencer) {
+            ExecutionStrategy requiredOffloads = ((ExecutionStrategyInfluencer<?>) anything).requiredOffloads();
+            return HttpExecutionStrategy.from(requiredOffloads);
+        } else {
+            return defaultOffloads;
+        }
+    }
+
     @Override
     public HttpServerBuilder drainRequestPayloadBody(final boolean enable) {
         this.drainRequestPayloadBody = enable;
@@ -151,7 +163,7 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
     @Override
     public HttpServerBuilder appendNonOffloadingServiceFilter(final Predicate<StreamingHttpRequest> predicate,
                                                               final StreamingHttpServiceFilterFactory factory) {
-        checkNonOffloading("Non-offloading predicate", noOffloadsStrategy(), predicate);
+        checkNonOffloading("Non-offloading predicate", offloadNever(), predicate);
         checkNonOffloading("Non-offloading filter", defaultStrategy(), factory);
         noOffloadServiceFilters.add(toConditionalServiceFilterFactory(predicate, factory));
         return this;
@@ -251,22 +263,22 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
     }
 
     @Override
-    public Single<ServerContext> listen(final HttpService service) {
+    public Single<HttpServerContext> listen(final HttpService service) {
         return listenForAdapter(toStreamingHttpService(service, computeServiceStrategy(service)));
     }
 
     @Override
-    public Single<ServerContext> listenStreaming(final StreamingHttpService service) {
+    public Single<HttpServerContext> listenStreaming(final StreamingHttpService service) {
         return listenForService(service, strategy);
     }
 
     @Override
-    public Single<ServerContext> listenBlocking(final BlockingHttpService service) {
+    public Single<HttpServerContext> listenBlocking(final BlockingHttpService service) {
         return listenForAdapter(toStreamingHttpService(service, computeServiceStrategy(service)));
     }
 
     @Override
-    public Single<ServerContext> listenBlockingStreaming(final BlockingStreamingHttpService service) {
+    public Single<HttpServerContext> listenBlockingStreaming(final BlockingStreamingHttpService service) {
         return listenForAdapter(toStreamingHttpService(service, computeServiceStrategy(service)));
     }
 
@@ -275,32 +287,12 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
         return executionContextBuilder.build();
     }
 
-    private Single<ServerContext> doListen(@Nullable final ConnectionAcceptor connectionAcceptor,
-                                           final HttpExecutionContext context,
-                                           StreamingHttpService service,
-                                           final boolean drainRequestPayloadBody) {
-        final ReadOnlyHttpServerConfig roConfig = this.config.asReadOnly();
-        service = applyInternalFilters(service, roConfig.lifecycleObserver());
-
-        if (roConfig.tcpConfig().isAlpnConfigured()) {
-            return DeferredServerChannelBinder.bind(context, roConfig, address, connectionAcceptor,
-                    service, drainRequestPayloadBody, false);
-        } else if (roConfig.tcpConfig().sniMapping() != null) {
-            return DeferredServerChannelBinder.bind(context, roConfig, address, connectionAcceptor,
-                    service, drainRequestPayloadBody, true);
-        } else if (roConfig.isH2PriorKnowledge()) {
-            return H2ServerParentConnectionContext.bind(context, roConfig, address, connectionAcceptor,
-                    service, drainRequestPayloadBody);
-        }
-        return NettyHttpServer.bind(context, roConfig, address, connectionAcceptor, service, drainRequestPayloadBody);
-    }
-
-    private Single<ServerContext> listenForAdapter(HttpApiConversions.ServiceAdapterHolder adapterHolder) {
+    private Single<HttpServerContext> listenForAdapter(HttpApiConversions.ServiceAdapterHolder adapterHolder) {
         return listenForService(adapterHolder.adaptor(), adapterHolder.serviceInvocationStrategy());
     }
 
     /**
-     * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
+     * Starts this server and returns the {@link HttpServerContext} after the server has been successfully started.
      * <p>
      * If the underlying protocol (e.g. TCP) supports it this should result in a socket bind/listen on {@code address}.
      * <p>/p>
@@ -317,22 +309,24 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
-    private Single<ServerContext> listenForService(StreamingHttpService rawService, HttpExecutionStrategy strategy) {
-        ConnectionAcceptor connectionAcceptor = connectionAcceptorFactory == null ? null :
-           connectionAcceptorFactory.create(ACCEPT_ALL);
+    private Single<HttpServerContext> listenForService(final StreamingHttpService rawService,
+                                                       final HttpExecutionStrategy strategy) {
+        InfluencerConnectionAcceptor connectionAcceptor = connectionAcceptorFactory == null ? null :
+                InfluencerConnectionAcceptor.withStrategy(connectionAcceptorFactory.create(ACCEPT_ALL),
+                        connectionAcceptorFactory.requiredOffloads());
 
         final StreamingHttpService filteredService;
-        HttpExecutionContext serviceContext;
+        final HttpExecutionContext executionContext;
 
         if (noOffloadServiceFilters.isEmpty()) {
             filteredService = serviceFilters.isEmpty() ? rawService : buildService(serviceFilters.stream(), rawService);
-            serviceContext = buildExecutionContext(strategy);
+            executionContext = buildExecutionContext(strategy);
         } else {
             Stream<StreamingHttpServiceFilterFactory> nonOffloadingFilters = noOffloadServiceFilters.stream();
 
-            if (strategy.hasOffloads()) {
-                serviceContext = buildExecutionContext(noOffloadsStrategy());
-                BooleanSupplier shouldOffload = serviceContext.ioExecutor().shouldOffloadSupplier();
+            if (strategy.isRequestResponseOffloaded()) {
+                executionContext = buildExecutionContext(REQRESP_OFFLOADS.missing(strategy));
+                BooleanSupplier shouldOffload = executionContext.ioExecutor().shouldOffloadSupplier();
                 // We are going to have to offload, even if just to the raw service
                 OffloadingFilter offloadingFilter =
                         new OffloadingFilter(strategy, buildFactory(serviceFilters), shouldOffload);
@@ -340,30 +334,40 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
             } else {
                 // All the filters can be appended.
                 nonOffloadingFilters = Stream.concat(nonOffloadingFilters, serviceFilters.stream());
-                serviceContext = buildExecutionContext(strategy);
+                executionContext = buildExecutionContext(strategy);
             }
             filteredService = buildService(nonOffloadingFilters, rawService);
         }
 
-        return doListen(connectionAcceptor, serviceContext, filteredService, drainRequestPayloadBody)
-                .afterOnSuccess(serverContext -> {
-                    LOGGER.debug("Server for address {} uses strategy {}", serverContext.listenAddress(), strategy);
-                });
+        return doBind(executionContext, connectionAcceptor, filteredService)
+                .afterOnSuccess(serverContext -> LOGGER.debug("Server for address {} uses strategy {}",
+                        serverContext.listenAddress(), strategy));
+    }
+
+    private Single<HttpServerContext> doBind(final HttpExecutionContext executionContext,
+                                             @Nullable final InfluencerConnectionAcceptor connectionAcceptor,
+                                             final StreamingHttpService service) {
+        ReadOnlyHttpServerConfig roConfig = config.asReadOnly();
+        StreamingHttpService filteredService = applyInternalFilters(service, roConfig.lifecycleObserver());
+
+        if (roConfig.tcpConfig().isAlpnConfigured()) {
+            return DeferredServerChannelBinder.bind(executionContext, roConfig, address, connectionAcceptor,
+                    filteredService, drainRequestPayloadBody, false);
+        } else if (roConfig.tcpConfig().sniMapping() != null) {
+            return DeferredServerChannelBinder.bind(executionContext, roConfig, address, connectionAcceptor,
+                    filteredService, drainRequestPayloadBody, true);
+        } else if (roConfig.isH2PriorKnowledge()) {
+            return H2ServerParentConnectionContext.bind(executionContext, roConfig, address, connectionAcceptor,
+                    filteredService, drainRequestPayloadBody);
+        }
+        return NettyHttpServer.bind(executionContext, roConfig, address, connectionAcceptor,
+                filteredService, drainRequestPayloadBody);
     }
 
     private HttpExecutionStrategy computeServiceStrategy(Object service) {
         HttpExecutionStrategy serviceStrategy = requiredOffloads(service, defaultStrategy());
         HttpExecutionStrategy filterStrategy = computeRequiredStrategy(serviceFilters, serviceStrategy);
         return defaultStrategy() == strategy ? filterStrategy : strategy.merge(filterStrategy);
-    }
-
-    private static HttpExecutionStrategy requiredOffloads(Object anything, HttpExecutionStrategy defaultOffloads) {
-        if (anything instanceof ExecutionStrategyInfluencer) {
-            ExecutionStrategy requiredOffloads = ((ExecutionStrategyInfluencer<?>) anything).requiredOffloads();
-            return HttpExecutionStrategy.from(requiredOffloads);
-        } else {
-            return defaultOffloads;
-        }
     }
 
     private static StreamingHttpService applyInternalFilters(StreamingHttpService service,
@@ -381,8 +385,7 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
     /**
      * Internal filter that makes sure we handle all exceptions from user-defined service and filters.
      */
-    private static final class ExceptionMapperServiceFilter
-            implements StreamingHttpServiceFilterFactory {
+    private static final class ExceptionMapperServiceFilter implements StreamingHttpServiceFilterFactory {
 
         static final StreamingHttpServiceFilterFactory INSTANCE = new ExceptionMapperServiceFilter();
 
@@ -435,7 +438,7 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
 
         @Override
         public HttpExecutionStrategy requiredOffloads() {
-            return HttpExecutionStrategies.anyStrategy();    // no influence since we do not block
+            return HttpExecutionStrategies.offloadNone();    // no influence since we do not block
         }
     }
 
@@ -472,7 +475,7 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
         @Override
         public HttpExecutionStrategy requiredOffloads() {
             // no influence since we do not block
-            return HttpExecutionStrategies.anyStrategy();
+            return HttpExecutionStrategies.offloadNone();
         }
     }
 }

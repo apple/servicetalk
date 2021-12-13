@@ -53,17 +53,14 @@ final class LoadBalancedStreamingHttpConnection implements FilterableStreamingHt
                    ExecutionStrategyInfluencer<HttpExecutionStrategy> {
     private final ReservableRequestConcurrencyController limiter;
     private final FilterableStreamingHttpLoadBalancedConnection filteredConnection;
-    private final HttpExecutionStrategy streamingStrategy;
-    private final HttpExecutionStrategy chainStrategy;
+    private final HttpExecutionStrategy connectStrategy;
 
     LoadBalancedStreamingHttpConnection(FilterableStreamingHttpLoadBalancedConnection filteredConnection,
                                         ReservableRequestConcurrencyController limiter,
-                                        HttpExecutionStrategy streamingStrategy,
-                                        HttpExecutionStrategy chainStrategy) {
+                                        HttpExecutionStrategy connectStrategy) {
         this.filteredConnection = filteredConnection;
         this.limiter = requireNonNull(limiter);
-        this.streamingStrategy = streamingStrategy;
-        this.chainStrategy = chainStrategy;
+        this.connectStrategy = connectStrategy;
     }
 
     @Override
@@ -133,22 +130,22 @@ final class LoadBalancedStreamingHttpConnection implements FilterableStreamingHt
 
     @Override
     public ReservedHttpConnection asConnection() {
-        return toReservedConnection(this, chainStrategy);
+        return toReservedConnection(this, connectStrategy);
     }
 
     @Override
     public ReservedBlockingStreamingHttpConnection asBlockingStreamingConnection() {
-        return toReservedBlockingStreamingConnection(this, chainStrategy);
+        return toReservedBlockingStreamingConnection(this, connectStrategy);
     }
 
     @Override
     public ReservedBlockingHttpConnection asBlockingConnection() {
-        return toReservedBlockingConnection(this, chainStrategy);
+        return toReservedBlockingConnection(this, connectStrategy);
     }
 
     @Override
     public HttpExecutionStrategy requiredOffloads() {
-        return chainStrategy;
+        return connectStrategy;
     }
 
     @Override

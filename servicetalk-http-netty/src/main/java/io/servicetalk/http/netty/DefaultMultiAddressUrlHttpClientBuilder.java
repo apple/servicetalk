@@ -44,6 +44,9 @@ import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.util.concurrent.ConcurrentHashMap;
@@ -75,14 +78,14 @@ import static java.util.Objects.requireNonNull;
 final class DefaultMultiAddressUrlHttpClientBuilder
         implements MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultMultiAddressUrlHttpClientBuilder.class);
+
     private static final String HTTPS_SCHEME = HTTPS.toString();
 
     private final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate;
 
     @Nullable
     private RedirectConfig redirectConfig;
-    @Nullable
-    private Function<HostAndPort, CharSequence> unresolvedAddressToHostFunction;
     @Nullable
     private SingleAddressInitializer<HostAndPort, InetSocketAddress> singleAddressInitializer;
 
@@ -97,8 +100,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         try {
             final HttpClientBuildContext<HostAndPort, InetSocketAddress> buildContext = builderTemplate.copyBuildCtx();
 
-            final ClientFactory clientFactory = new ClientFactory(buildContext.builder,
-                    unresolvedAddressToHostFunction, singleAddressInitializer);
+            final ClientFactory clientFactory = new ClientFactory(buildContext.builder, singleAddressInitializer);
 
             HttpExecutionContext executionContext = buildContext.builder.executionContextBuilder.build();
             final CachingKeyFactory keyFactory = closeables.prepend(new CachingKeyFactory());
@@ -111,8 +113,13 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             urlClient = redirectConfig == null ? urlClient :
                     new RedirectingHttpRequesterFilter(redirectConfig).create(urlClient);
 
-            return new FilterableClientToClient(urlClient, executionContext.executionStrategy(),
-                    buildContext.builder.computeChainStrategy(executionContext.executionStrategy()));
+            HttpExecutionStrategy computedStrategy =
+                    buildContext.builder.computeChainStrategy(executionContext.executionStrategy());
+
+            LOGGER.debug("Client created with base strategy {} → computed strategy {}",
+                    executionContext.executionStrategy(), computedStrategy);
+
+            return new FilterableClientToClient(urlClient, computedStrategy);
         } catch (final Throwable t) {
             closeables.closeAsync().subscribe();
             throw t;
@@ -208,16 +215,12 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         private static final ClientSslConfig DEFAULT_CLIENT_SSL_CONFIG = new ClientSslConfigBuilder().build();
         private final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate;
         @Nullable
-        private final Function<HostAndPort, CharSequence> hostHeaderTransformer;
-        @Nullable
         private final SingleAddressInitializer<HostAndPort, InetSocketAddress> singleAddressInitializer;
 
         ClientFactory(
                 final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate,
-                @Nullable final Function<HostAndPort, CharSequence> hostHeaderTransformer,
                 @Nullable final SingleAddressInitializer<HostAndPort, InetSocketAddress> singleAddressInitializer) {
             this.builderTemplate = builderTemplate;
-            this.hostHeaderTransformer = hostHeaderTransformer;
             this.singleAddressInitializer = singleAddressInitializer;
         }
 
@@ -226,10 +229,6 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             // Copy existing builder to prevent changes at runtime when concurrently creating clients for new addresses
             final HttpClientBuildContext<HostAndPort, InetSocketAddress> buildContext =
                     builderTemplate.copyBuildCtx(urlKey.hostAndPort);
-
-            if (hostHeaderTransformer != null) {
-                buildContext.builder.unresolvedAddressToHost(hostHeaderTransformer);
-            }
 
             if (HTTPS_SCHEME.equalsIgnoreCase(urlKey.scheme)) {
                 buildContext.builder.sslConfig(DEFAULT_CLIENT_SSL_CONFIG);
@@ -273,9 +272,9 @@ final class DefaultMultiAddressUrlHttpClientBuilder
                 final HttpRequestMetaData metaData) {
             return defer(() -> {
                 try {
-                    return selectClient(metaData).reserveConnection(metaData).subscribeShareContext();
+                    return selectClient(metaData).reserveConnection(metaData).shareContextOnSubscribe();
                 } catch (Throwable t) {
-                    return Single.<FilterableReservedStreamingHttpConnection>failed(t).subscribeShareContext();
+                    return Single.<FilterableReservedStreamingHttpConnection>failed(t).shareContextOnSubscribe();
                 }
             });
         }
@@ -284,9 +283,9 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
             return defer(() -> {
                 try {
-                    return selectClient(request).request(request).subscribeShareContext();
+                    return selectClient(request).request(request).shareContextOnSubscribe();
                 } catch (Throwable t) {
-                    return Single.<StreamingHttpResponse>failed(t).subscribeShareContext();
+                    return Single.<StreamingHttpResponse>failed(t).shareContextOnSubscribe();
                 }
             });
         }

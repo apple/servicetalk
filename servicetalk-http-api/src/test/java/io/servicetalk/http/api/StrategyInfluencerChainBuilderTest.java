@@ -95,7 +95,7 @@ class StrategyInfluencerChainBuilderTest {
     @Nonnull
     private HttpExecutionStrategyInfluencer newNoInfluenceInfluencer() {
         HttpExecutionStrategyInfluencer influencer1 = mock(HttpExecutionStrategyInfluencer.class);
-        when(influencer1.requiredOffloads()).thenReturn(HttpExecutionStrategies.anyStrategy());
+        when(influencer1.requiredOffloads()).thenReturn(HttpExecutionStrategies.offloadNone());
         when(influencer1.influenceStrategy(any(HttpExecutionStrategy.class)))
                 .then(invocation -> invocation.getArgument(0));
         return influencer1;

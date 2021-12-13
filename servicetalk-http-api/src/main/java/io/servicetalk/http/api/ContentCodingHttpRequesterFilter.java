@@ -66,7 +66,7 @@ public final class ContentCodingHttpRequesterFilter
             protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                             final StreamingHttpRequest request) {
                 return Single.defer(() -> codecTransformBidirectionalIfNeeded(delegate(), request)
-                        .subscribeShareContext());
+                        .shareContextOnSubscribe());
             }
         };
     }
@@ -77,7 +77,7 @@ public final class ContentCodingHttpRequesterFilter
             @Override
             public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
                 return Single.defer(() -> codecTransformBidirectionalIfNeeded(delegate(), request)
-                        .subscribeShareContext());
+                        .shareContextOnSubscribe());
             }
         };
     }
@@ -85,7 +85,7 @@ public final class ContentCodingHttpRequesterFilter
     @Override
     public HttpExecutionStrategy requiredOffloads() {
         // No influence since we do not block.
-        return HttpExecutionStrategies.anyStrategy();
+        return HttpExecutionStrategies.offloadNone();
     }
 
     private Single<StreamingHttpResponse> codecTransformBidirectionalIfNeeded(final StreamingHttpRequester delegate,

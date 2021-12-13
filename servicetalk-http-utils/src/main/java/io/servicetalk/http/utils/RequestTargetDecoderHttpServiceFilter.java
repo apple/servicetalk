@@ -62,7 +62,7 @@ public final class RequestTargetDecoderHttpServiceFilter implements StreamingHtt
                                                         final StreamingHttpResponseFactory responseFactory) {
                 return defer(() -> {
                     request.requestTarget(request.requestTarget(charset));
-                    return delegate().handle(ctx, request, responseFactory).subscribeShareContext();
+                    return delegate().handle(ctx, request, responseFactory).shareContextOnSubscribe();
                 });
             }
         };
@@ -71,6 +71,6 @@ public final class RequestTargetDecoderHttpServiceFilter implements StreamingHtt
     @Override
     public HttpExecutionStrategy requiredOffloads() {
         // No influence since we do not block.
-        return HttpExecutionStrategies.anyStrategy();
+        return HttpExecutionStrategies.offloadNone();
     }
 }

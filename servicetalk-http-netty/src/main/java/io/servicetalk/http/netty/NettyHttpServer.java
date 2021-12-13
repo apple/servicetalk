@@ -39,6 +39,7 @@ import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseMetaData;
+import io.servicetalk.http.api.HttpServerContext;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -46,9 +47,7 @@ import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.tcp.netty.internal.ReadOnlyTcpServerConfig;
 import io.servicetalk.tcp.netty.internal.TcpServerBinder;
 import io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer;
-import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionObserver;
-import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.CloseHandler;
@@ -56,6 +55,7 @@ import io.servicetalk.transport.netty.internal.CloseHandler.CloseEventObservedEx
 import io.servicetalk.transport.netty.internal.CopyByteBufHandlerChannelInitializer;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
+import io.servicetalk.transport.netty.internal.InfluencerConnectionAcceptor;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 import io.servicetalk.transport.netty.internal.SplittingFlushStrategy;
@@ -116,12 +116,12 @@ final class NettyHttpServer {
         // No instances
     }
 
-    static Single<ServerContext> bind(final HttpExecutionContext executionContext,
-                                      final ReadOnlyHttpServerConfig config,
-                                      final SocketAddress address,
-                                      @Nullable final ConnectionAcceptor connectionAcceptor,
-                                      final StreamingHttpService service,
-                                      final boolean drainRequestPayloadBody) {
+    static Single<HttpServerContext> bind(final HttpExecutionContext executionContext,
+                                          final ReadOnlyHttpServerConfig config,
+                                          final SocketAddress address,
+                                          @Nullable final InfluencerConnectionAcceptor connectionAcceptor,
+                                          final StreamingHttpService service,
+                                          final boolean drainRequestPayloadBody) {
         if (config.h1Config() == null) {
             return failed(newH1ConfigException());
         }
@@ -136,7 +136,7 @@ final class NettyHttpServer {
                 .map(delegate -> {
                     LOGGER.debug("Started HTTP/1.1 server for address {}.", delegate.listenAddress());
                     // The ServerContext returned by TcpServerBinder takes care of closing the connectionAcceptor.
-                    return new NettyHttpServerContext(delegate, service);
+                    return new NettyHttpServerContext(delegate, service, executionContext);
                 });
     }
 
@@ -195,13 +195,16 @@ final class NettyHttpServer {
         });
     }
 
-    static final class NettyHttpServerContext implements ServerContext {
+    static final class NettyHttpServerContext implements HttpServerContext {
         private final ServerContext delegate;
         private final ListenableAsyncCloseable asyncCloseable;
+        private final HttpExecutionContext executionContext;
 
-        NettyHttpServerContext(final ServerContext delegate, final StreamingHttpService service) {
+        NettyHttpServerContext(final ServerContext delegate, final StreamingHttpService service,
+                               final HttpExecutionContext executionContext) {
             this.delegate = delegate;
             asyncCloseable = toListenableAsyncCloseable(newCompositeCloseable().appendAll(service, delegate));
+            this.executionContext = executionContext;
         }
 
         @Override
@@ -215,8 +218,8 @@ final class NettyHttpServer {
         }
 
         @Override
-        public ExecutionContext<?> executionContext() {
-            return delegate.executionContext();
+        public HttpExecutionContext executionContext() {
+            return executionContext;
         }
 
         @Override
@@ -268,7 +271,7 @@ final class NettyHttpServer {
             this.headersFactory = headersFactory;
             executionContext = new DefaultHttpExecutionContext(connection.executionContext().bufferAllocator(),
                     connection.executionContext().ioExecutor(), connection.executionContext().executor(),
-                    HttpExecutionStrategies.noOffloadsStrategy());
+                    HttpExecutionStrategies.offloadNever());
             this.service = service;
             // H2 uses child channels, doesn't support pipelining, and doesn't repeat the write operation on the same
             // channel. We therefore don't need the splitting flush in this case.

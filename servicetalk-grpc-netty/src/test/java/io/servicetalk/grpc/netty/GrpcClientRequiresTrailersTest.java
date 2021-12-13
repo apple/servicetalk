@@ -44,7 +44,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.grpc.api.GrpcHeaderNames.GRPC_STATUS;
-import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.util.Collections.singletonList;
@@ -106,7 +106,7 @@ class GrpcClientRequiresTrailersTest {
                 });
 
         client = GrpcClients.forAddress(serverHostAndPort(serverContext))
-                .initializeHttp(builder -> builder.executionStrategy(noOffloadsStrategy()))
+                .initializeHttp(builder -> builder.executionStrategy(offloadNever()))
                 .buildBlocking(new TesterProto.Tester.ClientFactory());
     }
 

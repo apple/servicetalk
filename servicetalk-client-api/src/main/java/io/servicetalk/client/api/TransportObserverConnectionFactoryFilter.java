@@ -80,6 +80,6 @@ public final class TransportObserverConnectionFactoryFilter<ResolvedAddress, C e
 
     @Override
     public ExecutionStrategy requiredOffloads() {
-        return ExecutionStrategy.anyStrategy();
+        return ExecutionStrategy.offloadNone();
     }
 }

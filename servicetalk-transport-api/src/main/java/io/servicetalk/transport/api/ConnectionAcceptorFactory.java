@@ -21,7 +21,7 @@ import static java.util.Objects.requireNonNull;
  * A factory of {@link ConnectionAcceptor}.
  */
 @FunctionalInterface
-public interface ConnectionAcceptorFactory extends ExecutionStrategyInfluencer<ExecutionStrategy> {
+public interface ConnectionAcceptorFactory extends ExecutionStrategyInfluencer<ConnectExecutionStrategy> {
 
     /**
      * Create a {@link ConnectionAcceptor} using the provided {@link ConnectionAcceptor}.
@@ -63,10 +63,17 @@ public interface ConnectionAcceptorFactory extends ExecutionStrategyInfluencer<E
         return original -> original;
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The strategy returned will be applied to the connection acceptor instance returned by
+     * {@link #create(ConnectionAcceptor)}. If offloading is not required then override to return
+     * {@link ConnectExecutionStrategy#offloadNone()}
+     */
     @Override
-    default ExecutionStrategy requiredOffloads() {
+    default ConnectExecutionStrategy requiredOffloads() {
         // safe default--implementations are expected to override
-        return ExecutionStrategy.offloadAll();
+        return ConnectExecutionStrategy.offloadAll();
     }
 
     /**
@@ -76,7 +83,8 @@ public interface ConnectionAcceptorFactory extends ExecutionStrategyInfluencer<E
      * @param strategy execution strategy for the wrapped factory
      * @return wrapped {@link ConnectionAcceptorFactory}
      */
-    static ConnectionAcceptorFactory withStrategy(ConnectionAcceptorFactory original, ExecutionStrategy strategy) {
+    static ConnectionAcceptorFactory withStrategy(ConnectionAcceptorFactory original,
+                                                  ConnectExecutionStrategy strategy) {
         return new ConnectionAcceptorFactory() {
 
             @Override
@@ -85,7 +93,7 @@ public interface ConnectionAcceptorFactory extends ExecutionStrategyInfluencer<E
             }
 
             @Override
-            public ExecutionStrategy requiredOffloads() {
+            public ConnectExecutionStrategy requiredOffloads() {
                 return strategy;
             }
         };

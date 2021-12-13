@@ -41,6 +41,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import java.net.InetSocketAddress;
+import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
@@ -117,14 +118,16 @@ class AutoRetryTest {
 
         @Override
         public <T extends C> LoadBalancer<T> newLoadBalancer(
-                final Publisher<? extends ServiceDiscovererEvent<InetSocketAddress>> eventPublisher,
+                final String targetResource,
+                final Publisher<? extends Collection<? extends ServiceDiscovererEvent<InetSocketAddress>>>
+                        eventPublisher,
                 final ConnectionFactory<InetSocketAddress, T> connectionFactory) {
-            return new InspectingLoadBalancer<>(rr.newLoadBalancer(eventPublisher, connectionFactory));
+            return new InspectingLoadBalancer<>(rr.newLoadBalancer(targetResource, eventPublisher, connectionFactory));
         }
 
         @Override
         public ExecutionStrategy requiredOffloads() {
-            return ExecutionStrategy.anyStrategy();
+            return ExecutionStrategy.offloadNone();
         }
     }
 

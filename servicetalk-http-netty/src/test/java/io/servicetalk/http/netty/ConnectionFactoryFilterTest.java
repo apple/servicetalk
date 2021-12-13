@@ -164,7 +164,7 @@ class ConnectionFactoryFilterTest {
                             final InetSocketAddress inetSocketAddress, @Nullable final TransportObserver observer) {
                         return delegate().newConnection(inetSocketAddress, observer).map(filter);
                     }
-                }, ExecutionStrategy.anyStrategy());
+                }, ExecutionStrategy.offloadNone());
     }
 
     private static class AddResponseHeaderConnectionFilter extends StreamingHttpConnectionFilter {

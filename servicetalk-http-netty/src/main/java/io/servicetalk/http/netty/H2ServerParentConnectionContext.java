@@ -20,12 +20,12 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.http.api.HttpExecutionContext;
+import io.servicetalk.http.api.HttpServerContext;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.netty.NettyHttpServer.NettyHttpServerConnection;
 import io.servicetalk.tcp.netty.internal.ReadOnlyTcpServerConfig;
 import io.servicetalk.tcp.netty.internal.TcpServerBinder;
 import io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer;
-import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ConnectionObserver.MultiplexedObserver;
 import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
@@ -35,6 +35,7 @@ import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
+import io.servicetalk.transport.netty.internal.InfluencerConnectionAcceptor;
 import io.servicetalk.transport.netty.internal.NettyPipelineSslUtils;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopMultiplexedObserver;
 
@@ -79,12 +80,12 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
         return listenAddress;
     }
 
-    static Single<ServerContext> bind(final HttpExecutionContext executionContext,
-                                      final ReadOnlyHttpServerConfig config,
-                                      final SocketAddress listenAddress,
-                                      @Nullable final ConnectionAcceptor connectionAcceptor,
-                                      final StreamingHttpService service,
-                                      final boolean drainRequestPayloadBody) {
+    static Single<HttpServerContext> bind(final HttpExecutionContext executionContext,
+                                          final ReadOnlyHttpServerConfig config,
+                                          final SocketAddress listenAddress,
+                                          @Nullable final InfluencerConnectionAcceptor connectionAcceptor,
+                                          final StreamingHttpService service,
+                                          final boolean drainRequestPayloadBody) {
         if (config.h2Config() == null) {
             return failed(newH2ConfigException());
         }
@@ -98,7 +99,7 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                 .map(delegate -> {
                     LOGGER.debug("Started HTTP/2 server with prior-knowledge for address {}", delegate.listenAddress());
                     // The ServerContext returned by TcpServerBinder takes care of closing the connectionAcceptor.
-                    return new NettyHttpServer.NettyHttpServerContext(delegate, service);
+                    return new NettyHttpServer.NettyHttpServerContext(delegate, service, executionContext);
                 });
     }
 
@@ -149,6 +150,9 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                                 connection.trackActiveStream(streamChannel);
                                 StreamObserver streamObserver =
                                         parentChannelInitializer.multiplexedObserver.onNewStream();
+                                final int streamId = streamChannel.stream().id();
+                                assert streamId > 0;
+                                streamObserver.streamIdAssigned(streamId);
 
                                 // Netty To ServiceTalk type conversion
                                 final CloseHandler closeHandler = forNonPipelined(false, streamChannel.config());

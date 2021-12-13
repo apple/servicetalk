@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 
 import static io.servicetalk.http.api.DefaultHttpExecutionStrategy.OFFLOAD_RECEIVE_DATA_AND_SEND_STRATEGY;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static java.util.Objects.requireNonNull;
 
 final class ServiceToStreamingService extends AbstractServiceAdapterHolder {
@@ -29,7 +30,7 @@ final class ServiceToStreamingService extends AbstractServiceAdapterHolder {
     private final HttpService original;
 
     ServiceToStreamingService(final HttpService original, HttpExecutionStrategy strategy) {
-        super(DEFAULT_STRATEGY.merge(strategy));
+        super(defaultStrategy() == strategy ? DEFAULT_STRATEGY : strategy);
         this.original = requireNonNull(original);
     }
 

@@ -16,13 +16,11 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.buffer.api.CompositeBuffer;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
-import io.servicetalk.concurrent.api.DefaultThreadFactory;
-import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.BlockingHttpClient;
@@ -33,7 +31,9 @@ import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpResponse;
+import io.servicetalk.http.api.HttpLoadBalancerFactory;
+import io.servicetalk.http.api.HttpServerBuilder;
+import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
@@ -44,283 +44,286 @@ import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory;
 import io.servicetalk.transport.api.ExecutionStrategy;
+import io.servicetalk.transport.api.HostAndPort;
+import io.servicetalk.transport.api.IoThreadFactory;
+import io.servicetalk.transport.api.ServerContext;
 
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.net.InetSocketAddress;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
-import java.util.Objects;
-import java.util.function.Function;
+import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
-import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
-import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadAll;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.netty.ClientEffectiveStrategyTest.ClientOffloadPoint.RequestPayloadSubscription;
 import static io.servicetalk.http.netty.ClientEffectiveStrategyTest.ClientOffloadPoint.ResponseData;
 import static io.servicetalk.http.netty.ClientEffectiveStrategyTest.ClientOffloadPoint.ResponseMeta;
-import static io.servicetalk.http.netty.InvokingThreadsRecorder.userStrategy;
-import static io.servicetalk.http.netty.InvokingThreadsRecorder.userStrategyNoVerify;
+import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
+import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
+import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+@Execution(ExecutionMode.CONCURRENT)
 class ClientEffectiveStrategyTest {
-
     private static final String GREETING = "Hello";
 
-    enum ClientStrategyCase implements Function<ClientType, Params> {
-        noUserStrategyNoFilter(clientType -> new Params(clientType, Offloads.DEFAULT,
-                false, false, false, false,
-                InvokingThreadsRecorder::noStrategy)),
-        noUserStrategyWithFilter(clientType -> new Params(clientType, Offloads.ALL,
-                false, true, false, false,
-                InvokingThreadsRecorder::noStrategy)),
-        noUserStrategyWithLB(clientType -> new Params(clientType, Offloads.DEFAULT,
-                false, false, true, false,
-                InvokingThreadsRecorder::noStrategy)),
-        noUserStrategyWithCF(clientType -> new Params(clientType, Offloads.ALL,
-                false, false, false, true,
-                InvokingThreadsRecorder::noStrategy)),
-        userStrategyNoFilter(clientType -> new Params(clientType, Offloads.DEFAULT,
-                true, false, false, false,
-                () -> userStrategyNoVerify(defaultStrategy()))),
-        userStrategyWithFilter(clientType -> new Params(clientType, Offloads.ALL,
-                true, true, false, false,
-                () -> userStrategyNoVerify(defaultStrategy()))),
-        userStrategyWithLB(clientType -> new Params(clientType, Offloads.DEFAULT,
-                true, false, true, false,
-                () -> userStrategyNoVerify(defaultStrategy()))),
-        userStrategyWithCF(clientType -> new Params(clientType, Offloads.ALL,
-                true, false, false, true,
-                () -> userStrategyNoVerify(defaultStrategy()))),
-        userStrategyNoOffloadsNoFilter(clientType -> new Params(clientType, Offloads.NONE,
-                false, false, false, false,
-                () -> userStrategy(noOffloadsStrategy()))),
-        userStrategyNoOffloadsWithFilter(clientType -> new Params(clientType, Offloads.NONE,
-                false, true, false, false,
-                () -> userStrategy(noOffloadsStrategy()))),
-        userStrategyNoOffloadsWithLB(clientType -> new Params(clientType, Offloads.NONE,
-                false, false, true, false,
-                () -> userStrategy(noOffloadsStrategy()))),
-        userStrategyNoOffloadsWithCF(clientType -> new Params(clientType, Offloads.NONE,
-                false, false, false, true,
-                () -> userStrategy(noOffloadsStrategy()))),
-        customUserStrategyNoFilter(clientType -> new Params(clientType, Offloads.ALL,
-                true, false, false, false,
-                () -> userStrategy(customStrategyBuilder().offloadAll().build()))),
-        customUserStrategyWithFilter(clientType -> new Params(clientType, Offloads.ALL,
-                true, true, false, false,
-                () -> userStrategy(customStrategyBuilder().offloadAll().build()))),
-        customUserStrategyWithLB(clientType -> new Params(clientType, Offloads.ALL,
-                true, false, true, false,
-                () -> userStrategy(customStrategyBuilder().offloadAll().build()))),
-        customUserStrategyWithCF(clientType -> new Params(clientType, Offloads.ALL,
-                true, false, false, true,
-                () -> userStrategy(customStrategyBuilder().offloadAll().build())));
+    private static final HttpExecutionStrategy[] BUILDER_STRATEGIES = {
+            null, // unspecified
+            offloadNever(),
+            offloadNone(),
+            defaultStrategy(),
+            HttpExecutionStrategies.customStrategyBuilder().offloadSend().build(),
+            offloadAll(),
+    };
 
-        private final Function<ClientType, Params> paramsProvider;
+    private static final HttpExecutionStrategy[] FILTER_STRATEGIES = {
+            null, // absent
+            offloadNever(), // treated as "offloadNoneStrategy"
+            offloadNone(),
+            defaultStrategy(), // treated as "offloadNoneStrategy"
+            HttpExecutionStrategies.customStrategyBuilder().offloadSend().build(),
+            offloadAll(),
+    };
 
-        ClientStrategyCase(Function<ClientType, Params> paramsProvider) {
-            this.paramsProvider = paramsProvider;
-        }
+    private static final HttpExecutionStrategy[] LB_STRATEGIES = {
+            null, // absent
+            offloadNever(), // treated as "offloadNoneStrategy"
+            offloadNone(),
+            defaultStrategy(), // treated as "offloadNoneStrategy"
+            HttpExecutionStrategies.customStrategyBuilder().offloadSend().build(),
+            offloadAll(),
+    };
 
-        @Override
-        public Params apply(ClientType clientType) {
-            return paramsProvider.apply(clientType);
+    private static final HttpExecutionStrategy[] CF_STRATEGIES = {
+            null, // absent
+            offloadNever(), // treated as "offloadNoneStrategy"
+            offloadNone(),
+            defaultStrategy(), // treated as "offloadNoneStrategy"
+            HttpExecutionStrategies.customStrategyBuilder().offloadSend().build(),
+            offloadAll(),
+    };
+
+    static final ServerContext context;
+
+    static {
+        try {
+            HttpServerBuilder serverBuilder = HttpServers.forAddress(localAddress(0));
+            context = serverBuilder.listenBlocking((ctx, request, responseFactory) ->
+                    responseFactory.ok().payloadBody(ctx.executionContext().bufferAllocator()
+                            .fromAscii(GREETING))).toFuture().get();
+        } catch (Throwable all) {
+            throw new AssertionError("Failed to initialize server", all);
         }
     }
 
-    @ParameterizedTest
-    @EnumSource(ClientStrategyCase.class)
-    void blocking(ClientStrategyCase strategyCase) throws Exception {
-        try (Params params = strategyCase.apply(ClientType.Blocking)) {
-            assertThat("Null params supplied", params, notNullValue());
-            BlockingHttpClient blockingClient = params.client().asBlockingClient();
-            HttpResponse response = blockingClient.request(blockingClient.get("/"));
-            assertThat(response.payloadBody().toString(StandardCharsets.US_ASCII), is(GREETING));
-            params.verifyOffloads();
+    @AfterAll
+    static void shutdown() throws Exception {
+        context.closeGracefully();
+    }
+
+    @SuppressWarnings("unused")
+    static Stream<Arguments> casesSupplier() {
+        List<Arguments> arguments = new ArrayList<>();
+        for (ClientType clientType : ClientType.values()) {
+            for (HttpExecutionStrategy builderStrategy : BUILDER_STRATEGIES) {
+                for (HttpExecutionStrategy filterStrategy : FILTER_STRATEGIES) {
+                    for (HttpExecutionStrategy lbStrategy : LB_STRATEGIES) {
+                        for (HttpExecutionStrategy cfStrategy : CF_STRATEGIES) {
+                            arguments.add(Arguments.of(clientType,
+                                    builderStrategy, filterStrategy, lbStrategy, cfStrategy));
+                        }
+                    }
+                }
+            }
+        }
+        return arguments.stream();
+    }
+
+    @ParameterizedTest(name = "API={0} builder={1} filter={2} LB={3} CF={4}")
+    @MethodSource("casesSupplier")
+    void clientStrategy(ClientType clientType,
+                  @Nullable final HttpExecutionStrategy builderStrategy,
+                  @Nullable final HttpExecutionStrategy filterStrategy,
+                  @Nullable final HttpExecutionStrategy lbStrategy,
+                  @Nullable final HttpExecutionStrategy cfStrategy) throws Exception {
+        HttpExecutionStrategy effectiveStrategy = computeClientExecutionStrategy(
+                builderStrategy, filterStrategy, lbStrategy, cfStrategy);
+
+        SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> clientBuilder =
+                HttpClients.forSingleAddress(serverHostAndPort(context));
+
+        if (builderStrategy != null) {
+            clientBuilder.executionStrategy(builderStrategy);
+        }
+
+        ClientInvokingThreadRecorder invokingThreadsRecorder =
+                new ClientInvokingThreadRecorder(clientType, effectiveStrategy);
+
+        clientBuilder.appendClientFilter(invokingThreadsRecorder);
+        if (null != filterStrategy) {
+            clientBuilder.appendClientFilter(new StreamingHttpClientFilterFactory() {
+                @Override
+                public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {
+                    return new StreamingHttpClientFilter(client) {
+                    };
+                }
+
+                @Override
+                public HttpExecutionStrategy requiredOffloads() {
+                    return filterStrategy;
+                }
+            });
+        }
+        if (null != lbStrategy) {
+            HttpLoadBalancerFactory<InetSocketAddress> lfFactory =
+                    DefaultHttpLoadBalancerFactory.Builder.from(new LoadBalancerFactoryImpl() {
+                        @Override
+                        public ExecutionStrategy requiredOffloads() {
+                            return lbStrategy;
+                        }
+                    }).build();
+            clientBuilder.loadBalancerFactory(lfFactory);
+        }
+        if (null != cfStrategy) {
+            clientBuilder.appendConnectionFilter(new StreamingHttpConnectionFilterFactory() {
+                @Override
+                public StreamingHttpConnectionFilter create(
+                        final FilterableStreamingHttpConnection connection) {
+                    return new StreamingHttpConnectionFilter(connection) {
+                    };
+                }
+
+                @Override
+                public HttpExecutionStrategy requiredOffloads() {
+                    return cfStrategy;
+                }
+            });
+        }
+
+        // Exercise the client
+        try (StreamingHttpClient client = clientBuilder.buildStreaming()) {
+            String responseBody = getResponse(clientType, client);
+            assertThat(responseBody, is(GREETING));
+            invokingThreadsRecorder.verifyOffloads();
         }
     }
 
-    @ParameterizedTest
-    @EnumSource(ClientStrategyCase.class)
-    void blockingStreaming(ClientStrategyCase strategyCase) throws Exception {
-        try (Params params = strategyCase.apply(ClientType.BlockingStreaming)) {
-            assertThat("Null params supplied", params, notNullValue());
-            BlockingStreamingHttpClient blockingClient = params.client().asBlockingStreamingClient();
-            String response = buffersToResponse(blockingClient.request(blockingClient.get("/")).payloadBody(),
-                    StandardCharsets.US_ASCII);
-            assertThat(response, is(GREETING));
-            params.verifyOffloads();
+    /**
+     * Computes the base execution strategy that the client will use based on the selected builder strategy, filter
+     * strategy, load balancer strategy, connection factory filter strategy.
+     *
+     * @param builderStrategy strategy specified for client builder or null to use builder default.
+     * @param filterStrategy strategy specified for client stream filter to be added to client builder or null if no
+     * filter will be added.
+     * @param lbStrategy strategy specified for load balancer factory to be added to client builder or null if no
+     * load balancer will be added.
+     * @param cfStrategy strategy specified for connection filter factory to be added to client builder or null if no
+     * connection filter will be added.
+     * @return The str
+     */
+    private HttpExecutionStrategy computeClientExecutionStrategy(@Nullable final HttpExecutionStrategy builderStrategy,
+                                                                 @Nullable final HttpExecutionStrategy filterStrategy,
+                                                                 @Nullable final HttpExecutionStrategy lbStrategy,
+                                                                 @Nullable final HttpExecutionStrategy cfStrategy) {
+        // null means assume default strategy which is, unsurprisingly, defaultStrategy()
+        HttpExecutionStrategy computed = null == builderStrategy ?
+                defaultStrategy() : builderStrategy;
+        // null means no filter, noOffloadsStrategy() is illegal and replaced.
+        computed = null == filterStrategy || offloadNone() == filterStrategy || offloadNever() == filterStrategy ?
+                computed : computed.merge(filterStrategy);
+        computed = null == lbStrategy || offloadNone() == lbStrategy ||
+                defaultStrategy() == lbStrategy || offloadNever() == lbStrategy ?
+                computed : computed.merge(lbStrategy);
+        computed = null == cfStrategy || offloadNone() == cfStrategy ||
+                defaultStrategy() == cfStrategy || offloadNever() == cfStrategy ?
+                computed : computed.merge(cfStrategy);
+
+        return computed;
+    }
+
+    private String getResponse(ClientType clientType, StreamingHttpClient client) throws Exception {
+        switch (clientType) {
+            case Blocking:
+                BlockingHttpClient blockingClient = client.asBlockingClient();
+                return blockingClient.request(blockingClient.get("/")).payloadBody()
+                        .toString(StandardCharsets.US_ASCII);
+            case BlockingStreaming:
+                BlockingStreamingHttpClient blockingStreamingClient = client.asBlockingStreamingClient();
+                Supplier<CompositeBuffer> supplier = client.executionContext().bufferAllocator()::newCompositeBuffer;
+                return StreamSupport.stream(
+                                blockingStreamingClient.request(blockingStreamingClient.get("/"))
+                                        .payloadBody().spliterator(), false)
+                        .reduce((Buffer base, Buffer buffer) -> (base instanceof CompositeBuffer ?
+                                        ((CompositeBuffer) base) : supplier.get().addBuffer(base)).addBuffer(buffer))
+                        .map(buffer -> buffer.toString(StandardCharsets.US_ASCII))
+                        .orElse("");
+            case AsyncStreaming:
+                return client.request(client.get("/")).flatMap(resp -> resp.payloadBody().collect(() ->
+                                        client.executionContext().bufferAllocator().newCompositeBuffer(),
+                                CompositeBuffer::addBuffer))
+                        .toFuture().get()
+                        .toString(StandardCharsets.US_ASCII);
+            case Async:
+                HttpClient httpClient = client.asClient();
+                return httpClient.request(httpClient.get("/")).toFuture().get().payloadBody()
+                        .toString(StandardCharsets.US_ASCII);
+            default:
+                fail("Unexpected client type " + clientType);
+                /* NOTREACHED */
+                return "failed";
         }
     }
 
-    @ParameterizedTest
-    @EnumSource(ClientStrategyCase.class)
-    void streaming(ClientStrategyCase strategyCase) throws Exception {
-        try (Params params = strategyCase.apply(ClientType.AsyncStreaming)) {
-            assertThat("Null params supplied", params, notNullValue());
-            Collection<Buffer> buffers = params.client().request(params.client().get("/"))
-                    .flatMapPublisher(StreamingHttpResponse::payloadBody).toFuture().get();
-            String response = buffersToResponse(buffers, StandardCharsets.US_ASCII);
-            assertThat(response, is(GREETING));
-            params.verifyOffloads();
-        }
-    }
-
-    @ParameterizedTest
-    @EnumSource(ClientStrategyCase.class)
-    void async(ClientStrategyCase strategyCase) throws Exception {
-        try (Params params = strategyCase.apply(ClientType.Async)) {
-            assertThat("Null params supplied", params, notNullValue());
-            HttpClient httpClient = params.client().asClient();
-            HttpResponse response = httpClient.request(httpClient.get("/")).toFuture().get();
-            assertThat(response.payloadBody().toString(StandardCharsets.US_ASCII), is(GREETING));
-            params.verifyOffloads();
-        }
-    }
-
-    private static String buffersToResponse(Iterable<? extends Buffer> buffers, Charset charset) {
-        return StreamSupport.stream(buffers.spliterator(), false).map(buffer -> {
-                    byte[] bytes = new byte[buffer.readableBytes()];
-                    buffer.readBytes(bytes);
-                    return bytes;
-                }).reduce((orig, more) -> {
-                    byte[] combined = Arrays.copyOf(orig, orig.length + more.length);
-                    System.arraycopy(more, 0, combined, orig.length, more.length);
-                    return combined;
-                }).map(array -> new String(array, charset))
-                .orElseThrow(() -> new AssertionError("No response"));
-    }
-
-    private static final class Params implements AutoCloseable {
-        private static final String USER_STRATEGY_EXECUTOR_NAME_PREFIX = "user-strategy-executor";
+    private static final class ClientInvokingThreadRecorder implements StreamingHttpClientFilterFactory {
 
         private final EnumSet<ClientOffloadPoint> offloadPoints;
-        private final EnumSet<ClientOffloadPoint> nonOffloadPoints;
-        private final Executor executor;
-        private final InvokingThreadsRecorder<ClientOffloadPoint> invokingThreadsRecorder;
-        private final boolean executorUsedForContext;
+        private final ConcurrentMap<ClientOffloadPoint, Throwable> invokingThreads = new ConcurrentHashMap<>();
+        private final Queue<Throwable> errors = new LinkedBlockingQueue<>();
 
-        /**
-         * Create parameter instance for text case.
-         *  @param clientType intended usage of the client
-         * @param expectedOffloads which offloads are expected
-         * @param executorUsedForContext if true then install an executor in the client execution context
-         * @param addFilter Add a client filter that requires offloading
-         * @param addLoadBalancer Add a load balancer
-         * @param addConnectionFilter Add a connection filter
-         * @param recorderSupplier Supplier for threads recorder
-         */
-        Params(final ClientType clientType, final Offloads expectedOffloads,
-               final boolean executorUsedForContext,
-               final boolean addFilter, final boolean addLoadBalancer, final boolean addConnectionFilter,
-               final Supplier<InvokingThreadsRecorder<ClientOffloadPoint>> recorderSupplier) {
-            this.executorUsedForContext = executorUsedForContext;
-            this.executor = executorUsedForContext ?
-                    newCachedThreadExecutor(new DefaultThreadFactory(USER_STRATEGY_EXECUTOR_NAME_PREFIX)) :
-                    Executors.from(r -> fail("This executor was not to be used"));
-            offloadPoints = expectedOffloads.expected(clientType);
-            nonOffloadPoints = EnumSet.complementOf(offloadPoints);
-            invokingThreadsRecorder = Objects.requireNonNull(recorderSupplier.get(), "recorderSupplier");
-            initState(addFilter, addLoadBalancer, addConnectionFilter);
-        }
-
-        StreamingHttpClient client() {
-            return invokingThreadsRecorder.client();
-        }
-
-        void verifyOffloads() {
-            invokingThreadsRecorder.verifyOffloadCount();
-            for (ClientOffloadPoint offloadPoint : offloadPoints) {
-                invokingThreadsRecorder.assertOffload(offloadPoint);
+        ClientInvokingThreadRecorder(ClientType clientType, HttpExecutionStrategy effectiveStrategy) {
+            if (defaultStrategy() == effectiveStrategy) {
+                offloadPoints = Offloads.DEFAULT.expected(clientType);
+            } else {
+                offloadPoints = EnumSet.noneOf(ClientOffloadPoint.class);
+                // adjust expected offloads for specific execution strategy
+                if (effectiveStrategy.isSendOffloaded()) {
+                    offloadPoints.add(RequestPayloadSubscription);
+                }
+                if (effectiveStrategy.isMetadataReceiveOffloaded()) {
+                    offloadPoints.add(ResponseMeta);
+                }
+                if (effectiveStrategy.isDataReceiveOffloaded()) {
+                    offloadPoints.add(ResponseData);
+                }
             }
-            for (ClientOffloadPoint offloadPoint : nonOffloadPoints) {
-                invokingThreadsRecorder.assertNoOffload(offloadPoint);
-            }
-        }
-
-        @Override
-        public void close() throws Exception {
-            invokingThreadsRecorder.close();
-        }
-
-        private void initState(final boolean addFilter, boolean addLoadBalancer, boolean addConnectionFilter) {
-            HttpExecutionStrategy strategy = invokingThreadsRecorder.executionStrategy();
-            invokingThreadsRecorder.init((__, serverBuilder) ->
-                            serverBuilder.listenBlocking((ctx, request, responseFactory) ->
-                                    responseFactory.ok().payloadBody(ctx.executionContext().bufferAllocator()
-                                            .fromAscii(GREETING))),
-                    (ioExecutor, clientBuilder) -> {
-                        if (strategy != null) {
-                            clientBuilder.executionStrategy(strategy);
-                        }
-                        if (executorUsedForContext) {
-                            clientBuilder.executor(executor);
-                        }
-                        clientBuilder.ioExecutor(ioExecutor);
-                        clientBuilder.appendClientFilter(new ClientInvokingThreadRecorder(invokingThreadsRecorder));
-                        if (addConnectionFilter) {
-                            clientBuilder.appendConnectionFilter(new StreamingHttpConnectionFilterFactory() {
-                                @Override
-                                public StreamingHttpConnectionFilter create(
-                                        final FilterableStreamingHttpConnection connection) {
-                                    return new StreamingHttpConnectionFilter(connection) { };
-                                }
-
-                                @Override
-                                public HttpExecutionStrategy requiredOffloads() {
-                                    // require full offloading
-                                    return offloadAll();
-                                }
-                            });
-                        }
-                        if (addLoadBalancer) {
-                            clientBuilder.loadBalancerFactory(DefaultHttpLoadBalancerFactory.Builder
-                                    .from(new LoadBalancerFactoryImpl()).build());
-                        }
-                        if (addFilter) {
-                            // Our filter factory does not implement influenceStrategy, it will default to offload-all.
-                            clientBuilder.appendClientFilter(new StreamingHttpClientFilterFactory() {
-                                @Override
-                                public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {
-                                    return new StreamingHttpClientFilter(client) { };
-                                }
-
-                                @Override
-                                public HttpExecutionStrategy requiredOffloads() {
-                                    // require full offloading
-                                    return offloadAll();
-                                }
-                            });
-                        }
-                    });
-        }
-    }
-
-    private static final class ClientInvokingThreadRecorder
-            implements StreamingHttpClientFilterFactory {
-
-        private final InvokingThreadsRecorder<ClientOffloadPoint> holder;
-
-        ClientInvokingThreadRecorder(final InvokingThreadsRecorder<ClientOffloadPoint> holder) {
-            this.holder = holder;
         }
 
         @Override
         public HttpExecutionStrategy requiredOffloads() {
             // No influence since we do not block.
-            return HttpExecutionStrategies.anyStrategy();
+            return HttpExecutionStrategies.offloadNone();
         }
 
         @Override
@@ -331,29 +334,55 @@ class ClientEffectiveStrategyTest {
                 protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                                 final StreamingHttpRequest request) {
                     return delegate.request(request.transformPayloadBody(payload ->
-                                    payload.beforeRequest(__ -> holder.recordThread(RequestPayloadSubscription))))
-                            .beforeOnSuccess(__ -> holder.recordThread(ResponseMeta))
+                                    payload.beforeRequest(__ -> recordThread(RequestPayloadSubscription))))
+                            .beforeOnSuccess(__ -> recordThread(ResponseMeta))
                             .map(resp -> resp.transformPayloadBody(payload ->
-                                    payload.beforeOnNext(__ -> holder.recordThread(ResponseData))));
+                                    payload.beforeOnNext(__ -> recordThread(ResponseData))));
                 }
             };
+        }
+
+        void recordThread(final ClientOffloadPoint offloadPoint) {
+            invokingThreads.compute(offloadPoint, (ClientOffloadPoint offload, Throwable recorded) -> {
+                Thread current = Thread.currentThread();
+                boolean ioThread = IoThreadFactory.IoThread.isIoThread(current);
+                if (offloadPoints.contains(offloadPoint)) {
+                    if (ioThread) {
+                        errors.add(new AssertionError("Expected offloaded thread at " + offloadPoint));
+                    }
+                } else {
+                    if (!ioThread) {
+                        errors.add(new AssertionError("Expected ioThread at " + offloadPoint));
+                    }
+                }
+                return new Throwable("stack crawl : " + Thread.currentThread());
+            });
+        }
+
+        public void verifyOffloads() {
+            assertNoAsyncErrors(errors);
+            assertThat("Unexpected offload points recorded. " + invokingThreads,
+                    invokingThreads.size(), Matchers.is(ClientOffloadPoint.values().length));
         }
     }
 
     private static class LoadBalancerFactoryImpl
             implements LoadBalancerFactory<InetSocketAddress, FilterableStreamingHttpLoadBalancedConnection> {
+
         @Override
-        public <T extends FilterableStreamingHttpLoadBalancedConnection> LoadBalancer<T>
-        newLoadBalancer(final Publisher<? extends ServiceDiscovererEvent<InetSocketAddress>> eventPublisher,
-                        final ConnectionFactory<InetSocketAddress, T> connectionFactory) {
+        public <T extends FilterableStreamingHttpLoadBalancedConnection> LoadBalancer<T> newLoadBalancer(
+                final String targetResource,
+                final Publisher<? extends Collection<? extends ServiceDiscovererEvent<InetSocketAddress>>>
+                        eventPublisher,
+                final ConnectionFactory<InetSocketAddress, T> connectionFactory) {
             return new RoundRobinLoadBalancerFactory
                     .Builder<InetSocketAddress, FilterableStreamingHttpLoadBalancedConnection>().build()
-                    .newLoadBalancer(eventPublisher, connectionFactory);
+                    .newLoadBalancer(targetResource, eventPublisher, connectionFactory);
         }
 
         @Override
         public ExecutionStrategy requiredOffloads() {
-            return ExecutionStrategy.anyStrategy();
+            return ExecutionStrategy.offloadNone();
         }
     }
 

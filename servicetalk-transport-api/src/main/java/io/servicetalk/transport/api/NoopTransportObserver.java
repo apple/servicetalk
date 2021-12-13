@@ -58,6 +58,10 @@ final class NoopTransportObserver implements TransportObserver {
         }
 
         @Override
+        public void onTransportHandshakeComplete() {
+        }
+
+        @Override
         public SecurityHandshakeObserver onSecurityHandshake() {
             return NoopSecurityHandshakeObserver.INSTANCE;
         }
@@ -137,6 +141,10 @@ final class NoopTransportObserver implements TransportObserver {
 
         private NoopStreamObserver() {
             // Singleton
+        }
+
+        @Override
+        public void streamIdAssigned(final long streamId) {
         }
 
         @Override

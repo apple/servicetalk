@@ -35,7 +35,7 @@ import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyN
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
-import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
@@ -62,7 +62,7 @@ class HttpConnectionEmptyPayloadTest {
             ServerContext serverContext = closeable.merge(HttpServers
                     .forAddress(localAddress(0))
                     .ioExecutor(executionContextRule.ioExecutor())
-                    .executionStrategy(noOffloadsStrategy())
+                    .executionStrategy(offloadNever())
                     .listenStreamingAndAwait(
                             (ctx, req, factory) -> {
                                 StreamingHttpResponse resp = factory.ok().payloadBody(from(

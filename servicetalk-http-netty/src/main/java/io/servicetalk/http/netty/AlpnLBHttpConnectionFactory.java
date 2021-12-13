@@ -16,13 +16,14 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.ConnectionFactoryFilter;
+import io.servicetalk.client.api.ConsumableEvent;
 import io.servicetalk.client.api.internal.ReservableRequestConcurrencyController;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpExecutionContext;
-import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
@@ -31,6 +32,7 @@ import io.servicetalk.tcp.netty.internal.ReadOnlyTcpClientConfig;
 import io.servicetalk.tcp.netty.internal.TcpClientChannelInitializer;
 import io.servicetalk.tcp.netty.internal.TcpConnector;
 import io.servicetalk.transport.api.ConnectionObserver;
+import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.TransportObserver;
 
 import io.netty.channel.Channel;
@@ -40,7 +42,6 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.client.api.internal.ReservableRequestConcurrencyControllers.newController;
 import static io.servicetalk.concurrent.api.Single.failed;
-import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
 import static io.servicetalk.http.netty.AlpnIds.HTTP_1_1;
 import static io.servicetalk.http.netty.AlpnIds.HTTP_2;
 import static io.servicetalk.http.netty.StreamingConnectionFactory.withSslConfigPeerHost;
@@ -51,12 +52,13 @@ final class AlpnLBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpC
             final ReadOnlyHttpClientConfig config, final HttpExecutionContext executionContext,
             @Nullable final StreamingHttpConnectionFilterFactory connectionFilterFunction,
             final Function<HttpProtocolVersion, StreamingHttpRequestResponseFactory> reqRespFactoryFunc,
-            final HttpExecutionStrategy chainStrategy,
+            final ExecutionStrategy connectStrategy,
             final ConnectionFactoryFilter<ResolvedAddress, FilterableStreamingHttpConnection> connectionFactoryFilter,
             final Function<FilterableStreamingHttpConnection,
                     FilterableStreamingHttpLoadBalancedConnection> protocolBinding) {
-        super(config, executionContext, connectionFilterFunction, reqRespFactoryFunc, chainStrategy,
-                connectionFactoryFilter, protocolBinding);
+        super(config, executionContext, reqRespFactoryFunc,
+                connectStrategy, connectionFactoryFilter, connectionFilterFunction,
+                protocolBinding);
         assert config.h1Config() != null && config.h2Config() != null;
     }
 
@@ -100,11 +102,11 @@ final class AlpnLBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpC
     }
 
     @Override
-    ReservableRequestConcurrencyController newConcurrencyController(final FilterableStreamingHttpConnection connection,
-                                                                    final Completable onClosing) {
+    ReservableRequestConcurrencyController newConcurrencyController(
+            final Publisher<? extends ConsumableEvent<Integer>> maxConcurrency, final Completable onClosing) {
         // We set initialMaxConcurrency to 1 here because we don't know what type of connection will be created when
         // ALPN completes. The actual maxConcurrency value will be updated by the MAX_CONCURRENCY stream,
         // when we create a connection.
-        return newController(connection.transportEventStream(MAX_CONCURRENCY), onClosing, 1);
+        return newController(maxConcurrency, onClosing, 1);
     }
 }

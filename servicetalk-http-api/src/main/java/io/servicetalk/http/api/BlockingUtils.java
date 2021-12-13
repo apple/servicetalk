@@ -62,7 +62,7 @@ final class BlockingUtils {
         // It is assumed that users will always apply timeouts at the StreamingHttpService layer (e.g. via filter). So
         // we don't apply any explicit timeout here and just wait forever.
         return blockingInvocation(requester.request(request.toStreamingRequest())
-                .flatMap(response -> response.toResponse().subscribeShareContext()));
+                .flatMap(response -> response.toResponse().shareContextOnSubscribe()));
     }
 
     static <T> T blockingInvocation(Single<T> source) throws Exception {

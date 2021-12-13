@@ -60,7 +60,7 @@ public class StreamingHttpServiceToOffloadedStreamingHttpService implements Stre
         final HttpServiceContext wrappedCtx =
                 new ExecutionContextOverridingServiceContext(ctx, strategy, useExecutor);
 
-        if (!additionalOffloads.hasOffloads()) {
+        if (!additionalOffloads.isRequestResponseOffloaded()) {
             // No additional offloading needed.
             return delegate.handle(wrappedCtx, request, responseFactory);
         } else {
@@ -72,7 +72,7 @@ public class StreamingHttpServiceToOffloadedStreamingHttpService implements Stre
             if (additionalOffloads.isMetadataReceiveOffloaded() && shouldOffload.getAsBoolean()) {
                 final StreamingHttpRequest r = request;
                 resp = useExecutor.submit(
-                                () -> delegate.handle(wrappedCtx, r, responseFactory).subscribeShareContext())
+                                () -> delegate.handle(wrappedCtx, r, responseFactory).shareContextOnSubscribe())
                         // exec.submit() returns a Single<Single<response>>, so flatten nested Single.
                         .flatMap(identity());
             } else {
@@ -114,7 +114,7 @@ public class StreamingHttpServiceToOffloadedStreamingHttpService implements Stre
                                                       @Nullable final Executor executor,
                                                       final BooleanSupplier shouldOffload,
                                                       final StreamingHttpService service) {
-        return strategy.hasOffloads() ?
+        return strategy.isRequestResponseOffloaded() ?
                 new StreamingHttpServiceToOffloadedStreamingHttpService(strategy, executor, shouldOffload, service) :
                 new StreamingHttpService() {
                     @Override

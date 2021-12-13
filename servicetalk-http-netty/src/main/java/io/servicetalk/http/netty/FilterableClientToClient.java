@@ -47,36 +47,33 @@ import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KE
 
 final class FilterableClientToClient implements StreamingHttpClient {
     private final FilterableStreamingHttpClient client;
-    private final HttpExecutionStrategy chainStrategy;
     private final HttpExecutionStrategy strategy;
 
-    FilterableClientToClient(FilterableStreamingHttpClient filteredClient, HttpExecutionStrategy strategyFromBuilder,
-                HttpExecutionStrategy chainStrategy) {
-        strategy = strategyFromBuilder;
+    FilterableClientToClient(FilterableStreamingHttpClient filteredClient, HttpExecutionStrategy strategy) {
         client = filteredClient;
-        this.chainStrategy = chainStrategy;
+        this.strategy = strategy;
     }
 
     @Override
     public HttpClient asClient() {
-        return toClient(this, chainStrategy);
+        return toClient(this, strategy);
     }
 
     @Override
     public BlockingStreamingHttpClient asBlockingStreamingClient() {
-        return toBlockingStreamingClient(this, chainStrategy);
+        return toBlockingStreamingClient(this, strategy);
     }
 
     @Override
     public BlockingHttpClient asBlockingClient() {
-        return toBlockingClient(this, chainStrategy);
+        return toBlockingClient(this, strategy);
     }
 
     @Override
     public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
         return Single.defer(() -> {
             request.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, strategy);
-            return client.request(request).subscribeShareContext();
+            return client.request(request).shareContextOnSubscribe();
         });
     }
 
@@ -87,17 +84,17 @@ final class FilterableClientToClient implements StreamingHttpClient {
             return client.reserveConnection(metaData).map(rc -> new ReservedStreamingHttpConnection() {
                 @Override
                 public ReservedHttpConnection asConnection() {
-                    return toReservedConnection(this, chainStrategy);
+                    return toReservedConnection(this, strategy);
                 }
 
                 @Override
                 public ReservedBlockingStreamingHttpConnection asBlockingStreamingConnection() {
-                    return toReservedBlockingStreamingConnection(this, chainStrategy);
+                    return toReservedBlockingStreamingConnection(this, strategy);
                 }
 
                 @Override
                 public ReservedBlockingHttpConnection asBlockingConnection() {
-                    return toReservedBlockingConnection(this, chainStrategy);
+                    return toReservedBlockingConnection(this, strategy);
                 }
 
                 @Override
@@ -113,7 +110,7 @@ final class FilterableClientToClient implements StreamingHttpClient {
                     return Single.defer(() -> {
                         request.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY,
                                 FilterableClientToClient.this.strategy);
-                        return rc.request(request).subscribeShareContext();
+                        return rc.request(request).shareContextOnSubscribe();
                     });
                 }
 
@@ -156,7 +153,7 @@ final class FilterableClientToClient implements StreamingHttpClient {
                 public StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
                     return rc.newRequest(method, requestTarget);
                 }
-            }).subscribeShareContext();
+            }).shareContextOnSubscribe();
         });
     }
 

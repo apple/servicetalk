@@ -84,7 +84,7 @@ class ResponseTimeoutTest {
     private void setUp(Duration clientTimeout,
                        Duration serverTimeout) throws Exception {
         ctx = forAddress(localAddress(0))
-                .appendServiceFilter(new TimeoutHttpServiceFilter(__ -> serverTimeout, true))
+                .appendServiceFilter(new TimeoutHttpServiceFilter((req, ts) -> serverTimeout, true))
                 .listenAndAwait((__, ___, factory) -> {
                     Single<HttpResponse> resp = Single.never();
                     serverResponses.add(resp);
@@ -128,7 +128,7 @@ class ResponseTimeoutTest {
                     }
                 })
                 .appendConnectionFactoryFilter(original -> new CountingConnectionFactory(original, connectionCount))
-                .appendClientFilter(new TimeoutHttpRequesterFilter(__ -> clientTimeout, true))
+                .appendClientFilter(new TimeoutHttpRequesterFilter((req, ts) -> clientTimeout, true))
                 .build();
     }
 

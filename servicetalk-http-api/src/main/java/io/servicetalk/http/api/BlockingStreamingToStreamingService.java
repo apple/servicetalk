@@ -37,6 +37,7 @@ import static io.servicetalk.http.api.DefaultHttpExecutionStrategy.OFFLOAD_RECEI
 import static io.servicetalk.http.api.DefaultPayloadInfo.forTransportReceive;
 import static io.servicetalk.http.api.HeaderUtils.hasContentLength;
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpProtocolVersion.h1TrailersSupported;
@@ -52,7 +53,7 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
 
     BlockingStreamingToStreamingService(final BlockingStreamingHttpService original,
                                         final HttpExecutionStrategy strategy) {
-        super(DEFAULT_STRATEGY.merge(strategy));
+        super(defaultStrategy() == strategy ? DEFAULT_STRATEGY : strategy);
         this.original = requireNonNull(original);
     }
 

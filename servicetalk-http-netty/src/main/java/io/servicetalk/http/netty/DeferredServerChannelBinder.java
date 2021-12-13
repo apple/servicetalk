@@ -17,15 +17,15 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpExecutionContext;
+import io.servicetalk.http.api.HttpServerContext;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.netty.AlpnChannelSingle.NoopChannelInitializer;
 import io.servicetalk.http.netty.NettyHttpServer.NettyHttpServerConnection;
 import io.servicetalk.tcp.netty.internal.ReadOnlyTcpServerConfig;
 import io.servicetalk.tcp.netty.internal.TcpServerBinder;
 import io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer;
-import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionObserver;
-import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.netty.internal.InfluencerConnectionAcceptor;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
 import io.netty.channel.Channel;
@@ -48,13 +48,13 @@ final class DeferredServerChannelBinder {
         // No instances
     }
 
-    static Single<ServerContext> bind(final HttpExecutionContext executionContext,
-                                      final ReadOnlyHttpServerConfig config,
-                                      final SocketAddress listenAddress,
-                                      @Nullable final ConnectionAcceptor connectionAcceptor,
-                                      final StreamingHttpService service,
-                                      final boolean drainRequestPayloadBody,
-                                      final boolean sniOnly) {
+    static Single<HttpServerContext> bind(final HttpExecutionContext executionContext,
+                                          final ReadOnlyHttpServerConfig config,
+                                          final SocketAddress listenAddress,
+                                          @Nullable final InfluencerConnectionAcceptor connectionAcceptor,
+                                          final StreamingHttpService service,
+                                          final boolean drainRequestPayloadBody,
+                                          final boolean sniOnly) {
         final ReadOnlyTcpServerConfig tcpConfig = config.tcpConfig();
         assert tcpConfig.sslContext() != null;
 
@@ -77,7 +77,7 @@ final class DeferredServerChannelBinder {
                 .map(delegate -> {
                     LOGGER.debug("Started HTTP server with ALPN for address {}", delegate.listenAddress());
                     // The ServerContext returned by TcpServerBinder takes care of closing the connectionAcceptor.
-                    return new NettyHttpServer.NettyHttpServerContext(delegate, service);
+                    return new NettyHttpServer.NettyHttpServerContext(delegate, service, executionContext);
                 });
     }
 

@@ -41,6 +41,7 @@ import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.defer;
@@ -78,8 +79,11 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
         this.connectionContext = new DefaultNettyHttpConnectionContext(conn, executionContext);
         this.reqRespFactory = requireNonNull(reqRespFactory);
         maxConcurrencySetting = from(new IgnoreConsumedEvent<>(maxPipelinedRequests))
-                .concat(connection.onClosing().publishOn(executionContext.executor()))
-                .concat(succeeded(ZERO_MAX_CONCURRENCY_EVENT));
+                .concat(connection.onClosing())
+                .concat(succeeded(ZERO_MAX_CONCURRENCY_EVENT))
+                .publishOn(executionContext.executionStrategy().isEventOffloaded() ?
+                        executionContext.executor() : immediate(),
+                        IoThreadFactory.IoThread::currentThreadIsIoThread);
         this.headersFactory = headersFactory;
         this.allowDropTrailersReadFromTransport = allowDropTrailersReadFromTransport;
     }
@@ -143,7 +147,7 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
                                 IoThreadFactory.IoThread::currentThreadIsIoThread)));
             }
 
-            return resp.subscribeShareContext();
+            return resp.shareContextOnSubscribe();
         });
     }
 

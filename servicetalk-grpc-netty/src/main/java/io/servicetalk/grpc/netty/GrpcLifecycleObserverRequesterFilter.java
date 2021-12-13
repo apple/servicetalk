@@ -38,6 +38,7 @@ import io.servicetalk.http.utils.RetryingHttpRequesterFilter;
  * to also get visibility into
  * {@link SingleAddressHttpClientBuilder#autoRetryStrategy(AutoRetryStrategyProvider) automatic retries}.
  */
+//FIXME 0.42 - To be re-phrased once we remove auto-retries.
 public final class GrpcLifecycleObserverRequesterFilter extends HttpLifecycleObserverRequesterFilter {
 
     /**

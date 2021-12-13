@@ -19,10 +19,12 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.logging.api.LogLevel;
+import io.servicetalk.transport.api.ConnectExecutionStrategy;
 import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionAcceptorFactory;
+import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 import io.servicetalk.transport.api.IoExecutor;
-import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServerSslConfig;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 import io.servicetalk.transport.api.TransportObserver;
@@ -165,6 +167,11 @@ public interface HttpServerBuilder {
      *     filter1 ⇒ filter2 ⇒ filter3
      * </pre>
      *
+     * <p>The connection acceptor will, by default, not be offloaded. If your filter requires the
+     * {@link ConnectionAcceptor#accept(ConnectionContext)} to be offloaded then your
+     * {@link ConnectionAcceptorFactory} will need to return {@link ConnectExecutionStrategy#offloadAll()} from the
+     * {@link ExecutionStrategyInfluencer#requiredOffloads()}.
+     *
      * @param factory {@link ConnectionAcceptorFactory} to append. Lifetime of this
      * {@link ConnectionAcceptorFactory} is managed by this builder and the server started thereof.
      * @return {@code this}
@@ -303,110 +310,110 @@ public interface HttpServerBuilder {
     HttpServerBuilder executionStrategy(HttpExecutionStrategy strategy);
 
     /**
-     * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
+     * Starts this server and returns the {@link HttpServerContext} after the server has been successfully started.
      * <p>
      * If the underlying protocol (e.g. TCP) supports it this will result in a socket bind/listen on {@code address}.
      *
-     * @param service Service invoked for every request received by this server. The returned {@link ServerContext}
-     * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
-     * @return A {@link ServerContext} by blocking the calling thread until the server is successfully started or
+     * @param service Service invoked for every request received by this server. The returned {@link HttpServerContext}
+     * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link HttpServerContext} is closed.
+     * @return A {@link HttpServerContext} by blocking the calling thread until the server is successfully started or
      * throws an {@link Exception} if the server could not be started.
      * @throws Exception if the server could not be started.
      */
-    default ServerContext listenAndAwait(HttpService service) throws Exception {
+    default HttpServerContext listenAndAwait(HttpService service) throws Exception {
         return blockingInvocation(listen(service));
     }
 
     /**
-     * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
+     * Starts this server and returns the {@link HttpServerContext} after the server has been successfully started.
      * <p>
      * If the underlying protocol (e.g. TCP) supports it this will result in a socket bind/listen on {@code address}.
      *
-     * @param handler Service invoked for every request received by this server. The returned {@link ServerContext}
-     * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
-     * @return A {@link ServerContext} by blocking the calling thread until the server is successfully started or
+     * @param handler Service invoked for every request received by this server. The returned {@link HttpServerContext}
+     * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link HttpServerContext} is closed.
+     * @return A {@link HttpServerContext} by blocking the calling thread until the server is successfully started or
      * throws an {@link Exception} if the server could not be started.
      * @throws Exception if the server could not be started.
      */
-    default ServerContext listenStreamingAndAwait(StreamingHttpService handler) throws Exception {
+    default HttpServerContext listenStreamingAndAwait(StreamingHttpService handler) throws Exception {
         return blockingInvocation(listenStreaming(handler));
     }
 
     /**
-     * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
+     * Starts this server and returns the {@link HttpServerContext} after the server has been successfully started.
      * <p>
      * If the underlying protocol (e.g. TCP) supports it this will result in a socket bind/listen on {@code address}.
      *
-     * @param service Service invoked for every request received by this server. The returned {@link ServerContext}
-     * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
-     * @return A {@link ServerContext} by blocking the calling thread until the server is successfully started or
+     * @param service Service invoked for every request received by this server. The returned {@link HttpServerContext}
+     * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link HttpServerContext} is closed.
+     * @return A {@link HttpServerContext} by blocking the calling thread until the server is successfully started or
      * throws an {@link Exception} if the server could not be started.
      * @throws Exception if the server could not be started.
      */
-    default ServerContext listenBlockingAndAwait(BlockingHttpService service) throws Exception {
+    default HttpServerContext listenBlockingAndAwait(BlockingHttpService service) throws Exception {
         return blockingInvocation(listenBlocking(service));
     }
 
     /**
-     * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
+     * Starts this server and returns the {@link HttpServerContext} after the server has been successfully started.
      * <p>
      * If the underlying protocol (e.g. TCP) supports it this will result in a socket bind/listen on {@code address}.
      *
-     * @param handler Service invoked for every request received by this server. The returned {@link ServerContext}
-     * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
-     * @return A {@link ServerContext} by blocking the calling thread until the server is successfully started or
+     * @param handler Service invoked for every request received by this server. The returned {@link HttpServerContext}
+     * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link HttpServerContext} is closed.
+     * @return A {@link HttpServerContext} by blocking the calling thread until the server is successfully started or
      * throws an {@link Exception} if the server could not be started.
      * @throws Exception if the server could not be started.
      */
-    default ServerContext listenBlockingStreamingAndAwait(BlockingStreamingHttpService handler) throws Exception {
+    default HttpServerContext listenBlockingStreamingAndAwait(BlockingStreamingHttpService handler) throws Exception {
         return blockingInvocation(listenBlockingStreaming(handler));
     }
 
     /**
-     * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
+     * Starts this server and returns the {@link HttpServerContext} after the server has been successfully started.
      * <p>
      * If the underlying protocol (e.g. TCP) supports it this will result in a socket bind/listen on {@code address}.
      *
-     * @param service Service invoked for every request received by this server. The returned {@link ServerContext}
-     * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
+     * @param service Service invoked for every request received by this server. The returned {@link HttpServerContext}
+     * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link HttpServerContext} is closed.
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
-    Single<ServerContext> listen(HttpService service);
+    Single<HttpServerContext> listen(HttpService service);
 
     /**
-     * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
+     * Starts this server and returns the {@link HttpServerContext} after the server has been successfully started.
      * <p>
      * If the underlying protocol (e.g. TCP) supports it this will result in a socket bind/listen on {@code address}.
      *
-     * @param service Service invoked for every request received by this server. The returned {@link ServerContext}
-     * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
+     * @param service Service invoked for every request received by this server. The returned {@link HttpServerContext}
+     * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link HttpServerContext} is closed.
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
-    Single<ServerContext> listenStreaming(StreamingHttpService service);
+    Single<HttpServerContext> listenStreaming(StreamingHttpService service);
 
     /**
-     * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
+     * Starts this server and returns the {@link HttpServerContext} after the server has been successfully started.
      * <p>
      * If the underlying protocol (e.g. TCP) supports it this will result in a socket bind/listen on {@code address}.
      *
-     * @param service Service invoked for every request received by this server. The returned {@link ServerContext}
-     * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
+     * @param service Service invoked for every request received by this server. The returned {@link HttpServerContext}
+     * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link HttpServerContext} is closed.
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
-    Single<ServerContext> listenBlocking(BlockingHttpService service);
+    Single<HttpServerContext> listenBlocking(BlockingHttpService service);
 
     /**
-     * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
+     * Starts this server and returns the {@link HttpServerContext} after the server has been successfully started.
      * <p>
      * If the underlying protocol (e.g. TCP) supports it this will result in a socket bind/listen on {@code address}.
      *
-     * @param service Service invoked for every request received by this server. The returned {@link ServerContext}
-     * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
+     * @param service Service invoked for every request received by this server. The returned {@link HttpServerContext}
+     * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link HttpServerContext} is closed.
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
-    Single<ServerContext> listenBlockingStreaming(BlockingStreamingHttpService service);
+    Single<HttpServerContext> listenBlockingStreaming(BlockingStreamingHttpService service);
 }

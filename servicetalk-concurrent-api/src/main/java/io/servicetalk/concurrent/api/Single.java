@@ -42,7 +42,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Executors.immediate;
+import static io.servicetalk.concurrent.api.Executors.global;
 import static io.servicetalk.concurrent.api.NeverSingle.neverSingle;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
@@ -606,7 +606,7 @@ public abstract class Single<T> {
     }
 
     /**
-     * Creates a new {@link Single} that will mimic the signals of this {@link Single} but will terminate with a
+     * Creates a new {@link Single} that will mimic the signals of this {@link Single} but will terminate
      * with a {@link TimeoutException} if time {@code duration} elapses between subscribe and
      * termination. The timer starts when the returned {@link Single} is subscribed.
      * <p>
@@ -620,11 +620,11 @@ public abstract class Single<T> {
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
     public final Single<T> timeout(long duration, TimeUnit unit) {
-        return timeout(duration, unit, immediate());
+        return timeout(duration, unit, global());
     }
 
     /**
-     * Creates a new {@link Single} that will mimic the signals of this {@link Single} but will terminate with a
+     * Creates a new {@link Single} that will mimic the signals of this {@link Single} but will terminate
      * with a {@link TimeoutException} if time {@code duration} elapses between subscribe and
      * termination. The timer starts when the returned {@link Single} is subscribed.
      * <p>
@@ -633,7 +633,8 @@ public abstract class Single<T> {
      * {@link Subscriber#onError(Throwable) terminated}.
      * @param duration The time duration which is allowed to elapse before {@link Subscriber#onSuccess(Object)}.
      * @param unit The units for {@code duration}.
-     * @param timeoutExecutor The {@link Executor} to use for managing the timer notifications.
+     * @param timeoutExecutor The {@link io.servicetalk.concurrent.Executor} to use for managing the timer
+     * notifications.
      * @return a new {@link Single} that will mimic the signals of this {@link Single} but will terminate with a
      * {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onSuccess(Object)}.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
@@ -644,7 +645,7 @@ public abstract class Single<T> {
     }
 
     /**
-     * Creates a new {@link Single} that will mimic the signals of this {@link Single} but will terminate with a
+     * Creates a new {@link Single} that will mimic the signals of this {@link Single} but will terminate
      * with a {@link TimeoutException} if time {@code duration} elapses between subscribe and
      * termination. The timer starts when the returned {@link Single} is subscribed.
      * <p>
@@ -658,7 +659,7 @@ public abstract class Single<T> {
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
     public final Single<T> timeout(Duration duration) {
-        return timeout(duration, immediate());
+        return timeout(duration, global());
     }
 
     /**
@@ -670,7 +671,8 @@ public abstract class Single<T> {
      * {@link Cancellable#cancel() cancelled} and the associated {@link Subscriber} will be
      * {@link Subscriber#onError(Throwable) terminated}.
      * @param duration The time duration which is allowed to elapse before {@link Subscriber#onSuccess(Object)}.
-     * @param timeoutExecutor The {@link Executor} to use for managing the timer notifications.
+     * @param timeoutExecutor The {@link io.servicetalk.concurrent.Executor} to use for managing the timer
+     * notifications.
      * @return a new {@link Single} that will mimic the signals of this {@link Single} but will terminate with a
      * {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onSuccess(Object)}.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
@@ -1368,84 +1370,91 @@ public abstract class Single<T> {
     }
 
     /**
-     * Creates a new {@link Single} that will use the passed {@link Executor} to invoke all {@link Subscriber} methods.
-     * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
-     * {@link Single}. Only subsequent operations, if any, added in this execution chain will use this
-     * {@link Executor}.
+     * Creates a new {@link Single} that will use the passed {@link io.servicetalk.concurrent.Executor} to invoke all
+     * {@link Subscriber} methods. This method does <strong>not</strong> override preceding {@link Executor}s, if any,
+     * specified for {@code this} {@link Single}. Only subsequent operations, if any, added in this execution chain will
+     * use this {@link io.servicetalk.concurrent.Executor}.
      * <p>
-     * Note: unlike {@link #publishOn(Executor, BooleanSupplier)}, current operator always enforces offloading to the
-     * passed {@link Executor}.
+     * Note: unlike {@link #publishOn(io.servicetalk.concurrent.Executor, BooleanSupplier)}, current operator always
+     * enforces offloading to the passed {@link io.servicetalk.concurrent.Executor}.
      *
-     * @param executor {@link Executor} to use.
-     * @return A new {@link Single} that will use the passed {@link Executor} to invoke all {@link Subscriber} methods.
-     * @see #publishOn(Executor, BooleanSupplier)
+     * @param executor {@link io.servicetalk.concurrent.Executor} to use.
+     * @return A new {@link Single} that will use the passed {@link io.servicetalk.concurrent.Executor} to invoke all
+     * {@link Subscriber} methods.
+     * @see #publishOn(io.servicetalk.concurrent.Executor, BooleanSupplier)
      */
-    public final Single<T> publishOn(Executor executor) {
+    public final Single<T> publishOn(io.servicetalk.concurrent.Executor executor) {
         return PublishAndSubscribeOnSingles.publishOn(this, Boolean.TRUE::booleanValue, executor);
     }
 
     /**
-     * Creates a new {@link Single} that may use the passed {@link Executor} to invoke all {@link Subscriber} methods.
-     * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
-     * {@link Single}. Only subsequent operations, if any, added in this execution chain will use this
-     * {@link Executor}.
+     * Creates a new {@link Single} that may use the passed {@link io.servicetalk.concurrent.Executor} to invoke all
+     * {@link Subscriber} methods.
+     * This method does <strong>not</strong> override preceding {@link io.servicetalk.concurrent.Executor}s, if any,
+     * specified for {@code this} {@link Single}. Only subsequent operations, if any, added in this execution chain will
+     * use this {@link io.servicetalk.concurrent.Executor}.
      * <p>
-     * Note: unlike {@link #publishOn(Executor)}, current operator may skip offloading to the passed {@link Executor},
+     * Note: unlike {@link #publishOn(io.servicetalk.concurrent.Executor)}, current operator may skip offloading to the
+     * passed {@link io.servicetalk.concurrent.Executor},
      * depending on the result of the {@link BooleanSupplier} hint.
      *
-     * @param executor {@link Executor} to use.
+     * @param executor {@link io.servicetalk.concurrent.Executor} to use.
      * @param shouldOffload Provides a hint whether offloading to the executor can be omitted or not. Offloading may
      * still occur even if {@code false} is returned in order to preserve signal ordering.
-     * @return A new {@link Single} that may use the passed {@link Executor} to invoke all {@link Subscriber} methods.
-     * @see #publishOn(Executor)
+     * @return A new {@link Single} that may use the passed {@link io.servicetalk.concurrent.Executor} to invoke all
+     * {@link Subscriber} methods.
+     * @see #publishOn(io.servicetalk.concurrent.Executor)
      */
-    public final Single<T> publishOn(Executor executor, BooleanSupplier shouldOffload) {
+    public final Single<T> publishOn(io.servicetalk.concurrent.Executor executor, BooleanSupplier shouldOffload) {
         return PublishAndSubscribeOnSingles.publishOn(this, shouldOffload, executor);
     }
 
     /**
-     * Creates a new {@link Single} that will use the passed {@link Executor} to invoke the following methods:
+     * Creates a new {@link Single} that will use the passed {@link io.servicetalk.concurrent.Executor} to invoke the
+     * following methods:
      * <ul>
      *     <li>All {@link Cancellable} methods.</li>
      *     <li>The {@link #handleSubscribe(SingleSource.Subscriber)} method.</li>
      * </ul>
-     * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
-     * {@link Single}. Only subsequent operations, if any, added in this execution chain will use this
-     * {@link Executor}.
+     * This method does <strong>not</strong> override preceding {@link io.servicetalk.concurrent.Executor}s, if any,
+     * specified for {@code this} {@link Single}. Only subsequent operations, if any, added in this execution chain will
+     * use this {@link io.servicetalk.concurrent.Executor}.
      * <p>
-     * Note: unlike {@link #subscribeOn(Executor, BooleanSupplier)}, current operator always enforces offloading to the
-     * passed{@link Executor}.
+     * Note: unlike {@link #subscribeOn(io.servicetalk.concurrent.Executor, BooleanSupplier)}, current operator always
+     * enforces offloading to the passed {@link io.servicetalk.concurrent.Executor}.
      *
-     * @param executor {@link Executor} to use.
-     * @return A new {@link Single} that will use the passed {@link Executor} to invoke all methods of
-     * {@link Cancellable} and {@link #handleSubscribe(SingleSource.Subscriber)}.
-     * @see #subscribeOn(Executor, BooleanSupplier)
+     * @param executor {@link io.servicetalk.concurrent.Executor} to use.
+     * @return A new {@link Single} that will use the passed {@link io.servicetalk.concurrent.Executor} to invoke all
+     * methods of {@link Cancellable} and {@link #handleSubscribe(SingleSource.Subscriber)}.
+     * @see #subscribeOn(io.servicetalk.concurrent.Executor, BooleanSupplier)
      */
-    public final Single<T> subscribeOn(Executor executor) {
+    public final Single<T> subscribeOn(io.servicetalk.concurrent.Executor executor) {
         return PublishAndSubscribeOnSingles.subscribeOn(this, Boolean.TRUE::booleanValue, executor);
     }
 
     /**
-     * Creates a new {@link Single} that may use the passed {@link Executor} to invoke the following methods:
+     * Creates a new {@link Single} that may use the passed {@link io.servicetalk.concurrent.Executor} to invoke the
+     * following methods:
      * <ul>
      *     <li>All {@link Cancellable} methods.</li>
      *     <li>The {@link #handleSubscribe(SingleSource.Subscriber)} method.</li>
      * </ul>
-     * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
-     * {@link Single}. Only subsequent operations, if any, added in this execution chain will use this
-     * {@link Executor}.
+     * This method does <strong>not</strong> override preceding {@link io.servicetalk.concurrent.Executor}s, if any,
+     * specified for {@code this} {@link Single}. Only subsequent operations, if any, added in this execution chain will
+     * use this {@link io.servicetalk.concurrent.Executor}.
      * <p>
-     * Note: unlike {@link #subscribeOn(Executor)}, current operator may skip offloading to the passed {@link Executor},
-     * depending on the result of the {@link BooleanSupplier} hint.
+     * Note: unlike {@link #subscribeOn(io.servicetalk.concurrent.Executor)}, current operator may skip offloading to
+     * the passed {@link io.servicetalk.concurrent.Executor}, depending on the result of the {@link BooleanSupplier}
+     * hint.
      *
-     * @param executor {@link Executor} to use.
+     * @param executor {@link io.servicetalk.concurrent.Executor} to use.
      * @param shouldOffload Provides a hint whether offloading to the executor can be omitted or not. Offloading may
      * still occur even if {@code false} is returned in order to preserve signal ordering.
-     * @return A new {@link Single} that may use the passed {@link Executor} to invoke all methods of
-     * {@link Cancellable} and {@link #handleSubscribe(SingleSource.Subscriber)}.
-     * @see #subscribeOn(Executor)
+     * @return A new {@link Single} that may use the passed {@link io.servicetalk.concurrent.Executor} to invoke all
+     * methods of {@link Cancellable} and {@link #handleSubscribe(SingleSource.Subscriber)}.
+     * @see #subscribeOn(io.servicetalk.concurrent.Executor)
      */
-    public final Single<T> subscribeOn(Executor executor, BooleanSupplier shouldOffload) {
+    public final Single<T> subscribeOn(io.servicetalk.concurrent.Executor executor, BooleanSupplier shouldOffload) {
         return PublishAndSubscribeOnSingles.subscribeOn(this, shouldOffload, executor);
     }
 
@@ -1459,8 +1468,8 @@ public abstract class Single<T> {
      * @return A {@link Single} that will share the {@link AsyncContext} instead of making a
      * {@link ContextMap#copy() copy} when subscribed to.
      */
-    public final Single<T> subscribeShareContext() {
-        return new SingleSubscribeShareContext<>(this);
+    public final Single<T> shareContextOnSubscribe() {
+        return new SingleShareContextOnSubscribe<>(this);
     }
 
     /**
@@ -1663,7 +1672,7 @@ public abstract class Single<T> {
      * <p>
      * Blocking inside {@link Callable#call()} will in turn block the subscribe call to the returned {@link Single}. If
      * this behavior is undesirable then the returned {@link Single} should be offloaded using
-     * {@link #subscribeOn(Executor)} which offloads the subscribe call.
+     * {@link #subscribeOn(io.servicetalk.concurrent.Executor)} which offloads the subscribe call.
      *
      * @param callable {@link Callable} which supplies the result of the {@link Single}.
      * @param <T>      Type of the {@link Single}.
@@ -1680,8 +1689,8 @@ public abstract class Single<T> {
      * emitted by the {@link Supplier} will terminate the returned {@link Single} with the same error.
      * <p>
      * Blocking inside {@link Supplier#get()} will in turn block the subscribe call to the returned {@link Single}. If
-     *      * this behavior is undesirable then the returned {@link Single} should be offloaded using
-     *      * {@link #subscribeOn(Executor)} which offloads the subscribe call.
+     * this behavior is undesirable then the returned {@link Single} should be offloaded using
+     * {@link #subscribeOn(io.servicetalk.concurrent.Executor)} which offloads the subscribe call.
      *
      * @param supplier {@link Supplier} which supplies the result of the {@link Single}.
      * @param <T>      Type of the {@link Single}.

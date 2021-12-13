@@ -302,7 +302,7 @@ public final class RedirectConfigBuilder {
 
     private static final class DefaultRedirectRequestTransformer implements RedirectRequestTransformer {
 
-        private static final TrailersTransformer<Object, Buffer> NOOP_TRAILERS_TRANSFORMER =
+        private static final StatelessTrailersTransformer<Buffer> NOOP_TRAILERS_TRANSFORMER =
                 new StatelessTrailersTransformer<>();
 
         private final boolean changePostToGet;

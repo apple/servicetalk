@@ -55,6 +55,6 @@ final class OffloadingFilter implements StreamingHttpServiceFilterFactory {
     @Override
     public HttpExecutionStrategy requiredOffloads() {
         // We do our own offloading
-        return HttpExecutionStrategies.anyStrategy();
+        return HttpExecutionStrategies.offloadNone();
     }
 }

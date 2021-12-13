@@ -94,7 +94,7 @@ final class Utils {
 
         @Override
         public GrpcExecutionStrategy executionStrategy() {
-            return GrpcExecutionStrategies.noOffloadsStrategy();
+            return GrpcExecutionStrategies.offloadNever();
         }
     }
 

@@ -19,12 +19,13 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ClientSslConfigBuilder;
-import io.servicetalk.transport.api.ConnectionAcceptor;
+import io.servicetalk.transport.api.ConnectExecutionStrategy;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServerSslConfigBuilder;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
+import io.servicetalk.transport.netty.internal.InfluencerConnectionAcceptor;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 
 import org.junit.jupiter.api.AfterEach;
@@ -48,7 +49,8 @@ public abstract class AbstractTcpServerTest {
     public static final ExecutionContextExtension CLIENT_CTX =
             ExecutionContextExtension.cached("client-io", "client-executor");
 
-    private ConnectionAcceptor connectionAcceptor = ACCEPT_ALL;
+    private InfluencerConnectionAcceptor connectionAcceptor =
+            InfluencerConnectionAcceptor.withStrategy(ACCEPT_ALL, ConnectExecutionStrategy.offloadNone());
     private Function<NettyConnection<Buffer, Buffer>, Completable> service =
         conn -> conn.write(conn.read());
     private boolean sslEnabled;
@@ -57,7 +59,7 @@ public abstract class AbstractTcpServerTest {
     InetSocketAddress serverAddress;
     TcpClient client;
 
-    void connectionAcceptor(final ConnectionAcceptor connectionAcceptor) {
+    void connectionAcceptor(final InfluencerConnectionAcceptor connectionAcceptor) {
         this.connectionAcceptor = connectionAcceptor;
     }
 

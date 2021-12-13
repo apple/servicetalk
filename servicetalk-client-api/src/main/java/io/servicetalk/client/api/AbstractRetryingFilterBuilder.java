@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,9 +43,11 @@ import static java.util.Objects.requireNonNull;
  * @param <Builder> the type of builder for retrying filter
  * @param <Filter> the type of retrying filter to build
  * @param <Meta> the type of meta-data for {@link #retryFor(BiPredicate)}
- *
  * @see RetryStrategies
+ * @deprecated Moving forward ServiceTalk will remove this abstraction. Please rely on the protocol specific filter,
+ * like {@code io.servicetalk.http.netty.RetryingHttpRequesterFilter}.
  */
+@Deprecated
 public abstract class AbstractRetryingFilterBuilder<Builder
         extends AbstractRetryingFilterBuilder<Builder, Filter, Meta>, Filter, Meta> {
     private static final Duration FULL_JITTER = ofDays(1024);
@@ -84,43 +86,6 @@ public abstract class AbstractRetryingFilterBuilder<Builder
     public final Builder retryFor(final BiPredicate<Meta, Throwable> retryForPredicate) {
         this.retryForPredicate = requireNonNull(retryForPredicate);
         return castThis();
-    }
-
-    /**
-     * Creates a new retrying {@link Filter} which retries without delay.
-     * @return a new retrying {@link Filter} which retries without delay.
-     * @deprecated Use {@link #buildWithConstantBackoffFullJitter(Duration)} or
-     * {@link #buildWithConstantBackoffFullJitter(Duration)}.
-     */
-    @Deprecated
-    public final Filter buildWithImmediateRetries() {
-        return build(readOnlySettings(null, NULL_JITTER, null, null, false, evaluateDelayedRetries));
-    }
-
-    /**
-     * Creates a new retrying {@link Filter} which adds the passed constant {@link Duration} as a delay between retries.
-     * @param delay Constant {@link Duration} of delay between retries
-     * @return A new retrying {@link Filter} which adds a constant delay between retries
-     * @deprecated Use {@link #buildWithConstantBackoffDeltaJitter(Duration, Duration)} or
-     * {@link #buildWithConstantBackoffFullJitter(Duration)}.
-     */
-    @Deprecated
-    public final Filter buildWithConstantBackoff(final Duration delay) {
-        return build(readOnlySettings(delay, NULL_JITTER, null, null, false, evaluateDelayedRetries));
-    }
-
-    /**
-     * Creates a new retrying {@link Filter} which adds the passed constant {@link Duration} as a delay between retries.
-     * @param delay Constant {@link Duration} of delay between retries
-     * @param timerExecutor {@link Executor} to be used to schedule timers for backoff. It takes precedence over an
-     * alternative timer {@link Executor} from {@link ReadOnlyRetryableSettings#newStrategy(Executor)} argument
-     * @return A new retrying {@link Filter} which adds a constant delay between retries
-     * @deprecated Use {@link #buildWithConstantBackoffFullJitter(Duration, Executor)} or
-     * {@link #buildWithConstantBackoffDeltaJitter(Duration, Duration)}.
-     */
-    @Deprecated
-    public final Filter buildWithConstantBackoff(final Duration delay, final Executor timerExecutor) {
-        return build(readOnlySettings(delay, NULL_JITTER, null, timerExecutor, false, evaluateDelayedRetries));
     }
 
     /**
@@ -271,7 +236,10 @@ public abstract class AbstractRetryingFilterBuilder<Builder
      * A read-only settings for retryable filters.
      *
      * @param <Meta> the type of meta-data for {@link #retryFor(BiPredicate)}
+     * @deprecated Moving forward ServiceTalk will remove this abstraction. Please rely on the protocol specific
+     * filter, like {@code io.servicetalk.http.netty.RetryingHttpRequesterFilter}
      */
+    @Deprecated
     public static final class ReadOnlyRetryableSettings<Meta> {
 
         private final int maxRetries;

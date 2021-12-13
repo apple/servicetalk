@@ -33,6 +33,11 @@ final class DefaultGrpcExecutionStrategy implements GrpcExecutionStrategy {
     }
 
     @Override
+    public boolean isRequestResponseOffloaded() {
+        return delegate.isRequestResponseOffloaded();
+    }
+
+    @Override
     public boolean isMetadataReceiveOffloaded() {
         return delegate.isMetadataReceiveOffloaded();
     }
@@ -45,6 +50,16 @@ final class DefaultGrpcExecutionStrategy implements GrpcExecutionStrategy {
     @Override
     public boolean isSendOffloaded() {
         return delegate.isSendOffloaded();
+    }
+
+    @Override
+    public boolean isEventOffloaded() {
+        return delegate.isEventOffloaded();
+    }
+
+    @Override
+    public boolean isCloseOffloaded() {
+        return delegate.isCloseOffloaded();
     }
 
     @Override

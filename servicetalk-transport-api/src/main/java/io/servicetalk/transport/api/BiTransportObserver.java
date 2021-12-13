@@ -70,6 +70,12 @@ final class BiTransportObserver implements TransportObserver {
         }
 
         @Override
+        public void onTransportHandshakeComplete() {
+            first.onTransportHandshakeComplete();
+            second.onTransportHandshakeComplete();
+        }
+
+        @Override
         public SecurityHandshakeObserver onSecurityHandshake() {
             return new BiSecurityHandshakeObserver(first.onSecurityHandshake(), second.onSecurityHandshake());
         }
@@ -167,6 +173,12 @@ final class BiTransportObserver implements TransportObserver {
         private BiStreamObserver(final StreamObserver first, final StreamObserver second) {
             this.first = first;
             this.second = second;
+        }
+
+        @Override
+        public void streamIdAssigned(final long streamId) {
+            first.streamIdAssigned(streamId);
+            second.streamIdAssigned(streamId);
         }
 
         @Override

@@ -44,6 +44,10 @@ import static java.lang.Boolean.getBoolean;
 final class NativeTransportUtils {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NativeTransportUtils.class);
+    private static final String REQUIRE_NATIVE_LIBS_NAME = "io.servicetalk.transport.netty.requireNativeLibs";
+    private static final boolean REQUIRE_NATIVE_LIBS = getBoolean(REQUIRE_NATIVE_LIBS_NAME);
+    private static final String NETTY_NO_NATIVE_NAME = "io.netty.transport.noNative";
+    private static final boolean NETTY_NO_NATIVE = getBoolean(NETTY_NO_NATIVE_NAME);
 
     private static final boolean IS_LINUX;
     private static final boolean IS_OSX_OR_BSD;
@@ -56,9 +60,9 @@ final class NativeTransportUtils {
         TRY_IO_URING = new AtomicBoolean(getBoolean("io.servicetalk.transport.netty.tryIoUring"));
 
         if (IS_LINUX && !Epoll.isAvailable()) {
-            logUnavailability("epoll", os, Epoll.unavailabilityCause());
+            reactOnUnavailability("epoll", os, Epoll.unavailabilityCause());
         } else if (IS_OSX_OR_BSD && !KQueue.isAvailable()) {
-            logUnavailability("kqueue", "osx", KQueue.unavailabilityCause());
+            reactOnUnavailability("kqueue", "osx", KQueue.unavailabilityCause());
         }
     }
 
@@ -66,10 +70,31 @@ final class NativeTransportUtils {
         // No instances
     }
 
-    private static void logUnavailability(final String transport, final String os, final Throwable cause) {
-        LOGGER.warn("Can not load \"io.netty:netty-transport-native-{}:$nettyVersion:{}-{}\", it may impact " +
-                        "performance of the application. See https://netty.io/wiki/native-transports.html",
-                transport, os, normalizedArch(), cause);
+    private static void reactOnUnavailability(final String transport, final String os, final Throwable cause) {
+        if (REQUIRE_NATIVE_LIBS) {
+            throw new IllegalStateException("Can not load required \"io.netty:netty-transport-native-" + transport +
+                    ":$nettyVersion:" + os + '-' + normalizedArch() + "\", it may impact responsiveness, " +
+                    "reliability, and performance of the application. Fix the deployment to make sure the native " +
+                    "libraries are packaged and can be loaded. Otherwise, unset \"-D" + REQUIRE_NATIVE_LIBS_NAME +
+                    "=true\" system property to let the application start without native libraries and set \"-D" +
+                    NETTY_NO_NATIVE_NAME + "=true\" if running without native libs is intentional. " +
+                    "For more information, see https://netty.io/wiki/native-transports.html", cause);
+        }
+        if (NETTY_NO_NATIVE) {
+            LOGGER.info("io.netty:netty-transport-native-{} is explicitly disabled with \"-D{}=true\". Note that it " +
+                    "may impact responsiveness, reliability, and performance of the application. ServiceTalk " +
+                    "recommends always running with native libraries. Consider using \"-D{}=true\" to fail " +
+                    "application initialization without native libs. For more information, see " +
+                    "https://netty.io/wiki/native-transports.html",
+                    transport, NETTY_NO_NATIVE_NAME, REQUIRE_NATIVE_LIBS_NAME);
+        } else {
+            LOGGER.warn("Can not load \"io.netty:netty-transport-native-{}:$nettyVersion:{}-{}\", it may impact " +
+                    "responsiveness, reliability, and performance of the application. ServiceTalk recommends always " +
+                    "running with native libraries. Consider using \"-D{}=true\" to fail application initialization " +
+                    "without native libraries. If this is intentional, let netty know about it using \"-D{}=true\". " +
+                    "For more information, see https://netty.io/wiki/native-transports.html",
+                    transport, os, normalizedArch(), REQUIRE_NATIVE_LIBS_NAME, NETTY_NO_NATIVE_NAME);
+        }
     }
 
     /**

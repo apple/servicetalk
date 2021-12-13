@@ -24,9 +24,9 @@ import io.netty.channel.EventLoopGroup;
 public interface EventLoopAwareNettyIoExecutor extends NettyIoExecutor {
 
     /**
-     * Checks if the calling thread is an I/O thread manager by this {@link NettyIoExecutor}.
+     * Checks if the calling thread is an I/O thread managed by this {@link NettyIoExecutor}.
      *
-     * @return {@code true} if the calling thread is an I/O thread manager by this {@link NettyIoExecutor}.
+     * @return {@code true} if the calling thread is an I/O thread managed by this {@link NettyIoExecutor}.
      */
     boolean isCurrentThreadEventLoop();
 

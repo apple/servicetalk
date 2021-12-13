@@ -15,13 +15,13 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
+import io.servicetalk.transport.api.ServerContext;
 
-interface DefaultHttpExecutionStrategyInfluencer extends ExecutionStrategyInfluencer<HttpExecutionStrategy> {
+/**
+ * Context of an HTTP server.
+ */
+public interface HttpServerContext extends ServerContext {
 
     @Override
-    default HttpExecutionStrategy requiredOffloads() {
-        // safe default--implementations are expected to override
-        return HttpExecutionStrategies.offloadAll();
-    }
+    HttpExecutionContext executionContext();
 }

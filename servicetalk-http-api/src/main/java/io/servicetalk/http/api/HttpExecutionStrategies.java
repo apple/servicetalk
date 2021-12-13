@@ -18,6 +18,8 @@ package io.servicetalk.http.api;
 import java.util.EnumSet;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.http.api.HttpExecutionStrategies.HttpOffload.OFFLOAD_CLOSE;
+import static io.servicetalk.http.api.HttpExecutionStrategies.HttpOffload.OFFLOAD_EVENT;
 import static io.servicetalk.http.api.HttpExecutionStrategies.HttpOffload.OFFLOAD_RECEIVE_DATA;
 import static io.servicetalk.http.api.HttpExecutionStrategies.HttpOffload.OFFLOAD_RECEIVE_META;
 import static io.servicetalk.http.api.HttpExecutionStrategies.HttpOffload.OFFLOAD_SEND;
@@ -36,40 +38,45 @@ public final class HttpExecutionStrategies {
     /**
      * A special default {@link HttpExecutionStrategy} that offloads all actions unless merged with another strategy
      * that requires less offloading. The intention of this strategy is to provide a safe default if no strategy is
-     * specified.
+     * specified; it should not be returned by
+     * {@link HttpExecutionStrategyInfluencer#requiredOffloads()}, which should return {@link #offloadNone()} or
+     * {@link #offloadAll()} instead.
      *
      * @return Default {@link HttpExecutionStrategy}.
-     * @see #offloadAll()
      */
     public static HttpExecutionStrategy defaultStrategy() {
         return DEFAULT_HTTP_EXECUTION_STRATEGY;
     }
 
     /**
-     * A special {@link HttpExecutionStrategy} that disables all offloads on the request-response path. When merged
-     * with another execution strategy the result is always this strategy.
+     * A special {@link HttpExecutionStrategy} that disables all offloads on the request-response and transport event
+     * paths. This strategy is intended to be used only for client and server builders; it should not be returned by
+     * {@link HttpExecutionStrategyInfluencer#requiredOffloads()}, which should return {@link #offloadNone()} instead.
+     * When merged with another execution strategy the result is always this strategy.
      *
      * @return {@link HttpExecutionStrategy} that disables all request-response path offloads.
-     * @see #anyStrategy()
+     * @see #offloadNone()
      */
-    public static HttpExecutionStrategy noOffloadsStrategy() {
+    public static HttpExecutionStrategy offloadNever() {
         return OFFLOAD_NEVER_STRATEGY;
     }
 
     /**
-     * An {@link HttpExecutionStrategy} that requires no offloads on the request-response path. Unlike
-     * {@link #noOffloadsStrategy()}, this strategy merges normally with other execution strategy instances.
+     * An {@link HttpExecutionStrategy} that requires no offloads on the request-response path or transport event path.
+     * For {@link HttpExecutionStrategyInfluencer}s that do not block, the
+     * {@link HttpExecutionStrategyInfluencer#requiredOffloads()} method should return this value. Unlike
+     * {@link #offloadNever()}, this strategy merges normally with other execution strategy instances.
      *
      * @return {@link HttpExecutionStrategy} that requires no request-response path offloads.
-     * @see #noOffloadsStrategy()
+     * @see #offloadNever()
      */
-    public static HttpExecutionStrategy anyStrategy() {
+    public static HttpExecutionStrategy offloadNone() {
         return DefaultHttpExecutionStrategy.OFFLOAD_NONE_STRATEGY;
     }
 
     /**
-     * An {@link HttpExecutionStrategy} that requires offloading on the request-response path. Unlike
-     * {@link #defaultStrategy()}, this strategy merges normally with other execution strategy instances.
+     * An {@link HttpExecutionStrategy} that requires full offloading of the request-response path and transport events.
+     * Unlike {@link #defaultStrategy()}, this strategy merges normally with other execution strategy instances.
      *
      * @return {@link HttpExecutionStrategy} that requires no request-response path offloads.
      * @see #defaultStrategy()
@@ -132,6 +139,12 @@ public final class HttpExecutionStrategies {
         if (right.isDataReceiveOffloaded() && !left.isDataReceiveOffloaded()) {
             effectiveOffloads |= OFFLOAD_RECEIVE_DATA.mask();
         }
+        if (right.isEventOffloaded() && !left.isEventOffloaded()) {
+            effectiveOffloads |= OFFLOAD_EVENT.mask();
+        }
+        if (right.isCloseOffloaded() && !left.isCloseOffloaded()) {
+            effectiveOffloads |= OFFLOAD_CLOSE.mask();
+        }
 
         if (0 == effectiveOffloads) {
             // No extra offloads required
@@ -179,12 +192,30 @@ public final class HttpExecutionStrategies {
         }
 
         /**
+         * Enables offloading for events.
+         *
+         * @return {@code this}.
+         */
+        public Builder offloadEvent() {
+            return offload(OFFLOAD_EVENT);
+        }
+
+        /**
+         * Enables offloading for asynchronous close.
+         *
+         * @return {@code this}.
+         */
+        public Builder offloadClose() {
+            return offload(OFFLOAD_CLOSE);
+        }
+
+        /**
          * Enable all offloads.
          *
          * @return {@code this}.
          */
         public Builder offloadAll() {
-            return offloadReceiveMetadata().offloadReceiveData().offloadSend();
+            return offloadReceiveMetadata().offloadReceiveData().offloadSend().offloadEvent().offloadClose();
         }
 
         /**
@@ -224,7 +255,9 @@ public final class HttpExecutionStrategies {
     enum HttpOffload {
         OFFLOAD_RECEIVE_META,
         OFFLOAD_RECEIVE_DATA,
-        OFFLOAD_SEND;
+        OFFLOAD_SEND,
+        OFFLOAD_EVENT,
+        OFFLOAD_CLOSE;
 
         byte mask() {
             return (byte) (1 << ordinal());

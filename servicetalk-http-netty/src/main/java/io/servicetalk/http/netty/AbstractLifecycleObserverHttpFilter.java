@@ -23,6 +23,7 @@ import io.servicetalk.concurrent.api.TerminalSignalConsumer;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpLifecycleObserver;
 import io.servicetalk.http.api.HttpLifecycleObserver.HttpExchangeObserver;
@@ -36,7 +37,6 @@ import io.servicetalk.http.netty.NoopHttpLifecycleObserver.NoopHttpExchangeObser
 import io.servicetalk.http.netty.NoopHttpLifecycleObserver.NoopHttpRequestObserver;
 import io.servicetalk.http.utils.BeforeFinallyHttpOperator;
 import io.servicetalk.transport.api.ConnectionInfo;
-import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,7 +51,7 @@ import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.context.api.ContextMap.Key.newKey;
 import static java.util.Objects.requireNonNull;
 
-abstract class AbstractLifecycleObserverHttpFilter implements ExecutionStrategyInfluencer<HttpExecutionStrategy> {
+abstract class AbstractLifecycleObserverHttpFilter implements HttpExecutionStrategyInfluencer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractLifecycleObserverHttpFilter.class);
     @SuppressWarnings("unchecked")
@@ -139,7 +139,7 @@ abstract class AbstractLifecycleObserverHttpFilter implements ExecutionStrategyI
                 responseSingle = responseFunction.apply(transformed);
             } catch (Throwable t) {
                 onExchange.onResponseError(t);
-                return Single.<StreamingHttpResponse>failed(t).subscribeShareContext();
+                return Single.<StreamingHttpResponse>failed(t).shareContextOnSubscribe();
             }
             return responseSingle
                     .liftSync(new BeforeFinallyHttpOperator(exchangeContext, /* discardEventsAfterCancel */ true))
@@ -151,14 +151,14 @@ abstract class AbstractLifecycleObserverHttpFilter implements ExecutionStrategyI
                     .map(resp -> {
                         exchangeContext.onResponse(resp);
                         return resp.transformMessageBody(p -> p.beforeOnNext(exchangeContext::onResponseBody));
-                    }).subscribeShareContext();
+                    }).shareContextOnSubscribe();
         });
     }
 
     @Override
     public final HttpExecutionStrategy requiredOffloads() {
         // no influence since we do not block and the observer is not expected to block either
-        return HttpExecutionStrategies.anyStrategy();
+        return HttpExecutionStrategies.offloadNone();
     }
 
     private static final class ExchangeContext implements TerminalSignalConsumer {

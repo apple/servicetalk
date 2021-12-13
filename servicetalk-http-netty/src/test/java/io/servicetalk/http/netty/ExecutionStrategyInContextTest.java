@@ -22,6 +22,7 @@ import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpServerBuilder;
+import io.servicetalk.http.api.HttpServerContext;
 import io.servicetalk.http.api.ReservedBlockingHttpConnection;
 import io.servicetalk.http.api.ReservedBlockingStreamingHttpConnection;
 import io.servicetalk.http.api.ReservedHttpConnection;
@@ -113,7 +114,7 @@ class ExecutionStrategyInContextTest {
         clientAsCloseable = client;
         if (!customStrategy) {
             assert expectedClientStrategy == null;
-            expectedClientStrategy = customStrategyBuilder().offloadReceiveData().build();
+            expectedClientStrategy = customStrategyBuilder().offloadReceiveData().offloadEvent().build();
             assert expectedServerStrategy == null;
             expectedServerStrategy = customStrategyBuilder().offloadReceiveData().offloadSend().build();
         }
@@ -141,7 +142,7 @@ class ExecutionStrategyInContextTest {
         clientAsCloseable = client;
         if (!customStrategy) {
             assert expectedClientStrategy == null;
-            expectedClientStrategy = customStrategyBuilder().offloadNone().build();
+            expectedClientStrategy = customStrategyBuilder().offloadNone().offloadEvent().build();
             assert expectedServerStrategy == null;
             expectedServerStrategy = customStrategyBuilder().offloadReceiveData().build();
         }
@@ -175,7 +176,7 @@ class ExecutionStrategyInContextTest {
         clientAsCloseable = client;
         if (!customStrategy) {
             assert expectedClientStrategy == null;
-            expectedClientStrategy = customStrategyBuilder().offloadSend().build();
+            expectedClientStrategy = customStrategyBuilder().offloadSend().offloadEvent().build();
             assert expectedServerStrategy == null;
             expectedServerStrategy = customStrategyBuilder().offloadReceiveMetadata().build();
         }
@@ -193,7 +194,7 @@ class ExecutionStrategyInContextTest {
     }
 
     private SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> initClientAndServer(
-        Function<HttpServerBuilder, Single<ServerContext>> serverStarter, boolean customStrategy)
+            Function<HttpServerBuilder, Single<HttpServerContext>> serverStarter, boolean customStrategy)
             throws Exception {
         HttpServerBuilder serverBuilder = HttpServers.forAddress(localAddress(0));
         if (customStrategy) {

@@ -25,6 +25,7 @@ import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.BuilderUtils;
 import io.servicetalk.transport.netty.internal.ChannelSet;
 import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
+import io.servicetalk.transport.netty.internal.InfluencerConnectionAcceptor;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 import io.servicetalk.transport.netty.internal.NettyServerContext;
 
@@ -46,6 +47,7 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.toNettyAddress;
@@ -83,7 +85,7 @@ public final class TcpServerBinder {
      */
     public static <CC extends ConnectionContext> Single<ServerContext> bind(SocketAddress listenAddress,
             final ReadOnlyTcpServerConfig config, final boolean autoRead, final ExecutionContext<?> executionContext,
-            @Nullable final ConnectionAcceptor connectionAcceptor,
+            @Nullable final InfluencerConnectionAcceptor connectionAcceptor,
             final BiFunction<Channel, ConnectionObserver, Single<CC>> connectionFunction,
             final Consumer<CC> connectionConsumer) {
         requireNonNull(connectionFunction);
@@ -93,7 +95,8 @@ public final class TcpServerBinder {
         ServerBootstrap bs = new ServerBootstrap();
         configure(config, autoRead, bs, nettyIoExecutor.eventLoopGroup(), listenAddress.getClass());
 
-        ChannelSet channelSet = new ChannelSet(executionContext.executor());
+        ChannelSet channelSet = new ChannelSet(
+                executionContext.executionStrategy().isCloseOffloaded() ? executionContext.executor() : immediate());
         bs.handler(new ChannelInboundHandlerAdapter() {
             @Override
             public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
@@ -131,7 +134,9 @@ public final class TcpServerBinder {
                             // of connection processing.
                             defer(() -> connectionAcceptor.accept(conn).concat(succeeded(conn)))
                                     // subscribeOn is required to offload calls to connectionAcceptor#accept
-                                    .subscribeOn(executionContext.executor()));
+                                    .subscribeOn(connectionAcceptor.requiredOffloads().isConnectOffloaded() ?
+                                        executionContext.executor() : immediate())
+                    );
                 }
                 connectionSingle.beforeOnError(cause -> {
                     // Getting the remote-address may involve volatile reads and potentially a syscall, so guard it.

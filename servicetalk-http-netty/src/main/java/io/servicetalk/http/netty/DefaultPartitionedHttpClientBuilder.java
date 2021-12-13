@@ -50,6 +50,9 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.HttpClientBuildContext;
 import io.servicetalk.transport.api.IoExecutor;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
@@ -64,6 +67,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
 
 final class DefaultPartitionedHttpClientBuilder<U, R> implements PartitionedHttpClientBuilder<U, R> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultMultiAddressUrlHttpClientBuilder.class);
 
     private ServiceDiscoverer<U, R, PartitionedServiceDiscovererEvent<R>> serviceDiscoverer;
     @Nullable
@@ -118,8 +122,14 @@ final class DefaultPartitionedHttpClientBuilder<U, R> implements PartitionedHttp
                         defaultReqRespFactory(buildContext.httpConfig().asReadOnly(),
                                 executionContext.bufferAllocator()),
                         executionContext, partitionMapFactory);
-        return new FilterableClientToClient(partitionedClient, executionContext.executionStrategy(),
-                buildContext.builder.computeChainStrategy(executionContext.executionStrategy()));
+
+        HttpExecutionStrategy computedStrategy =
+                buildContext.builder.computeChainStrategy(executionContext.executionStrategy());
+
+        LOGGER.debug("Client created with base strategy {} → computed strategy {}",
+                executionContext.executionStrategy(), computedStrategy);
+
+        return new FilterableClientToClient(partitionedClient, computedStrategy);
     }
 
     private static final class DefaultPartitionedStreamingHttpClientFilter<U, R> implements
@@ -158,12 +168,12 @@ final class DefaultPartitionedHttpClientBuilder<U, R> implements PartitionedHttp
         @Override
         public Single<? extends FilterableReservedStreamingHttpConnection> reserveConnection(
                 final HttpRequestMetaData metaData) {
-            return defer(() -> selectClient(metaData).reserveConnection(metaData).subscribeShareContext());
+            return defer(() -> selectClient(metaData).reserveConnection(metaData).shareContextOnSubscribe());
         }
 
         @Override
         public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-            return defer(() -> selectClient(request).request(request).subscribeShareContext());
+            return defer(() -> selectClient(request).request(request).shareContextOnSubscribe());
         }
 
         @Override
