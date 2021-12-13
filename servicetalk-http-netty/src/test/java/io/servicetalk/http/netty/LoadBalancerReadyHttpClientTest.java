@@ -185,9 +185,8 @@ class LoadBalancerReadyHttpClientTest {
     private static StreamingHttpClientFilterFactory newAutomaticRetryFilterFactory(
             TestPublisher<Object> loadBalancerPublisher, TestCompletable sdStatusCompletable) {
         final RetryingHttpRequesterFilter filter = new RetryingHttpRequesterFilter.Builder().maxTotalRetries(1).build();
-        filter.inject(loadBalancerPublisher);
-        filter.inject(sdStatusCompletable);
-        return filter;
+        return client -> filter.create(new ContextAwareDelegateStreamingHttpClient(client, loadBalancerPublisher,
+                sdStatusCompletable));
     }
 
     private static final class DeferredSuccessSupplier<T> implements Supplier<Single<T>> {

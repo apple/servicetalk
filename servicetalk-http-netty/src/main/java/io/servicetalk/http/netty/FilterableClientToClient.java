@@ -49,8 +49,8 @@ final class FilterableClientToClient implements StreamingHttpClient {
     private final FilterableStreamingHttpClient client;
     private final HttpExecutionStrategy strategy;
 
-    FilterableClientToClient(FilterableStreamingHttpClient filteredClient, HttpExecutionStrategy strategy) {
-        client = filteredClient;
+    FilterableClientToClient(final FilterableStreamingHttpClient filteredClient, final HttpExecutionStrategy strategy) {
+        this.client = filteredClient;
         this.strategy = strategy;
     }
 

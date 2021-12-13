@@ -41,7 +41,6 @@ import io.servicetalk.transport.api.RetryableException;
 
 import java.io.IOException;
 import java.time.Duration;
-import java.util.ConcurrentModificationException;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import javax.annotation.Nullable;
@@ -87,10 +86,6 @@ public final class RetryingHttpRequesterFilter
     @Nullable
     private final Function<HttpResponseMetaData, HttpResponseException> responseMapper;
     private final BiFunction<HttpRequestMetaData, Throwable, BackOffPolicy> retryFor;
-    @Nullable
-    private Publisher<Object> lbEventStream;
-    @Nullable
-    private Completable sdStatus;
 
     RetryingHttpRequesterFilter(
             final boolean waitForLb, final boolean ignoreSdErrors, final int maxTotalRetries,
@@ -103,23 +98,13 @@ public final class RetryingHttpRequesterFilter
         this.retryFor = retryFor;
     }
 
-    void inject(final Publisher<Object> lbEventStream) {
-        if (this.lbEventStream != null) {
-            throw new ConcurrentModificationException();
-        }
-        this.lbEventStream = lbEventStream;
-    }
-
-    void inject(final Completable sdStatus) {
-        if (this.sdStatus != null) {
-            throw new ConcurrentModificationException();
-        }
-        this.sdStatus = ignoreSdErrors ? null : sdStatus;
-    }
-
     @Override
     public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {
-        return new ContextAwareRetryingHttpClientFilter(client);
+        final Publisher<Object> lbEventStream = ((ContextAwareDelegateStreamingHttpClient) client).lbEventStream();
+        final Completable sdStatus = ((ContextAwareDelegateStreamingHttpClient) client).sdStatus();
+        assert lbEventStream != null;
+        assert sdStatus != null;
+        return new ContextAwareRetryingHttpClientFilter(client, lbEventStream, ignoreSdErrors ? null : sdStatus);
     }
 
     @Override
@@ -130,10 +115,13 @@ public final class RetryingHttpRequesterFilter
 
     final class ContextAwareRetryingHttpClientFilter extends StreamingHttpClientFilter {
 
+        private final Executor executor;
+        private final Publisher<Object> lbEventStream;
+        @Nullable
+        private final Completable sdStatus;
+
         @Nullable
         private AsyncCloseable closeAsync;
-
-        private final Executor executor;
 
         @Nullable
         private LoadBalancerReadySubscriber loadBalancerReadySubscriber;
@@ -143,15 +131,18 @@ public final class RetryingHttpRequesterFilter
          *
          * @param delegate The {@link FilterableStreamingHttpClient} to delegate all calls to.
          */
-        private ContextAwareRetryingHttpClientFilter(final FilterableStreamingHttpClient delegate) {
+        private ContextAwareRetryingHttpClientFilter(final FilterableStreamingHttpClient delegate,
+                                                     final Publisher<Object> lbEventStream,
+                                                     @Nullable final Completable sdStatus) {
             super(delegate);
             this.executor = delegate.executionContext().executor();
+            this.lbEventStream = lbEventStream;
+            this.sdStatus = sdStatus;
             init();
         }
 
         public void init() {
             if (waitForLb) {
-                assert lbEventStream != null;
                 loadBalancerReadySubscriber = new LoadBalancerReadySubscriber();
                 closeAsync = toAsyncCloseable(__ -> {
                     loadBalancerReadySubscriber.cancel();

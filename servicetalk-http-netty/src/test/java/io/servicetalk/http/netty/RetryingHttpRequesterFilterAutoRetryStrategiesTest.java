@@ -22,7 +22,6 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.TestCompletable;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
-import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.netty.RetryingHttpRequesterFilter.ContextAwareRetryingHttpClientFilter;
@@ -214,13 +213,12 @@ class RetryingHttpRequesterFilterAutoRetryStrategiesTest {
     }
 
     private ContextAwareRetryingHttpClientFilter newFilter(final RetryingHttpRequesterFilter filter) {
-        final FilterableStreamingHttpClient client = mock(FilterableStreamingHttpClient.class);
+        final ContextAwareDelegateStreamingHttpClient client = mock(ContextAwareDelegateStreamingHttpClient.class);
         final HttpExecutionContext executionContext = mock(HttpExecutionContext.class);
         when(executionContext.executor()).then((Answer<Executor>) invocation -> immediate());
         when(client.executionContext()).then(__ -> executionContext);
-        filter.inject(sdStatus);
-        filter.inject(lbEvents);
-        // Force delayed initialization
+        when(client.sdStatus()).then(__ -> sdStatus);
+        when(client.lbEventStream()).then(__ -> lbEvents);
         return (ContextAwareRetryingHttpClientFilter) filter.create(client);
     }
 

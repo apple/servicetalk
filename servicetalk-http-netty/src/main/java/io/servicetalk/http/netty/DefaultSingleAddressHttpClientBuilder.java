@@ -97,8 +97,8 @@ import static java.util.Objects.requireNonNull;
 final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddressHttpClientBuilder<U, R> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultSingleAddressHttpClientBuilder.class);
-    private static final RetryingHttpRequesterFilter.Builder DEFAULT_AUTO_RETRIES =
-            new RetryingHttpRequesterFilter.Builder();
+    private static final RetryingHttpRequesterFilter DEFAULT_AUTO_RETRIES =
+            new RetryingHttpRequesterFilter.Builder().build();
 
     static final Duration SD_RETRY_STRATEGY_INIT_DURATION = ofSeconds(10);
     static final Duration SD_RETRY_STRATEGY_JITTER = ofSeconds(5);
@@ -247,14 +247,6 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         return buildStreaming(copyBuildCtx());
     }
 
-    private static <U, R> void injectRetryingFilterDependencies(final HttpClientBuildContext<U, R> ctx,
-            final LoadBalancer<LoadBalancedStreamingHttpConnection> loadBalancer) {
-        if (ctx.builder.retryingHttpRequesterFilter != null) {
-            ctx.builder.retryingHttpRequesterFilter.inject(ctx.sdStatus);
-            ctx.builder.retryingHttpRequesterFilter.inject(loadBalancer.eventStream());
-        }
-    }
-
     private static <U, R> StreamingHttpClient buildStreaming(final HttpClientBuildContext<U, R> ctx) {
         final ReadOnlyHttpClientConfig roConfig = ctx.httpConfig().asReadOnly();
         final HttpExecutionContext executionContext = ctx.builder.executionContextBuilder.build();
@@ -335,16 +327,18 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
             FilterableStreamingHttpClient lbClient = closeOnException.prepend(
                     new LoadBalancedStreamingHttpClient(executionContext, lb, reqRespFactory));
             if (ctx.builder.retryingHttpRequesterFilter == null) {
-                ctx.builder.retryingHttpRequesterFilter = DEFAULT_AUTO_RETRIES.build();
+                ctx.builder.retryingHttpRequesterFilter = DEFAULT_AUTO_RETRIES;
                 currClientFilterFactory = appendFilter(currClientFilterFactory,
                         ctx.builder.retryingHttpRequesterFilter);
             }
             HttpExecutionStrategy computedStrategy = ctx.builder.strategyComputation.buildForClient(executionStrategy);
             LOGGER.debug("Client for {} created with base strategy {} → computed strategy {}",
                     targetAddress(ctx), executionStrategy, computedStrategy);
-            injectRetryingFilterDependencies(ctx, lb);
+
             return new FilterableClientToClient(currClientFilterFactory != null ?
-                    currClientFilterFactory.create(lbClient) : lbClient, computedStrategy);
+                    currClientFilterFactory.create(new ContextAwareDelegateStreamingHttpClient(lbClient,
+                            lb.eventStream(), ctx.sdStatus)) : lbClient,
+                    computedStrategy);
         } catch (final Throwable t) {
             closeOnException.closeAsync().subscribe();
             throw t;
@@ -392,7 +386,10 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         if (currClientFilterFactory == null) {
             return appendClientFilterFactory;
         } else {
-            return client -> currClientFilterFactory.create(appendClientFilterFactory.create(client));
+            return client -> currClientFilterFactory.create(
+                    new ContextAwareDelegateStreamingHttpClient(appendClientFilterFactory.create(client),
+                            ((ContextAwareDelegateStreamingHttpClient) client).lbEventStream(),
+                            ((ContextAwareDelegateStreamingHttpClient) client).sdStatus()));
         }
     }
 
