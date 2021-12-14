@@ -32,7 +32,6 @@ import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.utils.RetryingHttpRequesterFilter;
 import io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory;
-import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.RetryableException;
 import io.servicetalk.transport.api.ServerContext;
@@ -223,16 +222,18 @@ class RetryingHttpRequesterFilterTest {
 
         @Override
         public <T extends C> LoadBalancer<T> newLoadBalancer(
+                final Publisher<? extends ServiceDiscovererEvent<InetSocketAddress>> eventPublisher,
+                final ConnectionFactory<InetSocketAddress, T> connectionFactory) {
+            return new InspectingLoadBalancer<>(rr.newLoadBalancer(eventPublisher, connectionFactory));
+        }
+
+        @Override
+        public <T extends C> LoadBalancer<T> newLoadBalancer(
                 final String targetResource,
                 final Publisher<? extends Collection<? extends ServiceDiscovererEvent<InetSocketAddress>>>
                         eventPublisher,
                 final ConnectionFactory<InetSocketAddress, T> connectionFactory) {
             return new InspectingLoadBalancer<>(rr.newLoadBalancer(targetResource, eventPublisher, connectionFactory));
-        }
-
-        @Override
-        public ExecutionStrategy requiredOffloads() {
-            return ExecutionStrategy.offloadNone();
         }
     }
 
