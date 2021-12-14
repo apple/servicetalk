@@ -102,6 +102,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
      */
     private boolean enqueueWrites;
     private final CloseHandler closeHandler;
+    private final WriteObserver observer;
     private final boolean isClient;
 
     WriteStreamSubscriber(Channel channel, WriteDemandEstimator demandEstimator, Subscriber subscriber,
@@ -111,8 +112,9 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
         this.subscriber = subscriber;
         this.channel = channel;
         this.demandEstimator = demandEstimator;
-        promise = new AllWritesPromise(channel, observer, enrichProtocolError);
+        promise = new AllWritesPromise(channel, enrichProtocolError);
         this.closeHandler = closeHandler;
+        this.observer = observer;
         this.isClient = isClient;
     }
 
@@ -161,6 +163,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
             long capacityBefore = channel.bytesBeforeUnwritable();
             promise.writeNext(msg);
             long capacityAfter = channel.bytesBeforeUnwritable();
+            observer.itemWritten(msg);
             demandEstimator.onItemWrite(msg, capacityBefore, capacityAfter);
             requestMoreIfRequired(subscription, capacityAfter);
         }
@@ -291,13 +294,10 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
          * streaming payload body may have more listeners. However, the MIN_INITIAL_CAPACITY of ArrayDeque is 8.
          */
         private final Deque<GenericFutureListener<?>> listenersOnWriteBoundaries = new ArrayDeque<>(8);
-        private final WriteObserver observer;
         private final UnaryOperator<Throwable> enrichProtocolError;
 
-        AllWritesPromise(final Channel channel, final WriteObserver observer,
-                         final UnaryOperator<Throwable> enrichProtocolError) {
+        AllWritesPromise(final Channel channel, final UnaryOperator<Throwable> enrichProtocolError) {
             super(channel);
-            this.observer = observer;
             this.enrichProtocolError = enrichProtocolError;
         }
 
@@ -443,7 +443,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
             if (hasFlag(SUBSCRIBER_TERMINATED)) {
                 return nettySharedPromiseTryStatus();
             }
-            observer.itemWritten();
+            observer.itemFlushed();
             if (--activeWrites == 0 && hasFlag(SOURCE_TERMINATED)) {
                 setFlag(SUBSCRIBER_TERMINATED);
                 try {

@@ -112,7 +112,7 @@ final class Flush {
             if (!eventLoop.inEventLoop() && !enqueueFlush) {
                 enqueueFlush = true;
             }
-            observer.itemReceived();
+            observer.itemReceived(t);
             subscriber.onNext(t);
             writeEventsListener.itemWritten(t);
         }
