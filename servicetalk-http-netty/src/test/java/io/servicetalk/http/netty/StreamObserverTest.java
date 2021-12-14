@@ -94,7 +94,7 @@ class StreamObserverTest {
         clientDataObserver = mock(DataObserver.class, "clientDataObserver");
         clientReadObserver = mock(ReadObserver.class, "clientReadObserver");
         clientWriteObserver = mock(WriteObserver.class, "clientWriteObserver");
-        when(clientTransportObserver.onNewConnection()).thenReturn(clientConnectionObserver);
+        when(clientTransportObserver.onNewConnection(any(), any())).thenReturn(clientConnectionObserver);
         when(clientConnectionObserver.multiplexedConnectionEstablished(any(ConnectionInfo.class)))
                 .thenReturn(clientMultiplexedObserver);
         when(clientMultiplexedObserver.onNewStream()).thenReturn(clientStreamObserver);
@@ -154,7 +154,7 @@ class StreamObserverTest {
             });
             return conn;
         }).toFuture().get()) {
-            verify(clientTransportObserver).onNewConnection();
+            verify(clientTransportObserver).onNewConnection(any(), any());
             verify(clientConnectionObserver).multiplexedConnectionEstablished(any(ConnectionInfo.class));
 
             connection.request(connection.get("/first")).subscribe(__ -> { /* no response expected */ });

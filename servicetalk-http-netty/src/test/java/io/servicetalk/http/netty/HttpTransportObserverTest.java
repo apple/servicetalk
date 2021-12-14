@@ -128,7 +128,7 @@ class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
         clientStreamObserver = mock(StreamObserver.class, "clientStreamObserver");
         clientReadObserver = mock(ReadObserver.class, "clientReadObserver");
         clientWriteObserver = mock(WriteObserver.class, "clientWriteObserver");
-        when(clientTransportObserver.onNewConnection()).thenReturn(clientConnectionObserver);
+        when(clientTransportObserver.onNewConnection(any(), any())).thenReturn(clientConnectionObserver);
         lenient().when(clientConnectionObserver.connectionEstablished(any(ConnectionInfo.class)))
                 .thenReturn(clientDataObserver);
         lenient().when(clientConnectionObserver.multiplexedConnectionEstablished(any(ConnectionInfo.class)))
@@ -145,7 +145,7 @@ class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
         serverStreamObserver = mock(StreamObserver.class, "serverStreamObserver");
         serverReadObserver = mock(ReadObserver.class, "serverReadObserver");
         serverWriteObserver = mock(WriteObserver.class, "serverWriteObserver");
-        when(serverTransportObserver.onNewConnection()).thenReturn(serverConnectionObserver);
+        when(serverTransportObserver.onNewConnection(any(), any())).thenReturn(serverConnectionObserver);
         lenient().when(serverConnectionObserver.connectionEstablished(any(ConnectionInfo.class)))
                 .thenReturn(serverDataObserver);
         lenient().when(serverConnectionObserver.multiplexedConnectionEstablished(any(ConnectionInfo.class)))
@@ -166,8 +166,8 @@ class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
         processRequest.countDown();
         StreamingHttpConnection connection = streamingHttpConnection();
 
-        verify(clientTransportObserver).onNewConnection();
-        verify(serverTransportObserver, await()).onNewConnection();
+        verify(clientTransportObserver).onNewConnection(any(), any());
+        verify(serverTransportObserver, await()).onNewConnection(any(), any());
         verify(clientConnectionObserver).onTransportHandshakeComplete();
         verify(serverConnectionObserver, await()).onTransportHandshakeComplete();
         if (protocol == HTTP_1) {

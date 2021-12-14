@@ -90,7 +90,7 @@ class SecurityHandshakeObserverTest {
         StreamObserver clientStreamObserver = mock(StreamObserver.class, "clientStreamObserver");
         ReadObserver clientReadObserver = mock(ReadObserver.class, "clientReadObserver");
         WriteObserver clientWriteObserver = mock(WriteObserver.class, "clientWriteObserver");
-        when(clientTransportObserver.onNewConnection()).thenReturn(clientConnectionObserver);
+        when(clientTransportObserver.onNewConnection(any(), any())).thenReturn(clientConnectionObserver);
         when(clientConnectionObserver.onSecurityHandshake()).thenReturn(clientSecurityHandshakeObserver);
         when(clientConnectionObserver.connectionEstablished(any(ConnectionInfo.class))).thenReturn(clientDataObserver);
         when(clientConnectionObserver.multiplexedConnectionEstablished(any(ConnectionInfo.class)))
@@ -108,7 +108,7 @@ class SecurityHandshakeObserverTest {
         StreamObserver serverStreamObserver = mock(StreamObserver.class, "serverStreamObserver");
         ReadObserver serverReadObserver = mock(ReadObserver.class, "serverReadObserver");
         WriteObserver serverWriteObserver = mock(WriteObserver.class, "serverWriteObserver");
-        when(serverTransportObserver.onNewConnection()).thenReturn(serverConnectionObserver);
+        when(serverTransportObserver.onNewConnection(any(), any())).thenReturn(serverConnectionObserver);
         when(serverConnectionObserver.onSecurityHandshake()).thenReturn(serverSecurityHandshakeObserver);
         when(serverConnectionObserver.connectionEstablished(any(ConnectionInfo.class))).thenReturn(serverDataObserver);
         when(serverConnectionObserver.multiplexedConnectionEstablished(any(ConnectionInfo.class)))

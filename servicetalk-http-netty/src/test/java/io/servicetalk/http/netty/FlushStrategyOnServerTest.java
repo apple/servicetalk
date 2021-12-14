@@ -109,16 +109,19 @@ class FlushStrategyOnServerTest {
                 globalExecutionContext().ioExecutor(), EXECUTOR_RULE.executor(), param.executionStrategy);
 
         final ReadOnlyHttpServerConfig config = new HttpServerConfig().asReadOnly();
-        final ConnectionObserver connectionObserver = config.tcpConfig().transportObserver().onNewConnection();
         final ReadOnlyTcpServerConfig tcpReadOnly = new TcpServerConfig().asReadOnly();
 
         try {
             serverContext = TcpServerBinder.bind(localAddress(0), tcpReadOnly, true,
                     httpExecutionContext, null,
-                    (channel, observer) -> initChannel(channel, httpExecutionContext, config,
-                            new TcpServerChannelInitializer(tcpReadOnly, connectionObserver)
-                                    .andThen((channel1 -> channel1.pipeline().addLast(interceptor))), service,
-                            true, connectionObserver),
+                    (channel, observer) -> {
+                        final ConnectionObserver connectionObserver = config.tcpConfig().transportObserver()
+                                .onNewConnection(channel.localAddress(), channel.remoteAddress());
+                        return initChannel(channel, httpExecutionContext, config,
+                                new TcpServerChannelInitializer(tcpReadOnly, connectionObserver)
+                                        .andThen(channel1 -> channel1.pipeline().addLast(interceptor)), service,
+                                true, connectionObserver);
+                    },
                     connection -> connection.process(true))
                     .map(delegate -> new NettyHttpServer.NettyHttpServerContext(delegate, service)).toFuture().get();
         } catch (Exception e) {

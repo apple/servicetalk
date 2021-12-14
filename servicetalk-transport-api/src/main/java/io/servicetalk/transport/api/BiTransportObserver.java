@@ -22,6 +22,7 @@ import io.servicetalk.transport.api.ConnectionObserver.SecurityHandshakeObserver
 import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
 import io.servicetalk.transport.api.ConnectionObserver.WriteObserver;
 
+import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
 import static io.servicetalk.transport.api.TransportObservers.asSafeObserver;
@@ -39,6 +40,12 @@ final class BiTransportObserver implements TransportObserver {
     @Override
     public ConnectionObserver onNewConnection() {
         return new BiConnectionObserver(first.onNewConnection(), second.onNewConnection());
+    }
+
+    @Override
+    public ConnectionObserver onNewConnection(@Nullable final Object localAddress, final Object remoteAddress) {
+        return new BiConnectionObserver(first.onNewConnection(localAddress, remoteAddress),
+                second.onNewConnection(localAddress, remoteAddress));
     }
 
     private static final class BiConnectionObserver implements ConnectionObserver {

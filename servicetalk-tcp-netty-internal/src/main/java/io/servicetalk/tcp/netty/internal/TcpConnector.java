@@ -96,7 +96,8 @@ public final class TcpConnector {
         return new SubscribableSingle<C>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super C> subscriber) {
-                ConnectHandler<C> connectHandler = new ConnectHandler<>(subscriber, connectionFactory, observer);
+                ConnectHandler<C> connectHandler = new ConnectHandler<>(subscriber, connectionFactory,
+                        observer.onNewConnection(localAddress, resolvedRemoteAddress));
                 try {
                     Future<?> connectFuture = connect0(localAddress, resolvedRemoteAddress, config, autoRead,
                             executionContext, connectHandler);
@@ -229,7 +230,7 @@ public final class TcpConnector {
 
         ConnectHandler(final Subscriber<? super C> target,
                        final BiFunction<Channel, ConnectionObserver, Single<? extends C>> connectionFactory,
-                       final TransportObserver observer) {
+                       final ConnectionObserver connectionObserver) {
             this.target = target;
             this.connectionFactory = connectionFactory;
             target.onSubscribe(() -> {
@@ -239,7 +240,7 @@ public final class TcpConnector {
                     flatMapCancellable.cancel();
                 }
             });
-            connectionObserver = observer.onNewConnection();
+            this.connectionObserver = connectionObserver;
         }
 
         @Override

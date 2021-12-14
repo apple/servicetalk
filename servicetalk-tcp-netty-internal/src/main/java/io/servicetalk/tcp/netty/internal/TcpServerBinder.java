@@ -117,7 +117,7 @@ public final class TcpServerBinder {
             @Override
             protected void initChannel(Channel channel) {
                 Single<T> connectionSingle = connectionFunction.apply(channel,
-                        config.transportObserver().onNewConnection());
+                        config.transportObserver().onNewConnection(channel.localAddress(), channel.remoteAddress()));
                 if (connectionAcceptor != null) {
                     connectionSingle = connectionSingle.flatMap(conn ->
                             // Defer is required to isolate context for ConnectionAcceptor#accept and the rest

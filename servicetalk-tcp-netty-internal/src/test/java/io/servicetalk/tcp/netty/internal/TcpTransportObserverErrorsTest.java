@@ -116,8 +116,8 @@ final class TcpTransportObserverErrorsTest extends AbstractTransportObserverTest
         setUp(errorSource);
 
         NettyConnection<Buffer, Buffer> connection = client.connectBlocking(CLIENT_CTX, serverAddress);
-        verify(clientTransportObserver).onNewConnection();
-        verify(serverTransportObserver, await()).onNewConnection();
+        verify(clientTransportObserver).onNewConnection(any(), any());
+        verify(serverTransportObserver, await()).onNewConnection(any(), any());
         verify(clientConnectionObserver).onTransportHandshakeComplete();
         verify(clientConnectionObserver).connectionEstablished(any(ConnectionInfo.class));
         verify(serverConnectionObserver, await()).onTransportHandshakeComplete();
