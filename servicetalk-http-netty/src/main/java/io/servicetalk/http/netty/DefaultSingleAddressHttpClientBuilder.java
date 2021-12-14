@@ -101,9 +101,6 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     private static final RetryingHttpRequesterFilter DEFAULT_AUTO_RETRIES =
             new RetryingHttpRequesterFilter.Builder().build();
 
-    private static final RetryingHttpRequesterFilter DEFAULT_AUTO_RETRIES =
-            new RetryingHttpRequesterFilter.Builder().build();
-
     static final Duration SD_RETRY_STRATEGY_INIT_DURATION = ofSeconds(10);
     static final Duration SD_RETRY_STRATEGY_JITTER = ofSeconds(5);
 
