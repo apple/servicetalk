@@ -97,6 +97,11 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <h1 title="Package" class="title">Package&nbsp;io.servicetalk.concurrent.api</h1>
 </div>
 <div class="contentContainer">
+<section role="region"><a id="package.description">
+<!--   -->
+</a>
+<div class="block">ServiceTalk concurrent APIs which follow Reactive Streams semantics.</div>
+</section>
 <ul class="blockList">
 <li class="blockList">
 <table class="typeSummary">
@@ -120,14 +125,14 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </tr>
 <tr class="altColor">
 <th class="colFirst" scope="row"><a href="AsyncContextMap.html" title="interface in io.servicetalk.concurrent.api">AsyncContextMap</a></th>
-<td class="colLast">
-<div class="block">The key-value map stored in the <a href="AsyncContext.html" title="class in io.servicetalk.concurrent.api"><code>AsyncContext</code></a>.</div>
+<td class="colLast">Deprecated.
+<div class="deprecationComment">Use <a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api"><code>ContextMap</code></a>.</div>
 </td>
 </tr>
 <tr class="rowColor">
 <th class="colFirst" scope="row"><a href="AsyncContextMapHolder.html" title="interface in io.servicetalk.concurrent.api">AsyncContextMapHolder</a></th>
-<td class="colLast">
-<div class="block">Interface for setting and getting a <a href="AsyncContextMap.html" title="interface in io.servicetalk.concurrent.api"><code>AsyncContextMap</code></a>.</div>
+<td class="colLast">Deprecated.
+<div class="deprecationComment">Use <a href="../../context/api/ContextMapHolder.html" title="interface in io.servicetalk.context.api"><code>ContextMapHolder</code></a>.</div>
 </td>
 </tr>
 <tr class="altColor">
@@ -286,8 +291,8 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </tr>
 <tr class="altColor">
 <th class="colFirst" scope="row"><a href="AsyncContextMap.Key.html" title="class in io.servicetalk.concurrent.api">AsyncContextMap.Key</a>&lt;T&gt;</th>
-<td class="colLast">
-<div class="block">A key identifies a specific object in a <a href="AsyncContextMap.html" title="interface in io.servicetalk.concurrent.api"><code>AsyncContextMap</code></a>.</div>
+<td class="colLast">Deprecated.
+<div class="deprecationComment">Use <a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api"><code>ContextMap.Key</code></a> with <a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api"><code>ContextMap</code></a>.</div>
 </td>
 </tr>
 <tr class="rowColor">
@@ -488,7 +493,9 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </tr>
 <tr class="altColor">
 <th class="colFirst" scope="row"><a href="RunnableCompletable.html" title="class in io.servicetalk.concurrent.api">RunnableCompletable</a></th>
-<td class="colLast">&nbsp;</td>
+<td class="colLast">Deprecated.
+<div class="deprecationComment">Use <a href="Completable.html#fromRunnable(java.lang.Runnable)"><code>Completable.fromRunnable(Runnable)</code></a>.</div>
+</td>
 </tr>
 <tr class="rowColor">
 <th class="colFirst" scope="row"><a href="SequentialCompletableSubscriberFunction.html" title="class in io.servicetalk.concurrent.api">SequentialCompletableSubscriberFunction</a></th>

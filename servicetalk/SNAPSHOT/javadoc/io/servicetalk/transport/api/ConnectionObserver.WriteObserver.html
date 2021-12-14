@@ -26,8 +26,8 @@
     catch(err) {
     }
 //-->
-var data = {"i0":6,"i1":6,"i2":6,"i3":6,"i4":6,"i5":6,"i6":6};
-var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"]};
+var data = {"i0":18,"i1":38,"i2":18,"i3":38,"i4":18,"i5":6,"i6":6,"i7":6,"i8":6,"i9":6};
+var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"],16:["t5","Default Methods"],32:["t6","Deprecated Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
 var tableTab = "tableTab";
@@ -150,55 +150,80 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </a>
 <h3>Method Summary</h3>
 <table class="memberSummary">
-<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t3" class="tableTab"><span><a href="javascript:show(4);">Abstract Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
+<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t3" class="tableTab"><span><a href="javascript:show(4);">Abstract Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t5" class="tableTab"><span><a href="javascript:show(16);">Default Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t6" class="tableTab"><span><a href="javascript:show(32);">Deprecated Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
 <tr>
 <th class="colFirst" scope="col">Modifier and Type</th>
 <th class="colSecond" scope="col">Method</th>
 <th class="colLast" scope="col">Description</th>
 </tr>
 <tr id="i0" class="altColor">
-<td class="colFirst"><code>void</code></td>
-<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#itemReceived()">itemReceived</a></span>()</code></th>
+<td class="colFirst"><code>default void</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#itemFlushed()">itemFlushed</a></span>()</code></th>
 <td class="colLast">
-<div class="block">Callback when an item is received and ready to be written.</div>
+<div class="block">Callback when an item is flushed to the network.</div>
 </td>
 </tr>
 <tr id="i1" class="rowColor">
 <td class="colFirst"><code>void</code></td>
-<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#itemWritten()">itemWritten</a></span>()</code></th>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#itemReceived()">itemReceived</a></span>()</code></th>
 <td class="colLast">
-<div class="block">Callback when an item is written to the transport.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use {<a href="#itemReceived(java.lang.Object)"><code>itemReceived(Object)</code></a>}</div>
+</div>
 </td>
 </tr>
 <tr id="i2" class="altColor">
+<td class="colFirst"><code>default void</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#itemReceived(java.lang.Object)">itemReceived</a></span>&#8203;(java.lang.Object&nbsp;item)</code></th>
+<td class="colLast">
+<div class="block">Callback when an item is received and ready to be written.</div>
+</td>
+</tr>
+<tr id="i3" class="rowColor">
+<td class="colFirst"><code>void</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#itemWritten()">itemWritten</a></span>()</code></th>
+<td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#itemWritten(java.lang.Object)"><code>itemWritten(Object)</code></a></div>
+</div>
+</td>
+</tr>
+<tr id="i4" class="altColor">
+<td class="colFirst"><code>default void</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#itemWritten(java.lang.Object)">itemWritten</a></span>&#8203;(java.lang.Object&nbsp;item)</code></th>
+<td class="colLast">
+<div class="block">Callback when an item is serialized and written to the socket.</div>
+</td>
+</tr>
+<tr id="i5" class="rowColor">
 <td class="colFirst"><code>void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#onFlushRequest()">onFlushRequest</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Callback when flush operation is requested.</div>
 </td>
 </tr>
-<tr id="i3" class="rowColor">
+<tr id="i6" class="altColor">
 <td class="colFirst"><code>void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#requestedToWrite(long)">requestedToWrite</a></span>&#8203;(long&nbsp;n)</code></th>
 <td class="colLast">
 <div class="block">Callback when new items are requested to write.</div>
 </td>
 </tr>
-<tr id="i4" class="altColor">
+<tr id="i7" class="rowColor">
 <td class="colFirst"><code>void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#writeCancelled()">writeCancelled</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Callback when the write operation is cancelled.</div>
 </td>
 </tr>
-<tr id="i5" class="rowColor">
+<tr id="i8" class="altColor">
 <td class="colFirst"><code>void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#writeComplete()">writeComplete</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Callback when the entire write operation completes successfully.</div>
 </td>
 </tr>
-<tr id="i6" class="altColor">
+<tr id="i9" class="rowColor">
 <td class="colFirst"><code>void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#writeFailed(java.lang.Throwable)">writeFailed</a></span>&#8203;(java.lang.Throwable&nbsp;cause)</code></th>
 <td class="colLast">
@@ -242,10 +267,29 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <ul class="blockList">
 <li class="blockList">
 <h4>itemReceived</h4>
-<pre class="methodSignature">void&nbsp;itemReceived()</pre>
+<pre class="methodSignature">@Deprecated
+void&nbsp;itemReceived()</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use {<a href="#itemReceived(java.lang.Object)"><code>itemReceived(Object)</code></a>}</div>
+</div>
 <div class="block">Callback when an item is received and ready to be written.
  <p>
  Content of the received items should be inspected at the higher level API when these items are produced.</div>
+</li>
+</ul>
+<a id="itemReceived(java.lang.Object)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>itemReceived</h4>
+<pre class="methodSignature">default&nbsp;void&nbsp;itemReceived&#8203;(@Nullable
+                          java.lang.Object&nbsp;item)</pre>
+<div class="block">Callback when an item is received and ready to be written.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>item</code> - received item</dd>
+</dl>
 </li>
 </ul>
 <a id="onFlushRequest()">
@@ -264,10 +308,39 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <ul class="blockList">
 <li class="blockList">
 <h4>itemWritten</h4>
-<pre class="methodSignature">void&nbsp;itemWritten()</pre>
+<pre class="methodSignature">@Deprecated
+void&nbsp;itemWritten()</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#itemWritten(java.lang.Object)"><code>itemWritten(Object)</code></a></div>
+</div>
 <div class="block">Callback when an item is written to the transport.
  <p>
  Content of the written items should be inspected at the higher level API when these items are produced.</div>
+</li>
+</ul>
+<a id="itemWritten(java.lang.Object)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>itemWritten</h4>
+<pre class="methodSignature">default&nbsp;void&nbsp;itemWritten&#8203;(@Nullable
+                         java.lang.Object&nbsp;item)</pre>
+<div class="block">Callback when an item is serialized and written to the socket.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>item</code> - written item</dd>
+</dl>
+</li>
+</ul>
+<a id="itemFlushed()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>itemFlushed</h4>
+<pre class="methodSignature">default&nbsp;void&nbsp;itemFlushed()</pre>
+<div class="block">Callback when an item is flushed to the network. Items are flushed in order they have been written.</div>
 </li>
 </ul>
 <a id="writeFailed(java.lang.Throwable)">

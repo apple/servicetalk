@@ -217,7 +217,7 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <th class="colFirst" scope="row"><a href="FilterableReservedStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">FilterableReservedStreamingHttpConnection</a></th>
 <td class="colLast">
 <div class="block">A special type of <a href="StreamingHttpConnection.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpConnection</code></a> for the exclusive use of the caller of
- <a href="StreamingHttpClient.html#reserveConnection(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.HttpRequestMetaData)"><code>StreamingHttpClient.reserveConnection(HttpExecutionStrategy, HttpRequestMetaData)</code></a>.</div>
+ <a href="StreamingHttpClient.html#reserveConnection(io.servicetalk.http.api.HttpRequestMetaData)"><code>StreamingHttpClient.reserveConnection(HttpRequestMetaData)</code></a>.</div>
 </td>
 </tr>
 <tr class="altColor">
@@ -302,6 +302,30 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <th class="colFirst" scope="row"><a href="HttpHeadersFactory.html" title="interface in io.servicetalk.http.api">HttpHeadersFactory</a></th>
 <td class="colLast">
 <div class="block">Factory method for creating <a href="HttpHeaders.html" title="interface in io.servicetalk.http.api"><code>HttpHeaders</code></a>.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colFirst" scope="row"><a href="HttpLifecycleObserver.html" title="interface in io.servicetalk.http.api">HttpLifecycleObserver</a></th>
+<td class="colLast">
+<div class="block">An observer interface that provides visibility into HTTP lifecycle events.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colFirst" scope="row"><a href="HttpLifecycleObserver.HttpExchangeObserver.html" title="interface in io.servicetalk.http.api">HttpLifecycleObserver.HttpExchangeObserver</a></th>
+<td class="colLast">
+<div class="block">An observer interface that provides visibility into events associated with a single HTTP exchange.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colFirst" scope="row"><a href="HttpLifecycleObserver.HttpRequestObserver.html" title="interface in io.servicetalk.http.api">HttpLifecycleObserver.HttpRequestObserver</a></th>
+<td class="colLast">
+<div class="block">An observer interface that provides visibility into events associated with a single HTTP request.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colFirst" scope="row"><a href="HttpLifecycleObserver.HttpResponseObserver.html" title="interface in io.servicetalk.http.api">HttpLifecycleObserver.HttpResponseObserver</a></th>
+<td class="colLast">
+<div class="block">An observer interface that provides visibility into events associated with a single HTTP response.</div>
 </td>
 </tr>
 <tr class="altColor">
@@ -422,8 +446,14 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </tr>
 <tr class="rowColor">
 <th class="colFirst" scope="row"><a href="MultiAddressHttpClientFilterFactory.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientFilterFactory</a>&lt;U&gt;</th>
-<td class="colLast">
-<div class="block">A factory for <a href="StreamingHttpClientFilter.html" title="class in io.servicetalk.http.api"><code>StreamingHttpClientFilter</code></a> to filter clients for different unresolved addresses.</div>
+<td class="colLast">Deprecated.
+<div class="deprecationComment">Use
+   <a href="MultiAddressHttpClientBuilder.html#initializer(io.servicetalk.http.api.MultiAddressHttpClientBuilder.SingleAddressInitializer)"><code>MultiAddressHttpClientBuilder.initializer(MultiAddressHttpClientBuilder.SingleAddressInitializer)</code></a> and
+   <a href="SingleAddressHttpClientBuilder.html#appendClientFilter(io.servicetalk.http.api.StreamingHttpClientFilterFactory)"><code>SingleAddressHttpClientBuilder.appendClientFilter(StreamingHttpClientFilterFactory)</code></a> or
+   <a href="SingleAddressHttpClientBuilder.html#appendClientFilter(java.util.function.Predicate,io.servicetalk.http.api.StreamingHttpClientFilterFactory)"><code>SingleAddressHttpClientBuilder.appendClientFilter(Predicate, StreamingHttpClientFilterFactory)</code></a>
+   on the last argument of
+   <a href="MultiAddressHttpClientBuilder.SingleAddressInitializer.html#initialize(java.lang.String,U,io.servicetalk.http.api.SingleAddressHttpClientBuilder)"><code>MultiAddressHttpClientBuilder.SingleAddressInitializer.initialize(
+   String, Object, SingleAddressHttpClientBuilder)</code></a>.</div>
 </td>
 </tr>
 <tr class="altColor">
@@ -446,14 +476,32 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </td>
 </tr>
 <tr class="rowColor">
-<th class="colFirst" scope="row"><a href="ReservedBlockingHttpConnection.html" title="interface in io.servicetalk.http.api">ReservedBlockingHttpConnection</a></th>
+<th class="colFirst" scope="row"><a href="RedirectConfig.html" title="interface in io.servicetalk.http.api">RedirectConfig</a></th>
 <td class="colLast">
-<div class="block">A special type of <a href="BlockingHttpConnection.html" title="interface in io.servicetalk.http.api"><code>BlockingHttpConnection</code></a> for the exclusive use of the caller of
- <a href="BlockingHttpClient.html#reserveConnection(io.servicetalk.http.api.HttpRequestMetaData)"><code>BlockingHttpClient.reserveConnection(HttpRequestMetaData)</code></a> and
- <a href="BlockingHttpClient.html#reserveConnection(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.HttpRequestMetaData)"><code>BlockingHttpClient.reserveConnection(HttpExecutionStrategy, HttpRequestMetaData)</code></a>.</div>
+<div class="block">Configuration options for <a href="https://datatracker.ietf.org/doc/html/rfc7231#section-6.4">redirection</a>.</div>
 </td>
 </tr>
 <tr class="altColor">
+<th class="colFirst" scope="row"><a href="RedirectConfig.RedirectPredicate.html" title="interface in io.servicetalk.http.api">RedirectConfig.RedirectPredicate</a></th>
+<td class="colLast">
+<div class="block">Predicate to make the final decision if redirect should be performed or not based on the given context.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colFirst" scope="row"><a href="RedirectConfig.RedirectRequestTransformer.html" title="interface in io.servicetalk.http.api">RedirectConfig.RedirectRequestTransformer</a></th>
+<td class="colLast">
+<div class="block">Provides access to the full context of the redirect to apply transformations for the pre-initialized redirect
+ request.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colFirst" scope="row"><a href="ReservedBlockingHttpConnection.html" title="interface in io.servicetalk.http.api">ReservedBlockingHttpConnection</a></th>
+<td class="colLast">
+<div class="block">A special type of <a href="BlockingHttpConnection.html" title="interface in io.servicetalk.http.api"><code>BlockingHttpConnection</code></a> for the exclusive use of the caller of
+ <a href="BlockingHttpClient.html#reserveConnection(io.servicetalk.http.api.HttpRequestMetaData)"><code>BlockingHttpClient.reserveConnection(HttpRequestMetaData)</code></a>.</div>
+</td>
+</tr>
+<tr class="rowColor">
 <th class="colFirst" scope="row"><a href="ReservedBlockingStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">ReservedBlockingStreamingHttpConnection</a></th>
 <td class="colLast">
 <div class="block">A special type of <a href="BlockingStreamingHttpConnection.html" title="interface in io.servicetalk.http.api"><code>BlockingStreamingHttpConnection</code></a> for the exclusive use of the caller of
@@ -461,15 +509,14 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
  <a href="BlockingStreamingHttpClient.html#reserveConnection(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.HttpRequestMetaData)"><code>BlockingStreamingHttpClient.reserveConnection(HttpExecutionStrategy, HttpRequestMetaData)</code></a>.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <th class="colFirst" scope="row"><a href="ReservedHttpConnection.html" title="interface in io.servicetalk.http.api">ReservedHttpConnection</a></th>
 <td class="colLast">
 <div class="block">A special type of <a href="HttpConnection.html" title="interface in io.servicetalk.http.api"><code>HttpConnection</code></a> for the exclusive use of the caller of
- <a href="HttpClient.html#reserveConnection(io.servicetalk.http.api.HttpRequestMetaData)"><code>HttpClient.reserveConnection(HttpRequestMetaData)</code></a> and
- <a href="HttpClient.html#reserveConnection(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.HttpRequestMetaData)"><code>HttpClient.reserveConnection(HttpExecutionStrategy, HttpRequestMetaData)</code></a>.</div>
+ <a href="HttpClient.html#reserveConnection(io.servicetalk.http.api.HttpRequestMetaData)"><code>HttpClient.reserveConnection(HttpRequestMetaData)</code></a>.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <th class="colFirst" scope="row"><a href="ReservedStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">ReservedStreamingHttpConnection</a></th>
 <td class="colLast">
 <div class="block">A special type of <a href="StreamingHttpConnection.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpConnection</code></a> for the exclusive use of the caller of
@@ -477,94 +524,96 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
  <a href="StreamingHttpClient.html#reserveConnection(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.HttpRequestMetaData)"><code>StreamingHttpClient.reserveConnection(HttpExecutionStrategy, HttpRequestMetaData)</code></a>.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <th class="colFirst" scope="row"><a href="ServiceDiscoveryRetryStrategy.html" title="interface in io.servicetalk.http.api">ServiceDiscoveryRetryStrategy</a>&lt;ResolvedAddress,&#8203;E extends <a href="../../client/api/ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;ResolvedAddress&gt;&gt;</th>
-<td class="colLast">
-<div class="block">A retry strategy for errors emitted from <a href="../../client/api/ServiceDiscoverer.html#discover(UnresolvedAddress)"><code>ServiceDiscoverer.discover(Object)</code></a>.</div>
+<td class="colLast">Deprecated.
+<div class="deprecationComment">Use <code>HttpClientBuilder.retryServiceDiscoveryErrors(BiIntFunction)</code>
+ or <code>HttpClientBuilder.retryServiceDiscoveryErrors(BiIntFunction)</code> combined with common utilities
+ from <a href="../../concurrent/api/RetryStrategies.html" title="class in io.servicetalk.concurrent.api"><code>RetryStrategies</code></a> or provide your own <a href="../../concurrent/api/BiIntFunction.html" title="interface in io.servicetalk.concurrent.api"><code>retry strategy</code></a>.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <th class="colFirst" scope="row"><a href="SingleAddressHttpClientSecurityConfigurator.html" title="interface in io.servicetalk.http.api">SingleAddressHttpClientSecurityConfigurator</a>&lt;U,&#8203;R&gt;</th>
 <td class="colLast">Deprecated.
 <div class="deprecationComment">Use <a href="SingleAddressHttpClientBuilder.html#sslConfig(io.servicetalk.transport.api.ClientSslConfig)"><code>SingleAddressHttpClientBuilder.sslConfig(ClientSslConfig)</code></a>.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <th class="colFirst" scope="row"><a href="StreamingHttpClient.html" title="interface in io.servicetalk.http.api">StreamingHttpClient</a></th>
 <td class="colLast">
 <div class="block">The equivalent of <a href="HttpClient.html" title="interface in io.servicetalk.http.api"><code>HttpClient</code></a> but that accepts <a href="StreamingHttpRequest.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpRequest</code></a> and returns
  <a href="StreamingHttpResponse.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpResponse</code></a>.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <th class="colFirst" scope="row"><a href="StreamingHttpClientFilterFactory.html" title="interface in io.servicetalk.http.api">StreamingHttpClientFilterFactory</a></th>
 <td class="colLast">
 <div class="block">A factory for <a href="StreamingHttpClientFilter.html" title="class in io.servicetalk.http.api"><code>StreamingHttpClientFilter</code></a>.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <th class="colFirst" scope="row"><a href="StreamingHttpConnection.html" title="interface in io.servicetalk.http.api">StreamingHttpConnection</a></th>
 <td class="colLast">
 <div class="block">The equivalent of <a href="HttpConnection.html" title="interface in io.servicetalk.http.api"><code>HttpConnection</code></a> but that accepts <a href="StreamingHttpRequest.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpRequest</code></a> and returns
  <a href="StreamingHttpResponse.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpResponse</code></a>.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <th class="colFirst" scope="row"><a href="StreamingHttpConnectionFilterFactory.html" title="interface in io.servicetalk.http.api">StreamingHttpConnectionFilterFactory</a></th>
 <td class="colLast">
 <div class="block">A factory for <a href="StreamingHttpConnectionFilter.html" title="class in io.servicetalk.http.api"><code>StreamingHttpConnectionFilter</code></a>.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <th class="colFirst" scope="row"><a href="StreamingHttpRequest.html" title="interface in io.servicetalk.http.api">StreamingHttpRequest</a></th>
 <td class="colLast">
 <div class="block">The equivalent of <a href="HttpRequest.html" title="interface in io.servicetalk.http.api"><code>HttpRequest</code></a> but provides the payload as a <a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <th class="colFirst" scope="row"><a href="StreamingHttpRequester.html" title="interface in io.servicetalk.http.api">StreamingHttpRequester</a></th>
 <td class="colLast">
 <div class="block">The equivalent of <a href="HttpRequester.html" title="interface in io.servicetalk.http.api"><code>HttpRequester</code></a> but that accepts <a href="StreamingHttpRequest.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpRequest</code></a> and returns
  <a href="StreamingHttpResponse.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpResponse</code></a>.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <th class="colFirst" scope="row"><a href="StreamingHttpRequestFactory.html" title="interface in io.servicetalk.http.api">StreamingHttpRequestFactory</a></th>
 <td class="colLast">
 <div class="block">A factory for creating <a href="StreamingHttpRequest.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpRequest</code></a>s.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <th class="colFirst" scope="row"><a href="StreamingHttpRequestResponseFactory.html" title="interface in io.servicetalk.http.api">StreamingHttpRequestResponseFactory</a></th>
 <td class="colLast">
 <div class="block">A combination of <a href="StreamingHttpRequestFactory.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpRequestFactory</code></a> and <a href="StreamingHttpResponseFactory.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpResponseFactory</code></a>.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <th class="colFirst" scope="row"><a href="StreamingHttpResponse.html" title="interface in io.servicetalk.http.api">StreamingHttpResponse</a></th>
 <td class="colLast">
 <div class="block">The equivalent of <a href="HttpResponse.html" title="interface in io.servicetalk.http.api"><code>HttpResponse</code></a> but provides the payload as a <a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <th class="colFirst" scope="row"><a href="StreamingHttpResponseFactory.html" title="interface in io.servicetalk.http.api">StreamingHttpResponseFactory</a></th>
 <td class="colLast">
 <div class="block">A factory for creating <a href="StreamingHttpResponse.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpResponse</code></a>s.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <th class="colFirst" scope="row"><a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api">StreamingHttpService</a></th>
 <td class="colLast">
 <div class="block">A service contract for the HTTP protocol.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <th class="colFirst" scope="row"><a href="StreamingHttpServiceFilterFactory.html" title="interface in io.servicetalk.http.api">StreamingHttpServiceFilterFactory</a></th>
 <td class="colLast">
 <div class="block">A factory for <a href="StreamingHttpServiceFilter.html" title="class in io.servicetalk.http.api"><code>StreamingHttpServiceFilter</code></a>.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <th class="colFirst" scope="row"><a href="TrailersTransformer.html" title="interface in io.servicetalk.http.api">TrailersTransformer</a>&lt;State,&#8203;Payload&gt;</th>
 <td class="colLast">
 <div class="block">A contract for transforming trailers for a streaming HTTP request/response.</div>
@@ -647,14 +696,17 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </tr>
 <tr class="altColor">
 <th class="colFirst" scope="row"><a href="DefaultServiceDiscoveryRetryStrategy.html" title="class in io.servicetalk.http.api">DefaultServiceDiscoveryRetryStrategy</a>&lt;ResolvedAddress,&#8203;E extends <a href="../../client/api/ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;ResolvedAddress&gt;&gt;</th>
-<td class="colLast">
-<div class="block">Default implementation for <a href="ServiceDiscoveryRetryStrategy.html" title="interface in io.servicetalk.http.api"><code>ServiceDiscoveryRetryStrategy</code></a>.</div>
+<td class="colLast">Deprecated.
+<div class="deprecationComment">Use <code>HttpClientBuilder.retryServiceDiscoveryErrors(BiIntFunction)</code>
+ or <code>HttpClientBuilder.retryServiceDiscoveryErrors(BiIntFunction)</code> combined with common utilities
+ from <a href="../../concurrent/api/RetryStrategies.html" title="class in io.servicetalk.concurrent.api"><code>RetryStrategies</code></a> or provide your own <a href="../../concurrent/api/BiIntFunction.html" title="interface in io.servicetalk.concurrent.api"><code>retry strategy</code></a>.</div>
 </td>
 </tr>
 <tr class="rowColor">
 <th class="colFirst" scope="row"><a href="DefaultServiceDiscoveryRetryStrategy.Builder.html" title="class in io.servicetalk.http.api">DefaultServiceDiscoveryRetryStrategy.Builder</a>&lt;ResolvedAddress,&#8203;E extends <a href="../../client/api/ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;ResolvedAddress&gt;&gt;</th>
-<td class="colLast">
-<div class="block">A builder to build instances of <a href="DefaultServiceDiscoveryRetryStrategy.html" title="class in io.servicetalk.http.api"><code>DefaultServiceDiscoveryRetryStrategy</code></a>.</div>
+<td class="colLast">Deprecated.
+<div class="deprecationComment">Use standard mechanisms for retrying using <a href="../../concurrent/api/RetryStrategies.html" title="class in io.servicetalk.concurrent.api"><code>RetryStrategies</code></a>
+ combined with <code>HttpClientBuilder.retryServiceDiscoveryErrors(BiIntFunction)</code>.</div>
 </td>
 </tr>
 <tr class="altColor">
@@ -725,9 +777,21 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </td>
 </tr>
 <tr class="rowColor">
+<th class="colFirst" scope="row"><a href="Http2ErrorCode.html" title="class in io.servicetalk.http.api">Http2ErrorCode</a></th>
+<td class="colLast">
+<div class="block">Represents an <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-7">http/2 error code</a>.</div>
+</td>
+</tr>
+<tr class="altColor">
 <th class="colFirst" scope="row"><a href="HttpApiConversions.html" title="class in io.servicetalk.http.api">HttpApiConversions</a></th>
 <td class="colLast">
 <div class="block">Conversion routines to <a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpService</code></a>.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colFirst" scope="row"><a href="HttpContextKeys.html" title="class in io.servicetalk.http.api">HttpContextKeys</a></th>
+<td class="colLast">
+<div class="block">All <a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api"><code>ContextMap.Key</code></a>(s) defined for HTTP.</div>
 </td>
 </tr>
 <tr class="altColor">
@@ -838,71 +902,77 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </td>
 </tr>
 <tr class="rowColor">
+<th class="colFirst" scope="row"><a href="RedirectConfigBuilder.html" title="class in io.servicetalk.http.api">RedirectConfigBuilder</a></th>
+<td class="colLast">
+<div class="block">Builder for <a href="RedirectConfig.html" title="interface in io.servicetalk.http.api"><code>RedirectConfig</code></a>.</div>
+</td>
+</tr>
+<tr class="altColor">
 <th class="colFirst" scope="row"><a href="ReservedStreamingHttpConnectionFilter.html" title="class in io.servicetalk.http.api">ReservedStreamingHttpConnectionFilter</a></th>
 <td class="colLast">
 <div class="block">A <a href="ReservedStreamingHttpConnectionFilter.html" title="class in io.servicetalk.http.api"><code>ReservedStreamingHttpConnectionFilter</code></a> that delegates all methods to a different
  <a href="ReservedStreamingHttpConnectionFilter.html" title="class in io.servicetalk.http.api"><code>ReservedStreamingHttpConnectionFilter</code></a>.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <th class="colFirst" scope="row"><a href="SingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;U,&#8203;R&gt;</th>
 <td class="colLast">
 <div class="block">A builder of <a href="StreamingHttpClient.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpClient</code></a> instances which call a single server based on the provided unresolved
  address.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <th class="colFirst" scope="row"><a href="StatelessTrailersTransformer.html" title="class in io.servicetalk.http.api">StatelessTrailersTransformer</a>&lt;Payload&gt;</th>
 <td class="colLast">
 <div class="block">An implementation of <a href="TrailersTransformer.html" title="interface in io.servicetalk.http.api"><code>TrailersTransformer</code></a> that does not require any state.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <th class="colFirst" scope="row"><a href="StrategyInfluencerChainBuilder.html" title="class in io.servicetalk.http.api">StrategyInfluencerChainBuilder</a></th>
 <td class="colLast">
 <div class="block">A chain of <a href="HttpExecutionStrategyInfluencer.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategyInfluencer</code></a>.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <th class="colFirst" scope="row"><a href="StreamingHttpClientFilter.html" title="class in io.servicetalk.http.api">StreamingHttpClientFilter</a></th>
 <td class="colLast">
 <div class="block">A <a href="StreamingHttpClient.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpClient</code></a> that delegates all methods to a different <a href="StreamingHttpClient.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpClient</code></a>.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <th class="colFirst" scope="row"><a href="StreamingHttpConnectionFilter.html" title="class in io.servicetalk.http.api">StreamingHttpConnectionFilter</a></th>
 <td class="colLast">
 <div class="block">A <a href="StreamingHttpConnection.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpConnection</code></a> that delegates all methods to a different <a href="StreamingHttpConnection.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpConnection</code></a>.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <th class="colFirst" scope="row"><a href="StreamingHttpRequests.html" title="class in io.servicetalk.http.api">StreamingHttpRequests</a></th>
 <td class="colLast">
 <div class="block">Factory methods for creating <a href="StreamingHttpRequest.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpRequest</code></a>s.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <th class="colFirst" scope="row"><a href="StreamingHttpResponses.html" title="class in io.servicetalk.http.api">StreamingHttpResponses</a></th>
 <td class="colLast">
 <div class="block">Factory methods for creating <a href="StreamingHttpResponse.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpResponse</code></a>s.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <th class="colFirst" scope="row"><a href="StreamingHttpServiceFilter.html" title="class in io.servicetalk.http.api">StreamingHttpServiceFilter</a></th>
 <td class="colLast">
 <div class="block">An implementation of <a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpService</code></a> that delegates all methods to the provided
  <a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpService</code></a>.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <th class="colFirst" scope="row"><a href="TestHttpServiceContext.html" title="class in io.servicetalk.http.api">TestHttpServiceContext</a></th>
 <td class="colLast">&nbsp;</td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <th class="colFirst" scope="row"><a href="TestStreamingHttpClient.html" title="class in io.servicetalk.http.api">TestStreamingHttpClient</a></th>
 <td class="colLast">&nbsp;</td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <th class="colFirst" scope="row"><a href="TestStreamingHttpConnection.html" title="class in io.servicetalk.http.api">TestStreamingHttpConnection</a></th>
 <td class="colLast">&nbsp;</td>
 </tr>
@@ -942,6 +1012,23 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
  <a href="https://tools.ietf.org/html/draft-ietf-httpbis-rfc6265bis-05#section-4.1.1">samesite-value</a>
  for the
  <a href="https://tools.ietf.org/html/draft-ietf-httpbis-rfc6265bis-05#section-5.3.7">SameSite attribute</a>.</div>
+</td>
+</tr>
+</tbody>
+</table>
+</li>
+<li class="blockList">
+<table class="typeSummary">
+<caption><span>Exception Summary</span><span class="tabEnd">&nbsp;</span></caption>
+<tr>
+<th class="colFirst" scope="col">Exception</th>
+<th class="colLast" scope="col">Description</th>
+</tr>
+<tbody>
+<tr class="altColor">
+<th class="colFirst" scope="row"><a href="Http2Exception.html" title="class in io.servicetalk.http.api">Http2Exception</a></th>
+<td class="colLast">
+<div class="block">An exception that represents a <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-7">http/2 error</a>.</div>
 </td>
 </tr>
 </tbody>

@@ -217,13 +217,13 @@ implements org.junit.jupiter.api.extension.AfterEachCallback, org.junit.jupiter.
 </tr>
 <tr id="i6" class="altColor">
 <td class="colFirst"><code>static <a href="ExecutionContextExtension.html" title="class in io.servicetalk.transport.netty.internal">ExecutionContextExtension</a></code></td>
-<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#cached(java.lang.String,java.lang.String)">cached</a></span>&#8203;(java.lang.String&nbsp;ioThreadPrefix,
-      java.lang.String&nbsp;executorThreadPrefix)</code></th>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#cached(io.servicetalk.transport.api.IoThreadFactory)">cached</a></span>&#8203;(<a href="../../api/IoThreadFactory.html" title="interface in io.servicetalk.transport.api">IoThreadFactory</a>&nbsp;ioThreadFactory)</code></th>
 <td class="colLast">&nbsp;</td>
 </tr>
 <tr id="i7" class="rowColor">
 <td class="colFirst"><code>static <a href="ExecutionContextExtension.html" title="class in io.servicetalk.transport.netty.internal">ExecutionContextExtension</a></code></td>
-<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#cached(java.util.concurrent.ThreadFactory)">cached</a></span>&#8203;(java.util.concurrent.ThreadFactory&nbsp;ioThreadFactory)</code></th>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#cached(java.lang.String,java.lang.String)">cached</a></span>&#8203;(java.lang.String&nbsp;ioThreadPrefix,
+      java.lang.String&nbsp;executorThreadPrefix)</code></th>
 <td class="colLast">&nbsp;</td>
 </tr>
 <tr id="i8" class="altColor">
@@ -249,7 +249,7 @@ implements org.junit.jupiter.api.extension.AfterEachCallback, org.junit.jupiter.
 <td class="colFirst"><code><a href="../../api/IoExecutor.html" title="interface in io.servicetalk.transport.api">IoExecutor</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#ioExecutor()">ioExecutor</a></span>()</code></th>
 <td class="colLast">
-<div class="block">Get the <a href="../../api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a> that is used to handle the IO.</div>
+<div class="block">Get the <a href="../../api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a> that is used to handle the I/O.</div>
 </td>
 </tr>
 <tr id="i12" class="altColor">
@@ -264,7 +264,7 @@ implements org.junit.jupiter.api.extension.AfterEachCallback, org.junit.jupiter.
 </tr>
 <tr id="i14" class="altColor">
 <td class="colFirst"><code>static <a href="ExecutionContextExtension.html" title="class in io.servicetalk.transport.netty.internal">ExecutionContextExtension</a></code></td>
-<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#single(java.util.concurrent.ThreadFactory)">single</a></span>&#8203;(java.util.concurrent.ThreadFactory&nbsp;ioThreadFactory)</code></th>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#single(io.servicetalk.transport.api.IoThreadFactory)">single</a></span>&#8203;(<a href="../../api/IoThreadFactory.html" title="interface in io.servicetalk.transport.api">IoThreadFactory</a>&nbsp;ioThreadFactory)</code></th>
 <td class="colLast">&nbsp;</td>
 </tr>
 </table>
@@ -330,13 +330,13 @@ implements org.junit.jupiter.api.extension.AfterEachCallback, org.junit.jupiter.
 <pre class="methodSignature">public static&nbsp;<a href="ExecutionContextExtension.html" title="class in io.servicetalk.transport.netty.internal">ExecutionContextExtension</a>&nbsp;cached()</pre>
 </li>
 </ul>
-<a id="cached(java.util.concurrent.ThreadFactory)">
+<a id="cached(io.servicetalk.transport.api.IoThreadFactory)">
 <!--   -->
 </a>
 <ul class="blockList">
 <li class="blockList">
 <h4>cached</h4>
-<pre class="methodSignature">public static&nbsp;<a href="ExecutionContextExtension.html" title="class in io.servicetalk.transport.netty.internal">ExecutionContextExtension</a>&nbsp;cached&#8203;(java.util.concurrent.ThreadFactory&nbsp;ioThreadFactory)</pre>
+<pre class="methodSignature">public static&nbsp;<a href="ExecutionContextExtension.html" title="class in io.servicetalk.transport.netty.internal">ExecutionContextExtension</a>&nbsp;cached&#8203;(<a href="../../api/IoThreadFactory.html" title="interface in io.servicetalk.transport.api">IoThreadFactory</a>&nbsp;ioThreadFactory)</pre>
 </li>
 </ul>
 <a id="cached(java.lang.String,java.lang.String)">
@@ -358,13 +358,13 @@ implements org.junit.jupiter.api.extension.AfterEachCallback, org.junit.jupiter.
 <pre class="methodSignature">public static&nbsp;<a href="ExecutionContextExtension.html" title="class in io.servicetalk.transport.netty.internal">ExecutionContextExtension</a>&nbsp;single()</pre>
 </li>
 </ul>
-<a id="single(java.util.concurrent.ThreadFactory)">
+<a id="single(io.servicetalk.transport.api.IoThreadFactory)">
 <!--   -->
 </a>
 <ul class="blockList">
 <li class="blockList">
 <h4>single</h4>
-<pre class="methodSignature">public static&nbsp;<a href="ExecutionContextExtension.html" title="class in io.servicetalk.transport.netty.internal">ExecutionContextExtension</a>&nbsp;single&#8203;(java.util.concurrent.ThreadFactory&nbsp;ioThreadFactory)</pre>
+<pre class="methodSignature">public static&nbsp;<a href="ExecutionContextExtension.html" title="class in io.servicetalk.transport.netty.internal">ExecutionContextExtension</a>&nbsp;single&#8203;(<a href="../../api/IoThreadFactory.html" title="interface in io.servicetalk.transport.api">IoThreadFactory</a>&nbsp;ioThreadFactory)</pre>
 </li>
 </ul>
 <a id="setClassLevel(boolean)">
@@ -401,12 +401,12 @@ implements org.junit.jupiter.api.extension.AfterEachCallback, org.junit.jupiter.
 <h4>ioExecutor</h4>
 <pre class="methodSignature">public&nbsp;<a href="../../api/IoExecutor.html" title="interface in io.servicetalk.transport.api">IoExecutor</a>&nbsp;ioExecutor()</pre>
 <div class="block"><span class="descfrmTypeLabel">Description copied from interface:&nbsp;<code><a href="../../api/ExecutionContext.html#ioExecutor()">ExecutionContext</a></code></span></div>
-<div class="block">Get the <a href="../../api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a> that is used to handle the IO.</div>
+<div class="block">Get the <a href="../../api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a> that is used to handle the I/O.</div>
 <dl>
 <dt><span class="overrideSpecifyLabel">Specified by:</span></dt>
 <dd><code><a href="../../api/ExecutionContext.html#ioExecutor()">ioExecutor</a></code>&nbsp;in interface&nbsp;<code><a href="../../api/ExecutionContext.html" title="interface in io.servicetalk.transport.api">ExecutionContext</a></code></dd>
 <dt><span class="returnLabel">Returns:</span></dt>
-<dd>The <a href="../../api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a> that is used to handle the.</dd>
+<dd>The <a href="../../api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a> that is used to handle the I/O.</dd>
 </dl>
 </li>
 </ul>

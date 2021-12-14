@@ -130,7 +130,7 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <div class="block">A contract to offload <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#glossary">signals</a> to and
  from any asynchronous source.
 
- <h2>Caution</h2>
+ <p><strong>Caution</strong>
  A <a href="SignalOffloader.html" title="interface in io.servicetalk.concurrent.internal"><code>SignalOffloader</code></a> instance <strong>MUST</strong> only be used for a single asynchronous execution chain at
  any given time. Reusing it across different execution chains concurrently may result in deadlock.
  Concurrent invocation of any <a href="SignalOffloader.html" title="interface in io.servicetalk.concurrent.internal"><code>SignalOffloader</code></a> methods may result in deadlock.</div>
@@ -256,7 +256,7 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <pre class="methodSignature">&lt;T&gt;&nbsp;<a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent">PublisherSource.Subscriber</a>&lt;? super T&gt;&nbsp;offloadSubscriber&#8203;(<a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent">PublisherSource.Subscriber</a>&lt;? super T&gt;&nbsp;subscriber)</pre>
 <div class="block">Decorates the passed <a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a> such that all method calls to it will be offloaded.
 
- <h2>Caution</h2>
+ <p><strong>Caution</strong>
  This method MUST not be called concurrently with itself or other offload methods here on the same
  <a href="SignalOffloader.html" title="interface in io.servicetalk.concurrent.internal"><code>SignalOffloader</code></a> instance.</div>
 <dl>
@@ -277,7 +277,7 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <h4>offloadSubscriber</h4>
 <pre class="methodSignature">&lt;T&gt;&nbsp;<a href="../SingleSource.Subscriber.html" title="interface in io.servicetalk.concurrent">SingleSource.Subscriber</a>&lt;? super T&gt;&nbsp;offloadSubscriber&#8203;(<a href="../SingleSource.Subscriber.html" title="interface in io.servicetalk.concurrent">SingleSource.Subscriber</a>&lt;? super T&gt;&nbsp;subscriber)</pre>
 <div class="block">Decorates the passed <a href="../SingleSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>SingleSource.Subscriber</code></a> such that all method calls to it will be offloaded.
- <h2>Caution</h2>
+ <p><strong>Caution</strong>
  This method MUST not be called concurrently with itself or other offload methods here on the same
  <a href="SignalOffloader.html" title="interface in io.servicetalk.concurrent.internal"><code>SignalOffloader</code></a> instance.</div>
 <dl>
@@ -299,7 +299,7 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <h4>offloadSubscriber</h4>
 <pre class="methodSignature"><a href="../CompletableSource.Subscriber.html" title="interface in io.servicetalk.concurrent">CompletableSource.Subscriber</a>&nbsp;offloadSubscriber&#8203;(<a href="../CompletableSource.Subscriber.html" title="interface in io.servicetalk.concurrent">CompletableSource.Subscriber</a>&nbsp;subscriber)</pre>
 <div class="block">Decorates the passed <a href="../CompletableSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>CompletableSource.Subscriber</code></a> such that all method calls to it will be offloaded.
- <h2>Caution</h2>
+ <p><strong>Caution</strong>
  This method MUST not be called concurrently with itself or other offload methods here on the same
  <a href="SignalOffloader.html" title="interface in io.servicetalk.concurrent.internal"><code>SignalOffloader</code></a> instance.</div>
 <dl>
@@ -320,7 +320,7 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <pre class="methodSignature">&lt;T&gt;&nbsp;<a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent">PublisherSource.Subscriber</a>&lt;? super T&gt;&nbsp;offloadSubscription&#8203;(<a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent">PublisherSource.Subscriber</a>&lt;? super T&gt;&nbsp;subscriber)</pre>
 <div class="block">Decorates the passed <a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a> such that all method calls to its <a href="../PublisherSource.Subscription.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscription</code></a> will be offloaded.
  <em>None of the <a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a> methods will be offloaded.</em>
- <h2>Caution</h2>
+ <p><strong>Caution</strong>
  This method MUST not be called concurrently with itself or other offload methods here on the same
  <a href="SignalOffloader.html" title="interface in io.servicetalk.concurrent.internal"><code>SignalOffloader</code></a> instance.</div>
 <dl>
@@ -343,7 +343,7 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <div class="block">Decorates the passed <a href="../SingleSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>SingleSource.Subscriber</code></a> such that all method calls to its <a href="../Cancellable.html" title="interface in io.servicetalk.concurrent"><code>Cancellable</code></a> will
  be offloaded.
  <em>None of the <a href="../SingleSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>SingleSource.Subscriber</code></a> methods will be offloaded.</em>
- <h2>Caution</h2>
+ <p><strong>Caution</strong>
  This method MUST not be called concurrently with itself or other offload methods here on the same
  <a href="SignalOffloader.html" title="interface in io.servicetalk.concurrent.internal"><code>SignalOffloader</code></a> instance.</div>
 <dl>
@@ -367,7 +367,7 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <div class="block">Decorates the passed <a href="../CompletableSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>CompletableSource.Subscriber</code></a> such that all method calls to its <a href="../Cancellable.html" title="interface in io.servicetalk.concurrent"><code>Cancellable</code></a>
  will be offloaded.
  <em>None of the <a href="../CompletableSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>CompletableSource.Subscriber</code></a> methods will be offloaded.</em>
- <h2>Caution</h2>LoadBalancerReadyHttpClientTest
+ <p><strong>Caution</strong> LoadBalancerReadyHttpClientTest
  This method MUST not be called concurrently with itself or other offload methods here on the same
  <a href="SignalOffloader.html" title="interface in io.servicetalk.concurrent.internal"><code>SignalOffloader</code></a> instance.</div>
 <dl>
@@ -389,11 +389,11 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
                           java.util.function.Consumer&lt;<a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent">PublisherSource.Subscriber</a>&lt;? super T&gt;&gt;&nbsp;handleSubscribe)</pre>
 <div class="block">Offloads subscribe call for the passed <a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a>.
 
- <h2>Offloading Failures</h2>
+ <p><strong>Offloading Failures</strong>
  Implementations are expected to handle failure to offload, e.g. If a thread pool is used to offload and it
  rejects task submissions. In such situations, it is expected that the passed <a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a> will be
  correctly terminated.
- <h2>Caution</h2>
+ <p><strong>Caution</strong>
  This method MUST not be called concurrently with itself or other offload methods here on the same
  <a href="SignalOffloader.html" title="interface in io.servicetalk.concurrent.internal"><code>SignalOffloader</code></a> instance.</div>
 <dl>
@@ -415,11 +415,11 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
                           java.util.function.Consumer&lt;<a href="../SingleSource.Subscriber.html" title="interface in io.servicetalk.concurrent">SingleSource.Subscriber</a>&lt;? super T&gt;&gt;&nbsp;handleSubscribe)</pre>
 <div class="block">Offloads subscribe call for the passed <a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a>.
 
- <h2>Offloading Failures</h2>
+ <p><strong>Offloading Failures</strong>
  Implementations are expected to handle failure to offload, e.g. If a thread pool is used to offload and it
  rejects task submissions. In such situations, it is expected that the passed <a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a> will be
  correctly terminated.
- <h2>Caution</h2>
+ <p><strong>Caution</strong>
  This method MUST not be called concurrently with itself or other offload methods here on the same
  <a href="SignalOffloader.html" title="interface in io.servicetalk.concurrent.internal"><code>SignalOffloader</code></a> instance.</div>
 <dl>
@@ -441,11 +441,11 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
                       java.util.function.Consumer&lt;<a href="../CompletableSource.Subscriber.html" title="interface in io.servicetalk.concurrent">CompletableSource.Subscriber</a>&gt;&nbsp;handleSubscribe)</pre>
 <div class="block">Offloads the subscribe call for the passed <a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a>.
 
- <h2>Offloading Failures</h2>
+ <p><strong>Offloading Failures</strong>
  Implementations are expected to handle failure to offload, e.g. If a thread pool is used to offload and it
  rejects task submissions. In such situations, it is expected that the passed <a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a> will be
  correctly terminated.
- <h2>Caution</h2>
+ <p><strong>Caution</strong>
  This method MUST not be called concurrently with itself or other offload methods here on the same
  <a href="SignalOffloader.html" title="interface in io.servicetalk.concurrent.internal"><code>SignalOffloader</code></a> instance.</div>
 <dl>
@@ -467,7 +467,7 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
                        java.util.function.Consumer&lt;T&gt;&nbsp;signalConsumer)</pre>
 <div class="block">Offloads the consumption of the passed <code>signal</code> by the passed <code>Consumer</code>.
 
- <h2>Caution</h2>
+ <p><strong>Caution</strong>
  This method MUST not be called concurrently with itself or other offload methods here on the same
  <a href="SignalOffloader.html" title="interface in io.servicetalk.concurrent.internal"><code>SignalOffloader</code></a> instance.</div>
 <dl>

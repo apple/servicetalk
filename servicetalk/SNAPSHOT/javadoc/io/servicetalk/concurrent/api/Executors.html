@@ -363,7 +363,7 @@ extends java.lang.Object</pre>
  <code>Executor</code> is an instance of <code>ScheduledExecutorService</code>.<p>
  Task execution will not honor cancellations unless passed <code>Executor</code>
  is an instance of <code>ExecutorService</code>.
- <h2>Long running tasks</h2>
+ <p><strong>Long running tasks</strong></p>
  <code>Executor</code> implementations are expected to run long running (blocking) tasks which may
  depend on other tasks submitted to the same <code>Executor</code> instance.
  In order to avoid deadlocks, it is generally a good idea to not allow task queuing in the
@@ -390,7 +390,7 @@ extends java.lang.Object</pre>
  is an instance of <code>ScheduledExecutorService</code>.<p>
  When a running task is cancelled, the thread running it will be interrupted.
  For overriding this behavior use <a href="#from(java.util.concurrent.ExecutorService,boolean)"><code>from(ExecutorService, boolean)</code></a>.
- <h2>Long running tasks</h2>
+ <p><strong>Long running tasks</strong></p>
  <code>Executor</code> implementations are expected to run long running (blocking) tasks which may
  depend on other tasks submitted to the same <code>Executor</code> instance.
  In order to avoid deadlocks, it is generally a good idea to not allow task queuing in the
@@ -416,7 +416,7 @@ extends java.lang.Object</pre>
 <div class="block">Creates a new <a href="Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> from the provided <code>ExecutorService</code>.
  Delayed task execution will be delegated to a global scheduler, unless passed <code>ExecutorService</code>
  is an instance of <code>ScheduledExecutorService</code>.
- <h2>Long running tasks</h2>
+ <p><strong>Long running tasks</strong></p>
  <code>Executor</code> implementations are expected to run long running (blocking) tasks which may
  depend on other tasks submitted to the same <code>Executor</code> instance.
  In order to avoid deadlocks, it is generally a good idea to not allow task queuing in the
@@ -443,7 +443,7 @@ extends java.lang.Object</pre>
 <div class="block">Creates a new <a href="Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> from the provided <code>ScheduledExecutorService</code>.
  When a running task is cancelled, the thread running it will be interrupted.
  For overriding this behavior use <a href="#from(java.util.concurrent.ScheduledExecutorService,boolean)"><code>from(ScheduledExecutorService, boolean)</code></a>.
- <h2>Long running tasks</h2>
+ <p><strong>Long running tasks</strong></p>
  <code>Executor</code> implementations are expected to run long running (blocking) tasks which may
  depend on other tasks submitted to the same <code>Executor</code> instance.
  In order to avoid deadlocks, it is generally a good idea to not allow task queuing in the
@@ -467,7 +467,7 @@ extends java.lang.Object</pre>
 <pre class="methodSignature">public static&nbsp;<a href="Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;from&#8203;(java.util.concurrent.ScheduledExecutorService&nbsp;scheduledExecutorService,
                             boolean&nbsp;mayInterruptOnCancel)</pre>
 <div class="block">Creates a new <a href="Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> from the provided <code>ScheduledExecutorService</code>.
- <h2>Long running tasks</h2>
+ <p><strong>Long running tasks</strong></p>
  <code>Executor</code> implementations are expected to run long running (blocking) tasks which may
  depend on other tasks submitted to the same <code>Executor</code> instance.
  In order to avoid deadlocks, it is generally a good idea to not allow task queuing in the
@@ -498,7 +498,7 @@ extends java.lang.Object</pre>
  For overriding this behavior use <a href="#from(java.util.concurrent.Executor,java.util.concurrent.ScheduledExecutorService,boolean)"><code>from(java.util.concurrent.Executor, ScheduledExecutorService, boolean)</code></a>.
  Task execution will not honor cancellations unless passed <code>Executor</code>
  is an instance of <code>ExecutorService</code>.
- <h2>Long running tasks</h2>
+ <p><strong>Long running tasks</strong></p>
  <code>Executor</code> implementations are expected to run long running (blocking) tasks which may
  depend on other tasks submitted to the same <code>Executor</code> instance.
  In order to avoid deadlocks, it is generally a good idea to not allow task queuing in the
@@ -529,7 +529,7 @@ extends java.lang.Object</pre>
  schedule delayed tasks.
  Task execution will not honor cancellations unless passed <code>Executor</code>
  is an instance of <code>ExecutorService</code>.
- <h2>Long running tasks</h2>
+ <p><strong>Long running tasks</strong></p>
  <code>Executor</code> implementations are expected to run long running (blocking) tasks which may
  depend on other tasks submitted to the same <code>Executor</code> instance.
  In order to avoid deadlocks, it is generally a good idea to not allow task queuing in the

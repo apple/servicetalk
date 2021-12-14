@@ -26,8 +26,8 @@
     catch(err) {
     }
 //-->
-var data = {"i0":6,"i1":6,"i2":6,"i3":6,"i4":6};
-var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"]};
+var data = {"i0":38,"i1":18,"i2":6,"i3":6,"i4":6,"i5":6};
+var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"],16:["t5","Default Methods"],32:["t6","Deprecated Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
 var tableTab = "tableTab";
@@ -150,7 +150,7 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </a>
 <h3>Method Summary</h3>
 <table class="memberSummary">
-<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t3" class="tableTab"><span><a href="javascript:show(4);">Abstract Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
+<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t3" class="tableTab"><span><a href="javascript:show(4);">Abstract Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t5" class="tableTab"><span><a href="javascript:show(16);">Default Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t6" class="tableTab"><span><a href="javascript:show(32);">Deprecated Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
 <tr>
 <th class="colFirst" scope="col">Modifier and Type</th>
 <th class="colSecond" scope="col">Method</th>
@@ -160,31 +160,40 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <td class="colFirst"><code>void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#itemRead()">itemRead</a></span>()</code></th>
 <td class="colLast">
-<div class="block">Invokes when a new item is read.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#itemRead(java.lang.Object)"><code>itemRead(Object)</code></a></div>
+</div>
 </td>
 </tr>
 <tr id="i1" class="rowColor">
+<td class="colFirst"><code>default void</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#itemRead(java.lang.Object)">itemRead</a></span>&#8203;(java.lang.Object&nbsp;item)</code></th>
+<td class="colLast">
+<div class="block">Invokes when a new item is read.</div>
+</td>
+</tr>
+<tr id="i2" class="altColor">
 <td class="colFirst"><code>void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#readCancelled()">readCancelled</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Callback when the read operation is cancelled.</div>
 </td>
 </tr>
-<tr id="i2" class="altColor">
+<tr id="i3" class="rowColor">
 <td class="colFirst"><code>void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#readComplete()">readComplete</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Callback when the entire read operation completes successfully.</div>
 </td>
 </tr>
-<tr id="i3" class="rowColor">
+<tr id="i4" class="altColor">
 <td class="colFirst"><code>void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#readFailed(java.lang.Throwable)">readFailed</a></span>&#8203;(java.lang.Throwable&nbsp;cause)</code></th>
 <td class="colLast">
 <div class="block">Callback when the read operation fails with an <code>error</code>.</div>
 </td>
 </tr>
-<tr id="i4" class="altColor">
+<tr id="i5" class="rowColor">
 <td class="colFirst"><code>void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#requestedToRead(long)">requestedToRead</a></span>&#8203;(long&nbsp;n)</code></th>
 <td class="colLast">
@@ -228,10 +237,29 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <ul class="blockList">
 <li class="blockList">
 <h4>itemRead</h4>
-<pre class="methodSignature">void&nbsp;itemRead()</pre>
+<pre class="methodSignature">@Deprecated
+void&nbsp;itemRead()</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#itemRead(java.lang.Object)"><code>itemRead(Object)</code></a></div>
+</div>
 <div class="block">Invokes when a new item is read.
  <p>
  Content of the read items should be inspected at the higher level API when these items are consumed.</div>
+</li>
+</ul>
+<a id="itemRead(java.lang.Object)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>itemRead</h4>
+<pre class="methodSignature">default&nbsp;void&nbsp;itemRead&#8203;(@Nullable
+                      java.lang.Object&nbsp;item)</pre>
+<div class="block">Invokes when a new item is read.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>item</code> - an item that was read</dd>
+</dl>
 </li>
 </ul>
 <a id="readFailed(java.lang.Throwable)">

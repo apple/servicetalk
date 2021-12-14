@@ -26,8 +26,8 @@
     catch(err) {
     }
 //-->
-var data = {"i0":10,"i1":10,"i2":10,"i3":9,"i4":10,"i5":10};
-var tabs = {65535:["t0","All Methods"],1:["t1","Static Methods"],2:["t2","Instance Methods"],8:["t4","Concrete Methods"]};
+var data = {"i0":42,"i1":42,"i2":42,"i3":41,"i4":42,"i5":42,"i6":42};
+var tabs = {65535:["t0","All Methods"],1:["t1","Static Methods"],2:["t2","Instance Methods"],8:["t4","Concrete Methods"],32:["t6","Deprecated Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
 var tableTab = "tableTab";
@@ -139,20 +139,15 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <dd><code><a href="../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api">LoadBalancer</a>&lt;C&gt;</code>, <code><a href="../concurrent/api/AsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">AsyncCloseable</a></code>, <code><a href="../concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a></code></dd>
 </dl>
 <hr>
-<pre>public final class <span class="typeNameLabel">RoundRobinLoadBalancer&lt;ResolvedAddress,&#8203;C extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</span>
+<pre>@Deprecated
+public final class <span class="typeNameLabel">RoundRobinLoadBalancer&lt;ResolvedAddress,&#8203;C extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</span>
 extends java.lang.Object
 implements <a href="../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api">LoadBalancer</a>&lt;C&gt;</pre>
-<div class="block">A <a href="../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> that uses a round robin strategy for selecting addresses. It has the following behaviour:
- <ul>
- <li>Round robining is done at address level.</li>
- <li>Connections are created lazily, without any concurrency control on their creation.
- This can lead to over-provisioning connections when dealing with a requests surge.</li>
- <li>Existing connections are reused unless a selector passed to <a href="#selectConnection(java.util.function.Predicate)"><code>selectConnection(Predicate)</code></a> suggests
- otherwise.
- This can lead to situations where connections will be used to their maximum capacity (for example in the context of
- pipelining) before new connections are created.</li>
- <li>Closed connections are automatically pruned.</li>
- </ul></div>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="RoundRobinLoadBalancerFactory.html" title="class in io.servicetalk.loadbalancer"><code>RoundRobinLoadBalancerFactory</code></a> to provide instances of this
+ <a href="../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>. This class will become package-private in the future.</div>
+</div>
+<div class="block">Consult <a href="RoundRobinLoadBalancer.RoundRobinLoadBalancerFactory.html" title="class in io.servicetalk.loadbalancer"><code>RoundRobinLoadBalancer.RoundRobinLoadBalancerFactory</code></a> for a description of this <a href="../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> type.</div>
 </li>
 </ul>
 </div>
@@ -177,7 +172,10 @@ implements <a href="../client/api/LoadBalancer.html" title="interface in io.serv
 <td class="colFirst"><code>static class&nbsp;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="RoundRobinLoadBalancer.RoundRobinLoadBalancerFactory.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancer.RoundRobinLoadBalancerFactory</a>&lt;<a href="RoundRobinLoadBalancer.RoundRobinLoadBalancerFactory.html" title="type parameter in RoundRobinLoadBalancer.RoundRobinLoadBalancerFactory">ResolvedAddress</a>,&#8203;<a href="RoundRobinLoadBalancer.RoundRobinLoadBalancerFactory.html" title="type parameter in RoundRobinLoadBalancer.RoundRobinLoadBalancerFactory">C</a> extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</span></code></th>
 <td class="colLast">
-<div class="block"><a href="../client/api/LoadBalancerFactory.html" title="interface in io.servicetalk.client.api"><code>LoadBalancerFactory</code></a> for <a href="RoundRobinLoadBalancer.html" title="class in io.servicetalk.loadbalancer"><code>RoundRobinLoadBalancer</code></a>.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="RoundRobinLoadBalancerFactory.html" title="class in io.servicetalk.loadbalancer"><code>RoundRobinLoadBalancerFactory</code></a> to build instances
+ of this <a href="../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a></div>
+</div>
 </td>
 </tr>
 </table>
@@ -201,7 +199,10 @@ implements <a href="../client/api/LoadBalancer.html" title="interface in io.serv
 <th class="colConstructorName" scope="row"><code><span class="memberNameLink"><a href="#%3Cinit%3E(io.servicetalk.concurrent.api.Publisher,io.servicetalk.client.api.ConnectionFactory)">RoundRobinLoadBalancer</a></span>&#8203;(<a href="../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;? extends <a href="../client/api/ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;<a href="RoundRobinLoadBalancer.html" title="type parameter in RoundRobinLoadBalancer">ResolvedAddress</a>&gt;&gt;&nbsp;eventPublisher,
                       <a href="../client/api/ConnectionFactory.html" title="interface in io.servicetalk.client.api">ConnectionFactory</a>&lt;<a href="RoundRobinLoadBalancer.html" title="type parameter in RoundRobinLoadBalancer">ResolvedAddress</a>,&#8203;? extends <a href="RoundRobinLoadBalancer.html" title="type parameter in RoundRobinLoadBalancer">C</a>&gt;&nbsp;connectionFactory)</code></th>
 <td class="colLast">
-<div class="block">Creates a new instance.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="RoundRobinLoadBalancerFactory.html" title="class in io.servicetalk.loadbalancer"><code>RoundRobinLoadBalancerFactory</code></a> to build instances
+ of this <a href="../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>.</div>
+</div>
 </td>
 </tr>
 </table>
@@ -216,7 +217,7 @@ implements <a href="../client/api/LoadBalancer.html" title="interface in io.serv
 </a>
 <h3>Method Summary</h3>
 <table class="memberSummary">
-<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t1" class="tableTab"><span><a href="javascript:show(1);">Static Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t4" class="tableTab"><span><a href="javascript:show(8);">Concrete Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
+<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t1" class="tableTab"><span><a href="javascript:show(1);">Static Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t4" class="tableTab"><span><a href="javascript:show(8);">Concrete Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t6" class="tableTab"><span><a href="javascript:show(32);">Deprecated Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
 <tr>
 <th class="colFirst" scope="col">Modifier and Type</th>
 <th class="colSecond" scope="col">Method</th>
@@ -226,6 +227,7 @@ implements <a href="../client/api/LoadBalancer.html" title="interface in io.serv
 <td class="colFirst"><code><a href="../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#closeAsync()">closeAsync</a></span>()</code></th>
 <td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Used to close/shutdown a resource.</div>
 </td>
 </tr>
@@ -233,6 +235,7 @@ implements <a href="../client/api/LoadBalancer.html" title="interface in io.serv
 <td class="colFirst"><code><a href="../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#closeAsyncGracefully()">closeAsyncGracefully</a></span>()</code></th>
 <td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Used to close/shutdown a resource, similar to <a href="../concurrent/api/AsyncCloseable.html#closeAsync()"><code>AsyncCloseable.closeAsync()</code></a>, but attempts to cleanup state before
  abruptly closing.</div>
 </td>
@@ -241,6 +244,7 @@ implements <a href="../client/api/LoadBalancer.html" title="interface in io.serv
 <td class="colFirst"><code><a href="../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;java.lang.Object&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#eventStream()">eventStream</a></span>()</code></th>
 <td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">A <a href="../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> of events provided by this <a href="../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>.</div>
 </td>
 </tr>
@@ -248,13 +252,17 @@ implements <a href="../client/api/LoadBalancer.html" title="interface in io.serv
 <td class="colFirst"><code>static &lt;ResolvedAddress,&#8203;C extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;<br><a href="RoundRobinLoadBalancer.RoundRobinLoadBalancerFactory.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancer.RoundRobinLoadBalancerFactory</a>&lt;ResolvedAddress,&#8203;C&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#newRoundRobinFactory()">newRoundRobinFactory</a></span>()</code></th>
 <td class="colLast">
-<div class="block">Create a <a href="../client/api/LoadBalancerFactory.html" title="interface in io.servicetalk.client.api"><code>LoadBalancerFactory</code></a> that creates instances of <a href="RoundRobinLoadBalancer.html" title="class in io.servicetalk.loadbalancer"><code>RoundRobinLoadBalancer</code></a>.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="RoundRobinLoadBalancerFactory.html" title="class in io.servicetalk.loadbalancer"><code>RoundRobinLoadBalancerFactory</code></a> to build instances
+ of this <a href="../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>.</div>
+</div>
 </td>
 </tr>
 <tr id="i4" class="altColor">
 <td class="colFirst"><code><a href="../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#onClose()">onClose</a></span>()</code></th>
 <td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Returns a <a href="../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that is notified once the <a href="../concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api"><code>ListenableAsyncCloseable</code></a> was closed.</div>
 </td>
 </tr>
@@ -262,8 +270,16 @@ implements <a href="../client/api/LoadBalancer.html" title="interface in io.serv
 <td class="colFirst"><code><a href="../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="RoundRobinLoadBalancer.html" title="type parameter in RoundRobinLoadBalancer">C</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#selectConnection(java.util.function.Predicate)">selectConnection</a></span>&#8203;(java.util.function.Predicate&lt;<a href="RoundRobinLoadBalancer.html" title="type parameter in RoundRobinLoadBalancer">C</a>&gt;&nbsp;selector)</code></th>
 <td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Select the most appropriate connection for a request.</div>
 </td>
+</tr>
+<tr id="i6" class="altColor">
+<td class="colFirst"><code>java.lang.String</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#toString()">toString</a></span>()</code></th>
+<td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span></div>
+&nbsp;</td>
 </tr>
 </table>
 <ul class="blockList">
@@ -271,7 +287,7 @@ implements <a href="../client/api/LoadBalancer.html" title="interface in io.serv
 <!--   -->
 </a>
 <h3>Methods inherited from class&nbsp;java.lang.Object</h3>
-<code>clone, equals, finalize, getClass, hashCode, notify, notifyAll, toString, wait, wait, wait</code></li>
+<code>clone, equals, finalize, getClass, hashCode, notify, notifyAll, wait, wait, wait</code></li>
 </ul>
 </li>
 </ul>
@@ -295,8 +311,13 @@ implements <a href="../client/api/LoadBalancer.html" title="interface in io.serv
 <ul class="blockListLast">
 <li class="blockList">
 <h4>RoundRobinLoadBalancer</h4>
-<pre>public&nbsp;RoundRobinLoadBalancer&#8203;(<a href="../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;? extends <a href="../client/api/ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;<a href="RoundRobinLoadBalancer.html" title="type parameter in RoundRobinLoadBalancer">ResolvedAddress</a>&gt;&gt;&nbsp;eventPublisher,
+<pre>@Deprecated
+public&nbsp;RoundRobinLoadBalancer&#8203;(<a href="../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;? extends <a href="../client/api/ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;<a href="RoundRobinLoadBalancer.html" title="type parameter in RoundRobinLoadBalancer">ResolvedAddress</a>&gt;&gt;&nbsp;eventPublisher,
                               <a href="../client/api/ConnectionFactory.html" title="interface in io.servicetalk.client.api">ConnectionFactory</a>&lt;<a href="RoundRobinLoadBalancer.html" title="type parameter in RoundRobinLoadBalancer">ResolvedAddress</a>,&#8203;? extends <a href="RoundRobinLoadBalancer.html" title="type parameter in RoundRobinLoadBalancer">C</a>&gt;&nbsp;connectionFactory)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="RoundRobinLoadBalancerFactory.html" title="class in io.servicetalk.loadbalancer"><code>RoundRobinLoadBalancerFactory</code></a> to build instances
+ of this <a href="../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>.</div>
+</div>
 <div class="block">Creates a new instance.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
@@ -321,14 +342,19 @@ implements <a href="../client/api/LoadBalancer.html" title="interface in io.serv
 <ul class="blockList">
 <li class="blockList">
 <h4>newRoundRobinFactory</h4>
-<pre class="methodSignature">public static&nbsp;&lt;ResolvedAddress,&#8203;C extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;&nbsp;<a href="RoundRobinLoadBalancer.RoundRobinLoadBalancerFactory.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancer.RoundRobinLoadBalancerFactory</a>&lt;ResolvedAddress,&#8203;C&gt;&nbsp;newRoundRobinFactory()</pre>
-<div class="block">Create a <a href="../client/api/LoadBalancerFactory.html" title="interface in io.servicetalk.client.api"><code>LoadBalancerFactory</code></a> that creates instances of <a href="RoundRobinLoadBalancer.html" title="class in io.servicetalk.loadbalancer"><code>RoundRobinLoadBalancer</code></a>.</div>
+<pre class="methodSignature">@Deprecated
+public static&nbsp;&lt;ResolvedAddress,&#8203;C extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;&nbsp;<a href="RoundRobinLoadBalancer.RoundRobinLoadBalancerFactory.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancer.RoundRobinLoadBalancerFactory</a>&lt;ResolvedAddress,&#8203;C&gt;&nbsp;newRoundRobinFactory()</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="RoundRobinLoadBalancerFactory.html" title="class in io.servicetalk.loadbalancer"><code>RoundRobinLoadBalancerFactory</code></a> to build instances
+ of this <a href="../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>.</div>
+</div>
+<div class="block">Please use <a href="RoundRobinLoadBalancerFactory.html" title="class in io.servicetalk.loadbalancer"><code>RoundRobinLoadBalancerFactory</code></a> instead of this factory.</div>
 <dl>
 <dt><span class="paramLabel">Type Parameters:</span></dt>
 <dd><code>ResolvedAddress</code> - The resolved address type.</dd>
 <dd><code>C</code> - The type of connection.</dd>
 <dt><span class="returnLabel">Returns:</span></dt>
-<dd>a <a href="../client/api/LoadBalancerFactory.html" title="interface in io.servicetalk.client.api"><code>LoadBalancerFactory</code></a> that creates instances of <a href="RoundRobinLoadBalancer.html" title="class in io.servicetalk.loadbalancer"><code>RoundRobinLoadBalancer</code></a>.</dd>
+<dd>a <a href="../client/api/LoadBalancerFactory.html" title="interface in io.servicetalk.client.api"><code>LoadBalancerFactory</code></a> that creates instances of this class.</dd>
 </dl>
 </li>
 </ul>
@@ -339,6 +365,7 @@ implements <a href="../client/api/LoadBalancer.html" title="interface in io.serv
 <li class="blockList">
 <h4>selectConnection</h4>
 <pre class="methodSignature">public&nbsp;<a href="../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="RoundRobinLoadBalancer.html" title="type parameter in RoundRobinLoadBalancer">C</a>&gt;&nbsp;selectConnection&#8203;(java.util.function.Predicate&lt;<a href="RoundRobinLoadBalancer.html" title="type parameter in RoundRobinLoadBalancer">C</a>&gt;&nbsp;selector)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block"><span class="descfrmTypeLabel">Description copied from interface:&nbsp;<code><a href="../client/api/LoadBalancer.html#selectConnection(java.util.function.Predicate)">LoadBalancer</a></code></span></div>
 <div class="block">Select the most appropriate connection for a request. Returned connection may be used concurrently for other
  requests.</div>
@@ -361,6 +388,7 @@ implements <a href="../client/api/LoadBalancer.html" title="interface in io.serv
 <li class="blockList">
 <h4>eventStream</h4>
 <pre class="methodSignature">public&nbsp;<a href="../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;java.lang.Object&gt;&nbsp;eventStream()</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block"><span class="descfrmTypeLabel">Description copied from interface:&nbsp;<code><a href="../client/api/LoadBalancer.html#eventStream()">LoadBalancer</a></code></span></div>
 <div class="block">A <a href="../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> of events provided by this <a href="../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>. This maybe used to broadcast internal state
  of this <a href="../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> to provide hints/visibility for external usage.</div>
@@ -372,6 +400,20 @@ implements <a href="../client/api/LoadBalancer.html" title="interface in io.serv
 </dl>
 </li>
 </ul>
+<a id="toString()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>toString</h4>
+<pre class="methodSignature">public&nbsp;java.lang.String&nbsp;toString()</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
+<dl>
+<dt><span class="overrideSpecifyLabel">Overrides:</span></dt>
+<dd><code>toString</code>&nbsp;in class&nbsp;<code>java.lang.Object</code></dd>
+</dl>
+</li>
+</ul>
 <a id="onClose()">
 <!--   -->
 </a>
@@ -379,6 +421,7 @@ implements <a href="../client/api/LoadBalancer.html" title="interface in io.serv
 <li class="blockList">
 <h4>onClose</h4>
 <pre class="methodSignature">public&nbsp;<a href="../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>&nbsp;onClose()</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block"><span class="descfrmTypeLabel">Description copied from interface:&nbsp;<code><a href="../concurrent/api/ListenableAsyncCloseable.html#onClose()">ListenableAsyncCloseable</a></code></span></div>
 <div class="block">Returns a <a href="../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that is notified once the <a href="../concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api"><code>ListenableAsyncCloseable</code></a> was closed.</div>
 <dl>
@@ -396,6 +439,7 @@ implements <a href="../client/api/LoadBalancer.html" title="interface in io.serv
 <li class="blockList">
 <h4>closeAsync</h4>
 <pre class="methodSignature">public&nbsp;<a href="../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>&nbsp;closeAsync()</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block"><span class="descfrmTypeLabel">Description copied from interface:&nbsp;<code><a href="../concurrent/api/AsyncCloseable.html#closeAsync()">AsyncCloseable</a></code></span></div>
 <div class="block">Used to close/shutdown a resource.</div>
 <dl>
@@ -413,6 +457,7 @@ implements <a href="../client/api/LoadBalancer.html" title="interface in io.serv
 <li class="blockList">
 <h4>closeAsyncGracefully</h4>
 <pre class="methodSignature">public&nbsp;<a href="../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>&nbsp;closeAsyncGracefully()</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block"><span class="descfrmTypeLabel">Description copied from interface:&nbsp;<code><a href="../concurrent/api/AsyncCloseable.html#closeAsyncGracefully()">AsyncCloseable</a></code></span></div>
 <div class="block">Used to close/shutdown a resource, similar to <a href="../concurrent/api/AsyncCloseable.html#closeAsync()"><code>AsyncCloseable.closeAsync()</code></a>, but attempts to cleanup state before
  abruptly closing. This provides a hint that implementations can use to stop accepting new work and finish in

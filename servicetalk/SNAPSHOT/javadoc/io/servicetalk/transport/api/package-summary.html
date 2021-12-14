@@ -215,6 +215,18 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </td>
 </tr>
 <tr class="altColor">
+<th class="colFirst" scope="row"><a href="IoThreadFactory.html" title="interface in io.servicetalk.transport.api">IoThreadFactory</a>&lt;T extends java.lang.Thread &amp; <a href="IoThreadFactory.IoThread.html" title="interface in io.servicetalk.transport.api">IoThreadFactory.IoThread</a>&gt;</th>
+<td class="colLast">
+<div class="block">Thread factory for use with <a href="IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a>.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colFirst" scope="row"><a href="IoThreadFactory.IoThread.html" title="interface in io.servicetalk.transport.api">IoThreadFactory.IoThread</a></th>
+<td class="colLast">
+<div class="block">Marker interface for IO Threads.</div>
+</td>
+</tr>
+<tr class="altColor">
 <th class="colFirst" scope="row"><a href="RetryableException.html" title="interface in io.servicetalk.transport.api">RetryableException</a></th>
 <td class="colLast">
 <div class="block">A marker-interface for exceptions which are safely retryable and occur only before ServiceTalk starts writing a
@@ -281,49 +293,67 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </td>
 </tr>
 <tr class="altColor">
+<th class="colFirst" scope="row"><a href="DelegatingClientSslConfig.html" title="class in io.servicetalk.transport.api">DelegatingClientSslConfig</a></th>
+<td class="colLast">
+<div class="block">Wrap a <a href="ClientSslConfig.html" title="interface in io.servicetalk.transport.api"><code>ClientSslConfig</code></a> and delegate all methods to it.</div>
+</td>
+</tr>
+<tr class="rowColor">
 <th class="colFirst" scope="row"><a href="DelegatingConnectionAcceptor.html" title="class in io.servicetalk.transport.api">DelegatingConnectionAcceptor</a></th>
 <td class="colLast">
 <div class="block">An implementation of <a href="ConnectionAcceptor.html" title="interface in io.servicetalk.transport.api"><code>ConnectionAcceptor</code></a> that delegates all methods to another <a href="ConnectionAcceptor.html" title="interface in io.servicetalk.transport.api"><code>ConnectionAcceptor</code></a>.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <th class="colFirst" scope="row"><a href="DelegatingConnectionContext.html" title="class in io.servicetalk.transport.api">DelegatingConnectionContext</a></th>
 <td class="colLast">
 <div class="block">A <a href="ConnectionContext.html" title="interface in io.servicetalk.transport.api"><code>ConnectionContext</code></a> implementation that delegates all calls to a provided <a href="ConnectionContext.html" title="interface in io.servicetalk.transport.api"><code>ConnectionContext</code></a>.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <th class="colFirst" scope="row"><a href="DelegatingExecutionContext.html" title="class in io.servicetalk.transport.api">DelegatingExecutionContext</a></th>
 <td class="colLast">
 <div class="block">An <a href="ExecutionContext.html" title="interface in io.servicetalk.transport.api"><code>ExecutionContext</code></a> implementation that delegates all calls to a provided <a href="ExecutionContext.html" title="interface in io.servicetalk.transport.api"><code>ExecutionContext</code></a>.</div>
 </td>
 </tr>
+<tr class="altColor">
+<th class="colFirst" scope="row"><a href="DelegatingServerSslConfig.html" title="class in io.servicetalk.transport.api">DelegatingServerSslConfig</a></th>
+<td class="colLast">
+<div class="block">Wrap a <a href="ServerSslConfig.html" title="interface in io.servicetalk.transport.api"><code>ServerSslConfig</code></a> and delegate all methods to it.</div>
+</td>
+</tr>
 <tr class="rowColor">
+<th class="colFirst" scope="row"><a href="DelegatingSslConfig.html" title="class in io.servicetalk.transport.api">DelegatingSslConfig</a>&lt;T extends <a href="SslConfig.html" title="interface in io.servicetalk.transport.api">SslConfig</a>&gt;</th>
+<td class="colLast">
+<div class="block">Wrap a <a href="SslConfig.html" title="interface in io.servicetalk.transport.api"><code>SslConfig</code></a> and delegate all methods to it.</div>
+</td>
+</tr>
+<tr class="altColor">
 <th class="colFirst" scope="row"><a href="DomainSocketAddress.html" title="class in io.servicetalk.transport.api">DomainSocketAddress</a></th>
 <td class="colLast">
 <div class="block">An address which represents a socket belonging to the
  <a href="http://man7.org/linux/man-pages/man7/unix.7.html">AF_UNIX socket family</a>.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <th class="colFirst" scope="row"><a href="FileDescriptorSocketAddress.html" title="class in io.servicetalk.transport.api">FileDescriptorSocketAddress</a></th>
 <td class="colLast">
 <div class="block">Special <code>SocketAddress</code> that allows to wrap an already existing filedescriptor.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <th class="colFirst" scope="row"><a href="ServerSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ServerSslConfigBuilder</a></th>
 <td class="colLast">
 <div class="block">Default builder for <a href="ServerSslConfig.html" title="interface in io.servicetalk.transport.api"><code>ServerSslConfig</code></a> objects.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <th class="colFirst" scope="row"><a href="ServiceTalkSocketOptions.html" title="class in io.servicetalk.transport.api">ServiceTalkSocketOptions</a></th>
 <td class="colLast">
 <div class="block"><code>SocketOption</code>s that can be used beside <code>StandardSocketOptions</code>.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <th class="colFirst" scope="row"><a href="TransportObservers.html" title="class in io.servicetalk.transport.api">TransportObservers</a></th>
 <td class="colLast">
 <div class="block">A factory to create different <a href="TransportObserver.html" title="interface in io.servicetalk.transport.api"><code>TransportObserver</code></a>s.</div>

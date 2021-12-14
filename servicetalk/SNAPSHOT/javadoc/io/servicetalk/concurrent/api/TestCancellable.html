@@ -26,8 +26,8 @@
     catch(err) {
     }
 //-->
-var data = {"i0":10,"i1":10,"i2":10,"i3":10};
-var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],8:["t4","Concrete Methods"]};
+var data = {"i0":10,"i1":42,"i2":10,"i3":10};
+var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],8:["t4","Concrete Methods"],32:["t6","Deprecated Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
 var tableTab = "tableTab";
@@ -194,7 +194,7 @@ implements <a href="../Cancellable.html" title="interface in io.servicetalk.conc
 </a>
 <h3>Method Summary</h3>
 <table class="memberSummary">
-<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t4" class="tableTab"><span><a href="javascript:show(8);">Concrete Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
+<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t4" class="tableTab"><span><a href="javascript:show(8);">Concrete Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t6" class="tableTab"><span><a href="javascript:show(32);">Deprecated Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
 <tr>
 <th class="colFirst" scope="col">Modifier and Type</th>
 <th class="colSecond" scope="col">Method</th>
@@ -211,7 +211,9 @@ implements <a href="../Cancellable.html" title="interface in io.servicetalk.conc
 <td class="colFirst"><code>void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#awaitCancelledUninterruptibly()">awaitCancelledUninterruptibly</a></span>()</code></th>
 <td class="colLast">
-<div class="block">Wait until <a href="#cancel()"><code>cancel()</code></a> is called without being interrupted.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#awaitCancelled()"><code>awaitCancelled()</code></a> instead.</div>
+</div>
 </td>
 </tr>
 <tr id="i2" class="altColor">
@@ -323,7 +325,11 @@ implements <a href="../Cancellable.html" title="interface in io.servicetalk.conc
 <ul class="blockListLast">
 <li class="blockList">
 <h4>awaitCancelledUninterruptibly</h4>
-<pre class="methodSignature">public final&nbsp;void&nbsp;awaitCancelledUninterruptibly()</pre>
+<pre class="methodSignature">@Deprecated
+public final&nbsp;void&nbsp;awaitCancelledUninterruptibly()</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#awaitCancelled()"><code>awaitCancelled()</code></a> instead.</div>
+</div>
 <div class="block">Wait until <a href="#cancel()"><code>cancel()</code></a> is called without being interrupted. This method catches an
  <code>InterruptedException</code> and discards it silently.</div>
 </li>

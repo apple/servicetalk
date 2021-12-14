@@ -26,7 +26,7 @@
     catch(err) {
     }
 //-->
-var data = {"i0":10,"i1":10,"i2":10,"i3":10};
+var data = {"i0":10,"i1":10,"i2":10,"i3":10,"i4":10};
 var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],8:["t4","Concrete Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
@@ -184,7 +184,27 @@ implements <a href="../api/HttpHeadersFactory.html" title="interface in io.servi
 <th class="colConstructorName" scope="row"><code><span class="memberNameLink"><a href="#%3Cinit%3E(boolean,boolean)">H2HeadersFactory</a></span>&#8203;(boolean&nbsp;validateNames,
                 boolean&nbsp;validateCookies)</code></th>
 <td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#%3Cinit%3E(boolean,boolean,boolean)"><code>H2HeadersFactory(boolean, boolean, boolean)</code></a>.</div>
+</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colConstructorName" scope="row"><code><span class="memberNameLink"><a href="#%3Cinit%3E(boolean,boolean,boolean)">H2HeadersFactory</a></span>&#8203;(boolean&nbsp;validateNames,
+                boolean&nbsp;validateCookies,
+                boolean&nbsp;validateValues)</code></th>
+<td class="colLast">
 <div class="block">Create an instance of the factory with the default array size hint.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colConstructorName" scope="row"><code><span class="memberNameLink"><a href="#%3Cinit%3E(boolean,boolean,boolean,int,int)">H2HeadersFactory</a></span>&#8203;(boolean&nbsp;validateNames,
+                boolean&nbsp;validateCookies,
+                boolean&nbsp;validateValues,
+                int&nbsp;headersArraySizeHint,
+                int&nbsp;trailersArraySizeHint)</code></th>
+<td class="colLast">
+<div class="block">Create an instance of the factory.</div>
 </td>
 </tr>
 <tr class="rowColor">
@@ -193,7 +213,9 @@ implements <a href="../api/HttpHeadersFactory.html" title="interface in io.servi
                 int&nbsp;headersArraySizeHint,
                 int&nbsp;trailersArraySizeHint)</code></th>
 <td class="colLast">
-<div class="block">Create an instance of the factory.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#%3Cinit%3E(boolean,boolean,boolean,int,int)"><code>H2HeadersFactory(boolean, boolean, boolean, int, int)</code></a>.</div>
+</div>
 </td>
 </tr>
 </table>
@@ -241,7 +263,14 @@ implements <a href="../api/HttpHeadersFactory.html" title="interface in io.servi
 <td class="colFirst"><code>boolean</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#validateCookies()">validateCookies</a></span>()</code></th>
 <td class="colLast">
-<div class="block">Determine if a cookies should be validated during parsing into <a href="../api/HttpSetCookie.html" title="interface in io.servicetalk.http.api"><code>HttpSetCookie</code></a>s.</div>
+<div class="block">Determine if cookies should be validated during parsing into <a href="../api/HttpSetCookie.html" title="interface in io.servicetalk.http.api"><code>HttpSetCookie</code></a>s.</div>
+</td>
+</tr>
+<tr id="i4" class="altColor">
+<td class="colFirst"><code>boolean</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#validateValues()">validateValues</a></span>()</code></th>
+<td class="colLast">
+<div class="block">Determine if header values should be validated during parsing into <a href="../api/HttpHeaders.html" title="interface in io.servicetalk.http.api"><code>HttpHeaders</code></a>s.</div>
 </td>
 </tr>
 </table>
@@ -293,8 +322,12 @@ implements <a href="../api/HttpHeadersFactory.html" title="interface in io.servi
 <ul class="blockList">
 <li class="blockList">
 <h4>H2HeadersFactory</h4>
-<pre>public&nbsp;H2HeadersFactory&#8203;(boolean&nbsp;validateNames,
+<pre>@Deprecated
+public&nbsp;H2HeadersFactory&#8203;(boolean&nbsp;validateNames,
                         boolean&nbsp;validateCookies)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#%3Cinit%3E(boolean,boolean,boolean)"><code>H2HeadersFactory(boolean, boolean, boolean)</code></a>.</div>
+</div>
 <div class="block">Create an instance of the factory with the default array size hint.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
@@ -303,7 +336,49 @@ implements <a href="../api/HttpHeadersFactory.html" title="interface in io.servi
 </dl>
 </li>
 </ul>
+<a id="&lt;init&gt;(boolean,boolean,boolean)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>H2HeadersFactory</h4>
+<pre>public&nbsp;H2HeadersFactory&#8203;(boolean&nbsp;validateNames,
+                        boolean&nbsp;validateCookies,
+                        boolean&nbsp;validateValues)</pre>
+<div class="block">Create an instance of the factory with the default array size hint.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>validateNames</code> - <code>true</code> to validate header/trailer names.</dd>
+<dd><code>validateCookies</code> - <code>true</code> to validate cookie contents when parsing.</dd>
+<dd><code>validateValues</code> - <code>true</code> to validate header values.</dd>
+</dl>
+</li>
+</ul>
 <a id="&lt;init&gt;(boolean,boolean,int,int)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>H2HeadersFactory</h4>
+<pre>@Deprecated
+public&nbsp;H2HeadersFactory&#8203;(boolean&nbsp;validateNames,
+                        boolean&nbsp;validateCookies,
+                        int&nbsp;headersArraySizeHint,
+                        int&nbsp;trailersArraySizeHint)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#%3Cinit%3E(boolean,boolean,boolean,int,int)"><code>H2HeadersFactory(boolean, boolean, boolean, int, int)</code></a>.</div>
+</div>
+<div class="block">Create an instance of the factory.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>validateNames</code> - <code>true</code> to validate header/trailer names.</dd>
+<dd><code>validateCookies</code> - <code>true</code> to validate cookie contents when parsing.</dd>
+<dd><code>headersArraySizeHint</code> - A hint as to how large the hash data structure should be for the headers.</dd>
+<dd><code>trailersArraySizeHint</code> - A hint as to how large the hash data structure should be for the trailers.</dd>
+</dl>
+</li>
+</ul>
+<a id="&lt;init&gt;(boolean,boolean,boolean,int,int)">
 <!--   -->
 </a>
 <ul class="blockListLast">
@@ -311,6 +386,7 @@ implements <a href="../api/HttpHeadersFactory.html" title="interface in io.servi
 <h4>H2HeadersFactory</h4>
 <pre>public&nbsp;H2HeadersFactory&#8203;(boolean&nbsp;validateNames,
                         boolean&nbsp;validateCookies,
+                        boolean&nbsp;validateValues,
                         int&nbsp;headersArraySizeHint,
                         int&nbsp;trailersArraySizeHint)</pre>
 <div class="block">Create an instance of the factory.</div>
@@ -318,6 +394,7 @@ implements <a href="../api/HttpHeadersFactory.html" title="interface in io.servi
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>validateNames</code> - <code>true</code> to validate header/trailer names.</dd>
 <dd><code>validateCookies</code> - <code>true</code> to validate cookie contents when parsing.</dd>
+<dd><code>validateValues</code> - <code>true</code> to validate header values.</dd>
 <dd><code>headersArraySizeHint</code> - A hint as to how large the hash data structure should be for the headers.</dd>
 <dd><code>trailersArraySizeHint</code> - A hint as to how large the hash data structure should be for the trailers.</dd>
 </dl>
@@ -392,17 +469,34 @@ implements <a href="../api/HttpHeadersFactory.html" title="interface in io.servi
 <a id="validateCookies()">
 <!--   -->
 </a>
-<ul class="blockListLast">
+<ul class="blockList">
 <li class="blockList">
 <h4>validateCookies</h4>
 <pre class="methodSignature">public&nbsp;boolean&nbsp;validateCookies()</pre>
 <div class="block"><span class="descfrmTypeLabel">Description copied from interface:&nbsp;<code><a href="../api/HttpHeadersFactory.html#validateCookies()">HttpHeadersFactory</a></code></span></div>
-<div class="block">Determine if a cookies should be validated during parsing into <a href="../api/HttpSetCookie.html" title="interface in io.servicetalk.http.api"><code>HttpSetCookie</code></a>s.</div>
+<div class="block">Determine if cookies should be validated during parsing into <a href="../api/HttpSetCookie.html" title="interface in io.servicetalk.http.api"><code>HttpSetCookie</code></a>s.</div>
 <dl>
 <dt><span class="overrideSpecifyLabel">Specified by:</span></dt>
 <dd><code><a href="../api/HttpHeadersFactory.html#validateCookies()">validateCookies</a></code>&nbsp;in interface&nbsp;<code><a href="../api/HttpHeadersFactory.html" title="interface in io.servicetalk.http.api">HttpHeadersFactory</a></code></dd>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd><code>true</code> if a cookies should be validated during parsing into <a href="../api/HttpSetCookie.html" title="interface in io.servicetalk.http.api"><code>HttpSetCookie</code></a>s.</dd>
+</dl>
+</li>
+</ul>
+<a id="validateValues()">
+<!--   -->
+</a>
+<ul class="blockListLast">
+<li class="blockList">
+<h4>validateValues</h4>
+<pre class="methodSignature">public&nbsp;boolean&nbsp;validateValues()</pre>
+<div class="block"><span class="descfrmTypeLabel">Description copied from interface:&nbsp;<code><a href="../api/HttpHeadersFactory.html#validateValues()">HttpHeadersFactory</a></code></span></div>
+<div class="block">Determine if header values should be validated during parsing into <a href="../api/HttpHeaders.html" title="interface in io.servicetalk.http.api"><code>HttpHeaders</code></a>s.</div>
+<dl>
+<dt><span class="overrideSpecifyLabel">Specified by:</span></dt>
+<dd><code><a href="../api/HttpHeadersFactory.html#validateValues()">validateValues</a></code>&nbsp;in interface&nbsp;<code><a href="../api/HttpHeadersFactory.html" title="interface in io.servicetalk.http.api">HttpHeadersFactory</a></code></dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd><code>true</code> if header values should be validated during parsing into <a href="../api/HttpHeaders.html" title="interface in io.servicetalk.http.api"><code>HttpHeaders</code></a>s.</dd>
 </dl>
 </li>
 </ul>

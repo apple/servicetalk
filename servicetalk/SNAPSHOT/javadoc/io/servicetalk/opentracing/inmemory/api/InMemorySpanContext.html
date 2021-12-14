@@ -26,8 +26,8 @@
     catch(err) {
     }
 //-->
-var data = {"i0":18,"i1":18,"i2":18,"i3":6};
-var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"],16:["t5","Default Methods"]};
+var data = {"i0":50,"i1":18,"i2":18,"i3":38};
+var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"],16:["t5","Default Methods"],32:["t6","Deprecated Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
 var tableTab = "tableTab";
@@ -143,7 +143,7 @@ extends io.opentracing.SpanContext</pre>
 </a>
 <h3>Method Summary</h3>
 <table class="memberSummary">
-<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t3" class="tableTab"><span><a href="javascript:show(4);">Abstract Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t5" class="tableTab"><span><a href="javascript:show(16);">Default Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
+<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t3" class="tableTab"><span><a href="javascript:show(4);">Abstract Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t5" class="tableTab"><span><a href="javascript:show(16);">Default Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t6" class="tableTab"><span><a href="javascript:show(32);">Deprecated Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
 <tr>
 <th class="colFirst" scope="col">Modifier and Type</th>
 <th class="colSecond" scope="col">Method</th>
@@ -153,7 +153,9 @@ extends io.opentracing.SpanContext</pre>
 <td class="colFirst"><code>default boolean</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#isSampled()">isSampled</a></span>()</code></th>
 <td class="colLast">
-<div class="block">Returns whether the span should be sampled.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">This method will change in a follow up release, to hold an additional state of <code>null</code>.</div>
+</div>
 </td>
 </tr>
 <tr id="i1" class="rowColor">
@@ -170,7 +172,9 @@ extends io.opentracing.SpanContext</pre>
 <td class="colFirst"><code><a href="InMemoryTraceState.html" title="interface in io.servicetalk.opentracing.inmemory.api">InMemoryTraceState</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#traceState()">traceState</a></span>()</code></th>
 <td class="colLast">
-<div class="block">Get the <a href="InMemoryTraceState.html" title="interface in io.servicetalk.opentracing.inmemory.api"><code>InMemoryTraceState</code></a> associated with this object.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">This method will be removed in a follow up release, to an effort to clean API.</div>
+</div>
 </td>
 </tr>
 </table>
@@ -203,7 +207,12 @@ extends io.opentracing.SpanContext</pre>
 <ul class="blockList">
 <li class="blockList">
 <h4>traceState</h4>
-<pre class="methodSignature"><a href="InMemoryTraceState.html" title="interface in io.servicetalk.opentracing.inmemory.api">InMemoryTraceState</a>&nbsp;traceState()</pre>
+<pre class="methodSignature">@Deprecated
+<a href="InMemoryTraceState.html" title="interface in io.servicetalk.opentracing.inmemory.api">InMemoryTraceState</a>&nbsp;traceState()</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">This method will be removed in a follow up release, to an effort to clean API. Alternative accessors
+ will be offered through the <a href="InMemorySpanContext.html" title="interface in io.servicetalk.opentracing.inmemory.api"><code>InMemorySpanContext</code></a> API.</div>
+</div>
 <div class="block">Get the <a href="InMemoryTraceState.html" title="interface in io.servicetalk.opentracing.inmemory.api"><code>InMemoryTraceState</code></a> associated with this object.</div>
 <dl>
 <dt><span class="returnLabel">Returns:</span></dt>
@@ -217,7 +226,11 @@ extends io.opentracing.SpanContext</pre>
 <ul class="blockList">
 <li class="blockList">
 <h4>isSampled</h4>
-<pre class="methodSignature">default&nbsp;boolean&nbsp;isSampled()</pre>
+<pre class="methodSignature">@Deprecated
+default&nbsp;boolean&nbsp;isSampled()</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">This method will change in a follow up release, to hold an additional state of <code>null</code>.</div>
+</div>
 <div class="block">Returns whether the span should be sampled.
  <p>
  Note this may differ from <a href="InMemoryTraceState.html#isSampled()"><code>InMemoryTraceState.isSampled()</code></a> from <a href="#traceState()"><code>traceState()</code></a> if the value is overridden

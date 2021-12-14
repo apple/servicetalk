@@ -92,6 +92,15 @@
     <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/http/index.html#Mutual-TLS">Mutual TLS</a>
   </li>
   <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/http/index.html#Observer">Observer</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/http/index.html#OpenTracing">OpenTracing</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/http/index.html#Redirects">Redirects</a>
+  </li>
+  <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/http/index.html#uds">Unix Domain Sockets</a>
   </li>
   <li class="nav-item" data-depth="3">
@@ -113,7 +122,13 @@
     <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/grpc/index.html#Deadlines">Deadlines</a>
   </li>
   <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/grpc/index.html#Observer">Observer</a>
+  </li>
+  <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/grpc/index.html#errors">Application Errors</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/grpc/index.html#execution-strategy">Execution Strategy</a>
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/grpc/index.html#route-guide">Route Guide</a>
@@ -997,23 +1012,6 @@
 </div>
         <article class="doc">
 <h1>gRPC</h1>
-<div id="preamble">
-<div class="sectionbody">
-<div class="admonitionblock important">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-important" title="Important"></i>
-</td>
-<td class="content">
-ServiceTalk gRPC support is an active work-in-progress and is not yet
-<a href="../../servicetalk/SNAPSHOT/performance.html" class="page">peformance tested</a>.
-</td>
-</tr>
-</table>
-</div>
-</div>
-</div>
 <div class="sect1">
 <h2 id="motivation"><a class="anchor" href="#motivation"></a><a class="link" href="#motivation">Motivation</a></h2>
 <div class="sectionbody">
@@ -1119,7 +1117,7 @@ into the <code>Connection</code>/transport details for each request/response. Th
 for multiple connections, from different threads, and even concurrently.</p>
 </div>
 <div class="sect2">
-<h3 id="http-filters"><a class="anchor" href="#http-filters"></a><a class="link" href="#http-filters">HTTP Filters</a></h3>
+<h3 id="ServerHttpFilters"><a class="anchor" href="#ServerHttpFilters"></a><a class="link" href="#ServerHttpFilters">HTTP Filters</a></h3>
 <div class="paragraph">
 <p>As gRPC module is built on top of <a href="../../servicetalk-http-api/SNAPSHOT/index.html" class="page">HTTP module</a>, one can use the
 <a href="../../servicetalk-http-api/SNAPSHOT/index.html#service-filters" class="page">HTTP service filters</a> if required to intercept the
@@ -1128,6 +1126,20 @@ HTTP layer.</p>
 </div>
 <div class="sect2">
 <h3 id="grpc-filters"><a class="anchor" href="#grpc-filters"></a><a class="link" href="#grpc-filters">gRPC Filters</a></h3>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+gRPC Service Filters have been deprecated and will be removed in a future release. Please use
+<a href="#ServerHttpFilters">HTTP service filters</a> or implement the interception logic in the particular service definition
+if decoded protos are required.
+</td>
+</tr>
+</table>
+</div>
 <div class="paragraph">
 <p>In addition to HTTP filters, gRPC users can also add gRPC filters which follow the same interface definition as the
 service and can be composed using the generated
@@ -1166,7 +1178,7 @@ The control flow of a request/response can be visualized in the below diagram:</
 which connection should be used.</p>
 </div>
 <div class="sect2">
-<h3 id="http-filters-2"><a class="anchor" href="#http-filters-2"></a><a class="link" href="#http-filters-2">HTTP Filters</a></h3>
+<h3 id="ClientHttpFilters"><a class="anchor" href="#ClientHttpFilters"></a><a class="link" href="#ClientHttpFilters">HTTP Filters</a></h3>
 <div class="paragraph">
 <p>As gRPC module is built on top of <a href="../../servicetalk-http-api/SNAPSHOT/index.html" class="page">HTTP module</a>, one can use the
 <a href="../../servicetalk-http-api/SNAPSHOT/index.html#client-filters" class="page">HTTP client filters</a> if required to intercept the
@@ -1175,6 +1187,20 @@ HTTP layer.</p>
 </div>
 <div class="sect2">
 <h3 id="grpc-filters-2"><a class="anchor" href="#grpc-filters-2"></a><a class="link" href="#grpc-filters-2">gRPC Filters</a></h3>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+gRPC Client Filters have been deprecated and will be removed in a future release. Please use
+<a href="#ClientHttpFilters">HTTP service filters</a> or implement the interception logic in the particular
+service definition if decoded protos are required.
+</td>
+</tr>
+</table>
+</div>
 <div class="paragraph">
 <p>In addition to HTTP filters, gRPC users can also add gRPC filters which follow the same interface definition as the
 service and can be composed using the generated

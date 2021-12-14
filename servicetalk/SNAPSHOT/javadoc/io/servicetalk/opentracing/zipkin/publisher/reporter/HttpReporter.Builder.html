@@ -26,8 +26,8 @@
     catch(err) {
     }
 //-->
-var data = {"i0":10,"i1":10,"i2":10,"i3":10,"i4":10};
-var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],8:["t4","Concrete Methods"]};
+var data = {"i0":10,"i1":10,"i2":10,"i3":42,"i4":10,"i5":10};
+var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],8:["t4","Concrete Methods"],32:["t6","Deprecated Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
 var tableTab = "tableTab";
@@ -174,7 +174,7 @@ extends java.lang.Object</pre>
 </a>
 <h3>Method Summary</h3>
 <table class="memberSummary">
-<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t4" class="tableTab"><span><a href="javascript:show(8);">Concrete Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
+<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t4" class="tableTab"><span><a href="javascript:show(8);">Concrete Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t6" class="tableTab"><span><a href="javascript:show(32);">Deprecated Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
 <tr>
 <th class="colFirst" scope="col">Modifier and Type</th>
 <th class="colSecond" scope="col">Method</th>
@@ -206,7 +206,9 @@ extends java.lang.Object</pre>
 <td class="colFirst"><code><a href="HttpReporter.Builder.html" title="class in io.servicetalk.opentracing.zipkin.publisher.reporter">HttpReporter.Builder</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#disableSpanBatching()">disableSpanBatching</a></span>()</code></th>
 <td class="colLast">
-<div class="block">Disable batching of spans before sending them to the zipkin collector.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#spansBatchingEnabled(boolean)"><code>spansBatchingEnabled(boolean)</code></a>.</div>
+</div>
 </td>
 </tr>
 <tr id="i4" class="altColor">
@@ -214,6 +216,13 @@ extends java.lang.Object</pre>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#maxConcurrentReports(int)">maxConcurrentReports</a></span>&#8203;(int&nbsp;maxConcurrentReports)</code></th>
 <td class="colLast">
 <div class="block">Sets the maximum number of concurrent requests that will be made to the zipkin collector at any time.</div>
+</td>
+</tr>
+<tr id="i5" class="rowColor">
+<td class="colFirst"><code><a href="HttpReporter.Builder.html" title="class in io.servicetalk.opentracing.zipkin.publisher.reporter">HttpReporter.Builder</a></code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#spansBatchingEnabled(boolean)">spansBatchingEnabled</a></span>&#8203;(boolean&nbsp;enable)</code></th>
+<td class="colLast">
+<div class="block">Configure batching of spans before sending them to the zipkin collector.</div>
 </td>
 </tr>
 </table>
@@ -321,9 +330,29 @@ extends java.lang.Object</pre>
 <ul class="blockList">
 <li class="blockList">
 <h4>disableSpanBatching</h4>
-<pre class="methodSignature">public&nbsp;<a href="HttpReporter.Builder.html" title="class in io.servicetalk.opentracing.zipkin.publisher.reporter">HttpReporter.Builder</a>&nbsp;disableSpanBatching()</pre>
+<pre class="methodSignature">@Deprecated
+public&nbsp;<a href="HttpReporter.Builder.html" title="class in io.servicetalk.opentracing.zipkin.publisher.reporter">HttpReporter.Builder</a>&nbsp;disableSpanBatching()</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#spansBatchingEnabled(boolean)"><code>spansBatchingEnabled(boolean)</code></a>.</div>
+</div>
 <div class="block">Disable batching of spans before sending them to the zipkin collector.</div>
 <dl>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd><code>this</code>.</dd>
+</dl>
+</li>
+</ul>
+<a id="spansBatchingEnabled(boolean)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>spansBatchingEnabled</h4>
+<pre class="methodSignature">public&nbsp;<a href="HttpReporter.Builder.html" title="class in io.servicetalk.opentracing.zipkin.publisher.reporter">HttpReporter.Builder</a>&nbsp;spansBatchingEnabled&#8203;(boolean&nbsp;enable)</pre>
+<div class="block">Configure batching of spans before sending them to the zipkin collector.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>enable</code> - When <code>false</code> batching will be disabled.</dd>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd><code>this</code>.</dd>
 </dl>

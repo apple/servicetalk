@@ -26,8 +26,8 @@
     catch(err) {
     }
 //-->
-var data = {"i0":9,"i1":9,"i2":9,"i3":9};
-var tabs = {65535:["t0","All Methods"],1:["t1","Static Methods"],8:["t4","Concrete Methods"]};
+var data = {"i0":9,"i1":9,"i2":9,"i3":9,"i4":41,"i5":9,"i6":9,"i7":41};
+var tabs = {65535:["t0","All Methods"],1:["t1","Static Methods"],8:["t4","Concrete Methods"],32:["t6","Deprecated Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
 var tableTab = "tableTab";
@@ -147,7 +147,7 @@ extends java.lang.Object</pre>
 </a>
 <h3>Method Summary</h3>
 <table class="memberSummary">
-<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t1" class="tableTab"><span><a href="javascript:show(1);">Static Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t4" class="tableTab"><span><a href="javascript:show(8);">Concrete Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
+<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t1" class="tableTab"><span><a href="javascript:show(1);">Static Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t4" class="tableTab"><span><a href="javascript:show(8);">Concrete Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t6" class="tableTab"><span><a href="javascript:show(32);">Deprecated Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
 <tr>
 <th class="colFirst" scope="col">Modifier and Type</th>
 <th class="colSecond" scope="col">Method</th>
@@ -168,18 +168,50 @@ extends java.lang.Object</pre>
 </td>
 </tr>
 <tr id="i2" class="altColor">
-<td class="colFirst"><code>static <a href="../api/IoExecutor.html" title="interface in io.servicetalk.transport.api">IoExecutor</a></code></td>
-<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#createIoExecutor(int,java.util.concurrent.ThreadFactory)">createIoExecutor</a></span>&#8203;(int&nbsp;ioThreads,
-                java.util.concurrent.ThreadFactory&nbsp;threadFactory)</code></th>
+<td class="colFirst"><code>static &lt;T extends java.lang.Thread &amp; <a href="../api/IoThreadFactory.IoThread.html" title="interface in io.servicetalk.transport.api">IoThreadFactory.IoThread</a>&gt;<br><a href="../api/IoExecutor.html" title="interface in io.servicetalk.transport.api">IoExecutor</a></code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#createIoExecutor(int,io.servicetalk.transport.api.IoThreadFactory)">createIoExecutor</a></span>&#8203;(int&nbsp;ioThreads,
+                <a href="../api/IoThreadFactory.html" title="interface in io.servicetalk.transport.api">IoThreadFactory</a>&lt;T&gt;&nbsp;threadFactory)</code></th>
 <td class="colLast">
 <div class="block">Creates a new <a href="../api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a> with the specified number of <code>ioThreads</code>.</div>
 </td>
 </tr>
 <tr id="i3" class="rowColor">
 <td class="colFirst"><code>static <a href="../api/IoExecutor.html" title="interface in io.servicetalk.transport.api">IoExecutor</a></code></td>
-<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#createIoExecutor(java.util.concurrent.ThreadFactory)">createIoExecutor</a></span>&#8203;(java.util.concurrent.ThreadFactory&nbsp;threadFactory)</code></th>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#createIoExecutor(int,java.lang.String)">createIoExecutor</a></span>&#8203;(int&nbsp;ioThreads,
+                java.lang.String&nbsp;threadNamePrefix)</code></th>
+<td class="colLast">
+<div class="block">Creates a new <a href="../api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a> with the specified number of <code>ioThreads</code>.</div>
+</td>
+</tr>
+<tr id="i4" class="altColor">
+<td class="colFirst"><code>static <a href="../api/IoExecutor.html" title="interface in io.servicetalk.transport.api">IoExecutor</a></code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#createIoExecutor(int,java.util.concurrent.ThreadFactory)">createIoExecutor</a></span>&#8203;(int&nbsp;ioThreads,
+                java.util.concurrent.ThreadFactory&nbsp;threadFactory)</code></th>
+<td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#createIoExecutor(int,io.servicetalk.transport.api.IoThreadFactory)"><code>createIoExecutor(int, IoThreadFactory)</code></a>.</div>
+</div>
+</td>
+</tr>
+<tr id="i5" class="rowColor">
+<td class="colFirst"><code>static &lt;T extends java.lang.Thread &amp; <a href="../api/IoThreadFactory.IoThread.html" title="interface in io.servicetalk.transport.api">IoThreadFactory.IoThread</a>&gt;<br><a href="../api/IoExecutor.html" title="interface in io.servicetalk.transport.api">IoExecutor</a></code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#createIoExecutor(io.servicetalk.transport.api.IoThreadFactory)">createIoExecutor</a></span>&#8203;(<a href="../api/IoThreadFactory.html" title="interface in io.servicetalk.transport.api">IoThreadFactory</a>&lt;T&gt;&nbsp;threadFactory)</code></th>
 <td class="colLast">
 <div class="block">Creates a new <a href="../api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a> with the default number of <code>ioThreads</code>.</div>
+</td>
+</tr>
+<tr id="i6" class="altColor">
+<td class="colFirst"><code>static <a href="../api/IoExecutor.html" title="interface in io.servicetalk.transport.api">IoExecutor</a></code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#createIoExecutor(java.lang.String)">createIoExecutor</a></span>&#8203;(java.lang.String&nbsp;threadNamePrefix)</code></th>
+<td class="colLast">&nbsp;</td>
+</tr>
+<tr id="i7" class="rowColor">
+<td class="colFirst"><code>static <a href="../api/IoExecutor.html" title="interface in io.servicetalk.transport.api">IoExecutor</a></code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#createIoExecutor(java.util.concurrent.ThreadFactory)">createIoExecutor</a></span>&#8203;(java.util.concurrent.ThreadFactory&nbsp;threadFactory)</code></th>
+<td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#createIoExecutor(io.servicetalk.transport.api.IoThreadFactory)"><code>createIoExecutor(IoThreadFactory)</code></a>.</div>
+</div>
 </td>
 </tr>
 </table>
@@ -212,14 +244,37 @@ extends java.lang.Object</pre>
 <ul class="blockList">
 <li class="blockList">
 <h4>createIoExecutor</h4>
-<pre class="methodSignature">public static&nbsp;<a href="../api/IoExecutor.html" title="interface in io.servicetalk.transport.api">IoExecutor</a>&nbsp;createIoExecutor&#8203;(int&nbsp;ioThreads,
+<pre class="methodSignature">@Deprecated
+public static&nbsp;<a href="../api/IoExecutor.html" title="interface in io.servicetalk.transport.api">IoExecutor</a>&nbsp;createIoExecutor&#8203;(int&nbsp;ioThreads,
                                           java.util.concurrent.ThreadFactory&nbsp;threadFactory)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#createIoExecutor(int,io.servicetalk.transport.api.IoThreadFactory)"><code>createIoExecutor(int, IoThreadFactory)</code></a>.</div>
+</div>
 <div class="block">Creates a new <a href="../api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a> with the specified number of <code>ioThreads</code>.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>ioThreads</code> - number of threads.</dd>
-<dd><code>threadFactory</code> - the <code>ThreadFactory</code> to use. If possible you should use an instance
- of <a href="internal/IoThreadFactory.html" title="class in io.servicetalk.transport.netty.internal"><code>IoThreadFactory</code></a> as it allows internal optimizations.</dd>
+<dd><code>threadFactory</code> - the <code>ThreadFactory</code> to use.</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd>The created <a href="../api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a></dd>
+</dl>
+</li>
+</ul>
+<a id="createIoExecutor(int,io.servicetalk.transport.api.IoThreadFactory)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>createIoExecutor</h4>
+<pre class="methodSignature">public static&nbsp;&lt;T extends java.lang.Thread &amp; <a href="../api/IoThreadFactory.IoThread.html" title="interface in io.servicetalk.transport.api">IoThreadFactory.IoThread</a>&gt;&nbsp;<a href="../api/IoExecutor.html" title="interface in io.servicetalk.transport.api">IoExecutor</a>&nbsp;createIoExecutor&#8203;(int&nbsp;ioThreads,
+                                                                                                  <a href="../api/IoThreadFactory.html" title="interface in io.servicetalk.transport.api">IoThreadFactory</a>&lt;T&gt;&nbsp;threadFactory)</pre>
+<div class="block">Creates a new <a href="../api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a> with the specified number of <code>ioThreads</code>.</div>
+<dl>
+<dt><span class="paramLabel">Type Parameters:</span></dt>
+<dd><code>T</code> - Type of the IO thread instances created by factory.</dd>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>ioThreads</code> - number of threads.</dd>
+<dd><code>threadFactory</code> - the <a href="../api/IoThreadFactory.html" title="interface in io.servicetalk.transport.api"><code>IoThreadFactory</code></a> to use.</dd>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd>The created <a href="../api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a></dd>
 </dl>
@@ -241,18 +296,66 @@ extends java.lang.Object</pre>
 </dl>
 </li>
 </ul>
+<a id="createIoExecutor(io.servicetalk.transport.api.IoThreadFactory)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>createIoExecutor</h4>
+<pre class="methodSignature">public static&nbsp;&lt;T extends java.lang.Thread &amp; <a href="../api/IoThreadFactory.IoThread.html" title="interface in io.servicetalk.transport.api">IoThreadFactory.IoThread</a>&gt;&nbsp;<a href="../api/IoExecutor.html" title="interface in io.servicetalk.transport.api">IoExecutor</a>&nbsp;createIoExecutor&#8203;(<a href="../api/IoThreadFactory.html" title="interface in io.servicetalk.transport.api">IoThreadFactory</a>&lt;T&gt;&nbsp;threadFactory)</pre>
+<div class="block">Creates a new <a href="../api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a> with the default number of <code>ioThreads</code>.</div>
+<dl>
+<dt><span class="paramLabel">Type Parameters:</span></dt>
+<dd><code>T</code> - Type of threads created by <a href="../api/IoThreadFactory.html" title="interface in io.servicetalk.transport.api"><code>IoThreadFactory</code></a></dd>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>threadFactory</code> - the <a href="../api/IoThreadFactory.html" title="interface in io.servicetalk.transport.api"><code>IoThreadFactory</code></a> to use.</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd>The created <a href="../api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a></dd>
+</dl>
+</li>
+</ul>
 <a id="createIoExecutor(java.util.concurrent.ThreadFactory)">
 <!--   -->
 </a>
 <ul class="blockList">
 <li class="blockList">
 <h4>createIoExecutor</h4>
-<pre class="methodSignature">public static&nbsp;<a href="../api/IoExecutor.html" title="interface in io.servicetalk.transport.api">IoExecutor</a>&nbsp;createIoExecutor&#8203;(java.util.concurrent.ThreadFactory&nbsp;threadFactory)</pre>
+<pre class="methodSignature">@Deprecated
+public static&nbsp;<a href="../api/IoExecutor.html" title="interface in io.servicetalk.transport.api">IoExecutor</a>&nbsp;createIoExecutor&#8203;(java.util.concurrent.ThreadFactory&nbsp;threadFactory)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#createIoExecutor(io.servicetalk.transport.api.IoThreadFactory)"><code>createIoExecutor(IoThreadFactory)</code></a>.</div>
+</div>
 <div class="block">Creates a new <a href="../api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a> with the default number of <code>ioThreads</code>.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
-<dd><code>threadFactory</code> - the <code>ThreadFactory</code> to use. If possible you should use an instance
- of <a href="internal/IoThreadFactory.html" title="class in io.servicetalk.transport.netty.internal"><code>IoThreadFactory</code></a> as it allows internal optimizations.</dd>
+<dd><code>threadFactory</code> - the <code>ThreadFactory</code> to use.</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd>The created <a href="../api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a></dd>
+</dl>
+</li>
+</ul>
+<a id="createIoExecutor(java.lang.String)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>createIoExecutor</h4>
+<pre class="methodSignature">public static&nbsp;<a href="../api/IoExecutor.html" title="interface in io.servicetalk.transport.api">IoExecutor</a>&nbsp;createIoExecutor&#8203;(java.lang.String&nbsp;threadNamePrefix)</pre>
+</li>
+</ul>
+<a id="createIoExecutor(int,java.lang.String)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>createIoExecutor</h4>
+<pre class="methodSignature">public static&nbsp;<a href="../api/IoExecutor.html" title="interface in io.servicetalk.transport.api">IoExecutor</a>&nbsp;createIoExecutor&#8203;(int&nbsp;ioThreads,
+                                          java.lang.String&nbsp;threadNamePrefix)</pre>
+<div class="block">Creates a new <a href="../api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a> with the specified number of <code>ioThreads</code>.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>ioThreads</code> - number of threads.</dd>
+<dd><code>threadNamePrefix</code> - the name prefix used for the created <code>Thread</code>s.</dd>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd>The created <a href="../api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a></dd>
 </dl>

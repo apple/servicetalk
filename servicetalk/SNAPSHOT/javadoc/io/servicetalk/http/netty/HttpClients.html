@@ -26,8 +26,8 @@
     catch(err) {
     }
 //-->
-var data = {"i0":9,"i1":9,"i2":9,"i3":9,"i4":9,"i5":9,"i6":9,"i7":9,"i8":9,"i9":9,"i10":9,"i11":9,"i12":9,"i13":9,"i14":9};
-var tabs = {65535:["t0","All Methods"],1:["t1","Static Methods"],8:["t4","Concrete Methods"]};
+var data = {"i0":9,"i1":9,"i2":9,"i3":9,"i4":9,"i5":9,"i6":41,"i7":41,"i8":41,"i9":9,"i10":9,"i11":9,"i12":9,"i13":41,"i14":41};
+var tabs = {65535:["t0","All Methods"],1:["t1","Static Methods"],8:["t4","Concrete Methods"],32:["t6","Deprecated Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
 var tableTab = "tableTab";
@@ -147,7 +147,7 @@ extends java.lang.Object</pre>
 </a>
 <h3>Method Summary</h3>
 <table class="memberSummary">
-<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t1" class="tableTab"><span><a href="javascript:show(1);">Static Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t4" class="tableTab"><span><a href="javascript:show(8);">Concrete Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
+<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t1" class="tableTab"><span><a href="javascript:show(1);">Static Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t4" class="tableTab"><span><a href="javascript:show(8);">Concrete Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t6" class="tableTab"><span><a href="javascript:show(32);">Deprecated Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
 <tr>
 <th class="colFirst" scope="col">Modifier and Type</th>
 <th class="colSecond" scope="col">Method</th>
@@ -206,7 +206,10 @@ extends java.lang.Object</pre>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#forResolvedAddressViaProxy(io.servicetalk.transport.api.HostAndPort,io.servicetalk.transport.api.HostAndPort)">forResolvedAddressViaProxy</a></span>&#8203;(<a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>&nbsp;address,
                           <a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>&nbsp;proxyAddress)</code></th>
 <td class="colLast">
-<div class="block">Creates a <a href="../api/SingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api"><code>SingleAddressHttpClientBuilder</code></a> for an address via a proxy, with default <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="../api/SingleAddressHttpClientBuilder.html#proxyAddress(U)"><code>SingleAddressHttpClientBuilder.proxyAddress(Object)</code></a> on the instance returned from
+ <a href="#forResolvedAddress(io.servicetalk.transport.api.HostAndPort)"><code>forResolvedAddress(HostAndPort)</code></a>.</div>
+</div>
 </td>
 </tr>
 <tr id="i7" class="rowColor">
@@ -216,8 +219,10 @@ extends java.lang.Object</pre>
                           java.lang.String&nbsp;proxyHost,
                           int&nbsp;proxyPort)</code></th>
 <td class="colLast">
-<div class="block">Creates a <a href="../api/SingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api"><code>SingleAddressHttpClientBuilder</code></a> for a resolved address via a proxy, with default
- <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="../api/SingleAddressHttpClientBuilder.html#proxyAddress(U)"><code>SingleAddressHttpClientBuilder.proxyAddress(Object)</code></a> on the instance returned from
+ <a href="#forResolvedAddress(java.lang.String,int)"><code>forResolvedAddress(String, int)</code></a>.</div>
+</div>
 </td>
 </tr>
 <tr id="i8" class="altColor">
@@ -225,7 +230,10 @@ extends java.lang.Object</pre>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#forResolvedAddressViaProxy(java.net.InetSocketAddress,java.net.InetSocketAddress)">forResolvedAddressViaProxy</a></span>&#8203;(java.net.InetSocketAddress&nbsp;address,
                           java.net.InetSocketAddress&nbsp;proxyAddress)</code></th>
 <td class="colLast">
-<div class="block">Creates a <a href="../api/SingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api"><code>SingleAddressHttpClientBuilder</code></a> for an address via a proxy, with default <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="../api/SingleAddressHttpClientBuilder.html#proxyAddress(U)"><code>SingleAddressHttpClientBuilder.proxyAddress(Object)</code></a> on the instance returned from
+ <a href="#forResolvedAddress(T)"><code>forResolvedAddress(SocketAddress)</code></a></div>
+</div>
 </td>
 </tr>
 <tr id="i9" class="rowColor">
@@ -266,8 +274,10 @@ extends java.lang.Object</pre>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#forSingleAddressViaProxy(io.servicetalk.transport.api.HostAndPort,io.servicetalk.transport.api.HostAndPort)">forSingleAddressViaProxy</a></span>&#8203;(<a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>&nbsp;address,
                         <a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>&nbsp;proxyAddress)</code></th>
 <td class="colLast">
-<div class="block">Creates a <a href="../api/SingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api"><code>SingleAddressHttpClientBuilder</code></a> for an address via a proxy, with default <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>
- and DNS <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="../api/SingleAddressHttpClientBuilder.html#proxyAddress(U)"><code>SingleAddressHttpClientBuilder.proxyAddress(Object)</code></a> on the instance returned from
+ <a href="#forSingleAddress(io.servicetalk.transport.api.HostAndPort)"><code>forSingleAddress(HostAndPort)</code></a>.</div>
+</div>
 </td>
 </tr>
 <tr id="i14" class="altColor">
@@ -277,8 +287,10 @@ extends java.lang.Object</pre>
                         java.lang.String&nbsp;proxyHost,
                         int&nbsp;proxyPort)</code></th>
 <td class="colLast">
-<div class="block">Creates a <a href="../api/SingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api"><code>SingleAddressHttpClientBuilder</code></a> for an address via a proxy, with default <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>
- and DNS <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="../api/SingleAddressHttpClientBuilder.html#proxyAddress(U)"><code>SingleAddressHttpClientBuilder.proxyAddress(Object)</code></a> on the instance returned from
+ <a href="#forSingleAddress(java.lang.String,int)"><code>forSingleAddress(String, int)</code></a>.</div>
+</div>
 </td>
 </tr>
 </table>
@@ -358,7 +370,7 @@ extends java.lang.Object</pre>
 <dd><code>host</code> - host to connect to, resolved by default using a DNS <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>. This will also be
  used for the <a href="../api/HttpHeaderNames.html#HOST"><code>HttpHeaderNames.HOST</code></a> together with the <code>port</code>. Use
  <a href="../api/SingleAddressHttpClientBuilder.html#unresolvedAddressToHost(java.util.function.Function)"><code>SingleAddressHttpClientBuilder.unresolvedAddressToHost(Function)</code></a> if you want to override that value
- or <a href="../api/SingleAddressHttpClientBuilder.html#disableHostHeaderFallback()"><code>SingleAddressHttpClientBuilder.disableHostHeaderFallback()</code></a> if you want to disable this behavior.</dd>
+ or <a href="../api/SingleAddressHttpClientBuilder.html#hostHeaderFallback(boolean)"><code>SingleAddressHttpClientBuilder.hostHeaderFallback(boolean)</code></a>} if you want to disable this behavior.</dd>
 <dd><code>port</code> - port to connect to</dd>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd>new builder for the address</dd>
@@ -371,10 +383,15 @@ extends java.lang.Object</pre>
 <ul class="blockList">
 <li class="blockList">
 <h4>forSingleAddressViaProxy</h4>
-<pre class="methodSignature">public static&nbsp;<a href="../api/SingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>,&#8203;java.net.InetSocketAddress&gt;&nbsp;forSingleAddressViaProxy&#8203;(java.lang.String&nbsp;host,
+<pre class="methodSignature">@Deprecated
+public static&nbsp;<a href="../api/SingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>,&#8203;java.net.InetSocketAddress&gt;&nbsp;forSingleAddressViaProxy&#8203;(java.lang.String&nbsp;host,
                                                                                                                     int&nbsp;port,
                                                                                                                     java.lang.String&nbsp;proxyHost,
                                                                                                                     int&nbsp;proxyPort)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="../api/SingleAddressHttpClientBuilder.html#proxyAddress(U)"><code>SingleAddressHttpClientBuilder.proxyAddress(Object)</code></a> on the instance returned from
+ <a href="#forSingleAddress(java.lang.String,int)"><code>forSingleAddress(String, int)</code></a>.</div>
+</div>
 <div class="block">Creates a <a href="../api/SingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api"><code>SingleAddressHttpClientBuilder</code></a> for an address via a proxy, with default <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>
  and DNS <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>.</div>
 <dl>
@@ -382,7 +399,7 @@ extends java.lang.Object</pre>
 <dd><code>host</code> - host to connect to via the proxy. This will also be used for the <a href="../api/HttpHeaderNames.html#HOST"><code>HttpHeaderNames.HOST</code></a>
  together with the <code>port</code>. Use
  <a href="../api/SingleAddressHttpClientBuilder.html#unresolvedAddressToHost(java.util.function.Function)"><code>SingleAddressHttpClientBuilder.unresolvedAddressToHost(Function)</code></a> if you want to override that value
- or <a href="../api/SingleAddressHttpClientBuilder.html#disableHostHeaderFallback()"><code>SingleAddressHttpClientBuilder.disableHostHeaderFallback()</code></a> if you want to disable this behavior.</dd>
+ or <a href="../api/SingleAddressHttpClientBuilder.html#hostHeaderFallback(boolean)"><code>SingleAddressHttpClientBuilder.hostHeaderFallback(boolean)</code></a> if you want to disable this behavior.</dd>
 <dd><code>port</code> - port to connect to</dd>
 <dd><code>proxyHost</code> - the proxy host to connect to, resolved by default using a DNS <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>.</dd>
 <dd><code>proxyPort</code> - The proxy port to connect.</dd>
@@ -403,7 +420,7 @@ extends java.lang.Object</pre>
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>address</code> - the <code>UnresolvedAddress</code> to connect to, resolved by default using a DNS <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>. This address will also be used for the <a href="../api/HttpHeaderNames.html#HOST"><code>HttpHeaderNames.HOST</code></a>.
  Use <a href="../api/SingleAddressHttpClientBuilder.html#unresolvedAddressToHost(java.util.function.Function)"><code>SingleAddressHttpClientBuilder.unresolvedAddressToHost(Function)</code></a> if you want to override that
- value or <a href="../api/SingleAddressHttpClientBuilder.html#disableHostHeaderFallback()"><code>SingleAddressHttpClientBuilder.disableHostHeaderFallback()</code></a> if you want to disable this behavior.</dd>
+ value or <a href="../api/SingleAddressHttpClientBuilder.html#hostHeaderFallback(boolean)"><code>SingleAddressHttpClientBuilder.hostHeaderFallback(boolean)</code></a> if you want to disable this behavior.</dd>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd>new builder for the address</dd>
 </dl>
@@ -433,15 +450,20 @@ extends java.lang.Object</pre>
 <ul class="blockList">
 <li class="blockList">
 <h4>forSingleAddressViaProxy</h4>
-<pre class="methodSignature">public static&nbsp;<a href="../api/SingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>,&#8203;java.net.InetSocketAddress&gt;&nbsp;forSingleAddressViaProxy&#8203;(<a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>&nbsp;address,
+<pre class="methodSignature">@Deprecated
+public static&nbsp;<a href="../api/SingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>,&#8203;java.net.InetSocketAddress&gt;&nbsp;forSingleAddressViaProxy&#8203;(<a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>&nbsp;address,
                                                                                                                     <a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>&nbsp;proxyAddress)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="../api/SingleAddressHttpClientBuilder.html#proxyAddress(U)"><code>SingleAddressHttpClientBuilder.proxyAddress(Object)</code></a> on the instance returned from
+ <a href="#forSingleAddress(io.servicetalk.transport.api.HostAndPort)"><code>forSingleAddress(HostAndPort)</code></a>.</div>
+</div>
 <div class="block">Creates a <a href="../api/SingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api"><code>SingleAddressHttpClientBuilder</code></a> for an address via a proxy, with default <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>
  and DNS <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>address</code> - the <code>UnresolvedAddress</code> to connect to via the proxy. This address will also be used for the
  <a href="../api/HttpHeaderNames.html#HOST"><code>HttpHeaderNames.HOST</code></a>. Use <a href="../api/SingleAddressHttpClientBuilder.html#unresolvedAddressToHost(java.util.function.Function)"><code>SingleAddressHttpClientBuilder.unresolvedAddressToHost(Function)</code></a>
- if you want to override that value or <a href="../api/SingleAddressHttpClientBuilder.html#disableHostHeaderFallback()"><code>SingleAddressHttpClientBuilder.disableHostHeaderFallback()</code></a> if you
+ if you want to override that value or <a href="../api/SingleAddressHttpClientBuilder.html#hostHeaderFallback(boolean)"><code>SingleAddressHttpClientBuilder.hostHeaderFallback(boolean)</code></a> if you
  want to disable this behavior.</dd>
 <dd><code>proxyAddress</code> - the proxy <code>UnresolvedAddress</code> to connect to, resolved by default using a DNS <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>.</dd>
 <dt><span class="returnLabel">Returns:</span></dt>
@@ -462,8 +484,12 @@ extends java.lang.Object</pre>
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>host</code> - resolved host address to connect. This will also be used for the <a href="../api/HttpHeaderNames.html#HOST"><code>HttpHeaderNames.HOST</code></a>
  together with the <code>port</code>. Use <a href="../api/SingleAddressHttpClientBuilder.html#unresolvedAddressToHost(java.util.function.Function)"><code>SingleAddressHttpClientBuilder.unresolvedAddressToHost(Function)</code></a>
- if you want to override that value or <a href="../api/SingleAddressHttpClientBuilder.html#disableHostHeaderFallback()"><code>SingleAddressHttpClientBuilder.disableHostHeaderFallback()</code></a>
- if you want to disable this behavior.</dd>
+ if you want to override that value or <a href="../api/SingleAddressHttpClientBuilder.html#hostHeaderFallback(boolean)"><code>SingleAddressHttpClientBuilder.hostHeaderFallback(boolean)</code></a>
+ if you want to disable this behavior.
+ <p>
+ Note, if <a href="../api/SingleAddressHttpClientBuilder.html#proxyAddress(U)"><code>a proxy</code></a> is configured for this client,
+ the proxy address also needs to be already resolved. Otherwise, runtime exceptions will be thrown when
+ the client is built.</dd>
 <dd><code>port</code> - port to connect to</dd>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd>new builder for the address</dd>
@@ -476,10 +502,15 @@ extends java.lang.Object</pre>
 <ul class="blockList">
 <li class="blockList">
 <h4>forResolvedAddressViaProxy</h4>
-<pre class="methodSignature">public static&nbsp;<a href="../api/SingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>,&#8203;java.net.InetSocketAddress&gt;&nbsp;forResolvedAddressViaProxy&#8203;(java.lang.String&nbsp;host,
+<pre class="methodSignature">@Deprecated
+public static&nbsp;<a href="../api/SingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>,&#8203;java.net.InetSocketAddress&gt;&nbsp;forResolvedAddressViaProxy&#8203;(java.lang.String&nbsp;host,
                                                                                                                       int&nbsp;port,
                                                                                                                       java.lang.String&nbsp;proxyHost,
                                                                                                                       int&nbsp;proxyPort)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="../api/SingleAddressHttpClientBuilder.html#proxyAddress(U)"><code>SingleAddressHttpClientBuilder.proxyAddress(Object)</code></a> on the instance returned from
+ <a href="#forResolvedAddress(java.lang.String,int)"><code>forResolvedAddress(String, int)</code></a>.</div>
+</div>
 <div class="block">Creates a <a href="../api/SingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api"><code>SingleAddressHttpClientBuilder</code></a> for a resolved address via a proxy, with default
  <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>.</div>
 <dl>
@@ -487,7 +518,7 @@ extends java.lang.Object</pre>
 <dd><code>host</code> - resolved host address to connect via the proxy. This will also be used for the
  <a href="../api/HttpHeaderNames.html#HOST"><code>HttpHeaderNames.HOST</code></a> together with the <code>port</code>. Use
  <a href="../api/SingleAddressHttpClientBuilder.html#unresolvedAddressToHost(java.util.function.Function)"><code>SingleAddressHttpClientBuilder.unresolvedAddressToHost(Function)</code></a> if you want to override that value
- or <a href="../api/SingleAddressHttpClientBuilder.html#disableHostHeaderFallback()"><code>SingleAddressHttpClientBuilder.disableHostHeaderFallback()</code></a> if you want to disable this behavior.</dd>
+ or <a href="../api/SingleAddressHttpClientBuilder.html#hostHeaderFallback(boolean)"><code>SingleAddressHttpClientBuilder.hostHeaderFallback(boolean)</code></a> if you want to disable this behavior.</dd>
 <dd><code>port</code> - port to connect to via the proxy</dd>
 <dd><code>proxyHost</code> - The proxy resolved host address to connect.</dd>
 <dd><code>proxyPort</code> - The proxy port to connect.</dd>
@@ -508,8 +539,12 @@ extends java.lang.Object</pre>
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>address</code> - the <code>ResolvedAddress</code> to connect. This address will also be used for the
  <a href="../api/HttpHeaderNames.html#HOST"><code>HttpHeaderNames.HOST</code></a>. Use <a href="../api/SingleAddressHttpClientBuilder.html#unresolvedAddressToHost(java.util.function.Function)"><code>SingleAddressHttpClientBuilder.unresolvedAddressToHost(Function)</code></a>
- if you want to override that value or <a href="../api/SingleAddressHttpClientBuilder.html#disableHostHeaderFallback()"><code>SingleAddressHttpClientBuilder.disableHostHeaderFallback()</code></a> if you
- want to disable this behavior.</dd>
+ if you want to override that value or <a href="../api/SingleAddressHttpClientBuilder.html#hostHeaderFallback(boolean)"><code>SingleAddressHttpClientBuilder.hostHeaderFallback(boolean)</code></a> if you
+ want to disable this behavior.
+ <p>
+ Note, if <a href="../api/SingleAddressHttpClientBuilder.html#proxyAddress(U)"><code>a proxy</code></a> is configured for this client,
+ the proxy address also needs to be already resolved. Otherwise, runtime exceptions will be thrown when
+ the client is built.</dd>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd>new builder for the address</dd>
 </dl>
@@ -521,14 +556,19 @@ extends java.lang.Object</pre>
 <ul class="blockList">
 <li class="blockList">
 <h4>forResolvedAddressViaProxy</h4>
-<pre class="methodSignature">public static&nbsp;<a href="../api/SingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>,&#8203;java.net.InetSocketAddress&gt;&nbsp;forResolvedAddressViaProxy&#8203;(<a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>&nbsp;address,
+<pre class="methodSignature">@Deprecated
+public static&nbsp;<a href="../api/SingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>,&#8203;java.net.InetSocketAddress&gt;&nbsp;forResolvedAddressViaProxy&#8203;(<a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>&nbsp;address,
                                                                                                                       <a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>&nbsp;proxyAddress)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="../api/SingleAddressHttpClientBuilder.html#proxyAddress(U)"><code>SingleAddressHttpClientBuilder.proxyAddress(Object)</code></a> on the instance returned from
+ <a href="#forResolvedAddress(io.servicetalk.transport.api.HostAndPort)"><code>forResolvedAddress(HostAndPort)</code></a>.</div>
+</div>
 <div class="block">Creates a <a href="../api/SingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api"><code>SingleAddressHttpClientBuilder</code></a> for an address via a proxy, with default <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>address</code> - the <code>ResolvedAddress</code> to connect to via the proxy. This address will also be used for the
  <a href="../api/HttpHeaderNames.html#HOST"><code>HttpHeaderNames.HOST</code></a>. Use <a href="../api/SingleAddressHttpClientBuilder.html#unresolvedAddressToHost(java.util.function.Function)"><code>SingleAddressHttpClientBuilder.unresolvedAddressToHost(Function)</code></a>
- if you want to override that value or <a href="../api/SingleAddressHttpClientBuilder.html#disableHostHeaderFallback()"><code>SingleAddressHttpClientBuilder.disableHostHeaderFallback()</code></a> if you
+ if you want to override that value or <a href="../api/SingleAddressHttpClientBuilder.html#hostHeaderFallback(boolean)"><code>SingleAddressHttpClientBuilder.hostHeaderFallback(boolean)</code></a> if you
  want to disable this behavior.</dd>
 <dd><code>proxyAddress</code> - The proxy <code>ResolvedAddress</code> to connect.</dd>
 <dt><span class="returnLabel">Returns:</span></dt>
@@ -552,7 +592,7 @@ extends java.lang.Object</pre>
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>address</code> - the <code>ResolvedAddress</code> to connect. This address will also be used for the
  <a href="../api/HttpHeaderNames.html#HOST"><code>HttpHeaderNames.HOST</code></a>. Use <a href="../api/SingleAddressHttpClientBuilder.html#unresolvedAddressToHost(java.util.function.Function)"><code>SingleAddressHttpClientBuilder.unresolvedAddressToHost(Function)</code></a>
- if you want to override that value or <a href="../api/SingleAddressHttpClientBuilder.html#disableHostHeaderFallback()"><code>SingleAddressHttpClientBuilder.disableHostHeaderFallback()</code></a> if you
+ if you want to override that value or <a href="../api/SingleAddressHttpClientBuilder.html#hostHeaderFallback(boolean)"><code>SingleAddressHttpClientBuilder.hostHeaderFallback(boolean)</code></a> if you
  want to disable this behavior.</dd>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd>new builder for the address</dd>
@@ -565,14 +605,19 @@ extends java.lang.Object</pre>
 <ul class="blockList">
 <li class="blockList">
 <h4>forResolvedAddressViaProxy</h4>
-<pre class="methodSignature">public static&nbsp;<a href="../api/SingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;java.net.InetSocketAddress,&#8203;java.net.InetSocketAddress&gt;&nbsp;forResolvedAddressViaProxy&#8203;(java.net.InetSocketAddress&nbsp;address,
+<pre class="methodSignature">@Deprecated
+public static&nbsp;<a href="../api/SingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;java.net.InetSocketAddress,&#8203;java.net.InetSocketAddress&gt;&nbsp;forResolvedAddressViaProxy&#8203;(java.net.InetSocketAddress&nbsp;address,
                                                                                                                                      java.net.InetSocketAddress&nbsp;proxyAddress)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="../api/SingleAddressHttpClientBuilder.html#proxyAddress(U)"><code>SingleAddressHttpClientBuilder.proxyAddress(Object)</code></a> on the instance returned from
+ <a href="#forResolvedAddress(T)"><code>forResolvedAddress(SocketAddress)</code></a></div>
+</div>
 <div class="block">Creates a <a href="../api/SingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api"><code>SingleAddressHttpClientBuilder</code></a> for an address via a proxy, with default <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>address</code> - the <code>ResolvedAddress</code> to connect to via the proxy. This address will also be used for the
  <a href="../api/HttpHeaderNames.html#HOST"><code>HttpHeaderNames.HOST</code></a>. Use <a href="../api/SingleAddressHttpClientBuilder.html#unresolvedAddressToHost(java.util.function.Function)"><code>SingleAddressHttpClientBuilder.unresolvedAddressToHost(Function)</code></a>
- if you want to override that value or <a href="../api/SingleAddressHttpClientBuilder.html#disableHostHeaderFallback()"><code>SingleAddressHttpClientBuilder.disableHostHeaderFallback()</code></a> if you
+ if you want to override that value or <a href="../api/SingleAddressHttpClientBuilder.html#hostHeaderFallback(boolean)"><code>SingleAddressHttpClientBuilder.hostHeaderFallback(boolean)</code></a> if you
  want to disable this behavior.</dd>
 <dd><code>proxyAddress</code> - The proxy <code>ResolvedAddress</code> to connect.</dd>
 <dt><span class="returnLabel">Returns:</span></dt>
@@ -601,7 +646,7 @@ extends java.lang.Object</pre>
  The lifecycle of the provided <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> should be managed by the caller.</dd>
 <dd><code>address</code> - the <code>UnresolvedAddress</code> to connect to resolved using the provided <code>serviceDiscoverer</code>.
  This address will also be used for the <a href="../api/HttpHeaderNames.html#HOST"><code>HttpHeaderNames.HOST</code></a> using a best effort conversion. Use <a href="../api/SingleAddressHttpClientBuilder.html#unresolvedAddressToHost(java.util.function.Function)"><code>SingleAddressHttpClientBuilder.unresolvedAddressToHost(Function)</code></a> if you want to override that value or
- <a href="../api/SingleAddressHttpClientBuilder.html#disableHostHeaderFallback()"><code>SingleAddressHttpClientBuilder.disableHostHeaderFallback()</code></a> if you want to disable this behavior.</dd>
+ <a href="../api/SingleAddressHttpClientBuilder.html#hostHeaderFallback(boolean)"><code>SingleAddressHttpClientBuilder.hostHeaderFallback(boolean)</code></a> if you want to disable this behavior.</dd>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd>new builder with provided configuration</dd>
 </dl>

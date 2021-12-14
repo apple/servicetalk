@@ -26,7 +26,7 @@
     catch(err) {
     }
 //-->
-var data = {"i0":10,"i1":10,"i2":10,"i3":10,"i4":10,"i5":10,"i6":10,"i7":10,"i8":10,"i9":10,"i10":10,"i11":6,"i12":10,"i13":10,"i14":10,"i15":10,"i16":10,"i17":10,"i18":10,"i19":10,"i20":10};
+var data = {"i0":10,"i1":10,"i2":10,"i3":10,"i4":10,"i5":10,"i6":10,"i7":10,"i8":10,"i9":10,"i10":10,"i11":10,"i12":10,"i13":6,"i14":10,"i15":10,"i16":10,"i17":10,"i18":10,"i19":10,"i20":10,"i21":10,"i22":10};
 var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"],8:["t4","Concrete Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
@@ -131,7 +131,7 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <li class="blockList">
 <dl>
 <dt>All Implemented Interfaces:</dt>
-<dd><code><a href="HttpMetaData.html" title="interface in io.servicetalk.http.api">HttpMetaData</a></code>, <code><a href="HttpResponseMetaData.html" title="interface in io.servicetalk.http.api">HttpResponseMetaData</a></code></dd>
+<dd><code><a href="../../context/api/ContextMapHolder.html" title="interface in io.servicetalk.context.api">ContextMapHolder</a></code>, <code><a href="HttpMetaData.html" title="interface in io.servicetalk.http.api">HttpMetaData</a></code>, <code><a href="HttpResponseMetaData.html" title="interface in io.servicetalk.http.api">HttpResponseMetaData</a></code></dd>
 </dl>
 <hr>
 <pre>public abstract class <span class="typeNameLabel">BlockingStreamingHttpServerResponse</span>
@@ -209,37 +209,51 @@ extends java.lang.Object</pre>
 </td>
 </tr>
 <tr id="i6" class="altColor">
+<td class="colFirst"><code><a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api">ContextMap</a></code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#context()">context</a></span>()</code></th>
+<td class="colLast">
+<div class="block">A context associated with this <a href="HttpMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpMetaData</code></a>.</div>
+</td>
+</tr>
+<tr id="i7" class="rowColor">
+<td class="colFirst"><code><a href="BlockingStreamingHttpServerResponse.html" title="class in io.servicetalk.http.api">BlockingStreamingHttpServerResponse</a></code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#context(io.servicetalk.context.api.ContextMap)">context</a></span>&#8203;(<a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api">ContextMap</a>&nbsp;context)</code></th>
+<td class="colLast">
+<div class="block">Sets a context for this <a href="HttpMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpMetaData</code></a>.</div>
+</td>
+</tr>
+<tr id="i8" class="altColor">
 <td class="colFirst"><code><a href="../../encoding/api/ContentCodec.html" title="interface in io.servicetalk.encoding.api">ContentCodec</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#encoding()">encoding</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Returns the <a href="../../encoding/api/ContentCodec.html" title="interface in io.servicetalk.encoding.api"><code>ContentCodec</code></a> used to encode the payload of a request or a response.</div>
 </td>
 </tr>
-<tr id="i7" class="rowColor">
+<tr id="i9" class="rowColor">
 <td class="colFirst"><code><a href="HttpMetaData.html" title="interface in io.servicetalk.http.api">HttpMetaData</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#encoding(io.servicetalk.encoding.api.ContentCodec)">encoding</a></span>&#8203;(<a href="../../encoding/api/ContentCodec.html" title="interface in io.servicetalk.encoding.api">ContentCodec</a>&nbsp;encoding)</code></th>
 <td class="colLast">
 <div class="block">The <a href="../../encoding/api/ContentCodec.html" title="interface in io.servicetalk.encoding.api"><code>ContentCodec</code></a> used to encode the payload of a request or a response.</div>
 </td>
 </tr>
-<tr id="i8" class="altColor">
+<tr id="i10" class="altColor">
 <td class="colFirst"><code>boolean</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#equals(java.lang.Object)">equals</a></span>&#8203;(java.lang.Object&nbsp;o)</code></th>
 <td class="colLast">&nbsp;</td>
 </tr>
-<tr id="i9" class="rowColor">
+<tr id="i11" class="rowColor">
 <td class="colFirst"><code>int</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#hashCode()">hashCode</a></span>()</code></th>
 <td class="colLast">&nbsp;</td>
 </tr>
-<tr id="i10" class="altColor">
+<tr id="i12" class="altColor">
 <td class="colFirst"><code><a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#headers()">headers</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Returns the headers of this message.</div>
 </td>
 </tr>
-<tr id="i11" class="rowColor">
+<tr id="i13" class="rowColor">
 <td class="colFirst"><code>abstract <a href="HttpPayloadWriter.html" title="interface in io.servicetalk.http.api">HttpPayloadWriter</a>&lt;<a href="../../buffer/api/Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#sendMetaData()">sendMetaData</a></span>()</code></th>
 <td class="colLast">
@@ -247,7 +261,7 @@ extends java.lang.Object</pre>
  body.</div>
 </td>
 </tr>
-<tr id="i12" class="altColor">
+<tr id="i14" class="altColor">
 <td class="colFirst"><code>&lt;T&gt;&nbsp;<a href="HttpPayloadWriter.html" title="interface in io.servicetalk.http.api">HttpPayloadWriter</a>&lt;T&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#sendMetaData(io.servicetalk.http.api.HttpSerializer)">sendMetaData</a></span>&#8203;(<a href="HttpSerializer.html" title="interface in io.servicetalk.http.api">HttpSerializer</a>&lt;T&gt;&nbsp;serializer)</code></th>
 <td class="colLast">
@@ -255,7 +269,7 @@ extends java.lang.Object</pre>
  to continue writing a payload body.</div>
 </td>
 </tr>
-<tr id="i13" class="rowColor">
+<tr id="i15" class="rowColor">
 <td class="colFirst"><code><a href="HttpOutputStream.html" title="class in io.servicetalk.http.api">HttpOutputStream</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#sendMetaDataOutputStream()">sendMetaDataOutputStream</a></span>()</code></th>
 <td class="colLast">
@@ -263,7 +277,7 @@ extends java.lang.Object</pre>
  payload body.</div>
 </td>
 </tr>
-<tr id="i14" class="altColor">
+<tr id="i16" class="altColor">
 <td class="colFirst"><code><a href="BlockingStreamingHttpServerResponse.html" title="class in io.servicetalk.http.api">BlockingStreamingHttpServerResponse</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setHeader(java.lang.CharSequence,java.lang.CharSequence)">setHeader</a></span>&#8203;(java.lang.CharSequence&nbsp;name,
          java.lang.CharSequence&nbsp;value)</code></th>
@@ -271,42 +285,42 @@ extends java.lang.Object</pre>
 <div class="block">Sets a header with the specified <code>name</code> and <code>value</code>.</div>
 </td>
 </tr>
-<tr id="i15" class="rowColor">
+<tr id="i17" class="rowColor">
 <td class="colFirst"><code><a href="BlockingStreamingHttpServerResponse.html" title="class in io.servicetalk.http.api">BlockingStreamingHttpServerResponse</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setHeaders(io.servicetalk.http.api.HttpHeaders)">setHeaders</a></span>&#8203;(<a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a>&nbsp;headers)</code></th>
 <td class="colLast">
 <div class="block">Clears the current header entries and copies all header entries of the specified <code>headers</code> object.</div>
 </td>
 </tr>
-<tr id="i16" class="altColor">
+<tr id="i18" class="altColor">
 <td class="colFirst"><code><a href="HttpResponseStatus.html" title="class in io.servicetalk.http.api">HttpResponseStatus</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#status()">status</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Returns the status of this <a href="StreamingHttpResponse.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpResponse</code></a>.</div>
 </td>
 </tr>
-<tr id="i17" class="rowColor">
+<tr id="i19" class="rowColor">
 <td class="colFirst"><code><a href="BlockingStreamingHttpServerResponse.html" title="class in io.servicetalk.http.api">BlockingStreamingHttpServerResponse</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#status(io.servicetalk.http.api.HttpResponseStatus)">status</a></span>&#8203;(<a href="HttpResponseStatus.html" title="class in io.servicetalk.http.api">HttpResponseStatus</a>&nbsp;status)</code></th>
 <td class="colLast">
 <div class="block">Set the status of this <a href="StreamingHttpResponse.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpResponse</code></a>.</div>
 </td>
 </tr>
-<tr id="i18" class="altColor">
+<tr id="i20" class="altColor">
 <td class="colFirst"><code>java.lang.String</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#toString()">toString</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Returns a string representation of the message.</div>
 </td>
 </tr>
-<tr id="i19" class="rowColor">
+<tr id="i21" class="rowColor">
 <td class="colFirst"><code><a href="HttpProtocolVersion.html" title="class in io.servicetalk.http.api">HttpProtocolVersion</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#version()">version</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Returns the protocol version of this <a href="HttpMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpMetaData</code></a>.</div>
 </td>
 </tr>
-<tr id="i20" class="altColor">
+<tr id="i22" class="altColor">
 <td class="colFirst"><code><a href="BlockingStreamingHttpServerResponse.html" title="class in io.servicetalk.http.api">BlockingStreamingHttpServerResponse</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#version(io.servicetalk.http.api.HttpProtocolVersion)">version</a></span>&#8203;(<a href="HttpProtocolVersion.html" title="class in io.servicetalk.http.api">HttpProtocolVersion</a>&nbsp;version)</code></th>
 <td class="colLast">
@@ -326,7 +340,7 @@ extends java.lang.Object</pre>
 <!--   -->
 </a>
 <h3>Methods inherited from interface&nbsp;io.servicetalk.http.api.<a href="HttpMetaData.html" title="interface in io.servicetalk.http.api">HttpMetaData</a></h3>
-<code><a href="HttpMetaData.html#encoding()">encoding</a>, <a href="HttpMetaData.html#encoding(io.servicetalk.encoding.api.ContentCodec)">encoding</a>, <a href="HttpMetaData.html#headers()">headers</a>, <a href="HttpMetaData.html#toString(java.util.function.BiFunction)">toString</a>, <a href="HttpMetaData.html#version()">version</a></code></li>
+<code><a href="HttpMetaData.html#context()">context</a>, <a href="HttpMetaData.html#encoding()">encoding</a>, <a href="HttpMetaData.html#encoding(io.servicetalk.encoding.api.ContentCodec)">encoding</a>, <a href="HttpMetaData.html#headers()">headers</a>, <a href="HttpMetaData.html#toString(java.util.function.BiFunction)">toString</a>, <a href="HttpMetaData.html#version()">version</a></code></li>
 </ul>
 </li>
 </ul>
@@ -602,6 +616,32 @@ extends java.lang.Object</pre>
 </dl>
 </li>
 </ul>
+<a id="context(io.servicetalk.context.api.ContextMap)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>context</h4>
+<pre class="methodSignature">public&nbsp;<a href="BlockingStreamingHttpServerResponse.html" title="class in io.servicetalk.http.api">BlockingStreamingHttpServerResponse</a>&nbsp;context&#8203;(<a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api">ContextMap</a>&nbsp;context)</pre>
+<div class="block"><span class="descfrmTypeLabel">Description copied from interface:&nbsp;<code><a href="HttpMetaData.html#context(io.servicetalk.context.api.ContextMap)">HttpMetaData</a></code></span></div>
+<div class="block">Sets a context for this <a href="HttpMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpMetaData</code></a>.
+ <p>
+ Context can be used to associate a state with a request or response message without serializing its state on the
+ wire.</div>
+<dl>
+<dt><span class="overrideSpecifyLabel">Specified by:</span></dt>
+<dd><code><a href="../../context/api/ContextMapHolder.html#context(io.servicetalk.context.api.ContextMap)">context</a></code>&nbsp;in interface&nbsp;<code><a href="../../context/api/ContextMapHolder.html" title="interface in io.servicetalk.context.api">ContextMapHolder</a></code></dd>
+<dt><span class="overrideSpecifyLabel">Specified by:</span></dt>
+<dd><code><a href="HttpMetaData.html#context(io.servicetalk.context.api.ContextMap)">context</a></code>&nbsp;in interface&nbsp;<code><a href="HttpMetaData.html" title="interface in io.servicetalk.http.api">HttpMetaData</a></code></dd>
+<dt><span class="overrideSpecifyLabel">Specified by:</span></dt>
+<dd><code><a href="HttpResponseMetaData.html#context(io.servicetalk.context.api.ContextMap)">context</a></code>&nbsp;in interface&nbsp;<code><a href="HttpResponseMetaData.html" title="interface in io.servicetalk.http.api">HttpResponseMetaData</a></code></dd>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>context</code> - the new context for this <a href="HttpMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpMetaData</code></a>.</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd><code>this</code>.</dd>
+</dl>
+</li>
+</ul>
 <a id="status()">
 <!--   -->
 </a>
@@ -723,7 +763,7 @@ extends java.lang.Object</pre>
 <a id="headers()">
 <!--   -->
 </a>
-<ul class="blockListLast">
+<ul class="blockList">
 <li class="blockList">
 <h4>headers</h4>
 <pre class="methodSignature">public final&nbsp;<a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a>&nbsp;headers()</pre>
@@ -734,6 +774,29 @@ extends java.lang.Object</pre>
 <dd><code><a href="HttpMetaData.html#headers()">headers</a></code>&nbsp;in interface&nbsp;<code><a href="HttpMetaData.html" title="interface in io.servicetalk.http.api">HttpMetaData</a></code></dd>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd>the headers.</dd>
+</dl>
+</li>
+</ul>
+<a id="context()">
+<!--   -->
+</a>
+<ul class="blockListLast">
+<li class="blockList">
+<h4>context</h4>
+<pre class="methodSignature">@Nonnull
+public final&nbsp;<a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api">ContextMap</a>&nbsp;context()</pre>
+<div class="block"><span class="descfrmTypeLabel">Description copied from interface:&nbsp;<code><a href="HttpMetaData.html#context()">HttpMetaData</a></code></span></div>
+<div class="block">A context associated with this <a href="HttpMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpMetaData</code></a>.
+ <p>
+ Context can be used to associate a state with a request or response message without serializing its state on the
+ wire.</div>
+<dl>
+<dt><span class="overrideSpecifyLabel">Specified by:</span></dt>
+<dd><code><a href="../../context/api/ContextMapHolder.html#context()">context</a></code>&nbsp;in interface&nbsp;<code><a href="../../context/api/ContextMapHolder.html" title="interface in io.servicetalk.context.api">ContextMapHolder</a></code></dd>
+<dt><span class="overrideSpecifyLabel">Specified by:</span></dt>
+<dd><code><a href="HttpMetaData.html#context()">context</a></code>&nbsp;in interface&nbsp;<code><a href="HttpMetaData.html" title="interface in io.servicetalk.http.api">HttpMetaData</a></code></dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd>a context associated with this <a href="HttpMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpMetaData</code></a>.</dd>
 </dl>
 </li>
 </ul>

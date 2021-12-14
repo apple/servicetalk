@@ -125,8 +125,8 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </tr>
 <tr class="altColor">
 <th class="colFirst" scope="row"><a href="FilterableGrpcClient.html" title="interface in io.servicetalk.grpc.api">FilterableGrpcClient</a></th>
-<td class="colLast">
-<div class="block">A client to a <a href="https://www.grpc.io">gRPC</a> service that supports filtering.</div>
+<td class="colLast">Deprecated.
+<div class="deprecationComment">gRPC Client Filters will be removed in future release of ServiceTalk.</div>
 </td>
 </tr>
 <tr class="rowColor">
@@ -143,167 +143,204 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </td>
 </tr>
 <tr class="rowColor">
-<th class="colFirst" scope="row"><a href="GrpcClientBuilder.MultiClientBuilder.html" title="interface in io.servicetalk.grpc.api">GrpcClientBuilder.MultiClientBuilder</a></th>
+<th class="colFirst" scope="row"><a href="GrpcClientBuilder.HttpInitializer.html" title="interface in io.servicetalk.grpc.api">GrpcClientBuilder.HttpInitializer</a>&lt;U,&#8203;R&gt;</th>
 <td class="colLast">
-<div class="block">An interface to create multiple <a href="https://www.grpc.io">gRPC</a> clients sharing the
- same underlying transport instance.</div>
+<div class="block">Initializes the underlying <a href="../../http/api/SingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api"><code>SingleAddressHttpClientBuilder</code></a> used for the transport layer.</div>
 </td>
 </tr>
 <tr class="altColor">
+<th class="colFirst" scope="row"><a href="GrpcClientBuilder.MultiClientBuilder.html" title="interface in io.servicetalk.grpc.api">GrpcClientBuilder.MultiClientBuilder</a></th>
+<td class="colLast">Deprecated.
+<div class="deprecationComment">Use <a href="GrpcClientFactory.html#newClient(io.servicetalk.grpc.api.GrpcClientCallFactory)"><code>GrpcClientFactory.newClient(GrpcClientCallFactory)</code></a>
+ or <a href="GrpcClientFactory.html#newBlockingClient(io.servicetalk.grpc.api.GrpcClientCallFactory)"><code>GrpcClientFactory.newBlockingClient(GrpcClientCallFactory)</code></a>
+ and provide a custom <a href="GrpcClientCallFactory.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClientCallFactory</code></a> instead.</div>
+</td>
+</tr>
+<tr class="rowColor">
 <th class="colFirst" scope="row"><a href="GrpcClientCallFactory.html" title="interface in io.servicetalk.grpc.api">GrpcClientCallFactory</a></th>
 <td class="colLast">
 <div class="block">A factory to create <a href="https://www.grpc.io">gRPC</a> client call objects for different
  programming models.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <th class="colFirst" scope="row"><a href="GrpcClientCallFactory.BlockingClientCall.html" title="interface in io.servicetalk.grpc.api">GrpcClientCallFactory.BlockingClientCall</a>&lt;Req,&#8203;Resp&gt;</th>
 <td class="colLast">
 <div class="block">An abstraction to make blocking client calls.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <th class="colFirst" scope="row"><a href="GrpcClientCallFactory.BlockingRequestStreamingClientCall.html" title="interface in io.servicetalk.grpc.api">GrpcClientCallFactory.BlockingRequestStreamingClientCall</a>&lt;Req,&#8203;Resp&gt;</th>
 <td class="colLast">
 <div class="block">An abstraction to make blocking client calls where request is streaming.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <th class="colFirst" scope="row"><a href="GrpcClientCallFactory.BlockingResponseStreamingClientCall.html" title="interface in io.servicetalk.grpc.api">GrpcClientCallFactory.BlockingResponseStreamingClientCall</a>&lt;Req,&#8203;Resp&gt;</th>
 <td class="colLast">
 <div class="block">An abstraction to make blocking client calls where response is streaming.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <th class="colFirst" scope="row"><a href="GrpcClientCallFactory.BlockingStreamingClientCall.html" title="interface in io.servicetalk.grpc.api">GrpcClientCallFactory.BlockingStreamingClientCall</a>&lt;Req,&#8203;Resp&gt;</th>
 <td class="colLast">
 <div class="block">An abstraction to make blocking bi-directional streaming client calls.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <th class="colFirst" scope="row"><a href="GrpcClientCallFactory.ClientCall.html" title="interface in io.servicetalk.grpc.api">GrpcClientCallFactory.ClientCall</a>&lt;Req,&#8203;Resp&gt;</th>
 <td class="colLast">
 <div class="block">An abstraction to make asynchronous client calls.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <th class="colFirst" scope="row"><a href="GrpcClientCallFactory.RequestStreamingClientCall.html" title="interface in io.servicetalk.grpc.api">GrpcClientCallFactory.RequestStreamingClientCall</a>&lt;Req,&#8203;Resp&gt;</th>
 <td class="colLast">
 <div class="block">An abstraction to make asynchronous client calls where request is streaming.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <th class="colFirst" scope="row"><a href="GrpcClientCallFactory.ResponseStreamingClientCall.html" title="interface in io.servicetalk.grpc.api">GrpcClientCallFactory.ResponseStreamingClientCall</a>&lt;Req,&#8203;Resp&gt;</th>
 <td class="colLast">
 <div class="block">An abstraction to make asynchronous client calls where response is streaming.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <th class="colFirst" scope="row"><a href="GrpcClientCallFactory.StreamingClientCall.html" title="interface in io.servicetalk.grpc.api">GrpcClientCallFactory.StreamingClientCall</a>&lt;Req,&#8203;Resp&gt;</th>
 <td class="colLast">
 <div class="block">An abstraction to make asynchronous bi-directional streaming client calls.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <th class="colFirst" scope="row"><a href="GrpcClientFilterFactory.html" title="interface in io.servicetalk.grpc.api">GrpcClientFilterFactory</a>&lt;Filter extends FilterableClient,&#8203;FilterableClient extends <a href="FilterableGrpcClient.html" title="interface in io.servicetalk.grpc.api">FilterableGrpcClient</a>&gt;</th>
-<td class="colLast">
-<div class="block">A factory to create <a href="https://www.grpc.io">gRPC</a> client filters.</div>
+<td class="colLast">Deprecated.
+<div class="deprecationComment">gRPC Client Filters will be removed in future release of ServiceTalk.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <th class="colFirst" scope="row"><a href="GrpcClientMetadata.html" title="interface in io.servicetalk.grpc.api">GrpcClientMetadata</a></th>
 <td class="colLast">
 <div class="block">Metadata for a <a href="https://www.grpc.io">gRPC</a> client call.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <th class="colFirst" scope="row"><a href="GrpcClientSecurityConfigurator.html" title="interface in io.servicetalk.grpc.api">GrpcClientSecurityConfigurator</a>&lt;U,&#8203;R&gt;</th>
 <td class="colLast">Deprecated.
 <div class="deprecationComment">Use <a href="GrpcClientBuilder.html#sslConfig(io.servicetalk.transport.api.ClientSslConfig)"><code>GrpcClientBuilder.sslConfig(ClientSslConfig)</code></a>.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <th class="colFirst" scope="row"><a href="GrpcExecutionContext.html" title="interface in io.servicetalk.grpc.api">GrpcExecutionContext</a></th>
 <td class="colLast">
 <div class="block">An extension of <a href="../../transport/api/ExecutionContext.html" title="interface in io.servicetalk.transport.api"><code>ExecutionContext</code></a> for <a href="https://www.grpc.io">gRPC</a>.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <th class="colFirst" scope="row"><a href="GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api">GrpcExecutionStrategy</a></th>
 <td class="colLast">
 <div class="block">An execution strategy for <a href="https://www.grpc.io">gRPC</a> client and servers.</div>
 </td>
 </tr>
+<tr class="rowColor">
+<th class="colFirst" scope="row"><a href="GrpcLifecycleObserver.html" title="interface in io.servicetalk.grpc.api">GrpcLifecycleObserver</a></th>
+<td class="colLast">
+<div class="block">An observer interface that provides visibility into gRPC lifecycle events.</div>
+</td>
+</tr>
 <tr class="altColor">
+<th class="colFirst" scope="row"><a href="GrpcLifecycleObserver.GrpcExchangeObserver.html" title="interface in io.servicetalk.grpc.api">GrpcLifecycleObserver.GrpcExchangeObserver</a></th>
+<td class="colLast">
+<div class="block">An observer interface that provides visibility into events associated with a single gRPC exchange.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colFirst" scope="row"><a href="GrpcLifecycleObserver.GrpcRequestObserver.html" title="interface in io.servicetalk.grpc.api">GrpcLifecycleObserver.GrpcRequestObserver</a></th>
+<td class="colLast">
+<div class="block">An observer interface that provides visibility into events associated with a single gRPC request.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colFirst" scope="row"><a href="GrpcLifecycleObserver.GrpcResponseObserver.html" title="interface in io.servicetalk.grpc.api">GrpcLifecycleObserver.GrpcResponseObserver</a></th>
+<td class="colLast">
+<div class="block">An observer interface that provides visibility into events associated with a single gRPC response.</div>
+</td>
+</tr>
+<tr class="rowColor">
 <th class="colFirst" scope="row"><a href="GrpcMetadata.html" title="interface in io.servicetalk.grpc.api">GrpcMetadata</a></th>
 <td class="colLast">
 <div class="block">Metadata for a <a href="https://www.grpc.io">gRPC</a> call.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <th class="colFirst" scope="row"><a href="GrpcPayloadWriter.html" title="interface in io.servicetalk.grpc.api">GrpcPayloadWriter</a>&lt;T&gt;</th>
 <td class="colLast">
 <div class="block">A <a href="../../oio/api/PayloadWriter.html" title="interface in io.servicetalk.oio.api"><code>PayloadWriter</code></a> for <a href="https://www.grpc.io">gRPC</a>.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <th class="colFirst" scope="row"><a href="GrpcRoutes.AllGrpcRoutes.html" title="interface in io.servicetalk.grpc.api">GrpcRoutes.AllGrpcRoutes</a></th>
 <td class="colLast">
 <div class="block">A collection of route corresponding to the enclosing <a href="GrpcRoutes.html" title="class in io.servicetalk.grpc.api"><code>GrpcRoutes</code></a>.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <th class="colFirst" scope="row"><a href="GrpcRoutes.BlockingRequestStreamingRoute.html" title="interface in io.servicetalk.grpc.api">GrpcRoutes.BlockingRequestStreamingRoute</a>&lt;Req,&#8203;Resp&gt;</th>
 <td class="colLast">
 <div class="block">A blocking <a href="https://www.grpc.io">gRPC</a> route with request streaming.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <th class="colFirst" scope="row"><a href="GrpcRoutes.BlockingResponseStreamingRoute.html" title="interface in io.servicetalk.grpc.api">GrpcRoutes.BlockingResponseStreamingRoute</a>&lt;Req,&#8203;Resp&gt;</th>
 <td class="colLast">
 <div class="block">A blocking <a href="https://www.grpc.io">gRPC</a> route with response streaming.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <th class="colFirst" scope="row"><a href="GrpcRoutes.BlockingRoute.html" title="interface in io.servicetalk.grpc.api">GrpcRoutes.BlockingRoute</a>&lt;Req,&#8203;Resp&gt;</th>
 <td class="colLast">
 <div class="block">A blocking <a href="https://www.grpc.io">gRPC</a> route.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <th class="colFirst" scope="row"><a href="GrpcRoutes.BlockingStreamingRoute.html" title="interface in io.servicetalk.grpc.api">GrpcRoutes.BlockingStreamingRoute</a>&lt;Req,&#8203;Resp&gt;</th>
 <td class="colLast">
 <div class="block">A blocking <a href="https://www.grpc.io">gRPC</a> route with bi-directional streaming.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <th class="colFirst" scope="row"><a href="GrpcRoutes.RequestStreamingRoute.html" title="interface in io.servicetalk.grpc.api">GrpcRoutes.RequestStreamingRoute</a>&lt;Req,&#8203;Resp&gt;</th>
 <td class="colLast">
 <div class="block">An asynchronous <a href="https://www.grpc.io">gRPC</a> route with request streaming.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <th class="colFirst" scope="row"><a href="GrpcRoutes.ResponseStreamingRoute.html" title="interface in io.servicetalk.grpc.api">GrpcRoutes.ResponseStreamingRoute</a>&lt;Req,&#8203;Resp&gt;</th>
 <td class="colLast">
 <div class="block">An asynchronous <a href="https://www.grpc.io">gRPC</a> route with response streaming.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <th class="colFirst" scope="row"><a href="GrpcRoutes.Route.html" title="interface in io.servicetalk.grpc.api">GrpcRoutes.Route</a>&lt;Req,&#8203;Resp&gt;</th>
 <td class="colLast">
 <div class="block">An asynchronous <a href="https://www.grpc.io">gRPC</a> route.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <th class="colFirst" scope="row"><a href="GrpcRoutes.StreamingRoute.html" title="interface in io.servicetalk.grpc.api">GrpcRoutes.StreamingRoute</a>&lt;Req,&#8203;Resp&gt;</th>
 <td class="colLast">
 <div class="block">An asynchronous <a href="https://www.grpc.io">gRPC</a> route with bi-directional streaming.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <th class="colFirst" scope="row"><a href="GrpcSerializationProvider.html" title="interface in io.servicetalk.grpc.api">GrpcSerializationProvider</a></th>
 <td class="colLast">
 <div class="block">A provider for <a href="https://www.grpc.io">gRPC</a> serialization/deserialization.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colFirst" scope="row"><a href="GrpcServerBuilder.HttpInitializer.html" title="interface in io.servicetalk.grpc.api">GrpcServerBuilder.HttpInitializer</a></th>
+<td class="colLast">
+<div class="block">Initializes the underlying <a href="../../http/api/HttpServerBuilder.html" title="class in io.servicetalk.http.api"><code>HttpServerBuilder</code></a> used for the transport layer.</div>
 </td>
 </tr>
 <tr class="altColor">
@@ -337,8 +374,8 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </tr>
 <tr class="rowColor">
 <th class="colFirst" scope="row"><a href="GrpcServiceFilterFactory.html" title="interface in io.servicetalk.grpc.api">GrpcServiceFilterFactory</a>&lt;Filter extends Service,&#8203;Service&gt;</th>
-<td class="colLast">
-<div class="block">A factory to create <a href="https://www.grpc.io">gRPC</a> service filters.</div>
+<td class="colLast">Deprecated.
+<div class="deprecationComment">gRPC Service Filters will be removed in future release of ServiceTalk.</div>
 </td>
 </tr>
 </tbody>

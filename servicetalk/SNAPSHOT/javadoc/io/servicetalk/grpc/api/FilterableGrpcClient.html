@@ -26,8 +26,8 @@
     catch(err) {
     }
 //-->
-var data = {"i0":6};
-var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"]};
+var data = {"i0":38};
+var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"],32:["t6","Deprecated Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
 var tableTab = "tableTab";
@@ -126,8 +126,18 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <dd><code><a href="../../concurrent/api/AsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">AsyncCloseable</a></code>, <code><a href="../../concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a></code></dd>
 </dl>
 <hr>
-<pre>public interface <span class="typeNameLabel">FilterableGrpcClient</span>
+<pre>@Deprecated
+public interface <span class="typeNameLabel">FilterableGrpcClient</span>
 extends <a href="../../concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a></pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">gRPC Client Filters will be removed in future release of ServiceTalk. We encourage the use of
+ <a href="../../http/api/StreamingHttpClientFilterFactory.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpClientFilterFactory</code></a> and if the access to the decoded payload is
+ necessary, then performing that logic can be done in the particular <a href="GrpcClient.html" title="interface in io.servicetalk.grpc.api"><code>client implementation</code></a>.
+ Please use <a href="../../http/api/SingleAddressHttpClientBuilder.html#appendClientFilter(io.servicetalk.http.api.StreamingHttpClientFilterFactory)"><code>SingleAddressHttpClientBuilder.appendClientFilter(
+ io.servicetalk.http.api.StreamingHttpClientFilterFactory)</code></a> upon the <code>builder</code> obtained using
+ <a href="GrpcClientBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcClientBuilder.HttpInitializer)"><code>GrpcClientBuilder.initializeHttp(GrpcClientBuilder.HttpInitializer)</code></a>
+ if HTTP filters are acceptable in your use case.</div>
+</div>
 <div class="block">A client to a <a href="https://www.grpc.io">gRPC</a> service that supports filtering.</div>
 </li>
 </ul>
@@ -143,7 +153,7 @@ extends <a href="../../concurrent/api/ListenableAsyncCloseable.html" title="inte
 </a>
 <h3>Method Summary</h3>
 <table class="memberSummary">
-<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t3" class="tableTab"><span><a href="javascript:show(4);">Abstract Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
+<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t3" class="tableTab"><span><a href="javascript:show(4);">Abstract Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t6" class="tableTab"><span><a href="javascript:show(32);">Deprecated Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
 <tr>
 <th class="colFirst" scope="col">Modifier and Type</th>
 <th class="colSecond" scope="col">Method</th>
@@ -153,6 +163,7 @@ extends <a href="../../concurrent/api/ListenableAsyncCloseable.html" title="inte
 <td class="colFirst"><code><a href="GrpcExecutionContext.html" title="interface in io.servicetalk.grpc.api">GrpcExecutionContext</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#executionContext()">executionContext</a></span>()</code></th>
 <td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Get the <a href="GrpcExecutionContext.html" title="interface in io.servicetalk.grpc.api"><code>GrpcExecutionContext</code></a> used during construction of this object.</div>
 </td>
 </tr>
@@ -194,6 +205,7 @@ extends <a href="../../concurrent/api/ListenableAsyncCloseable.html" title="inte
 <li class="blockList">
 <h4>executionContext</h4>
 <pre class="methodSignature"><a href="GrpcExecutionContext.html" title="interface in io.servicetalk.grpc.api">GrpcExecutionContext</a>&nbsp;executionContext()</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Get the <a href="GrpcExecutionContext.html" title="interface in io.servicetalk.grpc.api"><code>GrpcExecutionContext</code></a> used during construction of this object.
  <p>
  Note that the <a href="../../transport/api/ExecutionContext.html#ioExecutor()"><code>ExecutionContext.ioExecutor()</code></a> will not necessarily be associated with a specific thread

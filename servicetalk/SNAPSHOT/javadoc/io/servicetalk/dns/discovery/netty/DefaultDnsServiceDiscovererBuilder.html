@@ -26,7 +26,7 @@
     catch(err) {
     }
 //-->
-var data = {"i0":10,"i1":10,"i2":10,"i3":10,"i4":10,"i5":10,"i6":10,"i7":10,"i8":10,"i9":10,"i10":10};
+var data = {"i0":10,"i1":10,"i2":10,"i3":10,"i4":10,"i5":10,"i6":10,"i7":10,"i8":10,"i9":10,"i10":10,"i11":10};
 var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],8:["t4","Concrete Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
@@ -228,12 +228,20 @@ extends java.lang.Object</pre>
 </tr>
 <tr id="i7" class="rowColor">
 <td class="colFirst"><code><a href="DefaultDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty">DefaultDnsServiceDiscovererBuilder</a></code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#missingRecordStatus(io.servicetalk.client.api.ServiceDiscovererEvent.Status)">missingRecordStatus</a></span>&#8203;(<a href="../../../client/api/ServiceDiscovererEvent.Status.html" title="class in io.servicetalk.client.api">ServiceDiscovererEvent.Status</a>&nbsp;status)</code></th>
+<td class="colLast">
+<div class="block">Sets which <a href="../../../client/api/ServiceDiscovererEvent.Status.html" title="class in io.servicetalk.client.api"><code>ServiceDiscovererEvent.Status</code></a> to use in <a href="../../../client/api/ServiceDiscovererEvent.html#status()"><code>ServiceDiscovererEvent.status()</code></a> when a record
+ for a previously seen address is missing in the response.</div>
+</td>
+</tr>
+<tr id="i8" class="altColor">
+<td class="colFirst"><code><a href="DefaultDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty">DefaultDnsServiceDiscovererBuilder</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#ndots(int)">ndots</a></span>&#8203;(int&nbsp;ndots)</code></th>
 <td class="colLast">
 <div class="block">Set the number of dots which must appear in a name before an initial absolute query is made.</div>
 </td>
 </tr>
-<tr id="i8" class="altColor">
+<tr id="i9" class="rowColor">
 <td class="colFirst"><code><a href="DefaultDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty">DefaultDnsServiceDiscovererBuilder</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#observer(io.servicetalk.dns.discovery.netty.DnsServiceDiscovererObserver)">observer</a></span>&#8203;(<a href="DnsServiceDiscovererObserver.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererObserver</a>&nbsp;observer)</code></th>
 <td class="colLast">
@@ -241,7 +249,7 @@ extends java.lang.Object</pre>
  <a href="https://tools.ietf.org/html/rfc1034">DNS</a> <a href="../../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> built by this builder.</div>
 </td>
 </tr>
-<tr id="i9" class="rowColor">
+<tr id="i10" class="altColor">
 <td class="colFirst"><code><a href="DefaultDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty">DefaultDnsServiceDiscovererBuilder</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#optResourceEnabled(boolean)">optResourceEnabled</a></span>&#8203;(boolean&nbsp;optResourceEnabled)</code></th>
 <td class="colLast">
@@ -249,7 +257,7 @@ extends java.lang.Object</pre>
  how much data the resolver can read per response.</div>
 </td>
 </tr>
-<tr id="i10" class="altColor">
+<tr id="i11" class="rowColor">
 <td class="colFirst"><code><a href="DefaultDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty">DefaultDnsServiceDiscovererBuilder</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#queryTimeout(java.time.Duration)">queryTimeout</a></span>&#8203;(java.time.Duration&nbsp;queryTimeout)</code></th>
 <td class="colLast">
@@ -447,6 +455,23 @@ extends java.lang.Object</pre>
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>observer</code> - a <a href="DnsServiceDiscovererObserver.html" title="interface in io.servicetalk.dns.discovery.netty"><code>DnsServiceDiscovererObserver</code></a> that provides visibility into
  <a href="https://tools.ietf.org/html/rfc1034">DNS</a> <a href="../../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> built by this builder</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd><code>this</code>.</dd>
+</dl>
+</li>
+</ul>
+<a id="missingRecordStatus(io.servicetalk.client.api.ServiceDiscovererEvent.Status)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>missingRecordStatus</h4>
+<pre class="methodSignature">public&nbsp;<a href="DefaultDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty">DefaultDnsServiceDiscovererBuilder</a>&nbsp;missingRecordStatus&#8203;(<a href="../../../client/api/ServiceDiscovererEvent.Status.html" title="class in io.servicetalk.client.api">ServiceDiscovererEvent.Status</a>&nbsp;status)</pre>
+<div class="block">Sets which <a href="../../../client/api/ServiceDiscovererEvent.Status.html" title="class in io.servicetalk.client.api"><code>ServiceDiscovererEvent.Status</code></a> to use in <a href="../../../client/api/ServiceDiscovererEvent.html#status()"><code>ServiceDiscovererEvent.status()</code></a> when a record
+ for a previously seen address is missing in the response.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>status</code> - a <a href="../../../client/api/ServiceDiscovererEvent.Status.html" title="class in io.servicetalk.client.api"><code>ServiceDiscovererEvent.Status</code></a> for missing records.</dd>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd><code>this</code>.</dd>
 </dl>

@@ -26,7 +26,7 @@
     catch(err) {
     }
 //-->
-var data = {"i0":38,"i1":38,"i2":38,"i3":42,"i4":38,"i5":38,"i6":42,"i7":38,"i8":38,"i9":10,"i10":10,"i11":10,"i12":6,"i13":38,"i14":38,"i15":38,"i16":38,"i17":6,"i18":38,"i19":38,"i20":6,"i21":38,"i22":6,"i23":38,"i24":6,"i25":6,"i26":38,"i27":38};
+var data = {"i0":38,"i1":38,"i2":38,"i3":42,"i4":38,"i5":38,"i6":42,"i7":38,"i8":38,"i9":10,"i10":10,"i11":10,"i12":6,"i13":38,"i14":38,"i15":38,"i16":38,"i17":10,"i18":6,"i19":38,"i20":38,"i21":6,"i22":38,"i23":10,"i24":10,"i25":38,"i26":6,"i27":6,"i28":38,"i29":38};
 var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"],8:["t4","Concrete Methods"],32:["t6","Deprecated Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
@@ -381,13 +381,20 @@ extends java.lang.Object</pre>
 </td>
 </tr>
 <tr id="i17" class="rowColor">
+<td class="colFirst"><code><a href="PartitionedHttpClientBuilder.html" title="class in io.servicetalk.http.api">PartitionedHttpClientBuilder</a>&lt;<a href="PartitionedHttpClientBuilder.html" title="type parameter in PartitionedHttpClientBuilder">U</a>,&#8203;<a href="PartitionedHttpClientBuilder.html" title="type parameter in PartitionedHttpClientBuilder">R</a>&gt;</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#executor(io.servicetalk.concurrent.api.Executor)">executor</a></span>&#8203;(<a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;executor)</code></th>
+<td class="colLast">
+<div class="block">Sets the <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> for all connections created from this builder.</div>
+</td>
+</tr>
+<tr id="i18" class="altColor">
 <td class="colFirst"><code>abstract <a href="PartitionedHttpClientBuilder.html" title="class in io.servicetalk.http.api">PartitionedHttpClientBuilder</a>&lt;<a href="PartitionedHttpClientBuilder.html" title="type parameter in PartitionedHttpClientBuilder">U</a>,&#8203;<a href="PartitionedHttpClientBuilder.html" title="type parameter in PartitionedHttpClientBuilder">R</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#initializer(io.servicetalk.http.api.PartitionedHttpClientBuilder.SingleAddressInitializer)">initializer</a></span>&#8203;(<a href="PartitionedHttpClientBuilder.SingleAddressInitializer.html" title="interface in io.servicetalk.http.api">PartitionedHttpClientBuilder.SingleAddressInitializer</a>&lt;<a href="PartitionedHttpClientBuilder.html" title="type parameter in PartitionedHttpClientBuilder">U</a>,&#8203;<a href="PartitionedHttpClientBuilder.html" title="type parameter in PartitionedHttpClientBuilder">R</a>&gt;&nbsp;initializer)</code></th>
 <td class="colLast">
 <div class="block">Set a function which can customize options for each <a href="StreamingHttpClient.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpClient</code></a> that is built.</div>
 </td>
 </tr>
-<tr id="i18" class="altColor">
+<tr id="i19" class="rowColor">
 <td class="colFirst"><code>abstract <a href="PartitionedHttpClientBuilder.html" title="class in io.servicetalk.http.api">PartitionedHttpClientBuilder</a>&lt;<a href="PartitionedHttpClientBuilder.html" title="type parameter in PartitionedHttpClientBuilder">U</a>,&#8203;<a href="PartitionedHttpClientBuilder.html" title="type parameter in PartitionedHttpClientBuilder">R</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#ioExecutor(io.servicetalk.transport.api.IoExecutor)">ioExecutor</a></span>&#8203;(<a href="../../transport/api/IoExecutor.html" title="interface in io.servicetalk.transport.api">IoExecutor</a>&nbsp;ioExecutor)</code></th>
 <td class="colLast">
@@ -398,7 +405,7 @@ extends java.lang.Object</pre>
 </div>
 </td>
 </tr>
-<tr id="i19" class="rowColor">
+<tr id="i20" class="altColor">
 <td class="colFirst"><code>abstract <a href="PartitionedHttpClientBuilder.html" title="class in io.servicetalk.http.api">PartitionedHttpClientBuilder</a>&lt;<a href="PartitionedHttpClientBuilder.html" title="type parameter in PartitionedHttpClientBuilder">U</a>,&#8203;<a href="PartitionedHttpClientBuilder.html" title="type parameter in PartitionedHttpClientBuilder">R</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#loadBalancerFactory(io.servicetalk.http.api.HttpLoadBalancerFactory)">loadBalancerFactory</a></span>&#8203;(<a href="HttpLoadBalancerFactory.html" title="interface in io.servicetalk.http.api">HttpLoadBalancerFactory</a>&lt;<a href="PartitionedHttpClientBuilder.html" title="type parameter in PartitionedHttpClientBuilder">R</a>&gt;&nbsp;loadBalancerFactory)</code></th>
 <td class="colLast">
@@ -409,14 +416,14 @@ extends java.lang.Object</pre>
 </div>
 </td>
 </tr>
-<tr id="i20" class="altColor">
+<tr id="i21" class="rowColor">
 <td class="colFirst"><code>abstract <a href="PartitionedHttpClientBuilder.html" title="class in io.servicetalk.http.api">PartitionedHttpClientBuilder</a>&lt;<a href="PartitionedHttpClientBuilder.html" title="type parameter in PartitionedHttpClientBuilder">U</a>,&#8203;<a href="PartitionedHttpClientBuilder.html" title="type parameter in PartitionedHttpClientBuilder">R</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#partitionMapFactory(io.servicetalk.client.api.partition.PartitionMapFactory)">partitionMapFactory</a></span>&#8203;(<a href="../../client/api/partition/PartitionMapFactory.html" title="interface in io.servicetalk.client.api.partition">PartitionMapFactory</a>&nbsp;partitionMapFactory)</code></th>
 <td class="colLast">
 <div class="block">Sets <a href="../../client/api/partition/PartitionMapFactory.html" title="interface in io.servicetalk.client.api.partition"><code>PartitionMapFactory</code></a> to use by all <a href="StreamingHttpClient.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpClient</code></a>s created by this builder.</div>
 </td>
 </tr>
-<tr id="i21" class="rowColor">
+<tr id="i22" class="altColor">
 <td class="colFirst"><code>abstract <a href="PartitionedHttpClientBuilder.html" title="class in io.servicetalk.http.api">PartitionedHttpClientBuilder</a>&lt;<a href="PartitionedHttpClientBuilder.html" title="type parameter in PartitionedHttpClientBuilder">U</a>,&#8203;<a href="PartitionedHttpClientBuilder.html" title="type parameter in PartitionedHttpClientBuilder">R</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#protocols(io.servicetalk.http.api.HttpProtocolConfig...)">protocols</a></span>&#8203;(<a href="HttpProtocolConfig.html" title="interface in io.servicetalk.http.api">HttpProtocolConfig</a>...&nbsp;protocols)</code></th>
 <td class="colLast">
@@ -427,14 +434,21 @@ extends java.lang.Object</pre>
 </div>
 </td>
 </tr>
-<tr id="i22" class="altColor">
-<td class="colFirst"><code>abstract <a href="PartitionedHttpClientBuilder.html" title="class in io.servicetalk.http.api">PartitionedHttpClientBuilder</a>&lt;<a href="PartitionedHttpClientBuilder.html" title="type parameter in PartitionedHttpClientBuilder">U</a>,&#8203;<a href="PartitionedHttpClientBuilder.html" title="type parameter in PartitionedHttpClientBuilder">R</a>&gt;</code></td>
-<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#retryServiceDiscoveryErrors(io.servicetalk.http.api.ServiceDiscoveryRetryStrategy)">retryServiceDiscoveryErrors</a></span>&#8203;(<a href="ServiceDiscoveryRetryStrategy.html" title="interface in io.servicetalk.http.api">ServiceDiscoveryRetryStrategy</a>&lt;<a href="PartitionedHttpClientBuilder.html" title="type parameter in PartitionedHttpClientBuilder">R</a>,&#8203;<a href="../../client/api/partition/PartitionedServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api.partition">PartitionedServiceDiscovererEvent</a>&lt;<a href="PartitionedHttpClientBuilder.html" title="type parameter in PartitionedHttpClientBuilder">R</a>&gt;&gt;&nbsp;retryStrategy)</code></th>
+<tr id="i23" class="rowColor">
+<td class="colFirst"><code>io.servicetalk.http.api.HttpClientBuilder&lt;U,&#8203;R,&#8203;SDE&gt;</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#retryServiceDiscoveryErrors(io.servicetalk.concurrent.api.BiIntFunction)">retryServiceDiscoveryErrors</a></span>&#8203;(<a href="../../concurrent/api/BiIntFunction.html" title="interface in io.servicetalk.concurrent.api">BiIntFunction</a>&lt;java.lang.Throwable,&#8203;? extends <a href="../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>&gt;&nbsp;retryStrategy)</code></th>
 <td class="colLast">
 <div class="block">Sets a retry strategy to retry errors emitted by <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>.</div>
 </td>
 </tr>
-<tr id="i23" class="rowColor">
+<tr id="i24" class="altColor">
+<td class="colFirst"><code>io.servicetalk.http.api.BaseSingleAddressHttpClientBuilder&lt;U,&#8203;R,&#8203;SDE&gt;</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#retryServiceDiscoveryErrors(io.servicetalk.http.api.ServiceDiscoveryRetryStrategy)">retryServiceDiscoveryErrors</a></span>&#8203;(<a href="ServiceDiscoveryRetryStrategy.html" title="interface in io.servicetalk.http.api">ServiceDiscoveryRetryStrategy</a>&lt;R,&#8203;SDE&gt;&nbsp;retryStrategy)</code></th>
+<td class="colLast">
+<div class="block">Sets a retry strategy to retry errors emitted by <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>.</div>
+</td>
+</tr>
+<tr id="i25" class="rowColor">
 <td class="colFirst"><code>abstract <a href="PartitionedHttpClientSecurityConfigurator.html" title="interface in io.servicetalk.http.api">PartitionedHttpClientSecurityConfigurator</a>&lt;<a href="PartitionedHttpClientBuilder.html" title="type parameter in PartitionedHttpClientBuilder">U</a>,&#8203;<a href="PartitionedHttpClientBuilder.html" title="type parameter in PartitionedHttpClientBuilder">R</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#secure()">secure</a></span>()</code></th>
 <td class="colLast">
@@ -444,21 +458,21 @@ extends java.lang.Object</pre>
 </div>
 </td>
 </tr>
-<tr id="i24" class="altColor">
+<tr id="i26" class="altColor">
 <td class="colFirst"><code>abstract <a href="PartitionedHttpClientBuilder.html" title="class in io.servicetalk.http.api">PartitionedHttpClientBuilder</a>&lt;<a href="PartitionedHttpClientBuilder.html" title="type parameter in PartitionedHttpClientBuilder">U</a>,&#8203;<a href="PartitionedHttpClientBuilder.html" title="type parameter in PartitionedHttpClientBuilder">R</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#serviceDiscoverer(io.servicetalk.client.api.ServiceDiscoverer)">serviceDiscoverer</a></span>&#8203;(<a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api">ServiceDiscoverer</a>&lt;<a href="PartitionedHttpClientBuilder.html" title="type parameter in PartitionedHttpClientBuilder">U</a>,&#8203;<a href="PartitionedHttpClientBuilder.html" title="type parameter in PartitionedHttpClientBuilder">R</a>,&#8203;<a href="../../client/api/partition/PartitionedServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api.partition">PartitionedServiceDiscovererEvent</a>&lt;<a href="PartitionedHttpClientBuilder.html" title="type parameter in PartitionedHttpClientBuilder">R</a>&gt;&gt;&nbsp;serviceDiscoverer)</code></th>
 <td class="colLast">
 <div class="block">Sets a <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> to resolve addresses of remote servers to connect to.</div>
 </td>
 </tr>
-<tr id="i25" class="rowColor">
+<tr id="i27" class="rowColor">
 <td class="colFirst"><code>abstract <a href="PartitionedHttpClientBuilder.html" title="class in io.servicetalk.http.api">PartitionedHttpClientBuilder</a>&lt;<a href="PartitionedHttpClientBuilder.html" title="type parameter in PartitionedHttpClientBuilder">U</a>,&#8203;<a href="PartitionedHttpClientBuilder.html" title="type parameter in PartitionedHttpClientBuilder">R</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#serviceDiscoveryMaxQueueSize(int)">serviceDiscoveryMaxQueueSize</a></span>&#8203;(int&nbsp;serviceDiscoveryMaxQueueSize)</code></th>
 <td class="colLast">
 <div class="block">Sets the maximum amount of <a href="../../client/api/ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscovererEvent</code></a> objects that will be queued for each partition.</div>
 </td>
 </tr>
-<tr id="i26" class="altColor">
+<tr id="i28" class="altColor">
 <td class="colFirst"><code>abstract &lt;T&gt;&nbsp;<a href="PartitionedHttpClientBuilder.html" title="class in io.servicetalk.http.api">PartitionedHttpClientBuilder</a>&lt;<a href="PartitionedHttpClientBuilder.html" title="type parameter in PartitionedHttpClientBuilder">U</a>,&#8203;<a href="PartitionedHttpClientBuilder.html" title="type parameter in PartitionedHttpClientBuilder">R</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#socketOption(java.net.SocketOption,T)">socketOption</a></span>&#8203;(java.net.SocketOption&lt;T&gt;&nbsp;option,
             T&nbsp;value)</code></th>
@@ -470,7 +484,7 @@ extends java.lang.Object</pre>
 </div>
 </td>
 </tr>
-<tr id="i27" class="rowColor">
+<tr id="i29" class="rowColor">
 <td class="colFirst"><code>abstract <a href="PartitionedHttpClientBuilder.html" title="class in io.servicetalk.http.api">PartitionedHttpClientBuilder</a>&lt;<a href="PartitionedHttpClientBuilder.html" title="type parameter in PartitionedHttpClientBuilder">U</a>,&#8203;<a href="PartitionedHttpClientBuilder.html" title="type parameter in PartitionedHttpClientBuilder">R</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#unresolvedAddressToHost(java.util.function.Function)">unresolvedAddressToHost</a></span>&#8203;(java.util.function.Function&lt;<a href="PartitionedHttpClientBuilder.html" title="type parameter in PartitionedHttpClientBuilder">U</a>,&#8203;java.lang.CharSequence&gt;&nbsp;unresolvedAddressToHostFunction)</code></th>
 <td class="colLast">
@@ -541,6 +555,22 @@ public abstract&nbsp;<a href="PartitionedHttpClientBuilder.html" title="class in
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>ioExecutor</code> - <a href="../../transport/api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a> to use.</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd><code>this</code>.</dd>
+</dl>
+</li>
+</ul>
+<a id="executor(io.servicetalk.concurrent.api.Executor)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>executor</h4>
+<pre class="methodSignature">public&nbsp;<a href="PartitionedHttpClientBuilder.html" title="class in io.servicetalk.http.api">PartitionedHttpClientBuilder</a>&lt;<a href="PartitionedHttpClientBuilder.html" title="type parameter in PartitionedHttpClientBuilder">U</a>,&#8203;<a href="PartitionedHttpClientBuilder.html" title="type parameter in PartitionedHttpClientBuilder">R</a>&gt;&nbsp;executor&#8203;(<a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;executor)</pre>
+<div class="block">Sets the <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> for all connections created from this builder.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>executor</code> - <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> to use.</dd>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd><code>this</code>.</dd>
 </dl>
@@ -630,8 +660,7 @@ public abstract&nbsp;&lt;T&gt;&nbsp;<a href="PartitionedHttpClientBuilder.html" 
 <pre class="methodSignature">@Deprecated
 public abstract&nbsp;<a href="PartitionedHttpClientBuilder.html" title="class in io.servicetalk.http.api">PartitionedHttpClientBuilder</a>&lt;<a href="PartitionedHttpClientBuilder.html" title="type parameter in PartitionedHttpClientBuilder">U</a>,&#8203;<a href="PartitionedHttpClientBuilder.html" title="type parameter in PartitionedHttpClientBuilder">R</a>&gt;&nbsp;enableWireLogging&#8203;(java.lang.String&nbsp;loggerName)</pre>
 <div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
-<div class="block">Enables wire-logging for connections created by this builder.
- <p></div>
+<div class="block">Enables wire-logging for connections created by this builder.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>loggerName</code> - The name of the logger to log wire events.</dd>
@@ -718,7 +747,7 @@ public abstract&nbsp;<a href="PartitionedHttpClientBuilder.html" title="class in
  </pre>
  making a request to a connection wrapped by this filter chain the order of invocation of these filters will be:
  <pre>
-     filter1 =&gt; filter2 =&gt; filter3 =&gt; connection
+     filter1 ⇒ filter2 ⇒ filter3 ⇒ connection
  </pre></div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
@@ -757,7 +786,7 @@ public&nbsp;<a href="PartitionedHttpClientBuilder.html" title="class in io.servi
  </pre>
  making a request to a connection wrapped by this filter chain the order of invocation of these filters will be:
  <pre>
-     filter1 =&gt; filter2 =&gt; filter3 =&gt; connection
+     filter1 ⇒ filter2 ⇒ filter3 ⇒ connection
  </pre></div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
@@ -795,7 +824,7 @@ public abstract&nbsp;<a href="PartitionedHttpClientBuilder.html" title="class in
  </pre>
  Calling <a href="../../client/api/ConnectionFactory.html" title="interface in io.servicetalk.client.api"><code>ConnectionFactory</code></a> wrapped by this filter chain, the order of invocation of these filters will be:
  <pre>
-     filter1 =&gt; filter2 =&gt; filter3 =&gt; original connection factory
+     filter1 ⇒ filter2 ⇒ filter3 ⇒ original connection factory
  </pre></div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
@@ -880,6 +909,8 @@ public abstract&nbsp;<a href="PartitionedHttpClientBuilder.html" title="class in
 <dd><code>autoRetryStrategyProvider</code> - <a href="../../client/api/AutoRetryStrategyProvider.html" title="interface in io.servicetalk.client.api"><code>AutoRetryStrategyProvider</code></a> for the automatic retry strategy.</dd>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd><code>this</code></dd>
+<dt><span class="seeLabel">See Also:</span></dt>
+<dd><a href="../../client/api/DefaultAutoRetryStrategyProvider.html" title="class in io.servicetalk.client.api"><code>DefaultAutoRetryStrategyProvider</code></a></dd>
 </dl>
 </li>
 </ul>
@@ -899,24 +930,6 @@ public abstract&nbsp;<a href="PartitionedHttpClientBuilder.html" title="class in
  this <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> is no longer needed.</dd>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd><code>this</code>.</dd>
-</dl>
-</li>
-</ul>
-<a id="retryServiceDiscoveryErrors(io.servicetalk.http.api.ServiceDiscoveryRetryStrategy)">
-<!--   -->
-</a>
-<ul class="blockList">
-<li class="blockList">
-<h4>retryServiceDiscoveryErrors</h4>
-<pre class="methodSignature">public abstract&nbsp;<a href="PartitionedHttpClientBuilder.html" title="class in io.servicetalk.http.api">PartitionedHttpClientBuilder</a>&lt;<a href="PartitionedHttpClientBuilder.html" title="type parameter in PartitionedHttpClientBuilder">U</a>,&#8203;<a href="PartitionedHttpClientBuilder.html" title="type parameter in PartitionedHttpClientBuilder">R</a>&gt;&nbsp;retryServiceDiscoveryErrors&#8203;(<a href="ServiceDiscoveryRetryStrategy.html" title="interface in io.servicetalk.http.api">ServiceDiscoveryRetryStrategy</a>&lt;<a href="PartitionedHttpClientBuilder.html" title="type parameter in PartitionedHttpClientBuilder">R</a>,&#8203;<a href="../../client/api/partition/PartitionedServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api.partition">PartitionedServiceDiscovererEvent</a>&lt;<a href="PartitionedHttpClientBuilder.html" title="type parameter in PartitionedHttpClientBuilder">R</a>&gt;&gt;&nbsp;retryStrategy)</pre>
-<div class="block">Sets a retry strategy to retry errors emitted by <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>.</div>
-<dl>
-<dt><span class="paramLabel">Parameters:</span></dt>
-<dd><code>retryStrategy</code> - a retry strategy to retry errors emitted by <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>.</dd>
-<dt><span class="returnLabel">Returns:</span></dt>
-<dd><code>this</code>.</dd>
-<dt><span class="seeLabel">See Also:</span></dt>
-<dd><a href="DefaultServiceDiscoveryRetryStrategy.Builder.html" title="class in io.servicetalk.http.api"><code>DefaultServiceDiscoveryRetryStrategy.Builder</code></a></dd>
 </dl>
 </li>
 </ul>
@@ -993,7 +1006,7 @@ public abstract&nbsp;<a href="PartitionedHttpClientBuilder.html" title="class in
  </pre>
  making a request to a client wrapped by this filter chain the order of invocation of these filters will be:
  <pre>
-     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
+     filter1 ⇒ filter2 ⇒ filter3 ⇒ client
  </pre></div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
@@ -1031,7 +1044,7 @@ public&nbsp;<a href="PartitionedHttpClientBuilder.html" title="class in io.servi
  </pre>
  making a request to a client wrapped by this filter chain the order of invocation of these filters will be:
  <pre>
-     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
+     filter1 ⇒ filter2 ⇒ filter3 ⇒ client
  </pre></div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
@@ -1138,6 +1151,48 @@ public abstract&nbsp;<a href="PartitionedHttpClientBuilder.html" title="class in
  <a href="StreamingHttpClient.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpClient</code></a>s.</dd>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd><code>this</code></dd>
+</dl>
+</li>
+</ul>
+<a id="retryServiceDiscoveryErrors(io.servicetalk.http.api.ServiceDiscoveryRetryStrategy)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>retryServiceDiscoveryErrors</h4>
+<pre class="methodSignature">public&nbsp;io.servicetalk.http.api.BaseSingleAddressHttpClientBuilder&lt;U,&#8203;R,&#8203;SDE&gt;&nbsp;retryServiceDiscoveryErrors&#8203;(<a href="ServiceDiscoveryRetryStrategy.html" title="interface in io.servicetalk.http.api">ServiceDiscoveryRetryStrategy</a>&lt;R,&#8203;SDE&gt;&nbsp;retryStrategy)</pre>
+<div class="block">Sets a retry strategy to retry errors emitted by <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>.
+ <p>
+ Note, calling this method will unset the value provided via
+ <a href="#retryServiceDiscoveryErrors(io.servicetalk.concurrent.api.BiIntFunction)"><code>retryServiceDiscoveryErrors(BiIntFunction)</code></a> if it was called before.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>retryStrategy</code> - a retry strategy to retry errors emitted by <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>.</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd><code>this</code>.</dd>
+<dt><span class="seeLabel">See Also:</span></dt>
+<dd><a href="DefaultServiceDiscoveryRetryStrategy.Builder.html" title="class in io.servicetalk.http.api"><code>DefaultServiceDiscoveryRetryStrategy.Builder</code></a></dd>
+</dl>
+</li>
+</ul>
+<a id="retryServiceDiscoveryErrors(io.servicetalk.concurrent.api.BiIntFunction)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>retryServiceDiscoveryErrors</h4>
+<pre class="methodSignature">public&nbsp;io.servicetalk.http.api.HttpClientBuilder&lt;U,&#8203;R,&#8203;SDE&gt;&nbsp;retryServiceDiscoveryErrors&#8203;(<a href="../../concurrent/api/BiIntFunction.html" title="interface in io.servicetalk.concurrent.api">BiIntFunction</a>&lt;java.lang.Throwable,&#8203;? extends <a href="../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>&gt;&nbsp;retryStrategy)</pre>
+<div class="block">Sets a retry strategy to retry errors emitted by <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>retryStrategy</code> - a retry strategy to retry errors emitted by <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>.
+ <p>
+ Note, calling this method will unset the value provided via
+ <a href="#retryServiceDiscoveryErrors(io.servicetalk.http.api.ServiceDiscoveryRetryStrategy)"><code>retryServiceDiscoveryErrors(ServiceDiscoveryRetryStrategy)</code></a> if it was called before.</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd><code>this</code>.</dd>
+<dt><span class="seeLabel">See Also:</span></dt>
+<dd><a href="../../concurrent/api/RetryStrategies.html" title="class in io.servicetalk.concurrent.api"><code>RetryStrategies</code></a></dd>
 </dl>
 </li>
 </ul>

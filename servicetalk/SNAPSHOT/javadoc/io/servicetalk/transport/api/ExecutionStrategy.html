@@ -26,8 +26,8 @@
     catch(err) {
     }
 //-->
-var data = {"i0":6,"i1":6,"i2":6,"i3":6,"i4":6};
-var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"]};
+var data = {"i0":38,"i1":38,"i2":38,"i3":38,"i4":38};
+var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"],32:["t6","Deprecated Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
 var tableTab = "tableTab";
@@ -146,7 +146,7 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </a>
 <h3>Method Summary</h3>
 <table class="memberSummary">
-<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t3" class="tableTab"><span><a href="javascript:show(4);">Abstract Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
+<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t3" class="tableTab"><span><a href="javascript:show(4);">Abstract Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t6" class="tableTab"><span><a href="javascript:show(32);">Deprecated Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
 <tr>
 <th class="colFirst" scope="col">Modifier and Type</th>
 <th class="colSecond" scope="col">Method</th>
@@ -156,7 +156,10 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <td class="colFirst"><code><a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#executor()">executor</a></span>()</code></th>
 <td class="colLast">
-<div class="block">Returns the <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a>, if any for this <a href="ExecutionStrategy.html" title="interface in io.servicetalk.transport.api"><code>ExecutionStrategy</code></a>.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">The <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> from the <a href="ExecutionContext.html" title="interface in io.servicetalk.transport.api"><code>ExecutionContext</code></a> should be used
+ instead.</div>
+</div>
 </td>
 </tr>
 <tr id="i1" class="rowColor">
@@ -164,7 +167,9 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#offloadReceive(io.servicetalk.concurrent.api.Executor,io.servicetalk.concurrent.api.Publisher)">offloadReceive</a></span>&#8203;(<a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;fallback,
               <a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;T&gt;&nbsp;original)</code></th>
 <td class="colLast">
-<div class="block">Offloads the <code>original</code> <a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> for receiving data from the transport.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">This method will be removed.</div>
+</div>
 </td>
 </tr>
 <tr id="i2" class="altColor">
@@ -172,7 +177,9 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#offloadReceive(io.servicetalk.concurrent.api.Executor,io.servicetalk.concurrent.api.Single)">offloadReceive</a></span>&#8203;(<a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;fallback,
               <a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;T&gt;&nbsp;original)</code></th>
 <td class="colLast">
-<div class="block">Offloads the <code>original</code> <a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> for receiving data from the transport.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">This method will be removed.</div>
+</div>
 </td>
 </tr>
 <tr id="i3" class="rowColor">
@@ -180,7 +187,9 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#offloadSend(io.servicetalk.concurrent.api.Executor,io.servicetalk.concurrent.api.Publisher)">offloadSend</a></span>&#8203;(<a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;fallback,
            <a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;T&gt;&nbsp;original)</code></th>
 <td class="colLast">
-<div class="block">Offloads the <code>original</code> <a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> for sending data on the transport.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">This method will be removed.</div>
+</div>
 </td>
 </tr>
 <tr id="i4" class="altColor">
@@ -188,7 +197,9 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#offloadSend(io.servicetalk.concurrent.api.Executor,io.servicetalk.concurrent.api.Single)">offloadSend</a></span>&#8203;(<a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;fallback,
            <a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;T&gt;&nbsp;original)</code></th>
 <td class="colLast">
-<div class="block">Offloads the <code>original</code> <a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> for sending data on the transport.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">This method will be removed.</div>
+</div>
 </td>
 </tr>
 </table>
@@ -214,8 +225,13 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <ul class="blockList">
 <li class="blockList">
 <h4>offloadSend</h4>
-<pre class="methodSignature">&lt;T&gt;&nbsp;<a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;T&gt;&nbsp;offloadSend&#8203;(<a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;fallback,
+<pre class="methodSignature">@Deprecated
+&lt;T&gt;&nbsp;<a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;T&gt;&nbsp;offloadSend&#8203;(<a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;fallback,
                           <a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;T&gt;&nbsp;original)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">This method will be removed. If you depend upon it consider copying the implementation from
+ <code>DefaultHttpExecutionStrategy#offloadSend()</code></div>
+</div>
 <div class="block">Offloads the <code>original</code> <a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> for sending data on the transport.</div>
 <dl>
 <dt><span class="paramLabel">Type Parameters:</span></dt>
@@ -235,8 +251,13 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <ul class="blockList">
 <li class="blockList">
 <h4>offloadReceive</h4>
-<pre class="methodSignature">&lt;T&gt;&nbsp;<a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;T&gt;&nbsp;offloadReceive&#8203;(<a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;fallback,
+<pre class="methodSignature">@Deprecated
+&lt;T&gt;&nbsp;<a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;T&gt;&nbsp;offloadReceive&#8203;(<a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;fallback,
                              <a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;T&gt;&nbsp;original)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">This method will be removed. If you depend upon it consider copying the implementation from
+ <code>DefaultHttpExecutionStrategy#offloadReceive()</code></div>
+</div>
 <div class="block">Offloads the <code>original</code> <a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> for receiving data from the transport.</div>
 <dl>
 <dt><span class="paramLabel">Type Parameters:</span></dt>
@@ -256,8 +277,13 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <ul class="blockList">
 <li class="blockList">
 <h4>offloadSend</h4>
-<pre class="methodSignature">&lt;T&gt;&nbsp;<a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;T&gt;&nbsp;offloadSend&#8203;(<a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;fallback,
+<pre class="methodSignature">@Deprecated
+&lt;T&gt;&nbsp;<a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;T&gt;&nbsp;offloadSend&#8203;(<a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;fallback,
                              <a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;T&gt;&nbsp;original)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">This method will be removed. If you depend upon it consider copying the implementation from
+ <code>DefaultHttpExecutionStrategy#offloadSend()</code></div>
+</div>
 <div class="block">Offloads the <code>original</code> <a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> for sending data on the transport.</div>
 <dl>
 <dt><span class="paramLabel">Type Parameters:</span></dt>
@@ -277,8 +303,13 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <ul class="blockList">
 <li class="blockList">
 <h4>offloadReceive</h4>
-<pre class="methodSignature">&lt;T&gt;&nbsp;<a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;T&gt;&nbsp;offloadReceive&#8203;(<a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;fallback,
+<pre class="methodSignature">@Deprecated
+&lt;T&gt;&nbsp;<a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;T&gt;&nbsp;offloadReceive&#8203;(<a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;fallback,
                                 <a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;T&gt;&nbsp;original)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">This method will be removed. If you depend upon it consider copying the implementation from
+ <code>DefaultHttpExecutionStrategy#offloadReceive()</code></div>
+</div>
 <div class="block">Offloads the <code>original</code> <a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> for receiving data from the transport.</div>
 <dl>
 <dt><span class="paramLabel">Type Parameters:</span></dt>
@@ -298,9 +329,14 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <ul class="blockListLast">
 <li class="blockList">
 <h4>executor</h4>
-<pre class="methodSignature">@Nullable
+<pre class="methodSignature">@Deprecated
+@Nullable
 <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;executor()</pre>
-<div class="block">Returns the <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a>, if any for this <a href="ExecutionStrategy.html" title="interface in io.servicetalk.transport.api"><code>ExecutionStrategy</code></a>.</div>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">The <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> from the <a href="ExecutionContext.html" title="interface in io.servicetalk.transport.api"><code>ExecutionContext</code></a> should be used
+ instead.</div>
+</div>
+<div class="block">Returns the <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a>, if any, for this <a href="ExecutionStrategy.html" title="interface in io.servicetalk.transport.api"><code>ExecutionStrategy</code></a>.</div>
 <dl>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd><a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> for this <a href="ExecutionStrategy.html" title="interface in io.servicetalk.transport.api"><code>ExecutionStrategy</code></a>. <code>null</code> if none specified.</dd>

@@ -26,8 +26,8 @@
     catch(err) {
     }
 //-->
-var data = {"i0":6,"i1":6,"i2":6,"i3":6,"i4":6,"i5":6,"i6":6,"i7":6};
-var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"]};
+var data = {"i0":38,"i1":38,"i2":38,"i3":6,"i4":6,"i5":6,"i6":6,"i7":38};
+var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"],32:["t6","Deprecated Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
 var tableTab = "tableTab";
@@ -151,7 +151,7 @@ extends <a href="../../transport/api/ExecutionStrategy.html" title="interface in
 </a>
 <h3>Method Summary</h3>
 <table class="memberSummary">
-<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t3" class="tableTab"><span><a href="javascript:show(4);">Abstract Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
+<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t3" class="tableTab"><span><a href="javascript:show(4);">Abstract Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t6" class="tableTab"><span><a href="javascript:show(32);">Deprecated Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
 <tr>
 <th class="colFirst" scope="col">Modifier and Type</th>
 <th class="colSecond" scope="col">Method</th>
@@ -164,7 +164,9 @@ extends <a href="../../transport/api/ExecutionStrategy.html" title="interface in
             FS&nbsp;flushStrategy,
             <a href="ClientInvoker.html" title="interface in io.servicetalk.http.api">ClientInvoker</a>&lt;FS&gt;&nbsp;client)</code></th>
 <td class="colLast">
-<div class="block">Invokes the passed <code>Function</code> and applies the necessary offloading of request and response for a client.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">This method will be removed in future releases.</div>
+</div>
 </td>
 </tr>
 <tr id="i1" class="rowColor">
@@ -174,7 +176,9 @@ extends <a href="../../transport/api/ExecutionStrategy.html" title="interface in
              java.util.function.Function&lt;<a href="StreamingHttpRequest.html" title="interface in io.servicetalk.http.api">StreamingHttpRequest</a>,&#8203;<a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;java.lang.Object&gt;&gt;&nbsp;service,
              java.util.function.BiFunction&lt;java.lang.Throwable,&#8203;<a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>,&#8203;<a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;java.lang.Object&gt;&gt;&nbsp;errorHandler)</code></th>
 <td class="colLast">
-<div class="block">Invokes the passed <code>Function</code> and applies the necessary offloading of request and response for a server.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Will be removed as part of improved offloading strategy.</div>
+</div>
 </td>
 </tr>
 <tr id="i2" class="altColor">
@@ -182,7 +186,9 @@ extends <a href="../../transport/api/ExecutionStrategy.html" title="interface in
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#invokeService(io.servicetalk.concurrent.api.Executor,java.util.function.Function)">invokeService</a></span>&#8203;(<a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;fallback,
              java.util.function.Function&lt;<a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>,&#8203;T&gt;&nbsp;service)</code></th>
 <td class="colLast">
-<div class="block">Invokes a service represented by the passed <code>Function</code>.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">This method will be removed in future releases.</div>
+</div>
 </td>
 </tr>
 <tr id="i3" class="rowColor">
@@ -219,7 +225,9 @@ extends <a href="../../transport/api/ExecutionStrategy.html" title="interface in
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#offloadService(io.servicetalk.concurrent.api.Executor,io.servicetalk.http.api.StreamingHttpService)">offloadService</a></span>&#8203;(<a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;fallback,
               <a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api">StreamingHttpService</a>&nbsp;handler)</code></th>
 <td class="colLast">
-<div class="block">Wraps the passed <a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpService</code></a> to apply this <a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a>.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">This method will be removed in future releases.</div>
+</div>
 </td>
 </tr>
 </table>
@@ -254,11 +262,16 @@ extends <a href="../../transport/api/ExecutionStrategy.html" title="interface in
 <ul class="blockList">
 <li class="blockList">
 <h4>invokeClient</h4>
-<pre class="methodSignature">&lt;FS&gt;&nbsp;<a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="StreamingHttpResponse.html" title="interface in io.servicetalk.http.api">StreamingHttpResponse</a>&gt;&nbsp;invokeClient&#8203;(<a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;fallback,
+<pre class="methodSignature">@Deprecated
+&lt;FS&gt;&nbsp;<a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="StreamingHttpResponse.html" title="interface in io.servicetalk.http.api">StreamingHttpResponse</a>&gt;&nbsp;invokeClient&#8203;(<a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;fallback,
                                                 <a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;java.lang.Object&gt;&nbsp;flattenedRequest,
                                                 @Nullable
                                                 FS&nbsp;flushStrategy,
                                                 <a href="ClientInvoker.html" title="interface in io.servicetalk.http.api">ClientInvoker</a>&lt;FS&gt;&nbsp;client)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">This method will be removed in future releases. If you depend on it, copy the implementation from
+ <a href="#invokeClient(io.servicetalk.concurrent.api.Executor,io.servicetalk.concurrent.api.Publisher,FS,io.servicetalk.http.api.ClientInvoker)"><code>invokeClient(Executor, Publisher, Object, ClientInvoker)</code></a>.</div>
+</div>
 <div class="block">Invokes the passed <code>Function</code> and applies the necessary offloading of request and response for a client.</div>
 <dl>
 <dt><span class="paramLabel">Type Parameters:</span></dt>
@@ -281,10 +294,15 @@ extends <a href="../../transport/api/ExecutionStrategy.html" title="interface in
 <ul class="blockList">
 <li class="blockList">
 <h4>invokeService</h4>
-<pre class="methodSignature"><a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;java.lang.Object&gt;&nbsp;invokeService&#8203;(<a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;fallback,
+<pre class="methodSignature">@Deprecated
+<a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;java.lang.Object&gt;&nbsp;invokeService&#8203;(<a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;fallback,
                                           <a href="StreamingHttpRequest.html" title="interface in io.servicetalk.http.api">StreamingHttpRequest</a>&nbsp;request,
                                           java.util.function.Function&lt;<a href="StreamingHttpRequest.html" title="interface in io.servicetalk.http.api">StreamingHttpRequest</a>,&#8203;<a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;java.lang.Object&gt;&gt;&nbsp;service,
                                           java.util.function.BiFunction&lt;java.lang.Throwable,&#8203;<a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>,&#8203;<a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;java.lang.Object&gt;&gt;&nbsp;errorHandler)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Will be removed as part of improved offloading strategy. If you need this API please file an issue
+ explaining the use case.</div>
+</div>
 <div class="block">Invokes the passed <code>Function</code> and applies the necessary offloading of request and response for a server.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
@@ -296,7 +314,7 @@ extends <a href="../../transport/api/ExecutionStrategy.html" title="interface in
 <dd><code>errorHandler</code> - In case there is an error before calling the passed <code>service</code>, this <code>BiFunction</code>
  will be called to generate an error response.</dd>
 <dt><span class="returnLabel">Returns:</span></dt>
-<dd>A flattened <a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> containing all data constituting an HTTP response..</dd>
+<dd>A flattened <a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> containing all data constituting an HTTP response.</dd>
 </dl>
 </li>
 </ul>
@@ -306,8 +324,13 @@ extends <a href="../../transport/api/ExecutionStrategy.html" title="interface in
 <ul class="blockList">
 <li class="blockList">
 <h4>invokeService</h4>
-<pre class="methodSignature">&lt;T&gt;&nbsp;<a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;T&gt;&nbsp;invokeService&#8203;(<a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;fallback,
+<pre class="methodSignature">@Deprecated
+&lt;T&gt;&nbsp;<a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;T&gt;&nbsp;invokeService&#8203;(<a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;fallback,
                             java.util.function.Function&lt;<a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>,&#8203;T&gt;&nbsp;service)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">This method will be removed in future releases. If you depend on it, copy the implementation from
+ <a href="#invokeService(io.servicetalk.concurrent.api.Executor,java.util.function.Function)"><code>invokeService(Executor, Function)</code></a>.</div>
+</div>
 <div class="block">Invokes a service represented by the passed <code>Function</code>.
  <p>
  This method does not apply the strategy on the object returned from the <code>Function</code>, if that object is an
@@ -332,8 +355,13 @@ extends <a href="../../transport/api/ExecutionStrategy.html" title="interface in
 <ul class="blockList">
 <li class="blockList">
 <h4>offloadService</h4>
-<pre class="methodSignature"><a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api">StreamingHttpService</a>&nbsp;offloadService&#8203;(<a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;fallback,
+<pre class="methodSignature">@Deprecated
+<a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api">StreamingHttpService</a>&nbsp;offloadService&#8203;(<a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;fallback,
                                     <a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api">StreamingHttpService</a>&nbsp;handler)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">This method will be removed in future releases. If you depend on it, copy the implementation from
+ <a href="#offloadService(io.servicetalk.concurrent.api.Executor,io.servicetalk.http.api.StreamingHttpService)"><code>offloadService(Executor, StreamingHttpService)</code></a>.</div>
+</div>
 <div class="block">Wraps the passed <a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpService</code></a> to apply this <a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a>.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>

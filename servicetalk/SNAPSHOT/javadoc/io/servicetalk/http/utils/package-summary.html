@@ -135,6 +135,19 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </td>
 </tr>
 <tr class="rowColor">
+<th class="colFirst" scope="row"><a href="EnforceSequentialModeRequesterFilter.html" title="class in io.servicetalk.http.utils">EnforceSequentialModeRequesterFilter</a></th>
+<td class="colLast">
+<div class="block">Enforces sequential behavior of the client, deferring return of the response until after the request payload body is
+ sent.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colFirst" scope="row"><a href="HttpLifecycleObservers.html" title="class in io.servicetalk.http.utils">HttpLifecycleObservers</a></th>
+<td class="colLast">
+<div class="block">A factory to create different <a href="../api/HttpLifecycleObserver.html" title="interface in io.servicetalk.http.api"><code>HttpLifecycleObserver</code></a>s.</div>
+</td>
+</tr>
+<tr class="rowColor">
 <th class="colFirst" scope="row"><a href="HttpRequestUriUtils.html" title="class in io.servicetalk.http.utils">HttpRequestUriUtils</a></th>
 <td class="colLast">
 <div class="block">Helper methods for computing effective request URIs according
@@ -145,8 +158,9 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <tr class="altColor">
 <th class="colFirst" scope="row"><a href="RedirectingHttpRequesterFilter.html" title="class in io.servicetalk.http.utils">RedirectingHttpRequesterFilter</a></th>
 <td class="colLast">
-<div class="block">A HTTP request filter that performs automatic redirects if <a href="../api/StreamingHttpRequester.html#request(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.StreamingHttpRequest)"><code>StreamingHttpRequester.request(HttpExecutionStrategy, StreamingHttpRequest)</code></a> method receives 3XX status code in the
- <a href="../api/StreamingHttpResponse.html" title="interface in io.servicetalk.http.api"><code>response</code></a>.</div>
+<div class="block">An HTTP request filter that performs automatic
+ <a href="https://datatracker.ietf.org/doc/html/rfc7231#section-6.4">redirection</a> if a client receives
+ <a href="../api/HttpResponseStatus.StatusClass.html#REDIRECTION_3XX"><code>3XX status code</code></a> in the <a href="../api/HttpResponseMetaData.html" title="interface in io.servicetalk.http.api"><code>response</code></a>.</div>
 </td>
 </tr>
 <tr class="rowColor">
@@ -172,14 +186,16 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </tr>
 <tr class="altColor">
 <th class="colFirst" scope="row"><a href="RetryingHttpRequesterFilter.html" title="class in io.servicetalk.http.utils">RetryingHttpRequesterFilter</a></th>
-<td class="colLast">
-<div class="block">A filter to enable retries for HTTP requests.</div>
+<td class="colLast">Deprecated.
+<div class="deprecationComment">A replacement retrying http filter is available through
+ <code>io.servicetalk.http.netty.RetryingHttpRequesterFilter</code></div>
 </td>
 </tr>
 <tr class="rowColor">
 <th class="colFirst" scope="row"><a href="RetryingHttpRequesterFilter.Builder.html" title="class in io.servicetalk.http.utils">RetryingHttpRequesterFilter.Builder</a></th>
-<td class="colLast">
-<div class="block">A builder for <a href="RetryingHttpRequesterFilter.html" title="class in io.servicetalk.http.utils"><code>RetryingHttpRequesterFilter</code></a>, which puts an upper bound on retry attempts.</div>
+<td class="colLast">Deprecated.
+<div class="deprecationComment">A replacement retrying http filter builder is available through
+ <code>io.servicetalk.http.netty.RetryingHttpRequesterFilterBuilder</code></div>
 </td>
 </tr>
 <tr class="altColor">
@@ -207,8 +223,8 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <tbody>
 <tr class="altColor">
 <th class="colFirst" scope="row"><a href="InvalidRedirectException.html" title="class in io.servicetalk.http.utils">InvalidRedirectException</a></th>
-<td class="colLast">
-<div class="block">Throws when redirect could not be performed.</div>
+<td class="colLast">Deprecated.
+<div class="deprecationComment">There is no code that can throw this exception.</div>
 </td>
 </tr>
 </tbody>

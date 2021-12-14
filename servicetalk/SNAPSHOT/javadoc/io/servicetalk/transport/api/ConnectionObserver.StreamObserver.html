@@ -26,8 +26,8 @@
     catch(err) {
     }
 //-->
-var data = {"i0":6,"i1":6,"i2":6};
-var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"]};
+var data = {"i0":6,"i1":6,"i2":6,"i3":18};
+var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"],16:["t5","Default Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
 var tableTab = "tableTab";
@@ -149,7 +149,7 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </a>
 <h3>Method Summary</h3>
 <table class="memberSummary">
-<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t3" class="tableTab"><span><a href="javascript:show(4);">Abstract Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
+<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t3" class="tableTab"><span><a href="javascript:show(4);">Abstract Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t5" class="tableTab"><span><a href="javascript:show(16);">Default Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
 <tr>
 <th class="colFirst" scope="col">Modifier and Type</th>
 <th class="colSecond" scope="col">Method</th>
@@ -173,7 +173,14 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <td class="colFirst"><code><a href="ConnectionObserver.DataObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.DataObserver</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#streamEstablished()">streamEstablished</a></span>()</code></th>
 <td class="colLast">
-<div class="block">Callback when the stream is established and ready.</div>
+<div class="block">Callback when the stream is established and ready to be used.</div>
+</td>
+</tr>
+<tr id="i3" class="rowColor">
+<td class="colFirst"><code>default void</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#streamIdAssigned(long)">streamIdAssigned</a></span>&#8203;(long&nbsp;streamId)</code></th>
+<td class="colLast">
+<div class="block">Callback when a <code>streamId</code> is assigned.</div>
 </td>
 </tr>
 </table>
@@ -193,6 +200,22 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <!--   -->
 </a>
 <h3>Method Detail</h3>
+<a id="streamIdAssigned(long)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>streamIdAssigned</h4>
+<pre class="methodSignature">default&nbsp;void&nbsp;streamIdAssigned&#8203;(long&nbsp;streamId)</pre>
+<div class="block">Callback when a <code>streamId</code> is assigned.
+ <p>
+ Stream identifier may be deferred until after the first write is made on a newly established stream.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>streamId</code> - assigned stream identifier</dd>
+</dl>
+</li>
+</ul>
 <a id="streamEstablished()">
 <!--   -->
 </a>
@@ -200,10 +223,13 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <li class="blockList">
 <h4>streamEstablished</h4>
 <pre class="methodSignature"><a href="ConnectionObserver.DataObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.DataObserver</a>&nbsp;streamEstablished()</pre>
-<div class="block">Callback when the stream is established and ready.</div>
+<div class="block">Callback when the stream is established and ready to be used. It may or may not have an already assigned
+ <code>streamId</code> at the time.</div>
 <dl>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd>a new <a href="ConnectionObserver.DataObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver.DataObserver</code></a> that provides visibility into read and write events</dd>
+<dt><span class="seeLabel">See Also:</span></dt>
+<dd><a href="#streamIdAssigned(long)"><code>streamIdAssigned(long)</code></a></dd>
 </dl>
 </li>
 </ul>

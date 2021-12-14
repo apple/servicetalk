@@ -92,6 +92,15 @@
     <a class="nav-link" href="#Mutual-TLS">Mutual TLS</a>
   </li>
   <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="#Observer">Observer</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="#OpenTracing">OpenTracing</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="#Redirects">Redirects</a>
+  </li>
+  <li class="nav-item" data-depth="3">
     <a class="nav-link" href="#uds">Unix Domain Sockets</a>
   </li>
   <li class="nav-item" data-depth="3">
@@ -113,7 +122,13 @@
     <a class="nav-link" href="../grpc/index.html#Deadlines">Deadlines</a>
   </li>
   <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../grpc/index.html#Observer">Observer</a>
+  </li>
+  <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../grpc/index.html#errors">Application Errors</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../grpc/index.html#execution-strategy">Execution Strategy</a>
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../grpc/index.html#route-guide">Route Guide</a>
@@ -1312,6 +1327,105 @@ the same across all the HTTP APIs.
 </td>
 </tr>
 </table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="Observer"><a class="anchor" href="#Observer"></a><a class="link" href="#Observer">Observer</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This example demonstrates the following:
+- Use of
+<a href="https://github.com/apple/servicetalk/blob/main/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpLifecycleObserver.java">HttpLifecycleObserver</a> to log a summary of each request/response.</p>
+</div>
+<div class="paragraph">
+<p>Using the following classes:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/observer/src/main/java/io/servicetalk/examples/http/observer/LifecycleObserverServer.java">LifecycleObserverServer</a> - A server that installs a
+<a href="https://github.com/apple/servicetalk/blob/main/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpLifecycleObserver.java">HttpLifecycleObserver</a>
+on the server builder.</p>
+</li>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/observer/src/main/java/io/servicetalk/examples/http/observer/LifecycleObserverClient.java">LifecycleObserverClient</a> - A client that installs a
+<a href="https://github.com/apple/servicetalk/blob/main/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpLifecycleObserver.java">HttpLifecycleObserver</a>
+on via a client filter on the client builder.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="OpenTracing"><a class="anchor" href="#OpenTracing"></a><a class="link" href="#OpenTracing">OpenTracing</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This example demonstrates the following:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>automatically generate and propagate distributed tracing metadata</p>
+</li>
+<li>
+<p>make span IDs available in log statements via MDC</p>
+</li>
+<li>
+<p>publish span IDs via Zipkin&#8217;s HTTP API and to a local console logger</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Using the following classes:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/opentracing/src/main/java/io/servicetalk/examples/http/opentracing/OpenTracingServer.java">OpenTracingServer</a> - A server that generates/propagates span IDs, makes spans available in logs via MDC, publishes spans via Zipkin&#8217;s HTTP API.</p>
+</li>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/opentracing/src/main/java/io/servicetalk/examples/http/opentracing/OpenTracingClient.java">OpenTracingClient</a> - A client that generates/propagates span IDs, makes spans available in logs via MDC, publishes spans via local console logger.</p>
+</li>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/opentracing/src/main/java/io/servicetalk/examples/http/opentracing/ZipkinServerSimulator.java">ZipkinServerSimulator</a> - A server that simulates/mocks a Zipkin server, and logs requests to the console.</p>
+</li>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/opentracing/src/main/java/io/servicetalk/examples/http/opentracing/BraveTracingServer.java">BraveTracingServer</a> - A server that uses <a href="https://github.com/openzipkin-contrib/brave-opentracing">Brave OpenTracing</a> implementation.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="Redirects"><a class="anchor" href="#Redirects"></a><a class="link" href="#Redirects">Redirects</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Extends the async "Hello World" example to demonstrate different ways that users can support redirects in ServiceTalk
+applications. You should read and understand the async "Hello World" example first to understand the additions this
+example adds. No separate example is needed for the other API variants as the usage of the debugging features are the
+same for all API styles.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/redirects/src/main/java/io/servicetalk/examples/http/redirects/RedirectingServer.java">RedirectingServer</a> -
+Starts two servers, one of them (HTTP) redirects to another (HTTPS).</p>
+</li>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/redirects/src/main/java/io/servicetalk/examples/http/redirects/SingleAddressRedirectClient.java">SingleAddressRedirectClient.java</a> -
+Async <code>Hello World</code> example that demonstrates how relative redirects can be handled automatically by a single-address client.</p>
+</li>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/redirects/src/main/java/io/servicetalk/examples/http/redirects/MultiAddressUrlRedirectClient.java">MultiAddressUrlRedirectClient.java</a> -
+Async <code>Hello World</code> example that demonstrates how redirects can be handled automatically by a multi-address client.
+It demonstrates how users can preserve headers and payload body of the original request while redirecting to non-relative locations.</p>
+</li>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/redirects/src/main/java/io/servicetalk/examples/http/redirects/ManualRedirectClient.java">ManualRedirectClient.java</a> -
+Async <code>Hello World</code> example that demonstrates how redirects can be handled manually between multiple single-address clients.</p>
+</li>
+</ul>
 </div>
 </div>
 </div>

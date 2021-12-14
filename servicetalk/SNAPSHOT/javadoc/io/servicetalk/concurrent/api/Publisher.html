@@ -26,7 +26,7 @@
     catch(err) {
     }
 //-->
-var data = {"i0":10,"i1":10,"i2":10,"i3":10,"i4":10,"i5":10,"i6":10,"i7":10,"i8":10,"i9":10,"i10":10,"i11":10,"i12":10,"i13":10,"i14":10,"i15":10,"i16":10,"i17":10,"i18":10,"i19":10,"i20":10,"i21":10,"i22":10,"i23":10,"i24":10,"i25":10,"i26":9,"i27":9,"i28":9,"i29":10,"i30":10,"i31":10,"i32":10,"i33":10,"i34":10,"i35":10,"i36":10,"i37":10,"i38":10,"i39":10,"i40":10,"i41":10,"i42":10,"i43":10,"i44":10,"i45":10,"i46":10,"i47":10,"i48":10,"i49":9,"i50":9,"i51":9,"i52":9,"i53":9,"i54":9,"i55":9,"i56":9,"i57":10,"i58":10,"i59":10,"i60":10,"i61":6,"i62":42,"i63":42,"i64":42,"i65":42,"i66":10,"i67":10,"i68":10,"i69":10,"i70":10,"i71":10,"i72":10,"i73":9,"i74":10,"i75":10,"i76":10,"i77":10,"i78":10,"i79":10,"i80":10,"i81":10,"i82":10,"i83":10,"i84":10,"i85":10,"i86":10,"i87":42,"i88":10,"i89":42,"i90":9,"i91":9,"i92":42,"i93":10,"i94":10,"i95":10,"i96":10,"i97":10,"i98":10,"i99":10,"i100":10,"i101":10,"i102":42,"i103":10,"i104":10,"i105":10,"i106":10,"i107":10,"i108":10,"i109":10,"i110":10,"i111":10,"i112":10,"i113":10,"i114":10,"i115":10,"i116":10,"i117":10,"i118":10,"i119":10,"i120":10,"i121":10,"i122":10,"i123":10,"i124":10,"i125":10,"i126":10,"i127":10,"i128":10,"i129":10,"i130":10,"i131":10,"i132":10};
+var data = {"i0":10,"i1":10,"i2":10,"i3":10,"i4":10,"i5":10,"i6":10,"i7":10,"i8":10,"i9":10,"i10":10,"i11":10,"i12":10,"i13":10,"i14":10,"i15":10,"i16":10,"i17":10,"i18":10,"i19":10,"i20":10,"i21":10,"i22":10,"i23":10,"i24":10,"i25":10,"i26":9,"i27":9,"i28":9,"i29":10,"i30":10,"i31":10,"i32":10,"i33":10,"i34":10,"i35":10,"i36":10,"i37":10,"i38":10,"i39":10,"i40":10,"i41":10,"i42":10,"i43":10,"i44":10,"i45":10,"i46":10,"i47":10,"i48":10,"i49":9,"i50":9,"i51":9,"i52":9,"i53":9,"i54":9,"i55":9,"i56":9,"i57":10,"i58":10,"i59":10,"i60":10,"i61":6,"i62":42,"i63":42,"i64":42,"i65":42,"i66":10,"i67":10,"i68":10,"i69":10,"i70":10,"i71":10,"i72":10,"i73":9,"i74":10,"i75":10,"i76":10,"i77":10,"i78":10,"i79":10,"i80":10,"i81":10,"i82":10,"i83":10,"i84":10,"i85":10,"i86":42,"i87":42,"i88":10,"i89":42,"i90":9,"i91":9,"i92":42,"i93":10,"i94":10,"i95":10,"i96":10,"i97":10,"i98":10,"i99":10,"i100":10,"i101":10,"i102":42,"i103":10,"i104":10,"i105":10,"i106":10,"i107":10,"i108":10,"i109":10,"i110":10,"i111":10,"i112":10,"i113":10,"i114":10,"i115":10,"i116":10,"i117":10,"i118":10,"i119":10,"i120":10,"i121":10,"i122":10,"i123":10,"i124":10,"i125":10,"i126":10,"i127":10,"i128":10,"i129":10,"i130":10,"i131":10,"i132":10};
 var tabs = {65535:["t0","All Methods"],1:["t1","Static Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"],8:["t4","Concrete Methods"],32:["t6","Deprecated Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
@@ -955,14 +955,10 @@ extends java.lang.Object</pre>
 <td class="colFirst"><code><a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="Publisher.html" title="type parameter in Publisher">T</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#publishAndSubscribeOn(io.servicetalk.concurrent.api.Executor)">publishAndSubscribeOn</a></span>&#8203;(<a href="Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;executor)</code></th>
 <td class="colLast">
-<div class="block">Creates a new <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> that will use the passed <a href="Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> to invoke the following methods:
- 
-     All <a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a> methods.
-     All <a href="../PublisherSource.Subscription.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscription</code></a> methods.
-     The <a href="#handleSubscribe(io.servicetalk.concurrent.PublisherSource.Subscriber)"><code>handleSubscribe(PublisherSource.Subscriber)</code></a> method.
- 
- This method does <strong>not</strong> override preceding <a href="Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a>s, if any, specified for <code>this</code>
- <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">This operator has been deprecated because of upcoming behavior changes in how offloading via
+ operators is done.</div>
+</div>
 </td>
 </tr>
 <tr id="i87" class="rowColor">
@@ -1111,7 +1107,7 @@ extends java.lang.Object</pre>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#subscribeShareContext()">subscribeShareContext</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Signifies that when the returned <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> is subscribed to, the <a href="AsyncContext.html" title="class in io.servicetalk.concurrent.api"><code>AsyncContext</code></a> will be shared
- instead of making a <a href="AsyncContextMap.html#copy()"><code>copy</code></a>.</div>
+ instead of making a <a href="../../context/api/ContextMap.html#copy()"><code>copy</code></a>.</div>
 </td>
 </tr>
 <tr id="i104" class="altColor">
@@ -3589,7 +3585,11 @@ public final&nbsp;<a href="Publisher.html" title="class in io.servicetalk.concur
 <pre class="methodSignature">public final&nbsp;<a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="Publisher.html" title="type parameter in Publisher">T</a>&gt;&nbsp;retry&#8203;(<a href="BiIntPredicate.html" title="interface in io.servicetalk.concurrent.api">BiIntPredicate</a>&lt;java.lang.Throwable&gt;&nbsp;shouldRetry)</pre>
 <div class="block">Re-subscribes to this <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> if an error is emitted and the passed <a href="BiIntPredicate.html" title="interface in io.servicetalk.concurrent.api"><code>BiIntPredicate</code></a> returns
  <code>true</code>.
- <p>
+ <pre>
+ This method may result in a <code>StackOverflowError</code> if too many consecutive calls are made. This can be
+ avoided by trampolining the call stack onto an <a href="Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a>. For example:
+   <code>retryWhen((i, cause) -&gt; i % 10 == 0 ? executor.submit(() -&gt; { }) : Completable.completed())</code>
+ </pre>
  This method provides a means to retry an operation under certain failure conditions and in sequential programming
  is similar to:
  <pre><code>
@@ -3638,7 +3638,11 @@ public final&nbsp;<a href="Publisher.html" title="class in io.servicetalk.concur
 <div class="block">Re-subscribes to this <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> if an error is emitted and the <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> returned by the
  supplied <a href="BiIntFunction.html" title="interface in io.servicetalk.concurrent.api"><code>BiIntFunction</code></a> completes successfully. If the returned <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> emits an error, the
  returned <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> terminates with that error.
- <p>
+ <pre>
+ This method may result in a <code>StackOverflowError</code> if too many consecutive calls are made. This can be
+ avoided by trampolining the call stack onto an <a href="Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a>. For example:
+   <code>retryWhen((i, cause) -&gt; i % 10 == 0 ? executor.submit(() -&gt; { }) : Completable.completed())</code>
+ </pre>
  This method provides a means to retry an operation under certain failure conditions in an asynchronous fashion
  and in sequential programming is similar to:
  <pre><code>
@@ -3688,7 +3692,11 @@ public final&nbsp;<a href="Publisher.html" title="class in io.servicetalk.concur
 <pre class="methodSignature">public final&nbsp;<a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="Publisher.html" title="type parameter in Publisher">T</a>&gt;&nbsp;repeat&#8203;(java.util.function.IntPredicate&nbsp;shouldRepeat)</pre>
 <div class="block">Re-subscribes to this <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> when it completes and the passed <code>IntPredicate</code> returns
  <code>true</code>.
- <p>
+ <pre>
+ This method may result in a <code>StackOverflowError</code> if too many consecutive calls are made. This can be
+ avoided by trampolining the call stack onto an <a href="Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a>. For example:
+   <code>repeatWhen(i -&gt; i % 10 == 0 ? executor.submit(() -&gt; { }) : Completable.completed())</code>
+ </pre>
  This method provides a means to repeat an operation multiple times and in sequential programming is similar to:
  <pre><code>
      List&lt;T&gt; results = new ...;
@@ -3720,7 +3728,11 @@ public final&nbsp;<a href="Publisher.html" title="class in io.servicetalk.concur
 <div class="block">Re-subscribes to this <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> when it completes and the <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> returned by the supplied
  <code>IntFunction</code> completes successfully. If the returned <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> emits an error, the returned
  <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> is completed.
- <p>
+ <pre>
+ This method may result in a <code>StackOverflowError</code> if too many consecutive calls are made. This can be
+ avoided by trampolining the call stack onto an <a href="Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a>. For example:
+   <code>repeatWhen(i -&gt; i % 10 == 0 ? executor.submit(() -&gt; { }) : Completable.completed())</code>
+ </pre>
  This method provides a means to repeat an operation multiple times when in an asynchronous fashion and in
  sequential programming is similar to:
  <pre><code>
@@ -3863,14 +3875,14 @@ public final&nbsp;<a href="Publisher.html" title="class in io.servicetalk.concur
  is sent to that <a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a>. Otherwise a new <a href="GroupedPublisher.html" title="class in io.servicetalk.concurrent.api"><code>GroupedPublisher</code></a> is created and emitted from the
  returned <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>.
 
- <h2>Flow control</h2>
+ <p><strong>Flow control</strong></p>
  Multiple <a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a>s (for multiple <a href="GroupedPublisher.html" title="class in io.servicetalk.concurrent.api"><code>GroupedPublisher</code></a>s) request items individually from this
  <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>. Since, there is no way for a <a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a> to only request elements for its group,
  elements requested by one group may end up producing items for a different group, which has not yet requested
  enough. This will cause items to be queued per group which can not be emitted due to lack of demand. This queue
  size can be controlled with the <code>maxQueuePerGroup</code> argument.
 
- <h2>Cancellation</h2>
+ <p><strong>Cancellation</strong></p>
 
  If the <a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a> of the returned <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> cancels its <a href="../PublisherSource.Subscription.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscription</code></a>, then all active
  <a href="GroupedPublisher.html" title="class in io.servicetalk.concurrent.api"><code>GroupedPublisher</code></a>s will be terminated with an error and the <a href="../PublisherSource.Subscription.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscription</code></a> to this <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>
@@ -3927,14 +3939,14 @@ public final&nbsp;<a href="Publisher.html" title="class in io.servicetalk.concur
  that <a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a>. Otherwise a new <a href="GroupedPublisher.html" title="class in io.servicetalk.concurrent.api"><code>GroupedPublisher</code></a> is created and emitted from the returned
  <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>.
 
- <h2>Flow control</h2>
+ <p><strong>Flow control</strong></p>
  Multiple <a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a>s (for multiple <a href="GroupedPublisher.html" title="class in io.servicetalk.concurrent.api"><code>GroupedPublisher</code></a>s) request items individually from this
  <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>. Since, there is no way for a <a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a> to only request elements for its group,
  elements requested by one group may end up producing items for a different group, which has not yet requested
  enough. This will cause items to be queued per group which can not be emitted due to lack of demand. This queue
  size can be controlled with the <code>maxQueuePerGroup</code> argument.
 
- <h2>Cancellation</h2>
+ <p><strong>Cancellation</strong></p>
 
  If the <a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a> of the returned <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> cancels its <a href="../PublisherSource.Subscription.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscription</code></a>, then all active
  <a href="GroupedPublisher.html" title="class in io.servicetalk.concurrent.api"><code>GroupedPublisher</code></a>s will be terminated with an error and the <a href="../PublisherSource.Subscription.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscription</code></a> to this <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>
@@ -4161,7 +4173,18 @@ public final&nbsp;<a href="Publisher.html" title="class in io.servicetalk.concur
          currentAccumulator.add(t);
      }
      return buffers;
- </code></pre></div>
+ </code></pre>
+ Notes:
+ <ol>
+     <li>If this <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> does not emit items within the <a href="BufferStrategy.html#boundaries()"><code>boundary</code></a>,
+     it's expected it will emit an empty <a href="BufferStrategy.Accumulator.html#finish()"><code>accumulated value</code></a> as the result of
+     accumulating nothing. Use <a href="#filter(java.util.function.Predicate)"><code>filter(Predicate)</code></a> operator if empty accumulations have to be discarded.
+     </li>
+     <li>If more than one <a href="BufferStrategy.html#boundaries()"><code>boundary</code></a> is emitted while this operator
+     <a href="BufferStrategy.Accumulator.html#accumulate(T)"><code>accumulates</code></a> or emits the
+     <a href="../PublisherSource.Subscriber.html#onNext(T)"><code>next</code></a> result of accumulation, those boundaries will be
+     discarded without invoking <a href="BufferStrategy.Accumulator.html#finish()"><code>BufferStrategy.Accumulator.finish()</code></a> method.</li>
+ </ol></div>
 <dl>
 <dt><span class="paramLabel">Type Parameters:</span></dt>
 <dd><code>BC</code> - Type of the <a href="BufferStrategy.Accumulator.html" title="interface in io.servicetalk.concurrent.api"><code>BufferStrategy.Accumulator</code></a> to buffer items from this <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>.</dd>
@@ -4895,7 +4918,21 @@ public final&nbsp;<a href="Publisher.html" title="class in io.servicetalk.concur
 <ul class="blockList">
 <li class="blockList">
 <h4>publishAndSubscribeOn</h4>
-<pre class="methodSignature">public final&nbsp;<a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="Publisher.html" title="type parameter in Publisher">T</a>&gt;&nbsp;publishAndSubscribeOn&#8203;(<a href="Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;executor)</pre>
+<pre class="methodSignature">@Deprecated
+public final&nbsp;<a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="Publisher.html" title="type parameter in Publisher">T</a>&gt;&nbsp;publishAndSubscribeOn&#8203;(<a href="Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;executor)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">This operator has been deprecated because of upcoming behavior changes in how offloading via
+ operators is done. Originally offloading for subscribe/subscription was applied at the "bottom" of chain
+ (logically the last operator in the chain closest to the subscriber), and offloading for subscriber was applied
+ at the "top" of the operator chain (logically the first operator in the chain after the async source). The
+ current offloading doesn't respect the order in which the operators are applied, the offloading is the same
+ regardless of where the operators are placed in the chain. However, this behavior will soon change to instead
+ respect operator placement order and apply offloading exactly where the offloading operators are applied in the
+ chain. This change in behavior means that it no longer makes sense to fuse the offloading of publish and
+ subscribe as the location of the operators in the chain will now be significant. Publish and subscribe
+ offloading, when required, will typically be placed in different locations. Use separate, appropriately placed,
+ <a href="#subscribeOn(io.servicetalk.concurrent.api.Executor)"><code>subscribeOn(Executor)</code></a> and <a href="#publishOn(io.servicetalk.concurrent.api.Executor)"><code>publishOn(Executor)</code></a> operators instead.</div>
+</div>
 <div class="block">Creates a new <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> that will use the passed <a href="Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> to invoke the following methods:
  <ul>
      <li>All <a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a> methods.</li>
@@ -4953,14 +4990,14 @@ public final&nbsp;<a href="Publisher.html" title="class in io.servicetalk.concur
 <h4>subscribeShareContext</h4>
 <pre class="methodSignature">public final&nbsp;<a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="Publisher.html" title="type parameter in Publisher">T</a>&gt;&nbsp;subscribeShareContext()</pre>
 <div class="block">Signifies that when the returned <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> is subscribed to, the <a href="AsyncContext.html" title="class in io.servicetalk.concurrent.api"><code>AsyncContext</code></a> will be shared
- instead of making a <a href="AsyncContextMap.html#copy()"><code>copy</code></a>.
+ instead of making a <a href="../../context/api/ContextMap.html#copy()"><code>copy</code></a>.
  <p>
  This operator only impacts behavior if the returned <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> is subscribed directly after this operator,
  that means this must be the "last operator" in the chain for this to have an impact.</div>
 <dl>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd>A <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> that will share the <a href="AsyncContext.html" title="class in io.servicetalk.concurrent.api"><code>AsyncContext</code></a> instead of making a
- <a href="AsyncContextMap.html#copy()"><code>copy</code></a> when subscribed to.</dd>
+ <a href="../../context/api/ContextMap.html#copy()"><code>copy</code></a> when subscribed to.</dd>
 </dl>
 </li>
 </ul>
@@ -5291,7 +5328,7 @@ public final&nbsp;<a href="Publisher.html" title="class in io.servicetalk.concur
      <code>-1</code> to indicate end of stream after emitting all received data.</li>
  </ul>
 
- <h2>Flow control</h2>
+ <p><strong>Flow control</strong></p>
  This operator may pre-fetch may pre-fetch items from <code>this</code> <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> if available to reduce
  blocking for read operations from the returned <code>InputStream</code>. In order to increase responsiveness of the
  <code>InputStream</code> some amount of buffering may be done. Use <a href="#toInputStream(java.util.function.Function,int)"><code>toInputStream(Function, int)</code></a> to manage
@@ -5329,7 +5366,7 @@ public final&nbsp;<a href="Publisher.html" title="class in io.servicetalk.concur
      <code>-1</code> to indicate end of stream after emitting all received data.</li>
  </ul>
 
- <h2>Flow control</h2>
+ <p><strong>Flow control</strong></p>
  This operator may pre-fetch items from <code>this</code> <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> if available to reduce blocking for read
  operations from the returned <code>InputStream</code>. In order to increase responsiveness of the <code>InputStream</code>
  some amount of buffering may be done. <code>queueCapacity</code> can be used to bound this buffer.</div>
@@ -5368,13 +5405,13 @@ public final&nbsp;<a href="Publisher.html" title="class in io.servicetalk.concur
      <code>NoSuchElementException</code>. This error will be thrown only after draining all queued data, if any.</li>
  </ul>
 
- <h2>Flow control</h2>
+ <p><strong>Flow control</strong></p>
  This operator may pre-fetch items from <code>this</code> <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> if available to reduce blocking of
  <code>Iterator.hasNext()</code> from the returned <a href="../BlockingIterable.html" title="interface in io.servicetalk.concurrent"><code>BlockingIterable</code></a>. In order to increase responsiveness of
  the <code>Iterator</code> some amount of buffering may be done. Use <a href="#toIterable(int)"><code>toIterable(int)</code></a> to manage capacity of
  this buffer.
 
- <h2>Blocking</h2>
+ <p><strong>Blocking</strong></p>
  The returned <a href="../BlockingIterator.html" title="interface in io.servicetalk.concurrent"><code>BlockingIterator</code></a> from the returned <a href="../BlockingIterable.html" title="interface in io.servicetalk.concurrent"><code>BlockingIterable</code></a> will block on
  <code>Iterator.hasNext()</code> and <a href="../BlockingIterator.html#next()"><code>BlockingIterator.next()</code></a> if no data is available. This operator may
  try to reduce this blocking by requesting data ahead of time.</div>
@@ -5410,13 +5447,13 @@ public final&nbsp;<a href="Publisher.html" title="class in io.servicetalk.concur
      <code>NoSuchElementException</code>. This error will be thrown only after draining all queued data, if any.</li>
  </ul>
 
- <h2>Flow control</h2>
+ <p><strong>Flow control</strong></p>
  This operator may pre-fetch items from <code>this</code> <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> if available to reduce blocking of
  <code>Iterator.hasNext()</code> from the returned <a href="../BlockingIterable.html" title="interface in io.servicetalk.concurrent"><code>BlockingIterable</code></a>. In order to increase
  responsiveness of the <a href="../BlockingIterator.html" title="interface in io.servicetalk.concurrent"><code>BlockingIterator</code></a> some amount of buffering may be done. <code>queueCapacityHint</code>
  can be used to bound this buffer.
 
- <h2>Blocking</h2>
+ <p><strong>Blocking</strong></p>
  The returned <a href="../BlockingIterator.html" title="interface in io.servicetalk.concurrent"><code>BlockingIterator</code></a> from the returned <a href="../BlockingIterable.html" title="interface in io.servicetalk.concurrent"><code>BlockingIterable</code></a> will block on
  <code>Iterator.hasNext()</code> and <a href="../BlockingIterator.html#next()"><code>BlockingIterator.next()</code></a> if no data is available. This operator may
  try to reduce this blocking by requesting data ahead of time.</div>

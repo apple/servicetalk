@@ -26,8 +26,8 @@
     catch(err) {
     }
 //-->
-var data = {"i0":6,"i1":6,"i2":18,"i3":6,"i4":18,"i5":6,"i6":18,"i7":6,"i8":6,"i9":18,"i10":18};
-var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"],16:["t5","Default Methods"]};
+var data = {"i0":6,"i1":6,"i2":50,"i3":6,"i4":50,"i5":6,"i6":50,"i7":6,"i8":6,"i9":50,"i10":50};
+var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"],16:["t5","Default Methods"],32:["t6","Deprecated Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
 var tableTab = "tableTab";
@@ -143,7 +143,7 @@ extends io.opentracing.Span, <a href="InMemoryTraceState.html" title="interface 
 </a>
 <h3>Method Summary</h3>
 <table class="memberSummary">
-<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t3" class="tableTab"><span><a href="javascript:show(4);">Abstract Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t5" class="tableTab"><span><a href="javascript:show(16);">Default Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
+<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t3" class="tableTab"><span><a href="javascript:show(4);">Abstract Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t5" class="tableTab"><span><a href="javascript:show(16);">Default Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t6" class="tableTab"><span><a href="javascript:show(32);">Deprecated Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
 <tr>
 <th class="colFirst" scope="col">Modifier and Type</th>
 <th class="colSecond" scope="col">Method</th>
@@ -165,7 +165,9 @@ extends io.opentracing.Span, <a href="InMemoryTraceState.html" title="interface 
 <td class="colFirst"><code>default java.lang.String</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#nonnullParentSpanIdHex()">nonnullParentSpanIdHex</a></span>()</code></th>
 <td class="colLast">
-<div class="block">Returns the parent span ID in hex.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">This method will be removed in a follow up release, to an effort to clean API.</div>
+</div>
 </td>
 </tr>
 <tr id="i3" class="rowColor">
@@ -179,7 +181,9 @@ extends io.opentracing.Span, <a href="InMemoryTraceState.html" title="interface 
 <td class="colFirst"><code>default java.lang.Long</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#parentSpanId()">parentSpanId</a></span>()</code></th>
 <td class="colLast">
-<div class="block">Returns the parent span ID, could be null.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">This method will be removed in a follow up release, to an effort to clean API.</div>
+</div>
 </td>
 </tr>
 <tr id="i5" class="rowColor">
@@ -193,7 +197,9 @@ extends io.opentracing.Span, <a href="InMemoryTraceState.html" title="interface 
 <td class="colFirst"><code>default long</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#spanId()">spanId</a></span>()</code></th>
 <td class="colLast">
-<div class="block">Returns the span ID.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">This method will be removed in a follow up release, to an effort to clean API.</div>
+</div>
 </td>
 </tr>
 <tr id="i7" class="rowColor">
@@ -214,14 +220,18 @@ extends io.opentracing.Span, <a href="InMemoryTraceState.html" title="interface 
 <td class="colFirst"><code>default long</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#traceId()">traceId</a></span>()</code></th>
 <td class="colLast">
-<div class="block">Returns the low 64 bits of trace ID.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">This method will be removed in a follow up release, to an effort to clean API.</div>
+</div>
 </td>
 </tr>
 <tr id="i10" class="altColor">
 <td class="colFirst"><code>default long</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#traceIdHigh()">traceIdHigh</a></span>()</code></th>
 <td class="colLast">
-<div class="block">Returns the high 64 bits for 128-bit trace IDs, or <code>0L</code> for 64-bit trace IDs.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">This method will be removed in a follow up release, to an effort to clean API.</div>
+</div>
 </td>
 </tr>
 </table>
@@ -302,7 +312,11 @@ extends io.opentracing.Span, <a href="InMemoryTraceState.html" title="interface 
 <ul class="blockList">
 <li class="blockList">
 <h4>traceId</h4>
-<pre class="methodSignature">default&nbsp;long&nbsp;traceId()</pre>
+<pre class="methodSignature">@Deprecated
+default&nbsp;long&nbsp;traceId()</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">This method will be removed in a follow up release, to an effort to clean API.</div>
+</div>
 <div class="block">Returns the low 64 bits of trace ID.</div>
 <dl>
 <dt><span class="returnLabel">Returns:</span></dt>
@@ -316,7 +330,11 @@ extends io.opentracing.Span, <a href="InMemoryTraceState.html" title="interface 
 <ul class="blockList">
 <li class="blockList">
 <h4>traceIdHigh</h4>
-<pre class="methodSignature">default&nbsp;long&nbsp;traceIdHigh()</pre>
+<pre class="methodSignature">@Deprecated
+default&nbsp;long&nbsp;traceIdHigh()</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">This method will be removed in a follow up release, to an effort to clean API.</div>
+</div>
 <div class="block">Returns the high 64 bits for 128-bit trace IDs, or <code>0L</code> for 64-bit trace IDs.</div>
 <dl>
 <dt><span class="returnLabel">Returns:</span></dt>
@@ -330,7 +348,11 @@ extends io.opentracing.Span, <a href="InMemoryTraceState.html" title="interface 
 <ul class="blockList">
 <li class="blockList">
 <h4>spanId</h4>
-<pre class="methodSignature">default&nbsp;long&nbsp;spanId()</pre>
+<pre class="methodSignature">@Deprecated
+default&nbsp;long&nbsp;spanId()</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">This method will be removed in a follow up release, to an effort to clean API.</div>
+</div>
 <div class="block">Returns the span ID.</div>
 <dl>
 <dt><span class="returnLabel">Returns:</span></dt>
@@ -345,7 +367,11 @@ extends io.opentracing.Span, <a href="InMemoryTraceState.html" title="interface 
 <li class="blockList">
 <h4>parentSpanId</h4>
 <pre class="methodSignature">@Nullable
+@Deprecated
 default&nbsp;java.lang.Long&nbsp;parentSpanId()</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">This method will be removed in a follow up release, to an effort to clean API.</div>
+</div>
 <div class="block">Returns the parent span ID, could be null.</div>
 <dl>
 <dt><span class="returnLabel">Returns:</span></dt>
@@ -359,7 +385,11 @@ default&nbsp;java.lang.Long&nbsp;parentSpanId()</pre>
 <ul class="blockList">
 <li class="blockList">
 <h4>nonnullParentSpanIdHex</h4>
-<pre class="methodSignature">default&nbsp;java.lang.String&nbsp;nonnullParentSpanIdHex()</pre>
+<pre class="methodSignature">@Deprecated
+default&nbsp;java.lang.String&nbsp;nonnullParentSpanIdHex()</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">This method will be removed in a follow up release, to an effort to clean API.</div>
+</div>
 <div class="block">Returns the parent span ID in hex. Returns <code>"null"</code> if the parent span ID is not present.</div>
 <dl>
 <dt><span class="returnLabel">Returns:</span></dt>

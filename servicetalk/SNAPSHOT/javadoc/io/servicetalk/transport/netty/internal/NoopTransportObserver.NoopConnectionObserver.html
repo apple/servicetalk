@@ -26,7 +26,7 @@
     catch(err) {
     }
 //-->
-var data = {"i0":10,"i1":10,"i2":10,"i3":10,"i4":10,"i5":10,"i6":10,"i7":10};
+var data = {"i0":10,"i1":10,"i2":10,"i3":10,"i4":10,"i5":10,"i6":10,"i7":10,"i8":10};
 var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],8:["t4","Concrete Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
@@ -258,6 +258,13 @@ implements <a href="../../api/ConnectionObserver.html" title="interface in io.se
 <div class="block">Callback when a security handshake is initiated.</div>
 </td>
 </tr>
+<tr id="i8" class="altColor">
+<td class="colFirst"><code>void</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#onTransportHandshakeComplete()">onTransportHandshakeComplete</a></span>()</code></th>
+<td class="colLast">
+<div class="block">Callback when a transport handshake completes.</div>
+</td>
+</tr>
 </table>
 <ul class="blockList">
 <li class="blockList"><a id="methods.inherited.from.class.java.lang.Object">
@@ -350,6 +357,24 @@ implements <a href="../../api/ConnectionObserver.html" title="interface in io.se
 </dl>
 </li>
 </ul>
+<a id="onTransportHandshakeComplete()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>onTransportHandshakeComplete</h4>
+<pre class="methodSignature">public&nbsp;void&nbsp;onTransportHandshakeComplete()</pre>
+<div class="block"><span class="descfrmTypeLabel">Description copied from interface:&nbsp;<code><a href="../../api/ConnectionObserver.html#onTransportHandshakeComplete()">ConnectionObserver</a></code></span></div>
+<div class="block">Callback when a transport handshake completes.
+ <p>
+ Transport protocols that require a handshake in order to connect. Example:
+ <a href="https://datatracker.ietf.org/doc/html/rfc793.html#section-3.4">TCP "three-way handshake"</a>.</div>
+<dl>
+<dt><span class="overrideSpecifyLabel">Specified by:</span></dt>
+<dd><code><a href="../../api/ConnectionObserver.html#onTransportHandshakeComplete()">onTransportHandshakeComplete</a></code>&nbsp;in interface&nbsp;<code><a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver</a></code></dd>
+</dl>
+</li>
+</ul>
 <a id="onSecurityHandshake()">
 <!--   -->
 </a>
@@ -358,12 +383,26 @@ implements <a href="../../api/ConnectionObserver.html" title="interface in io.se
 <h4>onSecurityHandshake</h4>
 <pre class="methodSignature">public&nbsp;<a href="../../api/ConnectionObserver.SecurityHandshakeObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.SecurityHandshakeObserver</a>&nbsp;onSecurityHandshake()</pre>
 <div class="block"><span class="descfrmTypeLabel">Description copied from interface:&nbsp;<code><a href="../../api/ConnectionObserver.html#onSecurityHandshake()">ConnectionObserver</a></code></span></div>
-<div class="block">Callback when a security handshake is initiated.</div>
+<div class="block">Callback when a security handshake is initiated.
+ <p>
+ For a typical connection, this callback is invoked after <a href="../../api/ConnectionObserver.html#onTransportHandshakeComplete()"><code>ConnectionObserver.onTransportHandshakeComplete()</code></a>. There are may
+ be exceptions:
+ <ol>
+     <li>For a TCP connection, when <a href="../../api/ServiceTalkSocketOptions.html#TCP_FASTOPEN_CONNECT"><code>ServiceTalkSocketOptions.TCP_FASTOPEN_CONNECT</code></a> option is configured and
+     the Fast Open feature is supported by the OS, this callback may be invoked earlier. Note, even if the Fast
+     Open is available and configured, it may not actually happen if the
+     <a href="https://datatracker.ietf.org/doc/html/rfc7413#section-4.1">Fast Open Cookie</a> is <code>null</code> or
+     rejected by the server.</li>
+     <li>For a proxy connections, the handshake may happen after the
+     <a href="../../api/ConnectionObserver.html#connectionEstablished(io.servicetalk.transport.api.ConnectionInfo)"><code>ConnectionObserver.connectionEstablished(ConnectionInfo)</code></a>.</li>
+ </ol></div>
 <dl>
 <dt><span class="overrideSpecifyLabel">Specified by:</span></dt>
 <dd><code><a href="../../api/ConnectionObserver.html#onSecurityHandshake()">onSecurityHandshake</a></code>&nbsp;in interface&nbsp;<code><a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver</a></code></dd>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd>a new <a href="../../api/ConnectionObserver.SecurityHandshakeObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver.SecurityHandshakeObserver</code></a> that provides visibility into security handshake events</dd>
+<dt><span class="seeLabel">See Also:</span></dt>
+<dd><a href="https://datatracker.ietf.org/doc/html/rfc7413">RFC7413: TCP Fast Open</a></dd>
 </dl>
 </li>
 </ul>

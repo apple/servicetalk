@@ -26,7 +26,7 @@
     catch(err) {
     }
 //-->
-var data = {"i0":10,"i1":10,"i2":10,"i3":10,"i4":10,"i5":10,"i6":10};
+var data = {"i0":10,"i1":10,"i2":10,"i3":10,"i4":10,"i5":10,"i6":10,"i7":10,"i8":10,"i9":10};
 var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],8:["t4","Concrete Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
@@ -187,47 +187,68 @@ implements <a href="../../api/ConnectionObserver.WriteObserver.html" title="inte
 </tr>
 <tr id="i0" class="altColor">
 <td class="colFirst"><code>void</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#itemFlushed()">itemFlushed</a></span>()</code></th>
+<td class="colLast">
+<div class="block">Callback when an item is flushed to the network.</div>
+</td>
+</tr>
+<tr id="i1" class="rowColor">
+<td class="colFirst"><code>void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#itemReceived()">itemReceived</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Callback when an item is received and ready to be written.</div>
 </td>
 </tr>
-<tr id="i1" class="rowColor">
+<tr id="i2" class="altColor">
+<td class="colFirst"><code>void</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#itemReceived(java.lang.Object)">itemReceived</a></span>&#8203;(java.lang.Object&nbsp;item)</code></th>
+<td class="colLast">
+<div class="block">Callback when an item is received and ready to be written.</div>
+</td>
+</tr>
+<tr id="i3" class="rowColor">
 <td class="colFirst"><code>void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#itemWritten()">itemWritten</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Callback when an item is written to the transport.</div>
 </td>
 </tr>
-<tr id="i2" class="altColor">
+<tr id="i4" class="altColor">
+<td class="colFirst"><code>void</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#itemWritten(java.lang.Object)">itemWritten</a></span>&#8203;(java.lang.Object&nbsp;item)</code></th>
+<td class="colLast">
+<div class="block">Callback when an item is serialized and written to the socket.</div>
+</td>
+</tr>
+<tr id="i5" class="rowColor">
 <td class="colFirst"><code>void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#onFlushRequest()">onFlushRequest</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Callback when flush operation is requested.</div>
 </td>
 </tr>
-<tr id="i3" class="rowColor">
+<tr id="i6" class="altColor">
 <td class="colFirst"><code>void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#requestedToWrite(long)">requestedToWrite</a></span>&#8203;(long&nbsp;n)</code></th>
 <td class="colLast">
 <div class="block">Callback when new items are requested to write.</div>
 </td>
 </tr>
-<tr id="i4" class="altColor">
+<tr id="i7" class="rowColor">
 <td class="colFirst"><code>void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#writeCancelled()">writeCancelled</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Callback when the write operation is cancelled.</div>
 </td>
 </tr>
-<tr id="i5" class="rowColor">
+<tr id="i8" class="altColor">
 <td class="colFirst"><code>void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#writeComplete()">writeComplete</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Callback when the entire write operation completes successfully.</div>
 </td>
 </tr>
-<tr id="i6" class="altColor">
+<tr id="i9" class="rowColor">
 <td class="colFirst"><code>void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#writeFailed(java.lang.Throwable)">writeFailed</a></span>&#8203;(java.lang.Throwable&nbsp;cause)</code></th>
 <td class="colLast">
@@ -311,6 +332,24 @@ implements <a href="../../api/ConnectionObserver.WriteObserver.html" title="inte
 </dl>
 </li>
 </ul>
+<a id="itemReceived(java.lang.Object)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>itemReceived</h4>
+<pre class="methodSignature">public&nbsp;void&nbsp;itemReceived&#8203;(@Nullable
+                         java.lang.Object&nbsp;item)</pre>
+<div class="block"><span class="descfrmTypeLabel">Description copied from interface:&nbsp;<code><a href="../../api/ConnectionObserver.WriteObserver.html#itemReceived(java.lang.Object)">ConnectionObserver.WriteObserver</a></code></span></div>
+<div class="block">Callback when an item is received and ready to be written.</div>
+<dl>
+<dt><span class="overrideSpecifyLabel">Specified by:</span></dt>
+<dd><code><a href="../../api/ConnectionObserver.WriteObserver.html#itemReceived(java.lang.Object)">itemReceived</a></code>&nbsp;in interface&nbsp;<code><a href="../../api/ConnectionObserver.WriteObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.WriteObserver</a></code></dd>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>item</code> - received item</dd>
+</dl>
+</li>
+</ul>
 <a id="onFlushRequest()">
 <!--   -->
 </a>
@@ -340,6 +379,39 @@ implements <a href="../../api/ConnectionObserver.WriteObserver.html" title="inte
 <dl>
 <dt><span class="overrideSpecifyLabel">Specified by:</span></dt>
 <dd><code><a href="../../api/ConnectionObserver.WriteObserver.html#itemWritten()">itemWritten</a></code>&nbsp;in interface&nbsp;<code><a href="../../api/ConnectionObserver.WriteObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.WriteObserver</a></code></dd>
+</dl>
+</li>
+</ul>
+<a id="itemWritten(java.lang.Object)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>itemWritten</h4>
+<pre class="methodSignature">public&nbsp;void&nbsp;itemWritten&#8203;(@Nullable
+                        java.lang.Object&nbsp;item)</pre>
+<div class="block"><span class="descfrmTypeLabel">Description copied from interface:&nbsp;<code><a href="../../api/ConnectionObserver.WriteObserver.html#itemWritten(java.lang.Object)">ConnectionObserver.WriteObserver</a></code></span></div>
+<div class="block">Callback when an item is serialized and written to the socket.</div>
+<dl>
+<dt><span class="overrideSpecifyLabel">Specified by:</span></dt>
+<dd><code><a href="../../api/ConnectionObserver.WriteObserver.html#itemWritten(java.lang.Object)">itemWritten</a></code>&nbsp;in interface&nbsp;<code><a href="../../api/ConnectionObserver.WriteObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.WriteObserver</a></code></dd>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>item</code> - written item</dd>
+</dl>
+</li>
+</ul>
+<a id="itemFlushed()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>itemFlushed</h4>
+<pre class="methodSignature">public&nbsp;void&nbsp;itemFlushed()</pre>
+<div class="block"><span class="descfrmTypeLabel">Description copied from interface:&nbsp;<code><a href="../../api/ConnectionObserver.WriteObserver.html#itemFlushed()">ConnectionObserver.WriteObserver</a></code></span></div>
+<div class="block">Callback when an item is flushed to the network. Items are flushed in order they have been written.</div>
+<dl>
+<dt><span class="overrideSpecifyLabel">Specified by:</span></dt>
+<dd><code><a href="../../api/ConnectionObserver.WriteObserver.html#itemFlushed()">itemFlushed</a></code>&nbsp;in interface&nbsp;<code><a href="../../api/ConnectionObserver.WriteObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.WriteObserver</a></code></dd>
 </dl>
 </li>
 </ul>

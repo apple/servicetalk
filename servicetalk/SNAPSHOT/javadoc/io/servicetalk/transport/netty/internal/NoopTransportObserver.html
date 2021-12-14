@@ -26,7 +26,7 @@
     catch(err) {
     }
 //-->
-var data = {"i0":10};
+var data = {"i0":10,"i1":10};
 var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],8:["t4","Concrete Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
@@ -255,6 +255,14 @@ implements <a href="../../api/TransportObserver.html" title="interface in io.ser
 <div class="block">Callback when transport starts initializing a new network connection.</div>
 </td>
 </tr>
+<tr id="i1" class="rowColor">
+<td class="colFirst"><code><a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver</a></code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#onNewConnection(java.lang.Object,java.lang.Object)">onNewConnection</a></span>&#8203;(java.lang.Object&nbsp;localAddress,
+               java.lang.Object&nbsp;remoteAddress)</code></th>
+<td class="colLast">
+<div class="block">Callback when transport starts initializing a new network connection.</div>
+</td>
+</tr>
 </table>
 <ul class="blockList">
 <li class="blockList"><a id="methods.inherited.from.class.java.lang.Object">
@@ -301,7 +309,7 @@ implements <a href="../../api/TransportObserver.html" title="interface in io.ser
 <a id="onNewConnection()">
 <!--   -->
 </a>
-<ul class="blockListLast">
+<ul class="blockList">
 <li class="blockList">
 <h4>onNewConnection</h4>
 <pre class="methodSignature">public&nbsp;<a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver</a>&nbsp;onNewConnection()</pre>
@@ -310,6 +318,28 @@ implements <a href="../../api/TransportObserver.html" title="interface in io.ser
 <dl>
 <dt><span class="overrideSpecifyLabel">Specified by:</span></dt>
 <dd><code><a href="../../api/TransportObserver.html#onNewConnection()">onNewConnection</a></code>&nbsp;in interface&nbsp;<code><a href="../../api/TransportObserver.html" title="interface in io.servicetalk.transport.api">TransportObserver</a></code></dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd>a new <a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver</code></a> that provides visibility into events associated with a new connection</dd>
+</dl>
+</li>
+</ul>
+<a id="onNewConnection(java.lang.Object,java.lang.Object)">
+<!--   -->
+</a>
+<ul class="blockListLast">
+<li class="blockList">
+<h4>onNewConnection</h4>
+<pre class="methodSignature">public&nbsp;<a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver</a>&nbsp;onNewConnection&#8203;(@Nullable
+                                          java.lang.Object&nbsp;localAddress,
+                                          java.lang.Object&nbsp;remoteAddress)</pre>
+<div class="block"><span class="descfrmTypeLabel">Description copied from interface:&nbsp;<code><a href="../../api/TransportObserver.html#onNewConnection(java.lang.Object,java.lang.Object)">TransportObserver</a></code></span></div>
+<div class="block">Callback when transport starts initializing a new network connection.</div>
+<dl>
+<dt><span class="overrideSpecifyLabel">Specified by:</span></dt>
+<dd><code><a href="../../api/TransportObserver.html#onNewConnection(java.lang.Object,java.lang.Object)">onNewConnection</a></code>&nbsp;in interface&nbsp;<code><a href="../../api/TransportObserver.html" title="interface in io.servicetalk.transport.api">TransportObserver</a></code></dd>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>localAddress</code> - a local address of a new connection, if known</dd>
+<dd><code>remoteAddress</code> - a remote address of a new connection</dd>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd>a new <a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver</code></a> that provides visibility into events associated with a new connection</dd>
 </dl>

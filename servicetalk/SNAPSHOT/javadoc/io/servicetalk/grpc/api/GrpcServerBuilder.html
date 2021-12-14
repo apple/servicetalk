@@ -26,8 +26,8 @@
     catch(err) {
     }
 //-->
-var data = {"i0":6,"i1":10,"i2":10,"i3":42,"i4":6,"i5":6,"i6":6,"i7":6,"i8":6,"i9":6,"i10":38,"i11":6,"i12":6,"i13":6,"i14":10,"i15":10,"i16":10,"i17":10,"i18":6,"i19":6,"i20":38,"i21":6,"i22":6,"i23":6,"i24":6};
-var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"],8:["t4","Concrete Methods"],32:["t6","Deprecated Methods"]};
+var data = {"i0":41,"i1":42,"i2":42,"i3":42,"i4":42,"i5":42,"i6":6,"i7":42,"i8":6,"i9":6,"i10":6,"i11":42,"i12":42,"i13":42,"i14":42,"i15":42,"i16":10,"i17":42,"i18":10,"i19":10,"i20":10,"i21":10,"i22":10,"i23":42,"i24":42,"i25":38,"i26":42,"i27":42,"i28":42,"i29":42};
+var tabs = {65535:["t0","All Methods"],1:["t1","Static Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"],8:["t4","Concrete Methods"],32:["t6","Deprecated Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
 var tableTab = "tableTab";
@@ -87,7 +87,7 @@ loadScripts(document, 'script');</script>
 <div>
 <ul class="subNavList">
 <li>Summary:&nbsp;</li>
-<li>Nested&nbsp;|&nbsp;</li>
+<li><a href="#nested.class.summary">Nested</a>&nbsp;|&nbsp;</li>
 <li><a href="#field.summary">Field</a>&nbsp;|&nbsp;</li>
 <li><a href="#constructor.summary">Constr</a>&nbsp;|&nbsp;</li>
 <li><a href="#method.summary">Method</a></li>
@@ -139,6 +139,31 @@ extends java.lang.Object</pre>
 <div class="summary">
 <ul class="blockList">
 <li class="blockList">
+<!-- ======== NESTED CLASS SUMMARY ======== -->
+<section role="region">
+<ul class="blockList">
+<li class="blockList"><a id="nested.class.summary">
+<!--   -->
+</a>
+<h3>Nested Class Summary</h3>
+<table class="memberSummary">
+<caption><span>Nested Classes</span><span class="tabEnd">&nbsp;</span></caption>
+<tr>
+<th class="colFirst" scope="col">Modifier and Type</th>
+<th class="colSecond" scope="col">Class</th>
+<th class="colLast" scope="col">Description</th>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>static interface&nbsp;</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="GrpcServerBuilder.HttpInitializer.html" title="interface in io.servicetalk.grpc.api">GrpcServerBuilder.HttpInitializer</a></span></code></th>
+<td class="colLast">
+<div class="block">Initializes the underlying <a href="../../http/api/HttpServerBuilder.html" title="class in io.servicetalk.http.api"><code>HttpServerBuilder</code></a> used for the transport layer.</div>
+</td>
+</tr>
+</table>
+</li>
+</ul>
+</section>
 <!-- =========== FIELD SUMMARY =========== -->
 <section role="region">
 <ul class="blockList">
@@ -195,36 +220,59 @@ extends java.lang.Object</pre>
 </a>
 <h3>Method Summary</h3>
 <table class="memberSummary">
-<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t3" class="tableTab"><span><a href="javascript:show(4);">Abstract Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t4" class="tableTab"><span><a href="javascript:show(8);">Concrete Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t6" class="tableTab"><span><a href="javascript:show(32);">Deprecated Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
+<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t1" class="tableTab"><span><a href="javascript:show(1);">Static Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t3" class="tableTab"><span><a href="javascript:show(4);">Abstract Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t4" class="tableTab"><span><a href="javascript:show(8);">Concrete Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t6" class="tableTab"><span><a href="javascript:show(32);">Deprecated Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
 <tr>
 <th class="colFirst" scope="col">Modifier and Type</th>
 <th class="colSecond" scope="col">Method</th>
 <th class="colLast" scope="col">Description</th>
 </tr>
 <tr id="i0" class="altColor">
-<td class="colFirst"><code>abstract <a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a></code></td>
-<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#appendConnectionAcceptorFilter(io.servicetalk.transport.api.ConnectionAcceptorFactory)">appendConnectionAcceptorFilter</a></span>&#8203;(<a href="../../transport/api/ConnectionAcceptorFactory.html" title="interface in io.servicetalk.transport.api">ConnectionAcceptorFactory</a>&nbsp;factory)</code></th>
+<td class="colFirst"><code>protected static void</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#appendCatchAllFilter(io.servicetalk.http.api.HttpServerBuilder)">appendCatchAllFilter</a></span>&#8203;(<a href="../../http/api/HttpServerBuilder.html" title="class in io.servicetalk.http.api">HttpServerBuilder</a>&nbsp;httpServerBuilder)</code></th>
 <td class="colLast">
-<div class="block">Append the filter to the chain of filters used to decorate the <a href="../../transport/api/ConnectionAcceptor.html" title="interface in io.servicetalk.transport.api"><code>ConnectionAcceptor</code></a> used by this builder.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">This method was introduced temporarily, should not be used, and will be removed in version 0.42.</div>
+</div>
 </td>
 </tr>
 <tr id="i1" class="rowColor">
 <td class="colFirst"><code><a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a></code></td>
-<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#appendHttpServiceFilter(io.servicetalk.http.api.StreamingHttpServiceFilterFactory)">appendHttpServiceFilter</a></span>&#8203;(<a href="../../http/api/StreamingHttpServiceFilterFactory.html" title="interface in io.servicetalk.http.api">StreamingHttpServiceFilterFactory</a>&nbsp;factory)</code></th>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#appendConnectionAcceptorFilter(io.servicetalk.transport.api.ConnectionAcceptorFactory)">appendConnectionAcceptorFilter</a></span>&#8203;(<a href="../../transport/api/ConnectionAcceptorFactory.html" title="interface in io.servicetalk.transport.api">ConnectionAcceptorFactory</a>&nbsp;factory)</code></th>
 <td class="colLast">
-<div class="block">Append the filter to the chain of filters used to decorate the service used by this builder.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Call <a href="#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>initializeHttp(HttpInitializer)</code></a> and use
+ <a href="../../http/api/HttpServerBuilder.html#appendConnectionAcceptorFilter(io.servicetalk.transport.api.ConnectionAcceptorFactory)"><code>HttpServerBuilder.appendConnectionAcceptorFilter(ConnectionAcceptorFactory)</code></a>
+ on the <code>builder</code> instance by implementing <a href="GrpcServerBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.HttpServerBuilder)"><code>GrpcServerBuilder.HttpInitializer.initialize(HttpServerBuilder)</code></a>
+ functional interface.</div>
+</div>
 </td>
 </tr>
 <tr id="i2" class="altColor">
 <td class="colFirst"><code><a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a></code></td>
-<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#appendHttpServiceFilter(java.util.function.Predicate,io.servicetalk.http.api.StreamingHttpServiceFilterFactory)">appendHttpServiceFilter</a></span>&#8203;(java.util.function.Predicate&lt;<a href="../../http/api/StreamingHttpRequest.html" title="interface in io.servicetalk.http.api">StreamingHttpRequest</a>&gt;&nbsp;predicate,
-                       <a href="../../http/api/StreamingHttpServiceFilterFactory.html" title="interface in io.servicetalk.http.api">StreamingHttpServiceFilterFactory</a>&nbsp;factory)</code></th>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#appendHttpServiceFilter(io.servicetalk.http.api.StreamingHttpServiceFilterFactory)">appendHttpServiceFilter</a></span>&#8203;(<a href="../../http/api/StreamingHttpServiceFilterFactory.html" title="interface in io.servicetalk.http.api">StreamingHttpServiceFilterFactory</a>&nbsp;factory)</code></th>
 <td class="colLast">
-<div class="block">Append the filter to the chain of filters used to decorate the service used by this builder, for every request
- that passes the provided <code>Predicate</code>.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Call <a href="#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>initializeHttp(HttpInitializer)</code></a> and use
+ <a href="../../http/api/HttpServerBuilder.html#appendServiceFilter(io.servicetalk.http.api.StreamingHttpServiceFilterFactory)"><code>HttpServerBuilder.appendServiceFilter(StreamingHttpServiceFilterFactory)</code></a>
+ on the <code>builder</code> instance by implementing <a href="GrpcServerBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.HttpServerBuilder)"><code>GrpcServerBuilder.HttpInitializer.initialize(HttpServerBuilder)</code></a>
+ functional interface.</div>
+</div>
 </td>
 </tr>
 <tr id="i3" class="rowColor">
+<td class="colFirst"><code><a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a></code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#appendHttpServiceFilter(java.util.function.Predicate,io.servicetalk.http.api.StreamingHttpServiceFilterFactory)">appendHttpServiceFilter</a></span>&#8203;(java.util.function.Predicate&lt;<a href="../../http/api/StreamingHttpRequest.html" title="interface in io.servicetalk.http.api">StreamingHttpRequest</a>&gt;&nbsp;predicate,
+                       <a href="../../http/api/StreamingHttpServiceFilterFactory.html" title="interface in io.servicetalk.http.api">StreamingHttpServiceFilterFactory</a>&nbsp;factory)</code></th>
+<td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Call <a href="#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>initializeHttp(HttpInitializer)</code></a> and use
+ <a href="../../http/api/HttpServerBuilder.html#appendServiceFilter(java.util.function.Predicate,io.servicetalk.http.api.StreamingHttpServiceFilterFactory)"><code>HttpServerBuilder.appendServiceFilter(Predicate, StreamingHttpServiceFilterFactory)</code></a>
+ on the <code>builder</code> instance by implementing <a href="GrpcServerBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.HttpServerBuilder)"><code>GrpcServerBuilder.HttpInitializer.initialize(HttpServerBuilder)</code></a>
+ functional interface.</div>
+</div>
+</td>
+</tr>
+<tr id="i4" class="altColor">
 <td class="colFirst"><code><a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#backlog(int)">backlog</a></span>&#8203;(int&nbsp;backlog)</code></th>
 <td class="colLast">
@@ -234,36 +282,45 @@ extends java.lang.Object</pre>
 </div>
 </td>
 </tr>
-<tr id="i4" class="altColor">
-<td class="colFirst"><code>abstract <a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a></code></td>
+<tr id="i5" class="rowColor">
+<td class="colFirst"><code><a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#bufferAllocator(io.servicetalk.buffer.api.BufferAllocator)">bufferAllocator</a></span>&#8203;(<a href="../../buffer/api/BufferAllocator.html" title="interface in io.servicetalk.buffer.api">BufferAllocator</a>&nbsp;allocator)</code></th>
 <td class="colLast">
-<div class="block">Sets the <a href="../../buffer/api/BufferAllocator.html" title="interface in io.servicetalk.buffer.api"><code>BufferAllocator</code></a> to be used by this server.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Call <a href="#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>initializeHttp(HttpInitializer)</code></a> and use
+ <a href="../../http/api/HttpServerBuilder.html#bufferAllocator(io.servicetalk.buffer.api.BufferAllocator)"><code>HttpServerBuilder.bufferAllocator(BufferAllocator)</code></a>
+ on the <code>builder</code> instance by implementing <a href="GrpcServerBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.HttpServerBuilder)"><code>GrpcServerBuilder.HttpInitializer.initialize(HttpServerBuilder)</code></a>
+ functional interface.</div>
+</div>
 </td>
 </tr>
-<tr id="i5" class="rowColor">
+<tr id="i6" class="altColor">
 <td class="colFirst"><code>abstract <a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#defaultTimeout(java.time.Duration)">defaultTimeout</a></span>&#8203;(java.time.Duration&nbsp;defaultTimeout)</code></th>
 <td class="colLast">
 <div class="block">Set a default timeout during which gRPC calls are expected to complete.</div>
 </td>
 </tr>
-<tr id="i6" class="altColor">
-<td class="colFirst"><code>abstract <a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a></code></td>
+<tr id="i7" class="rowColor">
+<td class="colFirst"><code><a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#disableDrainingRequestPayloadBody()">disableDrainingRequestPayloadBody</a></span>()</code></th>
 <td class="colLast">
-<div class="block">Disables automatic consumption of request <a href="../../http/api/StreamingHttpRequest.html#payloadBody()"><code>payload body</code></a> when it is not
- consumed by the service.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Call <a href="#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>initializeHttp(HttpInitializer)</code></a> and use
+ <a href="../../http/api/HttpServerBuilder.html#drainRequestPayloadBody(boolean)"><code>HttpServerBuilder.drainRequestPayloadBody(boolean)</code></a>
+ on the <code>builder</code> instance by implementing <a href="GrpcServerBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.HttpServerBuilder)"><code>GrpcServerBuilder.HttpInitializer.initialize(HttpServerBuilder)</code></a>
+ functional interface.</div>
+</div>
 </td>
 </tr>
-<tr id="i7" class="rowColor">
+<tr id="i8" class="altColor">
 <td class="colFirst"><code>protected abstract void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#doAppendHttpServiceFilter(io.servicetalk.http.api.StreamingHttpServiceFilterFactory)">doAppendHttpServiceFilter</a></span>&#8203;(<a href="../../http/api/StreamingHttpServiceFilterFactory.html" title="interface in io.servicetalk.http.api">StreamingHttpServiceFilterFactory</a>&nbsp;factory)</code></th>
 <td class="colLast">
 <div class="block">Append the filter to the chain of filters used to decorate the service used by this builder.</div>
 </td>
 </tr>
-<tr id="i8" class="altColor">
+<tr id="i9" class="rowColor">
 <td class="colFirst"><code>protected abstract void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#doAppendHttpServiceFilter(java.util.function.Predicate,io.servicetalk.http.api.StreamingHttpServiceFilterFactory)">doAppendHttpServiceFilter</a></span>&#8203;(java.util.function.Predicate&lt;<a href="../../http/api/StreamingHttpRequest.html" title="interface in io.servicetalk.http.api">StreamingHttpRequest</a>&gt;&nbsp;predicate,
                          <a href="../../http/api/StreamingHttpServiceFilterFactory.html" title="interface in io.servicetalk.http.api">StreamingHttpServiceFilterFactory</a>&nbsp;factory)</code></th>
@@ -272,89 +329,155 @@ extends java.lang.Object</pre>
  that passes the provided <code>Predicate</code>.</div>
 </td>
 </tr>
-<tr id="i9" class="rowColor">
+<tr id="i10" class="altColor">
 <td class="colFirst"><code>protected abstract <a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api">ServerContext</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#doListen(io.servicetalk.grpc.api.GrpcServiceFactory)">doListen</a></span>&#8203;(<a href="GrpcServiceFactory.html" title="class in io.servicetalk.grpc.api">GrpcServiceFactory</a>&lt;?,&#8203;?,&#8203;?&gt;&nbsp;serviceFactory)</code></th>
 <td class="colLast">
 <div class="block">Starts this server and returns the <a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api"><code>ServerContext</code></a> after the server has been successfully started.</div>
 </td>
 </tr>
-<tr id="i10" class="altColor">
-<td class="colFirst"><code>abstract <a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a></code></td>
-<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#enableWireLogging(java.lang.String)">enableWireLogging</a></span>&#8203;(java.lang.String&nbsp;loggerName)</code></th>
+<tr id="i11" class="rowColor">
+<td class="colFirst"><code><a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a></code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#drainRequestPayloadBody(boolean)">drainRequestPayloadBody</a></span>&#8203;(boolean&nbsp;enable)</code></th>
 <td class="colLast">
 <div class="block"><span class="deprecatedLabel">Deprecated.</span>
-<div class="deprecationComment">Use <a href="#enableWireLogging(java.lang.String,io.servicetalk.logging.api.LogLevel,java.util.function.BooleanSupplier)"><code>enableWireLogging(String, LogLevel, BooleanSupplier)</code></a> instead.</div>
+<div class="deprecationComment">Call <a href="#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>initializeHttp(HttpInitializer)</code></a> and use
+ <a href="../../http/api/HttpServerBuilder.html#drainRequestPayloadBody(boolean)"><code>HttpServerBuilder.drainRequestPayloadBody(boolean)</code></a>
+ on the <code>builder</code> instance by implementing <a href="GrpcServerBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.HttpServerBuilder)"><code>GrpcServerBuilder.HttpInitializer.initialize(HttpServerBuilder)</code></a>
+ functional interface.</div>
 </div>
 </td>
 </tr>
-<tr id="i11" class="rowColor">
-<td class="colFirst"><code>abstract <a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a></code></td>
+<tr id="i12" class="altColor">
+<td class="colFirst"><code><a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a></code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#enableWireLogging(java.lang.String)">enableWireLogging</a></span>&#8203;(java.lang.String&nbsp;loggerName)</code></th>
+<td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Call <a href="#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>initializeHttp(HttpInitializer)</code></a> and use
+ <a href="../../http/api/HttpServerBuilder.html#enableWireLogging(java.lang.String,io.servicetalk.logging.api.LogLevel,java.util.function.BooleanSupplier)"><code>HttpServerBuilder.enableWireLogging(String, LogLevel, BooleanSupplier)</code></a>
+ on the <code>builder</code> instance by implementing <a href="GrpcServerBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.HttpServerBuilder)"><code>GrpcServerBuilder.HttpInitializer.initialize(HttpServerBuilder)</code></a>
+ functional interface.</div>
+</div>
+</td>
+</tr>
+<tr id="i13" class="rowColor">
+<td class="colFirst"><code><a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#enableWireLogging(java.lang.String,io.servicetalk.logging.api.LogLevel,java.util.function.BooleanSupplier)">enableWireLogging</a></span>&#8203;(java.lang.String&nbsp;loggerName,
                  <a href="../../logging/api/LogLevel.html" title="enum in io.servicetalk.logging.api">LogLevel</a>&nbsp;logLevel,
                  java.util.function.BooleanSupplier&nbsp;logUserData)</code></th>
 <td class="colLast">
-<div class="block">Enables wire-logging for connections created by this builder.</div>
-</td>
-</tr>
-<tr id="i12" class="altColor">
-<td class="colFirst"><code>abstract <a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a></code></td>
-<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#executionStrategy(io.servicetalk.grpc.api.GrpcExecutionStrategy)">executionStrategy</a></span>&#8203;(<a href="GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api">GrpcExecutionStrategy</a>&nbsp;strategy)</code></th>
-<td class="colLast">
-<div class="block">Sets the <a href="../../http/api/HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> to be used by this server.</div>
-</td>
-</tr>
-<tr id="i13" class="rowColor">
-<td class="colFirst"><code>abstract <a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a></code></td>
-<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#ioExecutor(io.servicetalk.transport.api.IoExecutor)">ioExecutor</a></span>&#8203;(<a href="../../transport/api/IoExecutor.html" title="interface in io.servicetalk.transport.api">IoExecutor</a>&nbsp;ioExecutor)</code></th>
-<td class="colLast">
-<div class="block">Sets the <a href="../../transport/api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a> to be used by this server.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Call <a href="#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>initializeHttp(HttpInitializer)</code></a> and use
+ <a href="../../http/api/HttpServerBuilder.html#enableWireLogging(java.lang.String,io.servicetalk.logging.api.LogLevel,java.util.function.BooleanSupplier)"><code>HttpServerBuilder.enableWireLogging(String, LogLevel, BooleanSupplier)</code></a>
+ on the <code>builder</code> instance by implementing <a href="GrpcServerBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.HttpServerBuilder)"><code>GrpcServerBuilder.HttpInitializer.initialize(HttpServerBuilder)</code></a>
+ functional interface.</div>
+</div>
 </td>
 </tr>
 <tr id="i14" class="altColor">
+<td class="colFirst"><code><a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a></code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#executionStrategy(io.servicetalk.grpc.api.GrpcExecutionStrategy)">executionStrategy</a></span>&#8203;(<a href="GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api">GrpcExecutionStrategy</a>&nbsp;strategy)</code></th>
+<td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Call <a href="#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>initializeHttp(HttpInitializer)</code></a> and use
+ <a href="../../http/api/HttpServerBuilder.html#executionStrategy(io.servicetalk.http.api.HttpExecutionStrategy)"><code>HttpServerBuilder.executionStrategy(HttpExecutionStrategy)</code></a>
+ on the <code>builder</code> instance by implementing <a href="GrpcServerBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.HttpServerBuilder)"><code>GrpcServerBuilder.HttpInitializer.initialize(HttpServerBuilder)</code></a>
+ functional interface.</div>
+</div>
+</td>
+</tr>
+<tr id="i15" class="rowColor">
+<td class="colFirst"><code><a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a></code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#executor(io.servicetalk.concurrent.api.Executor)">executor</a></span>&#8203;(<a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;executor)</code></th>
+<td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Call <a href="#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>initializeHttp(HttpInitializer)</code></a> and use
+ <a href="../../http/api/HttpServerBuilder.html#executor(io.servicetalk.concurrent.api.Executor)"><code>HttpServerBuilder.executor(Executor)</code></a>
+ on the <code>builder</code> instance by implementing <a href="GrpcServerBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.HttpServerBuilder)"><code>GrpcServerBuilder.HttpInitializer.initialize(HttpServerBuilder)</code></a>
+ functional interface.</div>
+</div>
+</td>
+</tr>
+<tr id="i16" class="altColor">
+<td class="colFirst"><code><a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a></code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)">initializeHttp</a></span>&#8203;(<a href="GrpcServerBuilder.HttpInitializer.html" title="interface in io.servicetalk.grpc.api">GrpcServerBuilder.HttpInitializer</a>&nbsp;initializer)</code></th>
+<td class="colLast">
+<div class="block">Set a function which can configure the underlying <a href="../../http/api/HttpServerBuilder.html" title="class in io.servicetalk.http.api"><code>HttpServerBuilder</code></a> used for the transport layer.</div>
+</td>
+</tr>
+<tr id="i17" class="rowColor">
+<td class="colFirst"><code><a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a></code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#ioExecutor(io.servicetalk.transport.api.IoExecutor)">ioExecutor</a></span>&#8203;(<a href="../../transport/api/IoExecutor.html" title="interface in io.servicetalk.transport.api">IoExecutor</a>&nbsp;ioExecutor)</code></th>
+<td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Call <a href="#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>initializeHttp(HttpInitializer)</code></a> and use
+ <a href="../../http/api/HttpServerBuilder.html#ioExecutor(io.servicetalk.transport.api.IoExecutor)"><code>HttpServerBuilder.ioExecutor(IoExecutor)</code></a>
+ on the <code>builder</code> instance by implementing <a href="GrpcServerBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.HttpServerBuilder)"><code>GrpcServerBuilder.HttpInitializer.initialize(HttpServerBuilder)</code></a>
+ functional interface.</div>
+</div>
+</td>
+</tr>
+<tr id="i18" class="altColor">
+<td class="colFirst"><code><a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a></code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#lifecycleObserver(io.servicetalk.grpc.api.GrpcLifecycleObserver)">lifecycleObserver</a></span>&#8203;(<a href="GrpcLifecycleObserver.html" title="interface in io.servicetalk.grpc.api">GrpcLifecycleObserver</a>&nbsp;lifecycleObserver)</code></th>
+<td class="colLast">
+<div class="block">Sets a <a href="GrpcLifecycleObserver.html" title="interface in io.servicetalk.grpc.api"><code>GrpcLifecycleObserver</code></a> that provides visibility into gRPC lifecycle events.</div>
+</td>
+</tr>
+<tr id="i19" class="rowColor">
 <td class="colFirst"><code><a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api">ServerContext</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#listen(io.servicetalk.grpc.api.GrpcBindableService...)">listen</a></span>&#8203;(<a href="GrpcBindableService.html" title="interface in io.servicetalk.grpc.api">GrpcBindableService</a>&lt;?,&#8203;?,&#8203;?&gt;...&nbsp;services)</code></th>
 <td class="colLast">
 <div class="block">Starts this server and returns the <a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api"><code>ServerContext</code></a> after the server has been successfully started.</div>
 </td>
 </tr>
-<tr id="i15" class="rowColor">
+<tr id="i20" class="altColor">
 <td class="colFirst"><code><a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api">ServerContext</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#listen(io.servicetalk.grpc.api.GrpcServiceFactory...)">listen</a></span>&#8203;(<a href="GrpcServiceFactory.html" title="class in io.servicetalk.grpc.api">GrpcServiceFactory</a>&lt;?,&#8203;?,&#8203;?&gt;...&nbsp;serviceFactories)</code></th>
 <td class="colLast">
 <div class="block">Starts this server and returns the <a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api"><code>ServerContext</code></a> after the server has been successfully started.</div>
 </td>
 </tr>
-<tr id="i16" class="altColor">
+<tr id="i21" class="rowColor">
 <td class="colFirst"><code><a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api">ServerContext</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#listenAndAwait(io.servicetalk.grpc.api.GrpcBindableService...)">listenAndAwait</a></span>&#8203;(<a href="GrpcBindableService.html" title="interface in io.servicetalk.grpc.api">GrpcBindableService</a>&lt;?,&#8203;?,&#8203;?&gt;...&nbsp;services)</code></th>
 <td class="colLast">
 <div class="block">Starts this server and returns the <a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api"><code>ServerContext</code></a> after the server has been successfully started.</div>
 </td>
 </tr>
-<tr id="i17" class="rowColor">
+<tr id="i22" class="altColor">
 <td class="colFirst"><code><a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api">ServerContext</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#listenAndAwait(io.servicetalk.grpc.api.GrpcServiceFactory...)">listenAndAwait</a></span>&#8203;(<a href="GrpcServiceFactory.html" title="class in io.servicetalk.grpc.api">GrpcServiceFactory</a>&lt;?,&#8203;?,&#8203;?&gt;...&nbsp;serviceFactories)</code></th>
 <td class="colLast">
 <div class="block">Starts this server and returns the <a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api"><code>ServerContext</code></a> after the server has been successfully started.</div>
 </td>
 </tr>
-<tr id="i18" class="altColor">
-<td class="colFirst"><code>abstract &lt;T&gt;&nbsp;<a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a></code></td>
+<tr id="i23" class="rowColor">
+<td class="colFirst"><code>&lt;T&gt;&nbsp;<a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#listenSocketOption(java.net.SocketOption,T)">listenSocketOption</a></span>&#8203;(java.net.SocketOption&lt;T&gt;&nbsp;option,
                   T&nbsp;value)</code></th>
 <td class="colLast">
-<div class="block">Adds a <code>SocketOption</code> that is applied to the server socket channel which listens/accepts socket channels.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Call <a href="#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>initializeHttp(HttpInitializer)</code></a> and use
+ <a href="../../http/api/HttpServerBuilder.html#listenSocketOption(java.net.SocketOption,T)"><code>HttpServerBuilder.listenSocketOption(SocketOption, Object)</code></a>
+ on the <code>builder</code> instance by implementing <a href="GrpcServerBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.HttpServerBuilder)"><code>GrpcServerBuilder.HttpInitializer.initialize(HttpServerBuilder)</code></a>
+ functional interface.</div>
+</div>
 </td>
 </tr>
-<tr id="i19" class="rowColor">
-<td class="colFirst"><code>abstract <a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a></code></td>
+<tr id="i24" class="altColor">
+<td class="colFirst"><code><a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#protocols(io.servicetalk.http.api.HttpProtocolConfig...)">protocols</a></span>&#8203;(<a href="../../http/api/HttpProtocolConfig.html" title="interface in io.servicetalk.http.api">HttpProtocolConfig</a>...&nbsp;protocols)</code></th>
 <td class="colLast">
-<div class="block">Configurations of various underlying protocol versions.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Call <a href="#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>initializeHttp(HttpInitializer)</code></a> and use
+ <a href="../../http/api/HttpServerBuilder.html#protocols(io.servicetalk.http.api.HttpProtocolConfig...)"><code>HttpServerBuilder.protocols(HttpProtocolConfig...)</code></a>
+ on the <code>builder</code> instance by implementing <a href="GrpcServerBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.HttpServerBuilder)"><code>GrpcServerBuilder.HttpInitializer.initialize(HttpServerBuilder)</code></a>
+ functional interface.</div>
+</div>
 </td>
 </tr>
-<tr id="i20" class="altColor">
+<tr id="i25" class="rowColor">
 <td class="colFirst"><code>abstract <a href="GrpcServerSecurityConfigurator.html" title="interface in io.servicetalk.grpc.api">GrpcServerSecurityConfigurator</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#secure()">secure</a></span>()</code></th>
 <td class="colLast">
@@ -363,34 +486,54 @@ extends java.lang.Object</pre>
 </div>
 </td>
 </tr>
-<tr id="i21" class="rowColor">
-<td class="colFirst"><code>abstract &lt;T&gt;&nbsp;<a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a></code></td>
+<tr id="i26" class="altColor">
+<td class="colFirst"><code>&lt;T&gt;&nbsp;<a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#socketOption(java.net.SocketOption,T)">socketOption</a></span>&#8203;(java.net.SocketOption&lt;T&gt;&nbsp;option,
             T&nbsp;value)</code></th>
 <td class="colLast">
-<div class="block">Add a <code>SocketOption</code> that is applied.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Call <a href="#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>initializeHttp(HttpInitializer)</code></a> and use
+ <a href="../../http/api/HttpServerBuilder.html#socketOption(java.net.SocketOption,T)"><code>HttpServerBuilder.socketOption(SocketOption, Object)</code></a>
+ on the <code>builder</code> instance by implementing <a href="GrpcServerBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.HttpServerBuilder)"><code>GrpcServerBuilder.HttpInitializer.initialize(HttpServerBuilder)</code></a>
+ functional interface.</div>
+</div>
 </td>
 </tr>
-<tr id="i22" class="altColor">
-<td class="colFirst"><code>abstract <a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a></code></td>
+<tr id="i27" class="rowColor">
+<td class="colFirst"><code><a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#sslConfig(io.servicetalk.transport.api.ServerSslConfig)">sslConfig</a></span>&#8203;(<a href="../../transport/api/ServerSslConfig.html" title="interface in io.servicetalk.transport.api">ServerSslConfig</a>&nbsp;config)</code></th>
 <td class="colLast">
-<div class="block">Set the SSL/TLS configuration.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Call <a href="#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>initializeHttp(HttpInitializer)</code></a> and use
+ <a href="../../http/api/HttpServerBuilder.html#sslConfig(io.servicetalk.transport.api.ServerSslConfig)"><code>HttpServerBuilder.sslConfig(ServerSslConfig)</code></a>
+ on the <code>builder</code> instance by implementing <a href="GrpcServerBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.HttpServerBuilder)"><code>GrpcServerBuilder.HttpInitializer.initialize(HttpServerBuilder)</code></a>
+ functional interface.</div>
+</div>
 </td>
 </tr>
-<tr id="i23" class="rowColor">
-<td class="colFirst"><code>abstract <a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a></code></td>
+<tr id="i28" class="altColor">
+<td class="colFirst"><code><a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#sslConfig(io.servicetalk.transport.api.ServerSslConfig,java.util.Map)">sslConfig</a></span>&#8203;(<a href="../../transport/api/ServerSslConfig.html" title="interface in io.servicetalk.transport.api">ServerSslConfig</a>&nbsp;defaultConfig,
          java.util.Map&lt;java.lang.String,&#8203;<a href="../../transport/api/ServerSslConfig.html" title="interface in io.servicetalk.transport.api">ServerSslConfig</a>&gt;&nbsp;sniMap)</code></th>
 <td class="colLast">
-<div class="block">Set the SSL/TLS and <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> configuration.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Call <a href="#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>initializeHttp(HttpInitializer)</code></a> and use
+ <a href="../../http/api/HttpServerBuilder.html#sslConfig(io.servicetalk.transport.api.ServerSslConfig,java.util.Map)"><code>HttpServerBuilder.sslConfig(ServerSslConfig, Map)</code></a>
+ on the <code>builder</code> instance by implementing <a href="GrpcServerBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.HttpServerBuilder)"><code>GrpcServerBuilder.HttpInitializer.initialize(HttpServerBuilder)</code></a>
+ functional interface.</div>
+</div>
 </td>
 </tr>
-<tr id="i24" class="altColor">
-<td class="colFirst"><code>abstract <a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a></code></td>
+<tr id="i29" class="rowColor">
+<td class="colFirst"><code><a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#transportObserver(io.servicetalk.transport.api.TransportObserver)">transportObserver</a></span>&#8203;(<a href="../../transport/api/TransportObserver.html" title="interface in io.servicetalk.transport.api">TransportObserver</a>&nbsp;transportObserver)</code></th>
 <td class="colLast">
-<div class="block">Sets a <a href="../../transport/api/TransportObserver.html" title="interface in io.servicetalk.transport.api"><code>TransportObserver</code></a> that provides visibility into transport events.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Call <a href="#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>initializeHttp(HttpInitializer)</code></a> and use
+ <a href="../../http/api/HttpServerBuilder.html#transportObserver(io.servicetalk.transport.api.TransportObserver)"><code>HttpServerBuilder.transportObserver(TransportObserver)</code></a>
+ on the <code>builder</code> instance by implementing <a href="GrpcServerBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.HttpServerBuilder)"><code>GrpcServerBuilder.HttpInitializer.initialize(HttpServerBuilder)</code></a>
+ functional interface.</div>
+</div>
 </td>
 </tr>
 </table>
@@ -461,13 +604,40 @@ protected static final&nbsp;<a href="../../concurrent/api/AsyncContextMap.Key.ht
 <!--   -->
 </a>
 <h3>Method Detail</h3>
+<a id="initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>initializeHttp</h4>
+<pre class="methodSignature">public&nbsp;<a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a>&nbsp;initializeHttp&#8203;(<a href="GrpcServerBuilder.HttpInitializer.html" title="interface in io.servicetalk.grpc.api">GrpcServerBuilder.HttpInitializer</a>&nbsp;initializer)</pre>
+<div class="block">Set a function which can configure the underlying <a href="../../http/api/HttpServerBuilder.html" title="class in io.servicetalk.http.api"><code>HttpServerBuilder</code></a> used for the transport layer.
+ <p>
+ Please note that this method shouldn't be mixed with the <code>Deprecated</code> methods of this class as the order
+ of operations would not be the same as the order in which the calls are made. Please migrate all of the calls
+ to this method.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>initializer</code> - Initializes the underlying HTTP transport builder.</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd><code>this</code>.</dd>
+</dl>
+</li>
+</ul>
 <a id="protocols(io.servicetalk.http.api.HttpProtocolConfig...)">
 <!--   -->
 </a>
 <ul class="blockList">
 <li class="blockList">
 <h4>protocols</h4>
-<pre class="methodSignature">public abstract&nbsp;<a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a>&nbsp;protocols&#8203;(<a href="../../http/api/HttpProtocolConfig.html" title="interface in io.servicetalk.http.api">HttpProtocolConfig</a>...&nbsp;protocols)</pre>
+<pre class="methodSignature">@Deprecated
+public&nbsp;<a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a>&nbsp;protocols&#8203;(<a href="../../http/api/HttpProtocolConfig.html" title="interface in io.servicetalk.http.api">HttpProtocolConfig</a>...&nbsp;protocols)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Call <a href="#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>initializeHttp(HttpInitializer)</code></a> and use
+ <a href="../../http/api/HttpServerBuilder.html#protocols(io.servicetalk.http.api.HttpProtocolConfig...)"><code>HttpServerBuilder.protocols(HttpProtocolConfig...)</code></a>
+ on the <code>builder</code> instance by implementing <a href="GrpcServerBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.HttpServerBuilder)"><code>GrpcServerBuilder.HttpInitializer.initialize(HttpServerBuilder)</code></a>
+ functional interface.</div>
+</div>
 <div class="block">Configurations of various underlying protocol versions.
  <p>
  <b>Note:</b> the order of specified protocols will reflect on priorities for ALPN in case the connections use
@@ -545,7 +715,14 @@ public abstract&nbsp;<a href="GrpcServerSecurityConfigurator.html" title="interf
 <ul class="blockList">
 <li class="blockList">
 <h4>sslConfig</h4>
-<pre class="methodSignature">public abstract&nbsp;<a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a>&nbsp;sslConfig&#8203;(<a href="../../transport/api/ServerSslConfig.html" title="interface in io.servicetalk.transport.api">ServerSslConfig</a>&nbsp;config)</pre>
+<pre class="methodSignature">@Deprecated
+public&nbsp;<a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a>&nbsp;sslConfig&#8203;(<a href="../../transport/api/ServerSslConfig.html" title="interface in io.servicetalk.transport.api">ServerSslConfig</a>&nbsp;config)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Call <a href="#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>initializeHttp(HttpInitializer)</code></a> and use
+ <a href="../../http/api/HttpServerBuilder.html#sslConfig(io.servicetalk.transport.api.ServerSslConfig)"><code>HttpServerBuilder.sslConfig(ServerSslConfig)</code></a>
+ on the <code>builder</code> instance by implementing <a href="GrpcServerBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.HttpServerBuilder)"><code>GrpcServerBuilder.HttpInitializer.initialize(HttpServerBuilder)</code></a>
+ functional interface.</div>
+</div>
 <div class="block">Set the SSL/TLS configuration.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
@@ -561,8 +738,15 @@ public abstract&nbsp;<a href="GrpcServerSecurityConfigurator.html" title="interf
 <ul class="blockList">
 <li class="blockList">
 <h4>sslConfig</h4>
-<pre class="methodSignature">public abstract&nbsp;<a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a>&nbsp;sslConfig&#8203;(<a href="../../transport/api/ServerSslConfig.html" title="interface in io.servicetalk.transport.api">ServerSslConfig</a>&nbsp;defaultConfig,
-                                            java.util.Map&lt;java.lang.String,&#8203;<a href="../../transport/api/ServerSslConfig.html" title="interface in io.servicetalk.transport.api">ServerSslConfig</a>&gt;&nbsp;sniMap)</pre>
+<pre class="methodSignature">@Deprecated
+public&nbsp;<a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a>&nbsp;sslConfig&#8203;(<a href="../../transport/api/ServerSslConfig.html" title="interface in io.servicetalk.transport.api">ServerSslConfig</a>&nbsp;defaultConfig,
+                                   java.util.Map&lt;java.lang.String,&#8203;<a href="../../transport/api/ServerSslConfig.html" title="interface in io.servicetalk.transport.api">ServerSslConfig</a>&gt;&nbsp;sniMap)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Call <a href="#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>initializeHttp(HttpInitializer)</code></a> and use
+ <a href="../../http/api/HttpServerBuilder.html#sslConfig(io.servicetalk.transport.api.ServerSslConfig,java.util.Map)"><code>HttpServerBuilder.sslConfig(ServerSslConfig, Map)</code></a>
+ on the <code>builder</code> instance by implementing <a href="GrpcServerBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.HttpServerBuilder)"><code>GrpcServerBuilder.HttpInitializer.initialize(HttpServerBuilder)</code></a>
+ functional interface.</div>
+</div>
 <div class="block">Set the SSL/TLS and <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> configuration.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
@@ -583,8 +767,15 @@ public abstract&nbsp;<a href="GrpcServerSecurityConfigurator.html" title="interf
 <ul class="blockList">
 <li class="blockList">
 <h4>socketOption</h4>
-<pre class="methodSignature">public abstract&nbsp;&lt;T&gt;&nbsp;<a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a>&nbsp;socketOption&#8203;(java.net.SocketOption&lt;T&gt;&nbsp;option,
-                                                   T&nbsp;value)</pre>
+<pre class="methodSignature">@Deprecated
+public&nbsp;&lt;T&gt;&nbsp;<a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a>&nbsp;socketOption&#8203;(java.net.SocketOption&lt;T&gt;&nbsp;option,
+                                          T&nbsp;value)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Call <a href="#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>initializeHttp(HttpInitializer)</code></a> and use
+ <a href="../../http/api/HttpServerBuilder.html#socketOption(java.net.SocketOption,T)"><code>HttpServerBuilder.socketOption(SocketOption, Object)</code></a>
+ on the <code>builder</code> instance by implementing <a href="GrpcServerBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.HttpServerBuilder)"><code>GrpcServerBuilder.HttpInitializer.initialize(HttpServerBuilder)</code></a>
+ functional interface.</div>
+</div>
 <div class="block">Add a <code>SocketOption</code> that is applied.</div>
 <dl>
 <dt><span class="paramLabel">Type Parameters:</span></dt>
@@ -608,8 +799,15 @@ public abstract&nbsp;<a href="GrpcServerSecurityConfigurator.html" title="interf
 <ul class="blockList">
 <li class="blockList">
 <h4>listenSocketOption</h4>
-<pre class="methodSignature">public abstract&nbsp;&lt;T&gt;&nbsp;<a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a>&nbsp;listenSocketOption&#8203;(java.net.SocketOption&lt;T&gt;&nbsp;option,
-                                                         T&nbsp;value)</pre>
+<pre class="methodSignature">@Deprecated
+public&nbsp;&lt;T&gt;&nbsp;<a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a>&nbsp;listenSocketOption&#8203;(java.net.SocketOption&lt;T&gt;&nbsp;option,
+                                                T&nbsp;value)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Call <a href="#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>initializeHttp(HttpInitializer)</code></a> and use
+ <a href="../../http/api/HttpServerBuilder.html#listenSocketOption(java.net.SocketOption,T)"><code>HttpServerBuilder.listenSocketOption(SocketOption, Object)</code></a>
+ on the <code>builder</code> instance by implementing <a href="GrpcServerBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.HttpServerBuilder)"><code>GrpcServerBuilder.HttpInitializer.initialize(HttpServerBuilder)</code></a>
+ functional interface.</div>
+</div>
 <div class="block">Adds a <code>SocketOption</code> that is applied to the server socket channel which listens/accepts socket channels.</div>
 <dl>
 <dt><span class="paramLabel">Type Parameters:</span></dt>
@@ -632,12 +830,14 @@ public abstract&nbsp;<a href="GrpcServerSecurityConfigurator.html" title="interf
 <li class="blockList">
 <h4>enableWireLogging</h4>
 <pre class="methodSignature">@Deprecated
-public abstract&nbsp;<a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a>&nbsp;enableWireLogging&#8203;(java.lang.String&nbsp;loggerName)</pre>
+public&nbsp;<a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a>&nbsp;enableWireLogging&#8203;(java.lang.String&nbsp;loggerName)</pre>
 <div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
-<div class="deprecationComment">Use <a href="#enableWireLogging(java.lang.String,io.servicetalk.logging.api.LogLevel,java.util.function.BooleanSupplier)"><code>enableWireLogging(String, LogLevel, BooleanSupplier)</code></a> instead.</div>
+<div class="deprecationComment">Call <a href="#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>initializeHttp(HttpInitializer)</code></a> and use
+ <a href="../../http/api/HttpServerBuilder.html#enableWireLogging(java.lang.String,io.servicetalk.logging.api.LogLevel,java.util.function.BooleanSupplier)"><code>HttpServerBuilder.enableWireLogging(String, LogLevel, BooleanSupplier)</code></a>
+ on the <code>builder</code> instance by implementing <a href="GrpcServerBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.HttpServerBuilder)"><code>GrpcServerBuilder.HttpInitializer.initialize(HttpServerBuilder)</code></a>
+ functional interface.</div>
 </div>
-<div class="block">Enable wire-logging for this server.
- <p></div>
+<div class="block">Enable wire-logging for this server.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>loggerName</code> - The name of the logger to log wire events.</dd>
@@ -652,9 +852,16 @@ public abstract&nbsp;<a href="GrpcServerBuilder.html" title="class in io.service
 <ul class="blockList">
 <li class="blockList">
 <h4>enableWireLogging</h4>
-<pre class="methodSignature">public abstract&nbsp;<a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a>&nbsp;enableWireLogging&#8203;(java.lang.String&nbsp;loggerName,
-                                                    <a href="../../logging/api/LogLevel.html" title="enum in io.servicetalk.logging.api">LogLevel</a>&nbsp;logLevel,
-                                                    java.util.function.BooleanSupplier&nbsp;logUserData)</pre>
+<pre class="methodSignature">@Deprecated
+public&nbsp;<a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a>&nbsp;enableWireLogging&#8203;(java.lang.String&nbsp;loggerName,
+                                           <a href="../../logging/api/LogLevel.html" title="enum in io.servicetalk.logging.api">LogLevel</a>&nbsp;logLevel,
+                                           java.util.function.BooleanSupplier&nbsp;logUserData)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Call <a href="#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>initializeHttp(HttpInitializer)</code></a> and use
+ <a href="../../http/api/HttpServerBuilder.html#enableWireLogging(java.lang.String,io.servicetalk.logging.api.LogLevel,java.util.function.BooleanSupplier)"><code>HttpServerBuilder.enableWireLogging(String, LogLevel, BooleanSupplier)</code></a>
+ on the <code>builder</code> instance by implementing <a href="GrpcServerBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.HttpServerBuilder)"><code>GrpcServerBuilder.HttpInitializer.initialize(HttpServerBuilder)</code></a>
+ functional interface.</div>
+</div>
 <div class="block">Enables wire-logging for connections created by this builder.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
@@ -673,11 +880,38 @@ public abstract&nbsp;<a href="GrpcServerBuilder.html" title="class in io.service
 <ul class="blockList">
 <li class="blockList">
 <h4>transportObserver</h4>
-<pre class="methodSignature">public abstract&nbsp;<a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a>&nbsp;transportObserver&#8203;(<a href="../../transport/api/TransportObserver.html" title="interface in io.servicetalk.transport.api">TransportObserver</a>&nbsp;transportObserver)</pre>
+<pre class="methodSignature">@Deprecated
+public&nbsp;<a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a>&nbsp;transportObserver&#8203;(<a href="../../transport/api/TransportObserver.html" title="interface in io.servicetalk.transport.api">TransportObserver</a>&nbsp;transportObserver)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Call <a href="#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>initializeHttp(HttpInitializer)</code></a> and use
+ <a href="../../http/api/HttpServerBuilder.html#transportObserver(io.servicetalk.transport.api.TransportObserver)"><code>HttpServerBuilder.transportObserver(TransportObserver)</code></a>
+ on the <code>builder</code> instance by implementing <a href="GrpcServerBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.HttpServerBuilder)"><code>GrpcServerBuilder.HttpInitializer.initialize(HttpServerBuilder)</code></a>
+ functional interface.</div>
+</div>
 <div class="block">Sets a <a href="../../transport/api/TransportObserver.html" title="interface in io.servicetalk.transport.api"><code>TransportObserver</code></a> that provides visibility into transport events.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>transportObserver</code> - A <a href="../../transport/api/TransportObserver.html" title="interface in io.servicetalk.transport.api"><code>TransportObserver</code></a> that provides visibility into transport events.</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd><code>this</code>.</dd>
+</dl>
+</li>
+</ul>
+<a id="lifecycleObserver(io.servicetalk.grpc.api.GrpcLifecycleObserver)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>lifecycleObserver</h4>
+<pre class="methodSignature">public&nbsp;<a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a>&nbsp;lifecycleObserver&#8203;(<a href="GrpcLifecycleObserver.html" title="interface in io.servicetalk.grpc.api">GrpcLifecycleObserver</a>&nbsp;lifecycleObserver)</pre>
+<div class="block">Sets a <a href="GrpcLifecycleObserver.html" title="interface in io.servicetalk.grpc.api"><code>GrpcLifecycleObserver</code></a> that provides visibility into gRPC lifecycle events.
+ <p>
+ Note, if <a href="#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>initializeHttp(HttpInitializer)</code></a> is used to configure
+ <a href="../../http/api/HttpServerBuilder.html#lifecycleObserver(io.servicetalk.http.api.HttpLifecycleObserver)"><code>HttpServerBuilder.lifecycleObserver(HttpLifecycleObserver)</code></a> – that will override the value specified
+ using this method. Please choose only one approach.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>lifecycleObserver</code> - A <a href="GrpcLifecycleObserver.html" title="interface in io.servicetalk.grpc.api"><code>GrpcLifecycleObserver</code></a> that provides visibility into gRPC lifecycle events.</dd>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd><code>this</code>.</dd>
 </dl>
@@ -689,7 +923,14 @@ public abstract&nbsp;<a href="GrpcServerBuilder.html" title="class in io.service
 <ul class="blockList">
 <li class="blockList">
 <h4>disableDrainingRequestPayloadBody</h4>
-<pre class="methodSignature">public abstract&nbsp;<a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a>&nbsp;disableDrainingRequestPayloadBody()</pre>
+<pre class="methodSignature">@Deprecated
+public&nbsp;<a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a>&nbsp;disableDrainingRequestPayloadBody()</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Call <a href="#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>initializeHttp(HttpInitializer)</code></a> and use
+ <a href="../../http/api/HttpServerBuilder.html#drainRequestPayloadBody(boolean)"><code>HttpServerBuilder.drainRequestPayloadBody(boolean)</code></a>
+ on the <code>builder</code> instance by implementing <a href="GrpcServerBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.HttpServerBuilder)"><code>GrpcServerBuilder.HttpInitializer.initialize(HttpServerBuilder)</code></a>
+ functional interface.</div>
+</div>
 <div class="block">Disables automatic consumption of request <a href="../../http/api/StreamingHttpRequest.html#payloadBody()"><code>payload body</code></a> when it is not
  consumed by the service.
  <p>
@@ -706,13 +947,53 @@ public abstract&nbsp;<a href="GrpcServerBuilder.html" title="class in io.service
 </dl>
 </li>
 </ul>
+<a id="drainRequestPayloadBody(boolean)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>drainRequestPayloadBody</h4>
+<pre class="methodSignature">@Deprecated
+public&nbsp;<a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a>&nbsp;drainRequestPayloadBody&#8203;(boolean&nbsp;enable)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Call <a href="#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>initializeHttp(HttpInitializer)</code></a> and use
+ <a href="../../http/api/HttpServerBuilder.html#drainRequestPayloadBody(boolean)"><code>HttpServerBuilder.drainRequestPayloadBody(boolean)</code></a>
+ on the <code>builder</code> instance by implementing <a href="GrpcServerBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.HttpServerBuilder)"><code>GrpcServerBuilder.HttpInitializer.initialize(HttpServerBuilder)</code></a>
+ functional interface.</div>
+</div>
+<div class="block">Configures automatic consumption of request <a href="../../http/api/StreamingHttpRequest.html#payloadBody()"><code>payload body</code></a> when it is
+ not consumed by the service.
+ <p>
+ For <a href="https://tools.ietf.org/html/rfc7230#section-6.3">persistent HTTP connections</a> it is required to
+ eventually consume the entire request payload to enable reading of the next request. This is required because
+ requests are pipelined for HTTP/1.1, so if the previous request is not completely read, next request can not be
+ read from the socket. For cases when there is a possibility that user may forget to consume request payload,
+ ServiceTalk automatically consumes request payload body. This automatic consumption behavior may create some
+ overhead and can be disabled using this method when it is guaranteed that all request paths consumes all request
+ payloads eventually. An example of guaranteed consumption are <a href="../../http/api/HttpRequest.html" title="interface in io.servicetalk.http.api"><code>non-streaming APIs</code></a>.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>enable</code> - When <code>false</code> it will disable the automatic consumption of request
+ <a href="../../http/api/StreamingHttpRequest.html#payloadBody()"><code>StreamingHttpRequest.payloadBody()</code></a>.</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd><code>this</code>.</dd>
+</dl>
+</li>
+</ul>
 <a id="appendConnectionAcceptorFilter(io.servicetalk.transport.api.ConnectionAcceptorFactory)">
 <!--   -->
 </a>
 <ul class="blockList">
 <li class="blockList">
 <h4>appendConnectionAcceptorFilter</h4>
-<pre class="methodSignature">public abstract&nbsp;<a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a>&nbsp;appendConnectionAcceptorFilter&#8203;(<a href="../../transport/api/ConnectionAcceptorFactory.html" title="interface in io.servicetalk.transport.api">ConnectionAcceptorFactory</a>&nbsp;factory)</pre>
+<pre class="methodSignature">@Deprecated
+public&nbsp;<a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a>&nbsp;appendConnectionAcceptorFilter&#8203;(<a href="../../transport/api/ConnectionAcceptorFactory.html" title="interface in io.servicetalk.transport.api">ConnectionAcceptorFactory</a>&nbsp;factory)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Call <a href="#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>initializeHttp(HttpInitializer)</code></a> and use
+ <a href="../../http/api/HttpServerBuilder.html#appendConnectionAcceptorFilter(io.servicetalk.transport.api.ConnectionAcceptorFactory)"><code>HttpServerBuilder.appendConnectionAcceptorFilter(ConnectionAcceptorFactory)</code></a>
+ on the <code>builder</code> instance by implementing <a href="GrpcServerBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.HttpServerBuilder)"><code>GrpcServerBuilder.HttpInitializer.initialize(HttpServerBuilder)</code></a>
+ functional interface.</div>
+</div>
 <div class="block">Append the filter to the chain of filters used to decorate the <a href="../../transport/api/ConnectionAcceptor.html" title="interface in io.servicetalk.transport.api"><code>ConnectionAcceptor</code></a> used by this builder.
  <p>
  The order of execution of these filters are in order of append. If 3 filters are added as follows:
@@ -723,7 +1004,7 @@ public abstract&nbsp;<a href="GrpcServerBuilder.html" title="class in io.service
  accepting a connection by a filter wrapped by this filter chain, the order of invocation of these filters will
  be:
  <pre>
-     filter1 =&gt; filter2 =&gt; filter3
+     filter1 ⇒ filter2 ⇒ filter3
  </pre></div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
@@ -740,7 +1021,14 @@ public abstract&nbsp;<a href="GrpcServerBuilder.html" title="class in io.service
 <ul class="blockList">
 <li class="blockList">
 <h4>appendHttpServiceFilter</h4>
-<pre class="methodSignature">public final&nbsp;<a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a>&nbsp;appendHttpServiceFilter&#8203;(<a href="../../http/api/StreamingHttpServiceFilterFactory.html" title="interface in io.servicetalk.http.api">StreamingHttpServiceFilterFactory</a>&nbsp;factory)</pre>
+<pre class="methodSignature">@Deprecated
+public final&nbsp;<a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a>&nbsp;appendHttpServiceFilter&#8203;(<a href="../../http/api/StreamingHttpServiceFilterFactory.html" title="interface in io.servicetalk.http.api">StreamingHttpServiceFilterFactory</a>&nbsp;factory)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Call <a href="#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>initializeHttp(HttpInitializer)</code></a> and use
+ <a href="../../http/api/HttpServerBuilder.html#appendServiceFilter(io.servicetalk.http.api.StreamingHttpServiceFilterFactory)"><code>HttpServerBuilder.appendServiceFilter(StreamingHttpServiceFilterFactory)</code></a>
+ on the <code>builder</code> instance by implementing <a href="GrpcServerBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.HttpServerBuilder)"><code>GrpcServerBuilder.HttpInitializer.initialize(HttpServerBuilder)</code></a>
+ functional interface.</div>
+</div>
 <div class="block">Append the filter to the chain of filters used to decorate the service used by this builder.
  <p>
  The order of execution of these filters are in order of append. If 3 filters are added as follows:
@@ -749,7 +1037,7 @@ public abstract&nbsp;<a href="GrpcServerBuilder.html" title="class in io.service
  </pre>
  accepting a request by a service wrapped by this filter chain, the order of invocation of these filters will be:
  <pre>
-     filter1 =&gt; filter2 =&gt; filter3 =&gt; service
+     filter1 ⇒ filter2 ⇒ filter3 ⇒ service
  </pre></div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
@@ -765,8 +1053,15 @@ public abstract&nbsp;<a href="GrpcServerBuilder.html" title="class in io.service
 <ul class="blockList">
 <li class="blockList">
 <h4>appendHttpServiceFilter</h4>
-<pre class="methodSignature">public final&nbsp;<a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a>&nbsp;appendHttpServiceFilter&#8203;(java.util.function.Predicate&lt;<a href="../../http/api/StreamingHttpRequest.html" title="interface in io.servicetalk.http.api">StreamingHttpRequest</a>&gt;&nbsp;predicate,
+<pre class="methodSignature">@Deprecated
+public final&nbsp;<a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a>&nbsp;appendHttpServiceFilter&#8203;(java.util.function.Predicate&lt;<a href="../../http/api/StreamingHttpRequest.html" title="interface in io.servicetalk.http.api">StreamingHttpRequest</a>&gt;&nbsp;predicate,
                                                        <a href="../../http/api/StreamingHttpServiceFilterFactory.html" title="interface in io.servicetalk.http.api">StreamingHttpServiceFilterFactory</a>&nbsp;factory)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Call <a href="#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>initializeHttp(HttpInitializer)</code></a> and use
+ <a href="../../http/api/HttpServerBuilder.html#appendServiceFilter(java.util.function.Predicate,io.servicetalk.http.api.StreamingHttpServiceFilterFactory)"><code>HttpServerBuilder.appendServiceFilter(Predicate, StreamingHttpServiceFilterFactory)</code></a>
+ on the <code>builder</code> instance by implementing <a href="GrpcServerBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.HttpServerBuilder)"><code>GrpcServerBuilder.HttpInitializer.initialize(HttpServerBuilder)</code></a>
+ functional interface.</div>
+</div>
 <div class="block">Append the filter to the chain of filters used to decorate the service used by this builder, for every request
  that passes the provided <code>Predicate</code>.
  <p>
@@ -776,7 +1071,7 @@ public abstract&nbsp;<a href="GrpcServerBuilder.html" title="class in io.service
  </pre>
  accepting a request by a service wrapped by this filter chain, the order of invocation of these filters will be:
  <pre>
-     filter1 =&gt; filter2 =&gt; filter3 =&gt; service
+     filter1 ⇒ filter2 ⇒ filter3 ⇒ service
  </pre></div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
@@ -793,11 +1088,41 @@ public abstract&nbsp;<a href="GrpcServerBuilder.html" title="class in io.service
 <ul class="blockList">
 <li class="blockList">
 <h4>ioExecutor</h4>
-<pre class="methodSignature">public abstract&nbsp;<a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a>&nbsp;ioExecutor&#8203;(<a href="../../transport/api/IoExecutor.html" title="interface in io.servicetalk.transport.api">IoExecutor</a>&nbsp;ioExecutor)</pre>
+<pre class="methodSignature">@Deprecated
+public&nbsp;<a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a>&nbsp;ioExecutor&#8203;(<a href="../../transport/api/IoExecutor.html" title="interface in io.servicetalk.transport.api">IoExecutor</a>&nbsp;ioExecutor)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Call <a href="#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>initializeHttp(HttpInitializer)</code></a> and use
+ <a href="../../http/api/HttpServerBuilder.html#ioExecutor(io.servicetalk.transport.api.IoExecutor)"><code>HttpServerBuilder.ioExecutor(IoExecutor)</code></a>
+ on the <code>builder</code> instance by implementing <a href="GrpcServerBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.HttpServerBuilder)"><code>GrpcServerBuilder.HttpInitializer.initialize(HttpServerBuilder)</code></a>
+ functional interface.</div>
+</div>
 <div class="block">Sets the <a href="../../transport/api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a> to be used by this server.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>ioExecutor</code> - <a href="../../transport/api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a> to use.</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd><code>this</code>.</dd>
+</dl>
+</li>
+</ul>
+<a id="executor(io.servicetalk.concurrent.api.Executor)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>executor</h4>
+<pre class="methodSignature">@Deprecated
+public&nbsp;<a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a>&nbsp;executor&#8203;(<a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;executor)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Call <a href="#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>initializeHttp(HttpInitializer)</code></a> and use
+ <a href="../../http/api/HttpServerBuilder.html#executor(io.servicetalk.concurrent.api.Executor)"><code>HttpServerBuilder.executor(Executor)</code></a>
+ on the <code>builder</code> instance by implementing <a href="GrpcServerBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.HttpServerBuilder)"><code>GrpcServerBuilder.HttpInitializer.initialize(HttpServerBuilder)</code></a>
+ functional interface.</div>
+</div>
+<div class="block">Sets the <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> to use.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>executor</code> - <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> to use.</dd>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd><code>this</code>.</dd>
 </dl>
@@ -809,7 +1134,14 @@ public abstract&nbsp;<a href="GrpcServerBuilder.html" title="class in io.service
 <ul class="blockList">
 <li class="blockList">
 <h4>bufferAllocator</h4>
-<pre class="methodSignature">public abstract&nbsp;<a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a>&nbsp;bufferAllocator&#8203;(<a href="../../buffer/api/BufferAllocator.html" title="interface in io.servicetalk.buffer.api">BufferAllocator</a>&nbsp;allocator)</pre>
+<pre class="methodSignature">@Deprecated
+public&nbsp;<a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a>&nbsp;bufferAllocator&#8203;(<a href="../../buffer/api/BufferAllocator.html" title="interface in io.servicetalk.buffer.api">BufferAllocator</a>&nbsp;allocator)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Call <a href="#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>initializeHttp(HttpInitializer)</code></a> and use
+ <a href="../../http/api/HttpServerBuilder.html#bufferAllocator(io.servicetalk.buffer.api.BufferAllocator)"><code>HttpServerBuilder.bufferAllocator(BufferAllocator)</code></a>
+ on the <code>builder</code> instance by implementing <a href="GrpcServerBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.HttpServerBuilder)"><code>GrpcServerBuilder.HttpInitializer.initialize(HttpServerBuilder)</code></a>
+ functional interface.</div>
+</div>
 <div class="block">Sets the <a href="../../buffer/api/BufferAllocator.html" title="interface in io.servicetalk.buffer.api"><code>BufferAllocator</code></a> to be used by this server.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
@@ -825,7 +1157,14 @@ public abstract&nbsp;<a href="GrpcServerBuilder.html" title="class in io.service
 <ul class="blockList">
 <li class="blockList">
 <h4>executionStrategy</h4>
-<pre class="methodSignature">public abstract&nbsp;<a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a>&nbsp;executionStrategy&#8203;(<a href="GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api">GrpcExecutionStrategy</a>&nbsp;strategy)</pre>
+<pre class="methodSignature">@Deprecated
+public&nbsp;<a href="GrpcServerBuilder.html" title="class in io.servicetalk.grpc.api">GrpcServerBuilder</a>&nbsp;executionStrategy&#8203;(<a href="GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api">GrpcExecutionStrategy</a>&nbsp;strategy)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Call <a href="#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>initializeHttp(HttpInitializer)</code></a> and use
+ <a href="../../http/api/HttpServerBuilder.html#executionStrategy(io.servicetalk.http.api.HttpExecutionStrategy)"><code>HttpServerBuilder.executionStrategy(HttpExecutionStrategy)</code></a>
+ on the <code>builder</code> instance by implementing <a href="GrpcServerBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.HttpServerBuilder)"><code>GrpcServerBuilder.HttpInitializer.initialize(HttpServerBuilder)</code></a>
+ functional interface.</div>
+</div>
 <div class="block">Sets the <a href="../../http/api/HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> to be used by this server.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
@@ -951,7 +1290,7 @@ public abstract&nbsp;<a href="GrpcServerBuilder.html" title="class in io.service
  </pre>
  accepting a request by a service wrapped by this filter chain, the order of invocation of these filters will be:
  <pre>
-     filter1 =&gt; filter2 =&gt; filter3 =&gt; service
+     filter1 ⇒ filter2 ⇒ filter3 ⇒ service
  </pre></div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
@@ -962,7 +1301,7 @@ public abstract&nbsp;<a href="GrpcServerBuilder.html" title="class in io.service
 <a id="doAppendHttpServiceFilter(java.util.function.Predicate,io.servicetalk.http.api.StreamingHttpServiceFilterFactory)">
 <!--   -->
 </a>
-<ul class="blockListLast">
+<ul class="blockList">
 <li class="blockList">
 <h4>doAppendHttpServiceFilter</h4>
 <pre class="methodSignature">protected abstract&nbsp;void&nbsp;doAppendHttpServiceFilter&#8203;(java.util.function.Predicate&lt;<a href="../../http/api/StreamingHttpRequest.html" title="interface in io.servicetalk.http.api">StreamingHttpRequest</a>&gt;&nbsp;predicate,
@@ -976,12 +1315,31 @@ public abstract&nbsp;<a href="GrpcServerBuilder.html" title="class in io.service
  </pre>
  accepting a request by a service wrapped by this filter chain, the order of invocation of these filters will be:
  <pre>
-     filter1 =&gt; filter2 =&gt; filter3 =&gt; service
+     filter1 ⇒ filter2 ⇒ filter3 ⇒ service
  </pre></div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>predicate</code> - the <code>Predicate</code> to test if the filter must be applied.</dd>
 <dd><code>factory</code> - <a href="../../http/api/StreamingHttpServiceFilterFactory.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpServiceFilterFactory</code></a> to append.</dd>
+</dl>
+</li>
+</ul>
+<a id="appendCatchAllFilter(io.servicetalk.http.api.HttpServerBuilder)">
+<!--   -->
+</a>
+<ul class="blockListLast">
+<li class="blockList">
+<h4>appendCatchAllFilter</h4>
+<pre class="methodSignature">@Deprecated
+protected static&nbsp;void&nbsp;appendCatchAllFilter&#8203;(<a href="../../http/api/HttpServerBuilder.html" title="class in io.servicetalk.http.api">HttpServerBuilder</a>&nbsp;httpServerBuilder)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">This method was introduced temporarily, should not be used, and will be removed in version 0.42.</div>
+</div>
+<div class="block">Temporarily method to append "catch-all-exceptions" filter, required until we transition from abstract classes
+ to interfaces.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>httpServerBuilder</code> - <a href="../../http/api/HttpServerBuilder.html" title="class in io.servicetalk.http.api"><code>HttpServerBuilder</code></a> to add a filter to</dd>
 </dl>
 </li>
 </ul>
@@ -1036,7 +1394,7 @@ public abstract&nbsp;<a href="GrpcServerBuilder.html" title="class in io.service
 <div>
 <ul class="subNavList">
 <li>Summary:&nbsp;</li>
-<li>Nested&nbsp;|&nbsp;</li>
+<li><a href="#nested.class.summary">Nested</a>&nbsp;|&nbsp;</li>
 <li><a href="#field.summary">Field</a>&nbsp;|&nbsp;</li>
 <li><a href="#constructor.summary">Constr</a>&nbsp;|&nbsp;</li>
 <li><a href="#method.summary">Method</a></li>

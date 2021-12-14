@@ -143,8 +143,13 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <dd><code>java.io.Serializable</code></dd>
 </dl>
 <hr>
-<pre>public final class <span class="typeNameLabel">InvalidRedirectException</span>
+<pre>@Deprecated
+public final class <span class="typeNameLabel">InvalidRedirectException</span>
 extends java.lang.RuntimeException</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">There is no code that can throw this exception. We will remove it and create a new exception type if
+ there is a use-case in future releases.</div>
+</div>
 <div class="block">Throws when redirect could not be performed.</div>
 <dl>
 <dt><span class="seeLabel">See Also:</span></dt>

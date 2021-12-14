@@ -137,7 +137,7 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <pre>public interface <span class="typeNameLabel">FilterableReservedStreamingHttpConnection</span>
 extends <a href="FilterableStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">FilterableStreamingHttpConnection</a></pre>
 <div class="block">A special type of <a href="StreamingHttpConnection.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpConnection</code></a> for the exclusive use of the caller of
- <a href="StreamingHttpClient.html#reserveConnection(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.HttpRequestMetaData)"><code>StreamingHttpClient.reserveConnection(HttpExecutionStrategy, HttpRequestMetaData)</code></a>.</div>
+ <a href="StreamingHttpClient.html#reserveConnection(io.servicetalk.http.api.HttpRequestMetaData)"><code>StreamingHttpClient.reserveConnection(HttpRequestMetaData)</code></a>.</div>
 </li>
 </ul>
 </div>
@@ -192,7 +192,7 @@ extends <a href="FilterableStreamingHttpConnection.html" title="interface in io.
 <!--   -->
 </a>
 <h3>Methods inherited from interface&nbsp;io.servicetalk.http.api.<a href="StreamingHttpRequester.html" title="interface in io.servicetalk.http.api">StreamingHttpRequester</a></h3>
-<code><a href="StreamingHttpRequester.html#executionContext()">executionContext</a>, <a href="StreamingHttpRequester.html#httpResponseFactory()">httpResponseFactory</a>, <a href="StreamingHttpRequester.html#request(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.StreamingHttpRequest)">request</a></code></li>
+<code><a href="StreamingHttpRequester.html#executionContext()">executionContext</a>, <a href="StreamingHttpRequester.html#httpResponseFactory()">httpResponseFactory</a>, <a href="StreamingHttpRequester.html#request(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.StreamingHttpRequest)">request</a>, <a href="StreamingHttpRequester.html#request(io.servicetalk.http.api.StreamingHttpRequest)">request</a></code></li>
 </ul>
 <ul class="blockList">
 <li class="blockList"><a id="methods.inherited.from.class.io.servicetalk.http.api.StreamingHttpRequestFactory">

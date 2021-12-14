@@ -161,6 +161,16 @@ implements <a href="ChannelInitializer.html" title="interface in io.servicetalk.
 <th class="colConstructorName" scope="row"><code><span class="memberNameLink"><a href="#%3Cinit%3E(io.servicetalk.transport.api.ConnectionObserver,boolean)">ConnectionObserverInitializer</a></span>&#8203;(<a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver</a>&nbsp;observer,
                              boolean&nbsp;secure)</code></th>
 <td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#%3Cinit%3E(io.servicetalk.transport.api.ConnectionObserver,boolean,boolean)"><code>ConnectionObserverInitializer(ConnectionObserver, boolean, boolean)</code></a></div>
+</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colConstructorName" scope="row"><code><span class="memberNameLink"><a href="#%3Cinit%3E(io.servicetalk.transport.api.ConnectionObserver,boolean,boolean)">ConnectionObserverInitializer</a></span>&#8203;(<a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver</a>&nbsp;observer,
+                             boolean&nbsp;secure,
+                             boolean&nbsp;client)</code></th>
+<td class="colLast">
 <div class="block">Creates a new instance.</div>
 </td>
 </tr>
@@ -223,16 +233,38 @@ implements <a href="ChannelInitializer.html" title="interface in io.servicetalk.
 <a id="&lt;init&gt;(io.servicetalk.transport.api.ConnectionObserver,boolean)">
 <!--   -->
 </a>
+<ul class="blockList">
+<li class="blockList">
+<h4>ConnectionObserverInitializer</h4>
+<pre>@Deprecated
+public&nbsp;ConnectionObserverInitializer&#8203;(<a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver</a>&nbsp;observer,
+                                     boolean&nbsp;secure)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#%3Cinit%3E(io.servicetalk.transport.api.ConnectionObserver,boolean,boolean)"><code>ConnectionObserverInitializer(ConnectionObserver, boolean, boolean)</code></a></div>
+</div>
+<div class="block">Creates a new instance.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>observer</code> - <a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver</code></a> to report network events.</dd>
+<dd><code>secure</code> - <code>true</code> if the observed connection is secure.</dd>
+</dl>
+</li>
+</ul>
+<a id="&lt;init&gt;(io.servicetalk.transport.api.ConnectionObserver,boolean,boolean)">
+<!--   -->
+</a>
 <ul class="blockListLast">
 <li class="blockList">
 <h4>ConnectionObserverInitializer</h4>
 <pre>public&nbsp;ConnectionObserverInitializer&#8203;(<a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver</a>&nbsp;observer,
-                                     boolean&nbsp;secure)</pre>
+                                     boolean&nbsp;secure,
+                                     boolean&nbsp;client)</pre>
 <div class="block">Creates a new instance.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>observer</code> - <a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver</code></a> to report network events.</dd>
 <dd><code>secure</code> - <code>true</code> if the observed connection is secure</dd>
+<dd><code>client</code> - <code>true</code> if this initializer is used on the client-side</dd>
 </dl>
 </li>
 </ul>

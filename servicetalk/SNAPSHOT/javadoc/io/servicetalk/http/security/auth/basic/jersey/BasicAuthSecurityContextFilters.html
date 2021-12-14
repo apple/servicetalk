@@ -26,8 +26,8 @@
     catch(err) {
     }
 //-->
-var data = {"i0":9,"i1":9,"i2":9,"i3":9};
-var tabs = {65535:["t0","All Methods"],1:["t1","Static Methods"],8:["t4","Concrete Methods"]};
+var data = {"i0":9,"i1":41,"i2":9,"i3":9,"i4":41,"i5":9};
+var tabs = {65535:["t0","All Methods"],1:["t1","Static Methods"],8:["t4","Concrete Methods"],32:["t6","Deprecated Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
 var tableTab = "tableTab";
@@ -187,7 +187,7 @@ extends java.lang.Object</pre>
 </a>
 <h3>Method Summary</h3>
 <table class="memberSummary">
-<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t1" class="tableTab"><span><a href="javascript:show(1);">Static Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t4" class="tableTab"><span><a href="javascript:show(8);">Concrete Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
+<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t1" class="tableTab"><span><a href="javascript:show(1);">Static Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t4" class="tableTab"><span><a href="javascript:show(8);">Concrete Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t6" class="tableTab"><span><a href="javascript:show(32);">Deprecated Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
 <tr>
 <th class="colFirst" scope="col">Modifier and Type</th>
 <th class="colSecond" scope="col">Method</th>
@@ -205,11 +205,20 @@ extends java.lang.Object</pre>
 <td class="colFirst"><code>static &lt;UserInfo&gt;&nbsp;<a href="BasicAuthSecurityContextFilters.UserInfoBuilder.html" title="class in io.servicetalk.http.security.auth.basic.jersey">BasicAuthSecurityContextFilters.UserInfoBuilder</a>&lt;UserInfo&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#forGlobalBinding(io.servicetalk.concurrent.api.AsyncContextMap.Key)">forGlobalBinding</a></span>&#8203;(<a href="../../../../../concurrent/api/AsyncContextMap.Key.html" title="class in io.servicetalk.concurrent.api">AsyncContextMap.Key</a>&lt;UserInfo&gt;&nbsp;userInfoKey)</code></th>
 <td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#forGlobalBinding(io.servicetalk.context.api.ContextMap.Key)"><code>forGlobalBinding(ContextMap.Key)</code></a></div>
+</div>
+</td>
+</tr>
+<tr id="i2" class="altColor">
+<td class="colFirst"><code>static &lt;UserInfo&gt;&nbsp;<a href="BasicAuthSecurityContextFilters.UserInfoBuilder.html" title="class in io.servicetalk.http.security.auth.basic.jersey">BasicAuthSecurityContextFilters.UserInfoBuilder</a>&lt;UserInfo&gt;</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#forGlobalBinding(io.servicetalk.context.api.ContextMap.Key)">forGlobalBinding</a></span>&#8203;(<a href="../../../../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;UserInfo&gt;&nbsp;userInfoKey)</code></th>
+<td class="colLast">
 <div class="block">Creates a new <a href="BasicAuthSecurityContextFilters.UserInfoBuilder.html" title="class in io.servicetalk.http.security.auth.basic.jersey"><code>BasicAuthSecurityContextFilters.UserInfoBuilder</code></a> instance for building a <code>ContainerRequestFilter</code> that needs to be
  globally bound to the JAX-RS <code>Application</code>.</div>
 </td>
 </tr>
-<tr id="i2" class="altColor">
+<tr id="i3" class="rowColor">
 <td class="colFirst"><code>static <a href="BasicAuthSecurityContextFilters.NoUserInfoBuilder.html" title="class in io.servicetalk.http.security.auth.basic.jersey">BasicAuthSecurityContextFilters.NoUserInfoBuilder</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#forNameBinding()">forNameBinding</a></span>()</code></th>
 <td class="colLast">
@@ -217,9 +226,18 @@ extends java.lang.Object</pre>
  explicitly bound to resources via the <a href="BasicAuthenticated.html" title="annotation in io.servicetalk.http.security.auth.basic.jersey"><code>BasicAuthenticated</code></a> annotation.</div>
 </td>
 </tr>
-<tr id="i3" class="rowColor">
+<tr id="i4" class="altColor">
 <td class="colFirst"><code>static &lt;UserInfo&gt;&nbsp;<a href="BasicAuthSecurityContextFilters.UserInfoBuilder.html" title="class in io.servicetalk.http.security.auth.basic.jersey">BasicAuthSecurityContextFilters.UserInfoBuilder</a>&lt;UserInfo&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#forNameBinding(io.servicetalk.concurrent.api.AsyncContextMap.Key)">forNameBinding</a></span>&#8203;(<a href="../../../../../concurrent/api/AsyncContextMap.Key.html" title="class in io.servicetalk.concurrent.api">AsyncContextMap.Key</a>&lt;UserInfo&gt;&nbsp;userInfoKey)</code></th>
+<td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#forNameBinding(io.servicetalk.context.api.ContextMap.Key)"><code>forNameBinding(ContextMap.Key)</code></a></div>
+</div>
+</td>
+</tr>
+<tr id="i5" class="rowColor">
+<td class="colFirst"><code>static &lt;UserInfo&gt;&nbsp;<a href="BasicAuthSecurityContextFilters.UserInfoBuilder.html" title="class in io.servicetalk.http.security.auth.basic.jersey">BasicAuthSecurityContextFilters.UserInfoBuilder</a>&lt;UserInfo&gt;</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#forNameBinding(io.servicetalk.context.api.ContextMap.Key)">forNameBinding</a></span>&#8203;(<a href="../../../../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;UserInfo&gt;&nbsp;userInfoKey)</code></th>
 <td class="colLast">
 <div class="block">Creates a new <a href="BasicAuthSecurityContextFilters.UserInfoBuilder.html" title="class in io.servicetalk.http.security.auth.basic.jersey"><code>BasicAuthSecurityContextFilters.UserInfoBuilder</code></a> instance for building a <code>ContainerRequestFilter</code> that needs to be
  explicitly bound to resources via the <a href="BasicAuthenticated.html" title="annotation in io.servicetalk.http.security.auth.basic.jersey"><code>BasicAuthenticated</code></a> annotation.</div>
@@ -249,13 +267,36 @@ extends java.lang.Object</pre>
 <!--   -->
 </a>
 <h3>Method Detail</h3>
+<a id="forGlobalBinding(io.servicetalk.context.api.ContextMap.Key)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>forGlobalBinding</h4>
+<pre class="methodSignature">public static&nbsp;&lt;UserInfo&gt;&nbsp;<a href="BasicAuthSecurityContextFilters.UserInfoBuilder.html" title="class in io.servicetalk.http.security.auth.basic.jersey">BasicAuthSecurityContextFilters.UserInfoBuilder</a>&lt;UserInfo&gt;&nbsp;forGlobalBinding&#8203;(<a href="../../../../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;UserInfo&gt;&nbsp;userInfoKey)</pre>
+<div class="block">Creates a new <a href="BasicAuthSecurityContextFilters.UserInfoBuilder.html" title="class in io.servicetalk.http.security.auth.basic.jersey"><code>BasicAuthSecurityContextFilters.UserInfoBuilder</code></a> instance for building a <code>ContainerRequestFilter</code> that needs to be
+ globally bound to the JAX-RS <code>Application</code>.</div>
+<dl>
+<dt><span class="paramLabel">Type Parameters:</span></dt>
+<dd><code>UserInfo</code> - the type of user info object expected in <a href="../../../../../concurrent/api/AsyncContext.html" title="class in io.servicetalk.concurrent.api"><code>AsyncContext</code></a>'s <code>userInfoKey</code> entry</dd>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>userInfoKey</code> - the <a href="../../../../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api"><code>ContextMap.Key</code></a> to use to get the user info from <a href="../../../../../concurrent/api/AsyncContext.html" title="class in io.servicetalk.concurrent.api"><code>AsyncContext</code></a></dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd>a new <a href="BasicAuthSecurityContextFilters.UserInfoBuilder.html" title="class in io.servicetalk.http.security.auth.basic.jersey"><code>BasicAuthSecurityContextFilters.UserInfoBuilder</code></a> instance</dd>
+</dl>
+</li>
+</ul>
 <a id="forGlobalBinding(io.servicetalk.concurrent.api.AsyncContextMap.Key)">
 <!--   -->
 </a>
 <ul class="blockList">
 <li class="blockList">
 <h4>forGlobalBinding</h4>
-<pre class="methodSignature">public static&nbsp;&lt;UserInfo&gt;&nbsp;<a href="BasicAuthSecurityContextFilters.UserInfoBuilder.html" title="class in io.servicetalk.http.security.auth.basic.jersey">BasicAuthSecurityContextFilters.UserInfoBuilder</a>&lt;UserInfo&gt;&nbsp;forGlobalBinding&#8203;(<a href="../../../../../concurrent/api/AsyncContextMap.Key.html" title="class in io.servicetalk.concurrent.api">AsyncContextMap.Key</a>&lt;UserInfo&gt;&nbsp;userInfoKey)</pre>
+<pre class="methodSignature">@Deprecated
+public static&nbsp;&lt;UserInfo&gt;&nbsp;<a href="BasicAuthSecurityContextFilters.UserInfoBuilder.html" title="class in io.servicetalk.http.security.auth.basic.jersey">BasicAuthSecurityContextFilters.UserInfoBuilder</a>&lt;UserInfo&gt;&nbsp;forGlobalBinding&#8203;(<a href="../../../../../concurrent/api/AsyncContextMap.Key.html" title="class in io.servicetalk.concurrent.api">AsyncContextMap.Key</a>&lt;UserInfo&gt;&nbsp;userInfoKey)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#forGlobalBinding(io.servicetalk.context.api.ContextMap.Key)"><code>forGlobalBinding(ContextMap.Key)</code></a></div>
+</div>
 <div class="block">Creates a new <a href="BasicAuthSecurityContextFilters.UserInfoBuilder.html" title="class in io.servicetalk.http.security.auth.basic.jersey"><code>BasicAuthSecurityContextFilters.UserInfoBuilder</code></a> instance for building a <code>ContainerRequestFilter</code> that needs to be
  globally bound to the JAX-RS <code>Application</code>.</div>
 <dl>
@@ -283,13 +324,36 @@ extends java.lang.Object</pre>
 </dl>
 </li>
 </ul>
+<a id="forNameBinding(io.servicetalk.context.api.ContextMap.Key)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>forNameBinding</h4>
+<pre class="methodSignature">public static&nbsp;&lt;UserInfo&gt;&nbsp;<a href="BasicAuthSecurityContextFilters.UserInfoBuilder.html" title="class in io.servicetalk.http.security.auth.basic.jersey">BasicAuthSecurityContextFilters.UserInfoBuilder</a>&lt;UserInfo&gt;&nbsp;forNameBinding&#8203;(<a href="../../../../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;UserInfo&gt;&nbsp;userInfoKey)</pre>
+<div class="block">Creates a new <a href="BasicAuthSecurityContextFilters.UserInfoBuilder.html" title="class in io.servicetalk.http.security.auth.basic.jersey"><code>BasicAuthSecurityContextFilters.UserInfoBuilder</code></a> instance for building a <code>ContainerRequestFilter</code> that needs to be
+ explicitly bound to resources via the <a href="BasicAuthenticated.html" title="annotation in io.servicetalk.http.security.auth.basic.jersey"><code>BasicAuthenticated</code></a> annotation.</div>
+<dl>
+<dt><span class="paramLabel">Type Parameters:</span></dt>
+<dd><code>UserInfo</code> - the type of user info object expected in <a href="../../../../../concurrent/api/AsyncContext.html" title="class in io.servicetalk.concurrent.api"><code>AsyncContext</code></a>'s <code>userInfoKey</code> entry</dd>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>userInfoKey</code> - the <a href="../../../../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api"><code>ContextMap.Key</code></a> to use to get the user info from <a href="../../../../../concurrent/api/AsyncContext.html" title="class in io.servicetalk.concurrent.api"><code>AsyncContext</code></a></dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd>a new <a href="BasicAuthSecurityContextFilters.UserInfoBuilder.html" title="class in io.servicetalk.http.security.auth.basic.jersey"><code>BasicAuthSecurityContextFilters.UserInfoBuilder</code></a> instance</dd>
+</dl>
+</li>
+</ul>
 <a id="forNameBinding(io.servicetalk.concurrent.api.AsyncContextMap.Key)">
 <!--   -->
 </a>
 <ul class="blockList">
 <li class="blockList">
 <h4>forNameBinding</h4>
-<pre class="methodSignature">public static&nbsp;&lt;UserInfo&gt;&nbsp;<a href="BasicAuthSecurityContextFilters.UserInfoBuilder.html" title="class in io.servicetalk.http.security.auth.basic.jersey">BasicAuthSecurityContextFilters.UserInfoBuilder</a>&lt;UserInfo&gt;&nbsp;forNameBinding&#8203;(<a href="../../../../../concurrent/api/AsyncContextMap.Key.html" title="class in io.servicetalk.concurrent.api">AsyncContextMap.Key</a>&lt;UserInfo&gt;&nbsp;userInfoKey)</pre>
+<pre class="methodSignature">@Deprecated
+public static&nbsp;&lt;UserInfo&gt;&nbsp;<a href="BasicAuthSecurityContextFilters.UserInfoBuilder.html" title="class in io.servicetalk.http.security.auth.basic.jersey">BasicAuthSecurityContextFilters.UserInfoBuilder</a>&lt;UserInfo&gt;&nbsp;forNameBinding&#8203;(<a href="../../../../../concurrent/api/AsyncContextMap.Key.html" title="class in io.servicetalk.concurrent.api">AsyncContextMap.Key</a>&lt;UserInfo&gt;&nbsp;userInfoKey)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#forNameBinding(io.servicetalk.context.api.ContextMap.Key)"><code>forNameBinding(ContextMap.Key)</code></a></div>
+</div>
 <div class="block">Creates a new <a href="BasicAuthSecurityContextFilters.UserInfoBuilder.html" title="class in io.servicetalk.http.security.auth.basic.jersey"><code>BasicAuthSecurityContextFilters.UserInfoBuilder</code></a> instance for building a <code>ContainerRequestFilter</code> that needs to be
  explicitly bound to resources via the <a href="BasicAuthenticated.html" title="annotation in io.servicetalk.http.security.auth.basic.jersey"><code>BasicAuthenticated</code></a> annotation.</div>
 <dl>

@@ -26,7 +26,7 @@
     catch(err) {
     }
 //-->
-var data = {"i0":10,"i1":10,"i2":10,"i3":10,"i4":10,"i5":10,"i6":10,"i7":10,"i8":10,"i9":10,"i10":10,"i11":10,"i12":10,"i13":10,"i14":10,"i15":10,"i16":10,"i17":10,"i18":10,"i19":10,"i20":10,"i21":10,"i22":10,"i23":10,"i24":10,"i25":10,"i26":10,"i27":10,"i28":10,"i29":10,"i30":10,"i31":10,"i32":10,"i33":10,"i34":10,"i35":10,"i36":10,"i37":10,"i38":10,"i39":10,"i40":10,"i41":10,"i42":10,"i43":10,"i44":10,"i45":10,"i46":10,"i47":10,"i48":10,"i49":10,"i50":10,"i51":10,"i52":10,"i53":10,"i54":10,"i55":10,"i56":10,"i57":10,"i58":10,"i59":10,"i60":10,"i61":10,"i62":10,"i63":10,"i64":10,"i65":10,"i66":10,"i67":10,"i68":10,"i69":10,"i70":10,"i71":10,"i72":10,"i73":10,"i74":10,"i75":10,"i76":10,"i77":10,"i78":10,"i79":10,"i80":10,"i81":10,"i82":10,"i83":10,"i84":10,"i85":10,"i86":10,"i87":10,"i88":10,"i89":10,"i90":10,"i91":10,"i92":10,"i93":10,"i94":10,"i95":10,"i96":10,"i97":10,"i98":10,"i99":10,"i100":10,"i101":10,"i102":10,"i103":10,"i104":10,"i105":10,"i106":10,"i107":10,"i108":10,"i109":10,"i110":10,"i111":10,"i112":10,"i113":10,"i114":10,"i115":10,"i116":10,"i117":10,"i118":10,"i119":10,"i120":10,"i121":10,"i122":10,"i123":10,"i124":10,"i125":10,"i126":10,"i127":10,"i128":10,"i129":10,"i130":10,"i131":10,"i132":10,"i133":10,"i134":10,"i135":10,"i136":10,"i137":10,"i138":10};
+var data = {"i0":10,"i1":10,"i2":10,"i3":10,"i4":10,"i5":10,"i6":10,"i7":10,"i8":10,"i9":10,"i10":10,"i11":10,"i12":10,"i13":10,"i14":10,"i15":10,"i16":10,"i17":10,"i18":10,"i19":10,"i20":10,"i21":10,"i22":10,"i23":10,"i24":10,"i25":10,"i26":10,"i27":10,"i28":10,"i29":10,"i30":10,"i31":10,"i32":10,"i33":10,"i34":10,"i35":10,"i36":10,"i37":10,"i38":10,"i39":10,"i40":10,"i41":10,"i42":10,"i43":10,"i44":10,"i45":10,"i46":10,"i47":10,"i48":10,"i49":10,"i50":10,"i51":10,"i52":10,"i53":10,"i54":10,"i55":10,"i56":10,"i57":10,"i58":10,"i59":10,"i60":10,"i61":10,"i62":10,"i63":10,"i64":10,"i65":10,"i66":10,"i67":10,"i68":10,"i69":10,"i70":10,"i71":10,"i72":10,"i73":10,"i74":10,"i75":10,"i76":10,"i77":10,"i78":10,"i79":10,"i80":10,"i81":10,"i82":10,"i83":10,"i84":10,"i85":10,"i86":10,"i87":10,"i88":10,"i89":10,"i90":10,"i91":10,"i92":10,"i93":10,"i94":10,"i95":10,"i96":10,"i97":10,"i98":10,"i99":10,"i100":10,"i101":10,"i102":10,"i103":10,"i104":10,"i105":10,"i106":10,"i107":10,"i108":10,"i109":10,"i110":10,"i111":10,"i112":10,"i113":10,"i114":10,"i115":10,"i116":10,"i117":10,"i118":10,"i119":10,"i120":10,"i121":10,"i122":10,"i123":10,"i124":10,"i125":10,"i126":10,"i127":10,"i128":10,"i129":10,"i130":10,"i131":10,"i132":10,"i133":10,"i134":10,"i135":10,"i136":10,"i137":10,"i138":10,"i139":10,"i140":10,"i141":10};
 var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],8:["t4","Concrete Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
@@ -295,6 +295,14 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
 </td>
 </tr>
 <tr id="i14" class="altColor">
+<td class="colFirst"><code>boolean</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#equals(java.lang.Object)">equals</a></span>&#8203;(java.lang.Object&nbsp;obj)</code></th>
+<td class="colLast">
+<div class="block">Determines if the content of the specified buffer is identical to the
+ content of this array.</div>
+</td>
+</tr>
+<tr id="i15" class="rowColor">
 <td class="colFirst"><code>int</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#forEachByte(int,int,io.servicetalk.buffer.api.ByteProcessor)">forEachByte</a></span>&#8203;(int&nbsp;index,
            int&nbsp;length,
@@ -303,14 +311,14 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
 <div class="block">Iterates over the specified area of this buffer with the specified <code>processor</code> in ascending order.</div>
 </td>
 </tr>
-<tr id="i15" class="rowColor">
+<tr id="i16" class="altColor">
 <td class="colFirst"><code>int</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#forEachByte(io.servicetalk.buffer.api.ByteProcessor)">forEachByte</a></span>&#8203;(<a href="ByteProcessor.html" title="interface in io.servicetalk.buffer.api">ByteProcessor</a>&nbsp;processor)</code></th>
 <td class="colLast">
 <div class="block">Iterates over the readable bytes of this buffer with the specified <code>processor</code> in ascending order.</div>
 </td>
 </tr>
-<tr id="i16" class="altColor">
+<tr id="i17" class="rowColor">
 <td class="colFirst"><code>int</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#forEachByteDesc(int,int,io.servicetalk.buffer.api.ByteProcessor)">forEachByteDesc</a></span>&#8203;(int&nbsp;index,
                int&nbsp;length,
@@ -319,28 +327,28 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
 <div class="block">Iterates over the specified area of this buffer with the specified <code>processor</code> in descending order.</div>
 </td>
 </tr>
-<tr id="i17" class="rowColor">
+<tr id="i18" class="altColor">
 <td class="colFirst"><code>int</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#forEachByteDesc(io.servicetalk.buffer.api.ByteProcessor)">forEachByteDesc</a></span>&#8203;(<a href="ByteProcessor.html" title="interface in io.servicetalk.buffer.api">ByteProcessor</a>&nbsp;processor)</code></th>
 <td class="colLast">
 <div class="block">Iterates over the readable bytes of this buffer with the specified <code>processor</code> in descending order.</div>
 </td>
 </tr>
-<tr id="i18" class="altColor">
+<tr id="i19" class="rowColor">
 <td class="colFirst"><code>boolean</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#getBoolean(int)">getBoolean</a></span>&#8203;(int&nbsp;index)</code></th>
 <td class="colLast">
 <div class="block">Gets a boolean at the specified absolute (@code index) in this buffer.</div>
 </td>
 </tr>
-<tr id="i19" class="rowColor">
+<tr id="i20" class="altColor">
 <td class="colFirst"><code>byte</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#getByte(int)">getByte</a></span>&#8203;(int&nbsp;index)</code></th>
 <td class="colLast">
 <div class="block">Gets a byte at the specified absolute <code>index</code> in this buffer.</div>
 </td>
 </tr>
-<tr id="i20" class="altColor">
+<tr id="i21" class="rowColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#getBytes(int,byte%5B%5D)">getBytes</a></span>&#8203;(int&nbsp;index,
         byte[]&nbsp;dst)</code></th>
@@ -349,7 +357,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  the specified absolute <code>index</code>.</div>
 </td>
 </tr>
-<tr id="i21" class="rowColor">
+<tr id="i22" class="altColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#getBytes(int,byte%5B%5D,int,int)">getBytes</a></span>&#8203;(int&nbsp;index,
         byte[]&nbsp;dst,
@@ -360,7 +368,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  the specified absolute <code>index</code>.</div>
 </td>
 </tr>
-<tr id="i22" class="altColor">
+<tr id="i23" class="rowColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#getBytes(int,io.servicetalk.buffer.api.Buffer)">getBytes</a></span>&#8203;(int&nbsp;index,
         <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a>&nbsp;dst)</code></th>
@@ -370,7 +378,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  non-writable.</div>
 </td>
 </tr>
-<tr id="i23" class="rowColor">
+<tr id="i24" class="altColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#getBytes(int,io.servicetalk.buffer.api.Buffer,int)">getBytes</a></span>&#8203;(int&nbsp;index,
         <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a>&nbsp;dst,
@@ -380,7 +388,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  the specified absolute <code>index</code>.</div>
 </td>
 </tr>
-<tr id="i24" class="altColor">
+<tr id="i25" class="rowColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#getBytes(int,io.servicetalk.buffer.api.Buffer,int,int)">getBytes</a></span>&#8203;(int&nbsp;index,
         <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a>&nbsp;dst,
@@ -391,7 +399,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  the specified absolute <code>index</code>.</div>
 </td>
 </tr>
-<tr id="i25" class="rowColor">
+<tr id="i26" class="altColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#getBytes(int,java.nio.ByteBuffer)">getBytes</a></span>&#8203;(int&nbsp;index,
         java.nio.ByteBuffer&nbsp;dst)</code></th>
@@ -401,7 +409,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  reaches its limit.</div>
 </td>
 </tr>
-<tr id="i26" class="altColor">
+<tr id="i27" class="rowColor">
 <td class="colFirst"><code>char</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#getChar(int)">getChar</a></span>&#8203;(int&nbsp;index)</code></th>
 <td class="colLast">
@@ -409,7 +417,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  <code>index</code> in this buffer.</div>
 </td>
 </tr>
-<tr id="i27" class="rowColor">
+<tr id="i28" class="altColor">
 <td class="colFirst"><code>double</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#getDouble(int)">getDouble</a></span>&#8203;(int&nbsp;index)</code></th>
 <td class="colLast">
@@ -417,7 +425,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  <code>index</code> in this buffer.</div>
 </td>
 </tr>
-<tr id="i28" class="altColor">
+<tr id="i29" class="rowColor">
 <td class="colFirst"><code>float</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#getFloat(int)">getFloat</a></span>&#8203;(int&nbsp;index)</code></th>
 <td class="colLast">
@@ -425,7 +433,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  <code>index</code> in this buffer.</div>
 </td>
 </tr>
-<tr id="i29" class="rowColor">
+<tr id="i30" class="altColor">
 <td class="colFirst"><code>int</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#getInt(int)">getInt</a></span>&#8203;(int&nbsp;index)</code></th>
 <td class="colLast">
@@ -433,7 +441,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  this buffer.</div>
 </td>
 </tr>
-<tr id="i30" class="altColor">
+<tr id="i31" class="rowColor">
 <td class="colFirst"><code>int</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#getIntLE(int)">getIntLE</a></span>&#8203;(int&nbsp;index)</code></th>
 <td class="colLast">
@@ -441,7 +449,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  this buffer with Little Endian Byte Order.</div>
 </td>
 </tr>
-<tr id="i31" class="rowColor">
+<tr id="i32" class="altColor">
 <td class="colFirst"><code>long</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#getLong(int)">getLong</a></span>&#8203;(int&nbsp;index)</code></th>
 <td class="colLast">
@@ -449,7 +457,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  this buffer.</div>
 </td>
 </tr>
-<tr id="i32" class="altColor">
+<tr id="i33" class="rowColor">
 <td class="colFirst"><code>long</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#getLongLE(int)">getLongLE</a></span>&#8203;(int&nbsp;index)</code></th>
 <td class="colLast">
@@ -457,7 +465,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  this buffer in Little Endian Byte Order.</div>
 </td>
 </tr>
-<tr id="i33" class="rowColor">
+<tr id="i34" class="altColor">
 <td class="colFirst"><code>int</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#getMedium(int)">getMedium</a></span>&#8203;(int&nbsp;index)</code></th>
 <td class="colLast">
@@ -465,7 +473,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  this buffer.</div>
 </td>
 </tr>
-<tr id="i34" class="altColor">
+<tr id="i35" class="rowColor">
 <td class="colFirst"><code>int</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#getMediumLE(int)">getMediumLE</a></span>&#8203;(int&nbsp;index)</code></th>
 <td class="colLast">
@@ -473,7 +481,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  this buffer in the Little Endian Byte Order.</div>
 </td>
 </tr>
-<tr id="i35" class="rowColor">
+<tr id="i36" class="altColor">
 <td class="colFirst"><code>short</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#getShort(int)">getShort</a></span>&#8203;(int&nbsp;index)</code></th>
 <td class="colLast">
@@ -481,7 +489,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  this buffer.</div>
 </td>
 </tr>
-<tr id="i36" class="altColor">
+<tr id="i37" class="rowColor">
 <td class="colFirst"><code>short</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#getShortLE(int)">getShortLE</a></span>&#8203;(int&nbsp;index)</code></th>
 <td class="colLast">
@@ -489,7 +497,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  this buffer in Little Endian Byte Order.</div>
 </td>
 </tr>
-<tr id="i37" class="rowColor">
+<tr id="i38" class="altColor">
 <td class="colFirst"><code>short</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#getUnsignedByte(int)">getUnsignedByte</a></span>&#8203;(int&nbsp;index)</code></th>
 <td class="colLast">
@@ -497,7 +505,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  buffer.</div>
 </td>
 </tr>
-<tr id="i38" class="altColor">
+<tr id="i39" class="rowColor">
 <td class="colFirst"><code>long</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#getUnsignedInt(int)">getUnsignedInt</a></span>&#8203;(int&nbsp;index)</code></th>
 <td class="colLast">
@@ -505,7 +513,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  in this buffer.</div>
 </td>
 </tr>
-<tr id="i39" class="rowColor">
+<tr id="i40" class="altColor">
 <td class="colFirst"><code>long</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#getUnsignedIntLE(int)">getUnsignedIntLE</a></span>&#8203;(int&nbsp;index)</code></th>
 <td class="colLast">
@@ -513,7 +521,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  in this buffer in Little Endian Byte Order.</div>
 </td>
 </tr>
-<tr id="i40" class="altColor">
+<tr id="i41" class="rowColor">
 <td class="colFirst"><code>int</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#getUnsignedMedium(int)">getUnsignedMedium</a></span>&#8203;(int&nbsp;index)</code></th>
 <td class="colLast">
@@ -521,7 +529,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  <code>index</code> in this buffer.</div>
 </td>
 </tr>
-<tr id="i41" class="rowColor">
+<tr id="i42" class="altColor">
 <td class="colFirst"><code>int</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#getUnsignedMediumLE(int)">getUnsignedMediumLE</a></span>&#8203;(int&nbsp;index)</code></th>
 <td class="colLast">
@@ -529,7 +537,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  <code>index</code> in this buffer in Little Endian Byte Order.</div>
 </td>
 </tr>
-<tr id="i42" class="altColor">
+<tr id="i43" class="rowColor">
 <td class="colFirst"><code>int</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#getUnsignedShort(int)">getUnsignedShort</a></span>&#8203;(int&nbsp;index)</code></th>
 <td class="colLast">
@@ -537,7 +545,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  <code>index</code> in this buffer.</div>
 </td>
 </tr>
-<tr id="i43" class="rowColor">
+<tr id="i44" class="altColor">
 <td class="colFirst"><code>int</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#getUnsignedShortLE(int)">getUnsignedShortLE</a></span>&#8203;(int&nbsp;index)</code></th>
 <td class="colLast">
@@ -545,14 +553,22 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  <code>index</code> in this buffer in Little Endian Byte Order.</div>
 </td>
 </tr>
-<tr id="i44" class="altColor">
+<tr id="i45" class="rowColor">
 <td class="colFirst"><code>boolean</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#hasArray()">hasArray</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Returns <code>true</code> if and only if this buffer has a backing byte array.</div>
 </td>
 </tr>
-<tr id="i45" class="rowColor">
+<tr id="i46" class="altColor">
+<td class="colFirst"><code>int</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#hashCode()">hashCode</a></span>()</code></th>
+<td class="colLast">
+<div class="block">Returns a hash code which was calculated from the content of this
+ buffer.</div>
+</td>
+</tr>
+<tr id="i47" class="rowColor">
 <td class="colFirst"><code>int</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#indexOf(int,int,byte)">indexOf</a></span>&#8203;(int&nbsp;fromIndex,
        int&nbsp;toIndex,
@@ -562,28 +578,28 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  buffer.</div>
 </td>
 </tr>
-<tr id="i46" class="altColor">
+<tr id="i48" class="altColor">
 <td class="colFirst"><code>boolean</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#isDirect()">isDirect</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Returns <code>true</code> if the buffer is direct and so not allocated on the heap.</div>
 </td>
 </tr>
-<tr id="i47" class="rowColor">
+<tr id="i49" class="rowColor">
 <td class="colFirst"><code>boolean</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#isReadOnly()">isReadOnly</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Determine if this buffer is read-only.</div>
 </td>
 </tr>
-<tr id="i48" class="altColor">
+<tr id="i50" class="altColor">
 <td class="colFirst"><code>int</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#maxCapacity()">maxCapacity</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Returns the maximum allowed capacity of this buffer.</div>
 </td>
 </tr>
-<tr id="i49" class="rowColor">
+<tr id="i51" class="rowColor">
 <td class="colFirst"><code>int</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#maxWritableBytes()">maxWritableBytes</a></span>()</code></th>
 <td class="colLast">
@@ -591,14 +607,14 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  <code>(this.maxCapacity - this.writerIndex)</code>.</div>
 </td>
 </tr>
-<tr id="i50" class="altColor">
+<tr id="i52" class="altColor">
 <td class="colFirst"><code>int</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#nioBufferCount()">nioBufferCount</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Returns the maximum number of NIO <code>ByteBuffer</code>s that consist this buffer.</div>
 </td>
 </tr>
-<tr id="i51" class="rowColor">
+<tr id="i53" class="rowColor">
 <td class="colFirst"><code>int</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#readableBytes()">readableBytes</a></span>()</code></th>
 <td class="colLast">
@@ -606,7 +622,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  <code>(this.writerIndex - this.readerIndex)</code>.</div>
 </td>
 </tr>
-<tr id="i52" class="altColor">
+<tr id="i54" class="altColor">
 <td class="colFirst"><code>boolean</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#readBoolean()">readBoolean</a></span>()</code></th>
 <td class="colLast">
@@ -614,7 +630,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  the <code>readerIndex</code> by <code>1</code> in this buffer.</div>
 </td>
 </tr>
-<tr id="i53" class="rowColor">
+<tr id="i55" class="rowColor">
 <td class="colFirst"><code>byte</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#readByte()">readByte</a></span>()</code></th>
 <td class="colLast">
@@ -622,7 +638,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  the <code>readerIndex</code> by <code>1</code> in this buffer.</div>
 </td>
 </tr>
-<tr id="i54" class="altColor">
+<tr id="i56" class="altColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#readBytes(byte%5B%5D)">readBytes</a></span>&#8203;(byte[]&nbsp;dst)</code></th>
 <td class="colLast">
@@ -631,7 +647,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  by the number of the transferred bytes (= <code>dst.length</code>).</div>
 </td>
 </tr>
-<tr id="i55" class="rowColor">
+<tr id="i57" class="rowColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#readBytes(byte%5B%5D,int,int)">readBytes</a></span>&#8203;(byte[]&nbsp;dst,
          int&nbsp;dstIndex,
@@ -642,7 +658,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  by the number of the transferred bytes (= <code>length</code>).</div>
 </td>
 </tr>
-<tr id="i56" class="altColor">
+<tr id="i58" class="altColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#readBytes(int)">readBytes</a></span>&#8203;(int&nbsp;length)</code></th>
 <td class="colLast">
@@ -651,7 +667,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  by the number of the transferred bytes (= <code>length</code>).</div>
 </td>
 </tr>
-<tr id="i57" class="rowColor">
+<tr id="i59" class="rowColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#readBytes(io.servicetalk.buffer.api.Buffer)">readBytes</a></span>&#8203;(<a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a>&nbsp;dst)</code></th>
 <td class="colLast">
@@ -661,7 +677,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  transferred bytes.</div>
 </td>
 </tr>
-<tr id="i58" class="altColor">
+<tr id="i60" class="altColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#readBytes(io.servicetalk.buffer.api.Buffer,int)">readBytes</a></span>&#8203;(<a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a>&nbsp;dst,
          int&nbsp;length)</code></th>
@@ -671,7 +687,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  by the number of the transferred bytes (= <code>length</code>).</div>
 </td>
 </tr>
-<tr id="i59" class="rowColor">
+<tr id="i61" class="rowColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#readBytes(io.servicetalk.buffer.api.Buffer,int,int)">readBytes</a></span>&#8203;(<a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a>&nbsp;dst,
          int&nbsp;dstIndex,
@@ -682,7 +698,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  by the number of the transferred bytes (= <code>length</code>).</div>
 </td>
 </tr>
-<tr id="i60" class="altColor">
+<tr id="i62" class="altColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#readBytes(java.nio.ByteBuffer)">readBytes</a></span>&#8203;(java.nio.ByteBuffer&nbsp;dst)</code></th>
 <td class="colLast">
@@ -692,7 +708,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  number of the transferred bytes.</div>
 </td>
 </tr>
-<tr id="i61" class="rowColor">
+<tr id="i63" class="rowColor">
 <td class="colFirst"><code>char</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#readChar()">readChar</a></span>()</code></th>
 <td class="colLast">
@@ -700,7 +716,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  and increases the <code>readerIndex</code> by <code>2</code> in this buffer.</div>
 </td>
 </tr>
-<tr id="i62" class="altColor">
+<tr id="i64" class="altColor">
 <td class="colFirst"><code>double</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#readDouble()">readDouble</a></span>()</code></th>
 <td class="colLast">
@@ -708,21 +724,21 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  and increases the <code>readerIndex</code> by <code>8</code> in this buffer.</div>
 </td>
 </tr>
-<tr id="i63" class="rowColor">
+<tr id="i65" class="rowColor">
 <td class="colFirst"><code>int</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#readerIndex()">readerIndex</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Returns the <code>readerIndex</code> of this buffer.</div>
 </td>
 </tr>
-<tr id="i64" class="altColor">
+<tr id="i66" class="altColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#readerIndex(int)">readerIndex</a></span>&#8203;(int&nbsp;readerIndex)</code></th>
 <td class="colLast">
 <div class="block">Sets the <code>readerIndex</code> of this buffer.</div>
 </td>
 </tr>
-<tr id="i65" class="rowColor">
+<tr id="i67" class="rowColor">
 <td class="colFirst"><code>float</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#readFloat()">readFloat</a></span>()</code></th>
 <td class="colLast">
@@ -730,7 +746,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  and increases the <code>readerIndex</code> by <code>4</code> in this buffer.</div>
 </td>
 </tr>
-<tr id="i66" class="altColor">
+<tr id="i68" class="altColor">
 <td class="colFirst"><code>int</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#readInt()">readInt</a></span>()</code></th>
 <td class="colLast">
@@ -738,7 +754,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  and increases the <code>readerIndex</code> by <code>4</code> in this buffer.</div>
 </td>
 </tr>
-<tr id="i67" class="rowColor">
+<tr id="i69" class="rowColor">
 <td class="colFirst"><code>int</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#readIntLE()">readIntLE</a></span>()</code></th>
 <td class="colLast">
@@ -747,7 +763,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  by <code>4</code> in this buffer.</div>
 </td>
 </tr>
-<tr id="i68" class="altColor">
+<tr id="i70" class="altColor">
 <td class="colFirst"><code>long</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#readLong()">readLong</a></span>()</code></th>
 <td class="colLast">
@@ -755,7 +771,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  and increases the <code>readerIndex</code> by <code>8</code> in this buffer.</div>
 </td>
 </tr>
-<tr id="i69" class="rowColor">
+<tr id="i71" class="rowColor">
 <td class="colFirst"><code>long</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#readLongLE()">readLongLE</a></span>()</code></th>
 <td class="colLast">
@@ -764,7 +780,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  by <code>8</code> in this buffer.</div>
 </td>
 </tr>
-<tr id="i70" class="altColor">
+<tr id="i72" class="altColor">
 <td class="colFirst"><code>int</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#readMedium()">readMedium</a></span>()</code></th>
 <td class="colLast">
@@ -772,7 +788,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  and increases the <code>readerIndex</code> by <code>3</code> in this buffer.</div>
 </td>
 </tr>
-<tr id="i71" class="rowColor">
+<tr id="i73" class="rowColor">
 <td class="colFirst"><code>int</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#readMediumLE()">readMediumLE</a></span>()</code></th>
 <td class="colLast">
@@ -781,7 +797,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  <code>readerIndex</code> by <code>3</code> in this buffer.</div>
 </td>
 </tr>
-<tr id="i72" class="altColor">
+<tr id="i74" class="altColor">
 <td class="colFirst"><code>short</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#readShort()">readShort</a></span>()</code></th>
 <td class="colLast">
@@ -789,7 +805,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  and increases the <code>readerIndex</code> by <code>2</code> in this buffer.</div>
 </td>
 </tr>
-<tr id="i73" class="rowColor">
+<tr id="i75" class="rowColor">
 <td class="colFirst"><code>short</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#readShortLE()">readShortLE</a></span>()</code></th>
 <td class="colLast">
@@ -798,7 +814,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  by <code>2</code> in this buffer.</div>
 </td>
 </tr>
-<tr id="i74" class="altColor">
+<tr id="i76" class="altColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#readSlice(int)">readSlice</a></span>&#8203;(int&nbsp;length)</code></th>
 <td class="colLast">
@@ -807,7 +823,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  of the new slice (= <code>length</code>).</div>
 </td>
 </tr>
-<tr id="i75" class="rowColor">
+<tr id="i77" class="rowColor">
 <td class="colFirst"><code>short</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#readUnsignedByte()">readUnsignedByte</a></span>()</code></th>
 <td class="colLast">
@@ -815,7 +831,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  the <code>readerIndex</code> by <code>1</code> in this buffer.</div>
 </td>
 </tr>
-<tr id="i76" class="altColor">
+<tr id="i78" class="altColor">
 <td class="colFirst"><code>long</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#readUnsignedInt()">readUnsignedInt</a></span>()</code></th>
 <td class="colLast">
@@ -823,7 +839,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  and increases the <code>readerIndex</code> by <code>4</code> in this buffer.</div>
 </td>
 </tr>
-<tr id="i77" class="rowColor">
+<tr id="i79" class="rowColor">
 <td class="colFirst"><code>long</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#readUnsignedIntLE()">readUnsignedIntLE</a></span>()</code></th>
 <td class="colLast">
@@ -832,7 +848,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  by <code>4</code> in this buffer.</div>
 </td>
 </tr>
-<tr id="i78" class="altColor">
+<tr id="i80" class="altColor">
 <td class="colFirst"><code>int</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#readUnsignedMedium()">readUnsignedMedium</a></span>()</code></th>
 <td class="colLast">
@@ -840,7 +856,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  and increases the <code>readerIndex</code> by <code>3</code> in this buffer.</div>
 </td>
 </tr>
-<tr id="i79" class="rowColor">
+<tr id="i81" class="rowColor">
 <td class="colFirst"><code>int</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#readUnsignedMediumLE()">readUnsignedMediumLE</a></span>()</code></th>
 <td class="colLast">
@@ -849,7 +865,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  by <code>3</code> in this buffer.</div>
 </td>
 </tr>
-<tr id="i80" class="altColor">
+<tr id="i82" class="altColor">
 <td class="colFirst"><code>int</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#readUnsignedShort()">readUnsignedShort</a></span>()</code></th>
 <td class="colLast">
@@ -857,7 +873,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  and increases the <code>readerIndex</code> by <code>2</code> in this buffer.</div>
 </td>
 </tr>
-<tr id="i81" class="rowColor">
+<tr id="i83" class="rowColor">
 <td class="colFirst"><code>int</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#readUnsignedShortLE()">readUnsignedShortLE</a></span>()</code></th>
 <td class="colLast">
@@ -866,7 +882,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  by <code>2</code> in this buffer.</div>
 </td>
 </tr>
-<tr id="i82" class="altColor">
+<tr id="i84" class="altColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setBoolean(int,boolean)">setBoolean</a></span>&#8203;(int&nbsp;index,
           boolean&nbsp;value)</code></th>
@@ -875,7 +891,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  buffer.</div>
 </td>
 </tr>
-<tr id="i83" class="rowColor">
+<tr id="i85" class="rowColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setByte(int,int)">setByte</a></span>&#8203;(int&nbsp;index,
        int&nbsp;value)</code></th>
@@ -884,7 +900,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  buffer.</div>
 </td>
 </tr>
-<tr id="i84" class="altColor">
+<tr id="i86" class="altColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setBytes(int,byte%5B%5D)">setBytes</a></span>&#8203;(int&nbsp;index,
         byte[]&nbsp;src)</code></th>
@@ -893,7 +909,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  the specified absolute <code>index</code>.</div>
 </td>
 </tr>
-<tr id="i85" class="rowColor">
+<tr id="i87" class="rowColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setBytes(int,byte%5B%5D,int,int)">setBytes</a></span>&#8203;(int&nbsp;index,
         byte[]&nbsp;src,
@@ -904,7 +920,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  the specified absolute <code>index</code>.</div>
 </td>
 </tr>
-<tr id="i86" class="altColor">
+<tr id="i88" class="altColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setBytes(int,io.servicetalk.buffer.api.Buffer)">setBytes</a></span>&#8203;(int&nbsp;index,
         <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a>&nbsp;src)</code></th>
@@ -914,7 +930,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  unreadable.</div>
 </td>
 </tr>
-<tr id="i87" class="rowColor">
+<tr id="i89" class="rowColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setBytes(int,io.servicetalk.buffer.api.Buffer,int)">setBytes</a></span>&#8203;(int&nbsp;index,
         <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a>&nbsp;src,
@@ -924,7 +940,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  the specified absolute <code>index</code>.</div>
 </td>
 </tr>
-<tr id="i88" class="altColor">
+<tr id="i90" class="altColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setBytes(int,io.servicetalk.buffer.api.Buffer,int,int)">setBytes</a></span>&#8203;(int&nbsp;index,
         <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a>&nbsp;src,
@@ -935,7 +951,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  the specified absolute <code>index</code>.</div>
 </td>
 </tr>
-<tr id="i89" class="rowColor">
+<tr id="i91" class="rowColor">
 <td class="colFirst"><code>int</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setBytes(int,java.io.InputStream,int)">setBytes</a></span>&#8203;(int&nbsp;index,
         java.io.InputStream&nbsp;src,
@@ -946,7 +962,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  is reached, or an exception is thrown.</div>
 </td>
 </tr>
-<tr id="i90" class="altColor">
+<tr id="i92" class="altColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setBytes(int,java.nio.ByteBuffer)">setBytes</a></span>&#8203;(int&nbsp;index,
         java.nio.ByteBuffer&nbsp;src)</code></th>
@@ -956,7 +972,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  reaches its limit.</div>
 </td>
 </tr>
-<tr id="i91" class="rowColor">
+<tr id="i93" class="rowColor">
 <td class="colFirst"><code>int</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setBytesUntilEndStream(int,java.io.InputStream,int)">setBytesUntilEndStream</a></span>&#8203;(int&nbsp;index,
                       java.io.InputStream&nbsp;src,
@@ -966,7 +982,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  the specified absolute <code>index</code> until the end of stream is reached or an exception is thrown.</div>
 </td>
 </tr>
-<tr id="i92" class="altColor">
+<tr id="i94" class="altColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setChar(int,int)">setChar</a></span>&#8203;(int&nbsp;index,
        int&nbsp;value)</code></th>
@@ -975,7 +991,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  <code>index</code> in this buffer.</div>
 </td>
 </tr>
-<tr id="i93" class="rowColor">
+<tr id="i95" class="rowColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setDouble(int,double)">setDouble</a></span>&#8203;(int&nbsp;index,
          double&nbsp;value)</code></th>
@@ -984,7 +1000,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  absolute <code>index</code> in this buffer.</div>
 </td>
 </tr>
-<tr id="i94" class="altColor">
+<tr id="i96" class="altColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setFloat(int,float)">setFloat</a></span>&#8203;(int&nbsp;index,
         float&nbsp;value)</code></th>
@@ -993,7 +1009,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  absolute <code>index</code> in this buffer.</div>
 </td>
 </tr>
-<tr id="i95" class="rowColor">
+<tr id="i97" class="rowColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setInt(int,int)">setInt</a></span>&#8203;(int&nbsp;index,
       int&nbsp;value)</code></th>
@@ -1002,7 +1018,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  <code>index</code> in this buffer.</div>
 </td>
 </tr>
-<tr id="i96" class="altColor">
+<tr id="i98" class="altColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setIntLE(int,int)">setIntLE</a></span>&#8203;(int&nbsp;index,
         int&nbsp;value)</code></th>
@@ -1012,7 +1028,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  .</div>
 </td>
 </tr>
-<tr id="i97" class="rowColor">
+<tr id="i99" class="rowColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setLong(int,long)">setLong</a></span>&#8203;(int&nbsp;index,
        long&nbsp;value)</code></th>
@@ -1021,7 +1037,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  <code>index</code> in this buffer.</div>
 </td>
 </tr>
-<tr id="i98" class="altColor">
+<tr id="i100" class="altColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setLongLE(int,long)">setLongLE</a></span>&#8203;(int&nbsp;index,
          long&nbsp;value)</code></th>
@@ -1030,7 +1046,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  <code>index</code> in this buffer in Little Endian Byte Order.</div>
 </td>
 </tr>
-<tr id="i99" class="rowColor">
+<tr id="i101" class="rowColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setMedium(int,int)">setMedium</a></span>&#8203;(int&nbsp;index,
          int&nbsp;value)</code></th>
@@ -1039,7 +1055,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  <code>index</code> in this buffer.</div>
 </td>
 </tr>
-<tr id="i100" class="altColor">
+<tr id="i102" class="altColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setMediumLE(int,int)">setMediumLE</a></span>&#8203;(int&nbsp;index,
            int&nbsp;value)</code></th>
@@ -1048,7 +1064,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  <code>index</code> in this buffer in the Little Endian Byte Order.</div>
 </td>
 </tr>
-<tr id="i101" class="rowColor">
+<tr id="i103" class="rowColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setShort(int,int)">setShort</a></span>&#8203;(int&nbsp;index,
         int&nbsp;value)</code></th>
@@ -1057,7 +1073,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  <code>index</code> in this buffer.</div>
 </td>
 </tr>
-<tr id="i102" class="altColor">
+<tr id="i104" class="altColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setShortLE(int,int)">setShortLE</a></span>&#8203;(int&nbsp;index,
           int&nbsp;value)</code></th>
@@ -1066,7 +1082,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  <code>index</code> in this buffer with the Little Endian Byte Order.</div>
 </td>
 </tr>
-<tr id="i103" class="rowColor">
+<tr id="i105" class="rowColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#skipBytes(int)">skipBytes</a></span>&#8203;(int&nbsp;length)</code></th>
 <td class="colLast">
@@ -1074,14 +1090,14 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  <code>length</code> in this buffer.</div>
 </td>
 </tr>
-<tr id="i104" class="altColor">
+<tr id="i106" class="altColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#slice()">slice</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Returns a slice of this buffer's readable bytes.</div>
 </td>
 </tr>
-<tr id="i105" class="rowColor">
+<tr id="i107" class="rowColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#slice(int,int)">slice</a></span>&#8203;(int&nbsp;index,
      int&nbsp;length)</code></th>
@@ -1089,14 +1105,14 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
 <div class="block">Returns a slice of this buffer's sub-region.</div>
 </td>
 </tr>
-<tr id="i106" class="altColor">
+<tr id="i108" class="altColor">
 <td class="colFirst"><code>java.nio.ByteBuffer</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#toNioBuffer()">toNioBuffer</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Exposes this buffer's readable bytes as an NIO <code>ByteBuffer</code>.</div>
 </td>
 </tr>
-<tr id="i107" class="rowColor">
+<tr id="i109" class="rowColor">
 <td class="colFirst"><code>java.nio.ByteBuffer</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#toNioBuffer(int,int)">toNioBuffer</a></span>&#8203;(int&nbsp;index,
            int&nbsp;length)</code></th>
@@ -1104,14 +1120,14 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
 <div class="block">Exposes this buffer's sub-region as an NIO <code>ByteBuffer</code>.</div>
 </td>
 </tr>
-<tr id="i108" class="altColor">
+<tr id="i110" class="altColor">
 <td class="colFirst"><code>java.nio.ByteBuffer[]</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#toNioBuffers()">toNioBuffers</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Exposes this buffer's readable bytes as an NIO <code>ByteBuffer</code>'s.</div>
 </td>
 </tr>
-<tr id="i109" class="rowColor">
+<tr id="i111" class="rowColor">
 <td class="colFirst"><code>java.nio.ByteBuffer[]</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#toNioBuffers(int,int)">toNioBuffers</a></span>&#8203;(int&nbsp;index,
             int&nbsp;length)</code></th>
@@ -1121,7 +1137,14 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  of the returned NIO buffer does not affect the indexes of this buffer.</div>
 </td>
 </tr>
-<tr id="i110" class="altColor">
+<tr id="i112" class="altColor">
+<td class="colFirst"><code>java.lang.String</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#toString()">toString</a></span>()</code></th>
+<td class="colLast">
+<div class="block">Returns the string representation of this buffer.</div>
+</td>
+</tr>
+<tr id="i113" class="rowColor">
 <td class="colFirst"><code>java.lang.String</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#toString(int,int,java.nio.charset.Charset)">toString</a></span>&#8203;(int&nbsp;index,
         int&nbsp;length,
@@ -1131,7 +1154,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  character set.</div>
 </td>
 </tr>
-<tr id="i111" class="rowColor">
+<tr id="i114" class="altColor">
 <td class="colFirst"><code>java.lang.String</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#toString(java.nio.charset.Charset)">toString</a></span>&#8203;(java.nio.charset.Charset&nbsp;charset)</code></th>
 <td class="colLast">
@@ -1139,7 +1162,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  character set name.</div>
 </td>
 </tr>
-<tr id="i112" class="altColor">
+<tr id="i115" class="rowColor">
 <td class="colFirst"><code>int</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#writableBytes()">writableBytes</a></span>()</code></th>
 <td class="colLast">
@@ -1147,7 +1170,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  <code>(this.capacity - this.writerIndex)</code>.</div>
 </td>
 </tr>
-<tr id="i113" class="rowColor">
+<tr id="i116" class="altColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#writeAscii(java.lang.CharSequence)">writeAscii</a></span>&#8203;(java.lang.CharSequence&nbsp;seq)</code></th>
 <td class="colLast">
@@ -1156,7 +1179,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  number of the transferred bytes.</div>
 </td>
 </tr>
-<tr id="i114" class="altColor">
+<tr id="i117" class="rowColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#writeBoolean(boolean)">writeBoolean</a></span>&#8203;(boolean&nbsp;value)</code></th>
 <td class="colLast">
@@ -1164,7 +1187,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  and increases the <code>writerIndex</code> by <code>1</code> in this buffer.</div>
 </td>
 </tr>
-<tr id="i115" class="rowColor">
+<tr id="i118" class="altColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#writeByte(int)">writeByte</a></span>&#8203;(int&nbsp;value)</code></th>
 <td class="colLast">
@@ -1172,7 +1195,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  and increases the <code>writerIndex</code> by <code>1</code> in this buffer.</div>
 </td>
 </tr>
-<tr id="i116" class="altColor">
+<tr id="i119" class="rowColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#writeBytes(byte%5B%5D)">writeBytes</a></span>&#8203;(byte[]&nbsp;src)</code></th>
 <td class="colLast">
@@ -1181,7 +1204,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  by the number of the transferred bytes (= <code>src.length</code>).</div>
 </td>
 </tr>
-<tr id="i117" class="rowColor">
+<tr id="i120" class="altColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#writeBytes(byte%5B%5D,int,int)">writeBytes</a></span>&#8203;(byte[]&nbsp;src,
           int&nbsp;srcIndex,
@@ -1192,7 +1215,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  by the number of the transferred bytes (= <code>length</code>).</div>
 </td>
 </tr>
-<tr id="i118" class="altColor">
+<tr id="i121" class="rowColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#writeBytes(io.servicetalk.buffer.api.Buffer)">writeBytes</a></span>&#8203;(<a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a>&nbsp;src)</code></th>
 <td class="colLast">
@@ -1202,7 +1225,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  the transferred bytes.</div>
 </td>
 </tr>
-<tr id="i119" class="rowColor">
+<tr id="i122" class="altColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#writeBytes(io.servicetalk.buffer.api.Buffer,int)">writeBytes</a></span>&#8203;(<a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a>&nbsp;src,
           int&nbsp;length)</code></th>
@@ -1212,7 +1235,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  by the number of the transferred bytes (= <code>length</code>).</div>
 </td>
 </tr>
-<tr id="i120" class="altColor">
+<tr id="i123" class="rowColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#writeBytes(io.servicetalk.buffer.api.Buffer,int,int)">writeBytes</a></span>&#8203;(<a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a>&nbsp;src,
           int&nbsp;srcIndex,
@@ -1223,7 +1246,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  by the number of the transferred bytes (= <code>length</code>).</div>
 </td>
 </tr>
-<tr id="i121" class="rowColor">
+<tr id="i124" class="altColor">
 <td class="colFirst"><code>int</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#writeBytes(java.io.InputStream,int)">writeBytes</a></span>&#8203;(java.io.InputStream&nbsp;src,
           int&nbsp;length)</code></th>
@@ -1233,7 +1256,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  is reached, or an exception is thrown.</div>
 </td>
 </tr>
-<tr id="i122" class="altColor">
+<tr id="i125" class="rowColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#writeBytes(java.nio.ByteBuffer)">writeBytes</a></span>&#8203;(java.nio.ByteBuffer&nbsp;src)</code></th>
 <td class="colLast">
@@ -1243,7 +1266,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  number of the transferred bytes.</div>
 </td>
 </tr>
-<tr id="i123" class="rowColor">
+<tr id="i126" class="altColor">
 <td class="colFirst"><code>int</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#writeBytesUntilEndStream(java.io.InputStream,int)">writeBytesUntilEndStream</a></span>&#8203;(java.io.InputStream&nbsp;src,
                         int&nbsp;chunkSize)</code></th>
@@ -1252,7 +1275,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  the current <code>writerIndex</code> until the end of stream is reached or an exception is thrown.</div>
 </td>
 </tr>
-<tr id="i124" class="altColor">
+<tr id="i127" class="rowColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#writeChar(int)">writeChar</a></span>&#8203;(int&nbsp;value)</code></th>
 <td class="colLast">
@@ -1261,7 +1284,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  in this buffer.</div>
 </td>
 </tr>
-<tr id="i125" class="rowColor">
+<tr id="i128" class="altColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#writeDouble(double)">writeDouble</a></span>&#8203;(double&nbsp;value)</code></th>
 <td class="colLast">
@@ -1270,7 +1293,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  in this buffer.</div>
 </td>
 </tr>
-<tr id="i126" class="altColor">
+<tr id="i129" class="rowColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#writeFloat(float)">writeFloat</a></span>&#8203;(float&nbsp;value)</code></th>
 <td class="colLast">
@@ -1279,7 +1302,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  in this buffer.</div>
 </td>
 </tr>
-<tr id="i127" class="rowColor">
+<tr id="i130" class="altColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#writeInt(int)">writeInt</a></span>&#8203;(int&nbsp;value)</code></th>
 <td class="colLast">
@@ -1287,7 +1310,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  and increases the <code>writerIndex</code> by <code>4</code> in this buffer.</div>
 </td>
 </tr>
-<tr id="i128" class="altColor">
+<tr id="i131" class="rowColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#writeIntLE(int)">writeIntLE</a></span>&#8203;(int&nbsp;value)</code></th>
 <td class="colLast">
@@ -1296,7 +1319,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  by <code>4</code> in this buffer.</div>
 </td>
 </tr>
-<tr id="i129" class="rowColor">
+<tr id="i132" class="altColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#writeLong(long)">writeLong</a></span>&#8203;(long&nbsp;value)</code></th>
 <td class="colLast">
@@ -1305,7 +1328,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  in this buffer.</div>
 </td>
 </tr>
-<tr id="i130" class="altColor">
+<tr id="i133" class="rowColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#writeLongLE(long)">writeLongLE</a></span>&#8203;(long&nbsp;value)</code></th>
 <td class="colLast">
@@ -1315,7 +1338,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  in this buffer.</div>
 </td>
 </tr>
-<tr id="i131" class="rowColor">
+<tr id="i134" class="altColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#writeMedium(int)">writeMedium</a></span>&#8203;(int&nbsp;value)</code></th>
 <td class="colLast">
@@ -1324,7 +1347,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  in this buffer.</div>
 </td>
 </tr>
-<tr id="i132" class="altColor">
+<tr id="i135" class="rowColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#writeMediumLE(int)">writeMediumLE</a></span>&#8203;(int&nbsp;value)</code></th>
 <td class="colLast">
@@ -1334,21 +1357,21 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  buffer.</div>
 </td>
 </tr>
-<tr id="i133" class="rowColor">
+<tr id="i136" class="altColor">
 <td class="colFirst"><code>int</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#writerIndex()">writerIndex</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Returns the <code>writerIndex</code> of this buffer.</div>
 </td>
 </tr>
-<tr id="i134" class="altColor">
+<tr id="i137" class="rowColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#writerIndex(int)">writerIndex</a></span>&#8203;(int&nbsp;writerIndex)</code></th>
 <td class="colLast">
 <div class="block">Sets the <code>writerIndex</code> of this buffer.</div>
 </td>
 </tr>
-<tr id="i135" class="rowColor">
+<tr id="i138" class="altColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#writeShort(int)">writeShort</a></span>&#8203;(int&nbsp;value)</code></th>
 <td class="colLast">
@@ -1357,7 +1380,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  in this buffer.</div>
 </td>
 </tr>
-<tr id="i136" class="altColor">
+<tr id="i139" class="rowColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#writeShortLE(int)">writeShortLE</a></span>&#8203;(int&nbsp;value)</code></th>
 <td class="colLast">
@@ -1366,7 +1389,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  <code>writerIndex</code> by <code>2</code> in this buffer.</div>
 </td>
 </tr>
-<tr id="i137" class="rowColor">
+<tr id="i140" class="altColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#writeUtf8(java.lang.CharSequence)">writeUtf8</a></span>&#8203;(java.lang.CharSequence&nbsp;seq)</code></th>
 <td class="colLast">
@@ -1375,7 +1398,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
  number of the transferred bytes.</div>
 </td>
 </tr>
-<tr id="i138" class="altColor">
+<tr id="i141" class="rowColor">
 <td class="colFirst"><code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#writeUtf8(java.lang.CharSequence,int)">writeUtf8</a></span>&#8203;(java.lang.CharSequence&nbsp;seq,
          int&nbsp;ensureWritable)</code></th>
@@ -1391,14 +1414,14 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
 <!--   -->
 </a>
 <h3>Methods inherited from class&nbsp;java.lang.Object</h3>
-<code>clone, equals, finalize, getClass, hashCode, notify, notifyAll, toString, wait, wait, wait</code></li>
+<code>clone, finalize, getClass, notify, notifyAll, wait, wait, wait</code></li>
 </ul>
 <ul class="blockList">
 <li class="blockList"><a id="methods.inherited.from.class.io.servicetalk.buffer.api.Buffer">
 <!--   -->
 </a>
 <h3>Methods inherited from interface&nbsp;io.servicetalk.buffer.api.<a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></h3>
-<code><a href="Buffer.html#equals(java.lang.Object)">equals</a>, <a href="Buffer.html#hashCode()">hashCode</a>, <a href="Buffer.html#toString()">toString</a>, <a href="Buffer.html#tryEnsureWritable(int,boolean)">tryEnsureWritable</a></code></li>
+<code><a href="Buffer.html#tryEnsureWritable(int,boolean)">tryEnsureWritable</a></code></li>
 </ul>
 </li>
 </ul>
@@ -4483,6 +4506,26 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
 </dl>
 </li>
 </ul>
+<a id="toString()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>toString</h4>
+<pre class="methodSignature">public&nbsp;java.lang.String&nbsp;toString()</pre>
+<div class="block"><span class="descfrmTypeLabel">Description copied from interface:&nbsp;<code><a href="Buffer.html#toString()">Buffer</a></code></span></div>
+<div class="block">Returns the string representation of this buffer.  This method does not
+ necessarily return the whole content of the buffer but returns
+ the values of the key properties such as <a href="Buffer.html#readerIndex()"><code>Buffer.readerIndex()</code></a>,
+ <a href="Buffer.html#writerIndex()"><code>Buffer.writerIndex()</code></a> and <a href="Buffer.html#capacity()"><code>Buffer.capacity()</code></a>.</div>
+<dl>
+<dt><span class="overrideSpecifyLabel">Specified by:</span></dt>
+<dd><code><a href="Buffer.html#toString()">toString</a></code>&nbsp;in interface&nbsp;<code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></dd>
+<dt><span class="overrideSpecifyLabel">Overrides:</span></dt>
+<dd><code>toString</code>&nbsp;in class&nbsp;<code>java.lang.Object</code></dd>
+</dl>
+</li>
+</ul>
 <a id="toString(java.nio.charset.Charset)">
 <!--   -->
 </a>
@@ -4599,7 +4642,7 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
 <a id="forEachByteDesc(int,int,io.servicetalk.buffer.api.ByteProcessor)">
 <!--   -->
 </a>
-<ul class="blockListLast">
+<ul class="blockList">
 <li class="blockList">
 <h4>forEachByteDesc</h4>
 <pre class="methodSignature">public&nbsp;int&nbsp;forEachByteDesc&#8203;(int&nbsp;index,
@@ -4618,6 +4661,52 @@ implements <a href="Buffer.html" title="interface in io.servicetalk.buffer.api">
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd><code>-1</code> if the processor iterated to or beyond the beginning of the specified area.
          The last-visited index If the <a href="ByteProcessor.html#process(byte)"><code>ByteProcessor.process(byte)</code></a> returned <code>false</code>.</dd>
+</dl>
+</li>
+</ul>
+<a id="hashCode()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>hashCode</h4>
+<pre class="methodSignature">public&nbsp;int&nbsp;hashCode()</pre>
+<div class="block"><span class="descfrmTypeLabel">Description copied from interface:&nbsp;<code><a href="Buffer.html#hashCode()">Buffer</a></code></span></div>
+<div class="block">Returns a hash code which was calculated from the content of this
+ buffer.  If there's a byte array which is
+ <a href="Buffer.html#equals(java.lang.Object)">equal to</a> this array, both arrays should
+ return the same value.</div>
+<dl>
+<dt><span class="overrideSpecifyLabel">Specified by:</span></dt>
+<dd><code><a href="Buffer.html#hashCode()">hashCode</a></code>&nbsp;in interface&nbsp;<code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></dd>
+<dt><span class="overrideSpecifyLabel">Overrides:</span></dt>
+<dd><code>hashCode</code>&nbsp;in class&nbsp;<code>java.lang.Object</code></dd>
+</dl>
+</li>
+</ul>
+<a id="equals(java.lang.Object)">
+<!--   -->
+</a>
+<ul class="blockListLast">
+<li class="blockList">
+<h4>equals</h4>
+<pre class="methodSignature">public&nbsp;boolean&nbsp;equals&#8203;(java.lang.Object&nbsp;obj)</pre>
+<div class="block"><span class="descfrmTypeLabel">Description copied from interface:&nbsp;<code><a href="Buffer.html#equals(java.lang.Object)">Buffer</a></code></span></div>
+<div class="block">Determines if the content of the specified buffer is identical to the
+ content of this array.  'Identical' here means:
+ <ul>
+ <li>the size of the contents of the two buffers are same and</li>
+ <li>every single byte of the content of the two buffers are same.</li>
+ </ul>
+ Please note that it does not compare <a href="Buffer.html#readerIndex()"><code>Buffer.readerIndex()</code></a> nor
+ <a href="Buffer.html#writerIndex()"><code>Buffer.writerIndex()</code></a>.  This method also returns <code>false</code> for
+ <code>null</code> and an object which is not an instance of
+ <a href="Buffer.html" title="interface in io.servicetalk.buffer.api"><code>Buffer</code></a> type.</div>
+<dl>
+<dt><span class="overrideSpecifyLabel">Specified by:</span></dt>
+<dd><code><a href="Buffer.html#equals(java.lang.Object)">equals</a></code>&nbsp;in interface&nbsp;<code><a href="Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></code></dd>
+<dt><span class="overrideSpecifyLabel">Overrides:</span></dt>
+<dd><code>equals</code>&nbsp;in class&nbsp;<code>java.lang.Object</code></dd>
 </dl>
 </li>
 </ul>

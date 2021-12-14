@@ -26,8 +26,8 @@
     catch(err) {
     }
 //-->
-var data = {"i0":10,"i1":10,"i2":10,"i3":10,"i4":10};
-var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],8:["t4","Concrete Methods"]};
+var data = {"i0":42,"i1":42,"i2":42,"i3":42,"i4":42,"i5":42,"i6":42};
+var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],8:["t4","Concrete Methods"],32:["t6","Deprecated Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
 var tableTab = "tableTab";
@@ -134,8 +134,13 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <dd><a href="DefaultAutoRetryStrategyProvider.html" title="class in io.servicetalk.client.api">DefaultAutoRetryStrategyProvider</a></dd>
 </dl>
 <hr>
-<pre>public static final class <span class="typeNameLabel">DefaultAutoRetryStrategyProvider.Builder</span>
+<pre>@Deprecated
+public static final class <span class="typeNameLabel">DefaultAutoRetryStrategyProvider.Builder</span>
 extends java.lang.Object</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">The capabilities of the auto-retry have been introduced under a new universal retrying filter,
+ available from <code>io.servicetalk.http.netty.RetryingHttpRequesterFilter</code>.</div>
+</div>
 <div class="block">A builder for <a href="DefaultAutoRetryStrategyProvider.html" title="class in io.servicetalk.client.api"><code>DefaultAutoRetryStrategyProvider</code></a>.</div>
 </li>
 </ul>
@@ -158,7 +163,9 @@ extends java.lang.Object</pre>
 </tr>
 <tr class="altColor">
 <th class="colConstructorName" scope="row"><code><span class="memberNameLink"><a href="#%3Cinit%3E()">Builder</a></span>()</code></th>
-<td class="colLast">&nbsp;</td>
+<td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span></div>
+&nbsp;</td>
 </tr>
 </table>
 </li>
@@ -172,7 +179,7 @@ extends java.lang.Object</pre>
 </a>
 <h3>Method Summary</h3>
 <table class="memberSummary">
-<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t4" class="tableTab"><span><a href="javascript:show(8);">Concrete Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
+<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t4" class="tableTab"><span><a href="javascript:show(8);">Concrete Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t6" class="tableTab"><span><a href="javascript:show(32);">Deprecated Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
 <tr>
 <th class="colFirst" scope="col">Modifier and Type</th>
 <th class="colSecond" scope="col">Method</th>
@@ -182,6 +189,7 @@ extends java.lang.Object</pre>
 <td class="colFirst"><code><a href="AutoRetryStrategyProvider.html" title="interface in io.servicetalk.client.api">AutoRetryStrategyProvider</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#build()">build</a></span>()</code></th>
 <td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Builds a new <a href="AutoRetryStrategyProvider.html" title="interface in io.servicetalk.client.api"><code>AutoRetryStrategyProvider</code></a>.</div>
 </td>
 </tr>
@@ -189,21 +197,25 @@ extends java.lang.Object</pre>
 <td class="colFirst"><code><a href="DefaultAutoRetryStrategyProvider.Builder.html" title="class in io.servicetalk.client.api">DefaultAutoRetryStrategyProvider.Builder</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#disableRetryAllRetryableExceptions()">disableRetryAllRetryableExceptions</a></span>()</code></th>
 <td class="colLast">
-<div class="block">Connection closures (by the peer or locally) and new requests may happen concurrently.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#retryAllRetryableExceptions(boolean)"><code>retryAllRetryableExceptions(boolean)</code></a>.</div>
+</div>
 </td>
 </tr>
 <tr id="i2" class="altColor">
 <td class="colFirst"><code><a href="DefaultAutoRetryStrategyProvider.Builder.html" title="class in io.servicetalk.client.api">DefaultAutoRetryStrategyProvider.Builder</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#disableWaitForLoadBalancer()">disableWaitForLoadBalancer</a></span>()</code></th>
 <td class="colLast">
-<div class="block">By default, automatic retries wait for the associated <a href="LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> to be ready before triggering a
- retry for requests.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#waitForLoadBalancer(boolean)"><code>waitForLoadBalancer(boolean)</code></a>.</div>
+</div>
 </td>
 </tr>
 <tr id="i3" class="rowColor">
 <td class="colFirst"><code><a href="DefaultAutoRetryStrategyProvider.Builder.html" title="class in io.servicetalk.client.api">DefaultAutoRetryStrategyProvider.Builder</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#ignoreServiceDiscovererErrors()">ignoreServiceDiscovererErrors</a></span>()</code></th>
 <td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">By default, <a href="AutoRetryStrategyProvider.AutoRetryStrategy.html" title="interface in io.servicetalk.client.api"><code>auto-retry strategies</code></a> fail a request if the last signal from the
  associated <a href="ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> was an error.</div>
 </td>
@@ -212,7 +224,25 @@ extends java.lang.Object</pre>
 <td class="colFirst"><code><a href="DefaultAutoRetryStrategyProvider.Builder.html" title="class in io.servicetalk.client.api">DefaultAutoRetryStrategyProvider.Builder</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#maxRetries(int)">maxRetries</a></span>&#8203;(int&nbsp;maxRetries)</code></th>
 <td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Updates maximum number of automatic retries done for any request.</div>
+</td>
+</tr>
+<tr id="i5" class="rowColor">
+<td class="colFirst"><code><a href="DefaultAutoRetryStrategyProvider.Builder.html" title="class in io.servicetalk.client.api">DefaultAutoRetryStrategyProvider.Builder</a></code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#retryAllRetryableExceptions(boolean)">retryAllRetryableExceptions</a></span>&#8203;(boolean&nbsp;retryAllRetryableExceptions)</code></th>
+<td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span></div>
+<div class="block">Connection closures (by the peer or locally) and new requests may happen concurrently.</div>
+</td>
+</tr>
+<tr id="i6" class="altColor">
+<td class="colFirst"><code><a href="DefaultAutoRetryStrategyProvider.Builder.html" title="class in io.servicetalk.client.api">DefaultAutoRetryStrategyProvider.Builder</a></code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#waitForLoadBalancer(boolean)">waitForLoadBalancer</a></span>&#8203;(boolean&nbsp;waitForLb)</code></th>
+<td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span></div>
+<div class="block">By default, automatic retries wait for the associated <a href="LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> to be ready before triggering a
+ retry for requests.</div>
 </td>
 </tr>
 </table>
@@ -246,6 +276,7 @@ extends java.lang.Object</pre>
 <li class="blockList">
 <h4>Builder</h4>
 <pre>public&nbsp;Builder()</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
 </li>
 </ul>
 </li>
@@ -264,11 +295,34 @@ extends java.lang.Object</pre>
 <ul class="blockList">
 <li class="blockList">
 <h4>disableWaitForLoadBalancer</h4>
-<pre class="methodSignature">public&nbsp;<a href="DefaultAutoRetryStrategyProvider.Builder.html" title="class in io.servicetalk.client.api">DefaultAutoRetryStrategyProvider.Builder</a>&nbsp;disableWaitForLoadBalancer()</pre>
+<pre class="methodSignature">@Deprecated
+public&nbsp;<a href="DefaultAutoRetryStrategyProvider.Builder.html" title="class in io.servicetalk.client.api">DefaultAutoRetryStrategyProvider.Builder</a>&nbsp;disableWaitForLoadBalancer()</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#waitForLoadBalancer(boolean)"><code>waitForLoadBalancer(boolean)</code></a>.</div>
+</div>
 <div class="block">By default, automatic retries wait for the associated <a href="LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> to be ready before triggering a
  retry for requests. This behavior may add latency to requests till the time the load balancer is ready
  instead of failing fast. This method disables the default behavior.</div>
 <dl>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd><code>this</code>.</dd>
+</dl>
+</li>
+</ul>
+<a id="waitForLoadBalancer(boolean)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>waitForLoadBalancer</h4>
+<pre class="methodSignature">public&nbsp;<a href="DefaultAutoRetryStrategyProvider.Builder.html" title="class in io.servicetalk.client.api">DefaultAutoRetryStrategyProvider.Builder</a>&nbsp;waitForLoadBalancer&#8203;(boolean&nbsp;waitForLb)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
+<div class="block">By default, automatic retries wait for the associated <a href="LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> to be ready before triggering a
+ retry for requests. This behavior may add latency to requests till the time the load balancer is ready
+ instead of failing fast. This method allows controlling that behavior.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>waitForLb</code> - Whether to wait for the <a href="LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> to be ready before retrying requests.</dd>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd><code>this</code>.</dd>
 </dl>
@@ -281,6 +335,7 @@ extends java.lang.Object</pre>
 <li class="blockList">
 <h4>ignoreServiceDiscovererErrors</h4>
 <pre class="methodSignature">public&nbsp;<a href="DefaultAutoRetryStrategyProvider.Builder.html" title="class in io.servicetalk.client.api">DefaultAutoRetryStrategyProvider.Builder</a>&nbsp;ignoreServiceDiscovererErrors()</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">By default, <a href="AutoRetryStrategyProvider.AutoRetryStrategy.html" title="interface in io.servicetalk.client.api"><code>auto-retry strategies</code></a> fail a request if the last signal from the
  associated <a href="ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> was an error. This method disables that behavior.</div>
 <dl>
@@ -295,13 +350,38 @@ extends java.lang.Object</pre>
 <ul class="blockList">
 <li class="blockList">
 <h4>disableRetryAllRetryableExceptions</h4>
-<pre class="methodSignature">public&nbsp;<a href="DefaultAutoRetryStrategyProvider.Builder.html" title="class in io.servicetalk.client.api">DefaultAutoRetryStrategyProvider.Builder</a>&nbsp;disableRetryAllRetryableExceptions()</pre>
+<pre class="methodSignature">@Deprecated
+public&nbsp;<a href="DefaultAutoRetryStrategyProvider.Builder.html" title="class in io.servicetalk.client.api">DefaultAutoRetryStrategyProvider.Builder</a>&nbsp;disableRetryAllRetryableExceptions()</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#retryAllRetryableExceptions(boolean)"><code>retryAllRetryableExceptions(boolean)</code></a>.</div>
+</div>
 <div class="block">Connection closures (by the peer or locally) and new requests may happen concurrently. This means that it is
  possible for a <a href="LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> to select a connection which is already closed (concurrently) but the
  close signal has not yet been seen by the <a href="LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>. In such cases, requests fail with a
  <a href="../../transport/api/RetryableException.html" title="interface in io.servicetalk.transport.api"><code>RetryableException</code></a>. By default, automatic retries always retries these <a href="../../transport/api/RetryableException.html" title="interface in io.servicetalk.transport.api"><code>RetryableException</code></a>s.
  This method disables the default behavior.</div>
 <dl>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd><code>this</code>.</dd>
+</dl>
+</li>
+</ul>
+<a id="retryAllRetryableExceptions(boolean)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>retryAllRetryableExceptions</h4>
+<pre class="methodSignature">public&nbsp;<a href="DefaultAutoRetryStrategyProvider.Builder.html" title="class in io.servicetalk.client.api">DefaultAutoRetryStrategyProvider.Builder</a>&nbsp;retryAllRetryableExceptions&#8203;(boolean&nbsp;retryAllRetryableExceptions)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
+<div class="block">Connection closures (by the peer or locally) and new requests may happen concurrently. This means that it is
+ possible for a <a href="LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> to select a connection which is already closed (concurrently) but the
+ close signal has not yet been seen by the <a href="LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>. In such cases, requests fail with a
+ <a href="../../transport/api/RetryableException.html" title="interface in io.servicetalk.transport.api"><code>RetryableException</code></a>. By default, automatic retries always retries these <a href="../../transport/api/RetryableException.html" title="interface in io.servicetalk.transport.api"><code>RetryableException</code></a>s.
+ This method allows controlling that behaviour.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>retryAllRetryableExceptions</code> - Whether to retry all <a href="../../transport/api/RetryableException.html" title="interface in io.servicetalk.transport.api"><code>RetryableException</code></a>s.</dd>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd><code>this</code>.</dd>
 </dl>
@@ -314,6 +394,7 @@ extends java.lang.Object</pre>
 <li class="blockList">
 <h4>maxRetries</h4>
 <pre class="methodSignature">public&nbsp;<a href="DefaultAutoRetryStrategyProvider.Builder.html" title="class in io.servicetalk.client.api">DefaultAutoRetryStrategyProvider.Builder</a>&nbsp;maxRetries&#8203;(int&nbsp;maxRetries)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Updates maximum number of automatic retries done for any request.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
@@ -330,6 +411,7 @@ extends java.lang.Object</pre>
 <li class="blockList">
 <h4>build</h4>
 <pre class="methodSignature">public&nbsp;<a href="AutoRetryStrategyProvider.html" title="interface in io.servicetalk.client.api">AutoRetryStrategyProvider</a>&nbsp;build()</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Builds a new <a href="AutoRetryStrategyProvider.html" title="interface in io.servicetalk.client.api"><code>AutoRetryStrategyProvider</code></a>.</div>
 <dl>
 <dt><span class="returnLabel">Returns:</span></dt>

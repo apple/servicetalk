@@ -26,7 +26,7 @@
     catch(err) {
     }
 //-->
-var data = {"i0":6,"i1":6,"i2":10,"i3":6,"i4":6,"i5":10,"i6":6,"i7":6,"i8":10,"i9":10,"i10":10,"i11":6,"i12":6,"i13":38,"i14":6,"i15":6,"i16":6,"i17":6,"i18":6,"i19":6,"i20":6,"i21":6,"i22":6,"i23":38,"i24":6,"i25":6,"i26":6,"i27":6};
+var data = {"i0":6,"i1":6,"i2":10,"i3":6,"i4":6,"i5":10,"i6":6,"i7":6,"i8":10,"i9":10,"i10":10,"i11":6,"i12":42,"i13":38,"i14":6,"i15":6,"i16":10,"i17":10,"i18":6,"i19":6,"i20":6,"i21":6,"i22":6,"i23":6,"i24":10,"i25":10,"i26":10,"i27":38,"i28":6,"i29":6,"i30":6,"i31":6};
 var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"],8:["t4","Concrete Methods"],32:["t6","Deprecated Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
@@ -276,10 +276,12 @@ extends java.lang.Object</pre>
 </td>
 </tr>
 <tr id="i12" class="altColor">
-<td class="colFirst"><code>abstract <a href="SingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">U</a>,&#8203;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">R</a>&gt;</code></td>
+<td class="colFirst"><code><a href="SingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">U</a>,&#8203;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">R</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#disableHostHeaderFallback()">disableHostHeaderFallback</a></span>()</code></th>
 <td class="colLast">
-<div class="block">Disables automatically setting <code>Host</code> headers by inferring from the address or <a href="HttpMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpMetaData</code></a>.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#hostHeaderFallback(boolean)"><code>hostHeaderFallback(boolean)</code></a>.</div>
+</div>
 </td>
 </tr>
 <tr id="i13" class="rowColor">
@@ -306,6 +308,20 @@ extends java.lang.Object</pre>
 </td>
 </tr>
 <tr id="i16" class="altColor">
+<td class="colFirst"><code><a href="SingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">U</a>,&#8203;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">R</a>&gt;</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#executor(io.servicetalk.concurrent.api.Executor)">executor</a></span>&#8203;(<a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;executor)</code></th>
+<td class="colLast">
+<div class="block">Sets the <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> for all connections created from this builder.</div>
+</td>
+</tr>
+<tr id="i17" class="rowColor">
+<td class="colFirst"><code><a href="SingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">U</a>,&#8203;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">R</a>&gt;</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#hostHeaderFallback(boolean)">hostHeaderFallback</a></span>&#8203;(boolean&nbsp;enable)</code></th>
+<td class="colLast">
+<div class="block">Configures automatically setting <code>Host</code> headers by inferring from the address or <a href="HttpMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpMetaData</code></a>.</div>
+</td>
+</tr>
+<tr id="i18" class="altColor">
 <td class="colFirst"><code>abstract <a href="SingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">U</a>,&#8203;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">R</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#inferPeerHost(boolean)">inferPeerHost</a></span>&#8203;(boolean&nbsp;shouldInfer)</code></th>
 <td class="colLast">
@@ -313,7 +329,7 @@ extends java.lang.Object</pre>
  from client's address when peer host is not specified.</div>
 </td>
 </tr>
-<tr id="i17" class="rowColor">
+<tr id="i19" class="rowColor">
 <td class="colFirst"><code>abstract <a href="SingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">U</a>,&#8203;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">R</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#inferPeerPort(boolean)">inferPeerPort</a></span>&#8203;(boolean&nbsp;shouldInfer)</code></th>
 <td class="colLast">
@@ -321,7 +337,7 @@ extends java.lang.Object</pre>
  from client's address when peer port is not specified (equals <code>-1</code>).</div>
 </td>
 </tr>
-<tr id="i18" class="altColor">
+<tr id="i20" class="altColor">
 <td class="colFirst"><code>abstract <a href="SingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">U</a>,&#8203;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">R</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#inferSniHostname(boolean)">inferSniHostname</a></span>&#8203;(boolean&nbsp;shouldInfer)</code></th>
 <td class="colLast">
@@ -330,35 +346,49 @@ extends java.lang.Object</pre>
  via <a href="#sslConfig(io.servicetalk.transport.api.ClientSslConfig)"><code>sslConfig(ClientSslConfig)</code></a>.</div>
 </td>
 </tr>
-<tr id="i19" class="rowColor">
+<tr id="i21" class="rowColor">
 <td class="colFirst"><code>abstract <a href="SingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">U</a>,&#8203;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">R</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#ioExecutor(io.servicetalk.transport.api.IoExecutor)">ioExecutor</a></span>&#8203;(<a href="../../transport/api/IoExecutor.html" title="interface in io.servicetalk.transport.api">IoExecutor</a>&nbsp;ioExecutor)</code></th>
 <td class="colLast">
 <div class="block">Sets the <a href="../../transport/api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a> for all connections created from this builder.</div>
 </td>
 </tr>
-<tr id="i20" class="altColor">
+<tr id="i22" class="altColor">
 <td class="colFirst"><code>abstract <a href="SingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">U</a>,&#8203;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">R</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#loadBalancerFactory(io.servicetalk.http.api.HttpLoadBalancerFactory)">loadBalancerFactory</a></span>&#8203;(<a href="HttpLoadBalancerFactory.html" title="interface in io.servicetalk.http.api">HttpLoadBalancerFactory</a>&lt;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">R</a>&gt;&nbsp;loadBalancerFactory)</code></th>
 <td class="colLast">
 <div class="block">Sets a <a href="HttpLoadBalancerFactory.html" title="interface in io.servicetalk.http.api"><code>HttpLoadBalancerFactory</code></a> to create <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> instances.</div>
 </td>
 </tr>
-<tr id="i21" class="rowColor">
+<tr id="i23" class="rowColor">
 <td class="colFirst"><code>abstract <a href="SingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">U</a>,&#8203;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">R</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#protocols(io.servicetalk.http.api.HttpProtocolConfig...)">protocols</a></span>&#8203;(<a href="HttpProtocolConfig.html" title="interface in io.servicetalk.http.api">HttpProtocolConfig</a>...&nbsp;protocols)</code></th>
 <td class="colLast">
 <div class="block">Configurations of various HTTP protocol versions.</div>
 </td>
 </tr>
-<tr id="i22" class="altColor">
-<td class="colFirst"><code>abstract <a href="SingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">U</a>,&#8203;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">R</a>&gt;</code></td>
-<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#retryServiceDiscoveryErrors(io.servicetalk.http.api.ServiceDiscoveryRetryStrategy)">retryServiceDiscoveryErrors</a></span>&#8203;(<a href="ServiceDiscoveryRetryStrategy.html" title="interface in io.servicetalk.http.api">ServiceDiscoveryRetryStrategy</a>&lt;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">R</a>,&#8203;<a href="../../client/api/ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">R</a>&gt;&gt;&nbsp;retryStrategy)</code></th>
+<tr id="i24" class="altColor">
+<td class="colFirst"><code><a href="SingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">U</a>,&#8203;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">R</a>&gt;</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#proxyAddress(U)">proxyAddress</a></span>&#8203;(<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">U</a>&nbsp;proxyAddress)</code></th>
+<td class="colLast">
+<div class="block">Configure proxy to serve as an intermediary for requests.</div>
+</td>
+</tr>
+<tr id="i25" class="rowColor">
+<td class="colFirst"><code>io.servicetalk.http.api.HttpClientBuilder&lt;U,&#8203;R,&#8203;SDE&gt;</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#retryServiceDiscoveryErrors(io.servicetalk.concurrent.api.BiIntFunction)">retryServiceDiscoveryErrors</a></span>&#8203;(<a href="../../concurrent/api/BiIntFunction.html" title="interface in io.servicetalk.concurrent.api">BiIntFunction</a>&lt;java.lang.Throwable,&#8203;? extends <a href="../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>&gt;&nbsp;retryStrategy)</code></th>
 <td class="colLast">
 <div class="block">Sets a retry strategy to retry errors emitted by <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>.</div>
 </td>
 </tr>
-<tr id="i23" class="rowColor">
+<tr id="i26" class="altColor">
+<td class="colFirst"><code>io.servicetalk.http.api.BaseSingleAddressHttpClientBuilder&lt;U,&#8203;R,&#8203;SDE&gt;</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#retryServiceDiscoveryErrors(io.servicetalk.http.api.ServiceDiscoveryRetryStrategy)">retryServiceDiscoveryErrors</a></span>&#8203;(<a href="ServiceDiscoveryRetryStrategy.html" title="interface in io.servicetalk.http.api">ServiceDiscoveryRetryStrategy</a>&lt;R,&#8203;SDE&gt;&nbsp;retryStrategy)</code></th>
+<td class="colLast">
+<div class="block">Sets a retry strategy to retry errors emitted by <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>.</div>
+</td>
+</tr>
+<tr id="i27" class="rowColor">
 <td class="colFirst"><code>abstract <a href="SingleAddressHttpClientSecurityConfigurator.html" title="interface in io.servicetalk.http.api">SingleAddressHttpClientSecurityConfigurator</a>&lt;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">U</a>,&#8203;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">R</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#secure()">secure</a></span>()</code></th>
 <td class="colLast">
@@ -367,14 +397,14 @@ extends java.lang.Object</pre>
 </div>
 </td>
 </tr>
-<tr id="i24" class="altColor">
+<tr id="i28" class="altColor">
 <td class="colFirst"><code>abstract <a href="SingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">U</a>,&#8203;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">R</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#serviceDiscoverer(io.servicetalk.client.api.ServiceDiscoverer)">serviceDiscoverer</a></span>&#8203;(<a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api">ServiceDiscoverer</a>&lt;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">U</a>,&#8203;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">R</a>,&#8203;<a href="../../client/api/ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">R</a>&gt;&gt;&nbsp;serviceDiscoverer)</code></th>
 <td class="colLast">
 <div class="block">Sets a <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> to resolve addresses of remote servers to connect to.</div>
 </td>
 </tr>
-<tr id="i25" class="rowColor">
+<tr id="i29" class="rowColor">
 <td class="colFirst"><code>abstract &lt;T&gt;&nbsp;<a href="SingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">U</a>,&#8203;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">R</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#socketOption(java.net.SocketOption,T)">socketOption</a></span>&#8203;(java.net.SocketOption&lt;T&gt;&nbsp;option,
             T&nbsp;value)</code></th>
@@ -382,14 +412,14 @@ extends java.lang.Object</pre>
 <div class="block">Adds a <code>SocketOption</code> for all connections created by this builder.</div>
 </td>
 </tr>
-<tr id="i26" class="altColor">
+<tr id="i30" class="altColor">
 <td class="colFirst"><code>abstract <a href="SingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">U</a>,&#8203;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">R</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#sslConfig(io.servicetalk.transport.api.ClientSslConfig)">sslConfig</a></span>&#8203;(<a href="../../transport/api/ClientSslConfig.html" title="interface in io.servicetalk.transport.api">ClientSslConfig</a>&nbsp;sslConfig)</code></th>
 <td class="colLast">
 <div class="block">Set the SSL/TLS configuration.</div>
 </td>
 </tr>
-<tr id="i27" class="rowColor">
+<tr id="i31" class="rowColor">
 <td class="colFirst"><code>abstract <a href="SingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">U</a>,&#8203;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">R</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#unresolvedAddressToHost(java.util.function.Function)">unresolvedAddressToHost</a></span>&#8203;(java.util.function.Function&lt;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">U</a>,&#8203;java.lang.CharSequence&gt;&nbsp;unresolvedAddressToHostFunction)</code></th>
 <td class="colLast">
@@ -439,6 +469,25 @@ extends java.lang.Object</pre>
 <!--   -->
 </a>
 <h3>Method Detail</h3>
+<a id="proxyAddress(java.lang.Object)">
+<!--   -->
+</a><a id="proxyAddress(U)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>proxyAddress</h4>
+<pre class="methodSignature">public&nbsp;<a href="SingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">U</a>,&#8203;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">R</a>&gt;&nbsp;proxyAddress&#8203;(<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">U</a>&nbsp;proxyAddress)</pre>
+<div class="block">Configure proxy to serve as an intermediary for requests.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>proxyAddress</code> - Unresolved address of the proxy. When used with a builder created for a resolved address,
+ <code>proxyAddress</code> should also be already resolved – otherwise runtime exceptions may occur.</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd><code>this</code>.</dd>
+</dl>
+</li>
+</ul>
 <a id="ioExecutor(io.servicetalk.transport.api.IoExecutor)">
 <!--   -->
 </a>
@@ -521,8 +570,7 @@ extends java.lang.Object</pre>
 <pre class="methodSignature">@Deprecated
 public abstract&nbsp;<a href="SingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">U</a>,&#8203;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">R</a>&gt;&nbsp;enableWireLogging&#8203;(java.lang.String&nbsp;loggerName)</pre>
 <div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
-<div class="block">Enables wire-logging for connections created by this builder.
- <p></div>
+<div class="block">Enables wire-logging for connections created by this builder.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>loggerName</code> - The name of the logger to log wire events.</dd>
@@ -571,6 +619,49 @@ public abstract&nbsp;<a href="SingleAddressHttpClientBuilder.html" title="class 
 </dl>
 </li>
 </ul>
+<a id="disableHostHeaderFallback()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>disableHostHeaderFallback</h4>
+<pre class="methodSignature">@Deprecated
+public&nbsp;<a href="SingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">U</a>,&#8203;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">R</a>&gt;&nbsp;disableHostHeaderFallback()</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#hostHeaderFallback(boolean)"><code>hostHeaderFallback(boolean)</code></a>.</div>
+</div>
+<div class="block">Disables automatically setting <code>Host</code> headers by inferring from the address or <a href="HttpMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpMetaData</code></a>.
+ <p>
+ This setting disables the default filter such that no <code>Host</code> header will be manipulated.</div>
+<dl>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd><code>this</code></dd>
+<dt><span class="seeLabel">See Also:</span></dt>
+<dd><a href="#unresolvedAddressToHost(java.util.function.Function)"><code>unresolvedAddressToHost(Function)</code></a></dd>
+</dl>
+</li>
+</ul>
+<a id="hostHeaderFallback(boolean)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>hostHeaderFallback</h4>
+<pre class="methodSignature">public&nbsp;<a href="SingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">U</a>,&#8203;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">R</a>&gt;&nbsp;hostHeaderFallback&#8203;(boolean&nbsp;enable)</pre>
+<div class="block">Configures automatically setting <code>Host</code> headers by inferring from the address or <a href="HttpMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpMetaData</code></a>.
+ <p>
+ When <code>false</code> is passed, this setting disables the default filter such that no <code>Host</code> header will be
+ manipulated.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>enable</code> - Whether a default filter for inferring the <code>Host</code> headers should be added.</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd><code>this</code></dd>
+<dt><span class="seeLabel">See Also:</span></dt>
+<dd><a href="#unresolvedAddressToHost(java.util.function.Function)"><code>unresolvedAddressToHost(Function)</code></a></dd>
+</dl>
+</li>
+</ul>
 <a id="appendConnectionFilter(io.servicetalk.http.api.StreamingHttpConnectionFilterFactory)">
 <!--   -->
 </a>
@@ -591,7 +682,7 @@ public abstract&nbsp;<a href="SingleAddressHttpClientBuilder.html" title="class 
  </pre>
  making a request to a connection wrapped by this filter chain the order of invocation of these filters will be:
  <pre>
-     filter1 =&gt; filter2 =&gt; filter3 =&gt; connection
+     filter1 ⇒ filter2 ⇒ filter3 ⇒ connection
  </pre></div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
@@ -623,7 +714,7 @@ public abstract&nbsp;<a href="SingleAddressHttpClientBuilder.html" title="class 
  </pre>
  making a request to a connection wrapped by this filter chain the order of invocation of these filters will be:
  <pre>
-     filter1 =&gt; filter2 =&gt; filter3 =&gt; connection
+     filter1 ⇒ filter2 ⇒ filter3 ⇒ connection
  </pre></div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
@@ -632,6 +723,22 @@ public abstract&nbsp;<a href="SingleAddressHttpClientBuilder.html" title="class 
  purpose of filtering.</dd>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd><code>this</code></dd>
+</dl>
+</li>
+</ul>
+<a id="executor(io.servicetalk.concurrent.api.Executor)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>executor</h4>
+<pre class="methodSignature">public&nbsp;<a href="SingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">U</a>,&#8203;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">R</a>&gt;&nbsp;executor&#8203;(<a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;executor)</pre>
+<div class="block">Sets the <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> for all connections created from this builder.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>executor</code> - <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> to use.</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd><code>this</code>.</dd>
 </dl>
 </li>
 </ul>
@@ -655,31 +762,13 @@ public abstract&nbsp;<a href="SingleAddressHttpClientBuilder.html" title="class 
  </pre>
  Calling <a href="../../client/api/ConnectionFactory.html" title="interface in io.servicetalk.client.api"><code>ConnectionFactory</code></a> wrapped by this filter chain, the order of invocation of these filters will be:
  <pre>
-     filter1 =&gt; filter2 =&gt; filter3 =&gt; original connection factory
+     filter1 ⇒ filter2 ⇒ filter3 ⇒ original connection factory
  </pre></div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>factory</code> - <a href="../../client/api/ConnectionFactoryFilter.html" title="interface in io.servicetalk.client.api"><code>ConnectionFactoryFilter</code></a> to use.</dd>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd><code>this</code></dd>
-</dl>
-</li>
-</ul>
-<a id="disableHostHeaderFallback()">
-<!--   -->
-</a>
-<ul class="blockList">
-<li class="blockList">
-<h4>disableHostHeaderFallback</h4>
-<pre class="methodSignature">public abstract&nbsp;<a href="SingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">U</a>,&#8203;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">R</a>&gt;&nbsp;disableHostHeaderFallback()</pre>
-<div class="block">Disables automatically setting <code>Host</code> headers by inferring from the address or <a href="HttpMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpMetaData</code></a>.
- <p>
- This setting disables the default filter such that no <code>Host</code> header will be manipulated.</div>
-<dl>
-<dt><span class="returnLabel">Returns:</span></dt>
-<dd><code>this</code></dd>
-<dt><span class="seeLabel">See Also:</span></dt>
-<dd><a href="MultiAddressHttpClientBuilder.html#unresolvedAddressToHost(java.util.function.Function)"><code>MultiAddressHttpClientBuilder.unresolvedAddressToHost(Function)</code></a></dd>
 </dl>
 </li>
 </ul>
@@ -722,6 +811,8 @@ public abstract&nbsp;<a href="SingleAddressHttpClientBuilder.html" title="class 
 <dd><code>autoRetryStrategyProvider</code> - <a href="../../client/api/AutoRetryStrategyProvider.html" title="interface in io.servicetalk.client.api"><code>AutoRetryStrategyProvider</code></a> for the automatic retry strategy.</dd>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd><code>this</code></dd>
+<dt><span class="seeLabel">See Also:</span></dt>
+<dd><a href="../../client/api/DefaultAutoRetryStrategyProvider.html" title="class in io.servicetalk.client.api"><code>DefaultAutoRetryStrategyProvider</code></a></dd>
 </dl>
 </li>
 </ul>
@@ -741,24 +832,6 @@ public abstract&nbsp;<a href="SingleAddressHttpClientBuilder.html" title="class 
  this <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> is no longer needed.</dd>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd><code>this</code>.</dd>
-</dl>
-</li>
-</ul>
-<a id="retryServiceDiscoveryErrors(io.servicetalk.http.api.ServiceDiscoveryRetryStrategy)">
-<!--   -->
-</a>
-<ul class="blockList">
-<li class="blockList">
-<h4>retryServiceDiscoveryErrors</h4>
-<pre class="methodSignature">public abstract&nbsp;<a href="SingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">U</a>,&#8203;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">R</a>&gt;&nbsp;retryServiceDiscoveryErrors&#8203;(<a href="ServiceDiscoveryRetryStrategy.html" title="interface in io.servicetalk.http.api">ServiceDiscoveryRetryStrategy</a>&lt;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">R</a>,&#8203;<a href="../../client/api/ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">R</a>&gt;&gt;&nbsp;retryStrategy)</pre>
-<div class="block">Sets a retry strategy to retry errors emitted by <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>.</div>
-<dl>
-<dt><span class="paramLabel">Parameters:</span></dt>
-<dd><code>retryStrategy</code> - a retry strategy to retry errors emitted by <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>.</dd>
-<dt><span class="returnLabel">Returns:</span></dt>
-<dd><code>this</code>.</dd>
-<dt><span class="seeLabel">See Also:</span></dt>
-<dd><a href="DefaultServiceDiscoveryRetryStrategy.Builder.html" title="class in io.servicetalk.http.api"><code>DefaultServiceDiscoveryRetryStrategy.Builder</code></a></dd>
 </dl>
 </li>
 </ul>
@@ -817,7 +890,7 @@ public abstract&nbsp;<a href="SingleAddressHttpClientBuilder.html" title="class 
  </pre>
  making a request to a client wrapped by this filter chain the order of invocation of these filters will be:
  <pre>
-     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
+     filter1 ⇒ filter2 ⇒ filter3 ⇒ client
  </pre></div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
@@ -848,7 +921,7 @@ public abstract&nbsp;<a href="SingleAddressHttpClientBuilder.html" title="class 
  </pre>
  making a request to a client wrapped by this filter chain the order of invocation of these filters will be:
  <pre>
-     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
+     filter1 ⇒ filter2 ⇒ filter3 ⇒ client
  </pre></div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
@@ -947,6 +1020,48 @@ public abstract&nbsp;<a href="SingleAddressHttpClientSecurityConfigurator.html" 
 <dd><code>shouldInfer</code> - value indicating whether inference is on (<code>true</code>) or off (<code>false</code>).</dd>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd><code>this</code></dd>
+</dl>
+</li>
+</ul>
+<a id="retryServiceDiscoveryErrors(io.servicetalk.http.api.ServiceDiscoveryRetryStrategy)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>retryServiceDiscoveryErrors</h4>
+<pre class="methodSignature">public&nbsp;io.servicetalk.http.api.BaseSingleAddressHttpClientBuilder&lt;U,&#8203;R,&#8203;SDE&gt;&nbsp;retryServiceDiscoveryErrors&#8203;(<a href="ServiceDiscoveryRetryStrategy.html" title="interface in io.servicetalk.http.api">ServiceDiscoveryRetryStrategy</a>&lt;R,&#8203;SDE&gt;&nbsp;retryStrategy)</pre>
+<div class="block">Sets a retry strategy to retry errors emitted by <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>.
+ <p>
+ Note, calling this method will unset the value provided via
+ <a href="#retryServiceDiscoveryErrors(io.servicetalk.concurrent.api.BiIntFunction)"><code>retryServiceDiscoveryErrors(BiIntFunction)</code></a> if it was called before.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>retryStrategy</code> - a retry strategy to retry errors emitted by <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>.</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd><code>this</code>.</dd>
+<dt><span class="seeLabel">See Also:</span></dt>
+<dd><a href="DefaultServiceDiscoveryRetryStrategy.Builder.html" title="class in io.servicetalk.http.api"><code>DefaultServiceDiscoveryRetryStrategy.Builder</code></a></dd>
+</dl>
+</li>
+</ul>
+<a id="retryServiceDiscoveryErrors(io.servicetalk.concurrent.api.BiIntFunction)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>retryServiceDiscoveryErrors</h4>
+<pre class="methodSignature">public&nbsp;io.servicetalk.http.api.HttpClientBuilder&lt;U,&#8203;R,&#8203;SDE&gt;&nbsp;retryServiceDiscoveryErrors&#8203;(<a href="../../concurrent/api/BiIntFunction.html" title="interface in io.servicetalk.concurrent.api">BiIntFunction</a>&lt;java.lang.Throwable,&#8203;? extends <a href="../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>&gt;&nbsp;retryStrategy)</pre>
+<div class="block">Sets a retry strategy to retry errors emitted by <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>retryStrategy</code> - a retry strategy to retry errors emitted by <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>.
+ <p>
+ Note, calling this method will unset the value provided via
+ <a href="#retryServiceDiscoveryErrors(io.servicetalk.http.api.ServiceDiscoveryRetryStrategy)"><code>retryServiceDiscoveryErrors(ServiceDiscoveryRetryStrategy)</code></a> if it was called before.</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd><code>this</code>.</dd>
+<dt><span class="seeLabel">See Also:</span></dt>
+<dd><a href="../../concurrent/api/RetryStrategies.html" title="class in io.servicetalk.concurrent.api"><code>RetryStrategies</code></a></dd>
 </dl>
 </li>
 </ul>

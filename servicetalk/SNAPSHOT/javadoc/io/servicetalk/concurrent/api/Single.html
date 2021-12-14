@@ -26,7 +26,7 @@
     catch(err) {
     }
 //-->
-var data = {"i0":10,"i1":10,"i2":10,"i3":10,"i4":10,"i5":10,"i6":10,"i7":10,"i8":9,"i9":9,"i10":10,"i11":9,"i12":9,"i13":10,"i14":10,"i15":10,"i16":10,"i17":10,"i18":10,"i19":10,"i20":10,"i21":9,"i22":9,"i23":9,"i24":9,"i25":9,"i26":9,"i27":9,"i28":9,"i29":10,"i30":10,"i31":10,"i32":9,"i33":9,"i34":10,"i35":10,"i36":10,"i37":9,"i38":9,"i39":9,"i40":9,"i41":6,"i42":42,"i43":42,"i44":42,"i45":42,"i46":10,"i47":10,"i48":10,"i49":10,"i50":9,"i51":10,"i52":10,"i53":10,"i54":10,"i55":10,"i56":10,"i57":10,"i58":10,"i59":10,"i60":10,"i61":42,"i62":10,"i63":42,"i64":42,"i65":10,"i66":10,"i67":10,"i68":10,"i69":10,"i70":10,"i71":10,"i72":42,"i73":10,"i74":9,"i75":10,"i76":10,"i77":10,"i78":10,"i79":10,"i80":10,"i81":10,"i82":10,"i83":10,"i84":10,"i85":10,"i86":10,"i87":10,"i88":10,"i89":10,"i90":10,"i91":9,"i92":9,"i93":9,"i94":9,"i95":9,"i96":9,"i97":9,"i98":9,"i99":10,"i100":10};
+var data = {"i0":10,"i1":10,"i2":10,"i3":10,"i4":10,"i5":10,"i6":10,"i7":10,"i8":9,"i9":9,"i10":10,"i11":9,"i12":9,"i13":10,"i14":10,"i15":10,"i16":10,"i17":10,"i18":10,"i19":10,"i20":10,"i21":9,"i22":9,"i23":9,"i24":9,"i25":9,"i26":9,"i27":9,"i28":9,"i29":10,"i30":10,"i31":10,"i32":10,"i33":9,"i34":9,"i35":10,"i36":10,"i37":10,"i38":9,"i39":9,"i40":9,"i41":9,"i42":6,"i43":42,"i44":42,"i45":42,"i46":42,"i47":10,"i48":10,"i49":10,"i50":10,"i51":9,"i52":10,"i53":10,"i54":10,"i55":10,"i56":10,"i57":10,"i58":10,"i59":10,"i60":10,"i61":42,"i62":42,"i63":10,"i64":42,"i65":42,"i66":10,"i67":10,"i68":10,"i69":10,"i70":10,"i71":10,"i72":10,"i73":42,"i74":10,"i75":9,"i76":10,"i77":10,"i78":10,"i79":10,"i80":10,"i81":10,"i82":10,"i83":10,"i84":10,"i85":10,"i86":10,"i87":10,"i88":10,"i89":10,"i90":10,"i91":10,"i92":9,"i93":9,"i94":9,"i95":9,"i96":9,"i97":9,"i98":9,"i99":9,"i100":10,"i101":10};
 var tabs = {65535:["t0","All Methods"],1:["t1","Static Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"],8:["t4","Concrete Methods"],32:["t6","Deprecated Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
@@ -489,48 +489,57 @@ extends java.lang.Object</pre>
 </tr>
 <tr id="i31" class="rowColor">
 <td class="colFirst"><code><a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#concat(io.servicetalk.concurrent.api.Publisher,boolean)">concat</a></span>&#8203;(<a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;? extends <a href="Single.html" title="type parameter in Single">T</a>&gt;&nbsp;next,
+      boolean&nbsp;deferSubscribe)</code></th>
+<td class="colLast">
+<div class="block">Returns a <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> that first emits the result of this <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> and then subscribes and emits all
+ elements from <code>next</code> <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>.</div>
+</td>
+</tr>
+<tr id="i32" class="altColor">
+<td class="colFirst"><code><a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#concat(io.servicetalk.concurrent.api.Single)">concat</a></span>&#8203;(<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends <a href="Single.html" title="type parameter in Single">T</a>&gt;&nbsp;next)</code></th>
 <td class="colLast">
 <div class="block">Returns a <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> that first emits the result of this <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> and then subscribes and emits
  result of <code>next</code> <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>.</div>
 </td>
 </tr>
-<tr id="i32" class="altColor">
+<tr id="i33" class="rowColor">
 <td class="colFirst"><code>static &lt;T&gt;&nbsp;<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;T&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#defer(java.util.function.Supplier)">defer</a></span>&#8203;(java.util.function.Supplier&lt;? extends <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T&gt;&gt;&nbsp;singleSupplier)</code></th>
 <td class="colLast">
 <div class="block">Defer creation of a <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> till it is subscribed to.</div>
 </td>
 </tr>
-<tr id="i33" class="rowColor">
+<tr id="i34" class="altColor">
 <td class="colFirst"><code>static &lt;T&gt;&nbsp;<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;T&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#failed(java.lang.Throwable)">failed</a></span>&#8203;(java.lang.Throwable&nbsp;cause)</code></th>
 <td class="colLast">
 <div class="block">Creates a realized <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> which always completes with the provided error <code>cause</code>.</div>
 </td>
 </tr>
-<tr id="i34" class="altColor">
+<tr id="i35" class="rowColor">
 <td class="colFirst"><code>&lt;R&gt;&nbsp;<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;R&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#flatMap(java.util.function.Function)">flatMap</a></span>&#8203;(java.util.function.Function&lt;? super <a href="Single.html" title="type parameter in Single">T</a>,&#8203;? extends <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends R&gt;&gt;&nbsp;next)</code></th>
 <td class="colLast">
 <div class="block">Returns a <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> that mirrors emissions from the <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> returned by <code>next</code>.</div>
 </td>
 </tr>
-<tr id="i35" class="rowColor">
+<tr id="i36" class="altColor">
 <td class="colFirst"><code><a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#flatMapCompletable(java.util.function.Function)">flatMapCompletable</a></span>&#8203;(java.util.function.Function&lt;? super <a href="Single.html" title="type parameter in Single">T</a>,&#8203;? extends <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>&gt;&nbsp;next)</code></th>
 <td class="colLast">
 <div class="block">Returns a <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that mirrors emissions from the <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> returned by <code>next</code>.</div>
 </td>
 </tr>
-<tr id="i36" class="altColor">
+<tr id="i37" class="rowColor">
 <td class="colFirst"><code>&lt;R&gt;&nbsp;<a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;R&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#flatMapPublisher(java.util.function.Function)">flatMapPublisher</a></span>&#8203;(java.util.function.Function&lt;? super <a href="Single.html" title="type parameter in Single">T</a>,&#8203;? extends <a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;? extends R&gt;&gt;&nbsp;next)</code></th>
 <td class="colLast">
 <div class="block">Returns a <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> that mirrors emissions from the <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> returned by <code>next</code>.</div>
 </td>
 </tr>
-<tr id="i37" class="rowColor">
+<tr id="i38" class="altColor">
 <td class="colFirst"><code>static &lt;T&gt;&nbsp;<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;T&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#fromCallable(java.util.concurrent.Callable)">fromCallable</a></span>&#8203;(java.util.concurrent.Callable&lt;T&gt;&nbsp;callable)</code></th>
 <td class="colLast">
@@ -538,21 +547,21 @@ extends java.lang.Object</pre>
  <code>Callable</code> and emit the value returned by that invocation from the returned <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>.</div>
 </td>
 </tr>
-<tr id="i38" class="altColor">
+<tr id="i39" class="rowColor">
 <td class="colFirst"><code>static &lt;T&gt;&nbsp;<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;T&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#fromFuture(java.util.concurrent.Future)">fromFuture</a></span>&#8203;(java.util.concurrent.Future&lt;? extends T&gt;&nbsp;future)</code></th>
 <td class="colLast">
 <div class="block">Convert from a <code>Future</code> to a <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> via <code>Future.get()</code>.</div>
 </td>
 </tr>
-<tr id="i39" class="rowColor">
+<tr id="i40" class="altColor">
 <td class="colFirst"><code>static &lt;T&gt;&nbsp;<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;T&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#fromStage(java.util.concurrent.CompletionStage)">fromStage</a></span>&#8203;(java.util.concurrent.CompletionStage&lt;? extends T&gt;&nbsp;stage)</code></th>
 <td class="colLast">
 <div class="block">Convert from a <code>CompletionStage</code> to a <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>.</div>
 </td>
 </tr>
-<tr id="i40" class="altColor">
+<tr id="i41" class="rowColor">
 <td class="colFirst"><code>static &lt;T&gt;&nbsp;<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;T&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#fromSupplier(java.util.function.Supplier)">fromSupplier</a></span>&#8203;(java.util.function.Supplier&lt;T&gt;&nbsp;supplier)</code></th>
 <td class="colLast">
@@ -560,14 +569,14 @@ extends java.lang.Object</pre>
  <code>Supplier</code> and emit the value returned by that invocation from the returned <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>.</div>
 </td>
 </tr>
-<tr id="i41" class="rowColor">
+<tr id="i42" class="altColor">
 <td class="colFirst"><code>protected abstract void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#handleSubscribe(io.servicetalk.concurrent.SingleSource.Subscriber)">handleSubscribe</a></span>&#8203;(<a href="../SingleSource.Subscriber.html" title="interface in io.servicetalk.concurrent">SingleSource.Subscriber</a>&lt;? super <a href="Single.html" title="type parameter in Single">T</a>&gt;&nbsp;subscriber)</code></th>
 <td class="colLast">
 <div class="block">Handles a subscriber to this <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>.</div>
 </td>
 </tr>
-<tr id="i42" class="altColor">
+<tr id="i43" class="rowColor">
 <td class="colFirst"><code><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#idleTimeout(long,java.util.concurrent.TimeUnit)">idleTimeout</a></span>&#8203;(long&nbsp;duration,
            java.util.concurrent.TimeUnit&nbsp;unit)</code></th>
@@ -577,7 +586,7 @@ extends java.lang.Object</pre>
 </div>
 </td>
 </tr>
-<tr id="i43" class="rowColor">
+<tr id="i44" class="altColor">
 <td class="colFirst"><code><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#idleTimeout(long,java.util.concurrent.TimeUnit,io.servicetalk.concurrent.Executor)">idleTimeout</a></span>&#8203;(long&nbsp;duration,
            java.util.concurrent.TimeUnit&nbsp;unit,
@@ -588,7 +597,7 @@ extends java.lang.Object</pre>
 </div>
 </td>
 </tr>
-<tr id="i44" class="altColor">
+<tr id="i45" class="rowColor">
 <td class="colFirst"><code><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#idleTimeout(java.time.Duration)">idleTimeout</a></span>&#8203;(java.time.Duration&nbsp;duration)</code></th>
 <td class="colLast">
@@ -597,7 +606,7 @@ extends java.lang.Object</pre>
 </div>
 </td>
 </tr>
-<tr id="i45" class="rowColor">
+<tr id="i46" class="altColor">
 <td class="colFirst"><code><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#idleTimeout(java.time.Duration,io.servicetalk.concurrent.Executor)">idleTimeout</a></span>&#8203;(java.time.Duration&nbsp;duration,
            <a href="../Executor.html" title="interface in io.servicetalk.concurrent">Executor</a>&nbsp;timeoutExecutor)</code></th>
@@ -607,7 +616,7 @@ extends java.lang.Object</pre>
 </div>
 </td>
 </tr>
-<tr id="i46" class="altColor">
+<tr id="i47" class="rowColor">
 <td class="colFirst"><code><a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#ignoreElement()">ignoreElement</a></span>()</code></th>
 <td class="colLast">
@@ -615,35 +624,35 @@ extends java.lang.Object</pre>
  <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a>.</div>
 </td>
 </tr>
-<tr id="i47" class="rowColor">
+<tr id="i48" class="altColor">
 <td class="colFirst"><code>&lt;R&gt;&nbsp;<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;R&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#liftAsync(io.servicetalk.concurrent.api.SingleOperator)">liftAsync</a></span>&#8203;(<a href="SingleOperator.html" title="interface in io.servicetalk.concurrent.api">SingleOperator</a>&lt;? super <a href="Single.html" title="type parameter in Single">T</a>,&#8203;? extends R&gt;&nbsp;operator)</code></th>
 <td class="colLast">
 <div class="block"><strong>This method requires advanced knowledge of building operators.</div>
 </td>
 </tr>
-<tr id="i48" class="altColor">
+<tr id="i49" class="rowColor">
 <td class="colFirst"><code>&lt;R&gt;&nbsp;<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;R&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#liftSync(io.servicetalk.concurrent.api.SingleOperator)">liftSync</a></span>&#8203;(<a href="SingleOperator.html" title="interface in io.servicetalk.concurrent.api">SingleOperator</a>&lt;? super <a href="Single.html" title="type parameter in Single">T</a>,&#8203;? extends R&gt;&nbsp;operator)</code></th>
 <td class="colLast">
 <div class="block"><strong>This method requires advanced knowledge of building operators.</div>
 </td>
 </tr>
-<tr id="i49" class="rowColor">
+<tr id="i50" class="altColor">
 <td class="colFirst"><code>&lt;R&gt;&nbsp;<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;R&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#map(java.util.function.Function)">map</a></span>&#8203;(java.util.function.Function&lt;? super <a href="Single.html" title="type parameter in Single">T</a>,&#8203;? extends R&gt;&nbsp;mapper)</code></th>
 <td class="colLast">
 <div class="block">Maps the result of this single to a different type.</div>
 </td>
 </tr>
-<tr id="i50" class="altColor">
+<tr id="i51" class="rowColor">
 <td class="colFirst"><code>static &lt;T&gt;&nbsp;<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;T&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#never()">never</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Creates a <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> that never terminates.</div>
 </td>
 </tr>
-<tr id="i51" class="rowColor">
+<tr id="i52" class="altColor">
 <td class="colFirst"><code>&lt;E extends java.lang.Throwable&gt;<br><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#onErrorMap(java.lang.Class,java.util.function.Function)">onErrorMap</a></span>&#8203;(java.lang.Class&lt;E&gt;&nbsp;type,
           java.util.function.Function&lt;? super E,&#8203;? extends java.lang.Throwable&gt;&nbsp;mapper)</code></th>
@@ -651,14 +660,14 @@ extends java.lang.Object</pre>
 <div class="block">Transform errors emitted on this <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> which match <code>type</code> into a different error.</div>
 </td>
 </tr>
-<tr id="i52" class="altColor">
+<tr id="i53" class="rowColor">
 <td class="colFirst"><code><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#onErrorMap(java.util.function.Function)">onErrorMap</a></span>&#8203;(java.util.function.Function&lt;? super java.lang.Throwable,&#8203;? extends java.lang.Throwable&gt;&nbsp;mapper)</code></th>
 <td class="colLast">
 <div class="block">Transform errors emitted on this <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> into a different error.</div>
 </td>
 </tr>
-<tr id="i53" class="rowColor">
+<tr id="i54" class="altColor">
 <td class="colFirst"><code><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#onErrorMap(java.util.function.Predicate,java.util.function.Function)">onErrorMap</a></span>&#8203;(java.util.function.Predicate&lt;? super java.lang.Throwable&gt;&nbsp;predicate,
           java.util.function.Function&lt;? super java.lang.Throwable,&#8203;? extends java.lang.Throwable&gt;&nbsp;mapper)</code></th>
@@ -666,7 +675,7 @@ extends java.lang.Object</pre>
 <div class="block">Transform errors emitted on this <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> which match <code>predicate</code> into a different error.</div>
 </td>
 </tr>
-<tr id="i54" class="altColor">
+<tr id="i55" class="rowColor">
 <td class="colFirst"><code>&lt;E extends java.lang.Throwable&gt;<br><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#onErrorResume(java.lang.Class,java.util.function.Function)">onErrorResume</a></span>&#8203;(java.lang.Class&lt;E&gt;&nbsp;type,
              java.util.function.Function&lt;? super E,&#8203;? extends <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends <a href="Single.html" title="type parameter in Single">T</a>&gt;&gt;&nbsp;nextFactory)</code></th>
@@ -675,7 +684,7 @@ extends java.lang.Object</pre>
  provided by the passed <code>nextFactory</code>.</div>
 </td>
 </tr>
-<tr id="i55" class="rowColor">
+<tr id="i56" class="altColor">
 <td class="colFirst"><code><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#onErrorResume(java.util.function.Function)">onErrorResume</a></span>&#8203;(java.util.function.Function&lt;? super java.lang.Throwable,&#8203;? extends <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends <a href="Single.html" title="type parameter in Single">T</a>&gt;&gt;&nbsp;nextFactory)</code></th>
 <td class="colLast">
@@ -683,7 +692,7 @@ extends java.lang.Object</pre>
  passed <code>nextFactory</code>.</div>
 </td>
 </tr>
-<tr id="i56" class="altColor">
+<tr id="i57" class="rowColor">
 <td class="colFirst"><code><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#onErrorResume(java.util.function.Predicate,java.util.function.Function)">onErrorResume</a></span>&#8203;(java.util.function.Predicate&lt;? super java.lang.Throwable&gt;&nbsp;predicate,
              java.util.function.Function&lt;? super java.lang.Throwable,&#8203;? extends <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends <a href="Single.html" title="type parameter in Single">T</a>&gt;&gt;&nbsp;nextFactory)</code></th>
@@ -692,7 +701,7 @@ extends java.lang.Object</pre>
  <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> provided by the passed <code>nextFactory</code>.</div>
 </td>
 </tr>
-<tr id="i57" class="rowColor">
+<tr id="i58" class="altColor">
 <td class="colFirst"><code>&lt;E extends java.lang.Throwable&gt;<br><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#onErrorReturn(java.lang.Class,java.util.function.Function)">onErrorReturn</a></span>&#8203;(java.lang.Class&lt;E&gt;&nbsp;type,
              java.util.function.Function&lt;? super E,&#8203;? extends <a href="Single.html" title="type parameter in Single">T</a>&gt;&nbsp;itemSupplier)</code></th>
@@ -701,7 +710,7 @@ extends java.lang.Object</pre>
  <a href="../SingleSource.Subscriber.html#onSuccess(T)"><code>SingleSource.Subscriber.onSuccess(Object)</code></a> signal (e.g.</div>
 </td>
 </tr>
-<tr id="i58" class="altColor">
+<tr id="i59" class="rowColor">
 <td class="colFirst"><code><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#onErrorReturn(java.util.function.Function)">onErrorReturn</a></span>&#8203;(java.util.function.Function&lt;? super java.lang.Throwable,&#8203;? extends <a href="Single.html" title="type parameter in Single">T</a>&gt;&nbsp;itemSupplier)</code></th>
 <td class="colLast">
@@ -709,7 +718,7 @@ extends java.lang.Object</pre>
  (e.g.</div>
 </td>
 </tr>
-<tr id="i59" class="rowColor">
+<tr id="i60" class="altColor">
 <td class="colFirst"><code><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#onErrorReturn(java.util.function.Predicate,java.util.function.Function)">onErrorReturn</a></span>&#8203;(java.util.function.Predicate&lt;? super java.lang.Throwable&gt;&nbsp;predicate,
              java.util.function.Function&lt;? super java.lang.Throwable,&#8203;? extends <a href="Single.html" title="type parameter in Single">T</a>&gt;&nbsp;itemSupplier)</code></th>
@@ -718,21 +727,17 @@ extends java.lang.Object</pre>
  <a href="../SingleSource.Subscriber.html#onSuccess(T)"><code>SingleSource.Subscriber.onSuccess(Object)</code></a> signal (e.g.</div>
 </td>
 </tr>
-<tr id="i60" class="altColor">
+<tr id="i61" class="rowColor">
 <td class="colFirst"><code><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#publishAndSubscribeOn(io.servicetalk.concurrent.api.Executor)">publishAndSubscribeOn</a></span>&#8203;(<a href="Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;executor)</code></th>
 <td class="colLast">
-<div class="block">Creates a new <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> that will use the passed <a href="Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> to invoke the following methods:
- 
-     All <a href="../SingleSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>SingleSource.Subscriber</code></a> methods.
-     All <a href="../Cancellable.html" title="interface in io.servicetalk.concurrent"><code>Cancellable</code></a> methods.
-     The <a href="#handleSubscribe(io.servicetalk.concurrent.SingleSource.Subscriber)"><code>handleSubscribe(SingleSource.Subscriber)</code></a> method.
- 
- This method does <strong>not</strong> override preceding <a href="Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a>s, if any, specified for <code>this</code>
- <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">This operator has been deprecated because of upcoming behavior changes in how offloading via
+ operators is done.</div>
+</div>
 </td>
 </tr>
-<tr id="i61" class="rowColor">
+<tr id="i62" class="altColor">
 <td class="colFirst"><code><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#publishAndSubscribeOnOverride(io.servicetalk.concurrent.api.Executor)">publishAndSubscribeOnOverride</a></span>&#8203;(<a href="Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;executor)</code></th>
 <td class="colLast">
@@ -741,14 +746,14 @@ extends java.lang.Object</pre>
 </div>
 </td>
 </tr>
-<tr id="i62" class="altColor">
+<tr id="i63" class="rowColor">
 <td class="colFirst"><code><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#publishOn(io.servicetalk.concurrent.api.Executor)">publishOn</a></span>&#8203;(<a href="Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;executor)</code></th>
 <td class="colLast">
 <div class="block">Creates a new <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> that will use the passed <a href="Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> to invoke all <a href="../SingleSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>SingleSource.Subscriber</code></a> methods.</div>
 </td>
 </tr>
-<tr id="i63" class="rowColor">
+<tr id="i64" class="altColor">
 <td class="colFirst"><code><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#publishOnOverride(io.servicetalk.concurrent.api.Executor)">publishOnOverride</a></span>&#8203;(<a href="Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;executor)</code></th>
 <td class="colLast">
@@ -757,7 +762,7 @@ extends java.lang.Object</pre>
 </div>
 </td>
 </tr>
-<tr id="i64" class="altColor">
+<tr id="i65" class="rowColor">
 <td class="colFirst"><code><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#recoverWith(java.util.function.Function)">recoverWith</a></span>&#8203;(java.util.function.Function&lt;? super java.lang.Throwable,&#8203;? extends <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends <a href="Single.html" title="type parameter in Single">T</a>&gt;&gt;&nbsp;nextFactory)</code></th>
 <td class="colLast">
@@ -766,14 +771,14 @@ extends java.lang.Object</pre>
 </div>
 </td>
 </tr>
-<tr id="i65" class="rowColor">
+<tr id="i66" class="altColor">
 <td class="colFirst"><code><a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#repeat(java.util.function.IntPredicate)">repeat</a></span>&#8203;(java.util.function.IntPredicate&nbsp;shouldRepeat)</code></th>
 <td class="colLast">
 <div class="block">Re-subscribes to this <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> when it completes and the passed <code>IntPredicate</code> returns <code>true</code>.</div>
 </td>
 </tr>
-<tr id="i66" class="altColor">
+<tr id="i67" class="rowColor">
 <td class="colFirst"><code><a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#repeatWhen(java.util.function.IntFunction)">repeatWhen</a></span>&#8203;(java.util.function.IntFunction&lt;? extends <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>&gt;&nbsp;repeatWhen)</code></th>
 <td class="colLast">
@@ -781,7 +786,7 @@ extends java.lang.Object</pre>
  <code>IntFunction</code> completes successfully.</div>
 </td>
 </tr>
-<tr id="i67" class="rowColor">
+<tr id="i68" class="altColor">
 <td class="colFirst"><code><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#retry(io.servicetalk.concurrent.api.BiIntPredicate)">retry</a></span>&#8203;(<a href="BiIntPredicate.html" title="interface in io.servicetalk.concurrent.api">BiIntPredicate</a>&lt;java.lang.Throwable&gt;&nbsp;shouldRetry)</code></th>
 <td class="colLast">
@@ -789,7 +794,7 @@ extends java.lang.Object</pre>
  <code>true</code>.</div>
 </td>
 </tr>
-<tr id="i68" class="altColor">
+<tr id="i69" class="rowColor">
 <td class="colFirst"><code><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#retryWhen(io.servicetalk.concurrent.api.BiIntFunction)">retryWhen</a></span>&#8203;(<a href="BiIntFunction.html" title="interface in io.servicetalk.concurrent.api">BiIntFunction</a>&lt;java.lang.Throwable,&#8203;? extends <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>&gt;&nbsp;retryWhen)</code></th>
 <td class="colLast">
@@ -797,7 +802,7 @@ extends java.lang.Object</pre>
  <a href="BiIntFunction.html" title="interface in io.servicetalk.concurrent.api"><code>BiIntFunction</code></a> completes successfully.</div>
 </td>
 </tr>
-<tr id="i69" class="rowColor">
+<tr id="i70" class="altColor">
 <td class="colFirst"><code><a href="../Cancellable.html" title="interface in io.servicetalk.concurrent">Cancellable</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#subscribe(java.util.function.Consumer)">subscribe</a></span>&#8203;(java.util.function.Consumer&lt;? super <a href="Single.html" title="type parameter in Single">T</a>&gt;&nbsp;resultConsumer)</code></th>
 <td class="colLast">
@@ -805,7 +810,7 @@ extends java.lang.Object</pre>
  <a href="../SingleSource.Subscriber.html#onError(java.lang.Throwable)"><code>SingleSource.Subscriber.onError(Throwable)</code></a>.</div>
 </td>
 </tr>
-<tr id="i70" class="altColor">
+<tr id="i71" class="rowColor">
 <td class="colFirst"><code>protected void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#subscribeInternal(io.servicetalk.concurrent.SingleSource.Subscriber)">subscribeInternal</a></span>&#8203;(<a href="../SingleSource.Subscriber.html" title="interface in io.servicetalk.concurrent">SingleSource.Subscriber</a>&lt;? super <a href="Single.html" title="type parameter in Single">T</a>&gt;&nbsp;subscriber)</code></th>
 <td class="colLast">
@@ -813,7 +818,7 @@ extends java.lang.Object</pre>
  different implementations to subscribe.</div>
 </td>
 </tr>
-<tr id="i71" class="rowColor">
+<tr id="i72" class="altColor">
 <td class="colFirst"><code><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#subscribeOn(io.servicetalk.concurrent.api.Executor)">subscribeOn</a></span>&#8203;(<a href="Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;executor)</code></th>
 <td class="colLast">
@@ -826,7 +831,7 @@ extends java.lang.Object</pre>
  <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>.</div>
 </td>
 </tr>
-<tr id="i72" class="altColor">
+<tr id="i73" class="rowColor">
 <td class="colFirst"><code><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#subscribeOnOverride(io.servicetalk.concurrent.api.Executor)">subscribeOnOverride</a></span>&#8203;(<a href="Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;executor)</code></th>
 <td class="colLast">
@@ -835,22 +840,22 @@ extends java.lang.Object</pre>
 </div>
 </td>
 </tr>
-<tr id="i73" class="rowColor">
+<tr id="i74" class="altColor">
 <td class="colFirst"><code><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#subscribeShareContext()">subscribeShareContext</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Signifies that when the returned <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> is subscribed to, the <a href="AsyncContext.html" title="class in io.servicetalk.concurrent.api"><code>AsyncContext</code></a> will be shared
- instead of making a <a href="AsyncContextMap.html#copy()"><code>copy</code></a>.</div>
+ instead of making a <a href="../../context/api/ContextMap.html#copy()"><code>copy</code></a>.</div>
 </td>
 </tr>
-<tr id="i74" class="altColor">
+<tr id="i75" class="rowColor">
 <td class="colFirst"><code>static &lt;T&gt;&nbsp;<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;T&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#succeeded(T)">succeeded</a></span>&#8203;(T&nbsp;value)</code></th>
 <td class="colLast">
 <div class="block">Creates a realized <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> which always completes successfully with the provided <code>value</code>.</div>
 </td>
 </tr>
-<tr id="i75" class="rowColor">
+<tr id="i76" class="altColor">
 <td class="colFirst"><code><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#timeout(long,java.util.concurrent.TimeUnit)">timeout</a></span>&#8203;(long&nbsp;duration,
        java.util.concurrent.TimeUnit&nbsp;unit)</code></th>
@@ -860,7 +865,7 @@ extends java.lang.Object</pre>
  termination.</div>
 </td>
 </tr>
-<tr id="i76" class="altColor">
+<tr id="i77" class="rowColor">
 <td class="colFirst"><code><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#timeout(long,java.util.concurrent.TimeUnit,io.servicetalk.concurrent.Executor)">timeout</a></span>&#8203;(long&nbsp;duration,
        java.util.concurrent.TimeUnit&nbsp;unit,
@@ -871,7 +876,7 @@ extends java.lang.Object</pre>
  termination.</div>
 </td>
 </tr>
-<tr id="i77" class="rowColor">
+<tr id="i78" class="altColor">
 <td class="colFirst"><code><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#timeout(java.time.Duration)">timeout</a></span>&#8203;(java.time.Duration&nbsp;duration)</code></th>
 <td class="colLast">
@@ -880,7 +885,7 @@ extends java.lang.Object</pre>
  termination.</div>
 </td>
 </tr>
-<tr id="i78" class="altColor">
+<tr id="i79" class="rowColor">
 <td class="colFirst"><code><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#timeout(java.time.Duration,io.servicetalk.concurrent.Executor)">timeout</a></span>&#8203;(java.time.Duration&nbsp;duration,
        <a href="../Executor.html" title="interface in io.servicetalk.concurrent">Executor</a>&nbsp;timeoutExecutor)</code></th>
@@ -889,7 +894,7 @@ extends java.lang.Object</pre>
  with a <code>TimeoutException</code> if time <code>duration</code> elapses between subscribe and termination.</div>
 </td>
 </tr>
-<tr id="i79" class="rowColor">
+<tr id="i80" class="altColor">
 <td class="colFirst"><code><a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#toCompletable()">toCompletable</a></span>()</code></th>
 <td class="colLast">
@@ -897,28 +902,28 @@ extends java.lang.Object</pre>
  <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a>.</div>
 </td>
 </tr>
-<tr id="i80" class="altColor">
+<tr id="i81" class="rowColor">
 <td class="colFirst"><code>java.util.concurrent.CompletionStage&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#toCompletionStage()">toCompletionStage</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Convert this <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> to a <code>CompletionStage</code>.</div>
 </td>
 </tr>
-<tr id="i81" class="rowColor">
+<tr id="i82" class="altColor">
 <td class="colFirst"><code>java.util.concurrent.Future&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#toFuture()">toFuture</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Convert this <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> to a <code>Future</code>.</div>
 </td>
 </tr>
-<tr id="i82" class="altColor">
+<tr id="i83" class="rowColor">
 <td class="colFirst"><code><a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#toPublisher()">toPublisher</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Converts this <code>Single</code> to a <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>.</div>
 </td>
 </tr>
-<tr id="i83" class="rowColor">
+<tr id="i84" class="altColor">
 <td class="colFirst"><code><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#whenCancel(java.lang.Runnable)">whenCancel</a></span>&#8203;(java.lang.Runnable&nbsp;onCancel)</code></th>
 <td class="colLast">
@@ -926,7 +931,7 @@ extends java.lang.Object</pre>
  Subscriptions of the returned <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>.</div>
 </td>
 </tr>
-<tr id="i84" class="altColor">
+<tr id="i85" class="rowColor">
 <td class="colFirst"><code><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#whenFinally(io.servicetalk.concurrent.api.SingleTerminalSignalConsumer)">whenFinally</a></span>&#8203;(<a href="SingleTerminalSignalConsumer.html" title="interface in io.servicetalk.concurrent.api">SingleTerminalSignalConsumer</a>&lt;? super <a href="Single.html" title="type parameter in Single">T</a>&gt;&nbsp;doFinally)</code></th>
 <td class="colLast">
@@ -942,7 +947,7 @@ extends java.lang.Object</pre>
  for Subscriptions/<a href="../SingleSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>SingleSource.Subscriber</code></a>s of the returned <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>.</div>
 </td>
 </tr>
-<tr id="i85" class="rowColor">
+<tr id="i86" class="altColor">
 <td class="colFirst"><code><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#whenFinally(io.servicetalk.concurrent.api.TerminalSignalConsumer)">whenFinally</a></span>&#8203;(<a href="TerminalSignalConsumer.html" title="interface in io.servicetalk.concurrent.api">TerminalSignalConsumer</a>&nbsp;doFinally)</code></th>
 <td class="colLast">
@@ -958,7 +963,7 @@ extends java.lang.Object</pre>
  for Subscriptions/<a href="../SingleSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>SingleSource.Subscriber</code></a>s of the returned <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>.</div>
 </td>
 </tr>
-<tr id="i86" class="altColor">
+<tr id="i87" class="rowColor">
 <td class="colFirst"><code><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#whenFinally(java.lang.Runnable)">whenFinally</a></span>&#8203;(java.lang.Runnable&nbsp;doFinally)</code></th>
 <td class="colLast">
@@ -972,7 +977,7 @@ extends java.lang.Object</pre>
  for Subscriptions/<a href="../SingleSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>SingleSource.Subscriber</code></a>s of the returned <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>.</div>
 </td>
 </tr>
-<tr id="i87" class="rowColor">
+<tr id="i88" class="altColor">
 <td class="colFirst"><code><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#whenOnError(java.util.function.Consumer)">whenOnError</a></span>&#8203;(java.util.function.Consumer&lt;java.lang.Throwable&gt;&nbsp;onError)</code></th>
 <td class="colLast">
@@ -980,7 +985,7 @@ extends java.lang.Object</pre>
  <a href="../SingleSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>SingleSource.Subscriber</code></a>s of the returned <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>.</div>
 </td>
 </tr>
-<tr id="i88" class="altColor">
+<tr id="i89" class="rowColor">
 <td class="colFirst"><code><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#whenOnSubscribe(java.util.function.Consumer)">whenOnSubscribe</a></span>&#8203;(java.util.function.Consumer&lt;<a href="../Cancellable.html" title="interface in io.servicetalk.concurrent">Cancellable</a>&gt;&nbsp;onSubscribe)</code></th>
 <td class="colLast">
@@ -988,7 +993,7 @@ extends java.lang.Object</pre>
  <a href="../SingleSource.Subscriber.html#onSubscribe(io.servicetalk.concurrent.Cancellable)"><code>SingleSource.Subscriber.onSubscribe(Cancellable)</code></a> is called for <a href="../SingleSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>SingleSource.Subscriber</code></a>s of the returned <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>.</div>
 </td>
 </tr>
-<tr id="i89" class="rowColor">
+<tr id="i90" class="altColor">
 <td class="colFirst"><code><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#whenOnSuccess(java.util.function.Consumer)">whenOnSuccess</a></span>&#8203;(java.util.function.Consumer&lt;? super <a href="Single.html" title="type parameter in Single">T</a>&gt;&nbsp;onSuccess)</code></th>
 <td class="colLast">
@@ -996,7 +1001,7 @@ extends java.lang.Object</pre>
  <a href="../SingleSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>SingleSource.Subscriber</code></a>s of the returned <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>.</div>
 </td>
 </tr>
-<tr id="i90" class="altColor">
+<tr id="i91" class="rowColor">
 <td class="colFirst"><code><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#whenSubscriber(java.util.function.Supplier)">whenSubscriber</a></span>&#8203;(java.util.function.Supplier&lt;? extends <a href="../SingleSource.Subscriber.html" title="interface in io.servicetalk.concurrent">SingleSource.Subscriber</a>&lt;? super <a href="Single.html" title="type parameter in Single">T</a>&gt;&gt;&nbsp;subscriberSupplier)</code></th>
 <td class="colLast">
@@ -1005,7 +1010,7 @@ extends java.lang.Object</pre>
  the returned <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>.</div>
 </td>
 </tr>
-<tr id="i91" class="rowColor">
+<tr id="i92" class="altColor">
 <td class="colFirst"><code>static &lt;T1,&#8203;T2,&#8203;T3,&#8203;R&gt;<br><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;R&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#zip(io.servicetalk.concurrent.api.Single,io.servicetalk.concurrent.api.Single,io.servicetalk.concurrent.api.Single,io.servicetalk.concurrent.api.Function3)">zip</a></span>&#8203;(<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T1&gt;&nbsp;s1,
    <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T2&gt;&nbsp;s2,
@@ -1016,7 +1021,7 @@ extends java.lang.Object</pre>
  <code>s1</code>, <code>s2</code>, and <code>s3</code>.</div>
 </td>
 </tr>
-<tr id="i92" class="altColor">
+<tr id="i93" class="rowColor">
 <td class="colFirst"><code>static &lt;T1,&#8203;T2,&#8203;T3,&#8203;T4,&#8203;R&gt;<br><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;R&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#zip(io.servicetalk.concurrent.api.Single,io.servicetalk.concurrent.api.Single,io.servicetalk.concurrent.api.Single,io.servicetalk.concurrent.api.Single,io.servicetalk.concurrent.api.Function4)">zip</a></span>&#8203;(<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T1&gt;&nbsp;s1,
    <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T2&gt;&nbsp;s2,
@@ -1028,7 +1033,7 @@ extends java.lang.Object</pre>
  <code>s1</code>, <code>s2</code>, <code>s3</code>, and <code>s4</code>.</div>
 </td>
 </tr>
-<tr id="i93" class="rowColor">
+<tr id="i94" class="altColor">
 <td class="colFirst"><code>static &lt;T1,&#8203;T2,&#8203;R&gt;<br><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;R&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#zip(io.servicetalk.concurrent.api.Single,io.servicetalk.concurrent.api.Single,java.util.function.BiFunction)">zip</a></span>&#8203;(<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T1&gt;&nbsp;s1,
    <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T2&gt;&nbsp;s2,
@@ -1038,7 +1043,7 @@ extends java.lang.Object</pre>
  by <code>s1</code> and <code>s2</code>.</div>
 </td>
 </tr>
-<tr id="i94" class="altColor">
+<tr id="i95" class="rowColor">
 <td class="colFirst"><code>static &lt;R&gt;&nbsp;<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;R&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#zip(java.util.function.Function,io.servicetalk.concurrent.api.Single...)">zip</a></span>&#8203;(java.util.function.Function&lt;? super java.lang.Object[],&#8203;? extends R&gt;&nbsp;zipper,
    <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;?&gt;...&nbsp;singles)</code></th>
@@ -1047,7 +1052,7 @@ extends java.lang.Object</pre>
  <code>singles</code>.</div>
 </td>
 </tr>
-<tr id="i95" class="rowColor">
+<tr id="i96" class="altColor">
 <td class="colFirst"><code>static &lt;T1,&#8203;T2,&#8203;T3,&#8203;R&gt;<br><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;R&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#zipDelayError(io.servicetalk.concurrent.api.Single,io.servicetalk.concurrent.api.Single,io.servicetalk.concurrent.api.Single,io.servicetalk.concurrent.api.Function3)">zipDelayError</a></span>&#8203;(<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T1&gt;&nbsp;s1,
              <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T2&gt;&nbsp;s2,
@@ -1058,7 +1063,7 @@ extends java.lang.Object</pre>
  <code>s1</code>, <code>s2</code>, and <code>s3</code>.</div>
 </td>
 </tr>
-<tr id="i96" class="altColor">
+<tr id="i97" class="rowColor">
 <td class="colFirst"><code>static &lt;T1,&#8203;T2,&#8203;T3,&#8203;T4,&#8203;R&gt;<br><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;R&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#zipDelayError(io.servicetalk.concurrent.api.Single,io.servicetalk.concurrent.api.Single,io.servicetalk.concurrent.api.Single,io.servicetalk.concurrent.api.Single,io.servicetalk.concurrent.api.Function4)">zipDelayError</a></span>&#8203;(<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T1&gt;&nbsp;s1,
              <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T2&gt;&nbsp;s2,
@@ -1070,7 +1075,7 @@ extends java.lang.Object</pre>
  <code>s1</code>, <code>s2</code>, <code>s3</code>, and <code>s4</code>.</div>
 </td>
 </tr>
-<tr id="i97" class="rowColor">
+<tr id="i98" class="altColor">
 <td class="colFirst"><code>static &lt;T1,&#8203;T2,&#8203;R&gt;<br><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;R&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#zipDelayError(io.servicetalk.concurrent.api.Single,io.servicetalk.concurrent.api.Single,java.util.function.BiFunction)">zipDelayError</a></span>&#8203;(<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T1&gt;&nbsp;s1,
              <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T2&gt;&nbsp;s2,
@@ -1080,7 +1085,7 @@ extends java.lang.Object</pre>
  by <code>s1</code> and <code>s2</code>.</div>
 </td>
 </tr>
-<tr id="i98" class="altColor">
+<tr id="i99" class="rowColor">
 <td class="colFirst"><code>static &lt;R&gt;&nbsp;<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;R&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#zipDelayError(java.util.function.Function,io.servicetalk.concurrent.api.Single...)">zipDelayError</a></span>&#8203;(java.util.function.Function&lt;? super java.lang.Object[],&#8203;? extends R&gt;&nbsp;zipper,
              <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;?&gt;...&nbsp;singles)</code></th>
@@ -1089,7 +1094,7 @@ extends java.lang.Object</pre>
  <code>singles</code>.</div>
 </td>
 </tr>
-<tr id="i99" class="rowColor">
+<tr id="i100" class="altColor">
 <td class="colFirst"><code>&lt;T2,&#8203;R&gt;<br><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;R&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#zipWith(io.servicetalk.concurrent.api.Single,java.util.function.BiFunction)">zipWith</a></span>&#8203;(<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T2&gt;&nbsp;other,
        java.util.function.BiFunction&lt;? super <a href="Single.html" title="type parameter in Single">T</a>,&#8203;? super T2,&#8203;? extends R&gt;&nbsp;zipper)</code></th>
@@ -1098,7 +1103,7 @@ extends java.lang.Object</pre>
  <code>this</code> and <code>other</code>.</div>
 </td>
 </tr>
-<tr id="i100" class="altColor">
+<tr id="i101" class="rowColor">
 <td class="colFirst"><code>&lt;T2,&#8203;R&gt;<br><a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;R&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#zipWithDelayError(io.servicetalk.concurrent.api.Single,java.util.function.BiFunction)">zipWithDelayError</a></span>&#8203;(<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends T2&gt;&nbsp;other,
                  java.util.function.BiFunction&lt;? super <a href="Single.html" title="type parameter in Single">T</a>,&#8203;? super T2,&#8203;? extends R&gt;&nbsp;zipper)</code></th>
@@ -2147,6 +2152,10 @@ public final&nbsp;<a href="Single.html" title="class in io.servicetalk.concurren
  elements from <code>next</code> <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>. Any error emitted by this <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> or <code>next</code>
  <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> is forwarded to the returned <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>.
  <p>
+ Note: this method is an overload for <a href="#concat(io.servicetalk.concurrent.api.Publisher,boolean)"><code>concat(Publisher, boolean)</code></a> with <code>deferSubscribe</code> equal to
+ <code>false</code>, which triggers subscribe to the <code>next</code> <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> as soon as <code>this</code>
+ <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> completes successfully.
+ <p>
  This method provides a means to sequence the execution of two asynchronous sources and in sequential programming
  is similar to:
  <pre><code>
@@ -2158,6 +2167,43 @@ public final&nbsp;<a href="Single.html" title="class in io.servicetalk.concurren
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>next</code> - <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> to concat.</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd>New <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> that first emits the result of this <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> and then subscribes and emits
+ all elements from <code>next</code> <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>.</dd>
+<dt><span class="seeLabel">See Also:</span></dt>
+<dd><a href="#concat(io.servicetalk.concurrent.api.Publisher,boolean)"><code>concat(Publisher, boolean)</code></a></dd>
+</dl>
+</li>
+</ul>
+<a id="concat(io.servicetalk.concurrent.api.Publisher,boolean)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>concat</h4>
+<pre class="methodSignature">public final&nbsp;<a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;&nbsp;concat&#8203;(<a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;? extends <a href="Single.html" title="type parameter in Single">T</a>&gt;&nbsp;next,
+                                 boolean&nbsp;deferSubscribe)</pre>
+<div class="block">Returns a <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> that first emits the result of this <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> and then subscribes and emits all
+ elements from <code>next</code> <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>. Any error emitted by this <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> or <code>next</code>
+ <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> is forwarded to the returned <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>.
+ <p>
+ This method provides a means to sequence the execution of two asynchronous sources and in sequential programming
+ is similar to:
+ <pre><code>
+     List&lt;T&gt; results = new ...;
+     results.add(resultOfThisSingle());
+     results.addAll(nextStream());
+     return results;
+ </code></pre></div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>next</code> - <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> to concat.</dd>
+<dd><code>deferSubscribe</code> - if <code>true</code> subscribe to the <code>next</code> <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> will be deferred until
+ demand is received. Otherwise, it subscribes to the <code>next</code> <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> as soon as <code>this</code>
+ <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> completes successfully. Choosing the deferred (<code>true</code>) behavior is important if the
+ <code>next</code> <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> does not or might not support multiple subscribers (non-replayable). Choosing the
+ immediate subscribe (<code>false</code>) behavior may have better performance and may be a preferable choice for
+ replayable <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>(s) or when eager subscribe is beneficial.</dd>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd>New <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> that first emits the result of this <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> and then subscribes and emits
  all elements from <code>next</code> <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>.</dd>
@@ -2241,7 +2287,11 @@ public final&nbsp;<a href="Single.html" title="class in io.servicetalk.concurren
 <pre class="methodSignature">public final&nbsp;<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;&nbsp;retry&#8203;(<a href="BiIntPredicate.html" title="interface in io.servicetalk.concurrent.api">BiIntPredicate</a>&lt;java.lang.Throwable&gt;&nbsp;shouldRetry)</pre>
 <div class="block">Re-subscribes to this <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> if an error is emitted and the passed <a href="BiIntPredicate.html" title="interface in io.servicetalk.concurrent.api"><code>BiIntPredicate</code></a> returns
  <code>true</code>.
- <p>
+ <pre>
+ This method may result in a <code>StackOverflowError</code> if too many consecutive calls are made. This can be
+ avoided by trampolining the call stack onto an <a href="Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a>. For example:
+   <code>retryWhen((i, cause) -&gt; i % 10 == 0 ? executor.submit(() -&gt; { }) : Completable.completed())</code>
+ </pre>
  This method provides a means to retry an operation under certain failure conditions and in sequential programming
  is similar to:
  <pre><code>
@@ -2284,7 +2334,11 @@ public final&nbsp;<a href="Single.html" title="class in io.servicetalk.concurren
 <div class="block">Re-subscribes to this <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> if an error is emitted and the <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> returned by the supplied
  <a href="BiIntFunction.html" title="interface in io.servicetalk.concurrent.api"><code>BiIntFunction</code></a> completes successfully. If the returned <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> emits an error, the returned
  <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> terminates with that error.
- <p>
+ <pre>
+ This method may result in a <code>StackOverflowError</code> if too many consecutive calls are made. This can be
+ avoided by trampolining the call stack onto an <a href="Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a>. For example:
+   <code>retryWhen((i, cause) -&gt; i % 10 == 0 ? executor.submit(() -&gt; { }) : Completable.completed())</code>
+ </pre>
  This method provides a means to retry an operation under certain failure conditions in an asynchronous fashion
  and in sequential programming is similar to:
  <pre><code>
@@ -2327,7 +2381,11 @@ public final&nbsp;<a href="Single.html" title="class in io.servicetalk.concurren
 <h4>repeat</h4>
 <pre class="methodSignature">public final&nbsp;<a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;&nbsp;repeat&#8203;(java.util.function.IntPredicate&nbsp;shouldRepeat)</pre>
 <div class="block">Re-subscribes to this <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> when it completes and the passed <code>IntPredicate</code> returns <code>true</code>.
- <p>
+ <pre>
+ This method may result in a <code>StackOverflowError</code> if too many consecutive calls are made. This can be
+ avoided by trampolining the call stack onto an <a href="Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a>. For example:
+   <code>repeatWhen(i -&gt; i % 10 == 0 ? executor.submit(() -&gt; { }) : Completable.completed())</code>
+ </pre>
  This method provides a means to repeat an operation multiple times and in sequential programming is similar to:
  <pre><code>
      List&lt;T&gt; results = new ...;
@@ -2359,7 +2417,11 @@ public final&nbsp;<a href="Single.html" title="class in io.servicetalk.concurren
 <div class="block">Re-subscribes to this <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> when it completes and the <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> returned by the supplied
  <code>IntFunction</code> completes successfully. If the returned <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> emits an error, the returned
  <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> emits an error.
- <p>
+ <pre>
+ This method may result in a <code>StackOverflowError</code> if too many consecutive calls are made. This can be
+ avoided by trampolining the call stack onto an <a href="Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a>. For example:
+   <code>repeatWhen(i -&gt; i % 10 == 0 ? executor.submit(() -&gt; { }) : Completable.completed())</code>
+ </pre>
  This method provides a means to repeat an operation multiple times when in an asynchronous fashion and in
  sequential programming is similar to:
  <pre><code>
@@ -3010,7 +3072,21 @@ public final&nbsp;<a href="Single.html" title="class in io.servicetalk.concurren
 <ul class="blockList">
 <li class="blockList">
 <h4>publishAndSubscribeOn</h4>
-<pre class="methodSignature">public final&nbsp;<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;&nbsp;publishAndSubscribeOn&#8203;(<a href="Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;executor)</pre>
+<pre class="methodSignature">@Deprecated
+public final&nbsp;<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;&nbsp;publishAndSubscribeOn&#8203;(<a href="Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;executor)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">This operator has been deprecated because of upcoming behavior changes in how offloading via
+ operators is done. Originally offloading for subscribe/subscription was applied at the "bottom" of chain
+ (logically the last operator in the chain closest to the subscriber), and offloading for subscriber was applied
+ at the "top" of the operator chain (logically the first operator in the chain after the async source). The
+ current offloading doesn't respect the order in which the operators are applied, the offloading is the same
+ regardless of where the operators are placed in the chain. However, this behavior will soon change to instead
+ respect operator placement order and apply offloading exactly where the offloading operators are applied in the
+ chain. This change in behavior means that it no longer makes sense to fuse the offloading of publish and
+ subscribe as the location of the operators in the chain will now be significant. Publish and subscribe
+ offloading, when required, will typically be placed in different locations. Use separate, appropriately placed,
+ <a href="#subscribeOn(io.servicetalk.concurrent.api.Executor)"><code>subscribeOn(Executor)</code></a> and <a href="#publishOn(io.servicetalk.concurrent.api.Executor)"><code>publishOn(Executor)</code></a> operators instead.</div>
+</div>
 <div class="block">Creates a new <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> that will use the passed <a href="Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> to invoke the following methods:
  <ul>
      <li>All <a href="../SingleSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>SingleSource.Subscriber</code></a> methods.</li>
@@ -3068,14 +3144,14 @@ public final&nbsp;<a href="Single.html" title="class in io.servicetalk.concurren
 <h4>subscribeShareContext</h4>
 <pre class="methodSignature">public final&nbsp;<a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="Single.html" title="type parameter in Single">T</a>&gt;&nbsp;subscribeShareContext()</pre>
 <div class="block">Signifies that when the returned <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> is subscribed to, the <a href="AsyncContext.html" title="class in io.servicetalk.concurrent.api"><code>AsyncContext</code></a> will be shared
- instead of making a <a href="AsyncContextMap.html#copy()"><code>copy</code></a>.
+ instead of making a <a href="../../context/api/ContextMap.html#copy()"><code>copy</code></a>.
  <p>
  This operator only impacts behavior if the returned <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> is subscribed directly after this operator,
  that means this must be the "last operator" in the chain for this to have an impact.</div>
 <dl>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd>A <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> that will share the <a href="AsyncContext.html" title="class in io.servicetalk.concurrent.api"><code>AsyncContext</code></a> instead of making a
- <a href="AsyncContextMap.html#copy()"><code>copy</code></a> when subscribed to.</dd>
+ <a href="../../context/api/ContextMap.html#copy()"><code>copy</code></a> when subscribed to.</dd>
 </dl>
 </li>
 </ul>

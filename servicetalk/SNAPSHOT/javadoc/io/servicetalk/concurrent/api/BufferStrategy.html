@@ -219,10 +219,19 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <li class="blockList">
 <h4>boundaries</h4>
 <pre class="methodSignature"><a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="BufferStrategy.html" title="type parameter in BufferStrategy">BC</a>&gt;&nbsp;boundaries()</pre>
-<div class="block">Returns a <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> representing asynchronous buffer boundaries. This <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> is expected to be
- an infinite <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>. Hence, it should never terminate any <a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a> subscribed to it. Instead
- <a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a>s will always <a href="../Cancellable.html#cancel()"><code>cancel</code></a> their <a href="../PublisherSource.Subscription.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscription</code></a>. If this
- expectation is violated, buffered items may be discarded.</div>
+<div class="block">Returns a <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> representing asynchronous buffer boundaries.
+ <p>
+ Notes:
+ <ol>
+     <li>This <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> is expected to be an infinite <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>. Hence, it should never terminate
+     any <a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a> subscribed to it. Instead <a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a>s will always
+     <a href="../Cancellable.html#cancel()"><code>cancel</code></a> their <a href="../PublisherSource.Subscription.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscription</code></a>. If this expectation is violated, buffered
+     items may be discarded.</li>
+     <li>If this <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> returns more boundaries faster than accumulation or emission of the previous
+     boundary can be processed, these new boundaries may be discarded without invocation of either
+     <a href="BufferStrategy.Accumulator.html#accumulate(T)"><code>BufferStrategy.Accumulator.accumulate(Object)</code></a> or <a href="BufferStrategy.Accumulator.html#finish()"><code>BufferStrategy.Accumulator.finish()</code></a> methods. Avoid initializing expensive
+     state before any of the <a href="BufferStrategy.Accumulator.html" title="interface in io.servicetalk.concurrent.api"><code>BufferStrategy.Accumulator</code></a> methods are invoked.</li>
+ </ol></div>
 <dl>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd>A <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> representing asynchronous buffer boundaries.</dd>
@@ -236,7 +245,11 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <li class="blockList">
 <h4>bufferSizeHint</h4>
 <pre class="methodSignature">int&nbsp;bufferSizeHint()</pre>
-<div class="block">A rough estimate of the number of items in a buffer.</div>
+<div class="block">A rough estimate of the number of items in a buffer.
+ <p>
+ Note: if <a href="#boundaries()"><code>boundaries()</code></a> are generated based on the number of accumulated items, this hint size MUST always
+ be equal or less than the number of items that generates a boundary. Otherwise, there is a risk of emitting more
+ buffers than requested.</div>
 <dl>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd>A rough estimate of the number of items in a buffer.</dd>

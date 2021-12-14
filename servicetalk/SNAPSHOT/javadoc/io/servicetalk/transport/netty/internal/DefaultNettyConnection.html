@@ -26,7 +26,7 @@
     catch(err) {
     }
 //-->
-var data = {"i0":10,"i1":10,"i2":10,"i3":9,"i4":9,"i5":10,"i6":10,"i7":10,"i8":10,"i9":10,"i10":10,"i11":10,"i12":10,"i13":10,"i14":10,"i15":10,"i16":10,"i17":10};
+var data = {"i0":10,"i1":10,"i2":10,"i3":10,"i4":10,"i5":10,"i6":9,"i7":9,"i8":10,"i9":10,"i10":10,"i11":10,"i12":10,"i13":10,"i14":10,"i15":10,"i16":10,"i17":10,"i18":10,"i19":10,"i20":10,"i21":10};
 var tabs = {65535:["t0","All Methods"],1:["t1","Static Methods"],2:["t2","Instance Methods"],8:["t4","Concrete Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
@@ -193,27 +193,42 @@ implements <a href="NettyConnection.html" title="interface in io.servicetalk.tra
 <th class="colLast" scope="col">Description</th>
 </tr>
 <tr id="i0" class="altColor">
+<td class="colFirst"><code>void</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#channelClosed(java.lang.Throwable)">channelClosed</a></span>&#8203;(java.lang.Throwable&nbsp;closedException)</code></th>
+<td class="colLast">&nbsp;</td>
+</tr>
+<tr id="i1" class="rowColor">
+<td class="colFirst"><code>void</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#channelOutboundClosed()">channelOutboundClosed</a></span>()</code></th>
+<td class="colLast">&nbsp;</td>
+</tr>
+<tr id="i2" class="altColor">
+<td class="colFirst"><code>void</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#channelWritable()">channelWritable</a></span>()</code></th>
+<td class="colLast">&nbsp;</td>
+</tr>
+<tr id="i3" class="rowColor">
 <td class="colFirst"><code><a href="FlushStrategy.html" title="interface in io.servicetalk.transport.netty.internal">FlushStrategy</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#defaultFlushStrategy()">defaultFlushStrategy</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Returns the <a href="FlushStrategy.html" title="interface in io.servicetalk.transport.netty.internal"><code>FlushStrategy</code></a> used by default for this <a href="NettyConnectionContext.html" title="interface in io.servicetalk.transport.netty.internal"><code>NettyConnectionContext</code></a>.</div>
 </td>
 </tr>
-<tr id="i1" class="rowColor">
+<tr id="i4" class="altColor">
 <td class="colFirst"><code>protected void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#doCloseAsyncGracefully()">doCloseAsyncGracefully</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Initiate graceful closure.</div>
 </td>
 </tr>
-<tr id="i2" class="altColor">
+<tr id="i5" class="rowColor">
 <td class="colFirst"><code><a href="../../api/ExecutionContext.html" title="interface in io.servicetalk.transport.api">ExecutionContext</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#executionContext()">executionContext</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Get the <a href="../../api/ExecutionContext.html" title="interface in io.servicetalk.transport.api"><code>ExecutionContext</code></a> for this <a href="../../api/ConnectionInfo.html" title="interface in io.servicetalk.transport.api"><code>ConnectionInfo</code></a>.</div>
 </td>
 </tr>
-<tr id="i3" class="rowColor">
+<tr id="i6" class="altColor">
 <td class="colFirst"><code>static &lt;Read,&#8203;Write&gt;<br><a href="../../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal">DefaultNettyConnection</a>&lt;Read,&#8203;Write&gt;&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#initChannel(io.netty.channel.Channel,io.servicetalk.buffer.api.BufferAllocator,io.servicetalk.concurrent.api.Executor,java.util.function.Predicate,io.servicetalk.transport.netty.internal.CloseHandler,io.servicetalk.transport.netty.internal.FlushStrategy,java.lang.Long,io.servicetalk.transport.netty.internal.ChannelInitializer,io.servicetalk.transport.api.ExecutionStrategy,io.servicetalk.transport.api.ConnectionInfo.Protocol,io.servicetalk.transport.api.ConnectionObserver,boolean)">initChannel</a></span>&#8203;(io.netty.channel.Channel&nbsp;channel,
            <a href="../../../buffer/api/BufferAllocator.html" title="interface in io.servicetalk.buffer.api">BufferAllocator</a>&nbsp;allocator,
@@ -232,7 +247,7 @@ implements <a href="NettyConnection.html" title="interface in io.servicetalk.tra
  <a href="DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal"><code>DefaultNettyConnection</code></a>.</div>
 </td>
 </tr>
-<tr id="i4" class="altColor">
+<tr id="i7" class="rowColor">
 <td class="colFirst"><code>static &lt;Read,&#8203;Write&gt;<br><a href="DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal">DefaultNettyConnection</a>&lt;Read,&#8203;Write&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#initChildChannel(io.netty.channel.Channel,io.servicetalk.buffer.api.BufferAllocator,io.servicetalk.concurrent.api.Executor,java.util.function.Predicate,io.servicetalk.transport.netty.internal.CloseHandler,io.servicetalk.transport.netty.internal.FlushStrategy,java.lang.Long,io.servicetalk.transport.api.ExecutionStrategy,io.servicetalk.transport.api.ConnectionInfo.Protocol,javax.net.ssl.SSLSession,io.netty.channel.ChannelConfig,io.servicetalk.transport.api.ConnectionObserver.StreamObserver,boolean,java.util.function.UnaryOperator)">initChildChannel</a></span>&#8203;(io.netty.channel.Channel&nbsp;channel,
                 <a href="../../../buffer/api/BufferAllocator.html" title="interface in io.servicetalk.buffer.api">BufferAllocator</a>&nbsp;allocator,
@@ -253,68 +268,73 @@ implements <a href="NettyConnection.html" title="interface in io.servicetalk.tra
  <a href="DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal"><code>DefaultNettyConnection</code></a>.</div>
 </td>
 </tr>
-<tr id="i5" class="rowColor">
+<tr id="i8" class="altColor">
+<td class="colFirst"><code>void</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#listenerDiscard(java.lang.Throwable)">listenerDiscard</a></span>&#8203;(java.lang.Throwable&nbsp;cause)</code></th>
+<td class="colLast">&nbsp;</td>
+</tr>
+<tr id="i9" class="rowColor">
 <td class="colFirst"><code>java.net.SocketAddress</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#localAddress()">localAddress</a></span>()</code></th>
 <td class="colLast">
 <div class="block">The <code>SocketAddress</code> to which the associated connection is bound.</div>
 </td>
 </tr>
-<tr id="i6" class="altColor">
+<tr id="i10" class="altColor">
 <td class="colFirst"><code>io.netty.channel.Channel</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#nettyChannel()">nettyChannel</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Return the Netty <code>Channel</code> backing this connection.</div>
 </td>
 </tr>
-<tr id="i7" class="rowColor">
+<tr id="i11" class="rowColor">
 <td class="colFirst"><code><a href="../../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#onClosing()">onClosing</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Returns a <a href="../../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that notifies when the connection has begun its closing sequence.</div>
 </td>
 </tr>
-<tr id="i8" class="altColor">
+<tr id="i12" class="altColor">
 <td class="colFirst"><code><a href="../../api/ConnectionInfo.Protocol.html" title="interface in io.servicetalk.transport.api">ConnectionInfo.Protocol</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#protocol()">protocol</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Get the <a href="../../api/ConnectionInfo.Protocol.html" title="interface in io.servicetalk.transport.api"><code>ConnectionInfo.Protocol</code></a> for this <a href="../../api/ConnectionInfo.html" title="interface in io.servicetalk.transport.api"><code>ConnectionInfo</code></a>.</div>
 </td>
 </tr>
-<tr id="i9" class="rowColor">
+<tr id="i13" class="rowColor">
 <td class="colFirst"><code><a href="../../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="DefaultNettyConnection.html" title="type parameter in DefaultNettyConnection">Read</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#read()">read</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Returns <a href="../../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> that emits all items as read from this connection.</div>
 </td>
 </tr>
-<tr id="i10" class="altColor">
+<tr id="i14" class="altColor">
 <td class="colFirst"><code>java.net.SocketAddress</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#remoteAddress()">remoteAddress</a></span>()</code></th>
 <td class="colLast">
 <div class="block">The <code>SocketAddress</code> to which the associated connection is connected.</div>
 </td>
 </tr>
-<tr id="i11" class="rowColor">
+<tr id="i15" class="rowColor">
 <td class="colFirst"><code>&lt;T&gt;&nbsp;T</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#socketOption(java.net.SocketOption)">socketOption</a></span>&#8203;(java.net.SocketOption&lt;T&gt;&nbsp;option)</code></th>
 <td class="colLast">
 <div class="block">Get the <code>SocketOption</code> value of type <code>T</code> for this <a href="../../api/ConnectionInfo.html" title="interface in io.servicetalk.transport.api"><code>ConnectionInfo</code></a>.</div>
 </td>
 </tr>
-<tr id="i12" class="altColor">
+<tr id="i16" class="altColor">
 <td class="colFirst"><code>javax.net.ssl.SSLSession</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#sslSession()">sslSession</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Get the <code>SSLSession</code> for this connection.</div>
 </td>
 </tr>
-<tr id="i13" class="rowColor">
+<tr id="i17" class="rowColor">
 <td class="colFirst"><code>java.lang.String</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#toString()">toString</a></span>()</code></th>
 <td class="colLast">&nbsp;</td>
 </tr>
-<tr id="i14" class="altColor">
+<tr id="i18" class="altColor">
 <td class="colFirst"><code><a href="../../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;java.lang.Throwable&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#transportError()">transportError</a></span>()</code></th>
 <td class="colLast">
@@ -322,21 +342,21 @@ implements <a href="NettyConnection.html" title="interface in io.servicetalk.tra
  the transport.</div>
 </td>
 </tr>
-<tr id="i15" class="rowColor">
+<tr id="i19" class="rowColor">
 <td class="colFirst"><code><a href="../../../concurrent/Cancellable.html" title="interface in io.servicetalk.concurrent">Cancellable</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#updateFlushStrategy(io.servicetalk.transport.netty.internal.NettyConnectionContext.FlushStrategyProvider)">updateFlushStrategy</a></span>&#8203;(<a href="NettyConnectionContext.FlushStrategyProvider.html" title="interface in io.servicetalk.transport.netty.internal">NettyConnectionContext.FlushStrategyProvider</a>&nbsp;strategyProvider)</code></th>
 <td class="colLast">
 <div class="block">Updates <a href="FlushStrategy.html" title="interface in io.servicetalk.transport.netty.internal"><code>FlushStrategy</code></a> associated with this connection.</div>
 </td>
 </tr>
-<tr id="i16" class="altColor">
+<tr id="i20" class="altColor">
 <td class="colFirst"><code><a href="../../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#write(io.servicetalk.concurrent.api.Publisher)">write</a></span>&#8203;(<a href="../../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="DefaultNettyConnection.html" title="type parameter in DefaultNettyConnection">Write</a>&gt;&nbsp;write)</code></th>
 <td class="colLast">
 <div class="block">Writes all elements emitted by the passed <a href="../../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> on this connection.</div>
 </td>
 </tr>
-<tr id="i17" class="rowColor">
+<tr id="i21" class="rowColor">
 <td class="colFirst"><code><a href="../../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#write(io.servicetalk.concurrent.api.Publisher,java.util.function.Supplier,java.util.function.Supplier)">write</a></span>&#8203;(<a href="../../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="DefaultNettyConnection.html" title="type parameter in DefaultNettyConnection">Write</a>&gt;&nbsp;write,
      java.util.function.Supplier&lt;<a href="FlushStrategy.html" title="interface in io.servicetalk.transport.netty.internal">FlushStrategy</a>&gt;&nbsp;flushStrategySupplier,
@@ -738,6 +758,42 @@ public&nbsp;&lt;T&gt;&nbsp;T&nbsp;socketOption&#8203;(java.net.SocketOption&lt;T
 <dt><span class="overrideSpecifyLabel">Overrides:</span></dt>
 <dd><code>toString</code>&nbsp;in class&nbsp;<code>java.lang.Object</code></dd>
 </dl>
+</li>
+</ul>
+<a id="channelWritable()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>channelWritable</h4>
+<pre class="methodSignature">public&nbsp;void&nbsp;channelWritable()</pre>
+</li>
+</ul>
+<a id="channelOutboundClosed()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>channelOutboundClosed</h4>
+<pre class="methodSignature">public&nbsp;void&nbsp;channelOutboundClosed()</pre>
+</li>
+</ul>
+<a id="channelClosed(java.lang.Throwable)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>channelClosed</h4>
+<pre class="methodSignature">public&nbsp;void&nbsp;channelClosed&#8203;(java.lang.Throwable&nbsp;closedException)</pre>
+</li>
+</ul>
+<a id="listenerDiscard(java.lang.Throwable)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>listenerDiscard</h4>
+<pre class="methodSignature">public&nbsp;void&nbsp;listenerDiscard&#8203;(java.lang.Throwable&nbsp;cause)</pre>
 </li>
 </ul>
 <a id="updateFlushStrategy(io.servicetalk.transport.netty.internal.NettyConnectionContext.FlushStrategyProvider)">

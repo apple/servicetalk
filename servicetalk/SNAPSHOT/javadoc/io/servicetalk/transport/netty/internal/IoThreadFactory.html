@@ -26,8 +26,8 @@
     catch(err) {
     }
 //-->
-var data = {"i0":10};
-var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],8:["t4","Concrete Methods"]};
+var data = {"i0":42,"i1":42};
+var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],8:["t4","Concrete Methods"],32:["t6","Deprecated Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
 var tableTab = "tableTab";
@@ -87,7 +87,7 @@ loadScripts(document, 'script');</script>
 <div>
 <ul class="subNavList">
 <li>Summary:&nbsp;</li>
-<li>Nested&nbsp;|&nbsp;</li>
+<li><a href="#nested.class.summary">Nested</a>&nbsp;|&nbsp;</li>
 <li>Field&nbsp;|&nbsp;</li>
 <li><a href="#constructor.summary">Constr</a>&nbsp;|&nbsp;</li>
 <li><a href="#method.summary">Method</a></li>
@@ -131,19 +131,48 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <li class="blockList">
 <dl>
 <dt>All Implemented Interfaces:</dt>
-<dd><code>java.util.concurrent.ThreadFactory</code></dd>
+<dd><code><a href="../../api/IoThreadFactory.html" title="interface in io.servicetalk.transport.api">IoThreadFactory</a>&lt;io.servicetalk.transport.netty.internal.IoThreadFactory.NettyIoThread&gt;</code>, <code>java.util.concurrent.ThreadFactory</code></dd>
+</dl>
+<dl>
+<dt>Direct Known Subclasses:</dt>
+<dd><code><a href="NettyIoThreadFactory.html" title="class in io.servicetalk.transport.netty.internal">NettyIoThreadFactory</a></code></dd>
 </dl>
 <hr>
-<pre>public final class <span class="typeNameLabel">IoThreadFactory</span>
+<pre>@Deprecated
+public class <span class="typeNameLabel">IoThreadFactory</span>
 extends java.lang.Object
-implements java.util.concurrent.ThreadFactory</pre>
-<div class="block">Default <code>ThreadFactory</code> to create IO <code>Thread</code>s.</div>
+implements java.util.concurrent.ThreadFactory, <a href="../../api/IoThreadFactory.html" title="interface in io.servicetalk.transport.api">IoThreadFactory</a>&lt;io.servicetalk.transport.netty.internal.IoThreadFactory.NettyIoThread&gt;</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="NettyIoThreadFactory.html" title="class in io.servicetalk.transport.netty.internal"><code>NettyIoThreadFactory</code></a>.</div>
+</div>
+<div class="block">Default <a href="../../api/IoThreadFactory.html" title="interface in io.servicetalk.transport.api"><code>IoThreadFactory</code></a> to create IO <a href="../../api/IoThreadFactory.IoThread.html" title="interface in io.servicetalk.transport.api"><code>IoThreadFactory.IoThread</code></a>s.</div>
+<dl>
+<dt><span class="seeLabel">See Also:</span></dt>
+<dd><a href="NettyIoThreadFactory.html" title="class in io.servicetalk.transport.netty.internal"><code>NettyIoThreadFactory</code></a></dd>
+</dl>
 </li>
 </ul>
 </div>
 <div class="summary">
 <ul class="blockList">
 <li class="blockList">
+<!-- ======== NESTED CLASS SUMMARY ======== -->
+<section role="region">
+<ul class="blockList">
+<li class="blockList"><a id="nested.class.summary">
+<!--   -->
+</a>
+<h3>Nested Class Summary</h3>
+<ul class="blockList">
+<li class="blockList"><a id="nested.classes.inherited.from.class.io.servicetalk.transport.api.IoThreadFactory">
+<!--   -->
+</a>
+<h3>Nested classes/interfaces inherited from interface&nbsp;io.servicetalk.transport.api.<a href="../../api/IoThreadFactory.html" title="interface in io.servicetalk.transport.api">IoThreadFactory</a></h3>
+<code><a href="../../api/IoThreadFactory.IoThread.html" title="interface in io.servicetalk.transport.api">IoThreadFactory.IoThread</a></code></li>
+</ul>
+</li>
+</ul>
+</section>
 <!-- ======== CONSTRUCTOR SUMMARY ======== -->
 <section role="region">
 <ul class="blockList">
@@ -160,13 +189,16 @@ implements java.util.concurrent.ThreadFactory</pre>
 <tr class="altColor">
 <th class="colConstructorName" scope="row"><code><span class="memberNameLink"><a href="#%3Cinit%3E(java.lang.String)">IoThreadFactory</a></span>&#8203;(java.lang.String&nbsp;threadNamePrefix)</code></th>
 <td class="colLast">
-<div class="block">Create a new instance.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Consider using <code>io.servicetalk.transport.netty.NettyIoExecutors#createIoExecutor(String)</code>.</div>
+</div>
 </td>
 </tr>
 <tr class="rowColor">
 <th class="colConstructorName" scope="row"><code><span class="memberNameLink"><a href="#%3Cinit%3E(java.lang.String,boolean)">IoThreadFactory</a></span>&#8203;(java.lang.String&nbsp;threadNamePrefix,
                boolean&nbsp;daemon)</code></th>
 <td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Create a new instance.</div>
 </td>
 </tr>
@@ -182,16 +214,25 @@ implements java.util.concurrent.ThreadFactory</pre>
 </a>
 <h3>Method Summary</h3>
 <table class="memberSummary">
-<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t4" class="tableTab"><span><a href="javascript:show(8);">Concrete Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
+<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t4" class="tableTab"><span><a href="javascript:show(8);">Concrete Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t6" class="tableTab"><span><a href="javascript:show(32);">Deprecated Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
 <tr>
 <th class="colFirst" scope="col">Modifier and Type</th>
 <th class="colSecond" scope="col">Method</th>
 <th class="colLast" scope="col">Description</th>
 </tr>
 <tr id="i0" class="altColor">
-<td class="colFirst"><code>java.lang.Thread</code></td>
+<td class="colFirst"><code>io.servicetalk.transport.netty.internal.IoThreadFactory.NettyIoThread</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#newThread(java.lang.Runnable)">newThread</a></span>&#8203;(java.lang.Runnable&nbsp;r)</code></th>
-<td class="colLast">&nbsp;</td>
+<td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span></div>
+&nbsp;</td>
+</tr>
+<tr id="i1" class="rowColor">
+<td class="colFirst"><code>java.lang.String</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#toString()">toString</a></span>()</code></th>
+<td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span></div>
+&nbsp;</td>
 </tr>
 </table>
 <ul class="blockList">
@@ -199,7 +240,7 @@ implements java.util.concurrent.ThreadFactory</pre>
 <!--   -->
 </a>
 <h3>Methods inherited from class&nbsp;java.lang.Object</h3>
-<code>clone, equals, finalize, getClass, hashCode, notify, notifyAll, toString, wait, wait, wait</code></li>
+<code>clone, equals, finalize, getClass, hashCode, notify, notifyAll, wait, wait, wait</code></li>
 </ul>
 </li>
 </ul>
@@ -223,7 +264,11 @@ implements java.util.concurrent.ThreadFactory</pre>
 <ul class="blockList">
 <li class="blockList">
 <h4>IoThreadFactory</h4>
-<pre>public&nbsp;IoThreadFactory&#8203;(java.lang.String&nbsp;threadNamePrefix)</pre>
+<pre>@Deprecated
+public&nbsp;IoThreadFactory&#8203;(java.lang.String&nbsp;threadNamePrefix)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Consider using <code>io.servicetalk.transport.netty.NettyIoExecutors#createIoExecutor(String)</code>.</div>
+</div>
 <div class="block">Create a new instance.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
@@ -239,6 +284,7 @@ implements java.util.concurrent.ThreadFactory</pre>
 <h4>IoThreadFactory</h4>
 <pre>public&nbsp;IoThreadFactory&#8203;(java.lang.String&nbsp;threadNamePrefix,
                        boolean&nbsp;daemon)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Create a new instance.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
@@ -260,13 +306,30 @@ implements java.util.concurrent.ThreadFactory</pre>
 <a id="newThread(java.lang.Runnable)">
 <!--   -->
 </a>
-<ul class="blockListLast">
+<ul class="blockList">
 <li class="blockList">
 <h4>newThread</h4>
-<pre class="methodSignature">public&nbsp;java.lang.Thread&nbsp;newThread&#8203;(java.lang.Runnable&nbsp;r)</pre>
+<pre class="methodSignature">public&nbsp;io.servicetalk.transport.netty.internal.IoThreadFactory.NettyIoThread&nbsp;newThread&#8203;(java.lang.Runnable&nbsp;r)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
 <dl>
 <dt><span class="overrideSpecifyLabel">Specified by:</span></dt>
+<dd><code><a href="../../api/IoThreadFactory.html#newThread(java.lang.Runnable)">newThread</a></code>&nbsp;in interface&nbsp;<code><a href="../../api/IoThreadFactory.html" title="interface in io.servicetalk.transport.api">IoThreadFactory</a>&lt;io.servicetalk.transport.netty.internal.IoThreadFactory.NettyIoThread&gt;</code></dd>
+<dt><span class="overrideSpecifyLabel">Specified by:</span></dt>
 <dd><code>newThread</code>&nbsp;in interface&nbsp;<code>java.util.concurrent.ThreadFactory</code></dd>
+</dl>
+</li>
+</ul>
+<a id="toString()">
+<!--   -->
+</a>
+<ul class="blockListLast">
+<li class="blockList">
+<h4>toString</h4>
+<pre class="methodSignature">public&nbsp;java.lang.String&nbsp;toString()</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
+<dl>
+<dt><span class="overrideSpecifyLabel">Overrides:</span></dt>
+<dd><code>toString</code>&nbsp;in class&nbsp;<code>java.lang.Object</code></dd>
 </dl>
 </li>
 </ul>
@@ -321,7 +384,7 @@ implements java.util.concurrent.ThreadFactory</pre>
 <div>
 <ul class="subNavList">
 <li>Summary:&nbsp;</li>
-<li>Nested&nbsp;|&nbsp;</li>
+<li><a href="#nested.class.summary">Nested</a>&nbsp;|&nbsp;</li>
 <li>Field&nbsp;|&nbsp;</li>
 <li><a href="#constructor.summary">Constr</a>&nbsp;|&nbsp;</li>
 <li><a href="#method.summary">Method</a></li>

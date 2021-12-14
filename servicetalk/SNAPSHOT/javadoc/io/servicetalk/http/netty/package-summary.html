@@ -129,6 +129,13 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <div class="block">A policy for sending <a href="https://tools.ietf.org/html/rfc7540#section-6.7">PING frames</a> to the peer.</div>
 </td>
 </tr>
+<tr class="rowColor">
+<th class="colFirst" scope="row"><a href="RetryingHttpRequesterFilter.DelayedRetry.html" title="interface in io.servicetalk.http.netty">RetryingHttpRequesterFilter.DelayedRetry</a></th>
+<td class="colLast">
+<div class="block">An interface that enhances any <code>Exception</code> to provide a constant <code>delay</code> to be applied when
+ retrying through a <a href="RetryingHttpRequesterFilter.html" title="class in io.servicetalk.http.netty"><code>retrying-filter</code></a>.</div>
+</td>
+</tr>
 </tbody>
 </table>
 </li>
@@ -208,15 +215,39 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </td>
 </tr>
 <tr class="rowColor">
+<th class="colFirst" scope="row"><a href="HttpLifecycleObserverRequesterFilter.html" title="class in io.servicetalk.http.netty">HttpLifecycleObserverRequesterFilter</a></th>
+<td class="colLast">
+<div class="block">An HTTP requester filter that tracks events during request/response lifecycle.</div>
+</td>
+</tr>
+<tr class="altColor">
 <th class="colFirst" scope="row"><a href="HttpProtocolConfigs.html" title="class in io.servicetalk.http.netty">HttpProtocolConfigs</a></th>
 <td class="colLast">
 <div class="block">Factory methods for <a href="../api/HttpProtocolConfig.html" title="interface in io.servicetalk.http.api"><code>HttpProtocolConfig</code></a>s and builders for their customization.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <th class="colFirst" scope="row"><a href="HttpServers.html" title="class in io.servicetalk.http.netty">HttpServers</a></th>
 <td class="colLast">
 <div class="block">Factory methods for building HTTP Servers backed by <a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api"><code>ServerContext</code></a>.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colFirst" scope="row"><a href="RetryingHttpRequesterFilter.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter</a></th>
+<td class="colLast">
+<div class="block">A filter to enable retries for HTTP clients.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colFirst" scope="row"><a href="RetryingHttpRequesterFilter.BackOffPolicy.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.BackOffPolicy</a></th>
+<td class="colLast">
+<div class="block">Definition and presets of retry backoff policies.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colFirst" scope="row"><a href="RetryingHttpRequesterFilter.Builder.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.Builder</a></th>
+<td class="colLast">
+<div class="block">A builder for <a href="RetryingHttpRequesterFilter.html" title="class in io.servicetalk.http.netty"><code>RetryingHttpRequesterFilter</code></a>, which puts an upper bound on retry attempts.</div>
 </td>
 </tr>
 </tbody>
@@ -234,6 +265,13 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <th class="colFirst" scope="row"><a href="ProxyResponseException.html" title="class in io.servicetalk.http.netty">ProxyResponseException</a></th>
 <td class="colLast">
 <div class="block">A proxy response exception, that indicates an unexpected response status from a proxy.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colFirst" scope="row"><a href="RetryingHttpRequesterFilter.HttpResponseException.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.HttpResponseException</a></th>
+<td class="colLast">
+<div class="block">This exception indicates response that matched the retrying rules of the <a href="RetryingHttpRequesterFilter.html" title="class in io.servicetalk.http.netty"><code>RetryingHttpRequesterFilter</code></a>
+ and will-be/was retried.</div>
 </td>
 </tr>
 </tbody>

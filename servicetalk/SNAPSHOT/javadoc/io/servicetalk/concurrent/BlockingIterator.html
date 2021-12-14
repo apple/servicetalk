@@ -176,7 +176,6 @@ extends <a href="CloseableIterator.html" title="interface in io.servicetalk.conc
 <tr id="i2" class="altColor">
 <td class="colFirst"><code><a href="BlockingIterator.html" title="type parameter in BlockingIterator">T</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#next()">next</a></span>()</code></th>
-<td class="colLast">&nbsp;</td>
 </tr>
 <tr id="i3" class="rowColor">
 <td class="colFirst"><code><a href="BlockingIterator.html" title="type parameter in BlockingIterator">T</a></code></td>
@@ -221,7 +220,12 @@ extends <a href="CloseableIterator.html" title="interface in io.servicetalk.conc
          throws java.util.concurrent.TimeoutException</pre>
 <div class="block">The equivalent of <code>Iterator.hasNext()</code> but only waits for <code>timeout</code> duration amount of time.
  <p>
- Note that <a href="#close()"><code>close()</code></a> is not required to interrupt this call.</div>
+ Note that <a href="#close()"><code>close()</code></a> is not required to interrupt this call.
+ <p>
+ Also note, this method can sneaky-throw an <code>InterruptedException</code> when a blocking operation internally
+ does so. The reason it's not declared is that the <code>Iterator</code> and <code>AutoCloseable</code>
+ interfaces do not declare checked exceptions and <a href="BlockingIterator.html" title="interface in io.servicetalk.concurrent"><code>BlockingIterator</code></a> extends them to allow use in
+ try-with-resources and enhanced for loop.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>timeout</code> - The duration of time to wait. If this value is non-positive that means the timeout expiration is
@@ -250,7 +254,12 @@ extends <a href="CloseableIterator.html" title="interface in io.servicetalk.conc
 throws java.util.concurrent.TimeoutException</pre>
 <div class="block">The equivalent of <a href="#next()"><code>next()</code></a> but only waits for <code>timeout</code> duration of time.
  <p>
- Note that <a href="#close()"><code>close()</code></a> is not required to interrupt this call.</div>
+ Note that <a href="#close()"><code>close()</code></a> is not required to interrupt this call.
+ <p>
+ Also note, this method can sneaky-throw an <code>InterruptedException</code> when a blocking operation internally
+ does so. The reason it's not declared is that the <code>Iterator</code> and <code>AutoCloseable</code>
+ interfaces do not declare checked exceptions and <a href="BlockingIterator.html" title="interface in io.servicetalk.concurrent"><code>BlockingIterator</code></a> extends them to allow use in
+ try-with-resources and enhanced for loop.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>timeout</code> - The duration of time to wait. If this value is non-positive that means the timeout expiration is
@@ -275,6 +284,12 @@ throws java.util.concurrent.TimeoutException</pre>
 <h4>next</h4>
 <pre class="methodSignature">@Nullable
 <a href="BlockingIterator.html" title="type parameter in BlockingIterator">T</a>&nbsp;next()</pre>
+<div class="block">
+ <p>
+ Note, this method can sneaky-throw an <code>InterruptedException</code> when a blocking operation internally
+ does so. The reason it's not declared is that the <code>Iterator</code> and <code>AutoCloseable</code>
+ interfaces do not declare checked exceptions and <a href="BlockingIterator.html" title="interface in io.servicetalk.concurrent"><code>BlockingIterator</code></a> extends them to allow use in
+ try-with-resources and enhanced for loop.</div>
 <dl>
 <dt><span class="overrideSpecifyLabel">Specified by:</span></dt>
 <dd><code>next</code>&nbsp;in interface&nbsp;<code>java.util.Iterator&lt;<a href="BlockingIterator.html" title="type parameter in BlockingIterator">T</a>&gt;</code></dd>

@@ -26,8 +26,8 @@
     catch(err) {
     }
 //-->
-var data = {"i0":6,"i1":6,"i2":6,"i3":6,"i4":6,"i5":6,"i6":6,"i7":6};
-var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"]};
+var data = {"i0":6,"i1":6,"i2":6,"i3":6,"i4":6,"i5":6,"i6":6,"i7":6,"i8":18};
+var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"],16:["t5","Default Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
 var tableTab = "tableTab";
@@ -205,7 +205,7 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </a>
 <h3>Method Summary</h3>
 <table class="memberSummary">
-<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t3" class="tableTab"><span><a href="javascript:show(4);">Abstract Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
+<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t3" class="tableTab"><span><a href="javascript:show(4);">Abstract Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t5" class="tableTab"><span><a href="javascript:show(16);">Default Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
 <tr>
 <th class="colFirst" scope="col">Modifier and Type</th>
 <th class="colSecond" scope="col">Method</th>
@@ -267,6 +267,13 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <div class="block">Callback when a security handshake is initiated.</div>
 </td>
 </tr>
+<tr id="i8" class="altColor">
+<td class="colFirst"><code>default void</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#onTransportHandshakeComplete()">onTransportHandshakeComplete</a></span>()</code></th>
+<td class="colLast">
+<div class="block">Callback when a transport handshake completes.</div>
+</td>
+</tr>
 </table>
 </li>
 </ul>
@@ -322,6 +329,19 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <div class="block">Callback when previously written data is flushed to the connection.</div>
 </li>
 </ul>
+<a id="onTransportHandshakeComplete()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>onTransportHandshakeComplete</h4>
+<pre class="methodSignature">default&nbsp;void&nbsp;onTransportHandshakeComplete()</pre>
+<div class="block">Callback when a transport handshake completes.
+ <p>
+ Transport protocols that require a handshake in order to connect. Example:
+ <a href="https://datatracker.ietf.org/doc/html/rfc793.html#section-3.4">TCP "three-way handshake"</a>.</div>
+</li>
+</ul>
 <a id="onSecurityHandshake()">
 <!--   -->
 </a>
@@ -329,10 +349,24 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <li class="blockList">
 <h4>onSecurityHandshake</h4>
 <pre class="methodSignature"><a href="ConnectionObserver.SecurityHandshakeObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.SecurityHandshakeObserver</a>&nbsp;onSecurityHandshake()</pre>
-<div class="block">Callback when a security handshake is initiated.</div>
+<div class="block">Callback when a security handshake is initiated.
+ <p>
+ For a typical connection, this callback is invoked after <a href="#onTransportHandshakeComplete()"><code>onTransportHandshakeComplete()</code></a>. There are may
+ be exceptions:
+ <ol>
+     <li>For a TCP connection, when <a href="ServiceTalkSocketOptions.html#TCP_FASTOPEN_CONNECT"><code>ServiceTalkSocketOptions.TCP_FASTOPEN_CONNECT</code></a> option is configured and
+     the Fast Open feature is supported by the OS, this callback may be invoked earlier. Note, even if the Fast
+     Open is available and configured, it may not actually happen if the
+     <a href="https://datatracker.ietf.org/doc/html/rfc7413#section-4.1">Fast Open Cookie</a> is <code>null</code> or
+     rejected by the server.</li>
+     <li>For a proxy connections, the handshake may happen after the
+     <a href="#connectionEstablished(io.servicetalk.transport.api.ConnectionInfo)"><code>connectionEstablished(ConnectionInfo)</code></a>.</li>
+ </ol></div>
 <dl>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd>a new <a href="ConnectionObserver.SecurityHandshakeObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver.SecurityHandshakeObserver</code></a> that provides visibility into security handshake events</dd>
+<dt><span class="seeLabel">See Also:</span></dt>
+<dd><a href="https://datatracker.ietf.org/doc/html/rfc7413">RFC7413: TCP Fast Open</a></dd>
 </dl>
 </li>
 </ul>

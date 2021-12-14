@@ -26,8 +26,8 @@
     catch(err) {
     }
 //-->
-var data = {"i0":10,"i1":10};
-var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],8:["t4","Concrete Methods"]};
+var data = {"i0":42,"i1":42};
+var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],8:["t4","Concrete Methods"],32:["t6","Deprecated Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
 var tableTab = "tableTab";
@@ -139,8 +139,13 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <dd><a href="RetryingHttpRequesterFilter.html" title="class in io.servicetalk.http.utils">RetryingHttpRequesterFilter</a></dd>
 </dl>
 <hr>
-<pre>public static final class <span class="typeNameLabel">RetryingHttpRequesterFilter.Builder</span>
+<pre>@Deprecated
+public static final class <span class="typeNameLabel">RetryingHttpRequesterFilter.Builder</span>
 extends <a href="../../client/api/AbstractRetryingFilterBuilder.html" title="class in io.servicetalk.client.api">AbstractRetryingFilterBuilder</a>&lt;<a href="RetryingHttpRequesterFilter.Builder.html" title="class in io.servicetalk.http.utils">RetryingHttpRequesterFilter.Builder</a>,&#8203;<a href="RetryingHttpRequesterFilter.html" title="class in io.servicetalk.http.utils">RetryingHttpRequesterFilter</a>,&#8203;<a href="../api/HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a>&gt;</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">A replacement retrying http filter builder is available through
+ <code>io.servicetalk.http.netty.RetryingHttpRequesterFilterBuilder</code></div>
+</div>
 <div class="block">A builder for <a href="RetryingHttpRequesterFilter.html" title="class in io.servicetalk.http.utils"><code>RetryingHttpRequesterFilter</code></a>, which puts an upper bound on retry attempts.
  To configure the maximum number of retry attempts see <a href="../../client/api/AbstractRetryingFilterBuilder.html#maxRetries(int)"><code>AbstractRetryingFilterBuilder.maxRetries(int)</code></a>.</div>
 </li>
@@ -181,7 +186,9 @@ extends <a href="../../client/api/AbstractRetryingFilterBuilder.html" title="cla
 </tr>
 <tr class="altColor">
 <th class="colConstructorName" scope="row"><code><span class="memberNameLink"><a href="#%3Cinit%3E()">Builder</a></span>()</code></th>
-<td class="colLast">&nbsp;</td>
+<td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span></div>
+&nbsp;</td>
 </tr>
 </table>
 </li>
@@ -195,7 +202,7 @@ extends <a href="../../client/api/AbstractRetryingFilterBuilder.html" title="cla
 </a>
 <h3>Method Summary</h3>
 <table class="memberSummary">
-<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t4" class="tableTab"><span><a href="javascript:show(8);">Concrete Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
+<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t4" class="tableTab"><span><a href="javascript:show(8);">Concrete Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t6" class="tableTab"><span><a href="javascript:show(32);">Deprecated Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
 <tr>
 <th class="colFirst" scope="col">Modifier and Type</th>
 <th class="colSecond" scope="col">Method</th>
@@ -205,6 +212,7 @@ extends <a href="../../client/api/AbstractRetryingFilterBuilder.html" title="cla
 <td class="colFirst"><code>protected <a href="RetryingHttpRequesterFilter.html" title="class in io.servicetalk.http.utils">RetryingHttpRequesterFilter</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#build(io.servicetalk.client.api.AbstractRetryingFilterBuilder.ReadOnlyRetryableSettings)">build</a></span>&#8203;(<a href="../../client/api/AbstractRetryingFilterBuilder.ReadOnlyRetryableSettings.html" title="class in io.servicetalk.client.api">AbstractRetryingFilterBuilder.ReadOnlyRetryableSettings</a>&lt;<a href="../api/HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a>&gt;&nbsp;readOnlySettings)</code></th>
 <td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Builds a retrying <a href="../../client/api/AbstractRetryingFilterBuilder.html" title="class in io.servicetalk.client.api"><code>AbstractRetryingFilterBuilder</code></a> for provided
  <a href="../../client/api/AbstractRetryingFilterBuilder.ReadOnlyRetryableSettings.html" title="class in io.servicetalk.client.api"><code>ReadOnlyRetryableSettings&lt;Meta&gt;</code></a>.</div>
 </td>
@@ -213,6 +221,7 @@ extends <a href="../../client/api/AbstractRetryingFilterBuilder.html" title="cla
 <td class="colFirst"><code>java.util.function.BiPredicate&lt;<a href="../api/HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a>,&#8203;java.lang.Throwable&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#retryForIdempotentRequestsPredicate()">retryForIdempotentRequestsPredicate</a></span>()</code></th>
 <td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Behaves as <a href="../../client/api/AbstractRetryingFilterBuilder.html#defaultRetryForPredicate()"><code>AbstractRetryingFilterBuilder.defaultRetryForPredicate()</code></a>, but also retries
  <a href="https://tools.ietf.org/html/rfc7231#section-4.2.2">idempotent</a> requests when applicable.</div>
 </td>
@@ -255,6 +264,7 @@ extends <a href="../../client/api/AbstractRetryingFilterBuilder.html" title="cla
 <li class="blockList">
 <h4>Builder</h4>
 <pre>public&nbsp;Builder()</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
 </li>
 </ul>
 </li>
@@ -274,6 +284,7 @@ extends <a href="../../client/api/AbstractRetryingFilterBuilder.html" title="cla
 <li class="blockList">
 <h4>build</h4>
 <pre class="methodSignature">protected&nbsp;<a href="RetryingHttpRequesterFilter.html" title="class in io.servicetalk.http.utils">RetryingHttpRequesterFilter</a>&nbsp;build&#8203;(<a href="../../client/api/AbstractRetryingFilterBuilder.ReadOnlyRetryableSettings.html" title="class in io.servicetalk.client.api">AbstractRetryingFilterBuilder.ReadOnlyRetryableSettings</a>&lt;<a href="../api/HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a>&gt;&nbsp;readOnlySettings)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block"><span class="descfrmTypeLabel">Description copied from class:&nbsp;<code><a href="../../client/api/AbstractRetryingFilterBuilder.html#build(io.servicetalk.client.api.AbstractRetryingFilterBuilder.ReadOnlyRetryableSettings)">AbstractRetryingFilterBuilder</a></code></span></div>
 <div class="block">Builds a retrying <a href="../../client/api/AbstractRetryingFilterBuilder.html" title="class in io.servicetalk.client.api"><code>AbstractRetryingFilterBuilder</code></a> for provided
  <a href="../../client/api/AbstractRetryingFilterBuilder.ReadOnlyRetryableSettings.html" title="class in io.servicetalk.client.api"><code>ReadOnlyRetryableSettings&lt;Meta&gt;</code></a>.</div>
@@ -294,13 +305,15 @@ extends <a href="../../client/api/AbstractRetryingFilterBuilder.html" title="cla
 <li class="blockList">
 <h4>retryForIdempotentRequestsPredicate</h4>
 <pre class="methodSignature">public&nbsp;java.util.function.BiPredicate&lt;<a href="../api/HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a>,&#8203;java.lang.Throwable&gt;&nbsp;retryForIdempotentRequestsPredicate()</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Behaves as <a href="../../client/api/AbstractRetryingFilterBuilder.html#defaultRetryForPredicate()"><code>AbstractRetryingFilterBuilder.defaultRetryForPredicate()</code></a>, but also retries
  <a href="https://tools.ietf.org/html/rfc7231#section-4.2.2">idempotent</a> requests when applicable.
  <p>
  <b>Note:</b> This predicate expects that the retried <a href="../api/StreamingHttpRequest.html" title="interface in io.servicetalk.http.api"><code>requests</code></a> have a
- <a href="../api/StreamingHttpRequest.html#payloadBody()"><code>payload body</code></a> that is replayable, i.e. multiple subscribes to the
- payload <a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> emit the same data. <a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>s that do not emit any data or which are
- created from in-memory data are typically replayable.</div>
+ <a href="../api/StreamingHttpRequest.html#payloadBody()"><code>payload body</code></a> that is
+ <a href="http://reactivex.io/documentation/operators/replay.html">replayable</a>, i.e. multiple subscribes to
+ the payload <a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> observe the same data. <a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>s that do not emit any data or which
+ are created from in-memory data are typically replayable.</div>
 <dl>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd>a <code>BiPredicate</code> for <a href="../../client/api/AbstractRetryingFilterBuilder.html#retryFor(java.util.function.BiPredicate)"><code>AbstractRetryingFilterBuilder.retryFor(BiPredicate)</code></a> builder method</dd>

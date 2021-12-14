@@ -190,7 +190,7 @@ implements <a href="HttpExecutionStrategy.html" title="interface in io.serviceta
 <td class="colFirst"><code><a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#executor()">executor</a></span>()</code></th>
 <td class="colLast">
-<div class="block">Returns the <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a>, if any for this <a href="../../transport/api/ExecutionStrategy.html" title="interface in io.servicetalk.transport.api"><code>ExecutionStrategy</code></a>.</div>
+<div class="block">Returns the <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a>, if any, for this <a href="../../transport/api/ExecutionStrategy.html" title="interface in io.servicetalk.transport.api"><code>ExecutionStrategy</code></a>.</div>
 </td>
 </tr>
 <tr id="i2" class="altColor">
@@ -398,7 +398,7 @@ implements <a href="HttpExecutionStrategy.html" title="interface in io.serviceta
 <dd><code>errorHandler</code> - In case there is an error before calling the passed <code>service</code>, this <code>BiFunction</code>
  will be called to generate an error response.</dd>
 <dt><span class="returnLabel">Returns:</span></dt>
-<dd>A flattened <a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> containing all data constituting an HTTP response..</dd>
+<dd>A flattened <a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> containing all data constituting an HTTP response.</dd>
 </dl>
 </li>
 </ul>
@@ -629,7 +629,7 @@ implements <a href="HttpExecutionStrategy.html" title="interface in io.serviceta
 <pre class="methodSignature">@Nullable
 public&nbsp;<a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;executor()</pre>
 <div class="block"><span class="descfrmTypeLabel">Description copied from interface:&nbsp;<code><a href="../../transport/api/ExecutionStrategy.html#executor()">ExecutionStrategy</a></code></span></div>
-<div class="block">Returns the <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a>, if any for this <a href="../../transport/api/ExecutionStrategy.html" title="interface in io.servicetalk.transport.api"><code>ExecutionStrategy</code></a>.</div>
+<div class="block">Returns the <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a>, if any, for this <a href="../../transport/api/ExecutionStrategy.html" title="interface in io.servicetalk.transport.api"><code>ExecutionStrategy</code></a>.</div>
 <dl>
 <dt><span class="overrideSpecifyLabel">Specified by:</span></dt>
 <dd><code><a href="../../transport/api/ExecutionStrategy.html#executor()">executor</a></code>&nbsp;in interface&nbsp;<code><a href="../../transport/api/ExecutionStrategy.html" title="interface in io.servicetalk.transport.api">ExecutionStrategy</a></code></dd>

@@ -137,19 +137,21 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <pre>public final class <span class="typeNameLabel">RedirectingHttpRequesterFilter</span>
 extends java.lang.Object
 implements <a href="../api/StreamingHttpClientFilterFactory.html" title="interface in io.servicetalk.http.api">StreamingHttpClientFilterFactory</a>, <a href="../api/StreamingHttpConnectionFilterFactory.html" title="interface in io.servicetalk.http.api">StreamingHttpConnectionFilterFactory</a>, <a href="../api/HttpExecutionStrategyInfluencer.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategyInfluencer</a></pre>
-<div class="block">A HTTP request filter that performs automatic redirects if <a href="../api/StreamingHttpRequester.html#request(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.StreamingHttpRequest)"><code>StreamingHttpRequester.request(HttpExecutionStrategy, StreamingHttpRequest)</code></a> method receives 3XX status code in the
- <a href="../api/StreamingHttpResponse.html" title="interface in io.servicetalk.http.api"><code>response</code></a>.
+<div class="block">An HTTP request filter that performs automatic
+ <a href="https://datatracker.ietf.org/doc/html/rfc7231#section-6.4">redirection</a> if a client receives
+ <a href="../api/HttpResponseStatus.StatusClass.html#REDIRECTION_3XX"><code>3XX status code</code></a> in the <a href="../api/HttpResponseMetaData.html" title="interface in io.servicetalk.http.api"><code>response</code></a>.
  <p>
  <b>Notes</b>:
  <ul>
-     <li>This implementation will not parse a payload for 300 (Multiple Choices) response code, if a preferred
-     choice's URI reference is not returned in the <a href="../api/HttpHeaderNames.html#LOCATION"><code>Location</code></a> header.</li>
-     <li>This implementation creates a redirect request internally with a request target in the
-     <a href="https://tools.ietf.org/html/rfc7230#section-5.3.1">origin-form</a> and assumes that
-     <a href="../api/HttpRequestMetaData.html#requestTarget()"><code>request target</code></a> and <a href="../api/HttpHeaderNames.html#HOST"><code>host header</code></a> are
-     sufficient for a provided request-to-group-key function.</li>
+     <li>This implementation will not parse a payload for
+     <a href="../api/HttpResponseStatus.html#MULTIPLE_CHOICES"><code>300 (Multiple Choices)</code></a> response code, if a preferred choice's URI
+     reference is not returned in the <a href="../api/HttpHeaderNames.html#LOCATION"><code>Location</code></a> header.</li>
      <li>Depending on its parameters and context: <a href="../api/HttpClient.html" title="interface in io.servicetalk.http.api"><code>HttpClient</code></a> or <a href="../api/HttpConnection.html" title="interface in io.servicetalk.http.api"><code>HttpConnection</code></a>, this filter may be
      limited to automatically following relative redirects only.</li>
+     <li>This implementation will automatically redirect headers and message body for relative locations.</li>
+     <li>For security reasons, this implementation will NOT automatically redirect headers and message body for
+     non-relative locations. Use <a href="../api/RedirectConfig.html" title="interface in io.servicetalk.http.api"><code>RedirectConfig</code></a> to opt-in for redirect of requires request components.
+     </li>
  </ul></div>
 </li>
 </ul>
@@ -179,14 +181,18 @@ implements <a href="../api/StreamingHttpClientFilterFactory.html" title="interfa
 <tr class="rowColor">
 <th class="colConstructorName" scope="row"><code><span class="memberNameLink"><a href="#%3Cinit%3E(boolean)">RedirectingHttpRequesterFilter</a></span>&#8203;(boolean&nbsp;onlyRelativeClient)</code></th>
 <td class="colLast">
-<div class="block">Create a new instance, performing relative redirects only for <a href="../api/HttpConnection.html" title="interface in io.servicetalk.http.api"><code>HttpConnection</code></a>.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#%3Cinit%3E(io.servicetalk.http.api.RedirectConfig)"><code>RedirectingHttpRequesterFilter(RedirectConfig)</code></a>.</div>
+</div>
 </td>
 </tr>
 <tr class="altColor">
 <th class="colConstructorName" scope="row"><code><span class="memberNameLink"><a href="#%3Cinit%3E(boolean,boolean)">RedirectingHttpRequesterFilter</a></span>&#8203;(boolean&nbsp;onlyRelativeClient,
                               boolean&nbsp;onlyRelativeConnection)</code></th>
 <td class="colLast">
-<div class="block">Create a new instance.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#%3Cinit%3E(io.servicetalk.http.api.RedirectConfig)"><code>RedirectingHttpRequesterFilter(RedirectConfig)</code></a>.</div>
+</div>
 </td>
 </tr>
 <tr class="rowColor">
@@ -194,20 +200,32 @@ implements <a href="../api/StreamingHttpClientFilterFactory.html" title="interfa
                               boolean&nbsp;onlyRelativeConnection,
                               int&nbsp;maxRedirects)</code></th>
 <td class="colLast">
-<div class="block">Create a new instance.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#%3Cinit%3E(io.servicetalk.http.api.RedirectConfig)"><code>RedirectingHttpRequesterFilter(RedirectConfig)</code></a>.</div>
+</div>
 </td>
 </tr>
 <tr class="altColor">
 <th class="colConstructorName" scope="row"><code><span class="memberNameLink"><a href="#%3Cinit%3E(boolean,int)">RedirectingHttpRequesterFilter</a></span>&#8203;(boolean&nbsp;onlyRelativeClient,
                               int&nbsp;maxRedirects)</code></th>
 <td class="colLast">
-<div class="block">Create a new instance, performing relative redirects only for <a href="../api/HttpConnection.html" title="interface in io.servicetalk.http.api"><code>HttpConnection</code></a>.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#%3Cinit%3E(io.servicetalk.http.api.RedirectConfig)"><code>RedirectingHttpRequesterFilter(RedirectConfig)</code></a>.</div>
+</div>
 </td>
 </tr>
 <tr class="rowColor">
 <th class="colConstructorName" scope="row"><code><span class="memberNameLink"><a href="#%3Cinit%3E(int)">RedirectingHttpRequesterFilter</a></span>&#8203;(int&nbsp;maxRedirects)</code></th>
 <td class="colLast">
-<div class="block">Create a new instance, only performing relative redirects.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#%3Cinit%3E(io.servicetalk.http.api.RedirectConfig)"><code>RedirectingHttpRequesterFilter(RedirectConfig)</code></a>.</div>
+</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colConstructorName" scope="row"><code><span class="memberNameLink"><a href="#%3Cinit%3E(io.servicetalk.http.api.RedirectConfig)">RedirectingHttpRequesterFilter</a></span>&#8203;(<a href="../api/RedirectConfig.html" title="interface in io.servicetalk.http.api">RedirectConfig</a>&nbsp;config)</code></th>
+<td class="colLast">
+<div class="block">Create a new instance.</div>
 </td>
 </tr>
 </table>
@@ -304,7 +322,11 @@ implements <a href="../api/StreamingHttpClientFilterFactory.html" title="interfa
 <ul class="blockList">
 <li class="blockList">
 <h4>RedirectingHttpRequesterFilter</h4>
-<pre>public&nbsp;RedirectingHttpRequesterFilter&#8203;(int&nbsp;maxRedirects)</pre>
+<pre>@Deprecated
+public&nbsp;RedirectingHttpRequesterFilter&#8203;(int&nbsp;maxRedirects)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#%3Cinit%3E(io.servicetalk.http.api.RedirectConfig)"><code>RedirectingHttpRequesterFilter(RedirectConfig)</code></a>.</div>
+</div>
 <div class="block">Create a new instance, only performing relative redirects.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
@@ -318,7 +340,11 @@ implements <a href="../api/StreamingHttpClientFilterFactory.html" title="interfa
 <ul class="blockList">
 <li class="blockList">
 <h4>RedirectingHttpRequesterFilter</h4>
-<pre>public&nbsp;RedirectingHttpRequesterFilter&#8203;(boolean&nbsp;onlyRelativeClient)</pre>
+<pre>@Deprecated
+public&nbsp;RedirectingHttpRequesterFilter&#8203;(boolean&nbsp;onlyRelativeClient)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#%3Cinit%3E(io.servicetalk.http.api.RedirectConfig)"><code>RedirectingHttpRequesterFilter(RedirectConfig)</code></a>.</div>
+</div>
 <div class="block">Create a new instance, performing relative redirects only for <a href="../api/HttpConnection.html" title="interface in io.servicetalk.http.api"><code>HttpConnection</code></a>.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
@@ -332,8 +358,12 @@ implements <a href="../api/StreamingHttpClientFilterFactory.html" title="interfa
 <ul class="blockList">
 <li class="blockList">
 <h4>RedirectingHttpRequesterFilter</h4>
-<pre>public&nbsp;RedirectingHttpRequesterFilter&#8203;(boolean&nbsp;onlyRelativeClient,
+<pre>@Deprecated
+public&nbsp;RedirectingHttpRequesterFilter&#8203;(boolean&nbsp;onlyRelativeClient,
                                       int&nbsp;maxRedirects)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#%3Cinit%3E(io.servicetalk.http.api.RedirectConfig)"><code>RedirectingHttpRequesterFilter(RedirectConfig)</code></a>.</div>
+</div>
 <div class="block">Create a new instance, performing relative redirects only for <a href="../api/HttpConnection.html" title="interface in io.servicetalk.http.api"><code>HttpConnection</code></a>.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
@@ -348,8 +378,12 @@ implements <a href="../api/StreamingHttpClientFilterFactory.html" title="interfa
 <ul class="blockList">
 <li class="blockList">
 <h4>RedirectingHttpRequesterFilter</h4>
-<pre>public&nbsp;RedirectingHttpRequesterFilter&#8203;(boolean&nbsp;onlyRelativeClient,
+<pre>@Deprecated
+public&nbsp;RedirectingHttpRequesterFilter&#8203;(boolean&nbsp;onlyRelativeClient,
                                       boolean&nbsp;onlyRelativeConnection)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#%3Cinit%3E(io.servicetalk.http.api.RedirectConfig)"><code>RedirectingHttpRequesterFilter(RedirectConfig)</code></a>.</div>
+</div>
 <div class="block">Create a new instance.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
@@ -361,18 +395,36 @@ implements <a href="../api/StreamingHttpClientFilterFactory.html" title="interfa
 <a id="&lt;init&gt;(boolean,boolean,int)">
 <!--   -->
 </a>
-<ul class="blockListLast">
+<ul class="blockList">
 <li class="blockList">
 <h4>RedirectingHttpRequesterFilter</h4>
-<pre>public&nbsp;RedirectingHttpRequesterFilter&#8203;(boolean&nbsp;onlyRelativeClient,
+<pre>@Deprecated
+public&nbsp;RedirectingHttpRequesterFilter&#8203;(boolean&nbsp;onlyRelativeClient,
                                       boolean&nbsp;onlyRelativeConnection,
                                       int&nbsp;maxRedirects)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#%3Cinit%3E(io.servicetalk.http.api.RedirectConfig)"><code>RedirectingHttpRequesterFilter(RedirectConfig)</code></a>.</div>
+</div>
 <div class="block">Create a new instance.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>onlyRelativeClient</code> - Limits the redirects to relative paths for <a href="../api/HttpClient.html" title="interface in io.servicetalk.http.api"><code>HttpClient</code></a> filters.</dd>
 <dd><code>onlyRelativeConnection</code> - Limits the redirects to relative paths for <a href="../api/HttpConnection.html" title="interface in io.servicetalk.http.api"><code>HttpConnection</code></a> filters.</dd>
 <dd><code>maxRedirects</code> - The maximum number of follow up redirects.</dd>
+</dl>
+</li>
+</ul>
+<a id="&lt;init&gt;(io.servicetalk.http.api.RedirectConfig)">
+<!--   -->
+</a>
+<ul class="blockListLast">
+<li class="blockList">
+<h4>RedirectingHttpRequesterFilter</h4>
+<pre>public&nbsp;RedirectingHttpRequesterFilter&#8203;(<a href="../api/RedirectConfig.html" title="interface in io.servicetalk.http.api">RedirectConfig</a>&nbsp;config)</pre>
+<div class="block">Create a new instance.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>config</code> - <a href="../api/RedirectConfig.html" title="interface in io.servicetalk.http.api"><code>RedirectConfig</code></a> to customize the behavior.</dd>
 </dl>
 </li>
 </ul>

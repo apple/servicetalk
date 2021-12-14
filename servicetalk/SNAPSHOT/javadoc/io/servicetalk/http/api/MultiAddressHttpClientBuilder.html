@@ -26,7 +26,7 @@
     catch(err) {
     }
 //-->
-var data = {"i0":38,"i1":6,"i2":38,"i3":10,"i4":42,"i5":38,"i6":38,"i7":42,"i8":38,"i9":38,"i10":10,"i11":10,"i12":10,"i13":6,"i14":38,"i15":38,"i16":38,"i17":38,"i18":6,"i19":38,"i20":38,"i21":6,"i22":38,"i23":38,"i24":38,"i25":38,"i26":38,"i27":38};
+var data = {"i0":38,"i1":38,"i2":38,"i3":42,"i4":42,"i5":38,"i6":38,"i7":42,"i8":38,"i9":6,"i10":10,"i11":10,"i12":10,"i13":6,"i14":38,"i15":38,"i16":38,"i17":6,"i18":10,"i19":10,"i20":6,"i21":6,"i22":38,"i23":42,"i24":38,"i25":10,"i26":38,"i27":38,"i28":38,"i29":38,"i30":38};
 var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"],8:["t4","Concrete Methods"],32:["t6","Deprecated Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
@@ -227,8 +227,13 @@ extends java.lang.Object</pre>
 <td class="colFirst"><code>abstract <a href="MultiAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">U</a>,&#8203;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">R</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#appendClientFilter(io.servicetalk.http.api.MultiAddressHttpClientFilterFactory)">appendClientFilter</a></span>&#8203;(<a href="MultiAddressHttpClientFilterFactory.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientFilterFactory</a>&lt;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">U</a>&gt;&nbsp;factory)</code></th>
 <td class="colLast">
-<div class="block">Appends the filter to the chain of filters used to decorate the <a href="StreamingHttpClient.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpClient</code></a> created by this
- builder for a given <code>UnresolvedAddress</code>.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use
+   <a href="#initializer(io.servicetalk.http.api.MultiAddressHttpClientBuilder.SingleAddressInitializer)"><code>initializer(SingleAddressInitializer)</code></a> and
+   <a href="SingleAddressHttpClientBuilder.html#appendClientFilter(io.servicetalk.http.api.StreamingHttpClientFilterFactory)"><code>SingleAddressHttpClientBuilder.appendClientFilter(StreamingHttpClientFilterFactory)</code></a>
+   on the last argument of
+   <a href="MultiAddressHttpClientBuilder.SingleAddressInitializer.html#initialize(java.lang.String,U,io.servicetalk.http.api.SingleAddressHttpClientBuilder)"><code>MultiAddressHttpClientBuilder.SingleAddressInitializer.initialize(String, Object, SingleAddressHttpClientBuilder)</code></a>.</div>
+</div>
 </td>
 </tr>
 <tr id="i2" class="altColor">
@@ -247,8 +252,13 @@ extends java.lang.Object</pre>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#appendClientFilter(java.util.function.Predicate,io.servicetalk.http.api.MultiAddressHttpClientFilterFactory)">appendClientFilter</a></span>&#8203;(java.util.function.Predicate&lt;<a href="StreamingHttpRequest.html" title="interface in io.servicetalk.http.api">StreamingHttpRequest</a>&gt;&nbsp;predicate,
                   <a href="MultiAddressHttpClientFilterFactory.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientFilterFactory</a>&lt;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">U</a>&gt;&nbsp;factory)</code></th>
 <td class="colLast">
-<div class="block">Appends the filter to the chain of filters used to decorate the <a href="StreamingHttpClient.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpClient</code></a> created by this
- builder for a given <code>UnresolvedAddress</code>, for every request that passes the provided <code>Predicate</code>.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use
+   <a href="#initializer(io.servicetalk.http.api.MultiAddressHttpClientBuilder.SingleAddressInitializer)"><code>initializer(SingleAddressInitializer)</code></a> and
+   <a href="SingleAddressHttpClientBuilder.html#appendClientFilter(java.util.function.Predicate,io.servicetalk.http.api.StreamingHttpClientFilterFactory)"><code>SingleAddressHttpClientBuilder.appendClientFilter(Predicate, StreamingHttpClientFilterFactory)</code></a>
+   on the last argument of
+   <a href="MultiAddressHttpClientBuilder.SingleAddressInitializer.html#initialize(java.lang.String,U,io.servicetalk.http.api.SingleAddressHttpClientBuilder)"><code>MultiAddressHttpClientBuilder.SingleAddressInitializer.initialize(String, Object, SingleAddressHttpClientBuilder)</code></a>.</div>
+</div>
 </td>
 </tr>
 <tr id="i4" class="altColor">
@@ -312,11 +322,7 @@ extends java.lang.Object</pre>
 <td class="colFirst"><code>abstract <a href="MultiAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">U</a>,&#8203;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">R</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#bufferAllocator(io.servicetalk.buffer.api.BufferAllocator)">bufferAllocator</a></span>&#8203;(<a href="../../buffer/api/BufferAllocator.html" title="interface in io.servicetalk.buffer.api">BufferAllocator</a>&nbsp;allocator)</code></th>
 <td class="colLast">
-<div class="block"><span class="deprecatedLabel">Deprecated.</span>
-<div class="deprecationComment">Use <a href="#initializer(io.servicetalk.http.api.MultiAddressHttpClientBuilder.SingleAddressInitializer)"><code>initializer(SingleAddressInitializer)</code></a> and
- <a href="SingleAddressHttpClientBuilder.html#bufferAllocator(io.servicetalk.buffer.api.BufferAllocator)"><code>SingleAddressHttpClientBuilder.bufferAllocator(BufferAllocator)</code></a> on the last argument of
- <a href="MultiAddressHttpClientBuilder.SingleAddressInitializer.html#initialize(java.lang.String,U,io.servicetalk.http.api.SingleAddressHttpClientBuilder)"><code>MultiAddressHttpClientBuilder.SingleAddressInitializer.initialize(String, Object, SingleAddressHttpClientBuilder)</code></a>.</div>
-</div>
+<div class="block">Sets the <a href="../../buffer/api/BufferAllocator.html" title="interface in io.servicetalk.buffer.api"><code>BufferAllocator</code></a> for all connections created from this builder.</div>
 </td>
 </tr>
 <tr id="i10" class="altColor">
@@ -382,32 +388,38 @@ extends java.lang.Object</pre>
 <td class="colFirst"><code>abstract <a href="MultiAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">U</a>,&#8203;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">R</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#executionStrategy(io.servicetalk.http.api.HttpExecutionStrategy)">executionStrategy</a></span>&#8203;(<a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategy</a>&nbsp;strategy)</code></th>
 <td class="colLast">
-<div class="block"><span class="deprecatedLabel">Deprecated.</span>
-<div class="deprecationComment">Use <a href="#initializer(io.servicetalk.http.api.MultiAddressHttpClientBuilder.SingleAddressInitializer)"><code>initializer(SingleAddressInitializer)</code></a> and
- <a href="SingleAddressHttpClientBuilder.html#executionStrategy(io.servicetalk.http.api.HttpExecutionStrategy)"><code>SingleAddressHttpClientBuilder.executionStrategy(HttpExecutionStrategy)</code></a> on the last argument of
- <a href="MultiAddressHttpClientBuilder.SingleAddressInitializer.html#initialize(java.lang.String,U,io.servicetalk.http.api.SingleAddressHttpClientBuilder)"><code>MultiAddressHttpClientBuilder.SingleAddressInitializer.initialize(String, Object, SingleAddressHttpClientBuilder)</code></a>.</div>
-</div>
+<div class="block">Sets the <a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> for all connections created from this builder.</div>
 </td>
 </tr>
 <tr id="i18" class="altColor">
+<td class="colFirst"><code><a href="MultiAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">U</a>,&#8203;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">R</a>&gt;</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#executor(io.servicetalk.concurrent.api.Executor)">executor</a></span>&#8203;(<a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;executor)</code></th>
+<td class="colLast">
+<div class="block">Sets the <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> for all connections created from this builder.</div>
+</td>
+</tr>
+<tr id="i19" class="rowColor">
+<td class="colFirst"><code><a href="MultiAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">U</a>,&#8203;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">R</a>&gt;</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#followRedirects(io.servicetalk.http.api.RedirectConfig)">followRedirects</a></span>&#8203;(<a href="RedirectConfig.html" title="interface in io.servicetalk.http.api">RedirectConfig</a>&nbsp;config)</code></th>
+<td class="colLast">
+<div class="block">Enables <a href="https://datatracker.ietf.org/doc/html/rfc7231#section-6.4">redirection</a>.</div>
+</td>
+</tr>
+<tr id="i20" class="altColor">
 <td class="colFirst"><code>abstract <a href="MultiAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">U</a>,&#8203;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">R</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#initializer(io.servicetalk.http.api.MultiAddressHttpClientBuilder.SingleAddressInitializer)">initializer</a></span>&#8203;(<a href="MultiAddressHttpClientBuilder.SingleAddressInitializer.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientBuilder.SingleAddressInitializer</a>&lt;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">U</a>,&#8203;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">R</a>&gt;&nbsp;initializer)</code></th>
 <td class="colLast">
 <div class="block">Set a function which can customize options for each <a href="StreamingHttpClient.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpClient</code></a> that is built.</div>
 </td>
 </tr>
-<tr id="i19" class="rowColor">
+<tr id="i21" class="rowColor">
 <td class="colFirst"><code>abstract <a href="MultiAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">U</a>,&#8203;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">R</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#ioExecutor(io.servicetalk.transport.api.IoExecutor)">ioExecutor</a></span>&#8203;(<a href="../../transport/api/IoExecutor.html" title="interface in io.servicetalk.transport.api">IoExecutor</a>&nbsp;ioExecutor)</code></th>
 <td class="colLast">
-<div class="block"><span class="deprecatedLabel">Deprecated.</span>
-<div class="deprecationComment">Use <a href="#initializer(io.servicetalk.http.api.MultiAddressHttpClientBuilder.SingleAddressInitializer)"><code>initializer(SingleAddressInitializer)</code></a> and
- <a href="SingleAddressHttpClientBuilder.html#ioExecutor(io.servicetalk.transport.api.IoExecutor)"><code>SingleAddressHttpClientBuilder.ioExecutor(IoExecutor)</code></a> on the last argument of
- <a href="MultiAddressHttpClientBuilder.SingleAddressInitializer.html#initialize(java.lang.String,U,io.servicetalk.http.api.SingleAddressHttpClientBuilder)"><code>MultiAddressHttpClientBuilder.SingleAddressInitializer.initialize(String, Object, SingleAddressHttpClientBuilder)</code></a>.</div>
-</div>
+<div class="block">Sets the <a href="../../transport/api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a> for all connections created from this builder.</div>
 </td>
 </tr>
-<tr id="i20" class="altColor">
+<tr id="i22" class="altColor">
 <td class="colFirst"><code>abstract <a href="MultiAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">U</a>,&#8203;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">R</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#loadBalancerFactory(io.servicetalk.http.api.HttpLoadBalancerFactory)">loadBalancerFactory</a></span>&#8203;(<a href="HttpLoadBalancerFactory.html" title="interface in io.servicetalk.http.api">HttpLoadBalancerFactory</a>&lt;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">R</a>&gt;&nbsp;loadBalancerFactory)</code></th>
 <td class="colLast">
@@ -418,14 +430,16 @@ extends java.lang.Object</pre>
 </div>
 </td>
 </tr>
-<tr id="i21" class="rowColor">
-<td class="colFirst"><code>abstract <a href="MultiAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">U</a>,&#8203;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">R</a>&gt;</code></td>
+<tr id="i23" class="rowColor">
+<td class="colFirst"><code><a href="MultiAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">U</a>,&#8203;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">R</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#maxRedirects(int)">maxRedirects</a></span>&#8203;(int&nbsp;maxRedirects)</code></th>
 <td class="colLast">
-<div class="block">Sets a maximum number of redirects to follow.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#followRedirects(io.servicetalk.http.api.RedirectConfig)"><code>followRedirects(RedirectConfig)</code></a> with <a href="RedirectConfigBuilder.html#maxRedirects(int)"><code>RedirectConfigBuilder.maxRedirects(int)</code></a>.</div>
+</div>
 </td>
 </tr>
-<tr id="i22" class="altColor">
+<tr id="i24" class="altColor">
 <td class="colFirst"><code>abstract <a href="MultiAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">U</a>,&#8203;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">R</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#protocols(io.servicetalk.http.api.HttpProtocolConfig...)">protocols</a></span>&#8203;(<a href="HttpProtocolConfig.html" title="interface in io.servicetalk.http.api">HttpProtocolConfig</a>...&nbsp;protocols)</code></th>
 <td class="colLast">
@@ -436,18 +450,25 @@ extends java.lang.Object</pre>
 </div>
 </td>
 </tr>
-<tr id="i23" class="rowColor">
+<tr id="i25" class="rowColor">
+<td class="colFirst"><code>io.servicetalk.http.api.HttpClientBuilder&lt;U,&#8203;R,&#8203;SDE&gt;</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#retryServiceDiscoveryErrors(io.servicetalk.concurrent.api.BiIntFunction)">retryServiceDiscoveryErrors</a></span>&#8203;(<a href="../../concurrent/api/BiIntFunction.html" title="interface in io.servicetalk.concurrent.api">BiIntFunction</a>&lt;java.lang.Throwable,&#8203;? extends <a href="../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>&gt;&nbsp;retryStrategy)</code></th>
+<td class="colLast">
+<div class="block">Sets a retry strategy to retry errors emitted by <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>.</div>
+</td>
+</tr>
+<tr id="i26" class="altColor">
 <td class="colFirst"><code>abstract <a href="MultiAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">U</a>,&#8203;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">R</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#retryServiceDiscoveryErrors(io.servicetalk.http.api.ServiceDiscoveryRetryStrategy)">retryServiceDiscoveryErrors</a></span>&#8203;(<a href="ServiceDiscoveryRetryStrategy.html" title="interface in io.servicetalk.http.api">ServiceDiscoveryRetryStrategy</a>&lt;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">R</a>,&#8203;<a href="../../client/api/ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">R</a>&gt;&gt;&nbsp;retryStrategy)</code></th>
 <td class="colLast">
 <div class="block"><span class="deprecatedLabel">Deprecated.</span>
 <div class="deprecationComment">Use <a href="#initializer(io.servicetalk.http.api.MultiAddressHttpClientBuilder.SingleAddressInitializer)"><code>initializer(SingleAddressInitializer)</code></a> and
- <a href="SingleAddressHttpClientBuilder.html#retryServiceDiscoveryErrors(io.servicetalk.http.api.ServiceDiscoveryRetryStrategy)"><code>SingleAddressHttpClientBuilder.retryServiceDiscoveryErrors(ServiceDiscoveryRetryStrategy)</code></a> on the last
+ <code>HttpClientBuilder.retryServiceDiscoveryErrors(ServiceDiscoveryRetryStrategy)</code> on the last
  argument of <a href="MultiAddressHttpClientBuilder.SingleAddressInitializer.html#initialize(java.lang.String,U,io.servicetalk.http.api.SingleAddressHttpClientBuilder)"><code>MultiAddressHttpClientBuilder.SingleAddressInitializer.initialize(String, Object, SingleAddressHttpClientBuilder)</code></a>.</div>
 </div>
 </td>
 </tr>
-<tr id="i24" class="altColor">
+<tr id="i27" class="rowColor">
 <td class="colFirst"><code>abstract <a href="MultiAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">U</a>,&#8203;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">R</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#secure(java.util.function.BiConsumer)">secure</a></span>&#8203;(java.util.function.BiConsumer&lt;<a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>,&#8203;<a href="../../transport/api/ClientSecurityConfigurator.html" title="interface in io.servicetalk.transport.api">ClientSecurityConfigurator</a>&gt;&nbsp;sslConfigFunction)</code></th>
 <td class="colLast">
@@ -457,7 +478,7 @@ extends java.lang.Object</pre>
 </div>
 </td>
 </tr>
-<tr id="i25" class="rowColor">
+<tr id="i28" class="altColor">
 <td class="colFirst"><code>abstract <a href="MultiAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">U</a>,&#8203;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">R</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#serviceDiscoverer(io.servicetalk.client.api.ServiceDiscoverer)">serviceDiscoverer</a></span>&#8203;(<a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api">ServiceDiscoverer</a>&lt;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">U</a>,&#8203;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">R</a>,&#8203;<a href="../../client/api/ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">R</a>&gt;&gt;&nbsp;serviceDiscoverer)</code></th>
 <td class="colLast">
@@ -468,7 +489,7 @@ extends java.lang.Object</pre>
 </div>
 </td>
 </tr>
-<tr id="i26" class="altColor">
+<tr id="i29" class="rowColor">
 <td class="colFirst"><code>abstract &lt;T&gt;&nbsp;<a href="MultiAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">U</a>,&#8203;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">R</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#socketOption(java.net.SocketOption,T)">socketOption</a></span>&#8203;(java.net.SocketOption&lt;T&gt;&nbsp;option,
             T&nbsp;value)</code></th>
@@ -480,7 +501,7 @@ extends java.lang.Object</pre>
 </div>
 </td>
 </tr>
-<tr id="i27" class="rowColor">
+<tr id="i30" class="altColor">
 <td class="colFirst"><code>abstract <a href="MultiAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">U</a>,&#8203;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">R</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#unresolvedAddressToHost(java.util.function.Function)">unresolvedAddressToHost</a></span>&#8203;(java.util.function.Function&lt;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">U</a>,&#8203;java.lang.CharSequence&gt;&nbsp;unresolvedAddressToHostFunction)</code></th>
 <td class="colLast">
@@ -540,17 +561,27 @@ extends java.lang.Object</pre>
 <ul class="blockList">
 <li class="blockList">
 <h4>ioExecutor</h4>
-<pre class="methodSignature">@Deprecated
-public abstract&nbsp;<a href="MultiAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">U</a>,&#8203;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">R</a>&gt;&nbsp;ioExecutor&#8203;(<a href="../../transport/api/IoExecutor.html" title="interface in io.servicetalk.transport.api">IoExecutor</a>&nbsp;ioExecutor)</pre>
-<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
-<div class="deprecationComment">Use <a href="#initializer(io.servicetalk.http.api.MultiAddressHttpClientBuilder.SingleAddressInitializer)"><code>initializer(SingleAddressInitializer)</code></a> and
- <a href="SingleAddressHttpClientBuilder.html#ioExecutor(io.servicetalk.transport.api.IoExecutor)"><code>SingleAddressHttpClientBuilder.ioExecutor(IoExecutor)</code></a> on the last argument of
- <a href="MultiAddressHttpClientBuilder.SingleAddressInitializer.html#initialize(java.lang.String,U,io.servicetalk.http.api.SingleAddressHttpClientBuilder)"><code>MultiAddressHttpClientBuilder.SingleAddressInitializer.initialize(String, Object, SingleAddressHttpClientBuilder)</code></a>.</div>
-</div>
+<pre class="methodSignature">public abstract&nbsp;<a href="MultiAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">U</a>,&#8203;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">R</a>&gt;&nbsp;ioExecutor&#8203;(<a href="../../transport/api/IoExecutor.html" title="interface in io.servicetalk.transport.api">IoExecutor</a>&nbsp;ioExecutor)</pre>
 <div class="block">Sets the <a href="../../transport/api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a> for all connections created from this builder.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>ioExecutor</code> - <a href="../../transport/api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a> to use.</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd><code>this</code>.</dd>
+</dl>
+</li>
+</ul>
+<a id="executor(io.servicetalk.concurrent.api.Executor)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>executor</h4>
+<pre class="methodSignature">public&nbsp;<a href="MultiAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">U</a>,&#8203;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">R</a>&gt;&nbsp;executor&#8203;(<a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;executor)</pre>
+<div class="block">Sets the <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> for all connections created from this builder.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>executor</code> - <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> to use.</dd>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd><code>this</code>.</dd>
 </dl>
@@ -562,13 +593,7 @@ public abstract&nbsp;<a href="MultiAddressHttpClientBuilder.html" title="class i
 <ul class="blockList">
 <li class="blockList">
 <h4>executionStrategy</h4>
-<pre class="methodSignature">@Deprecated
-public abstract&nbsp;<a href="MultiAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">U</a>,&#8203;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">R</a>&gt;&nbsp;executionStrategy&#8203;(<a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategy</a>&nbsp;strategy)</pre>
-<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
-<div class="deprecationComment">Use <a href="#initializer(io.servicetalk.http.api.MultiAddressHttpClientBuilder.SingleAddressInitializer)"><code>initializer(SingleAddressInitializer)</code></a> and
- <a href="SingleAddressHttpClientBuilder.html#executionStrategy(io.servicetalk.http.api.HttpExecutionStrategy)"><code>SingleAddressHttpClientBuilder.executionStrategy(HttpExecutionStrategy)</code></a> on the last argument of
- <a href="MultiAddressHttpClientBuilder.SingleAddressInitializer.html#initialize(java.lang.String,U,io.servicetalk.http.api.SingleAddressHttpClientBuilder)"><code>MultiAddressHttpClientBuilder.SingleAddressInitializer.initialize(String, Object, SingleAddressHttpClientBuilder)</code></a>.</div>
-</div>
+<pre class="methodSignature">public abstract&nbsp;<a href="MultiAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">U</a>,&#8203;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">R</a>&gt;&nbsp;executionStrategy&#8203;(<a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategy</a>&nbsp;strategy)</pre>
 <div class="block">Sets the <a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> for all connections created from this builder.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
@@ -584,13 +609,7 @@ public abstract&nbsp;<a href="MultiAddressHttpClientBuilder.html" title="class i
 <ul class="blockList">
 <li class="blockList">
 <h4>bufferAllocator</h4>
-<pre class="methodSignature">@Deprecated
-public abstract&nbsp;<a href="MultiAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">U</a>,&#8203;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">R</a>&gt;&nbsp;bufferAllocator&#8203;(<a href="../../buffer/api/BufferAllocator.html" title="interface in io.servicetalk.buffer.api">BufferAllocator</a>&nbsp;allocator)</pre>
-<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
-<div class="deprecationComment">Use <a href="#initializer(io.servicetalk.http.api.MultiAddressHttpClientBuilder.SingleAddressInitializer)"><code>initializer(SingleAddressInitializer)</code></a> and
- <a href="SingleAddressHttpClientBuilder.html#bufferAllocator(io.servicetalk.buffer.api.BufferAllocator)"><code>SingleAddressHttpClientBuilder.bufferAllocator(BufferAllocator)</code></a> on the last argument of
- <a href="MultiAddressHttpClientBuilder.SingleAddressInitializer.html#initialize(java.lang.String,U,io.servicetalk.http.api.SingleAddressHttpClientBuilder)"><code>MultiAddressHttpClientBuilder.SingleAddressInitializer.initialize(String, Object, SingleAddressHttpClientBuilder)</code></a>.</div>
-</div>
+<pre class="methodSignature">public abstract&nbsp;<a href="MultiAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">U</a>,&#8203;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">R</a>&gt;&nbsp;bufferAllocator&#8203;(<a href="../../buffer/api/BufferAllocator.html" title="interface in io.servicetalk.buffer.api">BufferAllocator</a>&nbsp;allocator)</pre>
 <div class="block">Sets the <a href="../../buffer/api/BufferAllocator.html" title="interface in io.servicetalk.buffer.api"><code>BufferAllocator</code></a> for all connections created from this builder.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
@@ -640,8 +659,7 @@ public abstract&nbsp;&lt;T&gt;&nbsp;<a href="MultiAddressHttpClientBuilder.html"
 <pre class="methodSignature">@Deprecated
 public abstract&nbsp;<a href="MultiAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">U</a>,&#8203;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">R</a>&gt;&nbsp;enableWireLogging&#8203;(java.lang.String&nbsp;loggerName)</pre>
 <div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
-<div class="block">Enables wire-logging for connections created by this builder.
- <p></div>
+<div class="block">Enables wire-logging for connections created by this builder.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>loggerName</code> - The name of the logger to log wire events.</dd>
@@ -817,7 +835,7 @@ public abstract&nbsp;<a href="MultiAddressHttpClientBuilder.html" title="class i
  </pre>
  making a request to a connection wrapped by this filter chain the order of invocation of these filters will be:
  <pre>
-     filter1 =&gt; filter2 =&gt; filter3 =&gt; connection
+     filter1 ⇒ filter2 ⇒ filter3 ⇒ connection
  </pre></div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
@@ -855,7 +873,7 @@ public&nbsp;<a href="MultiAddressHttpClientBuilder.html" title="class in io.serv
  </pre>
  making a request to a connection wrapped by this filter chain the order of invocation of these filters will be:
  <pre>
-     filter1 =&gt; filter2 =&gt; filter3 =&gt; connection
+     filter1 ⇒ filter2 ⇒ filter3 ⇒ connection
  </pre></div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
@@ -893,7 +911,7 @@ public abstract&nbsp;<a href="MultiAddressHttpClientBuilder.html" title="class i
  </pre>
  Calling <a href="../../client/api/ConnectionFactory.html" title="interface in io.servicetalk.client.api"><code>ConnectionFactory</code></a> wrapped by this filter chain, the order of invocation of these filters will be:
  <pre>
-     filter1 =&gt; filter2 =&gt; filter3 =&gt; original connection factory
+     filter1 ⇒ filter2 ⇒ filter3 ⇒ original connection factory
  </pre></div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
@@ -927,6 +945,8 @@ public abstract&nbsp;<a href="MultiAddressHttpClientBuilder.html" title="class i
 <dd><code>autoRetryStrategyProvider</code> - <a href="../../client/api/AutoRetryStrategyProvider.html" title="interface in io.servicetalk.client.api"><code>AutoRetryStrategyProvider</code></a> for the automatic retry strategy.</dd>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd><code>this</code></dd>
+<dt><span class="seeLabel">See Also:</span></dt>
+<dd><a href="../../client/api/DefaultAutoRetryStrategyProvider.html" title="class in io.servicetalk.client.api"><code>DefaultAutoRetryStrategyProvider</code></a></dd>
 </dl>
 </li>
 </ul>
@@ -965,10 +985,13 @@ public abstract&nbsp;<a href="MultiAddressHttpClientBuilder.html" title="class i
 public abstract&nbsp;<a href="MultiAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">U</a>,&#8203;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">R</a>&gt;&nbsp;retryServiceDiscoveryErrors&#8203;(<a href="ServiceDiscoveryRetryStrategy.html" title="interface in io.servicetalk.http.api">ServiceDiscoveryRetryStrategy</a>&lt;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">R</a>,&#8203;<a href="../../client/api/ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">R</a>&gt;&gt;&nbsp;retryStrategy)</pre>
 <div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
 <div class="deprecationComment">Use <a href="#initializer(io.servicetalk.http.api.MultiAddressHttpClientBuilder.SingleAddressInitializer)"><code>initializer(SingleAddressInitializer)</code></a> and
- <a href="SingleAddressHttpClientBuilder.html#retryServiceDiscoveryErrors(io.servicetalk.http.api.ServiceDiscoveryRetryStrategy)"><code>SingleAddressHttpClientBuilder.retryServiceDiscoveryErrors(ServiceDiscoveryRetryStrategy)</code></a> on the last
+ <code>HttpClientBuilder.retryServiceDiscoveryErrors(ServiceDiscoveryRetryStrategy)</code> on the last
  argument of <a href="MultiAddressHttpClientBuilder.SingleAddressInitializer.html#initialize(java.lang.String,U,io.servicetalk.http.api.SingleAddressHttpClientBuilder)"><code>MultiAddressHttpClientBuilder.SingleAddressInitializer.initialize(String, Object, SingleAddressHttpClientBuilder)</code></a>.</div>
 </div>
-<div class="block">Sets a retry strategy to retry errors emitted by <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>.</div>
+<div class="block">Sets a retry strategy to retry errors emitted by <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>.
+ <p>
+ Note, calling this method will unset the value provided via
+ <a href="#retryServiceDiscoveryErrors(io.servicetalk.concurrent.api.BiIntFunction)"><code>retryServiceDiscoveryErrors(BiIntFunction)</code></a> if it was called before.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>retryStrategy</code> - a retry strategy to retry errors emitted by <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>.</dd>
@@ -1052,7 +1075,7 @@ public abstract&nbsp;<a href="MultiAddressHttpClientBuilder.html" title="class i
  </pre>
  making a request to a client wrapped by this filter chain the order of invocation of these filters will be:
  <pre>
-     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
+     filter1 ⇒ filter2 ⇒ filter3 ⇒ client
  </pre></div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
@@ -1089,7 +1112,7 @@ public&nbsp;<a href="MultiAddressHttpClientBuilder.html" title="class in io.serv
  </pre>
  making a request to a client wrapped by this filter chain the order of invocation of these filters will be:
  <pre>
-     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
+     filter1 ⇒ filter2 ⇒ filter3 ⇒ client
  </pre></div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
@@ -1107,7 +1130,15 @@ public&nbsp;<a href="MultiAddressHttpClientBuilder.html" title="class in io.serv
 <ul class="blockList">
 <li class="blockList">
 <h4>appendClientFilter</h4>
-<pre class="methodSignature">public abstract&nbsp;<a href="MultiAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">U</a>,&#8203;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">R</a>&gt;&nbsp;appendClientFilter&#8203;(<a href="MultiAddressHttpClientFilterFactory.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientFilterFactory</a>&lt;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">U</a>&gt;&nbsp;factory)</pre>
+<pre class="methodSignature">@Deprecated
+public abstract&nbsp;<a href="MultiAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">U</a>,&#8203;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">R</a>&gt;&nbsp;appendClientFilter&#8203;(<a href="MultiAddressHttpClientFilterFactory.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientFilterFactory</a>&lt;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">U</a>&gt;&nbsp;factory)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use
+   <a href="#initializer(io.servicetalk.http.api.MultiAddressHttpClientBuilder.SingleAddressInitializer)"><code>initializer(SingleAddressInitializer)</code></a> and
+   <a href="SingleAddressHttpClientBuilder.html#appendClientFilter(io.servicetalk.http.api.StreamingHttpClientFilterFactory)"><code>SingleAddressHttpClientBuilder.appendClientFilter(StreamingHttpClientFilterFactory)</code></a>
+   on the last argument of
+   <a href="MultiAddressHttpClientBuilder.SingleAddressInitializer.html#initialize(java.lang.String,U,io.servicetalk.http.api.SingleAddressHttpClientBuilder)"><code>MultiAddressHttpClientBuilder.SingleAddressInitializer.initialize(String, Object, SingleAddressHttpClientBuilder)</code></a>.</div>
+</div>
 <div class="block">Appends the filter to the chain of filters used to decorate the <a href="StreamingHttpClient.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpClient</code></a> created by this
  builder for a given <code>UnresolvedAddress</code>.
  <p>
@@ -1120,7 +1151,7 @@ public&nbsp;<a href="MultiAddressHttpClientBuilder.html" title="class in io.serv
  </pre>
  Making a request to a client wrapped by this filter chain the order of invocation of these filters will be:
  <pre>
-     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
+     filter1 ⇒ filter2 ⇒ filter3 ⇒ client
  </pre></div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
@@ -1137,8 +1168,16 @@ public&nbsp;<a href="MultiAddressHttpClientBuilder.html" title="class in io.serv
 <ul class="blockList">
 <li class="blockList">
 <h4>appendClientFilter</h4>
-<pre class="methodSignature">public&nbsp;<a href="MultiAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">U</a>,&#8203;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">R</a>&gt;&nbsp;appendClientFilter&#8203;(java.util.function.Predicate&lt;<a href="StreamingHttpRequest.html" title="interface in io.servicetalk.http.api">StreamingHttpRequest</a>&gt;&nbsp;predicate,
+<pre class="methodSignature">@Deprecated
+public&nbsp;<a href="MultiAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">U</a>,&#8203;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">R</a>&gt;&nbsp;appendClientFilter&#8203;(java.util.function.Predicate&lt;<a href="StreamingHttpRequest.html" title="interface in io.servicetalk.http.api">StreamingHttpRequest</a>&gt;&nbsp;predicate,
                                                                    <a href="MultiAddressHttpClientFilterFactory.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientFilterFactory</a>&lt;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">U</a>&gt;&nbsp;factory)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use
+   <a href="#initializer(io.servicetalk.http.api.MultiAddressHttpClientBuilder.SingleAddressInitializer)"><code>initializer(SingleAddressInitializer)</code></a> and
+   <a href="SingleAddressHttpClientBuilder.html#appendClientFilter(java.util.function.Predicate,io.servicetalk.http.api.StreamingHttpClientFilterFactory)"><code>SingleAddressHttpClientBuilder.appendClientFilter(Predicate, StreamingHttpClientFilterFactory)</code></a>
+   on the last argument of
+   <a href="MultiAddressHttpClientBuilder.SingleAddressInitializer.html#initialize(java.lang.String,U,io.servicetalk.http.api.SingleAddressHttpClientBuilder)"><code>MultiAddressHttpClientBuilder.SingleAddressInitializer.initialize(String, Object, SingleAddressHttpClientBuilder)</code></a>.</div>
+</div>
 <div class="block">Appends the filter to the chain of filters used to decorate the <a href="StreamingHttpClient.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpClient</code></a> created by this
  builder for a given <code>UnresolvedAddress</code>, for every request that passes the provided <code>Predicate</code>.
  <p>
@@ -1151,7 +1190,7 @@ public&nbsp;<a href="MultiAddressHttpClientBuilder.html" title="class in io.serv
  </pre>
  Making a request to a client wrapped by this filter chain the order of invocation of these filters will be:
  <pre>
-     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
+     filter1 ⇒ filter2 ⇒ filter3 ⇒ client
  </pre></div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
@@ -1169,13 +1208,63 @@ public&nbsp;<a href="MultiAddressHttpClientBuilder.html" title="class in io.serv
 <ul class="blockList">
 <li class="blockList">
 <h4>maxRedirects</h4>
-<pre class="methodSignature">public abstract&nbsp;<a href="MultiAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">U</a>,&#8203;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">R</a>&gt;&nbsp;maxRedirects&#8203;(int&nbsp;maxRedirects)</pre>
+<pre class="methodSignature">@Deprecated
+public&nbsp;<a href="MultiAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">U</a>,&#8203;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">R</a>&gt;&nbsp;maxRedirects&#8203;(int&nbsp;maxRedirects)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#followRedirects(io.servicetalk.http.api.RedirectConfig)"><code>followRedirects(RedirectConfig)</code></a> with <a href="RedirectConfigBuilder.html#maxRedirects(int)"><code>RedirectConfigBuilder.maxRedirects(int)</code></a>.
+ Starting from version 0.42, redirects will be disabled by default and <a href="RedirectConfig.html" title="interface in io.servicetalk.http.api"><code>RedirectConfig</code></a> will be required to
+ enable them.</div>
+</div>
 <div class="block">Sets a maximum number of redirects to follow.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>maxRedirects</code> - A maximum number of redirects to follow. <code>0</code> disables redirects.</dd>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd><code>this</code>.</dd>
+</dl>
+</li>
+</ul>
+<a id="followRedirects(io.servicetalk.http.api.RedirectConfig)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>followRedirects</h4>
+<pre class="methodSignature">public&nbsp;<a href="MultiAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">U</a>,&#8203;<a href="MultiAddressHttpClientBuilder.html" title="type parameter in MultiAddressHttpClientBuilder">R</a>&gt;&nbsp;followRedirects&#8203;(<a href="RedirectConfig.html" title="interface in io.servicetalk.http.api">RedirectConfig</a>&nbsp;config)</pre>
+<div class="block">Enables <a href="https://datatracker.ietf.org/doc/html/rfc7231#section-6.4">redirection</a>.
+ <p>
+ Note: For backward compatibility with 0.41.x versions redirects are enabled by default. Starting from version
+ 0.42, users have to opt-in for redirects using this method. If you rely on redirects, always use this method.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>config</code> - <a href="RedirectConfig.html" title="interface in io.servicetalk.http.api"><code>RedirectConfig</code></a> to configure redirection behavior. It can be used to tune what requests
+ should follow redirects and which parts of the original request (headers/payload body/trailers) should be
+ redirected to non-relative locations.</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd><code>this</code>.</dd>
+<dt><span class="seeLabel">See Also:</span></dt>
+<dd><a href="RedirectConfigBuilder.html" title="class in io.servicetalk.http.api"><code>RedirectConfigBuilder</code></a></dd>
+</dl>
+</li>
+</ul>
+<a id="retryServiceDiscoveryErrors(io.servicetalk.concurrent.api.BiIntFunction)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>retryServiceDiscoveryErrors</h4>
+<pre class="methodSignature">public&nbsp;io.servicetalk.http.api.HttpClientBuilder&lt;U,&#8203;R,&#8203;SDE&gt;&nbsp;retryServiceDiscoveryErrors&#8203;(<a href="../../concurrent/api/BiIntFunction.html" title="interface in io.servicetalk.concurrent.api">BiIntFunction</a>&lt;java.lang.Throwable,&#8203;? extends <a href="../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>&gt;&nbsp;retryStrategy)</pre>
+<div class="block">Sets a retry strategy to retry errors emitted by <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>retryStrategy</code> - a retry strategy to retry errors emitted by <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>.
+ <p>
+ Note, calling this method will unset the value provided via
+ <a href="#retryServiceDiscoveryErrors(io.servicetalk.http.api.ServiceDiscoveryRetryStrategy)"><code>retryServiceDiscoveryErrors(ServiceDiscoveryRetryStrategy)</code></a> if it was called before.</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd><code>this</code>.</dd>
+<dt><span class="seeLabel">See Also:</span></dt>
+<dd><a href="../../concurrent/api/RetryStrategies.html" title="class in io.servicetalk.concurrent.api"><code>RetryStrategies</code></a></dd>
 </dl>
 </li>
 </ul>

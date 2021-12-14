@@ -26,8 +26,8 @@
     catch(err) {
     }
 //-->
-var data = {"i0":6,"i1":6,"i2":6,"i3":6};
-var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"]};
+var data = {"i0":6,"i1":18,"i2":50,"i3":6,"i4":6};
+var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"],16:["t5","Default Methods"],32:["t6","Deprecated Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
 var tableTab = "tableTab";
@@ -142,7 +142,7 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </a>
 <h3>Method Summary</h3>
 <table class="memberSummary">
-<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t3" class="tableTab"><span><a href="javascript:show(4);">Abstract Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
+<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t3" class="tableTab"><span><a href="javascript:show(4);">Abstract Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t5" class="tableTab"><span><a href="javascript:show(16);">Default Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t6" class="tableTab"><span><a href="javascript:show(32);">Deprecated Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
 <tr>
 <th class="colFirst" scope="col">Modifier and Type</th>
 <th class="colSecond" scope="col">Method</th>
@@ -152,24 +152,33 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <td class="colFirst"><code>int</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#nAvailable()">nAvailable</a></span>()</code></th>
 <td class="colLast">
-<div class="block">Number of resolved records that became <a href="../../../client/api/ServiceDiscovererEvent.html#isAvailable()"><code>available</code></a>.</div>
+<div class="block">Number of resolved records that became <a href="../../../client/api/ServiceDiscovererEvent.Status.html#AVAILABLE"><code>available</code></a>.</div>
 </td>
 </tr>
 <tr id="i1" class="rowColor">
-<td class="colFirst"><code>int</code></td>
-<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#nUnavailable()">nUnavailable</a></span>()</code></th>
+<td class="colFirst"><code>default int</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#nMissing()">nMissing</a></span>()</code></th>
 <td class="colLast">
-<div class="block">Number of resolved records that became <a href="../../../client/api/ServiceDiscovererEvent.html#isAvailable()"><code>unavailable</code></a>.</div>
+<div class="block">Number of missing records compared to the previous resolution result.</div>
 </td>
 </tr>
 <tr id="i2" class="altColor">
+<td class="colFirst"><code>default int</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#nUnavailable()">nUnavailable</a></span>()</code></th>
+<td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Implement and use <a href="#nMissing()"><code>nMissing()</code></a> method.</div>
+</div>
+</td>
+</tr>
+<tr id="i3" class="rowColor">
 <td class="colFirst"><code>int</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#resolvedRecords()">resolvedRecords</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Number of resolved DNS records.</div>
 </td>
 </tr>
-<tr id="i3" class="rowColor">
+<tr id="i4" class="altColor">
 <td class="colFirst"><code>int</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#ttl()">ttl</a></span>()</code></th>
 <td class="colLast">
@@ -228,24 +237,43 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <li class="blockList">
 <h4>nAvailable</h4>
 <pre class="methodSignature">int&nbsp;nAvailable()</pre>
-<div class="block">Number of resolved records that became <a href="../../../client/api/ServiceDiscovererEvent.html#isAvailable()"><code>available</code></a>.</div>
+<div class="block">Number of resolved records that became <a href="../../../client/api/ServiceDiscovererEvent.Status.html#AVAILABLE"><code>available</code></a>.</div>
 <dl>
 <dt><span class="returnLabel">Returns:</span></dt>
-<dd>the number of resolved records that became <a href="../../../client/api/ServiceDiscovererEvent.html#isAvailable()"><code>available</code></a></dd>
+<dd>the number of resolved records that became <a href="../../../client/api/ServiceDiscovererEvent.Status.html#AVAILABLE"><code>available</code></a></dd>
 </dl>
 </li>
 </ul>
 <a id="nUnavailable()">
 <!--   -->
 </a>
-<ul class="blockListLast">
+<ul class="blockList">
 <li class="blockList">
 <h4>nUnavailable</h4>
-<pre class="methodSignature">int&nbsp;nUnavailable()</pre>
-<div class="block">Number of resolved records that became <a href="../../../client/api/ServiceDiscovererEvent.html#isAvailable()"><code>unavailable</code></a>.</div>
+<pre class="methodSignature">@Deprecated
+default&nbsp;int&nbsp;nUnavailable()</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Implement and use <a href="#nMissing()"><code>nMissing()</code></a> method.</div>
+</div>
+<div class="block">Number of resolved records that became <a href="../../../client/api/ServiceDiscovererEvent.Status.html#UNAVAILABLE"><code>unavailable</code></a>.</div>
 <dl>
 <dt><span class="returnLabel">Returns:</span></dt>
-<dd>the number of resolved records that became <a href="../../../client/api/ServiceDiscovererEvent.html#isAvailable()"><code>unavailable</code></a></dd>
+<dd>the number of resolved records that became
+ <a href="../../../client/api/ServiceDiscovererEvent.Status.html#UNAVAILABLE"><code>unavailable</code></a></dd>
+</dl>
+</li>
+</ul>
+<a id="nMissing()">
+<!--   -->
+</a>
+<ul class="blockListLast">
+<li class="blockList">
+<h4>nMissing</h4>
+<pre class="methodSignature">default&nbsp;int&nbsp;nMissing()</pre>
+<div class="block">Number of missing records compared to the previous resolution result.</div>
+<dl>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd>number of missing records compared to the previous resolution result.</dd>
 </dl>
 </li>
 </ul>

@@ -108,14 +108,29 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <tbody>
 <tr class="altColor">
 <th class="colFirst" scope="row"><a href="RoundRobinLoadBalancer.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancer</a>&lt;ResolvedAddress,&#8203;C extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</th>
-<td class="colLast">
-<div class="block">A <a href="../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> that uses a round robin strategy for selecting addresses.</div>
+<td class="colLast">Deprecated.
+<div class="deprecationComment">Use <a href="RoundRobinLoadBalancerFactory.html" title="class in io.servicetalk.loadbalancer"><code>RoundRobinLoadBalancerFactory</code></a> to provide instances of this
+ <a href="../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>.</div>
 </td>
 </tr>
 <tr class="rowColor">
 <th class="colFirst" scope="row"><a href="RoundRobinLoadBalancer.RoundRobinLoadBalancerFactory.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancer.RoundRobinLoadBalancerFactory</a>&lt;ResolvedAddress,&#8203;C extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</th>
+<td class="colLast">Deprecated.
+<div class="deprecationComment">Use <a href="RoundRobinLoadBalancerFactory.html" title="class in io.servicetalk.loadbalancer"><code>RoundRobinLoadBalancerFactory</code></a> to build instances
+ of this <a href="../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a></div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colFirst" scope="row"><a href="RoundRobinLoadBalancerFactory.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancerFactory</a>&lt;ResolvedAddress,&#8203;C extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</th>
 <td class="colLast">
-<div class="block"><a href="../client/api/LoadBalancerFactory.html" title="interface in io.servicetalk.client.api"><code>LoadBalancerFactory</code></a> for <a href="RoundRobinLoadBalancer.html" title="class in io.servicetalk.loadbalancer"><code>RoundRobinLoadBalancer</code></a>.</div>
+<div class="block"><a href="../client/api/LoadBalancerFactory.html" title="interface in io.servicetalk.client.api"><code>LoadBalancerFactory</code></a> that creates <a href="../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> instances which use a round robin strategy
+ for selecting connections from a pool of addresses.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colFirst" scope="row"><a href="RoundRobinLoadBalancerFactory.Builder.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancerFactory.Builder</a>&lt;ResolvedAddress,&#8203;C extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</th>
+<td class="colLast">
+<div class="block">Builder for <a href="RoundRobinLoadBalancerFactory.html" title="class in io.servicetalk.loadbalancer"><code>RoundRobinLoadBalancerFactory</code></a>.</div>
 </td>
 </tr>
 </tbody>

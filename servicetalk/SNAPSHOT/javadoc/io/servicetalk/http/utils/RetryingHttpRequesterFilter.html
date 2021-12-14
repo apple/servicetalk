@@ -26,8 +26,8 @@
     catch(err) {
     }
 //-->
-var data = {"i0":10,"i1":10,"i2":10};
-var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],8:["t4","Concrete Methods"]};
+var data = {"i0":42,"i1":42,"i2":42};
+var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],8:["t4","Concrete Methods"],32:["t6","Deprecated Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
 var tableTab = "tableTab";
@@ -134,9 +134,14 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <dd><code><a href="../api/HttpExecutionStrategyInfluencer.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategyInfluencer</a></code>, <code><a href="../api/StreamingHttpClientFilterFactory.html" title="interface in io.servicetalk.http.api">StreamingHttpClientFilterFactory</a></code>, <code><a href="../api/StreamingHttpConnectionFilterFactory.html" title="interface in io.servicetalk.http.api">StreamingHttpConnectionFilterFactory</a></code></dd>
 </dl>
 <hr>
-<pre>public final class <span class="typeNameLabel">RetryingHttpRequesterFilter</span>
+<pre>@Deprecated
+public final class <span class="typeNameLabel">RetryingHttpRequesterFilter</span>
 extends java.lang.Object
 implements <a href="../api/StreamingHttpClientFilterFactory.html" title="interface in io.servicetalk.http.api">StreamingHttpClientFilterFactory</a>, <a href="../api/StreamingHttpConnectionFilterFactory.html" title="interface in io.servicetalk.http.api">StreamingHttpConnectionFilterFactory</a>, <a href="../api/HttpExecutionStrategyInfluencer.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategyInfluencer</a></pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">A replacement retrying http filter is available through
+ <code>io.servicetalk.http.netty.RetryingHttpRequesterFilter</code></div>
+</div>
 <div class="block">A filter to enable retries for HTTP requests.</div>
 <dl>
 <dt><span class="seeLabel">See Also:</span></dt>
@@ -166,7 +171,10 @@ implements <a href="../api/StreamingHttpClientFilterFactory.html" title="interfa
 <td class="colFirst"><code>static class&nbsp;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="RetryingHttpRequesterFilter.Builder.html" title="class in io.servicetalk.http.utils">RetryingHttpRequesterFilter.Builder</a></span></code></th>
 <td class="colLast">
-<div class="block">A builder for <a href="RetryingHttpRequesterFilter.html" title="class in io.servicetalk.http.utils"><code>RetryingHttpRequesterFilter</code></a>, which puts an upper bound on retry attempts.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">A replacement retrying http filter builder is available through
+ <code>io.servicetalk.http.netty.RetryingHttpRequesterFilterBuilder</code></div>
+</div>
 </td>
 </tr>
 </table>
@@ -181,7 +189,7 @@ implements <a href="../api/StreamingHttpClientFilterFactory.html" title="interfa
 </a>
 <h3>Method Summary</h3>
 <table class="memberSummary">
-<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t4" class="tableTab"><span><a href="javascript:show(8);">Concrete Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
+<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t4" class="tableTab"><span><a href="javascript:show(8);">Concrete Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t6" class="tableTab"><span><a href="javascript:show(32);">Deprecated Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
 <tr>
 <th class="colFirst" scope="col">Modifier and Type</th>
 <th class="colSecond" scope="col">Method</th>
@@ -191,6 +199,7 @@ implements <a href="../api/StreamingHttpClientFilterFactory.html" title="interfa
 <td class="colFirst"><code><a href="../api/StreamingHttpClientFilter.html" title="class in io.servicetalk.http.api">StreamingHttpClientFilter</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#create(io.servicetalk.http.api.FilterableStreamingHttpClient)">create</a></span>&#8203;(<a href="../api/FilterableStreamingHttpClient.html" title="interface in io.servicetalk.http.api">FilterableStreamingHttpClient</a>&nbsp;client)</code></th>
 <td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Creates a <a href="../api/StreamingHttpClientFilter.html" title="class in io.servicetalk.http.api"><code>StreamingHttpClientFilter</code></a> using the provided <a href="../api/StreamingHttpClientFilter.html" title="class in io.servicetalk.http.api"><code>StreamingHttpClientFilter</code></a>.</div>
 </td>
 </tr>
@@ -198,6 +207,7 @@ implements <a href="../api/StreamingHttpClientFilterFactory.html" title="interfa
 <td class="colFirst"><code><a href="../api/StreamingHttpConnectionFilter.html" title="class in io.servicetalk.http.api">StreamingHttpConnectionFilter</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#create(io.servicetalk.http.api.FilterableStreamingHttpConnection)">create</a></span>&#8203;(<a href="../api/FilterableStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">FilterableStreamingHttpConnection</a>&nbsp;connection)</code></th>
 <td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Create a <a href="../api/StreamingHttpConnectionFilter.html" title="class in io.servicetalk.http.api"><code>StreamingHttpConnectionFilter</code></a> using the provided <a href="../api/FilterableStreamingHttpConnection.html" title="interface in io.servicetalk.http.api"><code>FilterableStreamingHttpConnection</code></a>.</div>
 </td>
 </tr>
@@ -205,6 +215,7 @@ implements <a href="../api/StreamingHttpClientFilterFactory.html" title="interfa
 <td class="colFirst"><code><a href="../api/HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategy</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#influenceStrategy(io.servicetalk.http.api.HttpExecutionStrategy)">influenceStrategy</a></span>&#8203;(<a href="../api/HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategy</a>&nbsp;strategy)</code></th>
 <td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Optionally modify the passed <a href="../api/HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> to a new <a href="../api/HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> that suits
  this <a href="../api/HttpExecutionStrategyInfluencer.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategyInfluencer</code></a>.</div>
 </td>
@@ -254,6 +265,7 @@ implements <a href="../api/StreamingHttpClientFilterFactory.html" title="interfa
 <li class="blockList">
 <h4>create</h4>
 <pre class="methodSignature">public&nbsp;<a href="../api/StreamingHttpClientFilter.html" title="class in io.servicetalk.http.api">StreamingHttpClientFilter</a>&nbsp;create&#8203;(<a href="../api/FilterableStreamingHttpClient.html" title="interface in io.servicetalk.http.api">FilterableStreamingHttpClient</a>&nbsp;client)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block"><span class="descfrmTypeLabel">Description copied from interface:&nbsp;<code><a href="../api/StreamingHttpClientFilterFactory.html#create(io.servicetalk.http.api.FilterableStreamingHttpClient)">StreamingHttpClientFilterFactory</a></code></span></div>
 <div class="block">Creates a <a href="../api/StreamingHttpClientFilter.html" title="class in io.servicetalk.http.api"><code>StreamingHttpClientFilter</code></a> using the provided <a href="../api/StreamingHttpClientFilter.html" title="class in io.servicetalk.http.api"><code>StreamingHttpClientFilter</code></a>.</div>
 <dl>
@@ -273,6 +285,7 @@ implements <a href="../api/StreamingHttpClientFilterFactory.html" title="interfa
 <li class="blockList">
 <h4>create</h4>
 <pre class="methodSignature">public&nbsp;<a href="../api/StreamingHttpConnectionFilter.html" title="class in io.servicetalk.http.api">StreamingHttpConnectionFilter</a>&nbsp;create&#8203;(<a href="../api/FilterableStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">FilterableStreamingHttpConnection</a>&nbsp;connection)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block"><span class="descfrmTypeLabel">Description copied from interface:&nbsp;<code><a href="../api/StreamingHttpConnectionFilterFactory.html#create(io.servicetalk.http.api.FilterableStreamingHttpConnection)">StreamingHttpConnectionFilterFactory</a></code></span></div>
 <div class="block">Create a <a href="../api/StreamingHttpConnectionFilter.html" title="class in io.servicetalk.http.api"><code>StreamingHttpConnectionFilter</code></a> using the provided <a href="../api/FilterableStreamingHttpConnection.html" title="interface in io.servicetalk.http.api"><code>FilterableStreamingHttpConnection</code></a>.</div>
 <dl>
@@ -292,6 +305,7 @@ implements <a href="../api/StreamingHttpClientFilterFactory.html" title="interfa
 <li class="blockList">
 <h4>influenceStrategy</h4>
 <pre class="methodSignature">public&nbsp;<a href="../api/HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategy</a>&nbsp;influenceStrategy&#8203;(<a href="../api/HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategy</a>&nbsp;strategy)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block"><span class="descfrmTypeLabel">Description copied from interface:&nbsp;<code><a href="../api/HttpExecutionStrategyInfluencer.html#influenceStrategy(io.servicetalk.http.api.HttpExecutionStrategy)">HttpExecutionStrategyInfluencer</a></code></span></div>
 <div class="block">Optionally modify the passed <a href="../api/HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> to a new <a href="../api/HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> that suits
  this <a href="../api/HttpExecutionStrategyInfluencer.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategyInfluencer</code></a>.</div>

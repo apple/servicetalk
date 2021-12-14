@@ -26,8 +26,8 @@
     catch(err) {
     }
 //-->
-var data = {"i0":6,"i1":10,"i2":10,"i3":10,"i4":10,"i5":10,"i6":10,"i7":10,"i8":10,"i9":10,"i10":10,"i11":10,"i12":10,"i13":10,"i14":10};
-var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"],8:["t4","Concrete Methods"]};
+var data = {"i0":38,"i1":42,"i2":42,"i3":42,"i4":42,"i5":42,"i6":42,"i7":42,"i8":42,"i9":42,"i10":42,"i11":42,"i12":42,"i13":42,"i14":42};
+var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"],8:["t4","Concrete Methods"],32:["t6","Deprecated Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
 var tableTab = "tableTab";
@@ -140,8 +140,13 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <dd><code><a href="../../http/utils/RetryingHttpRequesterFilter.Builder.html" title="class in io.servicetalk.http.utils">RetryingHttpRequesterFilter.Builder</a></code></dd>
 </dl>
 <hr>
-<pre>public abstract class <span class="typeNameLabel">AbstractRetryingFilterBuilder&lt;Builder extends AbstractRetryingFilterBuilder&lt;Builder,&#8203;Filter,&#8203;Meta&gt;,&#8203;Filter,&#8203;Meta&gt;</span>
+<pre>@Deprecated
+public abstract class <span class="typeNameLabel">AbstractRetryingFilterBuilder&lt;Builder extends AbstractRetryingFilterBuilder&lt;Builder,&#8203;Filter,&#8203;Meta&gt;,&#8203;Filter,&#8203;Meta&gt;</span>
 extends java.lang.Object</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Moving forward ServiceTalk will remove this abstraction. Please rely on the protocol specific filter,
+ like <code>io.servicetalk.http.netty.RetryingHttpRequesterFilter</code>.</div>
+</div>
 <div class="block">An abstract builder for retrying filters.</div>
 <dl>
 <dt><span class="seeLabel">See Also:</span></dt>
@@ -171,7 +176,9 @@ extends java.lang.Object</pre>
 <td class="colFirst"><code>static class&nbsp;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="AbstractRetryingFilterBuilder.ReadOnlyRetryableSettings.html" title="class in io.servicetalk.client.api">AbstractRetryingFilterBuilder.ReadOnlyRetryableSettings</a>&lt;<a href="AbstractRetryingFilterBuilder.ReadOnlyRetryableSettings.html" title="type parameter in AbstractRetryingFilterBuilder.ReadOnlyRetryableSettings">Meta</a>&gt;</span></code></th>
 <td class="colLast">
-<div class="block">A read-only settings for retryable filters.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Moving forward ServiceTalk will remove this abstraction.</div>
+</div>
 </td>
 </tr>
 </table>
@@ -193,7 +200,9 @@ extends java.lang.Object</pre>
 </tr>
 <tr class="altColor">
 <th class="colConstructorName" scope="row"><code><span class="memberNameLink"><a href="#%3Cinit%3E()">AbstractRetryingFilterBuilder</a></span>()</code></th>
-<td class="colLast">&nbsp;</td>
+<td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span></div>
+&nbsp;</td>
 </tr>
 </table>
 </li>
@@ -207,7 +216,7 @@ extends java.lang.Object</pre>
 </a>
 <h3>Method Summary</h3>
 <table class="memberSummary">
-<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t3" class="tableTab"><span><a href="javascript:show(4);">Abstract Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t4" class="tableTab"><span><a href="javascript:show(8);">Concrete Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
+<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t3" class="tableTab"><span><a href="javascript:show(4);">Abstract Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t4" class="tableTab"><span><a href="javascript:show(8);">Concrete Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t6" class="tableTab"><span><a href="javascript:show(32);">Deprecated Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
 <tr>
 <th class="colFirst" scope="col">Modifier and Type</th>
 <th class="colSecond" scope="col">Method</th>
@@ -217,6 +226,7 @@ extends java.lang.Object</pre>
 <td class="colFirst"><code>protected abstract <a href="AbstractRetryingFilterBuilder.html" title="type parameter in AbstractRetryingFilterBuilder">Filter</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#build(io.servicetalk.client.api.AbstractRetryingFilterBuilder.ReadOnlyRetryableSettings)">build</a></span>&#8203;(<a href="AbstractRetryingFilterBuilder.ReadOnlyRetryableSettings.html" title="class in io.servicetalk.client.api">AbstractRetryingFilterBuilder.ReadOnlyRetryableSettings</a>&lt;<a href="AbstractRetryingFilterBuilder.html" title="type parameter in AbstractRetryingFilterBuilder">Meta</a>&gt;&nbsp;readOnlySettings)</code></th>
 <td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Builds a retrying <a href="AbstractRetryingFilterBuilder.html" title="class in io.servicetalk.client.api"><code>AbstractRetryingFilterBuilder</code></a> for provided
  <a href="AbstractRetryingFilterBuilder.ReadOnlyRetryableSettings.html" title="class in io.servicetalk.client.api"><code>ReadOnlyRetryableSettings&lt;Meta&gt;</code></a>.</div>
 </td>
@@ -225,7 +235,10 @@ extends java.lang.Object</pre>
 <td class="colFirst"><code><a href="AbstractRetryingFilterBuilder.html" title="type parameter in AbstractRetryingFilterBuilder">Filter</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#buildWithConstantBackoff(java.time.Duration)">buildWithConstantBackoff</a></span>&#8203;(java.time.Duration&nbsp;delay)</code></th>
 <td class="colLast">
-<div class="block">Creates a new retrying <a href="AbstractRetryingFilterBuilder.html" title="class in io.servicetalk.client.api"><code>AbstractRetryingFilterBuilder</code></a> which adds the passed constant <code>Duration</code> as a delay between retries.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#buildWithConstantBackoffDeltaJitter(java.time.Duration,java.time.Duration)"><code>buildWithConstantBackoffDeltaJitter(Duration, Duration)</code></a> or
+ <a href="#buildWithConstantBackoffFullJitter(java.time.Duration)"><code>buildWithConstantBackoffFullJitter(Duration)</code></a>.</div>
+</div>
 </td>
 </tr>
 <tr id="i2" class="altColor">
@@ -233,7 +246,10 @@ extends java.lang.Object</pre>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#buildWithConstantBackoff(java.time.Duration,io.servicetalk.concurrent.api.Executor)">buildWithConstantBackoff</a></span>&#8203;(java.time.Duration&nbsp;delay,
                         <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;timerExecutor)</code></th>
 <td class="colLast">
-<div class="block">Creates a new retrying <a href="AbstractRetryingFilterBuilder.html" title="class in io.servicetalk.client.api"><code>AbstractRetryingFilterBuilder</code></a> which adds the passed constant <code>Duration</code> as a delay between retries.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#buildWithConstantBackoffFullJitter(java.time.Duration,io.servicetalk.concurrent.api.Executor)"><code>buildWithConstantBackoffFullJitter(Duration, Executor)</code></a> or
+ <a href="#buildWithConstantBackoffDeltaJitter(java.time.Duration,java.time.Duration)"><code>buildWithConstantBackoffDeltaJitter(Duration, Duration)</code></a>.</div>
+</div>
 </td>
 </tr>
 <tr id="i3" class="rowColor">
@@ -241,6 +257,7 @@ extends java.lang.Object</pre>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#buildWithConstantBackoffDeltaJitter(java.time.Duration,java.time.Duration)">buildWithConstantBackoffDeltaJitter</a></span>&#8203;(java.time.Duration&nbsp;delay,
                                    java.time.Duration&nbsp;jitter)</code></th>
 <td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Creates a new retrying <a href="AbstractRetryingFilterBuilder.html" title="class in io.servicetalk.client.api"><code>AbstractRetryingFilterBuilder</code></a> which adds a randomized delay between retries and uses the passed
  <code>Duration</code> as a maximum delay possible.</div>
 </td>
@@ -251,6 +268,7 @@ extends java.lang.Object</pre>
                                    java.time.Duration&nbsp;jitter,
                                    <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;timerExecutor)</code></th>
 <td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Creates a new retrying <a href="AbstractRetryingFilterBuilder.html" title="class in io.servicetalk.client.api"><code>AbstractRetryingFilterBuilder</code></a> which adds a randomized delay between retries and uses the passed
  <code>Duration</code> as a maximum delay possible.</div>
 </td>
@@ -259,6 +277,7 @@ extends java.lang.Object</pre>
 <td class="colFirst"><code><a href="AbstractRetryingFilterBuilder.html" title="type parameter in AbstractRetryingFilterBuilder">Filter</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#buildWithConstantBackoffFullJitter(java.time.Duration)">buildWithConstantBackoffFullJitter</a></span>&#8203;(java.time.Duration&nbsp;delay)</code></th>
 <td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Creates a new retrying <a href="AbstractRetryingFilterBuilder.html" title="class in io.servicetalk.client.api"><code>AbstractRetryingFilterBuilder</code></a> which adds a randomized delay between retries and uses the passed
  <code>Duration</code> as a maximum delay possible.</div>
 </td>
@@ -268,6 +287,7 @@ extends java.lang.Object</pre>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#buildWithConstantBackoffFullJitter(java.time.Duration,io.servicetalk.concurrent.api.Executor)">buildWithConstantBackoffFullJitter</a></span>&#8203;(java.time.Duration&nbsp;delay,
                                   <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;timerExecutor)</code></th>
 <td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Creates a new retrying <a href="AbstractRetryingFilterBuilder.html" title="class in io.servicetalk.client.api"><code>AbstractRetryingFilterBuilder</code></a> which adds a randomized delay between retries and uses the passed
  <code>Duration</code> as a maximum delay possible.</div>
 </td>
@@ -278,6 +298,7 @@ extends java.lang.Object</pre>
                                       java.time.Duration&nbsp;jitter,
                                       java.time.Duration&nbsp;maxDelay)</code></th>
 <td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Creates a new retrying <a href="AbstractRetryingFilterBuilder.html" title="class in io.servicetalk.client.api"><code>AbstractRetryingFilterBuilder</code></a> which adds a delay between retries.</div>
 </td>
 </tr>
@@ -288,6 +309,7 @@ extends java.lang.Object</pre>
                                       java.time.Duration&nbsp;maxDelay,
                                       <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;timerExecutor)</code></th>
 <td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Creates a new retrying <a href="AbstractRetryingFilterBuilder.html" title="class in io.servicetalk.client.api"><code>AbstractRetryingFilterBuilder</code></a> which adds a delay between retries.</div>
 </td>
 </tr>
@@ -296,6 +318,7 @@ extends java.lang.Object</pre>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#buildWithExponentialBackoffFullJitter(java.time.Duration,java.time.Duration)">buildWithExponentialBackoffFullJitter</a></span>&#8203;(java.time.Duration&nbsp;initialDelay,
                                      java.time.Duration&nbsp;maxDelay)</code></th>
 <td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Creates a new retrying <a href="AbstractRetryingFilterBuilder.html" title="class in io.servicetalk.client.api"><code>AbstractRetryingFilterBuilder</code></a> which adds a delay between retries.</div>
 </td>
 </tr>
@@ -305,6 +328,7 @@ extends java.lang.Object</pre>
                                      java.time.Duration&nbsp;maxDelay,
                                      <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;timerExecutor)</code></th>
 <td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Creates a new retrying <a href="AbstractRetryingFilterBuilder.html" title="class in io.servicetalk.client.api"><code>AbstractRetryingFilterBuilder</code></a> which adds a delay between retries.</div>
 </td>
 </tr>
@@ -312,13 +336,17 @@ extends java.lang.Object</pre>
 <td class="colFirst"><code><a href="AbstractRetryingFilterBuilder.html" title="type parameter in AbstractRetryingFilterBuilder">Filter</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#buildWithImmediateRetries()">buildWithImmediateRetries</a></span>()</code></th>
 <td class="colLast">
-<div class="block">Creates a new retrying <a href="AbstractRetryingFilterBuilder.html" title="class in io.servicetalk.client.api"><code>AbstractRetryingFilterBuilder</code></a> which retries without delay.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#buildWithConstantBackoffFullJitter(java.time.Duration)"><code>buildWithConstantBackoffFullJitter(Duration)</code></a> or
+ <a href="#buildWithConstantBackoffFullJitter(java.time.Duration)"><code>buildWithConstantBackoffFullJitter(Duration)</code></a>.</div>
+</div>
 </td>
 </tr>
 <tr id="i12" class="altColor">
 <td class="colFirst"><code>java.util.function.BiPredicate&lt;<a href="AbstractRetryingFilterBuilder.html" title="type parameter in AbstractRetryingFilterBuilder">Meta</a>,&#8203;java.lang.Throwable&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#defaultRetryForPredicate()">defaultRetryForPredicate</a></span>()</code></th>
 <td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Returns a default value for <a href="#retryFor(java.util.function.BiPredicate)"><code>retryFor(BiPredicate)</code></a>.</div>
 </td>
 </tr>
@@ -326,6 +354,7 @@ extends java.lang.Object</pre>
 <td class="colFirst"><code><a href="AbstractRetryingFilterBuilder.html" title="type parameter in AbstractRetryingFilterBuilder">Builder</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#maxRetries(int)">maxRetries</a></span>&#8203;(int&nbsp;maxRetries)</code></th>
 <td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Set the maximum number of allowed retry operations before giving up.</div>
 </td>
 </tr>
@@ -333,6 +362,7 @@ extends java.lang.Object</pre>
 <td class="colFirst"><code><a href="AbstractRetryingFilterBuilder.html" title="type parameter in AbstractRetryingFilterBuilder">Builder</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#retryFor(java.util.function.BiPredicate)">retryFor</a></span>&#8203;(java.util.function.BiPredicate&lt;<a href="AbstractRetryingFilterBuilder.html" title="type parameter in AbstractRetryingFilterBuilder">Meta</a>,&#8203;java.lang.Throwable&gt;&nbsp;retryForPredicate)</code></th>
 <td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Overrides the default criterion for determining which requests or errors should be retried.</div>
 </td>
 </tr>
@@ -367,6 +397,7 @@ extends java.lang.Object</pre>
 <li class="blockList">
 <h4>AbstractRetryingFilterBuilder</h4>
 <pre>public&nbsp;AbstractRetryingFilterBuilder()</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
 </li>
 </ul>
 </li>
@@ -386,6 +417,7 @@ extends java.lang.Object</pre>
 <li class="blockList">
 <h4>maxRetries</h4>
 <pre class="methodSignature">public final&nbsp;<a href="AbstractRetryingFilterBuilder.html" title="type parameter in AbstractRetryingFilterBuilder">Builder</a>&nbsp;maxRetries&#8203;(int&nbsp;maxRetries)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Set the maximum number of allowed retry operations before giving up.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
@@ -402,6 +434,7 @@ extends java.lang.Object</pre>
 <li class="blockList">
 <h4>retryFor</h4>
 <pre class="methodSignature">public final&nbsp;<a href="AbstractRetryingFilterBuilder.html" title="type parameter in AbstractRetryingFilterBuilder">Builder</a>&nbsp;retryFor&#8203;(java.util.function.BiPredicate&lt;<a href="AbstractRetryingFilterBuilder.html" title="type parameter in AbstractRetryingFilterBuilder">Meta</a>,&#8203;java.lang.Throwable&gt;&nbsp;retryForPredicate)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Overrides the default criterion for determining which requests or errors should be retried.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
@@ -418,7 +451,12 @@ extends java.lang.Object</pre>
 <ul class="blockList">
 <li class="blockList">
 <h4>buildWithImmediateRetries</h4>
-<pre class="methodSignature">public final&nbsp;<a href="AbstractRetryingFilterBuilder.html" title="type parameter in AbstractRetryingFilterBuilder">Filter</a>&nbsp;buildWithImmediateRetries()</pre>
+<pre class="methodSignature">@Deprecated
+public final&nbsp;<a href="AbstractRetryingFilterBuilder.html" title="type parameter in AbstractRetryingFilterBuilder">Filter</a>&nbsp;buildWithImmediateRetries()</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#buildWithConstantBackoffFullJitter(java.time.Duration)"><code>buildWithConstantBackoffFullJitter(Duration)</code></a> or
+ <a href="#buildWithConstantBackoffFullJitter(java.time.Duration)"><code>buildWithConstantBackoffFullJitter(Duration)</code></a>.</div>
+</div>
 <div class="block">Creates a new retrying <a href="AbstractRetryingFilterBuilder.html" title="class in io.servicetalk.client.api"><code>AbstractRetryingFilterBuilder</code></a> which retries without delay.</div>
 <dl>
 <dt><span class="returnLabel">Returns:</span></dt>
@@ -432,7 +470,12 @@ extends java.lang.Object</pre>
 <ul class="blockList">
 <li class="blockList">
 <h4>buildWithConstantBackoff</h4>
-<pre class="methodSignature">public final&nbsp;<a href="AbstractRetryingFilterBuilder.html" title="type parameter in AbstractRetryingFilterBuilder">Filter</a>&nbsp;buildWithConstantBackoff&#8203;(java.time.Duration&nbsp;delay)</pre>
+<pre class="methodSignature">@Deprecated
+public final&nbsp;<a href="AbstractRetryingFilterBuilder.html" title="type parameter in AbstractRetryingFilterBuilder">Filter</a>&nbsp;buildWithConstantBackoff&#8203;(java.time.Duration&nbsp;delay)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#buildWithConstantBackoffDeltaJitter(java.time.Duration,java.time.Duration)"><code>buildWithConstantBackoffDeltaJitter(Duration, Duration)</code></a> or
+ <a href="#buildWithConstantBackoffFullJitter(java.time.Duration)"><code>buildWithConstantBackoffFullJitter(Duration)</code></a>.</div>
+</div>
 <div class="block">Creates a new retrying <a href="AbstractRetryingFilterBuilder.html" title="class in io.servicetalk.client.api"><code>AbstractRetryingFilterBuilder</code></a> which adds the passed constant <code>Duration</code> as a delay between retries.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
@@ -448,8 +491,13 @@ extends java.lang.Object</pre>
 <ul class="blockList">
 <li class="blockList">
 <h4>buildWithConstantBackoff</h4>
-<pre class="methodSignature">public final&nbsp;<a href="AbstractRetryingFilterBuilder.html" title="type parameter in AbstractRetryingFilterBuilder">Filter</a>&nbsp;buildWithConstantBackoff&#8203;(java.time.Duration&nbsp;delay,
+<pre class="methodSignature">@Deprecated
+public final&nbsp;<a href="AbstractRetryingFilterBuilder.html" title="type parameter in AbstractRetryingFilterBuilder">Filter</a>&nbsp;buildWithConstantBackoff&#8203;(java.time.Duration&nbsp;delay,
                                              <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;timerExecutor)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#buildWithConstantBackoffFullJitter(java.time.Duration,io.servicetalk.concurrent.api.Executor)"><code>buildWithConstantBackoffFullJitter(Duration, Executor)</code></a> or
+ <a href="#buildWithConstantBackoffDeltaJitter(java.time.Duration,java.time.Duration)"><code>buildWithConstantBackoffDeltaJitter(Duration, Duration)</code></a>.</div>
+</div>
 <div class="block">Creates a new retrying <a href="AbstractRetryingFilterBuilder.html" title="class in io.servicetalk.client.api"><code>AbstractRetryingFilterBuilder</code></a> which adds the passed constant <code>Duration</code> as a delay between retries.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
@@ -468,6 +516,7 @@ extends java.lang.Object</pre>
 <li class="blockList">
 <h4>buildWithConstantBackoffFullJitter</h4>
 <pre class="methodSignature">public final&nbsp;<a href="AbstractRetryingFilterBuilder.html" title="type parameter in AbstractRetryingFilterBuilder">Filter</a>&nbsp;buildWithConstantBackoffFullJitter&#8203;(java.time.Duration&nbsp;delay)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Creates a new retrying <a href="AbstractRetryingFilterBuilder.html" title="class in io.servicetalk.client.api"><code>AbstractRetryingFilterBuilder</code></a> which adds a randomized delay between retries and uses the passed
  <code>Duration</code> as a maximum delay possible. This additionally adds a "Full Jitter" for the backoff as described
  <a href="https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/">here</a>.</div>
@@ -487,6 +536,7 @@ extends java.lang.Object</pre>
 <h4>buildWithConstantBackoffFullJitter</h4>
 <pre class="methodSignature">public final&nbsp;<a href="AbstractRetryingFilterBuilder.html" title="type parameter in AbstractRetryingFilterBuilder">Filter</a>&nbsp;buildWithConstantBackoffFullJitter&#8203;(java.time.Duration&nbsp;delay,
                                                        <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;timerExecutor)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Creates a new retrying <a href="AbstractRetryingFilterBuilder.html" title="class in io.servicetalk.client.api"><code>AbstractRetryingFilterBuilder</code></a> which adds a randomized delay between retries and uses the passed
  <code>Duration</code> as a maximum delay possible. This additionally adds a "Full Jitter" for the backoff as described
  <a href="https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/">here</a>.</div>
@@ -508,6 +558,7 @@ extends java.lang.Object</pre>
 <h4>buildWithConstantBackoffDeltaJitter</h4>
 <pre class="methodSignature">public final&nbsp;<a href="AbstractRetryingFilterBuilder.html" title="type parameter in AbstractRetryingFilterBuilder">Filter</a>&nbsp;buildWithConstantBackoffDeltaJitter&#8203;(java.time.Duration&nbsp;delay,
                                                         java.time.Duration&nbsp;jitter)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Creates a new retrying <a href="AbstractRetryingFilterBuilder.html" title="class in io.servicetalk.client.api"><code>AbstractRetryingFilterBuilder</code></a> which adds a randomized delay between retries and uses the passed
  <code>Duration</code> as a maximum delay possible.</div>
 <dl>
@@ -528,6 +579,7 @@ extends java.lang.Object</pre>
 <pre class="methodSignature">public final&nbsp;<a href="AbstractRetryingFilterBuilder.html" title="type parameter in AbstractRetryingFilterBuilder">Filter</a>&nbsp;buildWithConstantBackoffDeltaJitter&#8203;(java.time.Duration&nbsp;delay,
                                                         java.time.Duration&nbsp;jitter,
                                                         <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;timerExecutor)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Creates a new retrying <a href="AbstractRetryingFilterBuilder.html" title="class in io.servicetalk.client.api"><code>AbstractRetryingFilterBuilder</code></a> which adds a randomized delay between retries and uses the passed
  <code>Duration</code> as a maximum delay possible.</div>
 <dl>
@@ -549,6 +601,7 @@ extends java.lang.Object</pre>
 <h4>buildWithExponentialBackoffFullJitter</h4>
 <pre class="methodSignature">public final&nbsp;<a href="AbstractRetryingFilterBuilder.html" title="type parameter in AbstractRetryingFilterBuilder">Filter</a>&nbsp;buildWithExponentialBackoffFullJitter&#8203;(java.time.Duration&nbsp;initialDelay,
                                                           java.time.Duration&nbsp;maxDelay)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Creates a new retrying <a href="AbstractRetryingFilterBuilder.html" title="class in io.servicetalk.client.api"><code>AbstractRetryingFilterBuilder</code></a> which adds a delay between retries. For first retry, the delay is
  <code>initialDelay</code> which is increased exponentially for subsequent retries. This additionally adds a
  "Full Jitter" for the backoff as described
@@ -571,6 +624,7 @@ extends java.lang.Object</pre>
 <pre class="methodSignature">public final&nbsp;<a href="AbstractRetryingFilterBuilder.html" title="type parameter in AbstractRetryingFilterBuilder">Filter</a>&nbsp;buildWithExponentialBackoffFullJitter&#8203;(java.time.Duration&nbsp;initialDelay,
                                                           java.time.Duration&nbsp;maxDelay,
                                                           <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;timerExecutor)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Creates a new retrying <a href="AbstractRetryingFilterBuilder.html" title="class in io.servicetalk.client.api"><code>AbstractRetryingFilterBuilder</code></a> which adds a delay between retries. For first retry, the delay is
  <code>initialDelay</code> which is increased exponentially for subsequent retries. This additionally adds a
  "Full Jitter" for the backoff as described
@@ -595,6 +649,7 @@ extends java.lang.Object</pre>
 <pre class="methodSignature">public final&nbsp;<a href="AbstractRetryingFilterBuilder.html" title="type parameter in AbstractRetryingFilterBuilder">Filter</a>&nbsp;buildWithExponentialBackoffDeltaJitter&#8203;(java.time.Duration&nbsp;initialDelay,
                                                            java.time.Duration&nbsp;jitter,
                                                            java.time.Duration&nbsp;maxDelay)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Creates a new retrying <a href="AbstractRetryingFilterBuilder.html" title="class in io.servicetalk.client.api"><code>AbstractRetryingFilterBuilder</code></a> which adds a delay between retries. For first retry, the delay is
  <code>initialDelay</code> which is increased exponentially for subsequent retries.</div>
 <dl>
@@ -617,6 +672,7 @@ extends java.lang.Object</pre>
                                                            java.time.Duration&nbsp;jitter,
                                                            java.time.Duration&nbsp;maxDelay,
                                                            <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;timerExecutor)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Creates a new retrying <a href="AbstractRetryingFilterBuilder.html" title="class in io.servicetalk.client.api"><code>AbstractRetryingFilterBuilder</code></a> which adds a delay between retries. For first retry, the delay is
  <code>initialDelay</code> which is increased exponentially for subsequent retries.</div>
 <dl>
@@ -638,6 +694,7 @@ extends java.lang.Object</pre>
 <li class="blockList">
 <h4>build</h4>
 <pre class="methodSignature">protected abstract&nbsp;<a href="AbstractRetryingFilterBuilder.html" title="type parameter in AbstractRetryingFilterBuilder">Filter</a>&nbsp;build&#8203;(<a href="AbstractRetryingFilterBuilder.ReadOnlyRetryableSettings.html" title="class in io.servicetalk.client.api">AbstractRetryingFilterBuilder.ReadOnlyRetryableSettings</a>&lt;<a href="AbstractRetryingFilterBuilder.html" title="type parameter in AbstractRetryingFilterBuilder">Meta</a>&gt;&nbsp;readOnlySettings)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Builds a retrying <a href="AbstractRetryingFilterBuilder.html" title="class in io.servicetalk.client.api"><code>AbstractRetryingFilterBuilder</code></a> for provided
  <a href="AbstractRetryingFilterBuilder.ReadOnlyRetryableSettings.html" title="class in io.servicetalk.client.api"><code>ReadOnlyRetryableSettings&lt;Meta&gt;</code></a>.</div>
 <dl>
@@ -655,6 +712,7 @@ extends java.lang.Object</pre>
 <li class="blockList">
 <h4>defaultRetryForPredicate</h4>
 <pre class="methodSignature">public&nbsp;java.util.function.BiPredicate&lt;<a href="AbstractRetryingFilterBuilder.html" title="type parameter in AbstractRetryingFilterBuilder">Meta</a>,&#8203;java.lang.Throwable&gt;&nbsp;defaultRetryForPredicate()</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Returns a default value for <a href="#retryFor(java.util.function.BiPredicate)"><code>retryFor(BiPredicate)</code></a>.</div>
 <dl>
 <dt><span class="returnLabel">Returns:</span></dt>

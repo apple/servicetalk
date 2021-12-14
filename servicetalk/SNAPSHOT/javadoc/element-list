@@ -13,6 +13,7 @@ io.servicetalk.concurrent.internal
 io.servicetalk.concurrent.jdkflow
 io.servicetalk.concurrent.reactivestreams
 io.servicetalk.concurrent.test.internal
+io.servicetalk.context.api
 io.servicetalk.data.jackson
 io.servicetalk.data.jackson.jersey
 io.servicetalk.data.jackson.jersey.config
@@ -26,6 +27,7 @@ io.servicetalk.grpc.internal
 io.servicetalk.grpc.netty
 io.servicetalk.grpc.protobuf
 io.servicetalk.grpc.protoc
+io.servicetalk.grpc.utils
 io.servicetalk.http.api
 io.servicetalk.http.netty
 io.servicetalk.http.router.jersey

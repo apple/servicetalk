@@ -26,8 +26,8 @@
     catch(err) {
     }
 //-->
-var data = {"i0":10,"i1":10,"i2":10,"i3":10,"i4":10,"i5":10,"i6":10,"i7":10,"i8":10,"i9":10,"i10":10};
-var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],8:["t4","Concrete Methods"]};
+var data = {"i0":10,"i1":10,"i2":10,"i3":10,"i4":10,"i5":10,"i6":10,"i7":10,"i8":42,"i9":10,"i10":10,"i11":10};
+var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],8:["t4","Concrete Methods"],32:["t6","Deprecated Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
 var tableTab = "tableTab";
@@ -177,7 +177,7 @@ implements <a href="FilterableStreamingHttpConnection.html" title="interface in 
 </a>
 <h3>Method Summary</h3>
 <table class="memberSummary">
-<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t4" class="tableTab"><span><a href="javascript:show(8);">Concrete Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
+<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t4" class="tableTab"><span><a href="javascript:show(8);">Concrete Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t6" class="tableTab"><span><a href="javascript:show(32);">Deprecated Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
 <tr>
 <th class="colFirst" scope="col">Modifier and Type</th>
 <th class="colSecond" scope="col">Method</th>
@@ -246,15 +246,22 @@ implements <a href="FilterableStreamingHttpConnection.html" title="interface in 
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#request(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.StreamingHttpRequest)">request</a></span>&#8203;(<a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategy</a>&nbsp;strategy,
        <a href="StreamingHttpRequest.html" title="interface in io.servicetalk.http.api">StreamingHttpRequest</a>&nbsp;request)</code></th>
 <td class="colLast">
-<div class="block">Send a <code>request</code> using the specified <a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>strategy</code></a>.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span></div>
 </td>
 </tr>
 <tr id="i9" class="rowColor">
+<td class="colFirst"><code><a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="StreamingHttpResponse.html" title="interface in io.servicetalk.http.api">StreamingHttpResponse</a>&gt;</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#request(io.servicetalk.http.api.StreamingHttpRequest)">request</a></span>&#8203;(<a href="StreamingHttpRequest.html" title="interface in io.servicetalk.http.api">StreamingHttpRequest</a>&nbsp;request)</code></th>
+<td class="colLast">
+<div class="block">Send a <code>request</code>.</div>
+</td>
+</tr>
+<tr id="i10" class="altColor">
 <td class="colFirst"><code>java.lang.String</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#toString()">toString</a></span>()</code></th>
 <td class="colLast">&nbsp;</td>
 </tr>
-<tr id="i10" class="altColor">
+<tr id="i11" class="rowColor">
 <td class="colFirst"><code>&lt;T&gt;&nbsp;<a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;? extends T&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#transportEventStream(io.servicetalk.http.api.HttpEventKey)">transportEventStream</a></span>&#8203;(<a href="HttpEventKey.html" title="class in io.servicetalk.http.api">HttpEventKey</a>&lt;T&gt;&nbsp;eventKey)</code></th>
 <td class="colLast">
@@ -317,14 +324,35 @@ implements <a href="FilterableStreamingHttpConnection.html" title="interface in 
 <!--   -->
 </a>
 <h3>Method Detail</h3>
+<a id="request(io.servicetalk.http.api.StreamingHttpRequest)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>request</h4>
+<pre class="methodSignature">public&nbsp;<a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="StreamingHttpResponse.html" title="interface in io.servicetalk.http.api">StreamingHttpResponse</a>&gt;&nbsp;request&#8203;(<a href="StreamingHttpRequest.html" title="interface in io.servicetalk.http.api">StreamingHttpRequest</a>&nbsp;request)</pre>
+<div class="block"><span class="descfrmTypeLabel">Description copied from interface:&nbsp;<code><a href="StreamingHttpRequester.html#request(io.servicetalk.http.api.StreamingHttpRequest)">StreamingHttpRequester</a></code></span></div>
+<div class="block">Send a <code>request</code>.</div>
+<dl>
+<dt><span class="overrideSpecifyLabel">Specified by:</span></dt>
+<dd><code><a href="StreamingHttpRequester.html#request(io.servicetalk.http.api.StreamingHttpRequest)">request</a></code>&nbsp;in interface&nbsp;<code><a href="StreamingHttpRequester.html" title="interface in io.servicetalk.http.api">StreamingHttpRequester</a></code></dd>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>request</code> - the request to send.</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd>The response.</dd>
+</dl>
+</li>
+</ul>
 <a id="request(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.StreamingHttpRequest)">
 <!--   -->
 </a>
 <ul class="blockList">
 <li class="blockList">
 <h4>request</h4>
-<pre class="methodSignature">public&nbsp;<a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="StreamingHttpResponse.html" title="interface in io.servicetalk.http.api">StreamingHttpResponse</a>&gt;&nbsp;request&#8203;(<a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategy</a>&nbsp;strategy,
+<pre class="methodSignature">@Deprecated
+public&nbsp;<a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="StreamingHttpResponse.html" title="interface in io.servicetalk.http.api">StreamingHttpResponse</a>&gt;&nbsp;request&#8203;(<a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategy</a>&nbsp;strategy,
                                              <a href="StreamingHttpRequest.html" title="interface in io.servicetalk.http.api">StreamingHttpRequest</a>&nbsp;request)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block"><span class="descfrmTypeLabel">Description copied from interface:&nbsp;<code><a href="StreamingHttpRequester.html#request(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.StreamingHttpRequest)">StreamingHttpRequester</a></code></span></div>
 <div class="block">Send a <code>request</code> using the specified <a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>strategy</code></a>.</div>
 <dl>

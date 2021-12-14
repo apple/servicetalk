@@ -26,8 +26,8 @@
     catch(err) {
     }
 //-->
-var data = {"i0":18,"i1":18,"i2":6,"i3":18,"i4":18,"i5":6,"i6":6,"i7":6};
-var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"],16:["t5","Default Methods"]};
+var data = {"i0":18,"i1":18,"i2":6,"i3":18,"i4":18,"i5":6,"i6":50,"i7":6};
+var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"],16:["t5","Default Methods"],32:["t6","Deprecated Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
 var tableTab = "tableTab";
@@ -144,7 +144,7 @@ extends <a href="HttpRequester.html" title="interface in io.servicetalk.http.api
 </a>
 <h3>Method Summary</h3>
 <table class="memberSummary">
-<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t3" class="tableTab"><span><a href="javascript:show(4);">Abstract Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t5" class="tableTab"><span><a href="javascript:show(16);">Default Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
+<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t3" class="tableTab"><span><a href="javascript:show(4);">Abstract Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t5" class="tableTab"><span><a href="javascript:show(16);">Default Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t6" class="tableTab"><span><a href="javascript:show(32);">Deprecated Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
 <tr>
 <th class="colFirst" scope="col">Modifier and Type</th>
 <th class="colSecond" scope="col">Method</th>
@@ -192,11 +192,13 @@ extends <a href="HttpRequester.html" title="interface in io.servicetalk.http.api
 </td>
 </tr>
 <tr id="i6" class="altColor">
-<td class="colFirst"><code><a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="ReservedHttpConnection.html" title="interface in io.servicetalk.http.api">ReservedHttpConnection</a>&gt;</code></td>
+<td class="colFirst"><code>default <a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="ReservedHttpConnection.html" title="interface in io.servicetalk.http.api">ReservedHttpConnection</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#reserveConnection(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.HttpRequestMetaData)">reserveConnection</a></span>&#8203;(<a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategy</a>&nbsp;strategy,
                  <a href="HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a>&nbsp;metaData)</code></th>
 <td class="colLast">
-<div class="block">Reserve an <a href="HttpConnection.html" title="interface in io.servicetalk.http.api"><code>HttpConnection</code></a> based on provided <a href="HttpRequestMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpRequestMetaData</code></a>.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#reserveConnection(io.servicetalk.http.api.HttpRequestMetaData)"><code>reserveConnection(HttpRequestMetaData)</code></a>.</div>
+</div>
 </td>
 </tr>
 <tr id="i7" class="rowColor">
@@ -260,6 +262,8 @@ extends <a href="HttpRequester.html" title="interface in io.servicetalk.http.api
 <pre class="methodSignature"><a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="HttpResponse.html" title="interface in io.servicetalk.http.api">HttpResponse</a>&gt;&nbsp;request&#8203;(<a href="HttpRequest.html" title="interface in io.servicetalk.http.api">HttpRequest</a>&nbsp;request)</pre>
 <div class="block">Send a <code>request</code>.</div>
 <dl>
+<dt><span class="overrideSpecifyLabel">Specified by:</span></dt>
+<dd><code><a href="HttpRequester.html#request(io.servicetalk.http.api.HttpRequest)">request</a></code>&nbsp;in interface&nbsp;<code><a href="HttpRequester.html" title="interface in io.servicetalk.http.api">HttpRequester</a></code></dd>
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>request</code> - the request to send.</dd>
 <dt><span class="returnLabel">Returns:</span></dt>
@@ -291,8 +295,14 @@ extends <a href="HttpRequester.html" title="interface in io.servicetalk.http.api
 <ul class="blockList">
 <li class="blockList">
 <h4>reserveConnection</h4>
-<pre class="methodSignature"><a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="ReservedHttpConnection.html" title="interface in io.servicetalk.http.api">ReservedHttpConnection</a>&gt;&nbsp;reserveConnection&#8203;(<a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategy</a>&nbsp;strategy,
-                                                 <a href="HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a>&nbsp;metaData)</pre>
+<pre class="methodSignature">@Deprecated
+default&nbsp;<a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="ReservedHttpConnection.html" title="interface in io.servicetalk.http.api">ReservedHttpConnection</a>&gt;&nbsp;reserveConnection&#8203;(<a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategy</a>&nbsp;strategy,
+                                                         <a href="HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a>&nbsp;metaData)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#reserveConnection(io.servicetalk.http.api.HttpRequestMetaData)"><code>reserveConnection(HttpRequestMetaData)</code></a>. If an <a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> needs to be
+ altered, provide a value for <a href="HttpContextKeys.html#HTTP_EXECUTION_STRATEGY_KEY"><code>HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY</code></a> in the
+ <a href="HttpMetaData.html#context()"><code>request context</code></a>.</div>
+</div>
 <div class="block">Reserve an <a href="HttpConnection.html" title="interface in io.servicetalk.http.api"><code>HttpConnection</code></a> based on provided <a href="HttpRequestMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpRequestMetaData</code></a>.
  <p>
  <b>Note:</b> reserved connections may not be restricted by the max pipelined requests count.</div>

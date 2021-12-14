@@ -343,33 +343,45 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </tr>
 <tr class="altColor">
 <th class="colFirst" scope="row"><a href="IoThreadFactory.html" title="class in io.servicetalk.transport.netty.internal">IoThreadFactory</a></th>
-<td class="colLast">
-<div class="block">Default <code>ThreadFactory</code> to create IO <code>Thread</code>s.</div>
+<td class="colLast">Deprecated.
+<div class="deprecationComment">Use <a href="NettyIoThreadFactory.html" title="class in io.servicetalk.transport.netty.internal"><code>NettyIoThreadFactory</code></a>.</div>
 </td>
 </tr>
 <tr class="rowColor">
+<th class="colFirst" scope="row"><a href="IoUringUtils.html" title="class in io.servicetalk.transport.netty.internal">IoUringUtils</a></th>
+<td class="colLast">
+<div class="block">Utilities for <code>IOUring</code>.</div>
+</td>
+</tr>
+<tr class="altColor">
 <th class="colFirst" scope="row"><a href="MockFlushStrategy.html" title="class in io.servicetalk.transport.netty.internal">MockFlushStrategy</a></th>
 <td class="colLast">
 <div class="block">A mocking setup for <a href="FlushStrategy.html" title="interface in io.servicetalk.transport.netty.internal"><code>FlushStrategy</code></a> that provides ways to verify interactions with <a href="FlushStrategy.WriteEventsListener.html" title="interface in io.servicetalk.transport.netty.internal"><code>FlushStrategy.WriteEventsListener</code></a>
  and also provides access to <a href="FlushStrategy.FlushSender.html" title="interface in io.servicetalk.transport.netty.internal"><code>FlushStrategy.FlushSender</code></a>.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <th class="colFirst" scope="row"><a href="NettyChannelListenableAsyncCloseable.html" title="class in io.servicetalk.transport.netty.internal">NettyChannelListenableAsyncCloseable</a></th>
 <td class="colLast">
 <div class="block">Implements <a href="../../../concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api"><code>ListenableAsyncCloseable</code></a> using a netty <code>Channel</code>.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <th class="colFirst" scope="row"><a href="NettyFutureCompletable.html" title="class in io.servicetalk.transport.netty.internal">NettyFutureCompletable</a></th>
 <td class="colLast">
 <div class="block">A <a href="../../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that wraps a netty <code>Future</code>.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <th class="colFirst" scope="row"><a href="NettyIoExecutors.html" title="class in io.servicetalk.transport.netty.internal">NettyIoExecutors</a></th>
 <td class="colLast">
 <div class="block">A static factory to create or convert to <a href="NettyIoExecutor.html" title="interface in io.servicetalk.transport.netty.internal"><code>NettyIoExecutor</code></a>.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colFirst" scope="row"><a href="NettyIoThreadFactory.html" title="class in io.servicetalk.transport.netty.internal">NettyIoThreadFactory</a></th>
+<td class="colLast">
+<div class="block">Default <a href="../../api/IoThreadFactory.html" title="interface in io.servicetalk.transport.api"><code>IoThreadFactory</code></a> to create IO <a href="../../api/IoThreadFactory.IoThread.html" title="interface in io.servicetalk.transport.api"><code>IoThreadFactory.IoThread</code></a>s.</div>
 </td>
 </tr>
 <tr class="rowColor">

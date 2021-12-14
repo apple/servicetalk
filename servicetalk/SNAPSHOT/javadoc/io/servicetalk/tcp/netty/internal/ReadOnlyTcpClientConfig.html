@@ -26,7 +26,7 @@
     catch(err) {
     }
 //-->
-var data = {"i0":10,"i1":10,"i2":10,"i3":10,"i4":10,"i5":10,"i6":10};
+var data = {"i0":10,"i1":10,"i2":10,"i3":10,"i4":10,"i5":10,"i6":10,"i7":10};
 var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],8:["t4","Concrete Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
@@ -202,6 +202,17 @@ extends java.lang.Object</pre>
 <div class="block">Get the <a href="../../../logging/api/UserDataLoggerConfig.html" title="interface in io.servicetalk.logging.api"><code>UserDataLoggerConfig</code></a> for wire logging.</div>
 </td>
 </tr>
+<tr id="i7" class="rowColor">
+<td class="colFirst"><code><a href="ReadOnlyTcpClientConfig.html" title="class in io.servicetalk.tcp.netty.internal">ReadOnlyTcpClientConfig</a></code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#withSslConfigPeerHost(java.lang.String,int,java.lang.String,java.lang.String)">withSslConfigPeerHost</a></span>&#8203;(java.lang.String&nbsp;peerHost,
+                     int&nbsp;peerPort,
+                     java.lang.String&nbsp;sniHostname,
+                     java.lang.String&nbsp;hostnameVerificationAlgorithm)</code></th>
+<td class="colLast">
+<div class="block">Create a new <a href="ReadOnlyTcpClientConfig.html" title="class in io.servicetalk.tcp.netty.internal"><code>ReadOnlyTcpClientConfig</code></a> replacing <a href="../../../transport/api/ClientSslConfig.html#peerHost()"><code>ClientSslConfig.peerHost()</code></a>,
+ <a href="../../../transport/api/ClientSslConfig.html#peerPort()"><code>ClientSslConfig.peerPort()</code></a>, and <a href="../../../transport/api/ClientSslConfig.html#sniHostname()"><code>ClientSslConfig.sniHostname()</code></a>.</div>
+</td>
+</tr>
 </table>
 <ul class="blockList">
 <li class="blockList"><a id="methods.inherited.from.class.java.lang.Object">
@@ -269,6 +280,32 @@ public&nbsp;<a href="../../../transport/api/ClientSslConfig.html" title="interfa
 <dl>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd>the <a href="../../../transport/api/ClientSslConfig.html" title="interface in io.servicetalk.transport.api"><code>ClientSslConfig</code></a>, or <code>null</code> if SSL/TLS is not configured.</dd>
+</dl>
+</li>
+</ul>
+<a id="withSslConfigPeerHost(java.lang.String,int,java.lang.String,java.lang.String)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>withSslConfigPeerHost</h4>
+<pre class="methodSignature">public&nbsp;<a href="ReadOnlyTcpClientConfig.html" title="class in io.servicetalk.tcp.netty.internal">ReadOnlyTcpClientConfig</a>&nbsp;withSslConfigPeerHost&#8203;(java.lang.String&nbsp;peerHost,
+                                                     int&nbsp;peerPort,
+                                                     @Nullable
+                                                     java.lang.String&nbsp;sniHostname,
+                                                     @Nullable
+                                                     java.lang.String&nbsp;hostnameVerificationAlgorithm)</pre>
+<div class="block">Create a new <a href="ReadOnlyTcpClientConfig.html" title="class in io.servicetalk.tcp.netty.internal"><code>ReadOnlyTcpClientConfig</code></a> replacing <a href="../../../transport/api/ClientSslConfig.html#peerHost()"><code>ClientSslConfig.peerHost()</code></a>,
+ <a href="../../../transport/api/ClientSslConfig.html#peerPort()"><code>ClientSslConfig.peerPort()</code></a>, and <a href="../../../transport/api/ClientSslConfig.html#sniHostname()"><code>ClientSslConfig.sniHostname()</code></a>.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>peerHost</code> - The new value for <a href="../../../transport/api/ClientSslConfig.html#peerHost()"><code>ClientSslConfig.peerHost()</code></a>.</dd>
+<dd><code>peerPort</code> - The new value for <a href="../../../transport/api/ClientSslConfig.html#peerPort()"><code>ClientSslConfig.peerPort()</code></a>.</dd>
+<dd><code>sniHostname</code> - The new value for <a href="../../../transport/api/ClientSslConfig.html#sniHostname()"><code>ClientSslConfig.sniHostname()</code></a>.</dd>
+<dd><code>hostnameVerificationAlgorithm</code> - The new value for <a href="../../../transport/api/ClientSslConfig.html#hostnameVerificationAlgorithm()"><code>ClientSslConfig.hostnameVerificationAlgorithm()</code></a>.</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd>a new <a href="ReadOnlyTcpClientConfig.html" title="class in io.servicetalk.tcp.netty.internal"><code>ReadOnlyTcpClientConfig</code></a> replacing <a href="../../../transport/api/ClientSslConfig.html#peerHost()"><code>ClientSslConfig.peerHost()</code></a> and
+ <a href="../../../transport/api/ClientSslConfig.html#peerPort()"><code>ClientSslConfig.peerPort()</code></a>.</dd>
 </dl>
 </li>
 </ul>

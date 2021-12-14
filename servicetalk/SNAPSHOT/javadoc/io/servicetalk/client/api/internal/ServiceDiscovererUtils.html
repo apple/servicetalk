@@ -26,8 +26,8 @@
     catch(err) {
     }
 //-->
-var data = {"i0":9};
-var tabs = {65535:["t0","All Methods"],1:["t1","Static Methods"],8:["t4","Concrete Methods"]};
+var data = {"i0":41,"i1":41};
+var tabs = {65535:["t0","All Methods"],1:["t1","Static Methods"],8:["t4","Concrete Methods"],32:["t6","Deprecated Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
 var tableTab = "tableTab";
@@ -130,8 +130,13 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <ul class="blockList">
 <li class="blockList">
 <hr>
-<pre>public final class <span class="typeNameLabel">ServiceDiscovererUtils</span>
+<pre>@Deprecated
+public final class <span class="typeNameLabel">ServiceDiscovererUtils</span>
 extends java.lang.Object</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">This is an internal class and will be removed in a future release. If you depend on it, consider
+ replicating its logic.</div>
+</div>
 <div class="block">A set of utility functions for <a href="../ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>.</div>
 </li>
 </ul>
@@ -157,7 +162,9 @@ extends java.lang.Object</pre>
 <td class="colFirst"><code>static interface&nbsp;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="ServiceDiscovererUtils.TwoIntsConsumer.html" title="interface in io.servicetalk.client.api.internal">ServiceDiscovererUtils.TwoIntsConsumer</a></span></code></th>
 <td class="colLast">
-<div class="block">Represents an operation that accepts two <code>int</code>-valued arguments and returns no result.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">This interface is defined by an internal class and will be removed in a future release.</div>
+</div>
 </td>
 </tr>
 </table>
@@ -172,7 +179,7 @@ extends java.lang.Object</pre>
 </a>
 <h3>Method Summary</h3>
 <table class="memberSummary">
-<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t1" class="tableTab"><span><a href="javascript:show(1);">Static Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t4" class="tableTab"><span><a href="javascript:show(8);">Concrete Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
+<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t1" class="tableTab"><span><a href="javascript:show(1);">Static Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t4" class="tableTab"><span><a href="javascript:show(8);">Concrete Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t6" class="tableTab"><span><a href="javascript:show(32);">Deprecated Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
 <tr>
 <th class="colFirst" scope="col">Modifier and Type</th>
 <th class="colSecond" scope="col">Method</th>
@@ -185,8 +192,22 @@ extends java.lang.Object</pre>
                    java.util.Comparator&lt;T&gt;&nbsp;comparator,
                    <a href="ServiceDiscovererUtils.TwoIntsConsumer.html" title="interface in io.servicetalk.client.api.internal">ServiceDiscovererUtils.TwoIntsConsumer</a>&nbsp;reporter)</code></th>
 <td class="colLast">
-<div class="block">Given a sorted list of currently active addresses, and a new set of unsorted active address calculate the
- <a href="../ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscovererEvent</code></a>s.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">This is an internal class and will be removed in a future release.</div>
+</div>
+</td>
+</tr>
+<tr id="i1" class="rowColor">
+<td class="colFirst"><code>static &lt;T&gt;&nbsp;java.util.List&lt;<a href="../ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;T&gt;&gt;</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#calculateDifference(java.util.List,java.util.List,java.util.Comparator,io.servicetalk.client.api.internal.ServiceDiscovererUtils.TwoIntsConsumer,io.servicetalk.client.api.ServiceDiscovererEvent.Status)">calculateDifference</a></span>&#8203;(java.util.List&lt;? extends T&gt;&nbsp;currentActiveAddresses,
+                   java.util.List&lt;? extends T&gt;&nbsp;newActiveAddresses,
+                   java.util.Comparator&lt;T&gt;&nbsp;comparator,
+                   <a href="ServiceDiscovererUtils.TwoIntsConsumer.html" title="interface in io.servicetalk.client.api.internal">ServiceDiscovererUtils.TwoIntsConsumer</a>&nbsp;reporter,
+                   <a href="../ServiceDiscovererEvent.Status.html" title="class in io.servicetalk.client.api">ServiceDiscovererEvent.Status</a>&nbsp;missingRecordStatus)</code></th>
+<td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">This is an internal class and will be removed in a future release.</div>
+</div>
 </td>
 </tr>
 </table>
@@ -216,15 +237,20 @@ extends java.lang.Object</pre>
 <a id="calculateDifference(java.util.List,java.util.List,java.util.Comparator,io.servicetalk.client.api.internal.ServiceDiscovererUtils.TwoIntsConsumer)">
 <!--   -->
 </a>
-<ul class="blockListLast">
+<ul class="blockList">
 <li class="blockList">
 <h4>calculateDifference</h4>
-<pre class="methodSignature">@Nullable
+<pre class="methodSignature">@Deprecated
+@Nullable
 public static&nbsp;&lt;T&gt;&nbsp;java.util.List&lt;<a href="../ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;T&gt;&gt;&nbsp;calculateDifference&#8203;(java.util.List&lt;? extends T&gt;&nbsp;currentActiveAddresses,
                                                                                 java.util.List&lt;? extends T&gt;&nbsp;newActiveAddresses,
                                                                                 java.util.Comparator&lt;T&gt;&nbsp;comparator,
                                                                                 @Nullable
                                                                                 <a href="ServiceDiscovererUtils.TwoIntsConsumer.html" title="interface in io.servicetalk.client.api.internal">ServiceDiscovererUtils.TwoIntsConsumer</a>&nbsp;reporter)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">This is an internal class and will be removed in a future release. If you depend on it, consider
+ replicating its logic.</div>
+</div>
 <div class="block">Given a sorted list of currently active addresses, and a new set of unsorted active address calculate the
  <a href="../ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscovererEvent</code></a>s.
  <p>
@@ -238,6 +264,45 @@ public static&nbsp;&lt;T&gt;&nbsp;java.util.List&lt;<a href="../ServiceDiscovere
  sorted with <code>List.sort(Comparator)</code>.</dd>
 <dd><code>comparator</code> - A comparator for the addresses and to use for binary searches.</dd>
 <dd><code>reporter</code> - A reporter for the numbers of available and unavailable events.</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd>A list of <a href="../ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscovererEvent</code></a>s which represents the changes between
+ <code>currentActiveAddresses</code> and <code>newActiveAddresses</code>, or <code>null</code> if there are no changes.</dd>
+</dl>
+</li>
+</ul>
+<a id="calculateDifference(java.util.List,java.util.List,java.util.Comparator,io.servicetalk.client.api.internal.ServiceDiscovererUtils.TwoIntsConsumer,io.servicetalk.client.api.ServiceDiscovererEvent.Status)">
+<!--   -->
+</a>
+<ul class="blockListLast">
+<li class="blockList">
+<h4>calculateDifference</h4>
+<pre class="methodSignature">@Deprecated
+@Nullable
+public static&nbsp;&lt;T&gt;&nbsp;java.util.List&lt;<a href="../ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;T&gt;&gt;&nbsp;calculateDifference&#8203;(java.util.List&lt;? extends T&gt;&nbsp;currentActiveAddresses,
+                                                                                java.util.List&lt;? extends T&gt;&nbsp;newActiveAddresses,
+                                                                                java.util.Comparator&lt;T&gt;&nbsp;comparator,
+                                                                                @Nullable
+                                                                                <a href="ServiceDiscovererUtils.TwoIntsConsumer.html" title="interface in io.servicetalk.client.api.internal">ServiceDiscovererUtils.TwoIntsConsumer</a>&nbsp;reporter,
+                                                                                <a href="../ServiceDiscovererEvent.Status.html" title="class in io.servicetalk.client.api">ServiceDiscovererEvent.Status</a>&nbsp;missingRecordStatus)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">This is an internal class and will be removed in a future release. If you depend on it, consider
+ replicating its logic.</div>
+</div>
+<div class="block">Given a sorted list of currently active addresses, and a new set of unsorted active address calculate the
+ <a href="../ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscovererEvent</code></a>s.
+ <p>
+ <code>newActiveAddresses</code> will be sorted in this method.</div>
+<dl>
+<dt><span class="paramLabel">Type Parameters:</span></dt>
+<dd><code>T</code> - The type of address.</dd>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>currentActiveAddresses</code> - The currently active addresses.</dd>
+<dd><code>newActiveAddresses</code> - The new list of active addresses.<b>This list must be modifiable</b> as it will be
+ sorted with <code>List.sort(Comparator)</code>.</dd>
+<dd><code>comparator</code> - A comparator for the addresses and to use for binary searches.</dd>
+<dd><code>reporter</code> - A reporter for the numbers of available and missing events.</dd>
+<dd><code>missingRecordStatus</code> - <a href="../ServiceDiscovererEvent.Status.html" title="class in io.servicetalk.client.api"><code>ServiceDiscovererEvent.Status</code></a> to use for created
+ <a href="../ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscovererEvent</code></a> when address present in current list but not in the new one.</dd>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd>A list of <a href="../ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscovererEvent</code></a>s which represents the changes between
  <code>currentActiveAddresses</code> and <code>newActiveAddresses</code>, or <code>null</code> if there are no changes.</dd>

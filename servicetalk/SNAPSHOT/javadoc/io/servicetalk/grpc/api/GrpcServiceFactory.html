@@ -26,8 +26,8 @@
     catch(err) {
     }
 //-->
-var data = {"i0":10,"i1":6,"i2":10};
-var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"],8:["t4","Concrete Methods"]};
+var data = {"i0":42,"i1":38,"i2":10};
+var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"],8:["t4","Concrete Methods"],32:["t6","Deprecated Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
 var tableTab = "tableTab";
@@ -204,7 +204,7 @@ extends java.lang.Object</pre>
 </a>
 <h3>Method Summary</h3>
 <table class="memberSummary">
-<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t3" class="tableTab"><span><a href="javascript:show(4);">Abstract Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t4" class="tableTab"><span><a href="javascript:show(8);">Concrete Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
+<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t3" class="tableTab"><span><a href="javascript:show(4);">Abstract Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t4" class="tableTab"><span><a href="javascript:show(8);">Concrete Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t6" class="tableTab"><span><a href="javascript:show(32);">Deprecated Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
 <tr>
 <th class="colFirst" scope="col">Modifier and Type</th>
 <th class="colSecond" scope="col">Method</th>
@@ -214,7 +214,9 @@ extends java.lang.Object</pre>
 <td class="colFirst"><code><a href="GrpcServiceFactory.html" title="class in io.servicetalk.grpc.api">GrpcServiceFactory</a>&lt;<a href="GrpcServiceFactory.html" title="type parameter in GrpcServiceFactory">Filter</a>,&#8203;<a href="GrpcServiceFactory.html" title="type parameter in GrpcServiceFactory">Service</a>,&#8203;<a href="GrpcServiceFactory.html" title="type parameter in GrpcServiceFactory">FilterFactory</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#appendServiceFilter(FilterFactory)">appendServiceFilter</a></span>&#8203;(<a href="GrpcServiceFactory.html" title="type parameter in GrpcServiceFactory">FilterFactory</a>&nbsp;before)</code></th>
 <td class="colLast">
-<div class="block">Appends the passed <a href="GrpcServiceFactory.html" title="class in io.servicetalk.grpc.api"><code>GrpcServiceFactory</code></a> to this factory.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">gRPC Service Filters will be removed in future release of ServiceTalk.</div>
+</div>
 </td>
 </tr>
 <tr id="i1" class="rowColor">
@@ -222,7 +224,9 @@ extends java.lang.Object</pre>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#appendServiceFilterFactory(FilterFactory,FilterFactory)">appendServiceFilterFactory</a></span>&#8203;(<a href="GrpcServiceFactory.html" title="type parameter in GrpcServiceFactory">FilterFactory</a>&nbsp;existing,
                           <a href="GrpcServiceFactory.html" title="type parameter in GrpcServiceFactory">FilterFactory</a>&nbsp;append)</code></th>
 <td class="colLast">
-<div class="block">Appends the passed <a href="GrpcServiceFactory.html" title="class in io.servicetalk.grpc.api"><code>GrpcServiceFactory</code></a> to this service factory.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">gRPC Service Filters will be removed in future release of ServiceTalk.</div>
+</div>
 </td>
 </tr>
 <tr id="i2" class="altColor">
@@ -310,7 +314,18 @@ extends java.lang.Object</pre>
 <ul class="blockList">
 <li class="blockList">
 <h4>appendServiceFilter</h4>
-<pre class="methodSignature">public&nbsp;<a href="GrpcServiceFactory.html" title="class in io.servicetalk.grpc.api">GrpcServiceFactory</a>&lt;<a href="GrpcServiceFactory.html" title="type parameter in GrpcServiceFactory">Filter</a>,&#8203;<a href="GrpcServiceFactory.html" title="type parameter in GrpcServiceFactory">Service</a>,&#8203;<a href="GrpcServiceFactory.html" title="type parameter in GrpcServiceFactory">FilterFactory</a>&gt;&nbsp;appendServiceFilter&#8203;(<a href="GrpcServiceFactory.html" title="type parameter in GrpcServiceFactory">FilterFactory</a>&nbsp;before)</pre>
+<pre class="methodSignature">@Deprecated
+public&nbsp;<a href="GrpcServiceFactory.html" title="class in io.servicetalk.grpc.api">GrpcServiceFactory</a>&lt;<a href="GrpcServiceFactory.html" title="type parameter in GrpcServiceFactory">Filter</a>,&#8203;<a href="GrpcServiceFactory.html" title="type parameter in GrpcServiceFactory">Service</a>,&#8203;<a href="GrpcServiceFactory.html" title="type parameter in GrpcServiceFactory">FilterFactory</a>&gt;&nbsp;appendServiceFilter&#8203;(<a href="GrpcServiceFactory.html" title="type parameter in GrpcServiceFactory">FilterFactory</a>&nbsp;before)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">gRPC Service Filters will be removed in future release of ServiceTalk. We encourage the use of
+ <a href="../../http/api/StreamingHttpServiceFilterFactory.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpServiceFilterFactory</code></a> and if the access to the decoded payload is necessary, then performing
+ that logic can be done in the particular <a href="GrpcService.html" title="interface in io.servicetalk.grpc.api"><code>service implementation</code></a>.
+ Please use
+ <a href="../../http/api/HttpServerBuilder.html#appendServiceFilter(io.servicetalk.http.api.StreamingHttpServiceFilterFactory)"><code>HttpServerBuilder.appendServiceFilter(StreamingHttpServiceFilterFactory)</code></a>
+ upon the <code>builder</code> obtained using
+ <a href="GrpcServerBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>GrpcServerBuilder.initializeHttp(GrpcServerBuilder.HttpInitializer)</code></a> if HTTP filters are acceptable
+ in your use case.</div>
+</div>
 <div class="block">Appends the passed <a href="GrpcServiceFactory.html" title="class in io.servicetalk.grpc.api"><code>GrpcServiceFactory</code></a> to this factory.
  <p>
  The order of execution of these filters are in order of append. If 3 filters are added as follows:
@@ -319,7 +334,7 @@ extends java.lang.Object</pre>
  </pre>
  making a request to a client wrapped by this filter chain the order of invocation of these filters will be:
  <pre>
-     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
+     filter1 ⇒ filter2 ⇒ filter3 ⇒ client
  </pre></div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
@@ -337,8 +352,19 @@ extends java.lang.Object</pre>
 <ul class="blockListLast">
 <li class="blockList">
 <h4>appendServiceFilterFactory</h4>
-<pre class="methodSignature">protected abstract&nbsp;<a href="GrpcServiceFactory.html" title="type parameter in GrpcServiceFactory">FilterFactory</a>&nbsp;appendServiceFilterFactory&#8203;(<a href="GrpcServiceFactory.html" title="type parameter in GrpcServiceFactory">FilterFactory</a>&nbsp;existing,
+<pre class="methodSignature">@Deprecated
+protected abstract&nbsp;<a href="GrpcServiceFactory.html" title="type parameter in GrpcServiceFactory">FilterFactory</a>&nbsp;appendServiceFilterFactory&#8203;(<a href="GrpcServiceFactory.html" title="type parameter in GrpcServiceFactory">FilterFactory</a>&nbsp;existing,
                                                             <a href="GrpcServiceFactory.html" title="type parameter in GrpcServiceFactory">FilterFactory</a>&nbsp;append)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">gRPC Service Filters will be removed in future release of ServiceTalk. We encourage the use of
+ <a href="../../http/api/StreamingHttpServiceFilterFactory.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpServiceFilterFactory</code></a> and if the access to the decoded payload is necessary, then performing
+ that logic can be done in the particular <a href="GrpcService.html" title="interface in io.servicetalk.grpc.api"><code>service implementation</code></a>.
+ Please use
+ <a href="../../http/api/HttpServerBuilder.html#appendServiceFilter(io.servicetalk.http.api.StreamingHttpServiceFilterFactory)"><code>HttpServerBuilder.appendServiceFilter(StreamingHttpServiceFilterFactory)</code></a>
+ upon the <code>builder</code> obtained using
+ <a href="GrpcServerBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>GrpcServerBuilder.initializeHttp(GrpcServerBuilder.HttpInitializer)</code></a> if HTTP filters are acceptable
+ in your use case.</div>
+</div>
 <div class="block">Appends the passed <a href="GrpcServiceFactory.html" title="class in io.servicetalk.grpc.api"><code>GrpcServiceFactory</code></a> to this service factory.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>

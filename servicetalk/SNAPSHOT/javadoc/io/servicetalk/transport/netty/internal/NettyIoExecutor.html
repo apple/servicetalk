@@ -133,8 +133,7 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <pre>public interface <span class="typeNameLabel">NettyIoExecutor</span>
 extends <a href="../../api/IoExecutor.html" title="interface in io.servicetalk.transport.api">IoExecutor</a></pre>
 <div class="block"><a href="../../api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a> for netty.
-
- <h2>Caution</h2>
+ <p><strong>Caution</strong></p>
  Implementations of this interface assumes that they would not be used to run blocking code.
  If this assumption is violated, it will impact eventloop responsiveness and hence should be avoided.</div>
 </li>
@@ -210,7 +209,7 @@ extends <a href="../../api/IoExecutor.html" title="interface in io.servicetalk.t
 <h4>asExecutor</h4>
 <pre class="methodSignature"><a href="../../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;asExecutor()</pre>
 <div class="block">Get an <a href="../../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> which will use an <a href="../../api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a> thread for execution.
- <h2>Caution</h2>
+ <p><strong>Caution</strong></p>
  Implementation of this method assumes there would be no blocking code inside the submitted <code>Runnable</code>s.
  If this assumption is violated, it will impact EventLoop responsiveness and hence should be avoided.</div>
 <dl>

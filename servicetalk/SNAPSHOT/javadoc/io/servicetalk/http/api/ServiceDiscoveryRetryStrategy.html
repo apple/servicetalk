@@ -26,8 +26,8 @@
     catch(err) {
     }
 //-->
-var data = {"i0":6};
-var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"]};
+var data = {"i0":38};
+var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"],32:["t6","Deprecated Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
 var tableTab = "tableTab";
@@ -135,9 +135,23 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <dd>This is a functional interface and can therefore be used as the assignment target for a lambda expression or method reference.</dd>
 </dl>
 <hr>
-<pre>@FunctionalInterface
+<pre>@Deprecated
+@FunctionalInterface
 public interface <span class="typeNameLabel">ServiceDiscoveryRetryStrategy&lt;ResolvedAddress,&#8203;E extends <a href="../../client/api/ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;ResolvedAddress&gt;&gt;</span></pre>
-<div class="block">A retry strategy for errors emitted from <a href="../../client/api/ServiceDiscoverer.html#discover(UnresolvedAddress)"><code>ServiceDiscoverer.discover(Object)</code></a>.</div>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <code>HttpClientBuilder.retryServiceDiscoveryErrors(BiIntFunction)</code>
+ or <code>HttpClientBuilder.retryServiceDiscoveryErrors(BiIntFunction)</code> combined with common utilities
+ from <a href="../../concurrent/api/RetryStrategies.html" title="class in io.servicetalk.concurrent.api"><code>RetryStrategies</code></a> or provide your own <a href="../../concurrent/api/BiIntFunction.html" title="interface in io.servicetalk.concurrent.api"><code>retry strategy</code></a>.</div>
+</div>
+<div class="block">A retry strategy for errors emitted from <a href="../../client/api/ServiceDiscoverer.html#discover(UnresolvedAddress)"><code>ServiceDiscoverer.discover(Object)</code></a>.
+ <p>
+ <strong>Note, the default implementation does not support
+ <a href="../../client/api/ServiceDiscovererEvent.Status.html#EXPIRED"><code>ServiceDiscovererEvent.Status.EXPIRED</code></a> <a href="../../client/api/ServiceDiscovererEvent.html#status()"><code>ServiceDiscovererEvent.status()</code></a>.</strong></div>
+<dl>
+<dt><span class="seeLabel">See Also:</span></dt>
+<dd><a href="../../concurrent/api/RetryStrategies.html" title="class in io.servicetalk.concurrent.api"><code>RetryStrategies</code></a>, 
+<code>HttpClientBuilder.retryServiceDiscoveryErrors(BiIntFunction)</code></dd>
+</dl>
 </li>
 </ul>
 </div>
@@ -152,7 +166,7 @@ public interface <span class="typeNameLabel">ServiceDiscoveryRetryStrategy&lt;Re
 </a>
 <h3>Method Summary</h3>
 <table class="memberSummary">
-<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t3" class="tableTab"><span><a href="javascript:show(4);">Abstract Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
+<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t3" class="tableTab"><span><a href="javascript:show(4);">Abstract Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t6" class="tableTab"><span><a href="javascript:show(32);">Deprecated Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
 <tr>
 <th class="colFirst" scope="col">Modifier and Type</th>
 <th class="colSecond" scope="col">Method</th>
@@ -162,6 +176,7 @@ public interface <span class="typeNameLabel">ServiceDiscoveryRetryStrategy&lt;Re
 <td class="colFirst"><code><a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;java.util.Collection&lt;<a href="ServiceDiscoveryRetryStrategy.html" title="type parameter in ServiceDiscoveryRetryStrategy">E</a>&gt;&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#apply(io.servicetalk.concurrent.api.Publisher)">apply</a></span>&#8203;(<a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;java.util.Collection&lt;<a href="ServiceDiscoveryRetryStrategy.html" title="type parameter in ServiceDiscoveryRetryStrategy">E</a>&gt;&gt;&nbsp;sdEvents)</code></th>
 <td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Applies this strategy on the passed <a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>.</div>
 </td>
 </tr>
@@ -189,6 +204,7 @@ public interface <span class="typeNameLabel">ServiceDiscoveryRetryStrategy&lt;Re
 <li class="blockList">
 <h4>apply</h4>
 <pre class="methodSignature"><a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;java.util.Collection&lt;<a href="ServiceDiscoveryRetryStrategy.html" title="type parameter in ServiceDiscoveryRetryStrategy">E</a>&gt;&gt;&nbsp;apply&#8203;(<a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;java.util.Collection&lt;<a href="ServiceDiscoveryRetryStrategy.html" title="type parameter in ServiceDiscoveryRetryStrategy">E</a>&gt;&gt;&nbsp;sdEvents)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Applies this strategy on the passed <a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>

@@ -26,7 +26,7 @@
     catch(err) {
     }
 //-->
-var data = {"i0":50,"i1":18,"i2":6,"i3":1,"i4":1};
+var data = {"i0":50,"i1":50,"i2":38,"i3":33,"i4":33};
 var tabs = {65535:["t0","All Methods"],1:["t1","Static Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"],16:["t5","Default Methods"],32:["t6","Deprecated Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
@@ -130,8 +130,18 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <dd>This is a functional interface and can therefore be used as the assignment target for a lambda expression or method reference.</dd>
 </dl>
 <hr>
-<pre>@FunctionalInterface
+<pre>@Deprecated
+@FunctionalInterface
 public interface <span class="typeNameLabel">MultiAddressHttpClientFilterFactory&lt;U&gt;</span></pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use
+   <a href="MultiAddressHttpClientBuilder.html#initializer(io.servicetalk.http.api.MultiAddressHttpClientBuilder.SingleAddressInitializer)"><code>MultiAddressHttpClientBuilder.initializer(MultiAddressHttpClientBuilder.SingleAddressInitializer)</code></a> and
+   <a href="SingleAddressHttpClientBuilder.html#appendClientFilter(io.servicetalk.http.api.StreamingHttpClientFilterFactory)"><code>SingleAddressHttpClientBuilder.appendClientFilter(StreamingHttpClientFilterFactory)</code></a> or
+   <a href="SingleAddressHttpClientBuilder.html#appendClientFilter(java.util.function.Predicate,io.servicetalk.http.api.StreamingHttpClientFilterFactory)"><code>SingleAddressHttpClientBuilder.appendClientFilter(Predicate, StreamingHttpClientFilterFactory)</code></a>
+   on the last argument of
+   <a href="MultiAddressHttpClientBuilder.SingleAddressInitializer.html#initialize(java.lang.String,U,io.servicetalk.http.api.SingleAddressHttpClientBuilder)"><code>MultiAddressHttpClientBuilder.SingleAddressInitializer.initialize(
+   String, Object, SingleAddressHttpClientBuilder)</code></a>.</div>
+</div>
 <div class="block">A factory for <a href="StreamingHttpClientFilter.html" title="class in io.servicetalk.http.api"><code>StreamingHttpClientFilter</code></a> to filter clients for different unresolved addresses.</div>
 <dl>
 <dt><span class="seeLabel">See Also:</span></dt>
@@ -170,6 +180,7 @@ public interface <span class="typeNameLabel">MultiAddressHttpClientFilterFactory
 <td class="colFirst"><code>default <a href="StreamingHttpClientFilterFactory.html" title="interface in io.servicetalk.http.api">StreamingHttpClientFilterFactory</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#asClientFilter(U)">asClientFilter</a></span>&#8203;(<a href="MultiAddressHttpClientFilterFactory.html" title="type parameter in MultiAddressHttpClientFilterFactory">U</a>&nbsp;address)</code></th>
 <td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Returns a <a href="StreamingHttpClientFilterFactory.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpClientFilterFactory</code></a> that adapts from a
  <a href="MultiAddressHttpClientFilterFactory.html" title="interface in io.servicetalk.http.api"><code>MultiAddressHttpClientFilterFactory</code></a>.</div>
 </td>
@@ -179,6 +190,7 @@ public interface <span class="typeNameLabel">MultiAddressHttpClientFilterFactory
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#create(U,io.servicetalk.http.api.FilterableStreamingHttpClient)">create</a></span>&#8203;(<a href="MultiAddressHttpClientFilterFactory.html" title="type parameter in MultiAddressHttpClientFilterFactory">U</a>&nbsp;address,
       <a href="FilterableStreamingHttpClient.html" title="interface in io.servicetalk.http.api">FilterableStreamingHttpClient</a>&nbsp;client)</code></th>
 <td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Create a <a href="StreamingHttpClientFilter.html" title="class in io.servicetalk.http.api"><code>StreamingHttpClientFilter</code></a> for the passed <code>address</code> using the provided
  <a href="FilterableStreamingHttpClient.html" title="interface in io.servicetalk.http.api"><code>FilterableStreamingHttpClient</code></a>.</div>
 </td>
@@ -187,6 +199,7 @@ public interface <span class="typeNameLabel">MultiAddressHttpClientFilterFactory
 <td class="colFirst"><code>static &lt;U&gt;&nbsp;<a href="MultiAddressHttpClientFilterFactory.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientFilterFactory</a>&lt;U&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#from(java.util.function.BiFunction)">from</a></span>&#8203;(java.util.function.BiFunction&lt;U,&#8203;<a href="FilterableStreamingHttpClient.html" title="interface in io.servicetalk.http.api">FilterableStreamingHttpClient</a>,&#8203;<a href="StreamingHttpClientFilter.html" title="class in io.servicetalk.http.api">StreamingHttpClientFilter</a>&gt;&nbsp;function)</code></th>
 <td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Returns a function that adapts from the <code>UnaryOperator</code>&lt;<a href="FilterableStreamingHttpClient.html" title="interface in io.servicetalk.http.api"><code>FilterableStreamingHttpClient</code></a>&gt;
  function type to the <a href="MultiAddressHttpClientFilterFactory.html" title="interface in io.servicetalk.http.api"><code>MultiAddressHttpClientFilterFactory</code></a>.</div>
 </td>
@@ -195,6 +208,7 @@ public interface <span class="typeNameLabel">MultiAddressHttpClientFilterFactory
 <td class="colFirst"><code>static &lt;U&gt;&nbsp;<a href="MultiAddressHttpClientFilterFactory.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientFilterFactory</a>&lt;U&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#from(java.util.function.Function)">from</a></span>&#8203;(java.util.function.Function&lt;<a href="FilterableStreamingHttpClient.html" title="interface in io.servicetalk.http.api">FilterableStreamingHttpClient</a>,&#8203;<a href="StreamingHttpClientFilter.html" title="class in io.servicetalk.http.api">StreamingHttpClientFilter</a>&gt;&nbsp;function)</code></th>
 <td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Returns a function that adapts from a <code>Function</code>&lt;<a href="FilterableStreamingHttpClient.html" title="interface in io.servicetalk.http.api"><code>FilterableStreamingHttpClient</code></a>,
  <a href="StreamingHttpClientFilter.html" title="class in io.servicetalk.http.api"><code>StreamingHttpClientFilter</code></a>&gt; to the <a href="StreamingHttpClientFilterFactory.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpClientFilterFactory</code></a>.</div>
 </td>
@@ -226,6 +240,7 @@ public interface <span class="typeNameLabel">MultiAddressHttpClientFilterFactory
 <h4>create</h4>
 <pre class="methodSignature"><a href="StreamingHttpClientFilter.html" title="class in io.servicetalk.http.api">StreamingHttpClientFilter</a>&nbsp;create&#8203;(<a href="MultiAddressHttpClientFilterFactory.html" title="type parameter in MultiAddressHttpClientFilterFactory">U</a>&nbsp;address,
                                  <a href="FilterableStreamingHttpClient.html" title="interface in io.servicetalk.http.api">FilterableStreamingHttpClient</a>&nbsp;client)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Create a <a href="StreamingHttpClientFilter.html" title="class in io.servicetalk.http.api"><code>StreamingHttpClientFilter</code></a> for the passed <code>address</code> using the provided
  <a href="FilterableStreamingHttpClient.html" title="interface in io.servicetalk.http.api"><code>FilterableStreamingHttpClient</code></a>.</div>
 <dl>
@@ -276,6 +291,7 @@ default&nbsp;<a href="MultiAddressHttpClientFilterFactory.html" title="interface
 <li class="blockList">
 <h4>asClientFilter</h4>
 <pre class="methodSignature">default&nbsp;<a href="StreamingHttpClientFilterFactory.html" title="interface in io.servicetalk.http.api">StreamingHttpClientFilterFactory</a>&nbsp;asClientFilter&#8203;(<a href="MultiAddressHttpClientFilterFactory.html" title="type parameter in MultiAddressHttpClientFilterFactory">U</a>&nbsp;address)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Returns a <a href="StreamingHttpClientFilterFactory.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpClientFilterFactory</code></a> that adapts from a
  <a href="MultiAddressHttpClientFilterFactory.html" title="interface in io.servicetalk.http.api"><code>MultiAddressHttpClientFilterFactory</code></a>.</div>
 <dl>
@@ -293,6 +309,7 @@ default&nbsp;<a href="MultiAddressHttpClientFilterFactory.html" title="interface
 <li class="blockList">
 <h4>from</h4>
 <pre class="methodSignature">static&nbsp;&lt;U&gt;&nbsp;<a href="MultiAddressHttpClientFilterFactory.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientFilterFactory</a>&lt;U&gt;&nbsp;from&#8203;(java.util.function.BiFunction&lt;U,&#8203;<a href="FilterableStreamingHttpClient.html" title="interface in io.servicetalk.http.api">FilterableStreamingHttpClient</a>,&#8203;<a href="StreamingHttpClientFilter.html" title="class in io.servicetalk.http.api">StreamingHttpClientFilter</a>&gt;&nbsp;function)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Returns a function that adapts from the <code>UnaryOperator</code>&lt;<a href="FilterableStreamingHttpClient.html" title="interface in io.servicetalk.http.api"><code>FilterableStreamingHttpClient</code></a>&gt;
  function type to the <a href="MultiAddressHttpClientFilterFactory.html" title="interface in io.servicetalk.http.api"><code>MultiAddressHttpClientFilterFactory</code></a>.</div>
 <dl>
@@ -313,6 +330,7 @@ default&nbsp;<a href="MultiAddressHttpClientFilterFactory.html" title="interface
 <li class="blockList">
 <h4>from</h4>
 <pre class="methodSignature">static&nbsp;&lt;U&gt;&nbsp;<a href="MultiAddressHttpClientFilterFactory.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientFilterFactory</a>&lt;U&gt;&nbsp;from&#8203;(java.util.function.Function&lt;<a href="FilterableStreamingHttpClient.html" title="interface in io.servicetalk.http.api">FilterableStreamingHttpClient</a>,&#8203;<a href="StreamingHttpClientFilter.html" title="class in io.servicetalk.http.api">StreamingHttpClientFilter</a>&gt;&nbsp;function)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Returns a function that adapts from a <code>Function</code>&lt;<a href="FilterableStreamingHttpClient.html" title="interface in io.servicetalk.http.api"><code>FilterableStreamingHttpClient</code></a>,
  <a href="StreamingHttpClientFilter.html" title="class in io.servicetalk.http.api"><code>StreamingHttpClientFilter</code></a>&gt; to the <a href="StreamingHttpClientFilterFactory.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpClientFilterFactory</code></a>.</div>
 <dl>

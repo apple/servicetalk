@@ -26,7 +26,7 @@
     catch(err) {
     }
 //-->
-var data = {"i0":6,"i1":10,"i2":10,"i3":10,"i4":42,"i5":6,"i6":10,"i7":6,"i8":38,"i9":6,"i10":10,"i11":6,"i12":10,"i13":10,"i14":10,"i15":10,"i16":10,"i17":10,"i18":6,"i19":10,"i20":10,"i21":6,"i22":38,"i23":6,"i24":6,"i25":6,"i26":6};
+var data = {"i0":6,"i1":10,"i2":10,"i3":10,"i4":42,"i5":6,"i6":42,"i7":38,"i8":10,"i9":38,"i10":6,"i11":10,"i12":10,"i13":6,"i14":10,"i15":10,"i16":10,"i17":10,"i18":10,"i19":10,"i20":10,"i21":6,"i22":10,"i23":10,"i24":6,"i25":38,"i26":6,"i27":6,"i28":6,"i29":6};
 var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"],8:["t4","Concrete Methods"],32:["t6","Deprecated Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
@@ -227,8 +227,9 @@ extends java.lang.Object</pre>
 <td class="colFirst"><code><a href="HttpServerBuilder.html" title="class in io.servicetalk.http.api">HttpServerBuilder</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#disableDrainingRequestPayloadBody()">disableDrainingRequestPayloadBody</a></span>()</code></th>
 <td class="colLast">
-<div class="block">Disables automatic consumption of request <a href="StreamingHttpRequest.html#payloadBody()"><code>payload body</code></a> when it is not
- consumed by the service.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#drainRequestPayloadBody(boolean)"><code>drainRequestPayloadBody(boolean)</code></a>.</div>
+</div>
 </td>
 </tr>
 <tr id="i7" class="rowColor">
@@ -238,10 +239,20 @@ extends java.lang.Object</pre>
         <a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategy</a>&nbsp;strategy,
         boolean&nbsp;drainRequestPayloadBody)</code></th>
 <td class="colLast">
-<div class="block">Starts this server and returns the <a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api"><code>ServerContext</code></a> after the server has been successfully started.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">This method will be removed.</div>
+</div>
 </td>
 </tr>
 <tr id="i8" class="altColor">
+<td class="colFirst"><code><a href="HttpServerBuilder.html" title="class in io.servicetalk.http.api">HttpServerBuilder</a></code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#drainRequestPayloadBody(boolean)">drainRequestPayloadBody</a></span>&#8203;(boolean&nbsp;enable)</code></th>
+<td class="colLast">
+<div class="block">Configure automatic consumption of request <a href="StreamingHttpRequest.html#payloadBody()"><code>payload body</code></a> when it is not
+ consumed by the service.</div>
+</td>
+</tr>
+<tr id="i9" class="rowColor">
 <td class="colFirst"><code>abstract <a href="HttpServerBuilder.html" title="class in io.servicetalk.http.api">HttpServerBuilder</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#enableWireLogging(java.lang.String)">enableWireLogging</a></span>&#8203;(java.lang.String&nbsp;loggerName)</code></th>
 <td class="colLast">
@@ -250,7 +261,7 @@ extends java.lang.Object</pre>
 </div>
 </td>
 </tr>
-<tr id="i9" class="rowColor">
+<tr id="i10" class="altColor">
 <td class="colFirst"><code>abstract <a href="HttpServerBuilder.html" title="class in io.servicetalk.http.api">HttpServerBuilder</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#enableWireLogging(java.lang.String,io.servicetalk.logging.api.LogLevel,java.util.function.BooleanSupplier)">enableWireLogging</a></span>&#8203;(java.lang.String&nbsp;loggerName,
                  <a href="../../logging/api/LogLevel.html" title="enum in io.servicetalk.logging.api">LogLevel</a>&nbsp;logLevel,
@@ -259,63 +270,77 @@ extends java.lang.Object</pre>
 <div class="block">Enables wire-logging for this server.</div>
 </td>
 </tr>
-<tr id="i10" class="altColor">
+<tr id="i11" class="rowColor">
 <td class="colFirst"><code><a href="HttpServerBuilder.html" title="class in io.servicetalk.http.api">HttpServerBuilder</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#executionStrategy(io.servicetalk.http.api.HttpExecutionStrategy)">executionStrategy</a></span>&#8203;(<a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategy</a>&nbsp;strategy)</code></th>
 <td class="colLast">
 <div class="block">Sets the <a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> to be used by this server.</div>
 </td>
 </tr>
-<tr id="i11" class="rowColor">
+<tr id="i12" class="altColor">
+<td class="colFirst"><code><a href="HttpServerBuilder.html" title="class in io.servicetalk.http.api">HttpServerBuilder</a></code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#executor(io.servicetalk.concurrent.api.Executor)">executor</a></span>&#8203;(<a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;executor)</code></th>
+<td class="colLast">
+<div class="block">Sets the <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> to use.</div>
+</td>
+</tr>
+<tr id="i13" class="rowColor">
 <td class="colFirst"><code>abstract <a href="HttpServerBuilder.html" title="class in io.servicetalk.http.api">HttpServerBuilder</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#ioExecutor(io.servicetalk.transport.api.IoExecutor)">ioExecutor</a></span>&#8203;(<a href="../../transport/api/IoExecutor.html" title="interface in io.servicetalk.transport.api">IoExecutor</a>&nbsp;ioExecutor)</code></th>
 <td class="colLast">
 <div class="block">Sets the <a href="../../transport/api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a> to be used by this server.</div>
 </td>
 </tr>
-<tr id="i12" class="altColor">
+<tr id="i14" class="altColor">
+<td class="colFirst"><code><a href="HttpServerBuilder.html" title="class in io.servicetalk.http.api">HttpServerBuilder</a></code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#lifecycleObserver(io.servicetalk.http.api.HttpLifecycleObserver)">lifecycleObserver</a></span>&#8203;(<a href="HttpLifecycleObserver.html" title="interface in io.servicetalk.http.api">HttpLifecycleObserver</a>&nbsp;lifecycleObserver)</code></th>
+<td class="colLast">
+<div class="block">Sets a <a href="HttpLifecycleObserver.html" title="interface in io.servicetalk.http.api"><code>HttpLifecycleObserver</code></a> that provides visibility into HTTP lifecycle events.</div>
+</td>
+</tr>
+<tr id="i15" class="rowColor">
 <td class="colFirst"><code><a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api">ServerContext</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#listen(io.servicetalk.http.api.HttpService)">listen</a></span>&#8203;(<a href="HttpService.html" title="interface in io.servicetalk.http.api">HttpService</a>&nbsp;service)</code></th>
 <td class="colLast">
 <div class="block">Starts this server and returns the <a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api"><code>ServerContext</code></a> after the server has been successfully started.</div>
 </td>
 </tr>
-<tr id="i13" class="rowColor">
+<tr id="i16" class="altColor">
 <td class="colFirst"><code><a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api">ServerContext</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#listenAndAwait(io.servicetalk.http.api.HttpService)">listenAndAwait</a></span>&#8203;(<a href="HttpService.html" title="interface in io.servicetalk.http.api">HttpService</a>&nbsp;service)</code></th>
 <td class="colLast">
 <div class="block">Starts this server and returns the <a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api"><code>ServerContext</code></a> after the server has been successfully started.</div>
 </td>
 </tr>
-<tr id="i14" class="altColor">
+<tr id="i17" class="rowColor">
 <td class="colFirst"><code><a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api">ServerContext</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#listenBlocking(io.servicetalk.http.api.BlockingHttpService)">listenBlocking</a></span>&#8203;(<a href="BlockingHttpService.html" title="interface in io.servicetalk.http.api">BlockingHttpService</a>&nbsp;service)</code></th>
 <td class="colLast">
 <div class="block">Starts this server and returns the <a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api"><code>ServerContext</code></a> after the server has been successfully started.</div>
 </td>
 </tr>
-<tr id="i15" class="rowColor">
+<tr id="i18" class="altColor">
 <td class="colFirst"><code><a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api">ServerContext</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#listenBlockingAndAwait(io.servicetalk.http.api.BlockingHttpService)">listenBlockingAndAwait</a></span>&#8203;(<a href="BlockingHttpService.html" title="interface in io.servicetalk.http.api">BlockingHttpService</a>&nbsp;service)</code></th>
 <td class="colLast">
 <div class="block">Starts this server and returns the <a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api"><code>ServerContext</code></a> after the server has been successfully started.</div>
 </td>
 </tr>
-<tr id="i16" class="altColor">
+<tr id="i19" class="rowColor">
 <td class="colFirst"><code><a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api">ServerContext</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#listenBlockingStreaming(io.servicetalk.http.api.BlockingStreamingHttpService)">listenBlockingStreaming</a></span>&#8203;(<a href="BlockingStreamingHttpService.html" title="interface in io.servicetalk.http.api">BlockingStreamingHttpService</a>&nbsp;service)</code></th>
 <td class="colLast">
 <div class="block">Starts this server and returns the <a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api"><code>ServerContext</code></a> after the server has been successfully started.</div>
 </td>
 </tr>
-<tr id="i17" class="rowColor">
+<tr id="i20" class="altColor">
 <td class="colFirst"><code><a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api">ServerContext</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#listenBlockingStreamingAndAwait(io.servicetalk.http.api.BlockingStreamingHttpService)">listenBlockingStreamingAndAwait</a></span>&#8203;(<a href="BlockingStreamingHttpService.html" title="interface in io.servicetalk.http.api">BlockingStreamingHttpService</a>&nbsp;handler)</code></th>
 <td class="colLast">
 <div class="block">Starts this server and returns the <a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api"><code>ServerContext</code></a> after the server has been successfully started.</div>
 </td>
 </tr>
-<tr id="i18" class="altColor">
+<tr id="i21" class="rowColor">
 <td class="colFirst"><code>abstract &lt;T&gt;&nbsp;<a href="HttpServerBuilder.html" title="class in io.servicetalk.http.api">HttpServerBuilder</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#listenSocketOption(java.net.SocketOption,T)">listenSocketOption</a></span>&#8203;(java.net.SocketOption&lt;T&gt;&nbsp;option,
                   T&nbsp;value)</code></th>
@@ -323,28 +348,28 @@ extends java.lang.Object</pre>
 <div class="block">Adds a <code>SocketOption</code> that is applied to the server socket channel which listens/accepts socket channels.</div>
 </td>
 </tr>
-<tr id="i19" class="rowColor">
+<tr id="i22" class="altColor">
 <td class="colFirst"><code><a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api">ServerContext</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#listenStreaming(io.servicetalk.http.api.StreamingHttpService)">listenStreaming</a></span>&#8203;(<a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api">StreamingHttpService</a>&nbsp;service)</code></th>
 <td class="colLast">
 <div class="block">Starts this server and returns the <a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api"><code>ServerContext</code></a> after the server has been successfully started.</div>
 </td>
 </tr>
-<tr id="i20" class="altColor">
+<tr id="i23" class="rowColor">
 <td class="colFirst"><code><a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api">ServerContext</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#listenStreamingAndAwait(io.servicetalk.http.api.StreamingHttpService)">listenStreamingAndAwait</a></span>&#8203;(<a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api">StreamingHttpService</a>&nbsp;handler)</code></th>
 <td class="colLast">
 <div class="block">Starts this server and returns the <a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api"><code>ServerContext</code></a> after the server has been successfully started.</div>
 </td>
 </tr>
-<tr id="i21" class="rowColor">
+<tr id="i24" class="altColor">
 <td class="colFirst"><code>abstract <a href="HttpServerBuilder.html" title="class in io.servicetalk.http.api">HttpServerBuilder</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#protocols(io.servicetalk.http.api.HttpProtocolConfig...)">protocols</a></span>&#8203;(<a href="HttpProtocolConfig.html" title="interface in io.servicetalk.http.api">HttpProtocolConfig</a>...&nbsp;protocols)</code></th>
 <td class="colLast">
 <div class="block">Configurations of various HTTP protocol versions.</div>
 </td>
 </tr>
-<tr id="i22" class="altColor">
+<tr id="i25" class="rowColor">
 <td class="colFirst"><code>abstract <a href="HttpServerSecurityConfigurator.html" title="interface in io.servicetalk.http.api">HttpServerSecurityConfigurator</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#secure()">secure</a></span>()</code></th>
 <td class="colLast">
@@ -353,7 +378,7 @@ extends java.lang.Object</pre>
 </div>
 </td>
 </tr>
-<tr id="i23" class="rowColor">
+<tr id="i26" class="altColor">
 <td class="colFirst"><code>abstract &lt;T&gt;&nbsp;<a href="HttpServerBuilder.html" title="class in io.servicetalk.http.api">HttpServerBuilder</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#socketOption(java.net.SocketOption,T)">socketOption</a></span>&#8203;(java.net.SocketOption&lt;T&gt;&nbsp;option,
             T&nbsp;value)</code></th>
@@ -361,14 +386,14 @@ extends java.lang.Object</pre>
 <div class="block">Adds a <code>SocketOption</code> that is applied to connected/accepted socket channels.</div>
 </td>
 </tr>
-<tr id="i24" class="altColor">
+<tr id="i27" class="rowColor">
 <td class="colFirst"><code>abstract <a href="HttpServerBuilder.html" title="class in io.servicetalk.http.api">HttpServerBuilder</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#sslConfig(io.servicetalk.transport.api.ServerSslConfig)">sslConfig</a></span>&#8203;(<a href="../../transport/api/ServerSslConfig.html" title="interface in io.servicetalk.transport.api">ServerSslConfig</a>&nbsp;config)</code></th>
 <td class="colLast">
 <div class="block">Set the SSL/TLS configuration.</div>
 </td>
 </tr>
-<tr id="i25" class="rowColor">
+<tr id="i28" class="altColor">
 <td class="colFirst"><code>abstract <a href="HttpServerBuilder.html" title="class in io.servicetalk.http.api">HttpServerBuilder</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#sslConfig(io.servicetalk.transport.api.ServerSslConfig,java.util.Map)">sslConfig</a></span>&#8203;(<a href="../../transport/api/ServerSslConfig.html" title="interface in io.servicetalk.transport.api">ServerSslConfig</a>&nbsp;defaultConfig,
          java.util.Map&lt;java.lang.String,&#8203;<a href="../../transport/api/ServerSslConfig.html" title="interface in io.servicetalk.transport.api">ServerSslConfig</a>&gt;&nbsp;sniMap)</code></th>
@@ -376,7 +401,7 @@ extends java.lang.Object</pre>
 <div class="block">Set the SSL/TLS and <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> configuration.</div>
 </td>
 </tr>
-<tr id="i26" class="altColor">
+<tr id="i29" class="rowColor">
 <td class="colFirst"><code>abstract <a href="HttpServerBuilder.html" title="class in io.servicetalk.http.api">HttpServerBuilder</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#transportObserver(io.servicetalk.transport.api.TransportObserver)">transportObserver</a></span>&#8203;(<a href="../../transport/api/TransportObserver.html" title="interface in io.servicetalk.transport.api">TransportObserver</a>&nbsp;transportObserver)</code></th>
 <td class="colLast">
@@ -585,8 +610,7 @@ public abstract&nbsp;<a href="HttpServerBuilder.html" title="class in io.service
 <div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
 <div class="deprecationComment">Use <a href="#enableWireLogging(java.lang.String,io.servicetalk.logging.api.LogLevel,java.util.function.BooleanSupplier)"><code>enableWireLogging(String, LogLevel, BooleanSupplier)</code></a> instead.</div>
 </div>
-<div class="block">Enables wire-logging for this server.
- <p></div>
+<div class="block">Enables wire-logging for this server.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>loggerName</code> - The name of the logger to log wire events.</dd>
@@ -632,13 +656,33 @@ public abstract&nbsp;<a href="HttpServerBuilder.html" title="class in io.service
 </dl>
 </li>
 </ul>
+<a id="lifecycleObserver(io.servicetalk.http.api.HttpLifecycleObserver)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>lifecycleObserver</h4>
+<pre class="methodSignature">public&nbsp;<a href="HttpServerBuilder.html" title="class in io.servicetalk.http.api">HttpServerBuilder</a>&nbsp;lifecycleObserver&#8203;(<a href="HttpLifecycleObserver.html" title="interface in io.servicetalk.http.api">HttpLifecycleObserver</a>&nbsp;lifecycleObserver)</pre>
+<div class="block">Sets a <a href="HttpLifecycleObserver.html" title="interface in io.servicetalk.http.api"><code>HttpLifecycleObserver</code></a> that provides visibility into HTTP lifecycle events.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>lifecycleObserver</code> - A <a href="HttpLifecycleObserver.html" title="interface in io.servicetalk.http.api"><code>HttpLifecycleObserver</code></a> that provides visibility into HTTP lifecycle events.</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd><code>this</code>.</dd>
+</dl>
+</li>
+</ul>
 <a id="disableDrainingRequestPayloadBody()">
 <!--   -->
 </a>
 <ul class="blockList">
 <li class="blockList">
 <h4>disableDrainingRequestPayloadBody</h4>
-<pre class="methodSignature">public final&nbsp;<a href="HttpServerBuilder.html" title="class in io.servicetalk.http.api">HttpServerBuilder</a>&nbsp;disableDrainingRequestPayloadBody()</pre>
+<pre class="methodSignature">@Deprecated
+public&nbsp;<a href="HttpServerBuilder.html" title="class in io.servicetalk.http.api">HttpServerBuilder</a>&nbsp;disableDrainingRequestPayloadBody()</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#drainRequestPayloadBody(boolean)"><code>drainRequestPayloadBody(boolean)</code></a>.</div>
+</div>
 <div class="block">Disables automatic consumption of request <a href="StreamingHttpRequest.html#payloadBody()"><code>payload body</code></a> when it is not
  consumed by the service.
  <p>
@@ -650,6 +694,32 @@ public abstract&nbsp;<a href="HttpServerBuilder.html" title="class in io.service
  overhead and can be disabled using this method when it is guaranteed that all request paths consumes all request
  payloads eventually. An example of guaranteed consumption are <a href="HttpRequest.html" title="interface in io.servicetalk.http.api"><code>non-streaming APIs</code></a>.</div>
 <dl>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd><code>this</code>.</dd>
+</dl>
+</li>
+</ul>
+<a id="drainRequestPayloadBody(boolean)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>drainRequestPayloadBody</h4>
+<pre class="methodSignature">public&nbsp;<a href="HttpServerBuilder.html" title="class in io.servicetalk.http.api">HttpServerBuilder</a>&nbsp;drainRequestPayloadBody&#8203;(boolean&nbsp;enable)</pre>
+<div class="block">Configure automatic consumption of request <a href="StreamingHttpRequest.html#payloadBody()"><code>payload body</code></a> when it is not
+ consumed by the service.
+ <p>
+ For <a href="https://tools.ietf.org/html/rfc7230#section-6.3">persistent HTTP connections</a> it is required to
+ eventually consume the entire request payload to enable reading of the next request. This is required because
+ requests are pipelined for HTTP/1.1, so if the previous request is not completely read, next request can not be
+ read from the socket. For cases when there is a possibility that user may forget to consume request payload,
+ ServiceTalk automatically consumes request payload body. This automatic consumption behavior may create some
+ overhead and can be disabled using this method when it is guaranteed that all request paths consumes all request
+ payloads eventually. An example of guaranteed consumption are <a href="HttpRequest.html" title="interface in io.servicetalk.http.api"><code>non-streaming APIs</code></a>.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>enable</code> - When <code>false</code> it will disable the automatic consumption of request
+ <a href="StreamingHttpRequest.html#payloadBody()"><code>StreamingHttpRequest.payloadBody()</code></a>.</dd>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd><code>this</code>.</dd>
 </dl>
@@ -682,7 +752,7 @@ public abstract&nbsp;<a href="HttpServerBuilder.html" title="class in io.service
 <ul class="blockList">
 <li class="blockList">
 <h4>appendConnectionAcceptorFilter</h4>
-<pre class="methodSignature">public final&nbsp;<a href="HttpServerBuilder.html" title="class in io.servicetalk.http.api">HttpServerBuilder</a>&nbsp;appendConnectionAcceptorFilter&#8203;(<a href="../../transport/api/ConnectionAcceptorFactory.html" title="interface in io.servicetalk.transport.api">ConnectionAcceptorFactory</a>&nbsp;factory)</pre>
+<pre class="methodSignature">public&nbsp;<a href="HttpServerBuilder.html" title="class in io.servicetalk.http.api">HttpServerBuilder</a>&nbsp;appendConnectionAcceptorFilter&#8203;(<a href="../../transport/api/ConnectionAcceptorFactory.html" title="interface in io.servicetalk.transport.api">ConnectionAcceptorFactory</a>&nbsp;factory)</pre>
 <div class="block">Appends the filter to the chain of filters used to decorate the <a href="../../transport/api/ConnectionAcceptor.html" title="interface in io.servicetalk.transport.api"><code>ConnectionAcceptor</code></a> used by this builder.
  <p>
  The order of execution of these filters are in order of append. If 3 filters are added as follows:
@@ -693,7 +763,7 @@ public abstract&nbsp;<a href="HttpServerBuilder.html" title="class in io.service
  accepting a connection by a filter wrapped by this filter chain, the order of invocation of these filters will
  be:
  <pre>
-     filter1 =&gt; filter2 =&gt; filter3
+     filter1 ⇒ filter2 ⇒ filter3
  </pre></div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
@@ -710,7 +780,7 @@ public abstract&nbsp;<a href="HttpServerBuilder.html" title="class in io.service
 <ul class="blockList">
 <li class="blockList">
 <h4>appendServiceFilter</h4>
-<pre class="methodSignature">public final&nbsp;<a href="HttpServerBuilder.html" title="class in io.servicetalk.http.api">HttpServerBuilder</a>&nbsp;appendServiceFilter&#8203;(<a href="StreamingHttpServiceFilterFactory.html" title="interface in io.servicetalk.http.api">StreamingHttpServiceFilterFactory</a>&nbsp;factory)</pre>
+<pre class="methodSignature">public&nbsp;<a href="HttpServerBuilder.html" title="class in io.servicetalk.http.api">HttpServerBuilder</a>&nbsp;appendServiceFilter&#8203;(<a href="StreamingHttpServiceFilterFactory.html" title="interface in io.servicetalk.http.api">StreamingHttpServiceFilterFactory</a>&nbsp;factory)</pre>
 <div class="block">Appends the filter to the chain of filters used to decorate the <a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpService</code></a> used by this
  builder.
  <p>
@@ -723,7 +793,7 @@ public abstract&nbsp;<a href="HttpServerBuilder.html" title="class in io.service
  </pre>
  accepting a request by a service wrapped by this filter chain, the order of invocation of these filters will be:
  <pre>
-     filter1 =&gt; filter2 =&gt; filter3 =&gt; service
+     filter1 ⇒ filter2 ⇒ filter3 ⇒ service
  </pre></div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
@@ -739,8 +809,8 @@ public abstract&nbsp;<a href="HttpServerBuilder.html" title="class in io.service
 <ul class="blockList">
 <li class="blockList">
 <h4>appendServiceFilter</h4>
-<pre class="methodSignature">public final&nbsp;<a href="HttpServerBuilder.html" title="class in io.servicetalk.http.api">HttpServerBuilder</a>&nbsp;appendServiceFilter&#8203;(java.util.function.Predicate&lt;<a href="StreamingHttpRequest.html" title="interface in io.servicetalk.http.api">StreamingHttpRequest</a>&gt;&nbsp;predicate,
-                                                   <a href="StreamingHttpServiceFilterFactory.html" title="interface in io.servicetalk.http.api">StreamingHttpServiceFilterFactory</a>&nbsp;factory)</pre>
+<pre class="methodSignature">public&nbsp;<a href="HttpServerBuilder.html" title="class in io.servicetalk.http.api">HttpServerBuilder</a>&nbsp;appendServiceFilter&#8203;(java.util.function.Predicate&lt;<a href="StreamingHttpRequest.html" title="interface in io.servicetalk.http.api">StreamingHttpRequest</a>&gt;&nbsp;predicate,
+                                             <a href="StreamingHttpServiceFilterFactory.html" title="interface in io.servicetalk.http.api">StreamingHttpServiceFilterFactory</a>&nbsp;factory)</pre>
 <div class="block">Appends the filter to the chain of filters used to decorate the <a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpService</code></a> used by this
  builder, for every request that passes the provided <code>Predicate</code>.
  <p>
@@ -753,7 +823,7 @@ public abstract&nbsp;<a href="HttpServerBuilder.html" title="class in io.service
  </pre>
  accepting a request by a service wrapped by this filter chain, the order of invocation of these filters will be:
  <pre>
-     filter1 =&gt; filter2 =&gt; filter3 =&gt; service
+     filter1 ⇒ filter2 ⇒ filter3 ⇒ service
  </pre></div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
@@ -775,6 +845,22 @@ public abstract&nbsp;<a href="HttpServerBuilder.html" title="class in io.service
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>ioExecutor</code> - <a href="../../transport/api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a> to use.</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd><code>this</code>.</dd>
+</dl>
+</li>
+</ul>
+<a id="executor(io.servicetalk.concurrent.api.Executor)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>executor</h4>
+<pre class="methodSignature">public&nbsp;<a href="HttpServerBuilder.html" title="class in io.servicetalk.http.api">HttpServerBuilder</a>&nbsp;executor&#8203;(<a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;executor)</pre>
+<div class="block">Sets the <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> to use.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>executor</code> - <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> to use.</dd>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd><code>this</code>.</dd>
 </dl>
@@ -802,7 +888,7 @@ public abstract&nbsp;<a href="HttpServerBuilder.html" title="class in io.service
 <ul class="blockList">
 <li class="blockList">
 <h4>executionStrategy</h4>
-<pre class="methodSignature">public final&nbsp;<a href="HttpServerBuilder.html" title="class in io.servicetalk.http.api">HttpServerBuilder</a>&nbsp;executionStrategy&#8203;(<a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategy</a>&nbsp;strategy)</pre>
+<pre class="methodSignature">public&nbsp;<a href="HttpServerBuilder.html" title="class in io.servicetalk.http.api">HttpServerBuilder</a>&nbsp;executionStrategy&#8203;(<a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategy</a>&nbsp;strategy)</pre>
 <div class="block">Sets the <a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> to be used by this server.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
@@ -818,8 +904,8 @@ public abstract&nbsp;<a href="HttpServerBuilder.html" title="class in io.service
 <ul class="blockList">
 <li class="blockList">
 <h4>listenAndAwait</h4>
-<pre class="methodSignature">public final&nbsp;<a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api">ServerContext</a>&nbsp;listenAndAwait&#8203;(<a href="HttpService.html" title="interface in io.servicetalk.http.api">HttpService</a>&nbsp;service)
-                                   throws java.lang.Exception</pre>
+<pre class="methodSignature">public&nbsp;<a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api">ServerContext</a>&nbsp;listenAndAwait&#8203;(<a href="HttpService.html" title="interface in io.servicetalk.http.api">HttpService</a>&nbsp;service)
+                             throws java.lang.Exception</pre>
 <div class="block">Starts this server and returns the <a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api"><code>ServerContext</code></a> after the server has been successfully started.
  <p>
  If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on <code>address</code>.</div>
@@ -841,8 +927,8 @@ public abstract&nbsp;<a href="HttpServerBuilder.html" title="class in io.service
 <ul class="blockList">
 <li class="blockList">
 <h4>listenStreamingAndAwait</h4>
-<pre class="methodSignature">public final&nbsp;<a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api">ServerContext</a>&nbsp;listenStreamingAndAwait&#8203;(<a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api">StreamingHttpService</a>&nbsp;handler)
-                                            throws java.lang.Exception</pre>
+<pre class="methodSignature">public&nbsp;<a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api">ServerContext</a>&nbsp;listenStreamingAndAwait&#8203;(<a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api">StreamingHttpService</a>&nbsp;handler)
+                                      throws java.lang.Exception</pre>
 <div class="block">Starts this server and returns the <a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api"><code>ServerContext</code></a> after the server has been successfully started.
  <p>
  If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on <code>address</code>.</div>
@@ -864,8 +950,8 @@ public abstract&nbsp;<a href="HttpServerBuilder.html" title="class in io.service
 <ul class="blockList">
 <li class="blockList">
 <h4>listenBlockingAndAwait</h4>
-<pre class="methodSignature">public final&nbsp;<a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api">ServerContext</a>&nbsp;listenBlockingAndAwait&#8203;(<a href="BlockingHttpService.html" title="interface in io.servicetalk.http.api">BlockingHttpService</a>&nbsp;service)
-                                           throws java.lang.Exception</pre>
+<pre class="methodSignature">public&nbsp;<a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api">ServerContext</a>&nbsp;listenBlockingAndAwait&#8203;(<a href="BlockingHttpService.html" title="interface in io.servicetalk.http.api">BlockingHttpService</a>&nbsp;service)
+                                     throws java.lang.Exception</pre>
 <div class="block">Starts this server and returns the <a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api"><code>ServerContext</code></a> after the server has been successfully started.
  <p>
  If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on <code>address</code>.</div>
@@ -887,8 +973,8 @@ public abstract&nbsp;<a href="HttpServerBuilder.html" title="class in io.service
 <ul class="blockList">
 <li class="blockList">
 <h4>listenBlockingStreamingAndAwait</h4>
-<pre class="methodSignature">public final&nbsp;<a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api">ServerContext</a>&nbsp;listenBlockingStreamingAndAwait&#8203;(<a href="BlockingStreamingHttpService.html" title="interface in io.servicetalk.http.api">BlockingStreamingHttpService</a>&nbsp;handler)
-                                                    throws java.lang.Exception</pre>
+<pre class="methodSignature">public&nbsp;<a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api">ServerContext</a>&nbsp;listenBlockingStreamingAndAwait&#8203;(<a href="BlockingStreamingHttpService.html" title="interface in io.servicetalk.http.api">BlockingStreamingHttpService</a>&nbsp;handler)
+                                              throws java.lang.Exception</pre>
 <div class="block">Starts this server and returns the <a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api"><code>ServerContext</code></a> after the server has been successfully started.
  <p>
  If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on <code>address</code>.</div>
@@ -910,7 +996,7 @@ public abstract&nbsp;<a href="HttpServerBuilder.html" title="class in io.service
 <ul class="blockList">
 <li class="blockList">
 <h4>listen</h4>
-<pre class="methodSignature">public final&nbsp;<a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api">ServerContext</a>&gt;&nbsp;listen&#8203;(<a href="HttpService.html" title="interface in io.servicetalk.http.api">HttpService</a>&nbsp;service)</pre>
+<pre class="methodSignature">public&nbsp;<a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api">ServerContext</a>&gt;&nbsp;listen&#8203;(<a href="HttpService.html" title="interface in io.servicetalk.http.api">HttpService</a>&nbsp;service)</pre>
 <div class="block">Starts this server and returns the <a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api"><code>ServerContext</code></a> after the server has been successfully started.
  <p>
  If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on <code>address</code>.</div>
@@ -930,7 +1016,7 @@ public abstract&nbsp;<a href="HttpServerBuilder.html" title="class in io.service
 <ul class="blockList">
 <li class="blockList">
 <h4>listenStreaming</h4>
-<pre class="methodSignature">public final&nbsp;<a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api">ServerContext</a>&gt;&nbsp;listenStreaming&#8203;(<a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api">StreamingHttpService</a>&nbsp;service)</pre>
+<pre class="methodSignature">public&nbsp;<a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api">ServerContext</a>&gt;&nbsp;listenStreaming&#8203;(<a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api">StreamingHttpService</a>&nbsp;service)</pre>
 <div class="block">Starts this server and returns the <a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api"><code>ServerContext</code></a> after the server has been successfully started.
  <p>
  If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on <code>address</code>.</div>
@@ -950,7 +1036,7 @@ public abstract&nbsp;<a href="HttpServerBuilder.html" title="class in io.service
 <ul class="blockList">
 <li class="blockList">
 <h4>listenBlocking</h4>
-<pre class="methodSignature">public final&nbsp;<a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api">ServerContext</a>&gt;&nbsp;listenBlocking&#8203;(<a href="BlockingHttpService.html" title="interface in io.servicetalk.http.api">BlockingHttpService</a>&nbsp;service)</pre>
+<pre class="methodSignature">public&nbsp;<a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api">ServerContext</a>&gt;&nbsp;listenBlocking&#8203;(<a href="BlockingHttpService.html" title="interface in io.servicetalk.http.api">BlockingHttpService</a>&nbsp;service)</pre>
 <div class="block">Starts this server and returns the <a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api"><code>ServerContext</code></a> after the server has been successfully started.
  <p>
  If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on <code>address</code>.</div>
@@ -970,7 +1056,7 @@ public abstract&nbsp;<a href="HttpServerBuilder.html" title="class in io.service
 <ul class="blockList">
 <li class="blockList">
 <h4>listenBlockingStreaming</h4>
-<pre class="methodSignature">public final&nbsp;<a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api">ServerContext</a>&gt;&nbsp;listenBlockingStreaming&#8203;(<a href="BlockingStreamingHttpService.html" title="interface in io.servicetalk.http.api">BlockingStreamingHttpService</a>&nbsp;service)</pre>
+<pre class="methodSignature">public&nbsp;<a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api">ServerContext</a>&gt;&nbsp;listenBlockingStreaming&#8203;(<a href="BlockingStreamingHttpService.html" title="interface in io.servicetalk.http.api">BlockingStreamingHttpService</a>&nbsp;service)</pre>
 <div class="block">Starts this server and returns the <a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api"><code>ServerContext</code></a> after the server has been successfully started.
  <p>
  If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on <code>address</code>.</div>
@@ -990,11 +1076,17 @@ public abstract&nbsp;<a href="HttpServerBuilder.html" title="class in io.service
 <ul class="blockListLast">
 <li class="blockList">
 <h4>doListen</h4>
-<pre class="methodSignature">protected abstract&nbsp;<a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api">ServerContext</a>&gt;&nbsp;doListen&#8203;(@Nullable
+<pre class="methodSignature">@Deprecated
+protected abstract&nbsp;<a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api">ServerContext</a>&gt;&nbsp;doListen&#8203;(@Nullable
                                                   <a href="../../transport/api/ConnectionAcceptor.html" title="interface in io.servicetalk.transport.api">ConnectionAcceptor</a>&nbsp;connectionAcceptor,
                                                   <a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api">StreamingHttpService</a>&nbsp;service,
                                                   <a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategy</a>&nbsp;strategy,
                                                   boolean&nbsp;drainRequestPayloadBody)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">This method will be removed. If you depend upon it consider copying the implementation from
+ <code>DefaultHttpServerBuilder#doListen(ConnectionAcceptor, StreamingHttpService, HttpExecutionStrategy,
+ boolean)</code></div>
+</div>
 <div class="block">Starts this server and returns the <a href="../../transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api"><code>ServerContext</code></a> after the server has been successfully started.
  <p>
  If the underlying protocol (eg. TCP) supports it this should result in a socket bind/listen on <code>address</code>.</div>

@@ -26,8 +26,8 @@
     catch(err) {
     }
 //-->
-var data = {"i0":10,"i1":10,"i2":10,"i3":9,"i4":9,"i5":9};
-var tabs = {65535:["t0","All Methods"],1:["t1","Static Methods"],2:["t2","Instance Methods"],8:["t4","Concrete Methods"]};
+var data = {"i0":42,"i1":42,"i2":42,"i3":41,"i4":41,"i5":41};
+var tabs = {65535:["t0","All Methods"],1:["t1","Static Methods"],2:["t2","Instance Methods"],8:["t4","Concrete Methods"],32:["t6","Deprecated Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
 var tableTab = "tableTab";
@@ -139,9 +139,19 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <dd><a href="DefaultServiceDiscoveryRetryStrategy.html" title="class in io.servicetalk.http.api">DefaultServiceDiscoveryRetryStrategy</a>&lt;<a href="DefaultServiceDiscoveryRetryStrategy.html" title="type parameter in DefaultServiceDiscoveryRetryStrategy">ResolvedAddress</a>,&#8203;<a href="DefaultServiceDiscoveryRetryStrategy.html" title="type parameter in DefaultServiceDiscoveryRetryStrategy">E</a> extends <a href="../../client/api/ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;<a href="DefaultServiceDiscoveryRetryStrategy.html" title="type parameter in DefaultServiceDiscoveryRetryStrategy">ResolvedAddress</a>&gt;&gt;</dd>
 </dl>
 <hr>
-<pre>public static final class <span class="typeNameLabel">DefaultServiceDiscoveryRetryStrategy.Builder&lt;ResolvedAddress,&#8203;E extends <a href="../../client/api/ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;ResolvedAddress&gt;&gt;</span>
+<pre>@Deprecated
+public static final class <span class="typeNameLabel">DefaultServiceDiscoveryRetryStrategy.Builder&lt;ResolvedAddress,&#8203;E extends <a href="../../client/api/ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;ResolvedAddress&gt;&gt;</span>
 extends java.lang.Object</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use standard mechanisms for retrying using <a href="../../concurrent/api/RetryStrategies.html" title="class in io.servicetalk.concurrent.api"><code>RetryStrategies</code></a>
+ combined with <code>HttpClientBuilder.retryServiceDiscoveryErrors(BiIntFunction)</code>.</div>
+</div>
 <div class="block">A builder to build instances of <a href="DefaultServiceDiscoveryRetryStrategy.html" title="class in io.servicetalk.http.api"><code>DefaultServiceDiscoveryRetryStrategy</code></a>.</div>
+<dl>
+<dt><span class="seeLabel">See Also:</span></dt>
+<dd><a href="../../concurrent/api/RetryStrategies.html" title="class in io.servicetalk.concurrent.api"><code>RetryStrategies</code></a>, 
+<code>HttpClientBuilder.retryServiceDiscoveryErrors(BiIntFunction)</code></dd>
+</dl>
 </li>
 </ul>
 </div>
@@ -156,7 +166,7 @@ extends java.lang.Object</pre>
 </a>
 <h3>Method Summary</h3>
 <table class="memberSummary">
-<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t1" class="tableTab"><span><a href="javascript:show(1);">Static Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t4" class="tableTab"><span><a href="javascript:show(8);">Concrete Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
+<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t1" class="tableTab"><span><a href="javascript:show(1);">Static Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t4" class="tableTab"><span><a href="javascript:show(8);">Concrete Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t6" class="tableTab"><span><a href="javascript:show(32);">Deprecated Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
 <tr>
 <th class="colFirst" scope="col">Modifier and Type</th>
 <th class="colSecond" scope="col">Method</th>
@@ -166,6 +176,7 @@ extends java.lang.Object</pre>
 <td class="colFirst"><code><a href="ServiceDiscoveryRetryStrategy.html" title="interface in io.servicetalk.http.api">ServiceDiscoveryRetryStrategy</a>&lt;<a href="DefaultServiceDiscoveryRetryStrategy.Builder.html" title="type parameter in DefaultServiceDiscoveryRetryStrategy.Builder">ResolvedAddress</a>,&#8203;<a href="DefaultServiceDiscoveryRetryStrategy.Builder.html" title="type parameter in DefaultServiceDiscoveryRetryStrategy.Builder">E</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#build()">build</a></span>()</code></th>
 <td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Creates a new <a href="ServiceDiscoveryRetryStrategy.html" title="interface in io.servicetalk.http.api"><code>ServiceDiscoveryRetryStrategy</code></a>.</div>
 </td>
 </tr>
@@ -173,6 +184,7 @@ extends java.lang.Object</pre>
 <td class="colFirst"><code><a href="DefaultServiceDiscoveryRetryStrategy.Builder.html" title="class in io.servicetalk.http.api">DefaultServiceDiscoveryRetryStrategy.Builder</a>&lt;<a href="DefaultServiceDiscoveryRetryStrategy.Builder.html" title="type parameter in DefaultServiceDiscoveryRetryStrategy.Builder">ResolvedAddress</a>,&#8203;<a href="DefaultServiceDiscoveryRetryStrategy.Builder.html" title="type parameter in DefaultServiceDiscoveryRetryStrategy.Builder">E</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#retainAddressesTillSuccess(boolean)">retainAddressesTillSuccess</a></span>&#8203;(boolean&nbsp;retainAddressesTillSuccess)</code></th>
 <td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">A <a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> returned from <a href="../../client/api/ServiceDiscoverer.html#discover(UnresolvedAddress)"><code>ServiceDiscoverer.discover(Object)</code></a> may fail transiently leaving the
  consumer of these events with an option of either disposing the addresses that were provided before the
  error or retain them till a retry succeeds.</div>
@@ -182,6 +194,7 @@ extends java.lang.Object</pre>
 <td class="colFirst"><code><a href="DefaultServiceDiscoveryRetryStrategy.Builder.html" title="class in io.servicetalk.http.api">DefaultServiceDiscoveryRetryStrategy.Builder</a>&lt;<a href="DefaultServiceDiscoveryRetryStrategy.Builder.html" title="type parameter in DefaultServiceDiscoveryRetryStrategy.Builder">ResolvedAddress</a>,&#8203;<a href="DefaultServiceDiscoveryRetryStrategy.Builder.html" title="type parameter in DefaultServiceDiscoveryRetryStrategy.Builder">E</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#retryStrategy(io.servicetalk.concurrent.api.BiIntFunction)">retryStrategy</a></span>&#8203;(<a href="../../concurrent/api/BiIntFunction.html" title="interface in io.servicetalk.concurrent.api">BiIntFunction</a>&lt;java.lang.Throwable,&#8203;? extends <a href="../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>&gt;&nbsp;retryStrategy)</code></th>
 <td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Specifies a <code>BiFunction</code> which is applied as-is using <a href="../../concurrent/api/Publisher.html#retryWhen(io.servicetalk.concurrent.api.BiIntFunction)"><code>Publisher.retryWhen(BiIntFunction)</code></a>
  on the <a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> passed to <a href="DefaultServiceDiscoveryRetryStrategy.html#apply(io.servicetalk.concurrent.api.Publisher)"><code>DefaultServiceDiscoveryRetryStrategy.apply(Publisher)</code></a>.</div>
 </td>
@@ -192,6 +205,7 @@ extends java.lang.Object</pre>
             java.time.Duration&nbsp;initialDelay,
             java.time.Duration&nbsp;jitter)</code></th>
 <td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Creates a new builder that uses default retries.</div>
 </td>
 </tr>
@@ -202,6 +216,7 @@ extends java.lang.Object</pre>
             java.time.Duration&nbsp;jitter,
             java.util.function.UnaryOperator&lt;E&gt;&nbsp;flipAvailability)</code></th>
 <td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Creates a new builder that uses default retries.</div>
 </td>
 </tr>
@@ -211,6 +226,7 @@ extends java.lang.Object</pre>
                          java.time.Duration&nbsp;initialDelay,
                          java.time.Duration&nbsp;jitter)</code></th>
 <td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Creates a new builder that uses default retries.</div>
 </td>
 </tr>
@@ -245,6 +261,7 @@ extends java.lang.Object</pre>
 <li class="blockList">
 <h4>retainAddressesTillSuccess</h4>
 <pre class="methodSignature">public&nbsp;<a href="DefaultServiceDiscoveryRetryStrategy.Builder.html" title="class in io.servicetalk.http.api">DefaultServiceDiscoveryRetryStrategy.Builder</a>&lt;<a href="DefaultServiceDiscoveryRetryStrategy.Builder.html" title="type parameter in DefaultServiceDiscoveryRetryStrategy.Builder">ResolvedAddress</a>,&#8203;<a href="DefaultServiceDiscoveryRetryStrategy.Builder.html" title="type parameter in DefaultServiceDiscoveryRetryStrategy.Builder">E</a>&gt;&nbsp;retainAddressesTillSuccess&#8203;(boolean&nbsp;retainAddressesTillSuccess)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">A <a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> returned from <a href="../../client/api/ServiceDiscoverer.html#discover(UnresolvedAddress)"><code>ServiceDiscoverer.discover(Object)</code></a> may fail transiently leaving the
  consumer of these events with an option of either disposing the addresses that were provided before the
  error or retain them till a retry succeeds. This option enables/disables retention of addresses after an
@@ -264,6 +281,7 @@ extends java.lang.Object</pre>
 <li class="blockList">
 <h4>retryStrategy</h4>
 <pre class="methodSignature">public&nbsp;<a href="DefaultServiceDiscoveryRetryStrategy.Builder.html" title="class in io.servicetalk.http.api">DefaultServiceDiscoveryRetryStrategy.Builder</a>&lt;<a href="DefaultServiceDiscoveryRetryStrategy.Builder.html" title="type parameter in DefaultServiceDiscoveryRetryStrategy.Builder">ResolvedAddress</a>,&#8203;<a href="DefaultServiceDiscoveryRetryStrategy.Builder.html" title="type parameter in DefaultServiceDiscoveryRetryStrategy.Builder">E</a>&gt;&nbsp;retryStrategy&#8203;(<a href="../../concurrent/api/BiIntFunction.html" title="interface in io.servicetalk.concurrent.api">BiIntFunction</a>&lt;java.lang.Throwable,&#8203;? extends <a href="../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>&gt;&nbsp;retryStrategy)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Specifies a <code>BiFunction</code> which is applied as-is using <a href="../../concurrent/api/Publisher.html#retryWhen(io.servicetalk.concurrent.api.BiIntFunction)"><code>Publisher.retryWhen(BiIntFunction)</code></a>
  on the <a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> passed to <a href="DefaultServiceDiscoveryRetryStrategy.html#apply(io.servicetalk.concurrent.api.Publisher)"><code>DefaultServiceDiscoveryRetryStrategy.apply(Publisher)</code></a>.</div>
 <dl>
@@ -283,6 +301,7 @@ extends java.lang.Object</pre>
 <li class="blockList">
 <h4>build</h4>
 <pre class="methodSignature">public&nbsp;<a href="ServiceDiscoveryRetryStrategy.html" title="interface in io.servicetalk.http.api">ServiceDiscoveryRetryStrategy</a>&lt;<a href="DefaultServiceDiscoveryRetryStrategy.Builder.html" title="type parameter in DefaultServiceDiscoveryRetryStrategy.Builder">ResolvedAddress</a>,&#8203;<a href="DefaultServiceDiscoveryRetryStrategy.Builder.html" title="type parameter in DefaultServiceDiscoveryRetryStrategy.Builder">E</a>&gt;&nbsp;build()</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Creates a new <a href="ServiceDiscoveryRetryStrategy.html" title="interface in io.servicetalk.http.api"><code>ServiceDiscoveryRetryStrategy</code></a>.</div>
 <dl>
 <dt><span class="returnLabel">Returns:</span></dt>
@@ -299,6 +318,7 @@ extends java.lang.Object</pre>
 <pre class="methodSignature">public static&nbsp;&lt;ResolvedAddress&gt;&nbsp;<a href="DefaultServiceDiscoveryRetryStrategy.Builder.html" title="class in io.servicetalk.http.api">DefaultServiceDiscoveryRetryStrategy.Builder</a>&lt;ResolvedAddress,&#8203;<a href="../../client/api/ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;ResolvedAddress&gt;&gt;&nbsp;withDefaults&#8203;(<a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;executor,
                                                                                                                                                          java.time.Duration&nbsp;initialDelay,
                                                                                                                                                          java.time.Duration&nbsp;jitter)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Creates a new builder that uses default retries.</div>
 <dl>
 <dt><span class="paramLabel">Type Parameters:</span></dt>
@@ -321,6 +341,7 @@ extends java.lang.Object</pre>
 <pre class="methodSignature">public static&nbsp;&lt;ResolvedAddress&gt;&nbsp;<a href="DefaultServiceDiscoveryRetryStrategy.Builder.html" title="class in io.servicetalk.http.api">DefaultServiceDiscoveryRetryStrategy.Builder</a>&lt;ResolvedAddress,&#8203;<a href="../../client/api/partition/PartitionedServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api.partition">PartitionedServiceDiscovererEvent</a>&lt;ResolvedAddress&gt;&gt;&nbsp;withDefaultsForPartitions&#8203;(<a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;executor,
                                                                                                                                                                                  java.time.Duration&nbsp;initialDelay,
                                                                                                                                                                                  java.time.Duration&nbsp;jitter)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Creates a new builder that uses default retries.</div>
 <dl>
 <dt><span class="paramLabel">Type Parameters:</span></dt>
@@ -344,6 +365,7 @@ extends java.lang.Object</pre>
                                                                                                                                                                            java.time.Duration&nbsp;initialDelay,
                                                                                                                                                                            java.time.Duration&nbsp;jitter,
                                                                                                                                                                            java.util.function.UnaryOperator&lt;E&gt;&nbsp;flipAvailability)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Creates a new builder that uses default retries.</div>
 <dl>
 <dt><span class="paramLabel">Type Parameters:</span></dt>
@@ -354,8 +376,9 @@ extends java.lang.Object</pre>
 <dd><code>initialDelay</code> - <code>Duration</code> to use as initial delay for backoffs.</dd>
 <dd><code>jitter</code> - <code>Duration</code> of jitter to apply to each backoff delay.</dd>
 <dd><code>flipAvailability</code> - <code>UnaryOperator</code> that returns a new <a href="../../client/api/ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscovererEvent</code></a> that is the
- same as the passed <a href="../../client/api/ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscovererEvent</code></a> but with <a href="../../client/api/ServiceDiscovererEvent.html#isAvailable()"><code>ServiceDiscovererEvent.isAvailable()</code></a> value
- flipped.</dd>
+ same as the passed <a href="../../client/api/ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscovererEvent</code></a> but with <a href="../../client/api/ServiceDiscovererEvent.html#status()"><code>ServiceDiscovererEvent.status()</code></a> value
+ flipped (with the assumption that only <a href="../../client/api/ServiceDiscovererEvent.Status.html#AVAILABLE"><code>ServiceDiscovererEvent.Status.AVAILABLE</code></a>
+ and <a href="../../client/api/ServiceDiscovererEvent.Status.html#UNAVAILABLE"><code>ServiceDiscovererEvent.Status.UNAVAILABLE</code></a> statuses are in use).</dd>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd>A new <a href="DefaultServiceDiscoveryRetryStrategy.Builder.html" title="class in io.servicetalk.http.api"><code>DefaultServiceDiscoveryRetryStrategy.Builder</code></a>.</dd>
 </dl>

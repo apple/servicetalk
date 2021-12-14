@@ -26,7 +26,7 @@
     catch(err) {
     }
 //-->
-var data = {"i0":50,"i1":6};
+var data = {"i0":50,"i1":38};
 var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"],16:["t5","Default Methods"],32:["t6","Deprecated Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
@@ -132,7 +132,16 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </dl>
 <hr>
 <pre>@FunctionalInterface
+@Deprecated
 public interface <span class="typeNameLabel">GrpcServiceFilterFactory&lt;Filter extends Service,&#8203;Service&gt;</span></pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">gRPC Service Filters will be removed in future release of ServiceTalk. We encourage the use of
+ <a href="../../http/api/StreamingHttpServiceFilterFactory.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpServiceFilterFactory</code></a> and if the access to the decoded payload is necessary, then performing
+ that logic can be done in the particular <a href="GrpcService.html" title="interface in io.servicetalk.grpc.api"><code>service implementation</code></a>.
+ Please use <a href="../../http/api/HttpServerBuilder.html#appendServiceFilter(io.servicetalk.http.api.StreamingHttpServiceFilterFactory)"><code>HttpServerBuilder.appendServiceFilter(StreamingHttpServiceFilterFactory)</code></a>
+ upon the <code>builder</code> obtained using <a href="GrpcServerBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>GrpcServerBuilder.initializeHttp(GrpcServerBuilder.HttpInitializer)</code></a>
+ if HTTP filters are acceptable in your use case.</div>
+</div>
 <div class="block">A factory to create <a href="https://www.grpc.io">gRPC</a> service filters.</div>
 </li>
 </ul>
@@ -167,6 +176,7 @@ public interface <span class="typeNameLabel">GrpcServiceFilterFactory&lt;Filter 
 <td class="colFirst"><code><a href="GrpcServiceFilterFactory.html" title="type parameter in GrpcServiceFilterFactory">Filter</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#create(Service)">create</a></span>&#8203;(<a href="GrpcServiceFilterFactory.html" title="type parameter in GrpcServiceFilterFactory">Service</a>&nbsp;service)</code></th>
 <td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Create a <a href="GrpcServiceFilterFactory.html" title="interface in io.servicetalk.grpc.api"><code>GrpcServiceFilterFactory</code></a> using the provided <a href="GrpcServiceFilterFactory.html" title="interface in io.servicetalk.grpc.api"><code>GrpcServiceFilterFactory</code></a>.</div>
 </td>
 </tr>
@@ -196,6 +206,7 @@ public interface <span class="typeNameLabel">GrpcServiceFilterFactory&lt;Filter 
 <li class="blockList">
 <h4>create</h4>
 <pre class="methodSignature"><a href="GrpcServiceFilterFactory.html" title="type parameter in GrpcServiceFilterFactory">Filter</a>&nbsp;create&#8203;(<a href="GrpcServiceFilterFactory.html" title="type parameter in GrpcServiceFilterFactory">Service</a>&nbsp;service)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Create a <a href="GrpcServiceFilterFactory.html" title="interface in io.servicetalk.grpc.api"><code>GrpcServiceFilterFactory</code></a> using the provided <a href="GrpcServiceFilterFactory.html" title="interface in io.servicetalk.grpc.api"><code>GrpcServiceFilterFactory</code></a>.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>

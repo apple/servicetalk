@@ -92,6 +92,15 @@
     <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/http/index.html#Mutual-TLS">Mutual TLS</a>
   </li>
   <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/http/index.html#Observer">Observer</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/http/index.html#OpenTracing">OpenTracing</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/http/index.html#Redirects">Redirects</a>
+  </li>
+  <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/http/index.html#uds">Unix Domain Sockets</a>
   </li>
   <li class="nav-item" data-depth="3">
@@ -113,7 +122,13 @@
     <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/grpc/index.html#Deadlines">Deadlines</a>
   </li>
   <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/grpc/index.html#Observer">Observer</a>
+  </li>
+  <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/grpc/index.html#errors">Application Errors</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/grpc/index.html#execution-strategy">Execution Strategy</a>
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/grpc/index.html#route-guide">Route Guide</a>
@@ -1075,31 +1090,13 @@ its operators, and the <code>Executor</code>.</p>
 </div>
 </div>
 <div class="paragraph">
-<p>The above interaction has a few important points:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>All operators inherit the <code>Executor</code> from the source, unless overridden explicitly by the user.</p>
-</li>
-<li>
-<p>A <a href="https://github.com/apple/servicetalk/blob/main/servicetalk-concurrent-internal//src/main/java/io/servicetalk/concurrent/internal/SignalOffloader.java"><code>SignalOffloader</code></a>
-is chosen when a <code>Subscriber</code> subscribes to a source decorated by zero or more operators.</p>
-</li>
-<li>
-<p>The chosen <a href="https://github.com/apple/servicetalk/blob/main/servicetalk-concurrent-internal//src/main/java/io/servicetalk/concurrent/internal/SignalOffloader.java"><code>SignalOffloader</code></a>
-is passed to all operators and then to the source, per <code>Subscriber</code>.</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
 <p>The above interaction provides all operators and the source an opportunity to piggy-back on the same <code>Executor</code> for all
 interactions with the <code>Subscriber</code>. Any operator in a chain has two options while accepting a <code>Subscriber</code>:</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p>Wrap the <code>Subscriber</code> such that all <code>Subscriber</code> and <code>Subscription</code> method calls are offloaded to the chosen
+<p>Wrap the <code>Subscriber</code> such that all <code>Subscriber</code> and <code>Subscription</code> method calls are offloaded to a chosen
 <code>Executor</code>. This mode is for operators that process signals from the original <code>Publisher</code> asynchronously.</p>
 </li>
 <li>
@@ -1149,7 +1146,7 @@ that process signals from the original <code>Publisher</code> synchronously.</p>
 <div class="paragraph">
 <p>In the above example the operators <code>map</code> and <code>filter</code> will not wrap <code>Subscriber</code> and <code>Subscription</code> since they do not do
 any asynchronous work. However, <code>flatmap</code> will wrap <code>Subscriber</code> and <code>Subscription</code> to offload the calls to the chosen
-<code>SignalOffloader</code>.</p>
+<code>Executor</code>.</p>
 </div>
 </div>
 </div>

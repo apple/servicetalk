@@ -167,14 +167,23 @@ extends java.lang.Object</pre>
 </td>
 </tr>
 <tr class="rowColor">
-<td class="colFirst"><code>static <a href="../../concurrent/api/AsyncContextMap.Key.html" title="class in io.servicetalk.concurrent.api">AsyncContextMap.Key</a>&lt;java.lang.Long&gt;</code></td>
-<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#GRPC_DEADLINE_KEY">GRPC_DEADLINE_KEY</a></span></code></th>
+<td class="colFirst"><code>static <a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;java.lang.Long&gt;</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#GRPC_DEADLINE_CONTEXT_KEY">GRPC_DEADLINE_CONTEXT_KEY</a></span></code></th>
 <td class="colLast">
-<div class="block">gRPC timeout is stored in context as a deadline so that when propagated to a new request the remaining time to be
- included in the request can be calculated.</div>
+<div class="block">gRPC timeout is stored in a context as a deadline so that when propagated to a new request the remaining time to
+ be included in the request can be calculated.</div>
 </td>
 </tr>
 <tr class="altColor">
+<td class="colFirst"><code>static <a href="../../concurrent/api/AsyncContextMap.Key.html" title="class in io.servicetalk.concurrent.api">AsyncContextMap.Key</a>&lt;java.lang.Long&gt;</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#GRPC_DEADLINE_KEY">GRPC_DEADLINE_KEY</a></span></code></th>
+<td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#GRPC_DEADLINE_CONTEXT_KEY"><code>GRPC_DEADLINE_CONTEXT_KEY</code></a></div>
+</div>
+</td>
+</tr>
+<tr class="rowColor">
 <td class="colFirst"><code>static java.time.Duration</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#GRPC_MAX_TIMEOUT">GRPC_MAX_TIMEOUT</a></span></code></th>
 <td class="colLast">
@@ -182,7 +191,7 @@ extends java.lang.Object</pre>
  <a href="https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#requests">request</a>.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <td class="colFirst"><code>static java.lang.CharSequence</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#GRPC_TIMEOUT_HEADER_KEY">GRPC_TIMEOUT_HEADER_KEY</a></span></code></th>
 <td class="colLast">
@@ -275,9 +284,24 @@ extends java.lang.Object</pre>
 <ul class="blockList">
 <li class="blockList">
 <h4>GRPC_DEADLINE_KEY</h4>
-<pre>public static final&nbsp;<a href="../../concurrent/api/AsyncContextMap.Key.html" title="class in io.servicetalk.concurrent.api">AsyncContextMap.Key</a>&lt;java.lang.Long&gt; GRPC_DEADLINE_KEY</pre>
+<pre>@Deprecated
+public static final&nbsp;<a href="../../concurrent/api/AsyncContextMap.Key.html" title="class in io.servicetalk.concurrent.api">AsyncContextMap.Key</a>&lt;java.lang.Long&gt; GRPC_DEADLINE_KEY</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#GRPC_DEADLINE_CONTEXT_KEY"><code>GRPC_DEADLINE_CONTEXT_KEY</code></a></div>
+</div>
 <div class="block">gRPC timeout is stored in context as a deadline so that when propagated to a new request the remaining time to be
  included in the request can be calculated.</div>
+</li>
+</ul>
+<a id="GRPC_DEADLINE_CONTEXT_KEY">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>GRPC_DEADLINE_CONTEXT_KEY</h4>
+<pre>public static final&nbsp;<a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;java.lang.Long&gt; GRPC_DEADLINE_CONTEXT_KEY</pre>
+<div class="block">gRPC timeout is stored in a context as a deadline so that when propagated to a new request the remaining time to
+ be included in the request can be calculated.</div>
 </li>
 </ul>
 <a id="EIGHT_NINES">

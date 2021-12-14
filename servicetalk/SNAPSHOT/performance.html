@@ -92,6 +92,15 @@
     <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/http/index.html#Mutual-TLS">Mutual TLS</a>
   </li>
   <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/http/index.html#Observer">Observer</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/http/index.html#OpenTracing">OpenTracing</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/http/index.html#Redirects">Redirects</a>
+  </li>
+  <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/http/index.html#uds">Unix Domain Sockets</a>
   </li>
   <li class="nav-item" data-depth="3">
@@ -113,7 +122,13 @@
     <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/grpc/index.html#Deadlines">Deadlines</a>
   </li>
   <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/grpc/index.html#Observer">Observer</a>
+  </li>
+  <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/grpc/index.html#errors">Application Errors</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/grpc/index.html#execution-strategy">Execution Strategy</a>
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/grpc/index.html#route-guide">Route Guide</a>
@@ -1606,6 +1621,23 @@ HttpResponse resp = client.request(client.get("/"));</code></pre>
 </div>
 </div>
 <div class="sect2">
+<h3 id="native-transport"><a class="anchor" href="#native-transport"></a><a class="link" href="#native-transport">Native transport</a></h3>
+<div class="paragraph">
+<p>Netty implements more performant JNI <a href="https://netty.io/wiki/native-transports.html">native transports</a>. Using those
+instead of Java NIO will allow users to achieve better performance numbers, reduce latencies, and make application more
+reactive to the network events. To verify that the native transport is available use
+<code>io.netty.channel.epoll.Epoll.isAvailable()</code> or <code>io.netty.channel.kqueue.KQueue.isAvailable()</code>.</p>
+</div>
+<div class="paragraph">
+<p>Users of the latest Linux kernels may experiment with <a href="https://unixism.net/loti/what_is_io_uring.html">io_uring</a>, an
+asynchronous I/O API through
+<a href="https://github.com/netty/netty-incubator-transport-io_uring">netty-incubator-transport-io_uring</a> module. Read
+documentation for the netty module to understand all requirements, limitations, and production-readiness.
+Availability of this feature can be checked by <code>io.netty.incubator.channel.uring.IOUring</code>. If it&#8217;s available, use
+<code>-Dio.servicetalk.transport.netty.tryIoUring=true</code> system property to opt-in for io_uring transport instead of epoll.</p>
+</div>
+</div>
+<div class="sect2">
 <h3 id="http-service-auto-payload-draining"><a class="anchor" href="#http-service-auto-payload-draining"></a><a class="link" href="#http-service-auto-payload-draining">HTTP Service auto payload-draining</a></h3>
 <div class="paragraph">
 <p>If a user forgets to consume the request payload (e.g. returns an <code>HTTP 4xx</code> status code and doesn&#8217;t care about the
@@ -1673,7 +1705,7 @@ to what <code>ThreadLocal</code> provides in one-request-per-thread execution mo
 flow (e.g. async operators) requires wrapping to <em>save</em> and <em>restore</em> the current context before/after the
 asynchronous control flow boundary. In order to provide a static API <code>ThreadLocal</code> is also required, although an
 optimization (e.g.
-<a href="https://github.com/apple/servicetalk/blob/main/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/AsyncContextMapHolder.java">AsyncContextMapHolder</a>
+<a href="https://github.com/apple/servicetalk/blob/main/servicetalk-context-api/src/main/java/io/servicetalk/context/api/ContextMapHolder.java">ContextMapHolder</a>
 ) is used to minimize this cost. This <code>ThreadLocal</code> optimization is enabled by default and can be enabled by using our
 <a href="https://github.com/apple/servicetalk/blob/main/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/DefaultThreadFactory.java">DefaultThreadFactory</a>
 if you use a custom <code>Executor</code>.</p>
@@ -1782,17 +1814,29 @@ support (if they are out of your control). It is recommended to consult reputabl
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">// add the netty dependency to your build, eg: "io.netty:netty-tcnative-boringssl-static:$tcnativeVersion"
-
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">// You can force the provider to OPENSSL as demonstrated below, or don't specify
+// the provider and OPENSSL will be used if available on the classpath.
 BlockingHttpClient client = HttpClients.forSingleAddress("servicetalk.io", 443)
-        .secure().provider(SecurityConfigurator.SslProvider.OPENSSL).commit()
+        .sslConfig(new ServerSslConfigBuilder(..).provider(OPENSSL).build())
         .buildBlocking();
 HttpResponse resp = client.request(client.get("/"));</code></pre>
 </div>
 </div>
-<div class="paragraph">
-<p>Latest <code>netty-tcnative-boringssl-static</code> version can be found in
-<a href="https://search.maven.org/artifact/io.netty/netty-tcnative-boringssl-static">Maven Central Repository</a>.</p>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<code>OPENSSL</code> provider requires <code>io.netty:netty-tcnative-boringssl-static:$tcnativeVersion</code> in the classpath.
+The latest <code>netty-tcnative-boringssl-static</code> version can be found in
+<a href="https://search.maven.org/artifact/io.netty/netty-tcnative-boringssl-static">Maven Central Repository</a>.
+Alternatively, rather than setting <code>$tcnativeVersion</code> to a specific version, you can omit the version and instead import the latest <code>netty-bom:$nettyVersion</code> from
+<a href="https://search.maven.org/artifact/io.netty/netty-bom">Maven Central Repository</a>. The Netty BOM will specify the version for tcnative components appropriate for the Netty version you are using.
+</td>
+</tr>
+</table>
 </div>
 </div>
 <div class="sect2">

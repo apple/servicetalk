@@ -26,8 +26,8 @@
     catch(err) {
     }
 //-->
-var data = {"i0":6};
-var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"]};
+var data = {"i0":38};
+var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"],32:["t6","Deprecated Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
 var tableTab = "tableTab";
@@ -131,7 +131,12 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </dl>
 <hr>
 <pre>@FunctionalInterface
+@Deprecated
 public interface <span class="typeNameLabel">AutoRetryStrategyProvider</span></pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">The capabilities of the auto-retry have been introduced under a new universal retrying filter,
+ available from <code>io.servicetalk.http.netty.RetryingHttpRequesterFilter</code>.</div>
+</div>
 <div class="block">A provider for <a href="AutoRetryStrategyProvider.AutoRetryStrategy.html" title="interface in io.servicetalk.client.api"><code>AutoRetryStrategyProvider.AutoRetryStrategy</code></a>.</div>
 </li>
 </ul>
@@ -157,6 +162,7 @@ public interface <span class="typeNameLabel">AutoRetryStrategyProvider</span></p
 <td class="colFirst"><code>static interface&nbsp;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="AutoRetryStrategyProvider.AutoRetryStrategy.html" title="interface in io.servicetalk.client.api">AutoRetryStrategyProvider.AutoRetryStrategy</a></span></code></th>
 <td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">A strategy to use for automatic retries.</div>
 </td>
 </tr>
@@ -182,7 +188,10 @@ public interface <span class="typeNameLabel">AutoRetryStrategyProvider</span></p
 <td class="colFirst"><code>static <a href="AutoRetryStrategyProvider.html" title="interface in io.servicetalk.client.api">AutoRetryStrategyProvider</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#DISABLE_AUTO_RETRIES">DISABLE_AUTO_RETRIES</a></span></code></th>
 <td class="colLast">
-<div class="block">An <a href="AutoRetryStrategyProvider.html" title="interface in io.servicetalk.client.api"><code>AutoRetryStrategyProvider</code></a> that disables automatic retries;</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Alternative available <code>io.servicetalk.http.netty.RetryingHttpRequesterFilter
+ .disableAutoRetries()</code>.</div>
+</div>
 </td>
 </tr>
 </table>
@@ -197,7 +206,7 @@ public interface <span class="typeNameLabel">AutoRetryStrategyProvider</span></p
 </a>
 <h3>Method Summary</h3>
 <table class="memberSummary">
-<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t3" class="tableTab"><span><a href="javascript:show(4);">Abstract Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
+<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t3" class="tableTab"><span><a href="javascript:show(4);">Abstract Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t6" class="tableTab"><span><a href="javascript:show(32);">Deprecated Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
 <tr>
 <th class="colFirst" scope="col">Modifier and Type</th>
 <th class="colSecond" scope="col">Method</th>
@@ -208,6 +217,7 @@ public interface <span class="typeNameLabel">AutoRetryStrategyProvider</span></p
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#newStrategy(io.servicetalk.concurrent.api.Publisher,io.servicetalk.concurrent.api.Completable)">newStrategy</a></span>&#8203;(<a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;java.lang.Object&gt;&nbsp;lbEventStream,
            <a href="../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>&nbsp;sdStatus)</code></th>
 <td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Creates a new <a href="AutoRetryStrategyProvider.AutoRetryStrategy.html" title="interface in io.servicetalk.client.api"><code>AutoRetryStrategyProvider.AutoRetryStrategy</code></a> instance.</div>
 </td>
 </tr>
@@ -234,7 +244,12 @@ public interface <span class="typeNameLabel">AutoRetryStrategyProvider</span></p
 <ul class="blockListLast">
 <li class="blockList">
 <h4>DISABLE_AUTO_RETRIES</h4>
-<pre>static final&nbsp;<a href="AutoRetryStrategyProvider.html" title="interface in io.servicetalk.client.api">AutoRetryStrategyProvider</a> DISABLE_AUTO_RETRIES</pre>
+<pre>@Deprecated
+static final&nbsp;<a href="AutoRetryStrategyProvider.html" title="interface in io.servicetalk.client.api">AutoRetryStrategyProvider</a> DISABLE_AUTO_RETRIES</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Alternative available <code>io.servicetalk.http.netty.RetryingHttpRequesterFilter
+ .disableAutoRetries()</code>.</div>
+</div>
 <div class="block">An <a href="AutoRetryStrategyProvider.html" title="interface in io.servicetalk.client.api"><code>AutoRetryStrategyProvider</code></a> that disables automatic retries;</div>
 </li>
 </ul>
@@ -256,6 +271,7 @@ public interface <span class="typeNameLabel">AutoRetryStrategyProvider</span></p
 <h4>newStrategy</h4>
 <pre class="methodSignature"><a href="AutoRetryStrategyProvider.AutoRetryStrategy.html" title="interface in io.servicetalk.client.api">AutoRetryStrategyProvider.AutoRetryStrategy</a>&nbsp;newStrategy&#8203;(<a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;java.lang.Object&gt;&nbsp;lbEventStream,
                                                         <a href="../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>&nbsp;sdStatus)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Creates a new <a href="AutoRetryStrategyProvider.AutoRetryStrategy.html" title="interface in io.servicetalk.client.api"><code>AutoRetryStrategyProvider.AutoRetryStrategy</code></a> instance.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>

@@ -92,6 +92,15 @@
     <a class="nav-link" href="../http/index.html#Mutual-TLS">Mutual TLS</a>
   </li>
   <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../http/index.html#Observer">Observer</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../http/index.html#OpenTracing">OpenTracing</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../http/index.html#Redirects">Redirects</a>
+  </li>
+  <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../http/index.html#uds">Unix Domain Sockets</a>
   </li>
   <li class="nav-item" data-depth="3">
@@ -113,7 +122,13 @@
     <a class="nav-link" href="#Deadlines">Deadlines</a>
   </li>
   <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="#Observer">Observer</a>
+  </li>
+  <li class="nav-item" data-depth="3">
     <a class="nav-link" href="#errors">Application Errors</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="#execution-strategy">Execution Strategy</a>
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="#route-guide">Route Guide</a>
@@ -1004,7 +1019,7 @@
 <p>The <a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/grpc"><code>grpc</code></a> folder contains examples for
 <a href="https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md">the gRPC application protocol</a>. We provide
 implementations for the examples proto services provided by
-<a href="https://github.com/grpc/grpc/tree/main/examples/protos">gRPC</a>.</p>
+<a href="https://github.com/grpc/grpc/tree/master/examples/protos">gRPC</a>.</p>
 </div>
 </div>
 </div>
@@ -1148,6 +1163,33 @@ within that time or cancels the request.</p>
 </div>
 </div>
 <div class="sect1">
+<h2 id="Observer"><a class="anchor" href="#Observer"></a><a class="link" href="#Observer">Observer</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This example demonstrates the following:
+- Use of
+<a href="https://github.com/apple/servicetalk/blob/main/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcLifecycleObserver.java">GrpcLifecycleObserver</a> to log a summary of each request/response.</p>
+</div>
+<div class="paragraph">
+<p>Using the following classes:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/grpc/observer/src/main/java/io/servicetalk/examples/grpc/observer/LifecycleObserverServer.java">LifecycleObserverServer</a> - A server that installs a
+<a href="https://github.com/apple/servicetalk/blob/main/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcLifecycleObserver.java">GrpcLifecycleObserver</a>
+on the server builder.</p>
+</li>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/grpc/observer/src/main/java/io/servicetalk/examples/grpc/observer/LifecycleObserverClient.java">LifecycleObserverClient</a> - A client that installs a
+<a href="https://github.com/apple/servicetalk/blob/main/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcLifecycleObserver.java">GrpcLifecycleObserver</a>
+on via a client filter on the client builder.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
 <h2 id="errors"><a class="anchor" href="#errors"></a><a class="link" href="#errors">Application Errors</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
@@ -1161,12 +1203,33 @@ could be any protobuf object.</p>
 <div class="ulist">
 <ul>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/grpc/compression/src/main/java/io/servicetalk/examples/grpc/errors/ErrorExampleServer.java">ErrorExampleServer</a> - Requires each request has a non-empty <code>token</code> field or else returns an
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/grpc/errors/src/main/java/io/servicetalk/examples/grpc/errors/ErrorExampleServer.java">ErrorExampleServer</a> - Requires each request has a non-empty <code>token</code> field or else returns an
 error.</p>
 </li>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/grpc/compression/src/main/java/io/servicetalk/examples/grpc/errors/ErrorExampleClient.java">ErrorExampleClient</a> - Sends a request with missing <code>token</code> field to simulate an error
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/grpc/errors/src/main/java/io/servicetalk/examples/grpc/errors/ErrorExampleClient.java">ErrorExampleClient</a> - Sends a request with missing <code>token</code> field to simulate an error
 condition on the server.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="execution-strategy"><a class="anchor" href="#execution-strategy"></a><a class="link" href="#execution-strategy">Execution Strategy</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The gRPC implementation can be configured to execute all or some of the routes for a server without offloading. Using the <code>IoExecutor</code> for executing routes is appropriate only if there is no possibility that the route implementation will block.</p>
+</div>
+<div class="paragraph">
+<p>The example demonstrates the impact of different route execution strategy configuration mechanisms.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/grpc/execution-strategy/src/main/java/io/servicetalk/examples/grpc/strategies/ExecutionStrategyServer.java">ExecutionStrategyServer</a> - Starts multiple servers configured using a variety of modes and techniques to specify the execution strategy to be used.</p>
+</li>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/grpc/execution-strategy/src/main/java/io/servicetalk/examples/grpc/strategies/ExecutionStrategyClient.java">ExecutionStrategyClient</a> - Sends requests to each of the differently configured servers and reports execution details.</p>
 </li>
 </ul>
 </div>

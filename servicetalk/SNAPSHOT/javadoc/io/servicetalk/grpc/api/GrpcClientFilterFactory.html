@@ -26,8 +26,8 @@
     catch(err) {
     }
 //-->
-var data = {"i0":6};
-var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"]};
+var data = {"i0":38};
+var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"],32:["t6","Deprecated Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
 var tableTab = "tableTab";
@@ -127,7 +127,17 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <dd><code>FilterableClient</code> - Type of filterable client.</dd>
 </dl>
 <hr>
-<pre>public interface <span class="typeNameLabel">GrpcClientFilterFactory&lt;Filter extends FilterableClient,&#8203;FilterableClient extends <a href="FilterableGrpcClient.html" title="interface in io.servicetalk.grpc.api">FilterableGrpcClient</a>&gt;</span></pre>
+<pre>@Deprecated
+public interface <span class="typeNameLabel">GrpcClientFilterFactory&lt;Filter extends FilterableClient,&#8203;FilterableClient extends <a href="FilterableGrpcClient.html" title="interface in io.servicetalk.grpc.api">FilterableGrpcClient</a>&gt;</span></pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">gRPC Client Filters will be removed in future release of ServiceTalk. We encourage the use of
+ <a href="../../http/api/StreamingHttpClientFilterFactory.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpClientFilterFactory</code></a> and if the access to the decoded payload is
+ necessary, then performing that logic can be done in the particular <a href="GrpcClient.html" title="interface in io.servicetalk.grpc.api"><code>client implementation</code></a>.
+ Please use <a href="../../http/api/SingleAddressHttpClientBuilder.html#appendClientFilter(io.servicetalk.http.api.StreamingHttpClientFilterFactory)"><code>SingleAddressHttpClientBuilder.appendClientFilter(
+ io.servicetalk.http.api.StreamingHttpClientFilterFactory)</code></a> upon the <code>builder</code> obtained using
+ <a href="GrpcClientBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcClientBuilder.HttpInitializer)"><code>GrpcClientBuilder.initializeHttp(GrpcClientBuilder.HttpInitializer)</code></a>
+ if HTTP filters are acceptable in your use case.</div>
+</div>
 <div class="block">A factory to create <a href="https://www.grpc.io">gRPC</a> client filters.</div>
 </li>
 </ul>
@@ -143,7 +153,7 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </a>
 <h3>Method Summary</h3>
 <table class="memberSummary">
-<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t3" class="tableTab"><span><a href="javascript:show(4);">Abstract Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
+<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t3" class="tableTab"><span><a href="javascript:show(4);">Abstract Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t6" class="tableTab"><span><a href="javascript:show(32);">Deprecated Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
 <tr>
 <th class="colFirst" scope="col">Modifier and Type</th>
 <th class="colSecond" scope="col">Method</th>
@@ -153,6 +163,7 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <td class="colFirst"><code><a href="GrpcClientFilterFactory.html" title="type parameter in GrpcClientFilterFactory">Filter</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#create(FilterableClient)">create</a></span>&#8203;(<a href="GrpcClientFilterFactory.html" title="type parameter in GrpcClientFilterFactory">FilterableClient</a>&nbsp;filterableClient)</code></th>
 <td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Create a <a href="GrpcClientFilterFactory.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClientFilterFactory</code></a> using the provided <a href="GrpcClientFilterFactory.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClientFilterFactory</code></a>.</div>
 </td>
 </tr>
@@ -182,6 +193,7 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <li class="blockList">
 <h4>create</h4>
 <pre class="methodSignature"><a href="GrpcClientFilterFactory.html" title="type parameter in GrpcClientFilterFactory">Filter</a>&nbsp;create&#8203;(<a href="GrpcClientFilterFactory.html" title="type parameter in GrpcClientFilterFactory">FilterableClient</a>&nbsp;filterableClient)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">Create a <a href="GrpcClientFilterFactory.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClientFilterFactory</code></a> using the provided <a href="GrpcClientFilterFactory.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClientFilterFactory</code></a>.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>

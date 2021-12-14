@@ -97,6 +97,11 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <h1 title="Package" class="title">Package&nbsp;io.servicetalk.client.api</h1>
 </div>
 <div class="contentContainer">
+<section role="region"><a id="package.description">
+<!--   -->
+</a>
+<div class="block">API definitions for Client use cases.</div>
+</section>
 <ul class="blockList">
 <li class="blockList">
 <table class="typeSummary">
@@ -108,8 +113,9 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <tbody>
 <tr class="altColor">
 <th class="colFirst" scope="row"><a href="AutoRetryStrategyProvider.html" title="interface in io.servicetalk.client.api">AutoRetryStrategyProvider</a></th>
-<td class="colLast">
-<div class="block">A provider for <a href="AutoRetryStrategyProvider.AutoRetryStrategy.html" title="interface in io.servicetalk.client.api"><code>AutoRetryStrategyProvider.AutoRetryStrategy</code></a>.</div>
+<td class="colLast">Deprecated.
+<div class="deprecationComment">The capabilities of the auto-retry have been introduced under a new universal retrying filter,
+ available from <code>io.servicetalk.http.netty.RetryingHttpRequesterFilter</code>.</div>
 </td>
 </tr>
 <tr class="rowColor">
@@ -217,26 +223,28 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <tbody>
 <tr class="altColor">
 <th class="colFirst" scope="row"><a href="AbstractRetryingFilterBuilder.html" title="class in io.servicetalk.client.api">AbstractRetryingFilterBuilder</a>&lt;Builder extends <a href="AbstractRetryingFilterBuilder.html" title="class in io.servicetalk.client.api">AbstractRetryingFilterBuilder</a>&lt;Builder,&#8203;Filter,&#8203;Meta&gt;,&#8203;Filter,&#8203;Meta&gt;</th>
-<td class="colLast">
-<div class="block">An abstract builder for retrying filters.</div>
+<td class="colLast">Deprecated.
+<div class="deprecationComment">Moving forward ServiceTalk will remove this abstraction.</div>
 </td>
 </tr>
 <tr class="rowColor">
 <th class="colFirst" scope="row"><a href="AbstractRetryingFilterBuilder.ReadOnlyRetryableSettings.html" title="class in io.servicetalk.client.api">AbstractRetryingFilterBuilder.ReadOnlyRetryableSettings</a>&lt;Meta&gt;</th>
-<td class="colLast">
-<div class="block">A read-only settings for retryable filters.</div>
+<td class="colLast">Deprecated.
+<div class="deprecationComment">Moving forward ServiceTalk will remove this abstraction.</div>
 </td>
 </tr>
 <tr class="altColor">
 <th class="colFirst" scope="row"><a href="DefaultAutoRetryStrategyProvider.html" title="class in io.servicetalk.client.api">DefaultAutoRetryStrategyProvider</a></th>
-<td class="colLast">
-<div class="block">Default implementation for <a href="AutoRetryStrategyProvider.html" title="interface in io.servicetalk.client.api"><code>AutoRetryStrategyProvider</code></a>.</div>
+<td class="colLast">Deprecated.
+<div class="deprecationComment">The capabilities of the auto-retry have been introduced under a new universal retrying filter,
+ available from <code>io.servicetalk.http.netty.RetryingHttpRequesterFilter</code>.</div>
 </td>
 </tr>
 <tr class="rowColor">
 <th class="colFirst" scope="row"><a href="DefaultAutoRetryStrategyProvider.Builder.html" title="class in io.servicetalk.client.api">DefaultAutoRetryStrategyProvider.Builder</a></th>
-<td class="colLast">
-<div class="block">A builder for <a href="DefaultAutoRetryStrategyProvider.html" title="class in io.servicetalk.client.api"><code>DefaultAutoRetryStrategyProvider</code></a>.</div>
+<td class="colLast">Deprecated.
+<div class="deprecationComment">The capabilities of the auto-retry have been introduced under a new universal retrying filter,
+ available from <code>io.servicetalk.http.netty.RetryingHttpRequesterFilter</code>.</div>
 </td>
 </tr>
 <tr class="altColor">
@@ -265,6 +273,13 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </td>
 </tr>
 <tr class="altColor">
+<th class="colFirst" scope="row"><a href="ServiceDiscovererEvent.Status.html" title="class in io.servicetalk.client.api">ServiceDiscovererEvent.Status</a></th>
+<td class="colLast">
+<div class="block">Status provided by the <a href="ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> system that guides the actions of <a href="LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> upon the
+ bound <a href="ServiceDiscovererEvent.html#address()"><code>ServiceDiscovererEvent.address()</code></a> (via <a href="ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscovererEvent</code></a>).</div>
+</td>
+</tr>
+<tr class="rowColor">
 <th class="colFirst" scope="row"><a href="TransportObserverConnectionFactoryFilter.html" title="class in io.servicetalk.client.api">TransportObserverConnectionFactoryFilter</a>&lt;ResolvedAddress,&#8203;C extends <a href="../../concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a>&gt;</th>
 <td class="colLast">
 <div class="block">A <a href="ConnectionFactoryFilter.html" title="interface in io.servicetalk.client.api"><code>ConnectionFactoryFilter</code></a> that configures a <a href="../../transport/api/TransportObserver.html" title="interface in io.servicetalk.transport.api"><code>TransportObserver</code></a> for new connections.</div>
@@ -283,8 +298,8 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <tbody>
 <tr class="altColor">
 <th class="colFirst" scope="row"><a href="ConnectionClosedException.html" title="class in io.servicetalk.client.api">ConnectionClosedException</a></th>
-<td class="colLast">
-<div class="block">Thrown when the connection is no longer available.</div>
+<td class="colLast">Deprecated.
+<div class="deprecationComment">There is no code that can throw this exception.</div>
 </td>
 </tr>
 <tr class="rowColor">
@@ -301,8 +316,8 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </tr>
 <tr class="rowColor">
 <th class="colFirst" scope="row"><a href="MaxRequestLimitExceededException.html" title="class in io.servicetalk.client.api">MaxRequestLimitExceededException</a></th>
-<td class="colLast">
-<div class="block">Exception raised when more concurrent requests have been issued on a connection than is allowed.</div>
+<td class="colLast">Deprecated.
+<div class="deprecationComment">There is no code that can throw this exception.</div>
 </td>
 </tr>
 <tr class="altColor">

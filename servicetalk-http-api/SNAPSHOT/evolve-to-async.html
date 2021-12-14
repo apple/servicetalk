@@ -92,6 +92,15 @@
     <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/http/index.html#Mutual-TLS">Mutual TLS</a>
   </li>
   <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/http/index.html#Observer">Observer</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/http/index.html#OpenTracing">OpenTracing</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/http/index.html#Redirects">Redirects</a>
+  </li>
+  <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/http/index.html#uds">Unix Domain Sockets</a>
   </li>
   <li class="nav-item" data-depth="3">
@@ -113,7 +122,13 @@
     <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/grpc/index.html#Deadlines">Deadlines</a>
   </li>
   <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/grpc/index.html#Observer">Observer</a>
+  </li>
+  <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/grpc/index.html#errors">Application Errors</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/grpc/index.html#execution-strategy">Execution Strategy</a>
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/grpc/index.html#route-guide">Route Guide</a>
@@ -1043,18 +1058,9 @@ of operation.</p>
 <div class="sect2">
 <h3 id="no-offloads-per-request"><a class="anchor" href="#no-offloads-per-request"></a><a class="link" href="#no-offloads-per-request">No offloads per request</a></h3>
 <div class="paragraph">
-<p>HTTP clients for all programming models provide methods to make requests with or without <code>HttpExecutionStrategy</code>.</p>
-</div>
-<div class="paragraph">
-<p>See
-<a href="https://github.com/apple/servicetalk/blob/main/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpClient.java">HttpClient</a>.</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">Single&lt;HttpResponse&gt; request(HttpRequest request);
-
-Single&lt;HttpResponse&gt; request(HttpExecutionStrategy strategy, HttpRequest request);</code></pre>
-</div>
+<p>HTTP clients for all programming models recognize <code>HTTP_EXECUTION_STRATEGY_KEY</code> from
+<a href="https://github.com/apple/servicetalk/blob/main/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpContextKeys.java">HttpContextKeys</a> that
+allows to override offloading by passing its value in <code>HttpRequestMetaData#context()</code>.</p>
 </div>
 <div class="paragraph">
 <p>In order to disable offloading for a specific request one has to use a specific <code>HttpExecutionStrategy</code> that does not
@@ -1065,7 +1071,9 @@ and can be used as below:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">// Processing of this request does not have any blocking code
-httpClient.request(HttpExecutionStrategies.noOffloadsStrategy(), aRequest);</code></pre>
+HttpRequest request = httpClient.newRequest(method, requestTarget);
+request.context().put(HTTP_EXECUTION_STRATEGY_KEY, HttpExecutionStrategies.noOffloadsStrategy());
+HttpResponse  response = httpClient.request(request);</code></pre>
 </div>
 </div>
 <div class="paragraph">

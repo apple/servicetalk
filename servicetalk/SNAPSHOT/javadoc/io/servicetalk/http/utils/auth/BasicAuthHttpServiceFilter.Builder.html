@@ -26,8 +26,8 @@
     catch(err) {
     }
 //-->
-var data = {"i0":10,"i1":10,"i2":10,"i3":10};
-var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],8:["t4","Concrete Methods"]};
+var data = {"i0":10,"i1":10,"i2":10,"i3":10,"i4":42,"i5":10};
+var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],8:["t4","Concrete Methods"],32:["t6","Deprecated Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
 var tableTab = "tableTab";
@@ -179,7 +179,7 @@ extends java.lang.Object</pre>
 </a>
 <h3>Method Summary</h3>
 <table class="memberSummary">
-<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t4" class="tableTab"><span><a href="javascript:show(8);">Concrete Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
+<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t4" class="tableTab"><span><a href="javascript:show(8);">Concrete Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t6" class="tableTab"><span><a href="javascript:show(32);">Deprecated Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
 <tr>
 <th class="colFirst" scope="col">Modifier and Type</th>
 <th class="colSecond" scope="col">Method</th>
@@ -209,9 +209,26 @@ extends java.lang.Object</pre>
 </tr>
 <tr id="i3" class="rowColor">
 <td class="colFirst"><code><a href="BasicAuthHttpServiceFilter.Builder.html" title="class in io.servicetalk.http.utils.auth">BasicAuthHttpServiceFilter.Builder</a>&lt;<a href="BasicAuthHttpServiceFilter.Builder.html" title="type parameter in BasicAuthHttpServiceFilter.Builder">UserInfo</a>&gt;</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#userInfoAsyncContextKey(io.servicetalk.context.api.ContextMap.Key)">userInfoAsyncContextKey</a></span>&#8203;(<a href="../../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;<a href="BasicAuthHttpServiceFilter.Builder.html" title="type parameter in BasicAuthHttpServiceFilter.Builder">UserInfo</a>&gt;&nbsp;userInfoAsyncContextKey)</code></th>
+<td class="colLast">
+<div class="block">Sets a <a href="../../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api"><code>key</code></a> to store a user info object of authenticated user in <a href="../../../concurrent/api/AsyncContext.html" title="class in io.servicetalk.concurrent.api"><code>AsyncContext</code></a>.</div>
+</td>
+</tr>
+<tr id="i4" class="altColor">
+<td class="colFirst"><code><a href="BasicAuthHttpServiceFilter.Builder.html" title="class in io.servicetalk.http.utils.auth">BasicAuthHttpServiceFilter.Builder</a>&lt;<a href="BasicAuthHttpServiceFilter.Builder.html" title="type parameter in BasicAuthHttpServiceFilter.Builder">UserInfo</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#userInfoKey(io.servicetalk.concurrent.api.AsyncContextMap.Key)">userInfoKey</a></span>&#8203;(<a href="../../../concurrent/api/AsyncContextMap.Key.html" title="class in io.servicetalk.concurrent.api">AsyncContextMap.Key</a>&lt;<a href="BasicAuthHttpServiceFilter.Builder.html" title="type parameter in BasicAuthHttpServiceFilter.Builder">UserInfo</a>&gt;&nbsp;userInfoKey)</code></th>
 <td class="colLast">
-<div class="block">Sets a <a href="../../../concurrent/api/AsyncContextMap.Key.html" title="class in io.servicetalk.concurrent.api"><code>key</code></a> to store a user info object of authenticated user in <a href="../../../concurrent/api/AsyncContextMap.html" title="interface in io.servicetalk.concurrent.api"><code>AsyncContextMap</code></a>.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#userInfoAsyncContextKey(io.servicetalk.context.api.ContextMap.Key)"><code>userInfoAsyncContextKey(ContextMap.Key)</code></a></div>
+</div>
+</td>
+</tr>
+<tr id="i5" class="rowColor">
+<td class="colFirst"><code><a href="BasicAuthHttpServiceFilter.Builder.html" title="class in io.servicetalk.http.utils.auth">BasicAuthHttpServiceFilter.Builder</a>&lt;<a href="BasicAuthHttpServiceFilter.Builder.html" title="type parameter in BasicAuthHttpServiceFilter.Builder">UserInfo</a>&gt;</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#userInfoRequestContextKey(io.servicetalk.context.api.ContextMap.Key)">userInfoRequestContextKey</a></span>&#8203;(<a href="../../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;<a href="BasicAuthHttpServiceFilter.Builder.html" title="type parameter in BasicAuthHttpServiceFilter.Builder">UserInfo</a>&gt;&nbsp;userInfoRequestContextKey)</code></th>
+<td class="colLast">
+<div class="block">Sets a <a href="../../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api"><code>key</code></a> to store a user info object of authenticated user in
+ <a href="../../api/HttpMetaData.html#context()"><code>request context</code></a>.</div>
 </td>
 </tr>
 </table>
@@ -250,8 +267,11 @@ extends java.lang.Object</pre>
  <p>
  It accepts credentials as <code>user-id:password</code> pairs, encoded using <code>Base64</code> for <a href="../../api/HttpHeaderNames.html#AUTHORIZATION"><code>Authorization</code></a> or <a href="../../api/HttpHeaderNames.html#PROXY_AUTHORIZATION"><code>Proxy-Authorization</code></a> header values. Use of the format <code>user:password</code> in the <a href="../../api/HttpRequestMetaData.html#userInfo()"><code>userinfo</code></a> field is deprecated by <a href="https://tools.ietf.org/html/rfc3986#section-3.2.1">RFC3986</a>.
  <p>
- User info object of authenticated user could be stored in <a href="../../../concurrent/api/AsyncContextMap.html" title="interface in io.servicetalk.concurrent.api"><code>AsyncContextMap</code></a>, if <a href="../../../concurrent/api/AsyncContextMap.Key.html" title="class in io.servicetalk.concurrent.api"><code>AsyncContextMap.Key</code></a> was
- configured via <a href="#userInfoKey(io.servicetalk.concurrent.api.AsyncContextMap.Key)"><code>userInfoKey(AsyncContextMap.Key)</code></a>.
+ User info object of authenticated user can be stored in <a href="../../../concurrent/api/AsyncContext.html" title="class in io.servicetalk.concurrent.api"><code>AsyncContext</code></a> if
+ <a href="../../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api"><code>ContextMap.Key</code></a> is configured via <a href="#userInfoAsyncContextKey(io.servicetalk.context.api.ContextMap.Key)"><code>userInfoAsyncContextKey(ContextMap.Key)</code></a> or
+ <a href="../../api/HttpMetaData.html#context()"><code>request context</code></a> if <a href="../../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api"><code>ContextMap.Key</code></a> is configured via
+ <a href="#userInfoRequestContextKey(io.servicetalk.context.api.ContextMap.Key)"><code>userInfoRequestContextKey(ContextMap.Key)</code></a>. The same <a href="../../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api"><code>key</code></a> can be reused
+ for both context storages.
  <p>
  <b>Note:</b> This scheme is not considered to be a secure method of user authentication unless used in
  conjunction with some external secure system such as TLS (Transport Layer Security, [<a href="https://tools.ietf.org/html/rfc5246">RFC5246</a>]), as the <code>user-id</code> and <code>password</code> are
@@ -279,11 +299,50 @@ extends java.lang.Object</pre>
 <ul class="blockList">
 <li class="blockList">
 <h4>userInfoKey</h4>
-<pre class="methodSignature">public&nbsp;<a href="BasicAuthHttpServiceFilter.Builder.html" title="class in io.servicetalk.http.utils.auth">BasicAuthHttpServiceFilter.Builder</a>&lt;<a href="BasicAuthHttpServiceFilter.Builder.html" title="type parameter in BasicAuthHttpServiceFilter.Builder">UserInfo</a>&gt;&nbsp;userInfoKey&#8203;(<a href="../../../concurrent/api/AsyncContextMap.Key.html" title="class in io.servicetalk.concurrent.api">AsyncContextMap.Key</a>&lt;<a href="BasicAuthHttpServiceFilter.Builder.html" title="type parameter in BasicAuthHttpServiceFilter.Builder">UserInfo</a>&gt;&nbsp;userInfoKey)</pre>
-<div class="block">Sets a <a href="../../../concurrent/api/AsyncContextMap.Key.html" title="class in io.servicetalk.concurrent.api"><code>key</code></a> to store a user info object of authenticated user in <a href="../../../concurrent/api/AsyncContextMap.html" title="interface in io.servicetalk.concurrent.api"><code>AsyncContextMap</code></a>.</div>
+<pre class="methodSignature">@Deprecated
+public&nbsp;<a href="BasicAuthHttpServiceFilter.Builder.html" title="class in io.servicetalk.http.utils.auth">BasicAuthHttpServiceFilter.Builder</a>&lt;<a href="BasicAuthHttpServiceFilter.Builder.html" title="type parameter in BasicAuthHttpServiceFilter.Builder">UserInfo</a>&gt;&nbsp;userInfoKey&#8203;(<a href="../../../concurrent/api/AsyncContextMap.Key.html" title="class in io.servicetalk.concurrent.api">AsyncContextMap.Key</a>&lt;<a href="BasicAuthHttpServiceFilter.Builder.html" title="type parameter in BasicAuthHttpServiceFilter.Builder">UserInfo</a>&gt;&nbsp;userInfoKey)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#userInfoAsyncContextKey(io.servicetalk.context.api.ContextMap.Key)"><code>userInfoAsyncContextKey(ContextMap.Key)</code></a></div>
+</div>
+<div class="block">Sets a <a href="../../../concurrent/api/AsyncContextMap.Key.html" title="class in io.servicetalk.concurrent.api"><code>key</code></a> to store a user info object of authenticated user in
+ <a href="../../../concurrent/api/AsyncContext.html" title="class in io.servicetalk.concurrent.api"><code>AsyncContext</code></a>.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
-<dd><code>userInfoKey</code> - a key to store a user info object in <a href="../../../concurrent/api/AsyncContextMap.html" title="interface in io.servicetalk.concurrent.api"><code>AsyncContextMap</code></a></dd>
+<dd><code>userInfoKey</code> - a key to store a user info object in <a href="../../../concurrent/api/AsyncContext.html" title="class in io.servicetalk.concurrent.api"><code>AsyncContext</code></a></dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd><code>this</code></dd>
+</dl>
+</li>
+</ul>
+<a id="userInfoAsyncContextKey(io.servicetalk.context.api.ContextMap.Key)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>userInfoAsyncContextKey</h4>
+<pre class="methodSignature">public&nbsp;<a href="BasicAuthHttpServiceFilter.Builder.html" title="class in io.servicetalk.http.utils.auth">BasicAuthHttpServiceFilter.Builder</a>&lt;<a href="BasicAuthHttpServiceFilter.Builder.html" title="type parameter in BasicAuthHttpServiceFilter.Builder">UserInfo</a>&gt;&nbsp;userInfoAsyncContextKey&#8203;(<a href="../../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;<a href="BasicAuthHttpServiceFilter.Builder.html" title="type parameter in BasicAuthHttpServiceFilter.Builder">UserInfo</a>&gt;&nbsp;userInfoAsyncContextKey)</pre>
+<div class="block">Sets a <a href="../../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api"><code>key</code></a> to store a user info object of authenticated user in <a href="../../../concurrent/api/AsyncContext.html" title="class in io.servicetalk.concurrent.api"><code>AsyncContext</code></a>.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>userInfoAsyncContextKey</code> - a key to store a user info object in <a href="../../../concurrent/api/AsyncContext.html" title="class in io.servicetalk.concurrent.api"><code>AsyncContext</code></a></dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd><code>this</code></dd>
+</dl>
+</li>
+</ul>
+<a id="userInfoRequestContextKey(io.servicetalk.context.api.ContextMap.Key)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>userInfoRequestContextKey</h4>
+<pre class="methodSignature">public&nbsp;<a href="BasicAuthHttpServiceFilter.Builder.html" title="class in io.servicetalk.http.utils.auth">BasicAuthHttpServiceFilter.Builder</a>&lt;<a href="BasicAuthHttpServiceFilter.Builder.html" title="type parameter in BasicAuthHttpServiceFilter.Builder">UserInfo</a>&gt;&nbsp;userInfoRequestContextKey&#8203;(<a href="../../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;<a href="BasicAuthHttpServiceFilter.Builder.html" title="type parameter in BasicAuthHttpServiceFilter.Builder">UserInfo</a>&gt;&nbsp;userInfoRequestContextKey)</pre>
+<div class="block">Sets a <a href="../../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api"><code>key</code></a> to store a user info object of authenticated user in
+ <a href="../../api/HttpMetaData.html#context()"><code>request context</code></a>.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>userInfoRequestContextKey</code> - a key to store a user info object in
+ <a href="../../api/HttpMetaData.html#context()"><code>request context</code></a></dd>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd><code>this</code></dd>
 </dl>

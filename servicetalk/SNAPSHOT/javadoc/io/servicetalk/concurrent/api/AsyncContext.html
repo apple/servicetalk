@@ -26,8 +26,8 @@
     catch(err) {
     }
 //-->
-var data = {"i0":9,"i1":9,"i2":9,"i3":9,"i4":9,"i5":9,"i6":9,"i7":9,"i8":9,"i9":9,"i10":9,"i11":9,"i12":9,"i13":9,"i14":9,"i15":9,"i16":9,"i17":9,"i18":9,"i19":9,"i20":9};
-var tabs = {65535:["t0","All Methods"],1:["t1","Static Methods"],8:["t4","Concrete Methods"]};
+var data = {"i0":9,"i1":9,"i2":9,"i3":41,"i4":9,"i5":9,"i6":9,"i7":41,"i8":9,"i9":41,"i10":9,"i11":41,"i12":9,"i13":9,"i14":9,"i15":9,"i16":41,"i17":41,"i18":9,"i19":9,"i20":41,"i21":9,"i22":9,"i23":41,"i24":9,"i25":41,"i26":9,"i27":9,"i28":9,"i29":9,"i30":9,"i31":9,"i32":9,"i33":9,"i34":9,"i35":9,"i36":9,"i37":9};
+var tabs = {65535:["t0","All Methods"],1:["t1","Static Methods"],8:["t4","Concrete Methods"],32:["t6","Deprecated Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
 var tableTab = "tableTab";
@@ -151,7 +151,7 @@ extends java.lang.Object</pre>
 </a>
 <h3>Method Summary</h3>
 <table class="memberSummary">
-<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t1" class="tableTab"><span><a href="javascript:show(1);">Static Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t4" class="tableTab"><span><a href="javascript:show(8);">Concrete Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
+<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t1" class="tableTab"><span><a href="javascript:show(1);">Static Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t4" class="tableTab"><span><a href="javascript:show(8);">Concrete Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t6" class="tableTab"><span><a href="javascript:show(32);">Deprecated Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
 <tr>
 <th class="colFirst" scope="col">Modifier and Type</th>
 <th class="colSecond" scope="col">Method</th>
@@ -161,109 +161,258 @@ extends java.lang.Object</pre>
 <td class="colFirst"><code>static void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#clear()">clear</a></span>()</code></th>
 <td class="colLast">
-<div class="block">Convenience method to clear all the key/value pairs from the current context.</div>
+<div class="block">Convenience method to clear all the entries from the current context.</div>
 </td>
 </tr>
 <tr id="i1" class="rowColor">
-<td class="colFirst"><code>static boolean</code></td>
-<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#containsKey(io.servicetalk.concurrent.api.AsyncContextMap.Key)">containsKey</a></span>&#8203;(<a href="AsyncContextMap.Key.html" title="class in io.servicetalk.concurrent.api">AsyncContextMap.Key</a>&lt;?&gt;&nbsp;key)</code></th>
+<td class="colFirst"><code>static &lt;T&gt;&nbsp;T</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#computeIfAbsent(io.servicetalk.context.api.ContextMap.Key,java.util.function.Function)">computeIfAbsent</a></span>&#8203;(<a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;T&gt;&nbsp;key,
+               java.util.function.Function&lt;<a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;T&gt;,&#8203;T&gt;&nbsp;computeFunction)</code></th>
 <td class="colLast">
-<div class="block">Convenience method to determine if the current context contains a key/value entry corresponding to <code>key</code>.</div>
+<div class="block">Convenience method to compute a new entry for the current context if this map does not already contain this
+ <code>key</code> or is mapped to <code>null</code>.</div>
 </td>
 </tr>
 <tr id="i2" class="altColor">
-<td class="colFirst"><code>static <a href="AsyncContextMap.html" title="interface in io.servicetalk.concurrent.api">AsyncContextMap</a></code></td>
-<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#current()">current</a></span>()</code></th>
+<td class="colFirst"><code>static &lt;T&gt;&nbsp;boolean</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#contains(io.servicetalk.context.api.ContextMap.Key,T)">contains</a></span>&#8203;(<a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;T&gt;&nbsp;key,
+        T&nbsp;value)</code></th>
 <td class="colLast">
-<div class="block">Get the current <a href="AsyncContextMap.html" title="interface in io.servicetalk.concurrent.api"><code>AsyncContextMap</code></a>.</div>
+<div class="block">Convenience method to determine if this context contains an entry matching the passed <code>key</code> and
+ <code>value</code>.</div>
 </td>
 </tr>
 <tr id="i3" class="rowColor">
+<td class="colFirst"><code>static boolean</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#containsKey(io.servicetalk.concurrent.api.AsyncContextMap.Key)">containsKey</a></span>&#8203;(<a href="AsyncContextMap.Key.html" title="class in io.servicetalk.concurrent.api">AsyncContextMap.Key</a>&lt;?&gt;&nbsp;key)</code></th>
+<td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#containsKey(io.servicetalk.context.api.ContextMap.Key)"><code>containsKey(ContextMap.Key)</code></a></div>
+</div>
+</td>
+</tr>
+<tr id="i4" class="altColor">
+<td class="colFirst"><code>static boolean</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#containsKey(io.servicetalk.context.api.ContextMap.Key)">containsKey</a></span>&#8203;(<a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;?&gt;&nbsp;key)</code></th>
+<td class="colLast">
+<div class="block">Convenience method to determine if the current context contains an entry corresponding to the <code>key</code>.</div>
+</td>
+</tr>
+<tr id="i5" class="rowColor">
+<td class="colFirst"><code>static boolean</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#containsValue(java.lang.Object)">containsValue</a></span>&#8203;(java.lang.Object&nbsp;value)</code></th>
+<td class="colLast">
+<div class="block">Convenience method to determine if the current context contains an entry with the specified <code>value</code>.</div>
+</td>
+</tr>
+<tr id="i6" class="altColor">
+<td class="colFirst"><code>static <a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api">ContextMap</a></code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#context()">context</a></span>()</code></th>
+<td class="colLast">
+<div class="block">Get the current <a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api"><code>ContextMap</code></a>.</div>
+</td>
+</tr>
+<tr id="i7" class="rowColor">
+<td class="colFirst"><code>static <a href="AsyncContextMap.html" title="interface in io.servicetalk.concurrent.api">AsyncContextMap</a></code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#current()">current</a></span>()</code></th>
+<td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#context()"><code>context()</code></a>.</div>
+</div>
+</td>
+</tr>
+<tr id="i8" class="altColor">
 <td class="colFirst"><code>static void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#disable()">disable</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Disable AsyncContext.</div>
 </td>
 </tr>
-<tr id="i4" class="altColor">
+<tr id="i9" class="rowColor">
 <td class="colFirst"><code>static <a href="AsyncContextMap.Key.html" title="class in io.servicetalk.concurrent.api">AsyncContextMap.Key</a>&lt;?&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#forEach(java.util.function.BiPredicate)">forEach</a></span>&#8203;(java.util.function.BiPredicate&lt;<a href="AsyncContextMap.Key.html" title="class in io.servicetalk.concurrent.api">AsyncContextMap.Key</a>&lt;?&gt;,&#8203;java.lang.Object&gt;&nbsp;consumer)</code></th>
 <td class="colLast">
-<div class="block">Convenience method to iterate over the key/value pairs contained in the current context.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#forEachEntry(java.util.function.BiPredicate)"><code>forEachEntry(BiPredicate)</code></a></div>
+</div>
 </td>
 </tr>
-<tr id="i5" class="rowColor">
+<tr id="i10" class="altColor">
+<td class="colFirst"><code>static <a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;?&gt;</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#forEachEntry(java.util.function.BiPredicate)">forEachEntry</a></span>&#8203;(java.util.function.BiPredicate&lt;<a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;?&gt;,&#8203;java.lang.Object&gt;&nbsp;consumer)</code></th>
+<td class="colLast">
+<div class="block">Convenience method to iterate over the entries contained in the current context.</div>
+</td>
+</tr>
+<tr id="i11" class="rowColor">
 <td class="colFirst"><code>static &lt;T&gt;&nbsp;T</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#get(io.servicetalk.concurrent.api.AsyncContextMap.Key)">get</a></span>&#8203;(<a href="AsyncContextMap.Key.html" title="class in io.servicetalk.concurrent.api">AsyncContextMap.Key</a>&lt;T&gt;&nbsp;key)</code></th>
 <td class="colLast">
-<div class="block">Convenience method to get the value associated with <code>key</code> from the current context.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#get(io.servicetalk.context.api.ContextMap.Key)"><code>get(ContextMap.Key)</code></a></div>
+</div>
 </td>
 </tr>
-<tr id="i6" class="altColor">
+<tr id="i12" class="altColor">
+<td class="colFirst"><code>static &lt;T&gt;&nbsp;T</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#get(io.servicetalk.context.api.ContextMap.Key)">get</a></span>&#8203;(<a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;T&gt;&nbsp;key)</code></th>
+<td class="colLast">
+<div class="block">Convenience method to get the value associated with the <code>key</code> from the current context.</div>
+</td>
+</tr>
+<tr id="i13" class="rowColor">
+<td class="colFirst"><code>static &lt;T&gt;&nbsp;T</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#getOrDefault(io.servicetalk.context.api.ContextMap.Key,T)">getOrDefault</a></span>&#8203;(<a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;T&gt;&nbsp;key,
+            T&nbsp;defaultValue)</code></th>
+<td class="colLast">
+<div class="block">Convenience method to get the value associated with <code>key</code> from the current context, or <code>defaultValue</code>
+ if no value is associated.</div>
+</td>
+</tr>
+<tr id="i14" class="altColor">
 <td class="colFirst"><code>static boolean</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#isDisabled()">isDisabled</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Determine if <a href="#disable()"><code>disable()</code></a> has been previously called.</div>
 </td>
 </tr>
-<tr id="i7" class="rowColor">
+<tr id="i15" class="rowColor">
 <td class="colFirst"><code>static boolean</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#isEmpty()">isEmpty</a></span>()</code></th>
 <td class="colLast">
-<div class="block">Convenience method to determine if there are no key/value pairs in the current context.</div>
+<div class="block">Convenience method to determine if there are no entries in the current context.</div>
 </td>
 </tr>
-<tr id="i8" class="altColor">
+<tr id="i16" class="altColor">
+<td class="colFirst"><code>static &lt;T&gt;&nbsp;void</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#newKeyMapping(io.servicetalk.concurrent.api.AsyncContextMap.Key,io.servicetalk.context.api.ContextMap.Key)">newKeyMapping</a></span>&#8203;(<a href="AsyncContextMap.Key.html" title="class in io.servicetalk.concurrent.api">AsyncContextMap.Key</a>&lt;T&gt;&nbsp;acmKey,
+             <a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;T&gt;&nbsp;cmKey)</code></th>
+<td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">This method can be used only as a temporary approach until the full codebase is migrated to
+ <a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api"><code>ContextMap</code></a> API.</div>
+</div>
+</td>
+</tr>
+<tr id="i17" class="rowColor">
 <td class="colFirst"><code>static &lt;T&gt;&nbsp;void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#put(io.servicetalk.concurrent.api.AsyncContextMap.Key,T)">put</a></span>&#8203;(<a href="AsyncContextMap.Key.html" title="class in io.servicetalk.concurrent.api">AsyncContextMap.Key</a>&lt;T&gt;&nbsp;key,
    T&nbsp;value)</code></th>
 <td class="colLast">
-<div class="block">Convenience method for adding a value to the current context.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#put(io.servicetalk.context.api.ContextMap.Key,T)"><code>put(ContextMap.Key, Object)</code></a></div>
+</div>
 </td>
 </tr>
-<tr id="i9" class="rowColor">
+<tr id="i18" class="altColor">
+<td class="colFirst"><code>static &lt;T&gt;&nbsp;T</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#put(io.servicetalk.context.api.ContextMap.Key,T)">put</a></span>&#8203;(<a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;T&gt;&nbsp;key,
+   T&nbsp;value)</code></th>
+<td class="colLast">
+<div class="block">Convenience method to put a new entry to the current context.</div>
+</td>
+</tr>
+<tr id="i19" class="rowColor">
+<td class="colFirst"><code>static void</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#putAll(io.servicetalk.context.api.ContextMap)">putAll</a></span>&#8203;(<a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api">ContextMap</a>&nbsp;map)</code></th>
+<td class="colLast">
+<div class="block">Convenience method to put all the entries into the current context from another <a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api"><code>ContextMap</code></a>.</div>
+</td>
+</tr>
+<tr id="i20" class="altColor">
 <td class="colFirst"><code>static void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#putAll(java.util.Map)">putAll</a></span>&#8203;(java.util.Map&lt;<a href="AsyncContextMap.Key.html" title="class in io.servicetalk.concurrent.api">AsyncContextMap.Key</a>&lt;?&gt;,&#8203;java.lang.Object&gt;&nbsp;map)</code></th>
 <td class="colLast">
-<div class="block">Convenience method for to put all the key/value pairs into the current context.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#putAllFromMap(java.util.Map)"><code>putAllFromMap(Map)</code></a></div>
+</div>
 </td>
 </tr>
-<tr id="i10" class="altColor">
+<tr id="i21" class="rowColor">
+<td class="colFirst"><code>static void</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#putAllFromMap(java.util.Map)">putAllFromMap</a></span>&#8203;(java.util.Map&lt;<a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;?&gt;,&#8203;java.lang.Object&gt;&nbsp;map)</code></th>
+<td class="colLast">
+<div class="block">Convenience method to put all the entries into the current context.</div>
+</td>
+</tr>
+<tr id="i22" class="altColor">
+<td class="colFirst"><code>static &lt;T&gt;&nbsp;T</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#putIfAbsent(io.servicetalk.context.api.ContextMap.Key,T)">putIfAbsent</a></span>&#8203;(<a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;T&gt;&nbsp;key,
+           T&nbsp;value)</code></th>
+<td class="colLast">
+<div class="block">Convenience method to put a new entry to the current context if this map does not already contain this
+ <code>key</code> or is mapped to <code>null</code>.</div>
+</td>
+</tr>
+<tr id="i23" class="rowColor">
 <td class="colFirst"><code>static void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#remove(io.servicetalk.concurrent.api.AsyncContextMap.Key)">remove</a></span>&#8203;(<a href="AsyncContextMap.Key.html" title="class in io.servicetalk.concurrent.api">AsyncContextMap.Key</a>&lt;?&gt;&nbsp;key)</code></th>
 <td class="colLast">
-<div class="block">Convenience method to remove a key/value pair from the current context.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#remove(io.servicetalk.context.api.ContextMap.Key)"><code>remove(ContextMap.Key)</code></a></div>
+</div>
 </td>
 </tr>
-<tr id="i11" class="rowColor">
+<tr id="i24" class="altColor">
+<td class="colFirst"><code>static &lt;T&gt;&nbsp;T</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#remove(io.servicetalk.context.api.ContextMap.Key)">remove</a></span>&#8203;(<a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;T&gt;&nbsp;key)</code></th>
+<td class="colLast">
+<div class="block">Convenience method to remove an entry from the current context.</div>
+</td>
+</tr>
+<tr id="i25" class="rowColor">
 <td class="colFirst"><code>static void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#removeAll(java.lang.Iterable)">removeAll</a></span>&#8203;(java.lang.Iterable&lt;<a href="AsyncContextMap.Key.html" title="class in io.servicetalk.concurrent.api">AsyncContextMap.Key</a>&lt;?&gt;&gt;&nbsp;entries)</code></th>
 <td class="colLast">
-<div class="block">Convenience method to remove all the key/value pairs from the current context.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#removeAllEntries(java.lang.Iterable)"><code>removeAllEntries(Iterable)</code></a></div>
+</div>
 </td>
 </tr>
-<tr id="i12" class="altColor">
+<tr id="i26" class="altColor">
+<td class="colFirst"><code>static boolean</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#removeAllEntries(java.lang.Iterable)">removeAllEntries</a></span>&#8203;(java.lang.Iterable&lt;<a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;?&gt;&gt;&nbsp;keys)</code></th>
+<td class="colLast">
+<div class="block">Convenience method to remove all entries from the current context associated with the keys from the
+ passed <code>Iterable</code>.</div>
+</td>
+</tr>
+<tr id="i27" class="rowColor">
+<td class="colFirst"><code>static int</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#size()">size</a></span>()</code></th>
+<td class="colLast">
+<div class="block">Convenience method to determine the number of entries in the current context.</div>
+</td>
+</tr>
+<tr id="i28" class="altColor">
 <td class="colFirst"><code>static &lt;T,&#8203;U&gt;<br>java.util.function.BiConsumer&lt;T,&#8203;U&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#wrapBiConsume(java.util.function.BiConsumer)">wrapBiConsume</a></span>&#8203;(java.util.function.BiConsumer&lt;T,&#8203;U&gt;&nbsp;consumer)</code></th>
 <td class="colLast">
 <div class="block">Wrap a <code>BiFunction</code> to ensure it is able to track <a href="AsyncContext.html" title="class in io.servicetalk.concurrent.api"><code>AsyncContext</code></a> correctly.</div>
 </td>
 </tr>
-<tr id="i13" class="rowColor">
+<tr id="i29" class="rowColor">
 <td class="colFirst"><code>static &lt;T,&#8203;U,&#8203;V&gt;<br>java.util.function.BiFunction&lt;T,&#8203;U,&#8203;V&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#wrapBiFunction(java.util.function.BiFunction)">wrapBiFunction</a></span>&#8203;(java.util.function.BiFunction&lt;T,&#8203;U,&#8203;V&gt;&nbsp;func)</code></th>
 <td class="colLast">
 <div class="block">Wrap a <code>BiFunction</code> to ensure it is able to track <a href="AsyncContext.html" title="class in io.servicetalk.concurrent.api"><code>AsyncContext</code></a> correctly.</div>
 </td>
 </tr>
-<tr id="i14" class="altColor">
+<tr id="i30" class="altColor">
+<td class="colFirst"><code>static &lt;V&gt;&nbsp;java.util.concurrent.Callable&lt;V&gt;</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#wrapCallable(java.util.concurrent.Callable)">wrapCallable</a></span>&#8203;(java.util.concurrent.Callable&lt;V&gt;&nbsp;callable)</code></th>
+<td class="colLast">
+<div class="block">Wrap a <code>Callable</code> to ensure it is able to track <a href="AsyncContext.html" title="class in io.servicetalk.concurrent.api"><code>AsyncContext</code></a> correctly.</div>
+</td>
+</tr>
+<tr id="i31" class="rowColor">
 <td class="colFirst"><code>static &lt;T&gt;&nbsp;java.util.function.Consumer&lt;T&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#wrapConsumer(java.util.function.Consumer)">wrapConsumer</a></span>&#8203;(java.util.function.Consumer&lt;T&gt;&nbsp;consumer)</code></th>
 <td class="colLast">
 <div class="block">Wrap a <code>Consumer</code> to ensure it is able to track <a href="AsyncContext.html" title="class in io.servicetalk.concurrent.api"><code>AsyncContext</code></a> correctly.</div>
 </td>
 </tr>
-<tr id="i15" class="rowColor">
+<tr id="i32" class="altColor">
 <td class="colFirst"><code>static <a href="Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#wrapExecutor(io.servicetalk.concurrent.api.Executor)">wrapExecutor</a></span>&#8203;(<a href="Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;executor)</code></th>
 <td class="colLast">
@@ -271,35 +420,35 @@ extends java.lang.Object</pre>
  correctly.</div>
 </td>
 </tr>
-<tr id="i16" class="altColor">
+<tr id="i33" class="rowColor">
 <td class="colFirst"><code>static &lt;T,&#8203;U&gt;<br>java.util.function.Function&lt;T,&#8203;U&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#wrapFunction(java.util.function.Function)">wrapFunction</a></span>&#8203;(java.util.function.Function&lt;T,&#8203;U&gt;&nbsp;func)</code></th>
 <td class="colLast">
 <div class="block">Wrap a <code>Function</code> to ensure it is able to track <a href="AsyncContext.html" title="class in io.servicetalk.concurrent.api"><code>AsyncContext</code></a> correctly.</div>
 </td>
 </tr>
-<tr id="i17" class="rowColor">
+<tr id="i34" class="altColor">
 <td class="colFirst"><code>static java.util.concurrent.Executor</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#wrapJdkExecutor(java.util.concurrent.Executor)">wrapJdkExecutor</a></span>&#8203;(java.util.concurrent.Executor&nbsp;executor)</code></th>
 <td class="colLast">
 <div class="block">Wrap an <code>Executor</code> to ensure it is able to track <a href="AsyncContext.html" title="class in io.servicetalk.concurrent.api"><code>AsyncContext</code></a> correctly.</div>
 </td>
 </tr>
-<tr id="i18" class="altColor">
+<tr id="i35" class="rowColor">
 <td class="colFirst"><code>static java.util.concurrent.ExecutorService</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#wrapJdkExecutorService(java.util.concurrent.ExecutorService)">wrapJdkExecutorService</a></span>&#8203;(java.util.concurrent.ExecutorService&nbsp;executor)</code></th>
 <td class="colLast">
 <div class="block">Wrap an <code>ExecutorService</code> to ensure it is able to track <a href="AsyncContext.html" title="class in io.servicetalk.concurrent.api"><code>AsyncContext</code></a> correctly.</div>
 </td>
 </tr>
-<tr id="i19" class="rowColor">
+<tr id="i36" class="altColor">
 <td class="colFirst"><code>static java.util.concurrent.ScheduledExecutorService</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#wrapJdkScheduledExecutorService(java.util.concurrent.ScheduledExecutorService)">wrapJdkScheduledExecutorService</a></span>&#8203;(java.util.concurrent.ScheduledExecutorService&nbsp;executor)</code></th>
 <td class="colLast">
 <div class="block">Wrap a <code>ScheduledExecutorService</code> to ensure it is able to track <a href="AsyncContext.html" title="class in io.servicetalk.concurrent.api"><code>AsyncContext</code></a> correctly.</div>
 </td>
 </tr>
-<tr id="i20" class="altColor">
+<tr id="i37" class="rowColor">
 <td class="colFirst"><code>static java.lang.Runnable</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#wrapRunnable(java.lang.Runnable)">wrapRunnable</a></span>&#8203;(java.lang.Runnable&nbsp;runnable)</code></th>
 <td class="colLast">
@@ -336,11 +485,58 @@ extends java.lang.Object</pre>
 <ul class="blockList">
 <li class="blockList">
 <h4>current</h4>
-<pre class="methodSignature">public static&nbsp;<a href="AsyncContextMap.html" title="interface in io.servicetalk.concurrent.api">AsyncContextMap</a>&nbsp;current()</pre>
+<pre class="methodSignature">@Deprecated
+public static&nbsp;<a href="AsyncContextMap.html" title="interface in io.servicetalk.concurrent.api">AsyncContextMap</a>&nbsp;current()</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#context()"><code>context()</code></a>.</div>
+</div>
 <div class="block">Get the current <a href="AsyncContextMap.html" title="interface in io.servicetalk.concurrent.api"><code>AsyncContextMap</code></a>.</div>
 <dl>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd>the current <a href="AsyncContextMap.html" title="interface in io.servicetalk.concurrent.api"><code>AsyncContextMap</code></a></dd>
+</dl>
+</li>
+</ul>
+<a id="context()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>context</h4>
+<pre class="methodSignature">public static&nbsp;<a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api">ContextMap</a>&nbsp;context()</pre>
+<div class="block">Get the current <a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api"><code>ContextMap</code></a>.</div>
+<dl>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd>the current <a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api"><code>ContextMap</code></a></dd>
+</dl>
+</li>
+</ul>
+<a id="newKeyMapping(io.servicetalk.concurrent.api.AsyncContextMap.Key,io.servicetalk.context.api.ContextMap.Key)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>newKeyMapping</h4>
+<pre class="methodSignature">@Deprecated
+public static&nbsp;&lt;T&gt;&nbsp;void&nbsp;newKeyMapping&#8203;(<a href="AsyncContextMap.Key.html" title="class in io.servicetalk.concurrent.api">AsyncContextMap.Key</a>&lt;T&gt;&nbsp;acmKey,
+                                     <a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;T&gt;&nbsp;cmKey)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">This method can be used only as a temporary approach until the full codebase is migrated to
+ <a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api"><code>ContextMap</code></a> API. This method will be removed in future releases.</div>
+</div>
+<div class="block">Registers a new mapping between <a href="AsyncContextMap.Key.html" title="class in io.servicetalk.concurrent.api"><code>AsyncContextMap.Key</code></a> and <a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api"><code>ContextMap.Key</code></a> to allow smooth migration
+ to the new API.
+ <p>
+ If the mapping is registered using this method, it will be possible to use both keys for <a href="AsyncContext.html" title="class in io.servicetalk.concurrent.api"><code>AsyncContext</code></a>
+ operations at the same time, allowing step-by-step migration from deprecated to the new keys. For example, it
+ will be possible to use <a href="#put(io.servicetalk.concurrent.api.AsyncContextMap.Key,T)"><code>put(AsyncContextMap.Key, Object)</code></a> and <a href="#get(io.servicetalk.context.api.ContextMap.Key)"><code>get(ContextMap.Key)</code></a> to retrieve
+ the same value.</div>
+<dl>
+<dt><span class="paramLabel">Type Parameters:</span></dt>
+<dd><code>T</code> - type of the value for these keys</dd>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>acmKey</code> - <a href="AsyncContextMap.Key.html" title="class in io.servicetalk.concurrent.api"><code>AsyncContextMap.Key</code></a> to map</dd>
+<dd><code>cmKey</code> - <a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api"><code>ContextMap.Key</code></a> to map</dd>
 </dl>
 </li>
 </ul>
@@ -352,10 +548,14 @@ extends java.lang.Object</pre>
 <ul class="blockList">
 <li class="blockList">
 <h4>put</h4>
-<pre class="methodSignature">public static&nbsp;&lt;T&gt;&nbsp;void&nbsp;put&#8203;(<a href="AsyncContextMap.Key.html" title="class in io.servicetalk.concurrent.api">AsyncContextMap.Key</a>&lt;T&gt;&nbsp;key,
+<pre class="methodSignature">@Deprecated
+public static&nbsp;&lt;T&gt;&nbsp;void&nbsp;put&#8203;(<a href="AsyncContextMap.Key.html" title="class in io.servicetalk.concurrent.api">AsyncContextMap.Key</a>&lt;T&gt;&nbsp;key,
                            @Nullable
                            T&nbsp;value)</pre>
-<div class="block">Convenience method for adding a value to the current context.</div>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#put(io.servicetalk.context.api.ContextMap.Key,T)"><code>put(ContextMap.Key, Object)</code></a></div>
+</div>
+<div class="block">Convenience method to put a value to the current context.</div>
 <dl>
 <dt><span class="paramLabel">Type Parameters:</span></dt>
 <dd><code>T</code> - The type of object associated with <code>key</code>.</dd>
@@ -372,20 +572,147 @@ extends java.lang.Object</pre>
 </dl>
 </li>
 </ul>
+<a id="put(io.servicetalk.context.api.ContextMap.Key,java.lang.Object)">
+<!--   -->
+</a><a id="put(io.servicetalk.context.api.ContextMap.Key,T)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>put</h4>
+<pre class="methodSignature">@Nullable
+public static&nbsp;&lt;T&gt;&nbsp;T&nbsp;put&#8203;(<a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;T&gt;&nbsp;key,
+                        @Nullable
+                        T&nbsp;value)</pre>
+<div class="block">Convenience method to put a new entry to the current context.</div>
+<dl>
+<dt><span class="paramLabel">Type Parameters:</span></dt>
+<dd><code>T</code> - The type of object associated with <code>key</code>.</dd>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>key</code> - The <a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api"><code>ContextMap.Key</code></a> used to index the <code>value</code>.</dd>
+<dd><code>value</code> - the value to put.</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd>The previous value associated with the <code>key</code>, or <code>null</code> if there was none. <code>null</code> can
+ also indicate the value associated with <code>key</code> is <code>null</code> (if <code>null</code> values are supported by the
+ implementation).</dd>
+<dt><span class="throwsLabel">Throws:</span></dt>
+<dd><code>java.lang.NullPointerException</code> - (optional behavior) if <code>key</code> or <code>value</code> is <code>null</code> and the
+ underlying <a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api"><code>ContextMap</code></a> implementation doesn't support <code>null</code> keys or values.</dd>
+<dd><code>java.lang.UnsupportedOperationException</code> - if this method is not supported by the underlying <a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api"><code>ContextMap</code></a>
+ implementation.</dd>
+<dt><span class="seeLabel">See Also:</span></dt>
+<dd><a href="../../context/api/ContextMap.html#put(io.servicetalk.context.api.ContextMap.Key,T)"><code>ContextMap.put(ContextMap.Key, Object)</code></a></dd>
+</dl>
+</li>
+</ul>
+<a id="putIfAbsent(io.servicetalk.context.api.ContextMap.Key,java.lang.Object)">
+<!--   -->
+</a><a id="putIfAbsent(io.servicetalk.context.api.ContextMap.Key,T)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>putIfAbsent</h4>
+<pre class="methodSignature">@Nullable
+public static&nbsp;&lt;T&gt;&nbsp;T&nbsp;putIfAbsent&#8203;(<a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;T&gt;&nbsp;key,
+                                @Nullable
+                                T&nbsp;value)</pre>
+<div class="block">Convenience method to put a new entry to the current context if this map does not already contain this
+ <code>key</code> or is mapped to <code>null</code>.</div>
+<dl>
+<dt><span class="paramLabel">Type Parameters:</span></dt>
+<dd><code>T</code> - The type of object associated with <code>key</code>.</dd>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>key</code> - The <a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api"><code>ContextMap.Key</code></a> used to index the <code>value</code>.</dd>
+<dd><code>value</code> - the value to put.</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd>The previous value associated with the <code>key</code>, or <code>null</code> if there was none. <code>null</code> can
+ also indicate the value associated with <code>key</code> is <code>null</code> (if <code>null</code> values are supported by the
+ implementation).</dd>
+<dt><span class="throwsLabel">Throws:</span></dt>
+<dd><code>java.lang.NullPointerException</code> - (optional behavior) if <code>key</code> or <code>value</code> is <code>null</code> and the
+ underlying <a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api"><code>ContextMap</code></a> implementation doesn't support <code>null</code> keys or values.</dd>
+<dd><code>java.lang.UnsupportedOperationException</code> - if this method is not supported by the underlying <a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api"><code>ContextMap</code></a>
+ implementation.</dd>
+<dt><span class="seeLabel">See Also:</span></dt>
+<dd><a href="../../context/api/ContextMap.html#putIfAbsent(io.servicetalk.context.api.ContextMap.Key,T)"><code>ContextMap.putIfAbsent(ContextMap.Key, Object)</code></a></dd>
+</dl>
+</li>
+</ul>
+<a id="computeIfAbsent(io.servicetalk.context.api.ContextMap.Key,java.util.function.Function)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>computeIfAbsent</h4>
+<pre class="methodSignature">@Nullable
+public static&nbsp;&lt;T&gt;&nbsp;T&nbsp;computeIfAbsent&#8203;(<a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;T&gt;&nbsp;key,
+                                    java.util.function.Function&lt;<a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;T&gt;,&#8203;T&gt;&nbsp;computeFunction)</pre>
+<div class="block">Convenience method to compute a new entry for the current context if this map does not already contain this
+ <code>key</code> or is mapped to <code>null</code>.</div>
+<dl>
+<dt><span class="paramLabel">Type Parameters:</span></dt>
+<dd><code>T</code> - The type of object associated with <code>key</code>.</dd>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>key</code> - The <a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api"><code>ContextMap.Key</code></a> used to index the <code>value</code>.</dd>
+<dd><code>computeFunction</code> - The function to compute a new value. Implementation may invoke this function multiple
+ times if concurrent threads attempt modifying this context map, result is expected to be idempotent.</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd>The previous value associated with the <code>key</code>, or <code>null</code> if there was none. <code>null</code> can
+ also indicate the value associated with <code>key</code> is <code>null</code> (if <code>null</code> values are supported by the
+ implementation).</dd>
+<dt><span class="throwsLabel">Throws:</span></dt>
+<dd><code>java.lang.NullPointerException</code> - (optional behavior) if <code>key</code> or computed <code>value</code> is <code>null</code> and the
+ underlying <a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api"><code>ContextMap</code></a> implementation doesn't support <code>null</code> keys or values.</dd>
+<dd><code>java.lang.UnsupportedOperationException</code> - if this method is not supported by the underlying <a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api"><code>ContextMap</code></a>
+ implementation.</dd>
+<dt><span class="seeLabel">See Also:</span></dt>
+<dd><a href="../../context/api/ContextMap.html#putIfAbsent(io.servicetalk.context.api.ContextMap.Key,T)"><code>ContextMap.putIfAbsent(ContextMap.Key, Object)</code></a></dd>
+</dl>
+</li>
+</ul>
+<a id="putAll(io.servicetalk.context.api.ContextMap)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>putAll</h4>
+<pre class="methodSignature">public static&nbsp;void&nbsp;putAll&#8203;(<a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api">ContextMap</a>&nbsp;map)</pre>
+<div class="block">Convenience method to put all the entries into the current context from another <a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api"><code>ContextMap</code></a>.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>map</code> - contains the entries that will be added.</dd>
+<dt><span class="throwsLabel">Throws:</span></dt>
+<dd><code>java.util.ConcurrentModificationException</code> - done on a best effort basis if the passed <code>map</code> is detected to be
+ modified while attempting to put all entries.</dd>
+<dd><code>java.lang.NullPointerException</code> - (optional behavior) if any of the <code>map</code> entries has a <code>null</code> <code>key</code>
+ or <code>value</code> and the underlying <a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api"><code>ContextMap</code></a> implementation doesn't support <code>null</code> keys or
+ values.</dd>
+<dd><code>java.lang.UnsupportedOperationException</code> - if this method is not supported by the underlying <a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api"><code>ContextMap</code></a>
+ implementation.</dd>
+<dt><span class="seeLabel">See Also:</span></dt>
+<dd><a href="../../context/api/ContextMap.html#putAll(io.servicetalk.context.api.ContextMap)"><code>ContextMap.putAll(ContextMap)</code></a></dd>
+</dl>
+</li>
+</ul>
 <a id="putAll(java.util.Map)">
 <!--   -->
 </a>
 <ul class="blockList">
 <li class="blockList">
 <h4>putAll</h4>
-<pre class="methodSignature">public static&nbsp;void&nbsp;putAll&#8203;(java.util.Map&lt;<a href="AsyncContextMap.Key.html" title="class in io.servicetalk.concurrent.api">AsyncContextMap.Key</a>&lt;?&gt;,&#8203;java.lang.Object&gt;&nbsp;map)</pre>
-<div class="block">Convenience method for to put all the key/value pairs into the current context.</div>
+<pre class="methodSignature">@Deprecated
+public static&nbsp;void&nbsp;putAll&#8203;(java.util.Map&lt;<a href="AsyncContextMap.Key.html" title="class in io.servicetalk.concurrent.api">AsyncContextMap.Key</a>&lt;?&gt;,&#8203;java.lang.Object&gt;&nbsp;map)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#putAllFromMap(java.util.Map)"><code>putAllFromMap(Map)</code></a></div>
+</div>
+<div class="block">Convenience method to put all the entries into the current context.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
-<dd><code>map</code> - contains the key/value pairs that will be added.</dd>
+<dd><code>map</code> - contains the entries that will be added.</dd>
 <dt><span class="throwsLabel">Throws:</span></dt>
-<dd><code>java.util.ConcurrentModificationException</code> - done on a best effort basis if <code>entries</code> is detected to be modified
- while attempting to put all entries.</dd>
+<dd><code>java.util.ConcurrentModificationException</code> - done on a best effort basis if the passed <code>map</code> is detected to be
+ modified while attempting to put all entries.</dd>
 <dd><code>java.lang.NullPointerException</code> - if <code>key</code> or <code>value</code> is <code>null</code> and the underlying
  <a href="AsyncContextMap.html" title="interface in io.servicetalk.concurrent.api"><code>AsyncContextMap</code></a> implementation doesn't support <code>null</code> keys or values.</dd>
 <dd><code>java.lang.UnsupportedOperationException</code> - if this method is not supported by the underlying <a href="AsyncContextMap.html" title="interface in io.servicetalk.concurrent.api"><code>AsyncContextMap</code></a>
@@ -395,14 +722,42 @@ extends java.lang.Object</pre>
 </dl>
 </li>
 </ul>
+<a id="putAllFromMap(java.util.Map)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>putAllFromMap</h4>
+<pre class="methodSignature">public static&nbsp;void&nbsp;putAllFromMap&#8203;(java.util.Map&lt;<a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;?&gt;,&#8203;java.lang.Object&gt;&nbsp;map)</pre>
+<div class="block">Convenience method to put all the entries into the current context.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>map</code> - contains the entries that will be added.</dd>
+<dt><span class="throwsLabel">Throws:</span></dt>
+<dd><code>java.util.ConcurrentModificationException</code> - done on a best effort basis if the passed <code>map</code> is detected to be
+ modified while attempting to put all entries.</dd>
+<dd><code>java.lang.NullPointerException</code> - (optional behavior) if any of the <code>map</code> entries has a <code>null</code> <code>key</code>
+ or <code>value</code> and the underlying <a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api"><code>ContextMap</code></a> implementation doesn't support <code>null</code> keys or
+ values.</dd>
+<dd><code>java.lang.UnsupportedOperationException</code> - if this method is not supported by the underlying <a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api"><code>ContextMap</code></a>
+ implementation.</dd>
+<dt><span class="seeLabel">See Also:</span></dt>
+<dd><a href="../../context/api/ContextMap.html#putAll(java.util.Map)"><code>ContextMap.putAll(Map)</code></a></dd>
+</dl>
+</li>
+</ul>
 <a id="remove(io.servicetalk.concurrent.api.AsyncContextMap.Key)">
 <!--   -->
 </a>
 <ul class="blockList">
 <li class="blockList">
 <h4>remove</h4>
-<pre class="methodSignature">public static&nbsp;void&nbsp;remove&#8203;(<a href="AsyncContextMap.Key.html" title="class in io.servicetalk.concurrent.api">AsyncContextMap.Key</a>&lt;?&gt;&nbsp;key)</pre>
-<div class="block">Convenience method to remove a key/value pair from the current context.</div>
+<pre class="methodSignature">@Deprecated
+public static&nbsp;void&nbsp;remove&#8203;(<a href="AsyncContextMap.Key.html" title="class in io.servicetalk.concurrent.api">AsyncContextMap.Key</a>&lt;?&gt;&nbsp;key)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#remove(io.servicetalk.context.api.ContextMap.Key)"><code>remove(ContextMap.Key)</code></a></div>
+</div>
+<div class="block">Convenience method to remove an entry from the current context.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>key</code> - The key to remove.</dd>
@@ -414,14 +769,45 @@ extends java.lang.Object</pre>
 </dl>
 </li>
 </ul>
+<a id="remove(io.servicetalk.context.api.ContextMap.Key)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>remove</h4>
+<pre class="methodSignature">@Nullable
+public static&nbsp;&lt;T&gt;&nbsp;T&nbsp;remove&#8203;(<a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;T&gt;&nbsp;key)</pre>
+<div class="block">Convenience method to remove an entry from the current context.</div>
+<dl>
+<dt><span class="paramLabel">Type Parameters:</span></dt>
+<dd><code>T</code> - The type of object associated with <code>key</code>.</dd>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>key</code> - The <a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api"><code>ContextMap.Key</code></a> which identifies an entry for removal.</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd>the previous value associated with <code>key</code>, or <code>null</code> if there was none. A <code>null</code>
+ value may also indicate there was a previous value which was <code>null</code>.</dd>
+<dt><span class="throwsLabel">Throws:</span></dt>
+<dd><code>java.lang.NullPointerException</code> - (optional behavior) if <code>key</code> is <code>null</code> and the underlying
+ <a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api"><code>ContextMap</code></a> implementation doesn't support <code>null</code> keys or values.</dd>
+<dd><code>java.lang.UnsupportedOperationException</code> - if this method is not supported by the underlying <a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api"><code>ContextMap</code></a>
+ implementation.</dd>
+<dt><span class="seeLabel">See Also:</span></dt>
+<dd><a href="../../context/api/ContextMap.html#remove(io.servicetalk.context.api.ContextMap.Key)"><code>ContextMap.remove(ContextMap.Key)</code></a></dd>
+</dl>
+</li>
+</ul>
 <a id="removeAll(java.lang.Iterable)">
 <!--   -->
 </a>
 <ul class="blockList">
 <li class="blockList">
 <h4>removeAll</h4>
-<pre class="methodSignature">public static&nbsp;void&nbsp;removeAll&#8203;(java.lang.Iterable&lt;<a href="AsyncContextMap.Key.html" title="class in io.servicetalk.concurrent.api">AsyncContextMap.Key</a>&lt;?&gt;&gt;&nbsp;entries)</pre>
-<div class="block">Convenience method to remove all the key/value pairs from the current context.</div>
+<pre class="methodSignature">@Deprecated
+public static&nbsp;void&nbsp;removeAll&#8203;(java.lang.Iterable&lt;<a href="AsyncContextMap.Key.html" title="class in io.servicetalk.concurrent.api">AsyncContextMap.Key</a>&lt;?&gt;&gt;&nbsp;entries)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#removeAllEntries(java.lang.Iterable)"><code>removeAllEntries(Iterable)</code></a></div>
+</div>
+<div class="block">Convenience method to remove all the entries from the current context.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>entries</code> - A <code>Iterable</code> which contains all the keys to remove.</dd>
@@ -433,6 +819,30 @@ extends java.lang.Object</pre>
 </dl>
 </li>
 </ul>
+<a id="removeAllEntries(java.lang.Iterable)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>removeAllEntries</h4>
+<pre class="methodSignature">public static&nbsp;boolean&nbsp;removeAllEntries&#8203;(java.lang.Iterable&lt;<a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;?&gt;&gt;&nbsp;keys)</pre>
+<div class="block">Convenience method to remove all entries from the current context associated with the keys from the
+ passed <code>Iterable</code>.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>keys</code> - The <a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api"><code>ContextMap.Key</code></a>s that identify entries for removal.</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd><code>true</code> if this map has changed as a result of this operation.</dd>
+<dt><span class="throwsLabel">Throws:</span></dt>
+<dd><code>java.lang.NullPointerException</code> - (optional behavior) if any of the <code>keys</code> is <code>null</code> and the underlying
+ <a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api"><code>ContextMap</code></a> implementation doesn't support <code>null</code> keys.</dd>
+<dd><code>java.lang.UnsupportedOperationException</code> - if this method is not supported by the underlying <a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api"><code>ContextMap</code></a>
+ implementation.</dd>
+<dt><span class="seeLabel">See Also:</span></dt>
+<dd><a href="../../context/api/ContextMap.html#removeAll(java.lang.Iterable)"><code>ContextMap.removeAll(Iterable)</code></a></dd>
+</dl>
+</li>
+</ul>
 <a id="clear()">
 <!--   -->
 </a>
@@ -440,13 +850,13 @@ extends java.lang.Object</pre>
 <li class="blockList">
 <h4>clear</h4>
 <pre class="methodSignature">public static&nbsp;void&nbsp;clear()</pre>
-<div class="block">Convenience method to clear all the key/value pairs from the current context.</div>
+<div class="block">Convenience method to clear all the entries from the current context.</div>
 <dl>
 <dt><span class="throwsLabel">Throws:</span></dt>
-<dd><code>java.lang.UnsupportedOperationException</code> - if this method is not supported by the underlying <a href="AsyncContextMap.html" title="interface in io.servicetalk.concurrent.api"><code>AsyncContextMap</code></a>
+<dd><code>java.lang.UnsupportedOperationException</code> - if this method is not supported by the underlying <a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api"><code>ContextMap</code></a>
  implementation.</dd>
 <dt><span class="seeLabel">See Also:</span></dt>
-<dd><a href="AsyncContextMap.html#clear()"><code>AsyncContextMap.clear()</code></a></dd>
+<dd><a href="../../context/api/ContextMap.html#clear()"><code>ContextMap.clear()</code></a></dd>
 </dl>
 </li>
 </ul>
@@ -456,8 +866,12 @@ extends java.lang.Object</pre>
 <ul class="blockList">
 <li class="blockList">
 <h4>get</h4>
-<pre class="methodSignature">@Nullable
+<pre class="methodSignature">@Deprecated
+@Nullable
 public static&nbsp;&lt;T&gt;&nbsp;T&nbsp;get&#8203;(<a href="AsyncContextMap.Key.html" title="class in io.servicetalk.concurrent.api">AsyncContextMap.Key</a>&lt;T&gt;&nbsp;key)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#get(io.servicetalk.context.api.ContextMap.Key)"><code>get(ContextMap.Key)</code></a></div>
+</div>
 <div class="block">Convenience method to get the value associated with <code>key</code> from the current context.</div>
 <dl>
 <dt><span class="paramLabel">Type Parameters:</span></dt>
@@ -476,25 +890,173 @@ public static&nbsp;&lt;T&gt;&nbsp;T&nbsp;get&#8203;(<a href="AsyncContextMap.Key
 </dl>
 </li>
 </ul>
+<a id="get(io.servicetalk.context.api.ContextMap.Key)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>get</h4>
+<pre class="methodSignature">@Nullable
+public static&nbsp;&lt;T&gt;&nbsp;T&nbsp;get&#8203;(<a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;T&gt;&nbsp;key)</pre>
+<div class="block">Convenience method to get the value associated with the <code>key</code> from the current context.</div>
+<dl>
+<dt><span class="paramLabel">Type Parameters:</span></dt>
+<dd><code>T</code> - The anticipated type of object associated with <code>key</code>.</dd>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>key</code> - The <a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api"><code>ContextMap.Key</code></a> to lookup.</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd>the value associated with the <code>key</code>, or <code>null</code> if no value is associated. <code>null</code> can
+ also indicate the value associated with <code>key</code> is <code>null</code> (if <code>null</code> values are supported by the
+ underlying <a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api"><code>ContextMap</code></a> implementation).</dd>
+<dt><span class="throwsLabel">Throws:</span></dt>
+<dd><code>java.lang.NullPointerException</code> - (optional behavior) if <code>key</code> is <code>null</code> and the underlying
+ <a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api"><code>ContextMap</code></a> implementation doesn't support <code>null</code> keys or values.</dd>
+<dt><span class="seeLabel">See Also:</span></dt>
+<dd><a href="../../context/api/ContextMap.html#get(io.servicetalk.context.api.ContextMap.Key)"><code>ContextMap.get(ContextMap.Key)</code></a></dd>
+</dl>
+</li>
+</ul>
+<a id="getOrDefault(io.servicetalk.context.api.ContextMap.Key,java.lang.Object)">
+<!--   -->
+</a><a id="getOrDefault(io.servicetalk.context.api.ContextMap.Key,T)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>getOrDefault</h4>
+<pre class="methodSignature">@Nullable
+public static&nbsp;&lt;T&gt;&nbsp;T&nbsp;getOrDefault&#8203;(<a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;T&gt;&nbsp;key,
+                                 T&nbsp;defaultValue)</pre>
+<div class="block">Convenience method to get the value associated with <code>key</code> from the current context, or <code>defaultValue</code>
+ if no value is associated.</div>
+<dl>
+<dt><span class="paramLabel">Type Parameters:</span></dt>
+<dd><code>T</code> - The anticipated type of object associated with <code>key</code>.</dd>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>key</code> - The <a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api"><code>ContextMap.Key</code></a> to lookup.</dd>
+<dd><code>defaultValue</code> - The value to return if no value is associated with the <code>key</code>.</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd>The value associated with the <code>key</code> (can return <code>null</code> if <code>null</code> values are supported
+ by the underlying <a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api"><code>ContextMap</code></a> implementation), or <code>defaultValue</code> if no value is associated.</dd>
+<dt><span class="throwsLabel">Throws:</span></dt>
+<dd><code>java.lang.NullPointerException</code> - (optional behavior) if <code>key</code> is <code>null</code> and the underlying
+ <a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api"><code>ContextMap</code></a> implementation doesn't support <code>null</code> keys or values.</dd>
+<dt><span class="seeLabel">See Also:</span></dt>
+<dd><a href="../../context/api/ContextMap.html#getOrDefault(io.servicetalk.context.api.ContextMap.Key,T)"><code>ContextMap.getOrDefault(ContextMap.Key, Object)</code></a></dd>
+</dl>
+</li>
+</ul>
 <a id="containsKey(io.servicetalk.concurrent.api.AsyncContextMap.Key)">
 <!--   -->
 </a>
 <ul class="blockList">
 <li class="blockList">
 <h4>containsKey</h4>
-<pre class="methodSignature">public static&nbsp;boolean&nbsp;containsKey&#8203;(<a href="AsyncContextMap.Key.html" title="class in io.servicetalk.concurrent.api">AsyncContextMap.Key</a>&lt;?&gt;&nbsp;key)</pre>
-<div class="block">Convenience method to determine if the current context contains a key/value entry corresponding to <code>key</code>.</div>
+<pre class="methodSignature">@Deprecated
+public static&nbsp;boolean&nbsp;containsKey&#8203;(<a href="AsyncContextMap.Key.html" title="class in io.servicetalk.concurrent.api">AsyncContextMap.Key</a>&lt;?&gt;&nbsp;key)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#containsKey(io.servicetalk.context.api.ContextMap.Key)"><code>containsKey(ContextMap.Key)</code></a></div>
+</div>
+<div class="block">Convenience method to determine if the current context contains an entry corresponding to <code>key</code>.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>key</code> - the key to lookup.</dd>
 <dt><span class="returnLabel">Returns:</span></dt>
-<dd><code>true</code> if the current context contains a key/value entry corresponding to <code>key</code>.
+<dd><code>true</code> if the current context contains an entry corresponding to <code>key</code>.
  <code>false</code> otherwise.</dd>
 <dt><span class="throwsLabel">Throws:</span></dt>
 <dd><code>java.lang.NullPointerException</code> - (optional behavior) if <code>key</code> is <code>null</code> and the underlying
  <a href="AsyncContextMap.html" title="interface in io.servicetalk.concurrent.api"><code>AsyncContextMap</code></a> implementation doesn't support <code>null</code> keys or values.</dd>
 <dt><span class="seeLabel">See Also:</span></dt>
 <dd><a href="AsyncContextMap.html#containsKey(io.servicetalk.concurrent.api.AsyncContextMap.Key)"><code>AsyncContextMap.containsKey(AsyncContextMap.Key)</code></a></dd>
+</dl>
+</li>
+</ul>
+<a id="containsKey(io.servicetalk.context.api.ContextMap.Key)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>containsKey</h4>
+<pre class="methodSignature">public static&nbsp;boolean&nbsp;containsKey&#8203;(<a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;?&gt;&nbsp;key)</pre>
+<div class="block">Convenience method to determine if the current context contains an entry corresponding to the <code>key</code>.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>key</code> - The <a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api"><code>ContextMap.Key</code></a> to lookup.</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd><code>true</code> if the current context contains an entry corresponding to the <code>key</code>, <code>false</code>
+ otherwise.</dd>
+<dt><span class="throwsLabel">Throws:</span></dt>
+<dd><code>java.lang.NullPointerException</code> - (optional behavior) if <code>key</code> is <code>null</code> and the underlying
+ <a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api"><code>ContextMap</code></a> implementation doesn't support <code>null</code> keys.</dd>
+<dt><span class="seeLabel">See Also:</span></dt>
+<dd><a href="../../context/api/ContextMap.html#containsKey(io.servicetalk.context.api.ContextMap.Key)"><code>ContextMap.containsKey(ContextMap.Key)</code></a></dd>
+</dl>
+</li>
+</ul>
+<a id="containsValue(java.lang.Object)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>containsValue</h4>
+<pre class="methodSignature">public static&nbsp;boolean&nbsp;containsValue&#8203;(java.lang.Object&nbsp;value)</pre>
+<div class="block">Convenience method to determine if the current context contains an entry with the specified <code>value</code>.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>value</code> - the value to lookup.</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd><code>true</code> if this context contains one or more entries with the specified <code>value</code>, <code>false</code>
+ otherwise.</dd>
+<dt><span class="throwsLabel">Throws:</span></dt>
+<dd><code>java.lang.NullPointerException</code> - (optional behavior) if <code>value</code> is <code>null</code> and the underlying
+ <a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api"><code>ContextMap</code></a> implementation doesn't support <code>null</code> values.</dd>
+<dt><span class="seeLabel">See Also:</span></dt>
+<dd><a href="../../context/api/ContextMap.html#containsValue(java.lang.Object)"><code>ContextMap.containsValue(Object)</code></a></dd>
+</dl>
+</li>
+</ul>
+<a id="contains(io.servicetalk.context.api.ContextMap.Key,java.lang.Object)">
+<!--   -->
+</a><a id="contains(io.servicetalk.context.api.ContextMap.Key,T)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>contains</h4>
+<pre class="methodSignature">public static&nbsp;&lt;T&gt;&nbsp;boolean&nbsp;contains&#8203;(<a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;T&gt;&nbsp;key,
+                                   @Nullable
+                                   T&nbsp;value)</pre>
+<div class="block">Convenience method to determine if this context contains an entry matching the passed <code>key</code> and
+ <code>value</code>.</div>
+<dl>
+<dt><span class="paramLabel">Type Parameters:</span></dt>
+<dd><code>T</code> - The anticipated type of object associated with the <code>key</code>.</dd>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>key</code> - The <a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api"><code>ContextMap.Key</code></a> to lookup.</dd>
+<dd><code>value</code> - The value to match.</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd><code>true</code> if this context contains an entry matching the passed <code>key</code> and <code>value</code>,
+ <code>false</code> otherwise.</dd>
+<dt><span class="throwsLabel">Throws:</span></dt>
+<dd><code>java.lang.NullPointerException</code> - (optional behavior) if <code>key</code> or <code>value</code> is <code>null</code> and the
+ underlying <a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api"><code>ContextMap</code></a> implementation doesn't support <code>null</code> keys or values.</dd>
+</dl>
+</li>
+</ul>
+<a id="size()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>size</h4>
+<pre class="methodSignature">public static&nbsp;int&nbsp;size()</pre>
+<div class="block">Convenience method to determine the number of entries in the current context.</div>
+<dl>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd>the number of entries in the current context.</dd>
+<dt><span class="seeLabel">See Also:</span></dt>
+<dd><a href="../../context/api/ContextMap.html#size()"><code>()</code></a></dd>
 </dl>
 </li>
 </ul>
@@ -505,12 +1067,12 @@ public static&nbsp;&lt;T&gt;&nbsp;T&nbsp;get&#8203;(<a href="AsyncContextMap.Key
 <li class="blockList">
 <h4>isEmpty</h4>
 <pre class="methodSignature">public static&nbsp;boolean&nbsp;isEmpty()</pre>
-<div class="block">Convenience method to determine if there are no key/value pairs in the current context.</div>
+<div class="block">Convenience method to determine if there are no entries in the current context.</div>
 <dl>
 <dt><span class="returnLabel">Returns:</span></dt>
-<dd><code>true</code> if there are no key/value pairs in the current context.</dd>
+<dd><code>true</code> if there are no entries in the current context.</dd>
 <dt><span class="seeLabel">See Also:</span></dt>
-<dd><a href="AsyncContextMap.html#isEmpty()"><code>AsyncContextMap.isEmpty()</code></a></dd>
+<dd><a href="../../context/api/ContextMap.html#isEmpty()"><code>ContextMap.isEmpty()</code></a></dd>
 </dl>
 </li>
 </ul>
@@ -520,20 +1082,49 @@ public static&nbsp;&lt;T&gt;&nbsp;T&nbsp;get&#8203;(<a href="AsyncContextMap.Key
 <ul class="blockList">
 <li class="blockList">
 <h4>forEach</h4>
-<pre class="methodSignature">@Nullable
+<pre class="methodSignature">@Deprecated
+@Nullable
 public static&nbsp;<a href="AsyncContextMap.Key.html" title="class in io.servicetalk.concurrent.api">AsyncContextMap.Key</a>&lt;?&gt;&nbsp;forEach&#8203;(java.util.function.BiPredicate&lt;<a href="AsyncContextMap.Key.html" title="class in io.servicetalk.concurrent.api">AsyncContextMap.Key</a>&lt;?&gt;,&#8203;java.lang.Object&gt;&nbsp;consumer)</pre>
-<div class="block">Convenience method to iterate over the key/value pairs contained in the current context.</div>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="#forEachEntry(java.util.function.BiPredicate)"><code>forEachEntry(BiPredicate)</code></a></div>
+</div>
+<div class="block">Convenience method to iterate over the entries contained in the current context.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
-<dd><code>consumer</code> - Each key/value pair will be passed as arguments to this <code>BiPredicate</code>. Returns <code>true</code>
- if the consumer wants to keep iterating or <code>false</code> to stop iteration at the current key/value pair.</dd>
+<dd><code>consumer</code> - Each entry will be passed as key and value arguments to this <code>BiPredicate</code>. A consumer
+ predicate should return <code>true</code> if it wants to keep iterating or <code>false</code> to stop iteration at the
+ current entry.</dd>
 <dt><span class="returnLabel">Returns:</span></dt>
-<dd><code>null</code> if <code>consumer</code> iterated through all key/value pairs or the <a href="AsyncContextMap.Key.html" title="class in io.servicetalk.concurrent.api"><code>AsyncContextMap.Key</code></a>
- at which the iteration stopped.</dd>
+<dd><code>null</code> if <code>consumer</code> iterated through all entries or the <a href="AsyncContextMap.Key.html" title="class in io.servicetalk.concurrent.api"><code>AsyncContextMap.Key</code></a> at which
+ the iteration stopped.</dd>
 <dt><span class="throwsLabel">Throws:</span></dt>
 <dd><code>java.lang.NullPointerException</code> - if <code>consumer</code> is null.</dd>
 <dt><span class="seeLabel">See Also:</span></dt>
 <dd><a href="AsyncContextMap.html#forEach(java.util.function.BiPredicate)"><code>AsyncContextMap.forEach(BiPredicate)</code></a></dd>
+</dl>
+</li>
+</ul>
+<a id="forEachEntry(java.util.function.BiPredicate)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>forEachEntry</h4>
+<pre class="methodSignature">@Nullable
+public static&nbsp;<a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;?&gt;&nbsp;forEachEntry&#8203;(java.util.function.BiPredicate&lt;<a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;?&gt;,&#8203;java.lang.Object&gt;&nbsp;consumer)</pre>
+<div class="block">Convenience method to iterate over the entries contained in the current context.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>consumer</code> - Each entry will be passed as key and value arguments to this <code>BiPredicate</code>. A consumer
+ predicate should return <code>true</code> if it wants to keep iterating or <code>false</code> to stop iteration at the
+ current entry.</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd><code>null</code> if <code>consumer</code> iterated through all entries or the <a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api"><code>ContextMap.Key</code></a> at which the
+ iteration stopped.</dd>
+<dt><span class="throwsLabel">Throws:</span></dt>
+<dd><code>java.lang.NullPointerException</code> - if <code>consumer</code> is null.</dd>
+<dt><span class="seeLabel">See Also:</span></dt>
+<dd><a href="../../context/api/ContextMap.html#forEach(java.util.function.BiPredicate)"><code>ContextMap.forEach(BiPredicate)</code></a></dd>
 </dl>
 </li>
 </ul>
@@ -615,6 +1206,24 @@ public static&nbsp;<a href="AsyncContextMap.Key.html" title="class in io.service
 <dd><code>runnable</code> - The runnable to wrap.</dd>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd>The wrapped <code>Runnable</code>.</dd>
+</dl>
+</li>
+</ul>
+<a id="wrapCallable(java.util.concurrent.Callable)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>wrapCallable</h4>
+<pre class="methodSignature">public static&nbsp;&lt;V&gt;&nbsp;java.util.concurrent.Callable&lt;V&gt;&nbsp;wrapCallable&#8203;(java.util.concurrent.Callable&lt;V&gt;&nbsp;callable)</pre>
+<div class="block">Wrap a <code>Callable</code> to ensure it is able to track <a href="AsyncContext.html" title="class in io.servicetalk.concurrent.api"><code>AsyncContext</code></a> correctly.</div>
+<dl>
+<dt><span class="paramLabel">Type Parameters:</span></dt>
+<dd><code>V</code> - The type of data returned by <code>callable</code>.</dd>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>callable</code> - The callable to wrap.</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd>The wrapped <code>Callable</code>.</dd>
 </dl>
 </li>
 </ul>

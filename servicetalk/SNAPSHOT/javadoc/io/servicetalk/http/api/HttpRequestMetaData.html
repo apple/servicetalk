@@ -26,7 +26,7 @@
     catch(err) {
     }
 //-->
-var data = {"i0":18,"i1":18,"i2":18,"i3":18,"i4":6,"i5":6,"i6":6,"i7":18,"i8":18,"i9":6,"i10":6,"i11":18,"i12":6,"i13":6,"i14":6,"i15":6,"i16":6,"i17":6,"i18":6,"i19":6,"i20":6,"i21":6,"i22":6,"i23":6,"i24":6,"i25":6,"i26":6,"i27":6,"i28":6,"i29":6,"i30":6,"i31":6,"i32":6,"i33":6,"i34":6,"i35":6,"i36":6,"i37":6,"i38":18,"i39":18,"i40":6,"i41":6,"i42":6,"i43":6,"i44":6};
+var data = {"i0":18,"i1":18,"i2":18,"i3":18,"i4":6,"i5":6,"i6":6,"i7":18,"i8":18,"i9":6,"i10":18,"i11":6,"i12":18,"i13":6,"i14":6,"i15":6,"i16":6,"i17":6,"i18":6,"i19":6,"i20":6,"i21":6,"i22":6,"i23":6,"i24":6,"i25":6,"i26":6,"i27":6,"i28":6,"i29":6,"i30":6,"i31":6,"i32":6,"i33":6,"i34":6,"i35":6,"i36":6,"i37":6,"i38":6,"i39":18,"i40":18,"i41":6,"i42":6,"i43":6,"i44":6,"i45":6};
 var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"],16:["t5","Default Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
@@ -123,7 +123,7 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <li class="blockList">
 <dl>
 <dt>All Superinterfaces:</dt>
-<dd><code><a href="HttpMetaData.html" title="interface in io.servicetalk.http.api">HttpMetaData</a></code></dd>
+<dd><code><a href="../../context/api/ContextMapHolder.html" title="interface in io.servicetalk.context.api">ContextMapHolder</a></code>, <code><a href="HttpMetaData.html" title="interface in io.servicetalk.http.api">HttpMetaData</a></code></dd>
 </dl>
 <dl>
 <dt>All Known Subinterfaces:</dt>
@@ -235,6 +235,13 @@ extends <a href="HttpMetaData.html" title="interface in io.servicetalk.http.api"
 </td>
 </tr>
 <tr id="i10" class="altColor">
+<td class="colFirst"><code>default <a href="HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a></code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#context(io.servicetalk.context.api.ContextMap)">context</a></span>&#8203;(<a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api">ContextMap</a>&nbsp;context)</code></th>
+<td class="colLast">
+<div class="block">Sets a context for this <a href="HttpMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpMetaData</code></a>.</div>
+</td>
+</tr>
+<tr id="i11" class="rowColor">
 <td class="colFirst"><code><a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#effectiveHostAndPort()">effectiveHostAndPort</a></span>()</code></th>
 <td class="colLast">
@@ -243,14 +250,14 @@ extends <a href="HttpMetaData.html" title="interface in io.servicetalk.http.api"
  of the <a href="https://tools.ietf.org/html/rfc7230#section-5.5">effective request URI</a>.</div>
 </td>
 </tr>
-<tr id="i11" class="rowColor">
+<tr id="i12" class="altColor">
 <td class="colFirst"><code>default boolean</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#hasQueryParameter(java.lang.String)">hasQueryParameter</a></span>&#8203;(java.lang.String&nbsp;key)</code></th>
 <td class="colLast">
 <div class="block">Returns <code>true</code> if a query parameter with the <code>key</code> exists, <code>false</code> otherwise.</div>
 </td>
 </tr>
-<tr id="i12" class="altColor">
+<tr id="i13" class="rowColor">
 <td class="colFirst"><code>boolean</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#hasQueryParameter(java.lang.String,java.lang.String)">hasQueryParameter</a></span>&#8203;(java.lang.String&nbsp;key,
                  java.lang.String&nbsp;value)</code></th>
@@ -258,7 +265,7 @@ extends <a href="HttpMetaData.html" title="interface in io.servicetalk.http.api"
 <div class="block">Returns <code>true</code> if a query parameter with the <code>key</code> and <code>value</code> exists, <code>false</code> otherwise.</div>
 </td>
 </tr>
-<tr id="i13" class="rowColor">
+<tr id="i14" class="altColor">
 <td class="colFirst"><code>java.lang.String</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#host()">host</a></span>()</code></th>
 <td class="colLast">
@@ -266,21 +273,21 @@ extends <a href="HttpMetaData.html" title="interface in io.servicetalk.http.api"
  from <a href="#requestTarget()"><code>requestTarget()</code></a>.</div>
 </td>
 </tr>
-<tr id="i14" class="altColor">
+<tr id="i15" class="rowColor">
 <td class="colFirst"><code><a href="HttpRequestMethod.html" title="class in io.servicetalk.http.api">HttpRequestMethod</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#method()">method</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Returns the <a href="HttpRequestMethod.html" title="class in io.servicetalk.http.api"><code>HttpRequestMethod</code></a> of this <a href="StreamingHttpRequest.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpRequest</code></a>.</div>
 </td>
 </tr>
-<tr id="i15" class="rowColor">
+<tr id="i16" class="altColor">
 <td class="colFirst"><code><a href="HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#method(io.servicetalk.http.api.HttpRequestMethod)">method</a></span>&#8203;(<a href="HttpRequestMethod.html" title="class in io.servicetalk.http.api">HttpRequestMethod</a>&nbsp;method)</code></th>
 <td class="colLast">
 <div class="block">Set the <a href="HttpRequestMethod.html" title="class in io.servicetalk.http.api"><code>HttpRequestMethod</code></a> of this <a href="StreamingHttpRequest.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpRequest</code></a>.</div>
 </td>
 </tr>
-<tr id="i16" class="altColor">
+<tr id="i17" class="rowColor">
 <td class="colFirst"><code>java.lang.String</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#path()">path</a></span>()</code></th>
 <td class="colLast">
@@ -288,7 +295,7 @@ extends <a href="HttpMetaData.html" title="interface in io.servicetalk.http.api"
  to <a href="https://tools.ietf.org/html/rfc3986#section-2.1">percent-encoding</a>.</div>
 </td>
 </tr>
-<tr id="i17" class="rowColor">
+<tr id="i18" class="altColor">
 <td class="colFirst"><code><a href="HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#path(java.lang.String)">path</a></span>&#8203;(java.lang.String&nbsp;path)</code></th>
 <td class="colLast">
@@ -297,7 +304,7 @@ extends <a href="HttpMetaData.html" title="interface in io.servicetalk.http.api"
  (<code>'/'</code>) characters.</div>
 </td>
 </tr>
-<tr id="i18" class="altColor">
+<tr id="i19" class="rowColor">
 <td class="colFirst"><code>int</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#port()">port</a></span>()</code></th>
 <td class="colLast">
@@ -305,7 +312,7 @@ extends <a href="HttpMetaData.html" title="interface in io.servicetalk.http.api"
  from <a href="#requestTarget()"><code>requestTarget()</code></a>.</div>
 </td>
 </tr>
-<tr id="i19" class="rowColor">
+<tr id="i20" class="altColor">
 <td class="colFirst"><code>java.lang.String</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#query()">query</a></span>()</code></th>
 <td class="colLast">
@@ -313,7 +320,7 @@ extends <a href="HttpMetaData.html" title="interface in io.servicetalk.http.api"
  to <a href="https://tools.ietf.org/html/rfc3986#section-3.4">rfc3986, Query</a>.</div>
 </td>
 </tr>
-<tr id="i20" class="altColor">
+<tr id="i21" class="rowColor">
 <td class="colFirst"><code><a href="HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#query(java.lang.String)">query</a></span>&#8203;(java.lang.String&nbsp;query)</code></th>
 <td class="colLast">
@@ -321,49 +328,49 @@ extends <a href="HttpMetaData.html" title="interface in io.servicetalk.http.api"
  to <a href="https://tools.ietf.org/html/rfc3986#section-3.4">rfc3986, Query</a>.</div>
 </td>
 </tr>
-<tr id="i21" class="rowColor">
+<tr id="i22" class="altColor">
 <td class="colFirst"><code>java.lang.String</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#queryParameter(java.lang.String)">queryParameter</a></span>&#8203;(java.lang.String&nbsp;key)</code></th>
 <td class="colLast">
 <div class="block">Returns the value of a query parameter with the specified key.</div>
 </td>
 </tr>
-<tr id="i22" class="altColor">
+<tr id="i23" class="rowColor">
 <td class="colFirst"><code>java.lang.Iterable&lt;java.util.Map.Entry&lt;java.lang.String,&#8203;java.lang.String&gt;&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#queryParameters()">queryParameters</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Returns all query parameters as key/value pairs.</div>
 </td>
 </tr>
-<tr id="i23" class="rowColor">
+<tr id="i24" class="altColor">
 <td class="colFirst"><code>java.lang.Iterable&lt;java.lang.String&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#queryParameters(java.lang.String)">queryParameters</a></span>&#8203;(java.lang.String&nbsp;key)</code></th>
 <td class="colLast">
 <div class="block">Returns all values for the query parameter with the specified key.</div>
 </td>
 </tr>
-<tr id="i24" class="altColor">
+<tr id="i25" class="rowColor">
 <td class="colFirst"><code>java.util.Iterator&lt;java.lang.String&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#queryParametersIterator(java.lang.String)">queryParametersIterator</a></span>&#8203;(java.lang.String&nbsp;key)</code></th>
 <td class="colLast">
 <div class="block">Returns all values for the query parameter with the specified key.</div>
 </td>
 </tr>
-<tr id="i25" class="rowColor">
+<tr id="i26" class="altColor">
 <td class="colFirst"><code>java.util.Set&lt;java.lang.String&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#queryParametersKeys()">queryParametersKeys</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Returns a <code>Set</code> of all query parameter keys.</div>
 </td>
 </tr>
-<tr id="i26" class="altColor">
+<tr id="i27" class="rowColor">
 <td class="colFirst"><code>int</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#queryParametersSize()">queryParametersSize</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Returns the number of query parameters.</div>
 </td>
 </tr>
-<tr id="i27" class="rowColor">
+<tr id="i28" class="altColor">
 <td class="colFirst"><code>java.lang.String</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#rawPath()">rawPath</a></span>()</code></th>
 <td class="colLast">
@@ -371,14 +378,14 @@ extends <a href="HttpMetaData.html" title="interface in io.servicetalk.http.api"
  from <a href="#requestTarget()"><code>requestTarget()</code></a>.</div>
 </td>
 </tr>
-<tr id="i28" class="altColor">
+<tr id="i29" class="rowColor">
 <td class="colFirst"><code><a href="HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#rawPath(java.lang.String)">rawPath</a></span>&#8203;(java.lang.String&nbsp;path)</code></th>
 <td class="colLast">
 <div class="block">Sets the path to <code>path</code>, without any encoding performed.</div>
 </td>
 </tr>
-<tr id="i29" class="rowColor">
+<tr id="i30" class="altColor">
 <td class="colFirst"><code>java.lang.String</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#rawQuery()">rawQuery</a></span>()</code></th>
 <td class="colLast">
@@ -386,7 +393,7 @@ extends <a href="HttpMetaData.html" title="interface in io.servicetalk.http.api"
  from <a href="#requestTarget()"><code>requestTarget()</code></a>.</div>
 </td>
 </tr>
-<tr id="i30" class="altColor">
+<tr id="i31" class="rowColor">
 <td class="colFirst"><code><a href="HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#rawQuery(java.lang.String)">rawQuery</a></span>&#8203;(java.lang.String&nbsp;query)</code></th>
 <td class="colLast">
@@ -394,14 +401,14 @@ extends <a href="HttpMetaData.html" title="interface in io.servicetalk.http.api"
  any encoding performed.</div>
 </td>
 </tr>
-<tr id="i31" class="rowColor">
+<tr id="i32" class="altColor">
 <td class="colFirst"><code>boolean</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#removeQueryParameters(java.lang.String)">removeQueryParameters</a></span>&#8203;(java.lang.String&nbsp;key)</code></th>
 <td class="colLast">
 <div class="block">Removes all query parameters with the specified <code>key</code>.</div>
 </td>
 </tr>
-<tr id="i32" class="altColor">
+<tr id="i33" class="rowColor">
 <td class="colFirst"><code>boolean</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#removeQueryParameters(java.lang.String,java.lang.String)">removeQueryParameters</a></span>&#8203;(java.lang.String&nbsp;key,
                      java.lang.String&nbsp;value)</code></th>
@@ -409,21 +416,21 @@ extends <a href="HttpMetaData.html" title="interface in io.servicetalk.http.api"
 <div class="block">Removes all query parameters with the specified <code>key</code> and <code>value</code>.</div>
 </td>
 </tr>
-<tr id="i33" class="rowColor">
+<tr id="i34" class="altColor">
 <td class="colFirst"><code>java.lang.String</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#requestTarget()">requestTarget</a></span>()</code></th>
 <td class="colLast">
 <div class="block">The <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a>.</div>
 </td>
 </tr>
-<tr id="i34" class="altColor">
+<tr id="i35" class="rowColor">
 <td class="colFirst"><code><a href="HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#requestTarget(java.lang.String)">requestTarget</a></span>&#8203;(java.lang.String&nbsp;requestTarget)</code></th>
 <td class="colLast">
 <div class="block">Set the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a>.</div>
 </td>
 </tr>
-<tr id="i35" class="rowColor">
+<tr id="i36" class="altColor">
 <td class="colFirst"><code><a href="HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#requestTarget(java.lang.String,java.nio.charset.Charset)">requestTarget</a></span>&#8203;(java.lang.String&nbsp;requestTarget,
              java.nio.charset.Charset&nbsp;encoding)</code></th>
@@ -431,14 +438,14 @@ extends <a href="HttpMetaData.html" title="interface in io.servicetalk.http.api"
 <div class="block">Set the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a>.</div>
 </td>
 </tr>
-<tr id="i36" class="altColor">
+<tr id="i37" class="rowColor">
 <td class="colFirst"><code>java.lang.String</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#requestTarget(java.nio.charset.Charset)">requestTarget</a></span>&#8203;(java.nio.charset.Charset&nbsp;encoding)</code></th>
 <td class="colLast">
 <div class="block">The <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a>.</div>
 </td>
 </tr>
-<tr id="i37" class="rowColor">
+<tr id="i38" class="altColor">
 <td class="colFirst"><code>java.lang.String</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#scheme()">scheme</a></span>()</code></th>
 <td class="colLast">
@@ -446,7 +453,7 @@ extends <a href="HttpMetaData.html" title="interface in io.servicetalk.http.api"
  from <a href="#requestTarget()"><code>requestTarget()</code></a> in lower case.</div>
 </td>
 </tr>
-<tr id="i38" class="altColor">
+<tr id="i39" class="rowColor">
 <td class="colFirst"><code>default <a href="HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setHeader(java.lang.CharSequence,java.lang.CharSequence)">setHeader</a></span>&#8203;(java.lang.CharSequence&nbsp;name,
          java.lang.CharSequence&nbsp;value)</code></th>
@@ -454,14 +461,14 @@ extends <a href="HttpMetaData.html" title="interface in io.servicetalk.http.api"
 <div class="block">Sets a header with the specified <code>name</code> and <code>value</code>.</div>
 </td>
 </tr>
-<tr id="i39" class="rowColor">
+<tr id="i40" class="altColor">
 <td class="colFirst"><code>default <a href="HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setHeaders(io.servicetalk.http.api.HttpHeaders)">setHeaders</a></span>&#8203;(<a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a>&nbsp;headers)</code></th>
 <td class="colLast">
 <div class="block">Clears the current header entries and copies all header entries of the specified <code>headers</code> object.</div>
 </td>
 </tr>
-<tr id="i40" class="altColor">
+<tr id="i41" class="rowColor">
 <td class="colFirst"><code><a href="HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setQueryParameter(java.lang.String,java.lang.String)">setQueryParameter</a></span>&#8203;(java.lang.String&nbsp;key,
                  java.lang.String&nbsp;value)</code></th>
@@ -470,7 +477,7 @@ extends <a href="HttpMetaData.html" title="interface in io.servicetalk.http.api"
  <a href="https://tools.ietf.org/html/rfc3986#section-2.1">percent-encoded</a> if needed.</div>
 </td>
 </tr>
-<tr id="i41" class="rowColor">
+<tr id="i42" class="altColor">
 <td class="colFirst"><code><a href="HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setQueryParameters(java.lang.String,java.lang.Iterable)">setQueryParameters</a></span>&#8203;(java.lang.String&nbsp;key,
                   java.lang.Iterable&lt;java.lang.String&gt;&nbsp;values)</code></th>
@@ -478,7 +485,7 @@ extends <a href="HttpMetaData.html" title="interface in io.servicetalk.http.api"
 <div class="block">Sets new query parameters with the specified <code>key</code> and <code>values</code>.</div>
 </td>
 </tr>
-<tr id="i42" class="altColor">
+<tr id="i43" class="rowColor">
 <td class="colFirst"><code><a href="HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setQueryParameters(java.lang.String,java.lang.String...)">setQueryParameters</a></span>&#8203;(java.lang.String&nbsp;key,
                   java.lang.String...&nbsp;values)</code></th>
@@ -486,7 +493,7 @@ extends <a href="HttpMetaData.html" title="interface in io.servicetalk.http.api"
 <div class="block">Sets new query parameters with the specified <code>key</code> and <code>values</code>.</div>
 </td>
 </tr>
-<tr id="i43" class="rowColor">
+<tr id="i44" class="altColor">
 <td class="colFirst"><code>java.lang.String</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#userInfo()">userInfo</a></span>()</code></th>
 <td class="colLast">
@@ -494,7 +501,7 @@ extends <a href="HttpMetaData.html" title="interface in io.servicetalk.http.api"
  from <a href="#requestTarget()"><code>requestTarget()</code></a>.</div>
 </td>
 </tr>
-<tr id="i44" class="altColor">
+<tr id="i45" class="rowColor">
 <td class="colFirst"><code><a href="HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#version(io.servicetalk.http.api.HttpProtocolVersion)">version</a></span>&#8203;(<a href="HttpProtocolVersion.html" title="class in io.servicetalk.http.api">HttpProtocolVersion</a>&nbsp;version)</code></th>
 <td class="colLast">
@@ -507,7 +514,7 @@ extends <a href="HttpMetaData.html" title="interface in io.servicetalk.http.api"
 <!--   -->
 </a>
 <h3>Methods inherited from interface&nbsp;io.servicetalk.http.api.<a href="HttpMetaData.html" title="interface in io.servicetalk.http.api">HttpMetaData</a></h3>
-<code><a href="HttpMetaData.html#encoding()">encoding</a>, <a href="HttpMetaData.html#encoding(io.servicetalk.encoding.api.ContentCodec)">encoding</a>, <a href="HttpMetaData.html#headers()">headers</a>, <a href="HttpMetaData.html#toString()">toString</a>, <a href="HttpMetaData.html#toString(java.util.function.BiFunction)">toString</a>, <a href="HttpMetaData.html#version()">version</a></code></li>
+<code><a href="HttpMetaData.html#context()">context</a>, <a href="HttpMetaData.html#encoding()">encoding</a>, <a href="HttpMetaData.html#encoding(io.servicetalk.encoding.api.ContentCodec)">encoding</a>, <a href="HttpMetaData.html#headers()">headers</a>, <a href="HttpMetaData.html#toString()">toString</a>, <a href="HttpMetaData.html#toString(java.util.function.BiFunction)">toString</a>, <a href="HttpMetaData.html#version()">version</a></code></li>
 </ul>
 </li>
 </ul>
@@ -1372,7 +1379,7 @@ java.lang.String&nbsp;queryParameter&#8203;(java.lang.String&nbsp;key)</pre>
 <a id="addSetCookie(java.lang.CharSequence,java.lang.CharSequence)">
 <!--   -->
 </a>
-<ul class="blockListLast">
+<ul class="blockList">
 <li class="blockList">
 <h4>addSetCookie</h4>
 <pre class="methodSignature">default&nbsp;<a href="HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a>&nbsp;addSetCookie&#8203;(java.lang.CharSequence&nbsp;name,
@@ -1389,6 +1396,30 @@ java.lang.String&nbsp;queryParameter&#8203;(java.lang.String&nbsp;key)</pre>
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>name</code> - the name of the cookie.</dd>
 <dd><code>value</code> - the value of the cookie.</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd><code>this</code>.</dd>
+</dl>
+</li>
+</ul>
+<a id="context(io.servicetalk.context.api.ContextMap)">
+<!--   -->
+</a>
+<ul class="blockListLast">
+<li class="blockList">
+<h4>context</h4>
+<pre class="methodSignature">default&nbsp;<a href="HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a>&nbsp;context&#8203;(<a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api">ContextMap</a>&nbsp;context)</pre>
+<div class="block"><span class="descfrmTypeLabel">Description copied from interface:&nbsp;<code><a href="HttpMetaData.html#context(io.servicetalk.context.api.ContextMap)">HttpMetaData</a></code></span></div>
+<div class="block">Sets a context for this <a href="HttpMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpMetaData</code></a>.
+ <p>
+ Context can be used to associate a state with a request or response message without serializing its state on the
+ wire.</div>
+<dl>
+<dt><span class="overrideSpecifyLabel">Specified by:</span></dt>
+<dd><code><a href="../../context/api/ContextMapHolder.html#context(io.servicetalk.context.api.ContextMap)">context</a></code>&nbsp;in interface&nbsp;<code><a href="../../context/api/ContextMapHolder.html" title="interface in io.servicetalk.context.api">ContextMapHolder</a></code></dd>
+<dt><span class="overrideSpecifyLabel">Specified by:</span></dt>
+<dd><code><a href="HttpMetaData.html#context(io.servicetalk.context.api.ContextMap)">context</a></code>&nbsp;in interface&nbsp;<code><a href="HttpMetaData.html" title="interface in io.servicetalk.http.api">HttpMetaData</a></code></dd>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>context</code> - the new context for this <a href="HttpMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpMetaData</code></a>.</dd>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd><code>this</code>.</dd>
 </dl>

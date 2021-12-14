@@ -26,7 +26,7 @@
     catch(err) {
     }
 //-->
-var data = {"i0":10,"i1":10,"i2":10,"i3":10,"i4":10};
+var data = {"i0":10,"i1":10,"i2":10,"i3":10,"i4":10,"i5":10};
 var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],8:["t4","Concrete Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
@@ -194,26 +194,33 @@ implements <a href="../../api/ConnectionObserver.ReadObserver.html" title="inter
 </tr>
 <tr id="i1" class="rowColor">
 <td class="colFirst"><code>void</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#itemRead(java.lang.Object)">itemRead</a></span>&#8203;(java.lang.Object&nbsp;item)</code></th>
+<td class="colLast">
+<div class="block">Invokes when a new item is read.</div>
+</td>
+</tr>
+<tr id="i2" class="altColor">
+<td class="colFirst"><code>void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#readCancelled()">readCancelled</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Callback when the read operation is cancelled.</div>
 </td>
 </tr>
-<tr id="i2" class="altColor">
+<tr id="i3" class="rowColor">
 <td class="colFirst"><code>void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#readComplete()">readComplete</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Callback when the entire read operation completes successfully.</div>
 </td>
 </tr>
-<tr id="i3" class="rowColor">
+<tr id="i4" class="altColor">
 <td class="colFirst"><code>void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#readFailed(java.lang.Throwable)">readFailed</a></span>&#8203;(java.lang.Throwable&nbsp;cause)</code></th>
 <td class="colLast">
 <div class="block">Callback when the read operation fails with an <code>error</code>.</div>
 </td>
 </tr>
-<tr id="i4" class="altColor">
+<tr id="i5" class="rowColor">
 <td class="colFirst"><code>void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#requestedToRead(long)">requestedToRead</a></span>&#8203;(long&nbsp;n)</code></th>
 <td class="colLast">
@@ -294,6 +301,24 @@ implements <a href="../../api/ConnectionObserver.ReadObserver.html" title="inter
 <dl>
 <dt><span class="overrideSpecifyLabel">Specified by:</span></dt>
 <dd><code><a href="../../api/ConnectionObserver.ReadObserver.html#itemRead()">itemRead</a></code>&nbsp;in interface&nbsp;<code><a href="../../api/ConnectionObserver.ReadObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.ReadObserver</a></code></dd>
+</dl>
+</li>
+</ul>
+<a id="itemRead(java.lang.Object)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>itemRead</h4>
+<pre class="methodSignature">public&nbsp;void&nbsp;itemRead&#8203;(@Nullable
+                     java.lang.Object&nbsp;item)</pre>
+<div class="block"><span class="descfrmTypeLabel">Description copied from interface:&nbsp;<code><a href="../../api/ConnectionObserver.ReadObserver.html#itemRead(java.lang.Object)">ConnectionObserver.ReadObserver</a></code></span></div>
+<div class="block">Invokes when a new item is read.</div>
+<dl>
+<dt><span class="overrideSpecifyLabel">Specified by:</span></dt>
+<dd><code><a href="../../api/ConnectionObserver.ReadObserver.html#itemRead(java.lang.Object)">itemRead</a></code>&nbsp;in interface&nbsp;<code><a href="../../api/ConnectionObserver.ReadObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.ReadObserver</a></code></dd>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>item</code> - an item that was read</dd>
 </dl>
 </li>
 </ul>

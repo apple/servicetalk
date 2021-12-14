@@ -98,8 +98,10 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <li><a href="#interface">Interfaces</a></li>
 <li><a href="#class">Classes</a></li>
 <li><a href="#enum">Enums</a></li>
+<li><a href="#exception">Exceptions</a></li>
 <li><a href="#field">Fields</a></li>
 <li><a href="#method">Methods</a></li>
+<li><a href="#constructor">Constructors</a></li>
 </ul>
 </div>
 <div class="contentContainer"><a id="interface">
@@ -115,6 +117,32 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </tr>
 <tbody>
 <tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/client/api/AutoRetryStrategyProvider.html" title="interface in io.servicetalk.client.api">io.servicetalk.client.api.AutoRetryStrategyProvider</a></th>
+<td class="colLast">
+<div class="deprecationComment">The capabilities of the auto-retry have been introduced under a new universal retrying filter,
+ available from <code>io.servicetalk.http.netty.RetryingHttpRequesterFilter</code>.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/client/api/internal/ServiceDiscovererUtils.TwoIntsConsumer.html" title="interface in io.servicetalk.client.api.internal">io.servicetalk.client.api.internal.ServiceDiscovererUtils.TwoIntsConsumer</a></th>
+<td class="colLast">
+<div class="deprecationComment">This interface is defined by an internal class and will be removed in a future release. If you depend
+ on it, consider replicating it.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/concurrent/api/AsyncContextMap.html" title="interface in io.servicetalk.concurrent.api">io.servicetalk.concurrent.api.AsyncContextMap</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/context/api/ContextMap.html" title="interface in io.servicetalk.context.api"><code>ContextMap</code></a>.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/concurrent/api/AsyncContextMapHolder.html" title="interface in io.servicetalk.concurrent.api">io.servicetalk.concurrent.api.AsyncContextMapHolder</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/context/api/ContextMapHolder.html" title="interface in io.servicetalk.context.api"><code>ContextMapHolder</code></a>.</div>
+</td>
+</tr>
+<tr class="altColor">
 <th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/encoding/api/ContentCodecBuilder.html" title="interface in io.servicetalk.encoding.api">io.servicetalk.encoding.api.ContentCodecBuilder</a></th>
 <td class="colLast">
 <div class="deprecationComment">encoding-api based solution is being replaced with a netty implementation available under
@@ -122,15 +150,58 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </td>
 </tr>
 <tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/FilterableGrpcClient.html" title="interface in io.servicetalk.grpc.api">io.servicetalk.grpc.api.FilterableGrpcClient</a></th>
+<td class="colLast">
+<div class="deprecationComment">gRPC Client Filters will be removed in future release of ServiceTalk. We encourage the use of
+ <a href="io/servicetalk/http/api/StreamingHttpClientFilterFactory.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpClientFilterFactory</code></a> and if the access to the decoded payload is
+ necessary, then performing that logic can be done in the particular <a href="io/servicetalk/grpc/api/GrpcClient.html" title="interface in io.servicetalk.grpc.api"><code>client implementation</code></a>.
+ Please use <a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html#appendClientFilter(io.servicetalk.http.api.StreamingHttpClientFilterFactory)"><code>SingleAddressHttpClientBuilder.appendClientFilter(
+ io.servicetalk.http.api.StreamingHttpClientFilterFactory)</code></a> upon the <code>builder</code> obtained using
+ <a href="io/servicetalk/grpc/api/GrpcClientBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcClientBuilder.HttpInitializer)"><code>GrpcClientBuilder.initializeHttp(GrpcClientBuilder.HttpInitializer)</code></a>
+ if HTTP filters are acceptable in your use case.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcClientBuilder.MultiClientBuilder.html" title="interface in io.servicetalk.grpc.api">io.servicetalk.grpc.api.GrpcClientBuilder.MultiClientBuilder</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/grpc/api/GrpcClientFactory.html#newClient(io.servicetalk.grpc.api.GrpcClientCallFactory)"><code>GrpcClientFactory.newClient(GrpcClientCallFactory)</code></a>
+ or <a href="io/servicetalk/grpc/api/GrpcClientFactory.html#newBlockingClient(io.servicetalk.grpc.api.GrpcClientCallFactory)"><code>GrpcClientFactory.newBlockingClient(GrpcClientCallFactory)</code></a>
+ and provide a custom <a href="io/servicetalk/grpc/api/GrpcClientCallFactory.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClientCallFactory</code></a> instead.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcClientFilterFactory.html" title="interface in io.servicetalk.grpc.api">io.servicetalk.grpc.api.GrpcClientFilterFactory</a></th>
+<td class="colLast">
+<div class="deprecationComment">gRPC Client Filters will be removed in future release of ServiceTalk. We encourage the use of
+ <a href="io/servicetalk/http/api/StreamingHttpClientFilterFactory.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpClientFilterFactory</code></a> and if the access to the decoded payload is
+ necessary, then performing that logic can be done in the particular <a href="io/servicetalk/grpc/api/GrpcClient.html" title="interface in io.servicetalk.grpc.api"><code>client implementation</code></a>.
+ Please use <a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html#appendClientFilter(io.servicetalk.http.api.StreamingHttpClientFilterFactory)"><code>SingleAddressHttpClientBuilder.appendClientFilter(
+ io.servicetalk.http.api.StreamingHttpClientFilterFactory)</code></a> upon the <code>builder</code> obtained using
+ <a href="io/servicetalk/grpc/api/GrpcClientBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcClientBuilder.HttpInitializer)"><code>GrpcClientBuilder.initializeHttp(GrpcClientBuilder.HttpInitializer)</code></a>
+ if HTTP filters are acceptable in your use case.</div>
+</td>
+</tr>
+<tr class="altColor">
 <th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcClientSecurityConfigurator.html" title="interface in io.servicetalk.grpc.api">io.servicetalk.grpc.api.GrpcClientSecurityConfigurator</a></th>
 <td class="colLast">
 <div class="deprecationComment">Use <a href="io/servicetalk/grpc/api/GrpcClientBuilder.html#sslConfig(io.servicetalk.transport.api.ClientSslConfig)"><code>GrpcClientBuilder.sslConfig(ClientSslConfig)</code></a>.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcServerSecurityConfigurator.html" title="interface in io.servicetalk.grpc.api">io.servicetalk.grpc.api.GrpcServerSecurityConfigurator</a></th>
 <td class="colLast">
 <div class="deprecationComment">Use <a href="io/servicetalk/grpc/api/GrpcServerBuilder.html#sslConfig(io.servicetalk.transport.api.ServerSslConfig)"><code>GrpcServerBuilder.sslConfig(ServerSslConfig)</code></a>.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcServiceFilterFactory.html" title="interface in io.servicetalk.grpc.api">io.servicetalk.grpc.api.GrpcServiceFilterFactory</a></th>
+<td class="colLast">
+<div class="deprecationComment">gRPC Service Filters will be removed in future release of ServiceTalk. We encourage the use of
+ <a href="io/servicetalk/http/api/StreamingHttpServiceFilterFactory.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpServiceFilterFactory</code></a> and if the access to the decoded payload is necessary, then performing
+ that logic can be done in the particular <a href="io/servicetalk/grpc/api/GrpcService.html" title="interface in io.servicetalk.grpc.api"><code>service implementation</code></a>.
+ Please use <a href="io/servicetalk/http/api/HttpServerBuilder.html#appendServiceFilter(io.servicetalk.http.api.StreamingHttpServiceFilterFactory)"><code>HttpServerBuilder.appendServiceFilter(StreamingHttpServiceFilterFactory)</code></a>
+ upon the <code>builder</code> obtained using <a href="io/servicetalk/grpc/api/GrpcServerBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>GrpcServerBuilder.initializeHttp(GrpcServerBuilder.HttpInitializer)</code></a>
+ if HTTP filters are acceptable in your use case.</div>
 </td>
 </tr>
 <tr class="rowColor">
@@ -140,16 +211,36 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </td>
 </tr>
 <tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/api/MultiAddressHttpClientFilterFactory.html" title="interface in io.servicetalk.http.api">io.servicetalk.http.api.MultiAddressHttpClientFilterFactory</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use
+   <a href="io/servicetalk/http/api/MultiAddressHttpClientBuilder.html#initializer(io.servicetalk.http.api.MultiAddressHttpClientBuilder.SingleAddressInitializer)"><code>MultiAddressHttpClientBuilder.initializer(MultiAddressHttpClientBuilder.SingleAddressInitializer)</code></a> and
+   <a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html#appendClientFilter(io.servicetalk.http.api.StreamingHttpClientFilterFactory)"><code>SingleAddressHttpClientBuilder.appendClientFilter(StreamingHttpClientFilterFactory)</code></a> or
+   <a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html#appendClientFilter(java.util.function.Predicate,io.servicetalk.http.api.StreamingHttpClientFilterFactory)"><code>SingleAddressHttpClientBuilder.appendClientFilter(Predicate, StreamingHttpClientFilterFactory)</code></a>
+   on the last argument of
+   <a href="io/servicetalk/http/api/MultiAddressHttpClientBuilder.SingleAddressInitializer.html#initialize(java.lang.String,U,io.servicetalk.http.api.SingleAddressHttpClientBuilder)"><code>MultiAddressHttpClientBuilder.SingleAddressInitializer.initialize(
+   String, Object, SingleAddressHttpClientBuilder)</code></a>.</div>
+</td>
+</tr>
+<tr class="rowColor">
 <th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/api/PartitionedHttpClientSecurityConfigurator.html" title="interface in io.servicetalk.http.api">io.servicetalk.http.api.PartitionedHttpClientSecurityConfigurator</a></th>
 <td class="colLast">
 <div class="deprecationComment">Use
  <a href="io/servicetalk/http/api/PartitionedHttpClientBuilder.html#appendClientBuilderFilter(io.servicetalk.http.api.PartitionHttpClientBuilderConfigurator)"><code>PartitionedHttpClientBuilder.appendClientBuilderFilter(PartitionHttpClientBuilderConfigurator)</code></a>.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/api/PartitionHttpClientBuilderConfigurator.html" title="interface in io.servicetalk.http.api">io.servicetalk.http.api.PartitionHttpClientBuilderConfigurator</a></th>
 <td class="colLast">
 <div class="deprecationComment">Use <a href="io/servicetalk/http/api/PartitionedHttpClientBuilder.SingleAddressInitializer.html" title="interface in io.servicetalk.http.api"><code>PartitionedHttpClientBuilder.SingleAddressInitializer</code></a>.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/api/ServiceDiscoveryRetryStrategy.html" title="interface in io.servicetalk.http.api">io.servicetalk.http.api.ServiceDiscoveryRetryStrategy</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <code>HttpClientBuilder.retryServiceDiscoveryErrors(BiIntFunction)</code>
+ or <code>HttpClientBuilder.retryServiceDiscoveryErrors(BiIntFunction)</code> combined with common utilities
+ from <a href="io/servicetalk/concurrent/api/RetryStrategies.html" title="class in io.servicetalk.concurrent.api"><code>RetryStrategies</code></a> or provide your own <a href="io/servicetalk/concurrent/api/BiIntFunction.html" title="interface in io.servicetalk.concurrent.api"><code>retry strategy</code></a>.</div>
 </td>
 </tr>
 <tr class="altColor">
@@ -159,18 +250,25 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </td>
 </tr>
 <tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/opentracing/inmemory/api/InMemoryTraceState.html" title="interface in io.servicetalk.opentracing.inmemory.api">io.servicetalk.opentracing.inmemory.api.InMemoryTraceState</a></th>
+<td class="colLast">
+<div class="deprecationComment">This class will be removed in a follow up release. Alternative accessors will be available through
+ the <a href="io/servicetalk/opentracing/inmemory/api/InMemorySpanContext.html" title="interface in io.servicetalk.opentracing.inmemory.api"><code>InMemorySpanContext</code></a> API.</div>
+</td>
+</tr>
+<tr class="altColor">
 <th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/transport/api/ClientSecurityConfigurator.html" title="interface in io.servicetalk.transport.api">io.servicetalk.transport.api.ClientSecurityConfigurator</a></th>
 <td class="colLast">
 <div class="deprecationComment">Use <a href="io/servicetalk/transport/api/ClientSslConfigBuilder.html" title="class in io.servicetalk.transport.api"><code>ClientSslConfigBuilder</code></a>.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/transport/api/SecurityConfigurator.html" title="interface in io.servicetalk.transport.api">io.servicetalk.transport.api.SecurityConfigurator</a></th>
 <td class="colLast">
 <div class="deprecationComment">Use <a href="io/servicetalk/transport/api/ServerSslConfigBuilder.html" title="class in io.servicetalk.transport.api"><code>ServerSslConfigBuilder</code></a> or <a href="io/servicetalk/transport/api/ClientSslConfigBuilder.html" title="class in io.servicetalk.transport.api"><code>ClientSslConfigBuilder</code></a>.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/transport/api/ServerSecurityConfigurator.html" title="interface in io.servicetalk.transport.api">io.servicetalk.transport.api.ServerSecurityConfigurator</a></th>
 <td class="colLast">
 <div class="deprecationComment">Use <a href="io/servicetalk/transport/api/ServerSslConfigBuilder.html" title="class in io.servicetalk.transport.api"><code>ServerSslConfigBuilder</code></a>.</div>
@@ -193,6 +291,47 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </tr>
 <tbody>
 <tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/client/api/AbstractRetryingFilterBuilder.html" title="class in io.servicetalk.client.api">io.servicetalk.client.api.AbstractRetryingFilterBuilder</a></th>
+<td class="colLast">
+<div class="deprecationComment">Moving forward ServiceTalk will remove this abstraction. Please rely on the protocol specific filter,
+ like <code>io.servicetalk.http.netty.RetryingHttpRequesterFilter</code>.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/client/api/AbstractRetryingFilterBuilder.ReadOnlyRetryableSettings.html" title="class in io.servicetalk.client.api">io.servicetalk.client.api.AbstractRetryingFilterBuilder.ReadOnlyRetryableSettings</a></th>
+<td class="colLast">
+<div class="deprecationComment">Moving forward ServiceTalk will remove this abstraction. Please rely on the protocol specific
+ filter, like <code>io.servicetalk.http.netty.RetryingHttpRequesterFilter</code></div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/client/api/DefaultAutoRetryStrategyProvider.html" title="class in io.servicetalk.client.api">io.servicetalk.client.api.DefaultAutoRetryStrategyProvider</a></th>
+<td class="colLast">
+<div class="deprecationComment">The capabilities of the auto-retry have been introduced under a new universal retrying filter,
+ available from <code>io.servicetalk.http.netty.RetryingHttpRequesterFilter</code>.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/client/api/DefaultAutoRetryStrategyProvider.Builder.html" title="class in io.servicetalk.client.api">io.servicetalk.client.api.DefaultAutoRetryStrategyProvider.Builder</a></th>
+<td class="colLast">
+<div class="deprecationComment">The capabilities of the auto-retry have been introduced under a new universal retrying filter,
+ available from <code>io.servicetalk.http.netty.RetryingHttpRequesterFilter</code>.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/client/api/internal/ServiceDiscovererUtils.html" title="class in io.servicetalk.client.api.internal">io.servicetalk.client.api.internal.ServiceDiscovererUtils</a></th>
+<td class="colLast">
+<div class="deprecationComment">This is an internal class and will be removed in a future release. If you depend on it, consider
+ replicating its logic.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/concurrent/api/AsyncContextMap.Key.html" title="class in io.servicetalk.concurrent.api">io.servicetalk.concurrent.api.AsyncContextMap.Key</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api"><code>ContextMap.Key</code></a> with <a href="io/servicetalk/context/api/ContextMap.html" title="interface in io.servicetalk.context.api"><code>ContextMap</code></a>.</div>
+</td>
+</tr>
+<tr class="altColor">
 <th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/concurrent/api/LegacyTestCompletable.html" title="class in io.servicetalk.concurrent.api">io.servicetalk.concurrent.api.LegacyTestCompletable</a></th>
 <td class="colLast">
 <div class="deprecationComment">Use <a href="io/servicetalk/concurrent/api/TestCompletable.html" title="class in io.servicetalk.concurrent.api"><code>TestCompletable</code></a> instead.</div>
@@ -205,21 +344,76 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </td>
 </tr>
 <tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/concurrent/api/RunnableCompletable.html" title="class in io.servicetalk.concurrent.api">io.servicetalk.concurrent.api.RunnableCompletable</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/concurrent/api/Completable.html#fromRunnable(java.lang.Runnable)"><code>Completable.fromRunnable(Runnable)</code></a>.</div>
+</td>
+</tr>
+<tr class="rowColor">
 <th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/concurrent/api/test/Verifiers.html" title="class in io.servicetalk.concurrent.api.test">io.servicetalk.concurrent.api.test.Verifiers</a></th>
 <td class="colLast">
 <div class="deprecationComment">Use <a href="io/servicetalk/concurrent/api/test/StepVerifiers.html" title="class in io.servicetalk.concurrent.api.test"><code>StepVerifiers</code></a> instead.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/encoding/api/ContentCodings.html" title="class in io.servicetalk.encoding.api">io.servicetalk.encoding.api.ContentCodings</a></th>
 <td class="colLast">
 <div class="deprecationComment">API replaced by <code>io.servicetalk.encoding.netty.ContentCodings</code></div>
 </td>
 </tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/api/DefaultServiceDiscoveryRetryStrategy.html" title="class in io.servicetalk.http.api">io.servicetalk.http.api.DefaultServiceDiscoveryRetryStrategy</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <code>HttpClientBuilder.retryServiceDiscoveryErrors(BiIntFunction)</code>
+ or <code>HttpClientBuilder.retryServiceDiscoveryErrors(BiIntFunction)</code> combined with common utilities
+ from <a href="io/servicetalk/concurrent/api/RetryStrategies.html" title="class in io.servicetalk.concurrent.api"><code>RetryStrategies</code></a> or provide your own <a href="io/servicetalk/concurrent/api/BiIntFunction.html" title="interface in io.servicetalk.concurrent.api"><code>retry strategy</code></a>.</div>
+</td>
+</tr>
 <tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/api/DefaultServiceDiscoveryRetryStrategy.Builder.html" title="class in io.servicetalk.http.api">io.servicetalk.http.api.DefaultServiceDiscoveryRetryStrategy.Builder</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use standard mechanisms for retrying using <a href="io/servicetalk/concurrent/api/RetryStrategies.html" title="class in io.servicetalk.concurrent.api"><code>RetryStrategies</code></a>
+ combined with <code>HttpClientBuilder.retryServiceDiscoveryErrors(BiIntFunction)</code>.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/utils/RetryingHttpRequesterFilter.html" title="class in io.servicetalk.http.utils">io.servicetalk.http.utils.RetryingHttpRequesterFilter</a></th>
+<td class="colLast">
+<div class="deprecationComment">A replacement retrying http filter is available through
+ <code>io.servicetalk.http.netty.RetryingHttpRequesterFilter</code></div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/utils/RetryingHttpRequesterFilter.Builder.html" title="class in io.servicetalk.http.utils">io.servicetalk.http.utils.RetryingHttpRequesterFilter.Builder</a></th>
+<td class="colLast">
+<div class="deprecationComment">A replacement retrying http filter builder is available through
+ <code>io.servicetalk.http.netty.RetryingHttpRequesterFilterBuilder</code></div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/loadbalancer/RoundRobinLoadBalancer.html" title="class in io.servicetalk.loadbalancer">io.servicetalk.loadbalancer.RoundRobinLoadBalancer</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/loadbalancer/RoundRobinLoadBalancerFactory.html" title="class in io.servicetalk.loadbalancer"><code>RoundRobinLoadBalancerFactory</code></a> to provide instances of this
+ <a href="io/servicetalk/client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>. This class will become package-private in the future.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/loadbalancer/RoundRobinLoadBalancer.RoundRobinLoadBalancerFactory.html" title="class in io.servicetalk.loadbalancer">io.servicetalk.loadbalancer.RoundRobinLoadBalancer.RoundRobinLoadBalancerFactory</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/loadbalancer/RoundRobinLoadBalancerFactory.html" title="class in io.servicetalk.loadbalancer"><code>RoundRobinLoadBalancerFactory</code></a> to build instances
+ of this <a href="io/servicetalk/client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a></div>
+</td>
+</tr>
+<tr class="rowColor">
 <th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/transport/netty/internal/ClientSecurityConfig.html" title="class in io.servicetalk.transport.netty.internal">io.servicetalk.transport.netty.internal.ClientSecurityConfig</a></th>
 <td class="colLast">
 <div class="deprecationComment">Use <a href="io/servicetalk/transport/api/ClientSslConfig.html" title="interface in io.servicetalk.transport.api"><code>ClientSslConfig</code></a>.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/transport/netty/internal/IoThreadFactory.html" title="class in io.servicetalk.transport.netty.internal">io.servicetalk.transport.netty.internal.IoThreadFactory</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/transport/netty/internal/NettyIoThreadFactory.html" title="class in io.servicetalk.transport.netty.internal"><code>NettyIoThreadFactory</code></a>.</div>
 </td>
 </tr>
 <tr class="rowColor">
@@ -272,6 +466,50 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </table>
 </li>
 </ul>
+<a id="exception">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<table class="deprecatedSummary">
+<caption><span>Exceptions</span><span class="tabEnd">&nbsp;</span></caption>
+<tr>
+<th class="colFirst" scope="col">Exceptions</th>
+<th class="colLast" scope="col">Description</th>
+</tr>
+<tbody>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/client/api/ConnectionClosedException.html" title="class in io.servicetalk.client.api">io.servicetalk.client.api.ConnectionClosedException</a></th>
+<td class="colLast">
+<div class="deprecationComment">There is no code that can throw this exception. We will remove it and create a new exception type if
+ there is a use-case in future releases.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/client/api/internal/MaxRequestLimitExceededRejectedSubscribeException.html" title="class in io.servicetalk.client.api.internal">io.servicetalk.client.api.internal.MaxRequestLimitExceededRejectedSubscribeException</a></th>
+<td class="colLast">
+<div class="deprecationComment">There is no code that can throw this exception. We will remove it and create a new exception type if
+ there is a use-case in future releases.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/client/api/MaxRequestLimitExceededException.html" title="class in io.servicetalk.client.api">io.servicetalk.client.api.MaxRequestLimitExceededException</a></th>
+<td class="colLast">
+<div class="deprecationComment">There is no code that can throw this exception. We will remove it and create a new exception type if
+ there is a use-case in future releases.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/utils/InvalidRedirectException.html" title="class in io.servicetalk.http.utils">io.servicetalk.http.utils.InvalidRedirectException</a></th>
+<td class="colLast">
+<div class="deprecationComment">There is no code that can throw this exception. We will remove it and create a new exception type if
+ there is a use-case in future releases.</div>
+</td>
+</tr>
+</tbody>
+</table>
+</li>
+</ul>
 <a id="field">
 <!--   -->
 </a>
@@ -285,22 +523,35 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </tr>
 <tbody>
 <tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/client/api/AutoRetryStrategyProvider.html#DISABLE_AUTO_RETRIES">io.servicetalk.client.api.AutoRetryStrategyProvider.DISABLE_AUTO_RETRIES</a></th>
+<td class="colLast">
+<div class="deprecationComment">Alternative available <code>io.servicetalk.http.netty.RetryingHttpRequesterFilter
+ .disableAutoRetries()</code>.</div>
+</td>
+</tr>
+<tr class="rowColor">
 <th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcClientBuilder.html#GRPC_DEADLINE_KEY">io.servicetalk.grpc.api.GrpcClientBuilder.GRPC_DEADLINE_KEY</a></th>
 <td class="colLast">
 <div class="deprecationComment">Do not use. This is internal implementation details that users should not depend on.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcClientMetadata.html#GRPC_MAX_TIMEOUT">io.servicetalk.grpc.api.GrpcClientMetadata.GRPC_MAX_TIMEOUT</a></th>
 <td class="colLast">
 <div class="deprecationComment">Do not use. This constant will be removed in future releases. If necessary, define an alternative
  constant in your application or use <code>null</code> for infinite <a href="io/servicetalk/grpc/api/GrpcClientMetadata.html#timeout()"><code>timeout</code></a>.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcServerBuilder.html#GRPC_DEADLINE_KEY">io.servicetalk.grpc.api.GrpcServerBuilder.GRPC_DEADLINE_KEY</a></th>
 <td class="colLast">
 <div class="deprecationComment">Do not use. This is internal implementation details that users should not depend on.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/internal/DeadlineUtils.html#GRPC_DEADLINE_KEY">io.servicetalk.grpc.internal.DeadlineUtils.GRPC_DEADLINE_KEY</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/grpc/internal/DeadlineUtils.html#GRPC_DEADLINE_CONTEXT_KEY"><code>DeadlineUtils.GRPC_DEADLINE_CONTEXT_KEY</code></a></div>
 </td>
 </tr>
 </tbody>
@@ -327,9 +578,122 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </td>
 </tr>
 <tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/client/api/AbstractRetryingFilterBuilder.html#buildWithConstantBackoff(java.time.Duration)">io.servicetalk.client.api.AbstractRetryingFilterBuilder.buildWithConstantBackoff&#8203;(Duration)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/client/api/AbstractRetryingFilterBuilder.html#buildWithConstantBackoffDeltaJitter(java.time.Duration,java.time.Duration)"><code>AbstractRetryingFilterBuilder.buildWithConstantBackoffDeltaJitter(Duration, Duration)</code></a> or
+ <a href="io/servicetalk/client/api/AbstractRetryingFilterBuilder.html#buildWithConstantBackoffFullJitter(java.time.Duration)"><code>AbstractRetryingFilterBuilder.buildWithConstantBackoffFullJitter(Duration)</code></a>.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/client/api/AbstractRetryingFilterBuilder.html#buildWithImmediateRetries()">io.servicetalk.client.api.AbstractRetryingFilterBuilder.buildWithImmediateRetries()</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/client/api/AbstractRetryingFilterBuilder.html#buildWithConstantBackoffFullJitter(java.time.Duration)"><code>AbstractRetryingFilterBuilder.buildWithConstantBackoffFullJitter(Duration)</code></a> or
+ <a href="io/servicetalk/client/api/AbstractRetryingFilterBuilder.html#buildWithConstantBackoffFullJitter(java.time.Duration)"><code>AbstractRetryingFilterBuilder.buildWithConstantBackoffFullJitter(Duration)</code></a>.</div>
+</td>
+</tr>
+<tr class="rowColor">
 <th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/client/api/ConnectionFactoryFilter.html#append(io.servicetalk.client.api.ConnectionFactoryFilter)">io.servicetalk.client.api.ConnectionFactoryFilter.append&#8203;(ConnectionFactoryFilter&lt;ResolvedAddress, C&gt;)</a></th>
 <td class="colLast">
 <div class="deprecationComment">Use <code>appendConnectionFactoryFilter(ConnectionFactoryFilter)</code> at the builder of a client</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/client/api/DefaultAutoRetryStrategyProvider.Builder.html#disableRetryAllRetryableExceptions()">io.servicetalk.client.api.DefaultAutoRetryStrategyProvider.Builder.disableRetryAllRetryableExceptions()</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/client/api/DefaultAutoRetryStrategyProvider.Builder.html#retryAllRetryableExceptions(boolean)"><code>DefaultAutoRetryStrategyProvider.Builder.retryAllRetryableExceptions(boolean)</code></a>.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/client/api/DefaultAutoRetryStrategyProvider.Builder.html#disableWaitForLoadBalancer()">io.servicetalk.client.api.DefaultAutoRetryStrategyProvider.Builder.disableWaitForLoadBalancer()</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/client/api/DefaultAutoRetryStrategyProvider.Builder.html#waitForLoadBalancer(boolean)"><code>DefaultAutoRetryStrategyProvider.Builder.waitForLoadBalancer(boolean)</code></a>.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/client/api/internal/ServiceDiscovererUtils.html#calculateDifference(java.util.List,java.util.List,java.util.Comparator,io.servicetalk.client.api.internal.ServiceDiscovererUtils.TwoIntsConsumer)">io.servicetalk.client.api.internal.ServiceDiscovererUtils.calculateDifference&#8203;(List&lt;? extends T&gt;, List&lt;? extends T&gt;, Comparator&lt;T&gt;, ServiceDiscovererUtils.TwoIntsConsumer)</a></th>
+<td class="colLast">
+<div class="deprecationComment">This is an internal class and will be removed in a future release. If you depend on it, consider
+ replicating its logic.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/client/api/LoadBalancerFactory.html#newLoadBalancer(io.servicetalk.concurrent.api.Publisher,io.servicetalk.client.api.ConnectionFactory)">io.servicetalk.client.api.LoadBalancerFactory.newLoadBalancer&#8203;(Publisher&lt;? extends ServiceDiscovererEvent&lt;ResolvedAddress&gt;&gt;, ConnectionFactory&lt;ResolvedAddress, T&gt;)</a></th>
+<td class="colLast">
+<div class="deprecationComment">In the future only <a href="io/servicetalk/client/api/LoadBalancerFactory.html#newLoadBalancer(java.lang.String,io.servicetalk.concurrent.api.Publisher,io.servicetalk.client.api.ConnectionFactory)"><code>LoadBalancerFactory.newLoadBalancer(String, Publisher, ConnectionFactory)</code></a> will remain,
+ please use that method instead.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/client/api/ServiceDiscovererEvent.html#isAvailable()">io.servicetalk.client.api.ServiceDiscovererEvent.isAvailable()</a></th>
+<td class="colLast">
+<div class="deprecationComment">Implement and use <a href="io/servicetalk/client/api/ServiceDiscovererEvent.html#status()"><code>ServiceDiscovererEvent.status()</code></a>. This method will be removed.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/concurrent/api/AsyncContext.html#containsKey(io.servicetalk.concurrent.api.AsyncContextMap.Key)">io.servicetalk.concurrent.api.AsyncContext.containsKey&#8203;(AsyncContextMap.Key&lt;?&gt;)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/concurrent/api/AsyncContext.html#containsKey(io.servicetalk.context.api.ContextMap.Key)"><code>AsyncContext.containsKey(ContextMap.Key)</code></a></div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/concurrent/api/AsyncContext.html#current()">io.servicetalk.concurrent.api.AsyncContext.current()</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/concurrent/api/AsyncContext.html#context()"><code>AsyncContext.context()</code></a>.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/concurrent/api/AsyncContext.html#forEach(java.util.function.BiPredicate)">io.servicetalk.concurrent.api.AsyncContext.forEach&#8203;(BiPredicate&lt;AsyncContextMap.Key&lt;?&gt;, Object&gt;)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/concurrent/api/AsyncContext.html#forEachEntry(java.util.function.BiPredicate)"><code>AsyncContext.forEachEntry(BiPredicate)</code></a></div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/concurrent/api/AsyncContext.html#get(io.servicetalk.concurrent.api.AsyncContextMap.Key)">io.servicetalk.concurrent.api.AsyncContext.get&#8203;(AsyncContextMap.Key&lt;T&gt;)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/concurrent/api/AsyncContext.html#get(io.servicetalk.context.api.ContextMap.Key)"><code>AsyncContext.get(ContextMap.Key)</code></a></div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/concurrent/api/AsyncContext.html#newKeyMapping(io.servicetalk.concurrent.api.AsyncContextMap.Key,io.servicetalk.context.api.ContextMap.Key)">io.servicetalk.concurrent.api.AsyncContext.newKeyMapping&#8203;(AsyncContextMap.Key&lt;T&gt;, ContextMap.Key&lt;T&gt;)</a></th>
+<td class="colLast">
+<div class="deprecationComment">This method can be used only as a temporary approach until the full codebase is migrated to
+ <a href="io/servicetalk/context/api/ContextMap.html" title="interface in io.servicetalk.context.api"><code>ContextMap</code></a> API. This method will be removed in future releases.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/concurrent/api/AsyncContext.html#put(io.servicetalk.concurrent.api.AsyncContextMap.Key,T)">io.servicetalk.concurrent.api.AsyncContext.put&#8203;(AsyncContextMap.Key&lt;T&gt;, T)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/concurrent/api/AsyncContext.html#put(io.servicetalk.context.api.ContextMap.Key,T)"><code>AsyncContext.put(ContextMap.Key, Object)</code></a></div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/concurrent/api/AsyncContext.html#putAll(java.util.Map)">io.servicetalk.concurrent.api.AsyncContext.putAll&#8203;(Map&lt;AsyncContextMap.Key&lt;?&gt;, Object&gt;)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/concurrent/api/AsyncContext.html#putAllFromMap(java.util.Map)"><code>AsyncContext.putAllFromMap(Map)</code></a></div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/concurrent/api/AsyncContext.html#remove(io.servicetalk.concurrent.api.AsyncContextMap.Key)">io.servicetalk.concurrent.api.AsyncContext.remove&#8203;(AsyncContextMap.Key&lt;?&gt;)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/concurrent/api/AsyncContext.html#remove(io.servicetalk.context.api.ContextMap.Key)"><code>AsyncContext.remove(ContextMap.Key)</code></a></div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/concurrent/api/AsyncContext.html#removeAll(java.lang.Iterable)">io.servicetalk.concurrent.api.AsyncContext.removeAll&#8203;(Iterable&lt;AsyncContextMap.Key&lt;?&gt;&gt;)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/concurrent/api/AsyncContext.html#removeAllEntries(java.lang.Iterable)"><code>AsyncContext.removeAllEntries(Iterable)</code></a></div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/concurrent/api/AsyncContextMap.Key.html#newKey(java.lang.String)">io.servicetalk.concurrent.api.AsyncContextMap.Key.newKey&#8203;(String)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/context/api/ContextMap.Key.html#newKey(java.lang.String,java.lang.Class)"><code>ContextMap.Key.newKey(String, Class)</code></a>.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/concurrent/api/AsyncContextMapHolder.html#asyncContextMap(io.servicetalk.concurrent.api.AsyncContextMap)">io.servicetalk.concurrent.api.AsyncContextMapHolder.asyncContextMap&#8203;(AsyncContextMap)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/context/api/ContextMapHolder.html#context(io.servicetalk.context.api.ContextMap)"><code>ContextMapHolder.context(ContextMap)</code></a>.</div>
 </td>
 </tr>
 <tr class="altColor">
@@ -339,30 +703,62 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </td>
 </tr>
 <tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/concurrent/api/Completable.html#publishAndSubscribeOn(io.servicetalk.concurrent.api.Executor)">io.servicetalk.concurrent.api.Completable.publishAndSubscribeOn&#8203;(Executor)</a></th>
+<td class="colLast">
+<div class="deprecationComment">This operator has been deprecated because of upcoming behavior changes in how offloading via
+ operators is done. Originally offloading for subscribe/subscription was applied at the "bottom" of chain
+ (logically the last operator in the chain closest to the subscriber), and offloading for subscriber was applied
+ at the "top" of the operator chain (logically the first operator in the chain after the async source). The
+ current offloading doesn't respect the order in which the operators are applied, the offloading is the same
+ regardless of where the operators are placed in the chain. However, this behavior will soon change to instead
+ respect operator placement order and apply offloading exactly where the offloading operators are applied in the
+ chain. This change in behavior means that it no longer makes sense to fuse the offloading of publish and
+ subscribe as the location of the operators in the chain will now be significant. Publish and subscribe
+ offloading, when required, will typically be placed in different locations. Use separate, appropriately placed,
+ <a href="io/servicetalk/concurrent/api/Completable.html#subscribeOn(io.servicetalk.concurrent.api.Executor)"><code>Completable.subscribeOn(Executor)</code></a> and <a href="io/servicetalk/concurrent/api/Completable.html#publishOn(io.servicetalk.concurrent.api.Executor)"><code>Completable.publishOn(Executor)</code></a> operators instead.</div>
+</td>
+</tr>
+<tr class="altColor">
 <th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/concurrent/api/Completable.html#publishAndSubscribeOnOverride(io.servicetalk.concurrent.api.Executor)">io.servicetalk.concurrent.api.Completable.publishAndSubscribeOnOverride&#8203;(Executor)</a></th>
 <td class="colLast">
 <div class="deprecationComment">This method will be removed in a future release. Consider switching to
  <a href="io/servicetalk/concurrent/api/Completable.html#publishAndSubscribeOn(io.servicetalk.concurrent.api.Executor)"><code>Completable.publishAndSubscribeOn(Executor)</code></a> and/or using <a href="io/servicetalk/concurrent/Executor.html#execute(java.lang.Runnable)"><code>Executor.execute(Runnable)</code></a> for offloading.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/concurrent/api/Completable.html#publishOnOverride(io.servicetalk.concurrent.api.Executor)">io.servicetalk.concurrent.api.Completable.publishOnOverride&#8203;(Executor)</a></th>
 <td class="colLast">
 <div class="deprecationComment">This method will be removed in a future release. Consider switching to
  <a href="io/servicetalk/concurrent/api/Completable.html#publishOn(io.servicetalk.concurrent.api.Executor)"><code>Completable.publishOn(Executor)</code></a> and/or using <a href="io/servicetalk/concurrent/Executor.html#execute(java.lang.Runnable)"><code>Executor.execute(Runnable)</code></a> for offloading.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/concurrent/api/Completable.html#subscribeOnOverride(io.servicetalk.concurrent.api.Executor)">io.servicetalk.concurrent.api.Completable.subscribeOnOverride&#8203;(Executor)</a></th>
 <td class="colLast">
 <div class="deprecationComment">This method will be removed in a future release. Consider switching to
  <a href="io/servicetalk/concurrent/api/Completable.html#subscribeOn(io.servicetalk.concurrent.api.Executor)"><code>Completable.subscribeOn(Executor)</code></a> and/or using <a href="io/servicetalk/concurrent/Executor.html#execute(java.lang.Runnable)"><code>Executor.execute(Runnable)</code></a> for offloading.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/concurrent/api/Publisher.html#idleTimeout(long,java.util.concurrent.TimeUnit)">io.servicetalk.concurrent.api.Publisher.idleTimeout&#8203;(long, TimeUnit)</a></th>
 <td class="colLast">
 <div class="deprecationComment">Use <a href="io/servicetalk/concurrent/api/Publisher.html#timeout(long,java.util.concurrent.TimeUnit)"><code>Publisher.timeout(long, TimeUnit)</code></a>.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/concurrent/api/Publisher.html#publishAndSubscribeOn(io.servicetalk.concurrent.api.Executor)">io.servicetalk.concurrent.api.Publisher.publishAndSubscribeOn&#8203;(Executor)</a></th>
+<td class="colLast">
+<div class="deprecationComment">This operator has been deprecated because of upcoming behavior changes in how offloading via
+ operators is done. Originally offloading for subscribe/subscription was applied at the "bottom" of chain
+ (logically the last operator in the chain closest to the subscriber), and offloading for subscriber was applied
+ at the "top" of the operator chain (logically the first operator in the chain after the async source). The
+ current offloading doesn't respect the order in which the operators are applied, the offloading is the same
+ regardless of where the operators are placed in the chain. However, this behavior will soon change to instead
+ respect operator placement order and apply offloading exactly where the offloading operators are applied in the
+ chain. This change in behavior means that it no longer makes sense to fuse the offloading of publish and
+ subscribe as the location of the operators in the chain will now be significant. Publish and subscribe
+ offloading, when required, will typically be placed in different locations. Use separate, appropriately placed,
+ <a href="io/servicetalk/concurrent/api/Publisher.html#subscribeOn(io.servicetalk.concurrent.api.Executor)"><code>Publisher.subscribeOn(Executor)</code></a> and <a href="io/servicetalk/concurrent/api/Publisher.html#publishOn(io.servicetalk.concurrent.api.Executor)"><code>Publisher.publishOn(Executor)</code></a> operators instead.</div>
 </td>
 </tr>
 <tr class="rowColor">
@@ -399,42 +795,76 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </td>
 </tr>
 <tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/concurrent/api/Single.html#publishAndSubscribeOn(io.servicetalk.concurrent.api.Executor)">io.servicetalk.concurrent.api.Single.publishAndSubscribeOn&#8203;(Executor)</a></th>
+<td class="colLast">
+<div class="deprecationComment">This operator has been deprecated because of upcoming behavior changes in how offloading via
+ operators is done. Originally offloading for subscribe/subscription was applied at the "bottom" of chain
+ (logically the last operator in the chain closest to the subscriber), and offloading for subscriber was applied
+ at the "top" of the operator chain (logically the first operator in the chain after the async source). The
+ current offloading doesn't respect the order in which the operators are applied, the offloading is the same
+ regardless of where the operators are placed in the chain. However, this behavior will soon change to instead
+ respect operator placement order and apply offloading exactly where the offloading operators are applied in the
+ chain. This change in behavior means that it no longer makes sense to fuse the offloading of publish and
+ subscribe as the location of the operators in the chain will now be significant. Publish and subscribe
+ offloading, when required, will typically be placed in different locations. Use separate, appropriately placed,
+ <a href="io/servicetalk/concurrent/api/Single.html#subscribeOn(io.servicetalk.concurrent.api.Executor)"><code>Single.subscribeOn(Executor)</code></a> and <a href="io/servicetalk/concurrent/api/Single.html#publishOn(io.servicetalk.concurrent.api.Executor)"><code>Single.publishOn(Executor)</code></a> operators instead.</div>
+</td>
+</tr>
+<tr class="rowColor">
 <th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/concurrent/api/Single.html#publishAndSubscribeOnOverride(io.servicetalk.concurrent.api.Executor)">io.servicetalk.concurrent.api.Single.publishAndSubscribeOnOverride&#8203;(Executor)</a></th>
 <td class="colLast">
 <div class="deprecationComment">This method will be removed in a future release. Consider switching to
  <a href="io/servicetalk/concurrent/api/Single.html#publishAndSubscribeOn(io.servicetalk.concurrent.api.Executor)"><code>Single.publishAndSubscribeOn(Executor)</code></a> and/or using <a href="io/servicetalk/concurrent/Executor.html#execute(java.lang.Runnable)"><code>Executor.execute(Runnable)</code></a> for offloading.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/concurrent/api/Single.html#publishOnOverride(io.servicetalk.concurrent.api.Executor)">io.servicetalk.concurrent.api.Single.publishOnOverride&#8203;(Executor)</a></th>
 <td class="colLast">
 <div class="deprecationComment">This method will be removed in a future release. Consider switching to
  <a href="io/servicetalk/concurrent/api/Single.html#publishOn(io.servicetalk.concurrent.api.Executor)"><code>Single.publishOn(Executor)</code></a> and/or using <a href="io/servicetalk/concurrent/Executor.html#execute(java.lang.Runnable)"><code>Executor.execute(Runnable)</code></a> for offloading.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/concurrent/api/Single.html#recoverWith(java.util.function.Function)">io.servicetalk.concurrent.api.Single.recoverWith&#8203;(Function&lt;? super Throwable, ? extends Single&lt;? extends T&gt;&gt;)</a></th>
 <td class="colLast">
 <div class="deprecationComment">Use <a href="io/servicetalk/concurrent/api/Single.html#onErrorResume(java.util.function.Function)"><code>Single.onErrorResume(Function)</code></a>.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/concurrent/api/Single.html#subscribeOnOverride(io.servicetalk.concurrent.api.Executor)">io.servicetalk.concurrent.api.Single.subscribeOnOverride&#8203;(Executor)</a></th>
 <td class="colLast">
 <div class="deprecationComment">This method will be removed in a future release. Consider switching to
  <a href="io/servicetalk/concurrent/api/Single.html#subscribeOn(io.servicetalk.concurrent.api.Executor)"><code>Single.subscribeOn(Executor)</code></a> and/or using <a href="io/servicetalk/concurrent/Executor.html#execute(java.lang.Runnable)"><code>Executor.execute(Runnable)</code></a> for offloading.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/concurrent/api/test/Verifiers.html#stepVerifier(io.servicetalk.concurrent.api.Publisher)">io.servicetalk.concurrent.api.test.Verifiers.stepVerifier&#8203;(Publisher&lt;T&gt;)</a></th>
 <td class="colLast">
 <div class="deprecationComment">Use <a href="io/servicetalk/concurrent/api/test/StepVerifiers.html#create(io.servicetalk.concurrent.api.Publisher)"><code>StepVerifiers.create(Publisher)</code></a> instead.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/concurrent/api/test/Verifiers.html#stepVerifierForSource(io.servicetalk.concurrent.PublisherSource)">io.servicetalk.concurrent.api.test.Verifiers.stepVerifierForSource&#8203;(PublisherSource&lt;T&gt;)</a></th>
 <td class="colLast">
 <div class="deprecationComment">Use <a href="io/servicetalk/concurrent/api/test/StepVerifiers.html#createForSource(io.servicetalk.concurrent.PublisherSource)"><code>StepVerifiers.createForSource(PublisherSource)</code></a> instead.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/concurrent/api/TestCancellable.html#awaitCancelledUninterruptibly()">io.servicetalk.concurrent.api.TestCancellable.awaitCancelledUninterruptibly()</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/concurrent/api/TestCancellable.html#awaitCancelled()"><code>TestCancellable.awaitCancelled()</code></a> instead.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/concurrent/api/TestSubscription.html#awaitRequestNUninterruptibly(long)">io.servicetalk.concurrent.api.TestSubscription.awaitRequestNUninterruptibly&#8203;(long)</a></th>
+<td class="colLast">
+<div class="deprecationComment">use <a href="io/servicetalk/concurrent/api/TestSubscription.html#awaitRequestN(long)"><code>TestSubscription.awaitRequestN(long)</code></a> instead.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/dns/discovery/netty/DnsServiceDiscovererObserver.ResolutionResult.html#nUnavailable()">io.servicetalk.dns.discovery.netty.DnsServiceDiscovererObserver.ResolutionResult.nUnavailable()</a></th>
+<td class="colLast">
+<div class="deprecationComment">Implement and use <a href="io/servicetalk/dns/discovery/netty/DnsServiceDiscovererObserver.ResolutionResult.html#nMissing()"><code>DnsServiceDiscovererObserver.ResolutionResult.nMissing()</code></a> method.</div>
 </td>
 </tr>
 <tr class="altColor">
@@ -452,36 +882,443 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </td>
 </tr>
 <tr class="altColor">
-<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcClientBuilder.html#enableWireLogging(java.lang.String)">io.servicetalk.grpc.api.GrpcClientBuilder.enableWireLogging&#8203;(String)</a></th>
-<td class="colLast"></td>
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcClientBuilder.html#appendConnectionFactoryFilter(io.servicetalk.client.api.ConnectionFactoryFilter)">io.servicetalk.grpc.api.GrpcClientBuilder.appendConnectionFactoryFilter&#8203;(ConnectionFactoryFilter&lt;R, FilterableStreamingHttpConnection&gt;)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Call <a href="io/servicetalk/grpc/api/GrpcClientBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcClientBuilder.HttpInitializer)"><code>GrpcClientBuilder.initializeHttp(HttpInitializer)</code></a> and use
+ <a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html#appendConnectionFactoryFilter(io.servicetalk.client.api.ConnectionFactoryFilter)"><code>SingleAddressHttpClientBuilder.appendConnectionFactoryFilter(ConnectionFactoryFilter)</code></a>
+ on the <code>builder</code> instance by implementing
+ <a href="io/servicetalk/grpc/api/GrpcClientBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.SingleAddressHttpClientBuilder)"><code>GrpcClientBuilder.HttpInitializer.initialize(SingleAddressHttpClientBuilder)</code></a> functional interface.</div>
+</td>
 </tr>
 <tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcClientBuilder.html#appendConnectionFilter(io.servicetalk.http.api.StreamingHttpConnectionFilterFactory)">io.servicetalk.grpc.api.GrpcClientBuilder.appendConnectionFilter&#8203;(StreamingHttpConnectionFilterFactory)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Call <a href="io/servicetalk/grpc/api/GrpcClientBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcClientBuilder.HttpInitializer)"><code>GrpcClientBuilder.initializeHttp(HttpInitializer)</code></a> and use
+ <a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html#appendConnectionFilter(io.servicetalk.http.api.StreamingHttpConnectionFilterFactory)"><code>SingleAddressHttpClientBuilder.appendConnectionFilter(StreamingHttpConnectionFilterFactory)</code></a>
+ on the <code>builder</code> instance by implementing
+ <a href="io/servicetalk/grpc/api/GrpcClientBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.SingleAddressHttpClientBuilder)"><code>GrpcClientBuilder.HttpInitializer.initialize(SingleAddressHttpClientBuilder)</code></a> functional interface.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcClientBuilder.html#appendHttpClientFilter(io.servicetalk.http.api.StreamingHttpClientFilterFactory)">io.servicetalk.grpc.api.GrpcClientBuilder.appendHttpClientFilter&#8203;(StreamingHttpClientFilterFactory)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Call <a href="io/servicetalk/grpc/api/GrpcClientBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcClientBuilder.HttpInitializer)"><code>GrpcClientBuilder.initializeHttp(HttpInitializer)</code></a> and use
+ <a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html#appendClientFilter(io.servicetalk.http.api.StreamingHttpClientFilterFactory)"><code>SingleAddressHttpClientBuilder.appendClientFilter(StreamingHttpClientFilterFactory)</code></a>
+ on the <code>builder</code> instance by implementing
+ <a href="io/servicetalk/grpc/api/GrpcClientBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.SingleAddressHttpClientBuilder)"><code>GrpcClientBuilder.HttpInitializer.initialize(SingleAddressHttpClientBuilder)</code></a> functional interface.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcClientBuilder.html#autoRetryStrategy(io.servicetalk.client.api.AutoRetryStrategyProvider)">io.servicetalk.grpc.api.GrpcClientBuilder.autoRetryStrategy&#8203;(AutoRetryStrategyProvider)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Call <a href="io/servicetalk/grpc/api/GrpcClientBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcClientBuilder.HttpInitializer)"><code>GrpcClientBuilder.initializeHttp(HttpInitializer)</code></a> and use
+ <a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html#autoRetryStrategy(io.servicetalk.client.api.AutoRetryStrategyProvider)"><code>SingleAddressHttpClientBuilder.autoRetryStrategy(AutoRetryStrategyProvider)</code></a>
+ on the <code>builder</code> instance by implementing
+ <a href="io/servicetalk/grpc/api/GrpcClientBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.SingleAddressHttpClientBuilder)"><code>GrpcClientBuilder.HttpInitializer.initialize(SingleAddressHttpClientBuilder)</code></a> functional interface.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcClientBuilder.html#bufferAllocator(io.servicetalk.buffer.api.BufferAllocator)">io.servicetalk.grpc.api.GrpcClientBuilder.bufferAllocator&#8203;(BufferAllocator)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Call <a href="io/servicetalk/grpc/api/GrpcClientBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcClientBuilder.HttpInitializer)"><code>GrpcClientBuilder.initializeHttp(HttpInitializer)</code></a> and use
+ <a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html#bufferAllocator(io.servicetalk.buffer.api.BufferAllocator)"><code>SingleAddressHttpClientBuilder.bufferAllocator(BufferAllocator)</code></a> on the <code>builder</code> instance
+ by implementing <a href="io/servicetalk/grpc/api/GrpcClientBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.SingleAddressHttpClientBuilder)"><code>GrpcClientBuilder.HttpInitializer.initialize(SingleAddressHttpClientBuilder)</code></a> functional interface.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcClientBuilder.html#buildMulti()">io.servicetalk.grpc.api.GrpcClientBuilder.buildMulti()</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/grpc/api/GrpcClientFactory.html#newClient(io.servicetalk.grpc.api.GrpcClientCallFactory)"><code>GrpcClientFactory.newClient(GrpcClientCallFactory)</code></a>
+ or <a href="io/servicetalk/grpc/api/GrpcClientFactory.html#newBlockingClient(io.servicetalk.grpc.api.GrpcClientCallFactory)"><code>GrpcClientFactory.newBlockingClient(GrpcClientCallFactory)</code></a>
+ and provide a custom <a href="io/servicetalk/grpc/api/GrpcClientCallFactory.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClientCallFactory</code></a> instead.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcClientBuilder.html#disableHostHeaderFallback()">io.servicetalk.grpc.api.GrpcClientBuilder.disableHostHeaderFallback()</a></th>
+<td class="colLast">
+<div class="deprecationComment">Call <a href="io/servicetalk/grpc/api/GrpcClientBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcClientBuilder.HttpInitializer)"><code>GrpcClientBuilder.initializeHttp(HttpInitializer)</code></a> and use
+ <a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html#hostHeaderFallback(boolean)"><code>SingleAddressHttpClientBuilder.hostHeaderFallback(boolean)</code></a> on the <code>builder</code> instance
+ by implementing <a href="io/servicetalk/grpc/api/GrpcClientBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.SingleAddressHttpClientBuilder)"><code>GrpcClientBuilder.HttpInitializer.initialize(SingleAddressHttpClientBuilder)</code></a> functional interface.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcClientBuilder.html#doAppendHttpClientFilter(io.servicetalk.http.api.StreamingHttpClientFilterFactory)">io.servicetalk.grpc.api.GrpcClientBuilder.doAppendHttpClientFilter&#8203;(StreamingHttpClientFilterFactory)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Users of this API should call <a href="io/servicetalk/grpc/api/GrpcClientBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcClientBuilder.HttpInitializer)"><code>GrpcClientBuilder.initializeHttp(HttpInitializer)</code></a> and use
+ <a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html#appendClientFilter(io.servicetalk.http.api.StreamingHttpClientFilterFactory)"><code>SingleAddressHttpClientBuilder.appendClientFilter(StreamingHttpClientFilterFactory)</code></a>
+ on the <code>builder</code> instance by implementing
+ <a href="io/servicetalk/grpc/api/GrpcClientBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.SingleAddressHttpClientBuilder)"><code>GrpcClientBuilder.HttpInitializer.initialize(SingleAddressHttpClientBuilder)</code></a> functional interface.
+ <p>
+ Please note: this method used to be abstract - keep the overridden implementation during transition phase.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcClientBuilder.html#enableWireLogging(java.lang.String)">io.servicetalk.grpc.api.GrpcClientBuilder.enableWireLogging&#8203;(String)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Call <a href="io/servicetalk/grpc/api/GrpcClientBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcClientBuilder.HttpInitializer)"><code>GrpcClientBuilder.initializeHttp(HttpInitializer)</code></a> and use
+ <a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html#enableWireLogging(java.lang.String)"><code>SingleAddressHttpClientBuilder.enableWireLogging(String)</code></a>
+ on the <code>builder</code> instance by implementing
+ <a href="io/servicetalk/grpc/api/GrpcClientBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.SingleAddressHttpClientBuilder)"><code>GrpcClientBuilder.HttpInitializer.initialize(SingleAddressHttpClientBuilder)</code></a> functional interface.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcClientBuilder.html#executionStrategy(io.servicetalk.grpc.api.GrpcExecutionStrategy)">io.servicetalk.grpc.api.GrpcClientBuilder.executionStrategy&#8203;(GrpcExecutionStrategy)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Call <a href="io/servicetalk/grpc/api/GrpcClientBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcClientBuilder.HttpInitializer)"><code>GrpcClientBuilder.initializeHttp(HttpInitializer)</code></a> and use
+ <a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html#executionStrategy(io.servicetalk.http.api.HttpExecutionStrategy)"><code>SingleAddressHttpClientBuilder.executionStrategy(HttpExecutionStrategy)</code></a> on the <code>builder</code> instance
+ by implementing <a href="io/servicetalk/grpc/api/GrpcClientBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.SingleAddressHttpClientBuilder)"><code>GrpcClientBuilder.HttpInitializer.initialize(SingleAddressHttpClientBuilder)</code></a> functional interface.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcClientBuilder.html#executor(io.servicetalk.concurrent.api.Executor)">io.servicetalk.grpc.api.GrpcClientBuilder.executor&#8203;(Executor)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Call <a href="io/servicetalk/grpc/api/GrpcClientBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcClientBuilder.HttpInitializer)"><code>GrpcClientBuilder.initializeHttp(HttpInitializer)</code></a> and use
+ <a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html#executor(io.servicetalk.concurrent.api.Executor)"><code>SingleAddressHttpClientBuilder.executor(Executor)</code></a> on the <code>builder</code> instance
+ by implementing <a href="io/servicetalk/grpc/api/GrpcClientBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.SingleAddressHttpClientBuilder)"><code>GrpcClientBuilder.HttpInitializer.initialize(SingleAddressHttpClientBuilder)</code></a> functional interface.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcClientBuilder.html#hostHeaderFallback(boolean)">io.servicetalk.grpc.api.GrpcClientBuilder.hostHeaderFallback&#8203;(boolean)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Call <a href="io/servicetalk/grpc/api/GrpcClientBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcClientBuilder.HttpInitializer)"><code>GrpcClientBuilder.initializeHttp(HttpInitializer)</code></a> and use
+ <a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html#hostHeaderFallback(boolean)"><code>SingleAddressHttpClientBuilder.hostHeaderFallback(boolean)</code></a> on the <code>builder</code> instance
+ by implementing <a href="io/servicetalk/grpc/api/GrpcClientBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.SingleAddressHttpClientBuilder)"><code>GrpcClientBuilder.HttpInitializer.initialize(SingleAddressHttpClientBuilder)</code></a> functional interface.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcClientBuilder.html#inferPeerHost(boolean)">io.servicetalk.grpc.api.GrpcClientBuilder.inferPeerHost&#8203;(boolean)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Call <a href="io/servicetalk/grpc/api/GrpcClientBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcClientBuilder.HttpInitializer)"><code>GrpcClientBuilder.initializeHttp(HttpInitializer)</code></a> and use
+ <a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html#inferPeerHost(boolean)"><code>SingleAddressHttpClientBuilder.inferPeerHost(boolean)</code></a> on the <code>builder</code> instance
+ by implementing <a href="io/servicetalk/grpc/api/GrpcClientBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.SingleAddressHttpClientBuilder)"><code>GrpcClientBuilder.HttpInitializer.initialize(SingleAddressHttpClientBuilder)</code></a> functional interface.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcClientBuilder.html#inferPeerPort(boolean)">io.servicetalk.grpc.api.GrpcClientBuilder.inferPeerPort&#8203;(boolean)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Call <a href="io/servicetalk/grpc/api/GrpcClientBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcClientBuilder.HttpInitializer)"><code>GrpcClientBuilder.initializeHttp(HttpInitializer)</code></a> and use
+ <a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html#inferPeerPort(boolean)"><code>SingleAddressHttpClientBuilder.inferPeerPort(boolean)</code></a> on the <code>builder</code> instance
+ by implementing <a href="io/servicetalk/grpc/api/GrpcClientBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.SingleAddressHttpClientBuilder)"><code>GrpcClientBuilder.HttpInitializer.initialize(SingleAddressHttpClientBuilder)</code></a> functional interface.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcClientBuilder.html#inferSniHostname(boolean)">io.servicetalk.grpc.api.GrpcClientBuilder.inferSniHostname&#8203;(boolean)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Call <a href="io/servicetalk/grpc/api/GrpcClientBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcClientBuilder.HttpInitializer)"><code>GrpcClientBuilder.initializeHttp(HttpInitializer)</code></a> and use
+ <a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html#inferSniHostname(boolean)"><code>SingleAddressHttpClientBuilder.inferSniHostname(boolean)</code></a> on the <code>builder</code> instance
+ by implementing <a href="io/servicetalk/grpc/api/GrpcClientBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.SingleAddressHttpClientBuilder)"><code>GrpcClientBuilder.HttpInitializer.initialize(SingleAddressHttpClientBuilder)</code></a> functional interface.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcClientBuilder.html#ioExecutor(io.servicetalk.transport.api.IoExecutor)">io.servicetalk.grpc.api.GrpcClientBuilder.ioExecutor&#8203;(IoExecutor)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Call <a href="io/servicetalk/grpc/api/GrpcClientBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcClientBuilder.HttpInitializer)"><code>GrpcClientBuilder.initializeHttp(HttpInitializer)</code></a> and use
+ <a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html#ioExecutor(io.servicetalk.transport.api.IoExecutor)"><code>SingleAddressHttpClientBuilder.ioExecutor(IoExecutor)</code></a> on the <code>builder</code> instance
+ by implementing <a href="io/servicetalk/grpc/api/GrpcClientBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.SingleAddressHttpClientBuilder)"><code>GrpcClientBuilder.HttpInitializer.initialize(SingleAddressHttpClientBuilder)</code></a> functional interface.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcClientBuilder.html#loadBalancerFactory(io.servicetalk.http.api.HttpLoadBalancerFactory)">io.servicetalk.grpc.api.GrpcClientBuilder.loadBalancerFactory&#8203;(HttpLoadBalancerFactory&lt;R&gt;)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Call <a href="io/servicetalk/grpc/api/GrpcClientBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcClientBuilder.HttpInitializer)"><code>GrpcClientBuilder.initializeHttp(HttpInitializer)</code></a> and use
+ <a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html#loadBalancerFactory(io.servicetalk.http.api.HttpLoadBalancerFactory)"><code>SingleAddressHttpClientBuilder.loadBalancerFactory(HttpLoadBalancerFactory)</code></a>
+ on the <code>builder</code> instance by implementing
+ <a href="io/servicetalk/grpc/api/GrpcClientBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.SingleAddressHttpClientBuilder)"><code>GrpcClientBuilder.HttpInitializer.initialize(SingleAddressHttpClientBuilder)</code></a> functional interface.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcClientBuilder.html#protocols(io.servicetalk.http.api.HttpProtocolConfig...)">io.servicetalk.grpc.api.GrpcClientBuilder.protocols&#8203;(HttpProtocolConfig...)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Call <a href="io/servicetalk/grpc/api/GrpcClientBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcClientBuilder.HttpInitializer)"><code>GrpcClientBuilder.initializeHttp(HttpInitializer)</code></a> and use
+ <a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html#protocols(io.servicetalk.http.api.HttpProtocolConfig...)"><code>SingleAddressHttpClientBuilder.protocols(HttpProtocolConfig...)</code></a> on the <code>builder</code> instance
+ by implementing <a href="io/servicetalk/grpc/api/GrpcClientBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.SingleAddressHttpClientBuilder)"><code>GrpcClientBuilder.HttpInitializer.initialize(SingleAddressHttpClientBuilder)</code></a> functional interface.</div>
+</td>
+</tr>
+<tr class="altColor">
 <th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcClientBuilder.html#secure()">io.servicetalk.grpc.api.GrpcClientBuilder.secure()</a></th>
-<td class="colLast"></td>
+<td class="colLast">
+<div class="deprecationComment">Call <a href="io/servicetalk/grpc/api/GrpcClientBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcClientBuilder.HttpInitializer)"><code>GrpcClientBuilder.initializeHttp(HttpInitializer)</code></a> and use
+ <a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html#sslConfig(io.servicetalk.transport.api.ClientSslConfig)"><code>SingleAddressHttpClientBuilder.sslConfig(ClientSslConfig)</code></a>
+ on the <code>builder</code> instance by implementing
+ <a href="io/servicetalk/grpc/api/GrpcClientBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.SingleAddressHttpClientBuilder)"><code>GrpcClientBuilder.HttpInitializer.initialize(SingleAddressHttpClientBuilder)</code></a> functional interface.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcClientBuilder.html#serviceDiscoverer(io.servicetalk.client.api.ServiceDiscoverer)">io.servicetalk.grpc.api.GrpcClientBuilder.serviceDiscoverer&#8203;(ServiceDiscoverer&lt;U, R, ServiceDiscovererEvent&lt;R&gt;&gt;)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Call <a href="io/servicetalk/grpc/api/GrpcClientBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcClientBuilder.HttpInitializer)"><code>GrpcClientBuilder.initializeHttp(HttpInitializer)</code></a> and use
+ <a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html#serviceDiscoverer(io.servicetalk.client.api.ServiceDiscoverer)"><code>SingleAddressHttpClientBuilder.serviceDiscoverer(ServiceDiscoverer)</code></a> on the <code>builder</code> instance
+ by implementing <a href="io/servicetalk/grpc/api/GrpcClientBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.SingleAddressHttpClientBuilder)"><code>GrpcClientBuilder.HttpInitializer.initialize(SingleAddressHttpClientBuilder)</code></a> functional interface.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcClientBuilder.html#socketOption(java.net.SocketOption,T)">io.servicetalk.grpc.api.GrpcClientBuilder.socketOption&#8203;(SocketOption&lt;T&gt;, T)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Call <a href="io/servicetalk/grpc/api/GrpcClientBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcClientBuilder.HttpInitializer)"><code>GrpcClientBuilder.initializeHttp(HttpInitializer)</code></a> and use
+ <a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html#socketOption(java.net.SocketOption,T)"><code>SingleAddressHttpClientBuilder.socketOption(SocketOption, Object)</code></a> on the <code>builder</code> instance
+ by implementing <a href="io/servicetalk/grpc/api/GrpcClientBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.SingleAddressHttpClientBuilder)"><code>GrpcClientBuilder.HttpInitializer.initialize(SingleAddressHttpClientBuilder)</code></a> functional interface.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcClientBuilder.html#sslConfig(io.servicetalk.transport.api.ClientSslConfig)">io.servicetalk.grpc.api.GrpcClientBuilder.sslConfig&#8203;(ClientSslConfig)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Call <a href="io/servicetalk/grpc/api/GrpcClientBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcClientBuilder.HttpInitializer)"><code>GrpcClientBuilder.initializeHttp(HttpInitializer)</code></a> and use
+ <a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html#sslConfig(io.servicetalk.transport.api.ClientSslConfig)"><code>SingleAddressHttpClientBuilder.sslConfig(ClientSslConfig)</code></a> on the <code>builder</code> instance
+ by implementing <a href="io/servicetalk/grpc/api/GrpcClientBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.SingleAddressHttpClientBuilder)"><code>GrpcClientBuilder.HttpInitializer.initialize(SingleAddressHttpClientBuilder)</code></a> functional interface.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcClientBuilder.html#unresolvedAddressToHost(java.util.function.Function)">io.servicetalk.grpc.api.GrpcClientBuilder.unresolvedAddressToHost&#8203;(Function&lt;U, CharSequence&gt;)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Call <a href="io/servicetalk/grpc/api/GrpcClientBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcClientBuilder.HttpInitializer)"><code>GrpcClientBuilder.initializeHttp(HttpInitializer)</code></a> and use
+ <a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html#unresolvedAddressToHost(java.util.function.Function)"><code>SingleAddressHttpClientBuilder.unresolvedAddressToHost(Function)</code></a> on the <code>builder</code> instance
+ by implementing <a href="io/servicetalk/grpc/api/GrpcClientBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.SingleAddressHttpClientBuilder)"><code>GrpcClientBuilder.HttpInitializer.initialize(SingleAddressHttpClientBuilder)</code></a> functional interface.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcClientFactory.html#appendClientFilter(FilterFactory)">io.servicetalk.grpc.api.GrpcClientFactory.appendClientFilter&#8203;(FilterFactory)</a></th>
+<td class="colLast">
+<div class="deprecationComment">gRPC Client Filters will be removed in future release of ServiceTalk. We encourage the use of
+ <a href="io/servicetalk/http/api/StreamingHttpClientFilterFactory.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpClientFilterFactory</code></a> and if the access to the decoded payload is
+ necessary, then performing that logic can be done in the particular <a href="io/servicetalk/grpc/api/GrpcClient.html" title="interface in io.servicetalk.grpc.api"><code>client implementation</code></a>.
+ Please use <a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html#appendClientFilter(io.servicetalk.http.api.StreamingHttpClientFilterFactory)"><code>SingleAddressHttpClientBuilder.appendClientFilter(
+ io.servicetalk.http.api.StreamingHttpClientFilterFactory)</code></a> upon the <code>builder</code> obtained using
+ <a href="io/servicetalk/grpc/api/GrpcClientBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcClientBuilder.HttpInitializer)"><code>GrpcClientBuilder.initializeHttp(GrpcClientBuilder.HttpInitializer)</code></a>
+ if HTTP filters are acceptable in your use case.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcClientFactory.html#appendClientFilterFactory(FilterFactory,FilterFactory)">io.servicetalk.grpc.api.GrpcClientFactory.appendClientFilterFactory&#8203;(FilterFactory, FilterFactory)</a></th>
+<td class="colLast">
+<div class="deprecationComment">gRPC Client Filters will be removed in future release of ServiceTalk. We encourage the use of
+ <a href="io/servicetalk/http/api/StreamingHttpClientFilterFactory.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpClientFilterFactory</code></a> and if the access to the decoded payload is
+ necessary, then performing that logic can be done in the particular <a href="io/servicetalk/grpc/api/GrpcClient.html" title="interface in io.servicetalk.grpc.api"><code>client implementation</code></a>.
+ Please use <a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html#appendClientFilter(io.servicetalk.http.api.StreamingHttpClientFilterFactory)"><code>SingleAddressHttpClientBuilder.appendClientFilter(
+ io.servicetalk.http.api.StreamingHttpClientFilterFactory)</code></a> upon the <code>builder</code> obtained using
+ <a href="io/servicetalk/grpc/api/GrpcClientBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcClientBuilder.HttpInitializer)"><code>GrpcClientBuilder.initializeHttp(GrpcClientBuilder.HttpInitializer)</code></a>
+ if HTTP filters are acceptable in your use case.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcClientFactory.html#newClient(FilterableClient)">io.servicetalk.grpc.api.GrpcClientFactory.newClient&#8203;(FilterableClient)</a></th>
+<td class="colLast">
+<div class="deprecationComment">gRPC Client Filters will be removed in future release of ServiceTalk. We encourage the use of
+ <a href="io/servicetalk/http/api/StreamingHttpClientFilterFactory.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpClientFilterFactory</code></a> and if the access to the decoded payload is
+ necessary, then performing that logic can be done in the particular <a href="io/servicetalk/grpc/api/GrpcClient.html" title="interface in io.servicetalk.grpc.api"><code>client implementation</code></a>.
+ Please use <a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html#appendClientFilter(io.servicetalk.http.api.StreamingHttpClientFilterFactory)"><code>SingleAddressHttpClientBuilder.appendClientFilter(
+ io.servicetalk.http.api.StreamingHttpClientFilterFactory)</code></a> upon the <code>builder</code> obtained using
+ <a href="io/servicetalk/grpc/api/GrpcClientBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcClientBuilder.HttpInitializer)"><code>GrpcClientBuilder.initializeHttp(GrpcClientBuilder.HttpInitializer)</code></a>
+ if HTTP filters are acceptable in your use case.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcClientFactory.html#newFilter(Client,FilterFactory)">io.servicetalk.grpc.api.GrpcClientFactory.newFilter&#8203;(Client, FilterFactory)</a></th>
+<td class="colLast">
+<div class="deprecationComment">gRPC Client Filters will be removed in future release of ServiceTalk. We encourage the use of
+ <a href="io/servicetalk/http/api/StreamingHttpClientFilterFactory.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpClientFilterFactory</code></a> and if the access to the decoded payload is
+ necessary, then performing that logic can be done in the particular <a href="io/servicetalk/grpc/api/GrpcClient.html" title="interface in io.servicetalk.grpc.api"><code>client implementation</code></a>.
+ Please use <a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html#appendClientFilter(io.servicetalk.http.api.StreamingHttpClientFilterFactory)"><code>SingleAddressHttpClientBuilder.appendClientFilter(
+ io.servicetalk.http.api.StreamingHttpClientFilterFactory)</code></a> upon the <code>builder</code> obtained using
+ <a href="io/servicetalk/grpc/api/GrpcClientBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcClientBuilder.HttpInitializer)"><code>GrpcClientBuilder.initializeHttp(GrpcClientBuilder.HttpInitializer)</code></a>
+ if HTTP filters are acceptable in your use case.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcExecutionStrategies.Builder.html#executor(io.servicetalk.concurrent.api.Executor)">io.servicetalk.grpc.api.GrpcExecutionStrategies.Builder.executor&#8203;(Executor)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Set the executor to use on the <a href="io/servicetalk/transport/api/ExecutionContext.html" title="interface in io.servicetalk.transport.api"><code>ExecutionContext</code></a> using
+ <code>executor(Executor)</code> methods on client/server builders.</div>
+</td>
 </tr>
 <tr class="altColor">
 <th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcExecutionStrategies.Builder.html#offloadWithThreadAffinity()">io.servicetalk.grpc.api.GrpcExecutionStrategies.Builder.offloadWithThreadAffinity()</a></th>
 <td class="colLast">
-<div class="deprecationComment">Use a single threaded executor with <a href="io/servicetalk/grpc/api/GrpcExecutionStrategies.Builder.html#executor(io.servicetalk.concurrent.api.Executor)"><code>GrpcExecutionStrategies.Builder.executor(Executor)</code></a> to ensure affinity.</div>
+<div class="deprecationComment">Use a single threaded executor set on <a href="io/servicetalk/transport/api/ExecutionContext.html" title="interface in io.servicetalk.transport.api"><code>ExecutionContext</code></a> using
+ <code>executor(Executor)</code> methods on client/server builders to ensure affinity.</div>
 </td>
 </tr>
 <tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcExecutionStrategies.html#defaultStrategy(io.servicetalk.concurrent.api.Executor)">io.servicetalk.grpc.api.GrpcExecutionStrategies.defaultStrategy&#8203;(Executor)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Set the executor to use on the <a href="io/servicetalk/transport/api/ExecutionContext.html" title="interface in io.servicetalk.transport.api"><code>ExecutionContext</code></a> using
+ <code>executor(Executor)</code> methods on client/server builders.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcExecutionStrategies.html#noOffloadsStrategy()">io.servicetalk.grpc.api.GrpcExecutionStrategies.noOffloadsStrategy()</a></th>
+<td class="colLast">
+<div class="deprecationComment">Replaced with the more descriptive <a href="io/servicetalk/grpc/api/GrpcExecutionStrategies.html#offloadNever()"><code>GrpcExecutionStrategies.offloadNever()</code></a>.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcServerBuilder.html#appendCatchAllFilter(io.servicetalk.http.api.HttpServerBuilder)">io.servicetalk.grpc.api.GrpcServerBuilder.appendCatchAllFilter&#8203;(HttpServerBuilder)</a></th>
+<td class="colLast">
+<div class="deprecationComment">This method was introduced temporarily, should not be used, and will be removed in version 0.42.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcServerBuilder.html#appendConnectionAcceptorFilter(io.servicetalk.transport.api.ConnectionAcceptorFactory)">io.servicetalk.grpc.api.GrpcServerBuilder.appendConnectionAcceptorFilter&#8203;(ConnectionAcceptorFactory)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Call <a href="io/servicetalk/grpc/api/GrpcServerBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>GrpcServerBuilder.initializeHttp(HttpInitializer)</code></a> and use
+ <a href="io/servicetalk/http/api/HttpServerBuilder.html#appendConnectionAcceptorFilter(io.servicetalk.transport.api.ConnectionAcceptorFactory)"><code>HttpServerBuilder.appendConnectionAcceptorFilter(ConnectionAcceptorFactory)</code></a>
+ on the <code>builder</code> instance by implementing <a href="io/servicetalk/grpc/api/GrpcServerBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.HttpServerBuilder)"><code>GrpcServerBuilder.HttpInitializer.initialize(HttpServerBuilder)</code></a>
+ functional interface.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcServerBuilder.html#appendHttpServiceFilter(io.servicetalk.http.api.StreamingHttpServiceFilterFactory)">io.servicetalk.grpc.api.GrpcServerBuilder.appendHttpServiceFilter&#8203;(StreamingHttpServiceFilterFactory)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Call <a href="io/servicetalk/grpc/api/GrpcServerBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>GrpcServerBuilder.initializeHttp(HttpInitializer)</code></a> and use
+ <a href="io/servicetalk/http/api/HttpServerBuilder.html#appendServiceFilter(io.servicetalk.http.api.StreamingHttpServiceFilterFactory)"><code>HttpServerBuilder.appendServiceFilter(StreamingHttpServiceFilterFactory)</code></a>
+ on the <code>builder</code> instance by implementing <a href="io/servicetalk/grpc/api/GrpcServerBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.HttpServerBuilder)"><code>GrpcServerBuilder.HttpInitializer.initialize(HttpServerBuilder)</code></a>
+ functional interface.</div>
+</td>
+</tr>
+<tr class="altColor">
 <th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcServerBuilder.html#backlog(int)">io.servicetalk.grpc.api.GrpcServerBuilder.backlog&#8203;(int)</a></th>
 <td class="colLast">
 <div class="deprecationComment">Use <a href="io/servicetalk/grpc/api/GrpcServerBuilder.html#listenSocketOption(java.net.SocketOption,T)"><code>GrpcServerBuilder.listenSocketOption(SocketOption, Object)</code></a> with key
  <a href="io/servicetalk/transport/api/ServiceTalkSocketOptions.html#SO_BACKLOG"><code>ServiceTalkSocketOptions.SO_BACKLOG</code></a>.</div>
 </td>
 </tr>
-<tr class="altColor">
-<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcServerBuilder.html#enableWireLogging(java.lang.String)">io.servicetalk.grpc.api.GrpcServerBuilder.enableWireLogging&#8203;(String)</a></th>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcServerBuilder.html#bufferAllocator(io.servicetalk.buffer.api.BufferAllocator)">io.servicetalk.grpc.api.GrpcServerBuilder.bufferAllocator&#8203;(BufferAllocator)</a></th>
 <td class="colLast">
-<div class="deprecationComment">Use <a href="io/servicetalk/grpc/api/GrpcServerBuilder.html#enableWireLogging(java.lang.String,io.servicetalk.logging.api.LogLevel,java.util.function.BooleanSupplier)"><code>GrpcServerBuilder.enableWireLogging(String, LogLevel, BooleanSupplier)</code></a> instead.</div>
+<div class="deprecationComment">Call <a href="io/servicetalk/grpc/api/GrpcServerBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>GrpcServerBuilder.initializeHttp(HttpInitializer)</code></a> and use
+ <a href="io/servicetalk/http/api/HttpServerBuilder.html#bufferAllocator(io.servicetalk.buffer.api.BufferAllocator)"><code>HttpServerBuilder.bufferAllocator(BufferAllocator)</code></a>
+ on the <code>builder</code> instance by implementing <a href="io/servicetalk/grpc/api/GrpcServerBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.HttpServerBuilder)"><code>GrpcServerBuilder.HttpInitializer.initialize(HttpServerBuilder)</code></a>
+ functional interface.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcServerBuilder.html#disableDrainingRequestPayloadBody()">io.servicetalk.grpc.api.GrpcServerBuilder.disableDrainingRequestPayloadBody()</a></th>
+<td class="colLast">
+<div class="deprecationComment">Call <a href="io/servicetalk/grpc/api/GrpcServerBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>GrpcServerBuilder.initializeHttp(HttpInitializer)</code></a> and use
+ <a href="io/servicetalk/http/api/HttpServerBuilder.html#drainRequestPayloadBody(boolean)"><code>HttpServerBuilder.drainRequestPayloadBody(boolean)</code></a>
+ on the <code>builder</code> instance by implementing <a href="io/servicetalk/grpc/api/GrpcServerBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.HttpServerBuilder)"><code>GrpcServerBuilder.HttpInitializer.initialize(HttpServerBuilder)</code></a>
+ functional interface.</div>
 </td>
 </tr>
 <tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcServerBuilder.html#drainRequestPayloadBody(boolean)">io.servicetalk.grpc.api.GrpcServerBuilder.drainRequestPayloadBody&#8203;(boolean)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Call <a href="io/servicetalk/grpc/api/GrpcServerBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>GrpcServerBuilder.initializeHttp(HttpInitializer)</code></a> and use
+ <a href="io/servicetalk/http/api/HttpServerBuilder.html#drainRequestPayloadBody(boolean)"><code>HttpServerBuilder.drainRequestPayloadBody(boolean)</code></a>
+ on the <code>builder</code> instance by implementing <a href="io/servicetalk/grpc/api/GrpcServerBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.HttpServerBuilder)"><code>GrpcServerBuilder.HttpInitializer.initialize(HttpServerBuilder)</code></a>
+ functional interface.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcServerBuilder.html#enableWireLogging(java.lang.String)">io.servicetalk.grpc.api.GrpcServerBuilder.enableWireLogging&#8203;(String)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Call <a href="io/servicetalk/grpc/api/GrpcServerBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>GrpcServerBuilder.initializeHttp(HttpInitializer)</code></a> and use
+ <a href="io/servicetalk/http/api/HttpServerBuilder.html#enableWireLogging(java.lang.String,io.servicetalk.logging.api.LogLevel,java.util.function.BooleanSupplier)"><code>HttpServerBuilder.enableWireLogging(String, LogLevel, BooleanSupplier)</code></a>
+ on the <code>builder</code> instance by implementing <a href="io/servicetalk/grpc/api/GrpcServerBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.HttpServerBuilder)"><code>GrpcServerBuilder.HttpInitializer.initialize(HttpServerBuilder)</code></a>
+ functional interface.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcServerBuilder.html#executionStrategy(io.servicetalk.grpc.api.GrpcExecutionStrategy)">io.servicetalk.grpc.api.GrpcServerBuilder.executionStrategy&#8203;(GrpcExecutionStrategy)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Call <a href="io/servicetalk/grpc/api/GrpcServerBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>GrpcServerBuilder.initializeHttp(HttpInitializer)</code></a> and use
+ <a href="io/servicetalk/http/api/HttpServerBuilder.html#executionStrategy(io.servicetalk.http.api.HttpExecutionStrategy)"><code>HttpServerBuilder.executionStrategy(HttpExecutionStrategy)</code></a>
+ on the <code>builder</code> instance by implementing <a href="io/servicetalk/grpc/api/GrpcServerBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.HttpServerBuilder)"><code>GrpcServerBuilder.HttpInitializer.initialize(HttpServerBuilder)</code></a>
+ functional interface.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcServerBuilder.html#executor(io.servicetalk.concurrent.api.Executor)">io.servicetalk.grpc.api.GrpcServerBuilder.executor&#8203;(Executor)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Call <a href="io/servicetalk/grpc/api/GrpcServerBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>GrpcServerBuilder.initializeHttp(HttpInitializer)</code></a> and use
+ <a href="io/servicetalk/http/api/HttpServerBuilder.html#executor(io.servicetalk.concurrent.api.Executor)"><code>HttpServerBuilder.executor(Executor)</code></a>
+ on the <code>builder</code> instance by implementing <a href="io/servicetalk/grpc/api/GrpcServerBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.HttpServerBuilder)"><code>GrpcServerBuilder.HttpInitializer.initialize(HttpServerBuilder)</code></a>
+ functional interface.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcServerBuilder.html#ioExecutor(io.servicetalk.transport.api.IoExecutor)">io.servicetalk.grpc.api.GrpcServerBuilder.ioExecutor&#8203;(IoExecutor)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Call <a href="io/servicetalk/grpc/api/GrpcServerBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>GrpcServerBuilder.initializeHttp(HttpInitializer)</code></a> and use
+ <a href="io/servicetalk/http/api/HttpServerBuilder.html#ioExecutor(io.servicetalk.transport.api.IoExecutor)"><code>HttpServerBuilder.ioExecutor(IoExecutor)</code></a>
+ on the <code>builder</code> instance by implementing <a href="io/servicetalk/grpc/api/GrpcServerBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.HttpServerBuilder)"><code>GrpcServerBuilder.HttpInitializer.initialize(HttpServerBuilder)</code></a>
+ functional interface.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcServerBuilder.html#listenSocketOption(java.net.SocketOption,T)">io.servicetalk.grpc.api.GrpcServerBuilder.listenSocketOption&#8203;(SocketOption&lt;T&gt;, T)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Call <a href="io/servicetalk/grpc/api/GrpcServerBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>GrpcServerBuilder.initializeHttp(HttpInitializer)</code></a> and use
+ <a href="io/servicetalk/http/api/HttpServerBuilder.html#listenSocketOption(java.net.SocketOption,T)"><code>HttpServerBuilder.listenSocketOption(SocketOption, Object)</code></a>
+ on the <code>builder</code> instance by implementing <a href="io/servicetalk/grpc/api/GrpcServerBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.HttpServerBuilder)"><code>GrpcServerBuilder.HttpInitializer.initialize(HttpServerBuilder)</code></a>
+ functional interface.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcServerBuilder.html#protocols(io.servicetalk.http.api.HttpProtocolConfig...)">io.servicetalk.grpc.api.GrpcServerBuilder.protocols&#8203;(HttpProtocolConfig...)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Call <a href="io/servicetalk/grpc/api/GrpcServerBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>GrpcServerBuilder.initializeHttp(HttpInitializer)</code></a> and use
+ <a href="io/servicetalk/http/api/HttpServerBuilder.html#protocols(io.servicetalk.http.api.HttpProtocolConfig...)"><code>HttpServerBuilder.protocols(HttpProtocolConfig...)</code></a>
+ on the <code>builder</code> instance by implementing <a href="io/servicetalk/grpc/api/GrpcServerBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.HttpServerBuilder)"><code>GrpcServerBuilder.HttpInitializer.initialize(HttpServerBuilder)</code></a>
+ functional interface.</div>
+</td>
+</tr>
+<tr class="altColor">
 <th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcServerBuilder.html#secure()">io.servicetalk.grpc.api.GrpcServerBuilder.secure()</a></th>
 <td class="colLast">
 <div class="deprecationComment">Use <a href="io/servicetalk/grpc/api/GrpcServerBuilder.html#sslConfig(io.servicetalk.transport.api.ServerSslConfig)"><code>GrpcServerBuilder.sslConfig(ServerSslConfig)</code></a>.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcServerBuilder.html#socketOption(java.net.SocketOption,T)">io.servicetalk.grpc.api.GrpcServerBuilder.socketOption&#8203;(SocketOption&lt;T&gt;, T)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Call <a href="io/servicetalk/grpc/api/GrpcServerBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>GrpcServerBuilder.initializeHttp(HttpInitializer)</code></a> and use
+ <a href="io/servicetalk/http/api/HttpServerBuilder.html#socketOption(java.net.SocketOption,T)"><code>HttpServerBuilder.socketOption(SocketOption, Object)</code></a>
+ on the <code>builder</code> instance by implementing <a href="io/servicetalk/grpc/api/GrpcServerBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.HttpServerBuilder)"><code>GrpcServerBuilder.HttpInitializer.initialize(HttpServerBuilder)</code></a>
+ functional interface.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcServerBuilder.html#sslConfig(io.servicetalk.transport.api.ServerSslConfig)">io.servicetalk.grpc.api.GrpcServerBuilder.sslConfig&#8203;(ServerSslConfig)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Call <a href="io/servicetalk/grpc/api/GrpcServerBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>GrpcServerBuilder.initializeHttp(HttpInitializer)</code></a> and use
+ <a href="io/servicetalk/http/api/HttpServerBuilder.html#sslConfig(io.servicetalk.transport.api.ServerSslConfig)"><code>HttpServerBuilder.sslConfig(ServerSslConfig)</code></a>
+ on the <code>builder</code> instance by implementing <a href="io/servicetalk/grpc/api/GrpcServerBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.HttpServerBuilder)"><code>GrpcServerBuilder.HttpInitializer.initialize(HttpServerBuilder)</code></a>
+ functional interface.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcServerBuilder.html#transportObserver(io.servicetalk.transport.api.TransportObserver)">io.servicetalk.grpc.api.GrpcServerBuilder.transportObserver&#8203;(TransportObserver)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Call <a href="io/servicetalk/grpc/api/GrpcServerBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>GrpcServerBuilder.initializeHttp(HttpInitializer)</code></a> and use
+ <a href="io/servicetalk/http/api/HttpServerBuilder.html#transportObserver(io.servicetalk.transport.api.TransportObserver)"><code>HttpServerBuilder.transportObserver(TransportObserver)</code></a>
+ on the <code>builder</code> instance by implementing <a href="io/servicetalk/grpc/api/GrpcServerBuilder.HttpInitializer.html#initialize(io.servicetalk.http.api.HttpServerBuilder)"><code>GrpcServerBuilder.HttpInitializer.initialize(HttpServerBuilder)</code></a>
+ functional interface.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcServiceFactory.html#appendServiceFilter(FilterFactory)">io.servicetalk.grpc.api.GrpcServiceFactory.appendServiceFilter&#8203;(FilterFactory)</a></th>
+<td class="colLast">
+<div class="deprecationComment">gRPC Service Filters will be removed in future release of ServiceTalk. We encourage the use of
+ <a href="io/servicetalk/http/api/StreamingHttpServiceFilterFactory.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpServiceFilterFactory</code></a> and if the access to the decoded payload is necessary, then performing
+ that logic can be done in the particular <a href="io/servicetalk/grpc/api/GrpcService.html" title="interface in io.servicetalk.grpc.api"><code>service implementation</code></a>.
+ Please use
+ <a href="io/servicetalk/http/api/HttpServerBuilder.html#appendServiceFilter(io.servicetalk.http.api.StreamingHttpServiceFilterFactory)"><code>HttpServerBuilder.appendServiceFilter(StreamingHttpServiceFilterFactory)</code></a>
+ upon the <code>builder</code> obtained using
+ <a href="io/servicetalk/grpc/api/GrpcServerBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>GrpcServerBuilder.initializeHttp(GrpcServerBuilder.HttpInitializer)</code></a> if HTTP filters are acceptable
+ in your use case.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/grpc/api/GrpcServiceFactory.html#appendServiceFilterFactory(FilterFactory,FilterFactory)">io.servicetalk.grpc.api.GrpcServiceFactory.appendServiceFilterFactory&#8203;(FilterFactory, FilterFactory)</a></th>
+<td class="colLast">
+<div class="deprecationComment">gRPC Service Filters will be removed in future release of ServiceTalk. We encourage the use of
+ <a href="io/servicetalk/http/api/StreamingHttpServiceFilterFactory.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpServiceFilterFactory</code></a> and if the access to the decoded payload is necessary, then performing
+ that logic can be done in the particular <a href="io/servicetalk/grpc/api/GrpcService.html" title="interface in io.servicetalk.grpc.api"><code>service implementation</code></a>.
+ Please use
+ <a href="io/servicetalk/http/api/HttpServerBuilder.html#appendServiceFilter(io.servicetalk.http.api.StreamingHttpServiceFilterFactory)"><code>HttpServerBuilder.appendServiceFilter(StreamingHttpServiceFilterFactory)</code></a>
+ upon the <code>builder</code> obtained using
+ <a href="io/servicetalk/grpc/api/GrpcServerBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>GrpcServerBuilder.initializeHttp(GrpcServerBuilder.HttpInitializer)</code></a> if HTTP filters are acceptable
+ in your use case.</div>
 </td>
 </tr>
 <tr class="altColor">
@@ -491,9 +1328,122 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </td>
 </tr>
 <tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/api/BlockingHttpClient.html#reserveConnection(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.HttpRequestMetaData)">io.servicetalk.http.api.BlockingHttpClient.reserveConnection&#8203;(HttpExecutionStrategy, HttpRequestMetaData)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/http/api/BlockingHttpClient.html#reserveConnection(io.servicetalk.http.api.HttpRequestMetaData)"><code>BlockingHttpClient.reserveConnection(HttpRequestMetaData)</code></a>. If an <a href="io/servicetalk/http/api/HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> needs to be
+ altered, provide a value for <a href="io/servicetalk/http/api/HttpContextKeys.html#HTTP_EXECUTION_STRATEGY_KEY"><code>HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY</code></a> in the
+ <a href="io/servicetalk/http/api/HttpMetaData.html#context()"><code>request context</code></a>.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/api/BlockingHttpRequester.html#request(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.HttpRequest)">io.servicetalk.http.api.BlockingHttpRequester.request&#8203;(HttpExecutionStrategy, HttpRequest)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/http/api/BlockingHttpRequester.html#request(io.servicetalk.http.api.HttpRequest)"><code>BlockingHttpRequester.request(HttpRequest)</code></a>. If an <a href="io/servicetalk/http/api/HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> needs to be altered, provide a
+ value for <a href="io/servicetalk/http/api/HttpContextKeys.html#HTTP_EXECUTION_STRATEGY_KEY"><code>HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY</code></a> in the
+ <a href="io/servicetalk/http/api/HttpMetaData.html#context()"><code>request context</code></a>.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/api/BlockingStreamingHttpClient.html#reserveConnection(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.HttpRequestMetaData)">io.servicetalk.http.api.BlockingStreamingHttpClient.reserveConnection&#8203;(HttpExecutionStrategy, HttpRequestMetaData)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/http/api/BlockingStreamingHttpClient.html#reserveConnection(io.servicetalk.http.api.HttpRequestMetaData)"><code>BlockingStreamingHttpClient.reserveConnection(HttpRequestMetaData)</code></a>. If an <a href="io/servicetalk/http/api/HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> needs to be
+ altered, provide a value for <a href="io/servicetalk/http/api/HttpContextKeys.html#HTTP_EXECUTION_STRATEGY_KEY"><code>HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY</code></a> in the
+ <a href="io/servicetalk/http/api/HttpMetaData.html#context()"><code>request context</code></a>.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/api/BlockingStreamingHttpRequest.html#payloadBody(io.servicetalk.concurrent.CloseableIterable)">io.servicetalk.http.api.BlockingStreamingHttpRequest.payloadBody&#8203;(CloseableIterable&lt;Buffer&gt;)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/http/api/BlockingStreamingHttpRequest.html#payloadBody(java.lang.Iterable)"><code>BlockingStreamingHttpRequest.payloadBody(Iterable)</code></a>.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/api/BlockingStreamingHttpRequester.html#request(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.BlockingStreamingHttpRequest)">io.servicetalk.http.api.BlockingStreamingHttpRequester.request&#8203;(HttpExecutionStrategy, BlockingStreamingHttpRequest)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/http/api/BlockingStreamingHttpRequester.html#request(io.servicetalk.http.api.BlockingStreamingHttpRequest)"><code>BlockingStreamingHttpRequester.request(BlockingStreamingHttpRequest)</code></a>. If an <a href="io/servicetalk/http/api/HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> needs to be
+ altered, provide a value for <a href="io/servicetalk/http/api/HttpContextKeys.html#HTTP_EXECUTION_STRATEGY_KEY"><code>HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY</code></a> in the
+ <a href="io/servicetalk/http/api/HttpMetaData.html#context()"><code>request context</code></a>.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/api/BlockingStreamingHttpResponse.html#payloadBody(io.servicetalk.concurrent.CloseableIterable)">io.servicetalk.http.api.BlockingStreamingHttpResponse.payloadBody&#8203;(CloseableIterable&lt;Buffer&gt;)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/http/api/BlockingStreamingHttpResponse.html#payloadBody(java.lang.Iterable)"><code>BlockingStreamingHttpResponse.payloadBody(Iterable)</code></a>.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/api/FilterableStreamingHttpClient.html#reserveConnection(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.HttpRequestMetaData)">io.servicetalk.http.api.FilterableStreamingHttpClient.reserveConnection&#8203;(HttpExecutionStrategy, HttpRequestMetaData)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/http/api/FilterableStreamingHttpClient.html#reserveConnection(io.servicetalk.http.api.HttpRequestMetaData)"><code>FilterableStreamingHttpClient.reserveConnection(HttpRequestMetaData)</code></a>. If an <a href="io/servicetalk/http/api/HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> needs to be
+ altered, provide a value for <a href="io/servicetalk/http/api/HttpContextKeys.html#HTTP_EXECUTION_STRATEGY_KEY"><code>HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY</code></a> in the
+ <a href="io/servicetalk/http/api/HttpMetaData.html#context()"><code>request context</code></a>.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/api/HttpClient.html#reserveConnection(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.HttpRequestMetaData)">io.servicetalk.http.api.HttpClient.reserveConnection&#8203;(HttpExecutionStrategy, HttpRequestMetaData)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/http/api/HttpClient.html#reserveConnection(io.servicetalk.http.api.HttpRequestMetaData)"><code>HttpClient.reserveConnection(HttpRequestMetaData)</code></a>. If an <a href="io/servicetalk/http/api/HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> needs to be
+ altered, provide a value for <a href="io/servicetalk/http/api/HttpContextKeys.html#HTTP_EXECUTION_STRATEGY_KEY"><code>HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY</code></a> in the
+ <a href="io/servicetalk/http/api/HttpMetaData.html#context()"><code>request context</code></a>.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/api/HttpExecutionStrategies.Builder.html#executor(io.servicetalk.concurrent.api.Executor)">io.servicetalk.http.api.HttpExecutionStrategies.Builder.executor&#8203;(Executor)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Set the executor to use on the <a href="io/servicetalk/transport/api/ExecutionContext.html" title="interface in io.servicetalk.transport.api"><code>ExecutionContext</code></a> using
+ <code>executor(Executor)</code> methods on client/server builders.</div>
+</td>
+</tr>
+<tr class="altColor">
 <th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/api/HttpExecutionStrategies.Builder.html#offloadWithThreadAffinity()">io.servicetalk.http.api.HttpExecutionStrategies.Builder.offloadWithThreadAffinity()</a></th>
 <td class="colLast">
 <div class="deprecationComment">Use a single threaded executor with <a href="io/servicetalk/http/api/HttpExecutionStrategies.Builder.html#executor(io.servicetalk.concurrent.api.Executor)"><code>HttpExecutionStrategies.Builder.executor(Executor)</code></a> to ensure affinity.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/api/HttpExecutionStrategies.html#defaultStrategy(io.servicetalk.concurrent.api.Executor)">io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy&#8203;(Executor)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Set the executor to use on the <a href="io/servicetalk/transport/api/ExecutionContext.html" title="interface in io.servicetalk.transport.api"><code>ExecutionContext</code></a> using
+ <code>executor(Executor)</code> methods on client/server builders.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/api/HttpExecutionStrategies.html#noOffloadsStrategy()">io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy()</a></th>
+<td class="colLast">
+<div class="deprecationComment">Replaced with the more descriptive <a href="io/servicetalk/http/api/HttpExecutionStrategies.html#offloadNever()"><code>HttpExecutionStrategies.offloadNever()</code></a>.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/api/HttpExecutionStrategy.html#invokeClient(io.servicetalk.concurrent.api.Executor,io.servicetalk.concurrent.api.Publisher,FS,io.servicetalk.http.api.ClientInvoker)">io.servicetalk.http.api.HttpExecutionStrategy.invokeClient&#8203;(Executor, Publisher&lt;Object&gt;, FS, ClientInvoker&lt;FS&gt;)</a></th>
+<td class="colLast">
+<div class="deprecationComment">This method will be removed in future releases. If you depend on it, copy the implementation from
+ <a href="io/servicetalk/http/api/HttpExecutionStrategy.html#invokeClient(io.servicetalk.concurrent.api.Executor,io.servicetalk.concurrent.api.Publisher,FS,io.servicetalk.http.api.ClientInvoker)"><code>HttpExecutionStrategy.invokeClient(Executor, Publisher, Object, ClientInvoker)</code></a>.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/api/HttpExecutionStrategy.html#invokeService(io.servicetalk.concurrent.api.Executor,io.servicetalk.http.api.StreamingHttpRequest,java.util.function.Function,java.util.function.BiFunction)">io.servicetalk.http.api.HttpExecutionStrategy.invokeService&#8203;(Executor, StreamingHttpRequest, Function&lt;StreamingHttpRequest, Publisher&lt;Object&gt;&gt;, BiFunction&lt;Throwable, Executor, Publisher&lt;Object&gt;&gt;)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Will be removed as part of improved offloading strategy. If you need this API please file an issue
+ explaining the use case.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/api/HttpExecutionStrategy.html#offloadService(io.servicetalk.concurrent.api.Executor,io.servicetalk.http.api.StreamingHttpService)">io.servicetalk.http.api.HttpExecutionStrategy.offloadService&#8203;(Executor, StreamingHttpService)</a></th>
+<td class="colLast">
+<div class="deprecationComment">This method will be removed in future releases. If you depend on it, copy the implementation from
+ <a href="io/servicetalk/http/api/HttpExecutionStrategy.html#offloadService(io.servicetalk.concurrent.api.Executor,io.servicetalk.http.api.StreamingHttpService)"><code>HttpExecutionStrategy.offloadService(Executor, StreamingHttpService)</code></a>.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/api/HttpLoadBalancerFactory.html#newLoadBalancer(io.servicetalk.concurrent.api.Publisher,io.servicetalk.client.api.ConnectionFactory)">io.servicetalk.http.api.HttpLoadBalancerFactory.newLoadBalancer&#8203;(Publisher&lt;? extends ServiceDiscovererEvent&lt;ResolvedAddress&gt;&gt;, ConnectionFactory&lt;ResolvedAddress, T&gt;)</a></th>
+<td class="colLast"></td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/api/HttpRequester.html#request(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.HttpRequest)">io.servicetalk.http.api.HttpRequester.request&#8203;(HttpExecutionStrategy, HttpRequest)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/http/api/HttpRequester.html#request(io.servicetalk.http.api.HttpRequest)"><code>HttpRequester.request(HttpRequest)</code></a>. If an <a href="io/servicetalk/http/api/HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> needs to be altered, provide a
+ value for <a href="io/servicetalk/http/api/HttpContextKeys.html#HTTP_EXECUTION_STRATEGY_KEY"><code>HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY</code></a> in the
+ <a href="io/servicetalk/http/api/HttpMetaData.html#context()"><code>request context</code></a>.</div>
 </td>
 </tr>
 <tr class="altColor">
@@ -501,6 +1451,20 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <td class="colLast">
 <div class="deprecationComment">Use <a href="io/servicetalk/http/api/HttpServerBuilder.html#listenSocketOption(java.net.SocketOption,T)"><code>HttpServerBuilder.listenSocketOption(SocketOption, Object)</code></a> with key
  <a href="io/servicetalk/transport/api/ServiceTalkSocketOptions.html#SO_BACKLOG"><code>ServiceTalkSocketOptions.SO_BACKLOG</code></a>.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/api/HttpServerBuilder.html#disableDrainingRequestPayloadBody()">io.servicetalk.http.api.HttpServerBuilder.disableDrainingRequestPayloadBody()</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/http/api/HttpServerBuilder.html#drainRequestPayloadBody(boolean)"><code>HttpServerBuilder.drainRequestPayloadBody(boolean)</code></a>.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/api/HttpServerBuilder.html#doListen(io.servicetalk.transport.api.ConnectionAcceptor,io.servicetalk.http.api.StreamingHttpService,io.servicetalk.http.api.HttpExecutionStrategy,boolean)">io.servicetalk.http.api.HttpServerBuilder.doListen&#8203;(ConnectionAcceptor, StreamingHttpService, HttpExecutionStrategy, boolean)</a></th>
+<td class="colLast">
+<div class="deprecationComment">This method will be removed. If you depend upon it consider copying the implementation from
+ <code>DefaultHttpServerBuilder#doListen(ConnectionAcceptor, StreamingHttpService, HttpExecutionStrategy,
+ boolean)</code></div>
 </td>
 </tr>
 <tr class="rowColor">
@@ -556,14 +1520,6 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </td>
 </tr>
 <tr class="altColor">
-<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/api/MultiAddressHttpClientBuilder.html#bufferAllocator(io.servicetalk.buffer.api.BufferAllocator)">io.servicetalk.http.api.MultiAddressHttpClientBuilder.bufferAllocator&#8203;(BufferAllocator)</a></th>
-<td class="colLast">
-<div class="deprecationComment">Use <a href="io/servicetalk/http/api/MultiAddressHttpClientBuilder.html#initializer(io.servicetalk.http.api.MultiAddressHttpClientBuilder.SingleAddressInitializer)"><code>MultiAddressHttpClientBuilder.initializer(SingleAddressInitializer)</code></a> and
- <a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html#bufferAllocator(io.servicetalk.buffer.api.BufferAllocator)"><code>SingleAddressHttpClientBuilder.bufferAllocator(BufferAllocator)</code></a> on the last argument of
- <a href="io/servicetalk/http/api/MultiAddressHttpClientBuilder.SingleAddressInitializer.html#initialize(java.lang.String,U,io.servicetalk.http.api.SingleAddressHttpClientBuilder)"><code>MultiAddressHttpClientBuilder.SingleAddressInitializer.initialize(String, Object, SingleAddressHttpClientBuilder)</code></a>.</div>
-</td>
-</tr>
-<tr class="rowColor">
 <th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/api/MultiAddressHttpClientBuilder.html#disableHostHeaderFallback()">io.servicetalk.http.api.MultiAddressHttpClientBuilder.disableHostHeaderFallback()</a></th>
 <td class="colLast">
 <div class="deprecationComment">Use <a href="io/servicetalk/http/api/MultiAddressHttpClientBuilder.html#initializer(io.servicetalk.http.api.MultiAddressHttpClientBuilder.SingleAddressInitializer)"><code>MultiAddressHttpClientBuilder.initializer(SingleAddressInitializer)</code></a> and
@@ -571,32 +1527,24 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
  <a href="io/servicetalk/http/api/MultiAddressHttpClientBuilder.SingleAddressInitializer.html#initialize(java.lang.String,U,io.servicetalk.http.api.SingleAddressHttpClientBuilder)"><code>MultiAddressHttpClientBuilder.SingleAddressInitializer.initialize(String, Object, SingleAddressHttpClientBuilder)</code></a>.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/api/MultiAddressHttpClientBuilder.html#enableWireLogging(java.lang.String)">io.servicetalk.http.api.MultiAddressHttpClientBuilder.enableWireLogging&#8203;(String)</a></th>
 <td class="colLast"></td>
 </tr>
-<tr class="rowColor">
-<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/api/MultiAddressHttpClientBuilder.html#executionStrategy(io.servicetalk.http.api.HttpExecutionStrategy)">io.servicetalk.http.api.MultiAddressHttpClientBuilder.executionStrategy&#8203;(HttpExecutionStrategy)</a></th>
-<td class="colLast">
-<div class="deprecationComment">Use <a href="io/servicetalk/http/api/MultiAddressHttpClientBuilder.html#initializer(io.servicetalk.http.api.MultiAddressHttpClientBuilder.SingleAddressInitializer)"><code>MultiAddressHttpClientBuilder.initializer(SingleAddressInitializer)</code></a> and
- <a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html#executionStrategy(io.servicetalk.http.api.HttpExecutionStrategy)"><code>SingleAddressHttpClientBuilder.executionStrategy(HttpExecutionStrategy)</code></a> on the last argument of
- <a href="io/servicetalk/http/api/MultiAddressHttpClientBuilder.SingleAddressInitializer.html#initialize(java.lang.String,U,io.servicetalk.http.api.SingleAddressHttpClientBuilder)"><code>MultiAddressHttpClientBuilder.SingleAddressInitializer.initialize(String, Object, SingleAddressHttpClientBuilder)</code></a>.</div>
-</td>
-</tr>
 <tr class="altColor">
-<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/api/MultiAddressHttpClientBuilder.html#ioExecutor(io.servicetalk.transport.api.IoExecutor)">io.servicetalk.http.api.MultiAddressHttpClientBuilder.ioExecutor&#8203;(IoExecutor)</a></th>
-<td class="colLast">
-<div class="deprecationComment">Use <a href="io/servicetalk/http/api/MultiAddressHttpClientBuilder.html#initializer(io.servicetalk.http.api.MultiAddressHttpClientBuilder.SingleAddressInitializer)"><code>MultiAddressHttpClientBuilder.initializer(SingleAddressInitializer)</code></a> and
- <a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html#ioExecutor(io.servicetalk.transport.api.IoExecutor)"><code>SingleAddressHttpClientBuilder.ioExecutor(IoExecutor)</code></a> on the last argument of
- <a href="io/servicetalk/http/api/MultiAddressHttpClientBuilder.SingleAddressInitializer.html#initialize(java.lang.String,U,io.servicetalk.http.api.SingleAddressHttpClientBuilder)"><code>MultiAddressHttpClientBuilder.SingleAddressInitializer.initialize(String, Object, SingleAddressHttpClientBuilder)</code></a>.</div>
-</td>
-</tr>
-<tr class="rowColor">
 <th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/api/MultiAddressHttpClientBuilder.html#loadBalancerFactory(io.servicetalk.http.api.HttpLoadBalancerFactory)">io.servicetalk.http.api.MultiAddressHttpClientBuilder.loadBalancerFactory&#8203;(HttpLoadBalancerFactory&lt;R&gt;)</a></th>
 <td class="colLast">
 <div class="deprecationComment">Use <a href="io/servicetalk/http/api/MultiAddressHttpClientBuilder.html#initializer(io.servicetalk.http.api.MultiAddressHttpClientBuilder.SingleAddressInitializer)"><code>MultiAddressHttpClientBuilder.initializer(SingleAddressInitializer)</code></a> and
  <a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html#loadBalancerFactory(io.servicetalk.http.api.HttpLoadBalancerFactory)"><code>SingleAddressHttpClientBuilder.loadBalancerFactory(HttpLoadBalancerFactory)</code></a> on the last
  argument of <a href="io/servicetalk/http/api/MultiAddressHttpClientBuilder.SingleAddressInitializer.html#initialize(java.lang.String,U,io.servicetalk.http.api.SingleAddressHttpClientBuilder)"><code>MultiAddressHttpClientBuilder.SingleAddressInitializer.initialize(String, Object, SingleAddressHttpClientBuilder)</code></a>.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/api/MultiAddressHttpClientBuilder.html#maxRedirects(int)">io.servicetalk.http.api.MultiAddressHttpClientBuilder.maxRedirects&#8203;(int)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/http/api/MultiAddressHttpClientBuilder.html#followRedirects(io.servicetalk.http.api.RedirectConfig)"><code>MultiAddressHttpClientBuilder.followRedirects(RedirectConfig)</code></a> with <a href="io/servicetalk/http/api/RedirectConfigBuilder.html#maxRedirects(int)"><code>RedirectConfigBuilder.maxRedirects(int)</code></a>.
+ Starting from version 0.42, redirects will be disabled by default and <a href="io/servicetalk/http/api/RedirectConfig.html" title="interface in io.servicetalk.http.api"><code>RedirectConfig</code></a> will be required to
+ enable them.</div>
 </td>
 </tr>
 <tr class="altColor">
@@ -611,7 +1559,7 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/api/MultiAddressHttpClientBuilder.html#retryServiceDiscoveryErrors(io.servicetalk.http.api.ServiceDiscoveryRetryStrategy)">io.servicetalk.http.api.MultiAddressHttpClientBuilder.retryServiceDiscoveryErrors&#8203;(ServiceDiscoveryRetryStrategy&lt;R, ServiceDiscovererEvent&lt;R&gt;&gt;)</a></th>
 <td class="colLast">
 <div class="deprecationComment">Use <a href="io/servicetalk/http/api/MultiAddressHttpClientBuilder.html#initializer(io.servicetalk.http.api.MultiAddressHttpClientBuilder.SingleAddressInitializer)"><code>MultiAddressHttpClientBuilder.initializer(SingleAddressInitializer)</code></a> and
- <a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html#retryServiceDiscoveryErrors(io.servicetalk.http.api.ServiceDiscoveryRetryStrategy)"><code>SingleAddressHttpClientBuilder.retryServiceDiscoveryErrors(ServiceDiscoveryRetryStrategy)</code></a> on the last
+ <code>HttpClientBuilder.retryServiceDiscoveryErrors(ServiceDiscoveryRetryStrategy)</code> on the last
  argument of <a href="io/servicetalk/http/api/MultiAddressHttpClientBuilder.SingleAddressInitializer.html#initialize(java.lang.String,U,io.servicetalk.http.api.SingleAddressHttpClientBuilder)"><code>MultiAddressHttpClientBuilder.SingleAddressInitializer.initialize(String, Object, SingleAddressHttpClientBuilder)</code></a>.</div>
 </td>
 </tr>
@@ -774,6 +1722,16 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </td>
 </tr>
 <tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/api/ReservedStreamingHttpConnectionFilter.html#request(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.StreamingHttpRequest)">io.servicetalk.http.api.ReservedStreamingHttpConnectionFilter.request&#8203;(HttpExecutionStrategy, StreamingHttpRequest)</a></th>
+<td class="colLast"></td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html#disableHostHeaderFallback()">io.servicetalk.http.api.SingleAddressHttpClientBuilder.disableHostHeaderFallback()</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html#hostHeaderFallback(boolean)"><code>SingleAddressHttpClientBuilder.hostHeaderFallback(boolean)</code></a>.</div>
+</td>
+</tr>
+<tr class="rowColor">
 <th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html#enableWireLogging(java.lang.String)">io.servicetalk.http.api.SingleAddressHttpClientBuilder.enableWireLogging&#8203;(String)</a></th>
 <td class="colLast"></td>
 </tr>
@@ -784,15 +1742,49 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </td>
 </tr>
 <tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/api/StreamingHttpClient.html#reserveConnection(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.HttpRequestMetaData)">io.servicetalk.http.api.StreamingHttpClient.reserveConnection&#8203;(HttpExecutionStrategy, HttpRequestMetaData)</a></th>
+<td class="colLast"></td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/api/StreamingHttpClientFilter.html#request(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.StreamingHttpRequest)">io.servicetalk.http.api.StreamingHttpClientFilter.request&#8203;(HttpExecutionStrategy, StreamingHttpRequest)</a></th>
+<td class="colLast"></td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/api/StreamingHttpClientFilter.html#reserveConnection(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.HttpRequestMetaData)">io.servicetalk.http.api.StreamingHttpClientFilter.reserveConnection&#8203;(HttpExecutionStrategy, HttpRequestMetaData)</a></th>
+<td class="colLast"></td>
+</tr>
+<tr class="altColor">
 <th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/api/StreamingHttpClientFilterFactory.html#append(io.servicetalk.http.api.StreamingHttpClientFilterFactory)">io.servicetalk.http.api.StreamingHttpClientFilterFactory.append&#8203;(StreamingHttpClientFilterFactory)</a></th>
 <td class="colLast">
 <div class="deprecationComment">Use <code>HttpClientBuilder.appendClientFilter(StreamingHttpClientFilterFactory)</code></div>
 </td>
 </tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/api/StreamingHttpClientFilterFactory.html#asMultiAddressClientFilter()">io.servicetalk.http.api.StreamingHttpClientFilterFactory.asMultiAddressClientFilter()</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use
+   <a href="io/servicetalk/http/api/MultiAddressHttpClientBuilder.html#initializer(io.servicetalk.http.api.MultiAddressHttpClientBuilder.SingleAddressInitializer)"><code>MultiAddressHttpClientBuilder.initializer(MultiAddressHttpClientBuilder.SingleAddressInitializer)</code></a> and
+   <a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html#appendClientFilter(io.servicetalk.http.api.StreamingHttpClientFilterFactory)"><code>SingleAddressHttpClientBuilder.appendClientFilter(StreamingHttpClientFilterFactory)</code></a>
+   on the last argument of
+   <a href="io/servicetalk/http/api/MultiAddressHttpClientBuilder.SingleAddressInitializer.html#initialize(java.lang.String,U,io.servicetalk.http.api.SingleAddressHttpClientBuilder)"><code>MultiAddressHttpClientBuilder.SingleAddressInitializer.initialize(String, Object, SingleAddressHttpClientBuilder)</code></a>.</div>
+</td>
+</tr>
 <tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/api/StreamingHttpConnectionFilter.html#request(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.StreamingHttpRequest)">io.servicetalk.http.api.StreamingHttpConnectionFilter.request&#8203;(HttpExecutionStrategy, StreamingHttpRequest)</a></th>
+<td class="colLast"></td>
+</tr>
+<tr class="rowColor">
 <th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/api/StreamingHttpConnectionFilterFactory.html#append(io.servicetalk.http.api.StreamingHttpConnectionFilterFactory)">io.servicetalk.http.api.StreamingHttpConnectionFilterFactory.append&#8203;(StreamingHttpConnectionFilterFactory)</a></th>
 <td class="colLast">
 <div class="deprecationComment">Use <code>BaseHttpBuilder.appendConnectionFilter(StreamingHttpConnectionFilterFactory)</code></div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/api/StreamingHttpRequester.html#request(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.StreamingHttpRequest)">io.servicetalk.http.api.StreamingHttpRequester.request&#8203;(HttpExecutionStrategy, StreamingHttpRequest)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/http/api/StreamingHttpRequester.html#request(io.servicetalk.http.api.StreamingHttpRequest)"><code>StreamingHttpRequester.request(StreamingHttpRequest)</code></a>. If an <a href="io/servicetalk/http/api/HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> needs to be
+ altered, provide a value for <a href="io/servicetalk/http/api/HttpContextKeys.html#HTTP_EXECUTION_STRATEGY_KEY"><code>HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY</code></a> in the
+ <a href="io/servicetalk/http/api/HttpMetaData.html#context()"><code>request context</code></a>.</div>
 </td>
 </tr>
 <tr class="rowColor">
@@ -814,31 +1806,174 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </td>
 </tr>
 <tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/netty/HttpClients.html#forResolvedAddressViaProxy(java.lang.String,int,java.lang.String,int)">io.servicetalk.http.netty.HttpClients.forResolvedAddressViaProxy&#8203;(String, int, String, int)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html#proxyAddress(U)"><code>SingleAddressHttpClientBuilder.proxyAddress(Object)</code></a> on the instance returned from
+ <a href="io/servicetalk/http/netty/HttpClients.html#forResolvedAddress(java.lang.String,int)"><code>HttpClients.forResolvedAddress(String, int)</code></a>.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/netty/HttpClients.html#forSingleAddressViaProxy(java.lang.String,int,java.lang.String,int)">io.servicetalk.http.netty.HttpClients.forSingleAddressViaProxy&#8203;(String, int, String, int)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html#proxyAddress(U)"><code>SingleAddressHttpClientBuilder.proxyAddress(Object)</code></a> on the instance returned from
+ <a href="io/servicetalk/http/netty/HttpClients.html#forSingleAddress(java.lang.String,int)"><code>HttpClients.forSingleAddress(String, int)</code></a>.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/security/auth/basic/jersey/BasicAuthSecurityContextFilters.html#forGlobalBinding(io.servicetalk.concurrent.api.AsyncContextMap.Key)">io.servicetalk.http.security.auth.basic.jersey.BasicAuthSecurityContextFilters.forGlobalBinding&#8203;(AsyncContextMap.Key&lt;UserInfo&gt;)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/http/security/auth/basic/jersey/BasicAuthSecurityContextFilters.html#forGlobalBinding(io.servicetalk.context.api.ContextMap.Key)"><code>BasicAuthSecurityContextFilters.forGlobalBinding(ContextMap.Key)</code></a></div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/security/auth/basic/jersey/BasicAuthSecurityContextFilters.html#forNameBinding(io.servicetalk.concurrent.api.AsyncContextMap.Key)">io.servicetalk.http.security.auth.basic.jersey.BasicAuthSecurityContextFilters.forNameBinding&#8203;(AsyncContextMap.Key&lt;UserInfo&gt;)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/http/security/auth/basic/jersey/BasicAuthSecurityContextFilters.html#forNameBinding(io.servicetalk.context.api.ContextMap.Key)"><code>BasicAuthSecurityContextFilters.forNameBinding(ContextMap.Key)</code></a></div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/utils/auth/BasicAuthHttpServiceFilter.Builder.html#userInfoKey(io.servicetalk.concurrent.api.AsyncContextMap.Key)">io.servicetalk.http.utils.auth.BasicAuthHttpServiceFilter.Builder.userInfoKey&#8203;(AsyncContextMap.Key&lt;UserInfo&gt;)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/http/utils/auth/BasicAuthHttpServiceFilter.Builder.html#userInfoAsyncContextKey(io.servicetalk.context.api.ContextMap.Key)"><code>BasicAuthHttpServiceFilter.Builder.userInfoAsyncContextKey(ContextMap.Key)</code></a></div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/loadbalancer/RoundRobinLoadBalancer.html#newRoundRobinFactory()">io.servicetalk.loadbalancer.RoundRobinLoadBalancer.newRoundRobinFactory()</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/loadbalancer/RoundRobinLoadBalancerFactory.html" title="class in io.servicetalk.loadbalancer"><code>RoundRobinLoadBalancerFactory</code></a> to build instances
+ of this <a href="io/servicetalk/client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/loadbalancer/RoundRobinLoadBalancerFactory.Builder.html#eagerConnectionShutdown(boolean)">io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory.Builder.eagerConnectionShutdown&#8203;(boolean)</a></th>
+<td class="colLast">
+<div class="deprecationComment">To control the behaviour, configure the
+ <a href="io/servicetalk/client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> of your choice to deliver appropriate
+ <a href="io/servicetalk/client/api/ServiceDiscovererEvent.html#status()"><code>ServiceDiscovererEvent.status()</code></a>. In order to avoid connection shutdown use
+ <a href="io/servicetalk/client/api/ServiceDiscovererEvent.Status.html#EXPIRED"><code>ServiceDiscovererEvent.Status.EXPIRED</code></a>. Use <a href="io/servicetalk/client/api/ServiceDiscovererEvent.Status.html#UNAVAILABLE"><code>ServiceDiscovererEvent.Status.UNAVAILABLE</code></a> when the
+ connections should be eagerly closed upon such event.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/opentracing/inmemory/api/InMemorySpan.html#nonnullParentSpanIdHex()">io.servicetalk.opentracing.inmemory.api.InMemorySpan.nonnullParentSpanIdHex()</a></th>
+<td class="colLast">
+<div class="deprecationComment">This method will be removed in a follow up release, to an effort to clean API.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/opentracing/inmemory/api/InMemorySpan.html#parentSpanId()">io.servicetalk.opentracing.inmemory.api.InMemorySpan.parentSpanId()</a></th>
+<td class="colLast">
+<div class="deprecationComment">This method will be removed in a follow up release, to an effort to clean API.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/opentracing/inmemory/api/InMemorySpan.html#spanId()">io.servicetalk.opentracing.inmemory.api.InMemorySpan.spanId()</a></th>
+<td class="colLast">
+<div class="deprecationComment">This method will be removed in a follow up release, to an effort to clean API.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/opentracing/inmemory/api/InMemorySpan.html#traceId()">io.servicetalk.opentracing.inmemory.api.InMemorySpan.traceId()</a></th>
+<td class="colLast">
+<div class="deprecationComment">This method will be removed in a follow up release, to an effort to clean API.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/opentracing/inmemory/api/InMemorySpan.html#traceIdHigh()">io.servicetalk.opentracing.inmemory.api.InMemorySpan.traceIdHigh()</a></th>
+<td class="colLast">
+<div class="deprecationComment">This method will be removed in a follow up release, to an effort to clean API.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/opentracing/inmemory/api/InMemorySpanContext.html#isSampled()">io.servicetalk.opentracing.inmemory.api.InMemorySpanContext.isSampled()</a></th>
+<td class="colLast">
+<div class="deprecationComment">This method will change in a follow up release, to hold an additional state of <code>null</code>.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/opentracing/inmemory/api/InMemorySpanContext.html#traceState()">io.servicetalk.opentracing.inmemory.api.InMemorySpanContext.traceState()</a></th>
+<td class="colLast">
+<div class="deprecationComment">This method will be removed in a follow up release, to an effort to clean API. Alternative accessors
+ will be offered through the <a href="io/servicetalk/opentracing/inmemory/api/InMemorySpanContext.html" title="interface in io.servicetalk.opentracing.inmemory.api"><code>InMemorySpanContext</code></a> API.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/opentracing/zipkin/publisher/reporter/HttpReporter.Builder.html#disableSpanBatching()">io.servicetalk.opentracing.zipkin.publisher.reporter.HttpReporter.Builder.disableSpanBatching()</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/opentracing/zipkin/publisher/reporter/HttpReporter.Builder.html#spansBatchingEnabled(boolean)"><code>HttpReporter.Builder.spansBatchingEnabled(boolean)</code></a>.</div>
+</td>
+</tr>
+<tr class="rowColor">
 <th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/opentracing/zipkin/publisher/reporter/UdpReporter.Builder.html#enableWireLogging(java.lang.String)">io.servicetalk.opentracing.zipkin.publisher.reporter.UdpReporter.Builder.enableWireLogging&#8203;(String)</a></th>
 <td class="colLast">
 <div class="deprecationComment">Use <a href="io/servicetalk/opentracing/zipkin/publisher/reporter/UdpReporter.Builder.html#enableWireLogging(java.lang.String,io.servicetalk.logging.api.LogLevel,java.util.function.BooleanSupplier)"><code>UdpReporter.Builder.enableWireLogging(String, LogLevel, BooleanSupplier)</code></a> instead.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/tcp/netty/internal/ReadOnlyTcpServerConfig.html#backlog()">io.servicetalk.tcp.netty.internal.ReadOnlyTcpServerConfig.backlog()</a></th>
 <td class="colLast">
 <div class="deprecationComment">Use <a href="io/servicetalk/tcp/netty/internal/ReadOnlyTcpServerConfig.html#listenOptions()"><code>ReadOnlyTcpServerConfig.listenOptions()</code></a> with key <a href="io/servicetalk/transport/api/ServiceTalkSocketOptions.html#SO_BACKLOG"><code>ServiceTalkSocketOptions.SO_BACKLOG</code></a>.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/tcp/netty/internal/TcpServerConfig.html#backlog(int)">io.servicetalk.tcp.netty.internal.TcpServerConfig.backlog&#8203;(int)</a></th>
 <td class="colLast">
 <div class="deprecationComment">Use <a href="io/servicetalk/tcp/netty/internal/TcpServerConfig.html#listenSocketOption(java.net.SocketOption,T)"><code>TcpServerConfig.listenSocketOption(SocketOption, Object)</code></a> with
  <a href="io/servicetalk/transport/api/ServiceTalkSocketOptions.html#SO_BACKLOG"><code>ServiceTalkSocketOptions.SO_BACKLOG</code></a>.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/transport/api/ClientSslConfigBuilder.html#disableHostnameVerification()">io.servicetalk.transport.api.ClientSslConfigBuilder.disableHostnameVerification()</a></th>
 <td class="colLast">
 <div class="deprecationComment">Disabling hostname verification may leave you vulnerable to man-in-the-middle attacks. See
  <a href="https://tools.ietf.org/search/rfc2818#section-3.1">server identity</a> on the risks of disabling.
  If the expected value isn't automatically inferred use <a href="io/servicetalk/transport/api/ClientSslConfigBuilder.html#peerHost(java.lang.String)"><code>ClientSslConfigBuilder.peerHost(String)</code></a> to set the expected value.
  When disabling is intended, use <a href="io/servicetalk/transport/api/ClientSslConfigBuilder.html#hostnameVerificationAlgorithm"><code>ClientSslConfigBuilder.hostnameVerificationAlgorithm</code></a> with <code>""</code> as argument.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/transport/api/ConnectionObserver.ReadObserver.html#itemRead()">io.servicetalk.transport.api.ConnectionObserver.ReadObserver.itemRead()</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/transport/api/ConnectionObserver.ReadObserver.html#itemRead(java.lang.Object)"><code>ConnectionObserver.ReadObserver.itemRead(Object)</code></a></div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/transport/api/ConnectionObserver.WriteObserver.html#itemReceived()">io.servicetalk.transport.api.ConnectionObserver.WriteObserver.itemReceived()</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use {<a href="io/servicetalk/transport/api/ConnectionObserver.WriteObserver.html#itemReceived(java.lang.Object)"><code>ConnectionObserver.WriteObserver.itemReceived(Object)</code></a>}</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/transport/api/ConnectionObserver.WriteObserver.html#itemWritten()">io.servicetalk.transport.api.ConnectionObserver.WriteObserver.itemWritten()</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/transport/api/ConnectionObserver.WriteObserver.html#itemWritten(java.lang.Object)"><code>ConnectionObserver.WriteObserver.itemWritten(Object)</code></a></div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/transport/api/ExecutionStrategy.html#executor()">io.servicetalk.transport.api.ExecutionStrategy.executor()</a></th>
+<td class="colLast">
+<div class="deprecationComment">The <a href="io/servicetalk/concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> from the <a href="io/servicetalk/transport/api/ExecutionContext.html" title="interface in io.servicetalk.transport.api"><code>ExecutionContext</code></a> should be used
+ instead.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/transport/api/ExecutionStrategy.html#offloadReceive(io.servicetalk.concurrent.api.Executor,io.servicetalk.concurrent.api.Single)">io.servicetalk.transport.api.ExecutionStrategy.offloadReceive&#8203;(Executor, Single&lt;T&gt;)</a></th>
+<td class="colLast">
+<div class="deprecationComment">This method will be removed. If you depend upon it consider copying the implementation from
+ <code>DefaultHttpExecutionStrategy#offloadReceive()</code></div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/transport/api/ExecutionStrategy.html#offloadSend(io.servicetalk.concurrent.api.Executor,io.servicetalk.concurrent.api.Single)">io.servicetalk.transport.api.ExecutionStrategy.offloadSend&#8203;(Executor, Single&lt;T&gt;)</a></th>
+<td class="colLast">
+<div class="deprecationComment">This method will be removed. If you depend upon it consider copying the implementation from
+ <code>DefaultHttpExecutionStrategy#offloadSend()</code></div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/transport/api/TransportObserver.html#onNewConnection()">io.servicetalk.transport.api.TransportObserver.onNewConnection()</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/transport/api/TransportObserver.html#onNewConnection(java.lang.Object,java.lang.Object)"><code>TransportObserver.onNewConnection(Object, Object)</code></a></div>
 </td>
 </tr>
 <tr class="altColor">
@@ -851,6 +1986,86 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/transport/netty/internal/BuilderUtils.html#useKQueue(io.netty.channel.EventLoopGroup)">io.servicetalk.transport.netty.internal.BuilderUtils.useKQueue&#8203;(EventLoopGroup)</a></th>
 <td class="colLast">
 <div class="deprecationComment">Use <code>NativeTransportUtils.useKQueue(EventLoopGroup)</code></div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/transport/netty/internal/NettyIoExecutors.html#createEventLoopGroup(int,java.util.concurrent.ThreadFactory)">io.servicetalk.transport.netty.internal.NettyIoExecutors.createEventLoopGroup&#8203;(int, ThreadFactory)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/transport/netty/internal/EventLoopAwareNettyIoExecutors.html#toEventLoopAwareNettyIoExecutor(io.servicetalk.transport.api.IoExecutor)"><code>EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor(IoExecutor)</code></a> and
+ <a href="io/servicetalk/transport/netty/internal/EventLoopAwareNettyIoExecutor.html#eventLoopGroup()"><code>EventLoopAwareNettyIoExecutor.eventLoopGroup()</code></a> with any <a href="io/servicetalk/transport/netty/internal/NettyIoExecutor.html" title="interface in io.servicetalk.transport.netty.internal"><code>NettyIoExecutor</code></a> created by other factory
+ methods in this class.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/transport/netty/internal/NettyIoExecutors.html#createIoExecutor(java.util.concurrent.ThreadFactory)">io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor&#8203;(ThreadFactory)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/transport/netty/internal/NettyIoExecutors.html#createIoExecutor(io.servicetalk.transport.api.IoThreadFactory)"><code>NettyIoExecutors.createIoExecutor(IoThreadFactory)</code></a>.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/transport/netty/NettyIoExecutors.html#createIoExecutor(int,java.util.concurrent.ThreadFactory)">io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor&#8203;(int, ThreadFactory)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/transport/netty/NettyIoExecutors.html#createIoExecutor(int,io.servicetalk.transport.api.IoThreadFactory)"><code>NettyIoExecutors.createIoExecutor(int, IoThreadFactory)</code></a>.</div>
+</td>
+</tr>
+</tbody>
+</table>
+</li>
+</ul>
+<a id="constructor">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<table class="deprecatedSummary">
+<caption><span>Constructors</span><span class="tabEnd">&nbsp;</span></caption>
+<tr>
+<th class="colFirst" scope="col">Constructor</th>
+<th class="colLast" scope="col">Description</th>
+</tr>
+<tbody>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/client/api/DefaultServiceDiscovererEvent.html#%3Cinit%3E(T,boolean)">io.servicetalk.client.api.DefaultServiceDiscovererEvent&#8203;(T, boolean)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use
+ <a href="io/servicetalk/client/api/DefaultServiceDiscovererEvent.html#%3Cinit%3E(T,io.servicetalk.client.api.ServiceDiscovererEvent.Status)"><code>DefaultServiceDiscovererEvent(Object, io.servicetalk.client.api.ServiceDiscovererEvent.Status)</code></a>.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/api/DefaultHttpHeadersFactory.html#%3Cinit%3E(boolean,boolean)">io.servicetalk.http.api.DefaultHttpHeadersFactory&#8203;(boolean, boolean)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/http/api/DefaultHttpHeadersFactory.html#%3Cinit%3E(boolean,boolean,boolean)"><code>DefaultHttpHeadersFactory(boolean, boolean, boolean)</code></a>.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/netty/H2HeadersFactory.html#%3Cinit%3E(boolean,boolean)">io.servicetalk.http.netty.H2HeadersFactory&#8203;(boolean, boolean)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/http/netty/H2HeadersFactory.html#%3Cinit%3E(boolean,boolean,boolean)"><code>H2HeadersFactory(boolean, boolean, boolean)</code></a>.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/utils/RedirectingHttpRequesterFilter.html#%3Cinit%3E(int)">io.servicetalk.http.utils.RedirectingHttpRequesterFilter&#8203;(int)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/http/utils/RedirectingHttpRequesterFilter.html#%3Cinit%3E(io.servicetalk.http.api.RedirectConfig)"><code>RedirectingHttpRequesterFilter(RedirectConfig)</code></a>.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/loadbalancer/RoundRobinLoadBalancer.html#%3Cinit%3E(io.servicetalk.concurrent.api.Publisher,io.servicetalk.client.api.ConnectionFactory)">io.servicetalk.loadbalancer.RoundRobinLoadBalancer&#8203;(Publisher&lt;? extends ServiceDiscovererEvent&lt;ResolvedAddress&gt;&gt;, ConnectionFactory&lt;ResolvedAddress, ? extends C&gt;)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/loadbalancer/RoundRobinLoadBalancerFactory.html" title="class in io.servicetalk.loadbalancer"><code>RoundRobinLoadBalancerFactory</code></a> to build instances
+ of this <a href="io/servicetalk/client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/transport/netty/internal/ConnectionObserverInitializer.html#%3Cinit%3E(io.servicetalk.transport.api.ConnectionObserver,boolean)">io.servicetalk.transport.netty.internal.ConnectionObserverInitializer&#8203;(ConnectionObserver, boolean)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/transport/netty/internal/ConnectionObserverInitializer.html#%3Cinit%3E(io.servicetalk.transport.api.ConnectionObserver,boolean,boolean)"><code>ConnectionObserverInitializer(ConnectionObserver, boolean, boolean)</code></a></div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/transport/netty/internal/IoThreadFactory.html#%3Cinit%3E(java.lang.String)">io.servicetalk.transport.netty.internal.IoThreadFactory&#8203;(String)</a></th>
+<td class="colLast">
+<div class="deprecationComment">Consider using <code>io.servicetalk.transport.netty.NettyIoExecutors#createIoExecutor(String)</code>.</div>
 </td>
 </tr>
 </tbody>

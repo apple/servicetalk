@@ -359,9 +359,12 @@ extends java.lang.Object</pre>
 <dd><code>T</code> - The type of <code>SocketAddress</code>.</dd>
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>address</code> - the <code>ResolvedAddress</code> to connect. This address will also be used for the
- <a href="../../http/api/HttpHeaderNames.html#HOST"><code>HttpHeaderNames.HOST</code></a>. Use <a href="../api/GrpcClientBuilder.html#unresolvedAddressToHost(java.util.function.Function)"><code>GrpcClientBuilder.unresolvedAddressToHost(Function)</code></a>
- if you want to override that value or <a href="../api/GrpcClientBuilder.html#disableHostHeaderFallback()"><code>GrpcClientBuilder.disableHostHeaderFallback()</code></a> if you
- want to disable this behavior.</dd>
+ <a href="../../http/api/HttpHeaderNames.html#HOST"><code>HttpHeaderNames.HOST</code></a>.
+ Use <a href="../../http/api/SingleAddressHttpClientBuilder.html#unresolvedAddressToHost(java.util.function.Function)"><code>SingleAddressHttpClientBuilder.unresolvedAddressToHost(Function)</code></a>
+ via <a href="../api/GrpcClientBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcClientBuilder.HttpInitializer)"><code>GrpcClientBuilder.initializeHttp(GrpcClientBuilder.HttpInitializer)</code></a>
+ if you want to override that value or
+ <a href="../../http/api/SingleAddressHttpClientBuilder.html#hostHeaderFallback(boolean)"><code>SingleAddressHttpClientBuilder.hostHeaderFallback(boolean)</code></a>
+ if you want to disable this behavior.</dd>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd>new builder for the address</dd>
 </dl>

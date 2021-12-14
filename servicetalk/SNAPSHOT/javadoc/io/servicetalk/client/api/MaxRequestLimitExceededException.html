@@ -147,8 +147,13 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <dd><code><a href="internal/MaxRequestLimitExceededRejectedSubscribeException.html" title="class in io.servicetalk.client.api.internal">MaxRequestLimitExceededRejectedSubscribeException</a></code></dd>
 </dl>
 <hr>
-<pre>public class <span class="typeNameLabel">MaxRequestLimitExceededException</span>
+<pre>@Deprecated
+public class <span class="typeNameLabel">MaxRequestLimitExceededException</span>
 extends java.lang.RuntimeException</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">There is no code that can throw this exception. We will remove it and create a new exception type if
+ there is a use-case in future releases.</div>
+</div>
 <div class="block">Exception raised when more concurrent requests have been issued on a connection than is allowed.</div>
 <dl>
 <dt><span class="seeLabel">See Also:</span></dt>
@@ -176,6 +181,7 @@ extends java.lang.RuntimeException</pre>
 <tr class="altColor">
 <th class="colConstructorName" scope="row"><code><span class="memberNameLink"><a href="#%3Cinit%3E(java.lang.String)">MaxRequestLimitExceededException</a></span>&#8203;(java.lang.String&nbsp;message)</code></th>
 <td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">New instance.</div>
 </td>
 </tr>
@@ -227,6 +233,7 @@ extends java.lang.RuntimeException</pre>
 <li class="blockList">
 <h4>MaxRequestLimitExceededException</h4>
 <pre>public&nbsp;MaxRequestLimitExceededException&#8203;(java.lang.String&nbsp;message)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
 <div class="block">New instance.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>

@@ -139,7 +139,10 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <hr>
 <pre>public abstract static class <span class="typeNameLabel">BasicAuthSecurityContextFilters.UserInfoBuilder&lt;UserInfo&gt;</span>
 extends <a href="BasicAuthSecurityContextFilters.AbstractBuilder.html" title="class in io.servicetalk.http.security.auth.basic.jersey">BasicAuthSecurityContextFilters.AbstractBuilder</a>&lt;<a href="BasicAuthSecurityContextFilters.UserInfoBuilder.html" title="class in io.servicetalk.http.security.auth.basic.jersey">BasicAuthSecurityContextFilters.UserInfoBuilder</a>&lt;UserInfo&gt;,&#8203;java.util.function.BiFunction&lt;javax.ws.rs.container.ContainerRequestContext,&#8203;UserInfo,&#8203;java.security.Principal&gt;,&#8203;java.util.function.BiFunction&lt;javax.ws.rs.container.ContainerRequestContext,&#8203;UserInfo,&#8203;javax.ws.rs.core.SecurityContext&gt;&gt;</pre>
-<div class="block">A builder that can be used when user info is stored in <a href="../../../../../concurrent/api/AsyncContext.html" title="class in io.servicetalk.concurrent.api"><code>AsyncContext</code></a>.</div>
+<div class="block">A builder that can be used when user info is stored in <a href="../../../../../concurrent/api/AsyncContext.html" title="class in io.servicetalk.concurrent.api"><code>AsyncContext</code></a>.
+ <p>
+ For example, it can be used with <code>io.servicetalk.http.utils.auth.BasicAuthHttpServiceFilter</code> configured
+ with <code>userInfoAsyncContextKey(ContextMap.Key)</code> at the builder.</div>
 </li>
 </ul>
 </div>

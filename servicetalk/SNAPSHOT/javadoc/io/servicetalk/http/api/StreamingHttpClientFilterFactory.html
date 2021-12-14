@@ -26,7 +26,7 @@
     catch(err) {
     }
 //-->
-var data = {"i0":50,"i1":18,"i2":6};
+var data = {"i0":50,"i1":50,"i2":6};
 var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"],16:["t5","Default Methods"],32:["t6","Deprecated Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
@@ -127,7 +127,7 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </dl>
 <dl>
 <dt>All Known Implementing Classes:</dt>
-<dd><code><a href="ConditionalFilterFactory.html" title="class in io.servicetalk.http.api">ConditionalFilterFactory</a></code>, <code><a href="ContentCodingHttpRequesterFilter.html" title="class in io.servicetalk.http.api">ContentCodingHttpRequesterFilter</a></code>, <code><a href="../utils/RedirectingHttpRequesterFilter.html" title="class in io.servicetalk.http.utils">RedirectingHttpRequesterFilter</a></code>, <code><a href="../utils/RequestTargetEncoderHttpRequesterFilter.html" title="class in io.servicetalk.http.utils">RequestTargetEncoderHttpRequesterFilter</a></code>, <code><a href="../utils/RetryingHttpRequesterFilter.html" title="class in io.servicetalk.http.utils">RetryingHttpRequesterFilter</a></code>, <code><a href="../utils/TimeoutHttpRequesterFilter.html" title="class in io.servicetalk.http.utils">TimeoutHttpRequesterFilter</a></code>, <code><a href="../../opentracing/http/TracingHttpRequesterFilter.html" title="class in io.servicetalk.opentracing.http">TracingHttpRequesterFilter</a></code></dd>
+<dd><code><a href="ConditionalFilterFactory.html" title="class in io.servicetalk.http.api">ConditionalFilterFactory</a></code>, <code><a href="ContentCodingHttpRequesterFilter.html" title="class in io.servicetalk.http.api">ContentCodingHttpRequesterFilter</a></code>, <code><a href="../utils/EnforceSequentialModeRequesterFilter.html" title="class in io.servicetalk.http.utils">EnforceSequentialModeRequesterFilter</a></code>, <code><a href="../../grpc/netty/GrpcLifecycleObserverRequesterFilter.html" title="class in io.servicetalk.grpc.netty">GrpcLifecycleObserverRequesterFilter</a></code>, <code><a href="../netty/HttpLifecycleObserverRequesterFilter.html" title="class in io.servicetalk.http.netty">HttpLifecycleObserverRequesterFilter</a></code>, <code><a href="../utils/RedirectingHttpRequesterFilter.html" title="class in io.servicetalk.http.utils">RedirectingHttpRequesterFilter</a></code>, <code><a href="../utils/RequestTargetEncoderHttpRequesterFilter.html" title="class in io.servicetalk.http.utils">RequestTargetEncoderHttpRequesterFilter</a></code>, <code><a href="../netty/RetryingHttpRequesterFilter.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter</a></code>, <code><a href="../utils/RetryingHttpRequesterFilter.html" title="class in io.servicetalk.http.utils">RetryingHttpRequesterFilter</a></code>, <code><a href="../utils/TimeoutHttpRequesterFilter.html" title="class in io.servicetalk.http.utils">TimeoutHttpRequesterFilter</a></code>, <code><a href="../../opentracing/http/TracingHttpRequesterFilter.html" title="class in io.servicetalk.opentracing.http">TracingHttpRequesterFilter</a></code></dd>
 </dl>
 <dl>
 <dt>Functional Interface:</dt>
@@ -170,8 +170,13 @@ public interface <span class="typeNameLabel">StreamingHttpClientFilterFactory</s
 <td class="colFirst"><code>default &lt;U&gt;&nbsp;<a href="MultiAddressHttpClientFilterFactory.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientFilterFactory</a>&lt;U&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#asMultiAddressClientFilter()">asMultiAddressClientFilter</a></span>()</code></th>
 <td class="colLast">
-<div class="block">Returns a <a href="MultiAddressHttpClientFilterFactory.html" title="interface in io.servicetalk.http.api"><code>MultiAddressHttpClientFilterFactory</code></a> that adapts from a
- <a href="StreamingHttpClientFilterFactory.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpClientFilterFactory</code></a>.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use
+   <a href="MultiAddressHttpClientBuilder.html#initializer(io.servicetalk.http.api.MultiAddressHttpClientBuilder.SingleAddressInitializer)"><code>MultiAddressHttpClientBuilder.initializer(MultiAddressHttpClientBuilder.SingleAddressInitializer)</code></a> and
+   <a href="SingleAddressHttpClientBuilder.html#appendClientFilter(io.servicetalk.http.api.StreamingHttpClientFilterFactory)"><code>SingleAddressHttpClientBuilder.appendClientFilter(StreamingHttpClientFilterFactory)</code></a>
+   on the last argument of
+   <a href="MultiAddressHttpClientBuilder.SingleAddressInitializer.html#initialize(java.lang.String,U,io.servicetalk.http.api.SingleAddressHttpClientBuilder)"><code>MultiAddressHttpClientBuilder.SingleAddressInitializer.initialize(String, Object, SingleAddressHttpClientBuilder)</code></a>.</div>
+</div>
 </td>
 </tr>
 <tr id="i2" class="altColor">
@@ -251,7 +256,15 @@ default&nbsp;<a href="StreamingHttpClientFilterFactory.html" title="interface in
 <ul class="blockListLast">
 <li class="blockList">
 <h4>asMultiAddressClientFilter</h4>
-<pre class="methodSignature">default&nbsp;&lt;U&gt;&nbsp;<a href="MultiAddressHttpClientFilterFactory.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientFilterFactory</a>&lt;U&gt;&nbsp;asMultiAddressClientFilter()</pre>
+<pre class="methodSignature">@Deprecated
+default&nbsp;&lt;U&gt;&nbsp;<a href="MultiAddressHttpClientFilterFactory.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientFilterFactory</a>&lt;U&gt;&nbsp;asMultiAddressClientFilter()</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use
+   <a href="MultiAddressHttpClientBuilder.html#initializer(io.servicetalk.http.api.MultiAddressHttpClientBuilder.SingleAddressInitializer)"><code>MultiAddressHttpClientBuilder.initializer(MultiAddressHttpClientBuilder.SingleAddressInitializer)</code></a> and
+   <a href="SingleAddressHttpClientBuilder.html#appendClientFilter(io.servicetalk.http.api.StreamingHttpClientFilterFactory)"><code>SingleAddressHttpClientBuilder.appendClientFilter(StreamingHttpClientFilterFactory)</code></a>
+   on the last argument of
+   <a href="MultiAddressHttpClientBuilder.SingleAddressInitializer.html#initialize(java.lang.String,U,io.servicetalk.http.api.SingleAddressHttpClientBuilder)"><code>MultiAddressHttpClientBuilder.SingleAddressInitializer.initialize(String, Object, SingleAddressHttpClientBuilder)</code></a>.</div>
+</div>
 <div class="block">Returns a <a href="MultiAddressHttpClientFilterFactory.html" title="interface in io.servicetalk.http.api"><code>MultiAddressHttpClientFilterFactory</code></a> that adapts from a
  <a href="StreamingHttpClientFilterFactory.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpClientFilterFactory</code></a>.</div>
 <dl>

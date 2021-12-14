@@ -115,8 +115,12 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <li class="circle">io.servicetalk.http.netty.<a href="H2KeepAlivePolicies.KeepAlivePolicyBuilder.html" title="class in io.servicetalk.http.netty"><span class="typeNameLink">H2KeepAlivePolicies.KeepAlivePolicyBuilder</span></a></li>
 <li class="circle">io.servicetalk.http.netty.<a href="H2ProtocolConfigBuilder.html" title="class in io.servicetalk.http.netty"><span class="typeNameLink">H2ProtocolConfigBuilder</span></a></li>
 <li class="circle">io.servicetalk.http.netty.<a href="HttpClients.html" title="class in io.servicetalk.http.netty"><span class="typeNameLink">HttpClients</span></a></li>
+<li class="circle">io.servicetalk.http.netty.<a href="HttpLifecycleObserverRequesterFilter.html" title="class in io.servicetalk.http.netty"><span class="typeNameLink">HttpLifecycleObserverRequesterFilter</span></a> (implements io.servicetalk.http.api.<a href="../api/StreamingHttpClientFilterFactory.html" title="interface in io.servicetalk.http.api">StreamingHttpClientFilterFactory</a>, io.servicetalk.http.api.<a href="../api/StreamingHttpConnectionFilterFactory.html" title="interface in io.servicetalk.http.api">StreamingHttpConnectionFilterFactory</a>)</li>
 <li class="circle">io.servicetalk.http.netty.<a href="HttpProtocolConfigs.html" title="class in io.servicetalk.http.netty"><span class="typeNameLink">HttpProtocolConfigs</span></a></li>
 <li class="circle">io.servicetalk.http.netty.<a href="HttpServers.html" title="class in io.servicetalk.http.netty"><span class="typeNameLink">HttpServers</span></a></li>
+<li class="circle">io.servicetalk.http.netty.<a href="RetryingHttpRequesterFilter.html" title="class in io.servicetalk.http.netty"><span class="typeNameLink">RetryingHttpRequesterFilter</span></a> (implements io.servicetalk.http.api.<a href="../api/HttpExecutionStrategyInfluencer.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategyInfluencer</a>, io.servicetalk.http.api.<a href="../api/StreamingHttpClientFilterFactory.html" title="interface in io.servicetalk.http.api">StreamingHttpClientFilterFactory</a>)</li>
+<li class="circle">io.servicetalk.http.netty.<a href="RetryingHttpRequesterFilter.BackOffPolicy.html" title="class in io.servicetalk.http.netty"><span class="typeNameLink">RetryingHttpRequesterFilter.BackOffPolicy</span></a></li>
+<li class="circle">io.servicetalk.http.netty.<a href="RetryingHttpRequesterFilter.Builder.html" title="class in io.servicetalk.http.netty"><span class="typeNameLink">RetryingHttpRequesterFilter.Builder</span></a></li>
 <li class="circle">java.lang.Throwable (implements java.io.Serializable)
 <ul>
 <li class="circle">java.lang.Exception
@@ -124,6 +128,11 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <li class="circle">java.io.IOException
 <ul>
 <li class="circle">io.servicetalk.http.netty.<a href="ProxyResponseException.html" title="class in io.servicetalk.http.netty"><span class="typeNameLink">ProxyResponseException</span></a> (implements io.servicetalk.transport.api.<a href="../../transport/api/RetryableException.html" title="interface in io.servicetalk.transport.api">RetryableException</a>)</li>
+</ul>
+</li>
+<li class="circle">java.lang.RuntimeException
+<ul>
+<li class="circle">io.servicetalk.http.netty.<a href="RetryingHttpRequesterFilter.HttpResponseException.html" title="class in io.servicetalk.http.netty"><span class="typeNameLink">RetryingHttpRequesterFilter.HttpResponseException</span></a></li>
 </ul>
 </li>
 </ul>
@@ -144,6 +153,7 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <li class="circle">io.servicetalk.http.netty.<a href="H2ProtocolConfig.html" title="interface in io.servicetalk.http.netty"><span class="typeNameLink">H2ProtocolConfig</span></a></li>
 </ul>
 </li>
+<li class="circle">io.servicetalk.http.netty.<a href="RetryingHttpRequesterFilter.DelayedRetry.html" title="interface in io.servicetalk.http.netty"><span class="typeNameLink">RetryingHttpRequesterFilter.DelayedRetry</span></a></li>
 </ul>
 </section>
 </div>

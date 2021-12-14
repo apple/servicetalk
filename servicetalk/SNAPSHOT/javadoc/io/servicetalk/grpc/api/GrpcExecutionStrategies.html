@@ -26,8 +26,8 @@
     catch(err) {
     }
 //-->
-var data = {"i0":9,"i1":9,"i2":9,"i3":9};
-var tabs = {65535:["t0","All Methods"],1:["t1","Static Methods"],8:["t4","Concrete Methods"]};
+var data = {"i0":9,"i1":9,"i2":41,"i3":41,"i4":9};
+var tabs = {65535:["t0","All Methods"],1:["t1","Static Methods"],8:["t4","Concrete Methods"],32:["t6","Deprecated Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
 var tableTab = "tableTab";
@@ -172,7 +172,7 @@ extends java.lang.Object</pre>
 </a>
 <h3>Method Summary</h3>
 <table class="memberSummary">
-<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t1" class="tableTab"><span><a href="javascript:show(1);">Static Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t4" class="tableTab"><span><a href="javascript:show(8);">Concrete Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
+<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t1" class="tableTab"><span><a href="javascript:show(1);">Static Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t4" class="tableTab"><span><a href="javascript:show(8);">Concrete Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t6" class="tableTab"><span><a href="javascript:show(32);">Deprecated Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
 <tr>
 <th class="colFirst" scope="col">Modifier and Type</th>
 <th class="colSecond" scope="col">Method</th>
@@ -196,12 +196,24 @@ extends java.lang.Object</pre>
 <td class="colFirst"><code>static <a href="GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api">GrpcExecutionStrategy</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#defaultStrategy(io.servicetalk.concurrent.api.Executor)">defaultStrategy</a></span>&#8203;(<a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;executor)</code></th>
 <td class="colLast">
-<div class="block">The default <a href="GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api"><code>GrpcExecutionStrategy</code></a> using the passed <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a>.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Set the executor to use on the <a href="../../transport/api/ExecutionContext.html" title="interface in io.servicetalk.transport.api"><code>ExecutionContext</code></a> using
+ <code>executor(Executor)</code> methods on client/server builders.</div>
+</div>
 </td>
 </tr>
 <tr id="i3" class="rowColor">
 <td class="colFirst"><code>static <a href="GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api">GrpcExecutionStrategy</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#noOffloadsStrategy()">noOffloadsStrategy</a></span>()</code></th>
+<td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Replaced with the more descriptive <a href="#offloadNever()"><code>offloadNever()</code></a>.</div>
+</div>
+</td>
+</tr>
+<tr id="i4" class="altColor">
+<td class="colFirst"><code>static <a href="GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api">GrpcExecutionStrategy</a></code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#offloadNever()">offloadNever</a></span>()</code></th>
 <td class="colLast">
 <div class="block">A <a href="GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api"><code>GrpcExecutionStrategy</code></a> that disables all offloads.</div>
 </td>
@@ -250,7 +262,12 @@ extends java.lang.Object</pre>
 <ul class="blockList">
 <li class="blockList">
 <h4>defaultStrategy</h4>
-<pre class="methodSignature">public static&nbsp;<a href="GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api">GrpcExecutionStrategy</a>&nbsp;defaultStrategy&#8203;(<a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;executor)</pre>
+<pre class="methodSignature">@Deprecated
+public static&nbsp;<a href="GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api">GrpcExecutionStrategy</a>&nbsp;defaultStrategy&#8203;(<a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;executor)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Set the executor to use on the <a href="../../transport/api/ExecutionContext.html" title="interface in io.servicetalk.transport.api"><code>ExecutionContext</code></a> using
+ <code>executor(Executor)</code> methods on client/server builders.</div>
+</div>
 <div class="block">The default <a href="GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api"><code>GrpcExecutionStrategy</code></a> using the passed <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a>.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
@@ -266,7 +283,25 @@ extends java.lang.Object</pre>
 <ul class="blockList">
 <li class="blockList">
 <h4>noOffloadsStrategy</h4>
-<pre class="methodSignature">public static&nbsp;<a href="GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api">GrpcExecutionStrategy</a>&nbsp;noOffloadsStrategy()</pre>
+<pre class="methodSignature">@Deprecated
+public static&nbsp;<a href="GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api">GrpcExecutionStrategy</a>&nbsp;noOffloadsStrategy()</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Replaced with the more descriptive <a href="#offloadNever()"><code>offloadNever()</code></a>.</div>
+</div>
+<div class="block">A <a href="GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api"><code>GrpcExecutionStrategy</code></a> that disables all offloads.</div>
+<dl>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd><a href="GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api"><code>GrpcExecutionStrategy</code></a> that disables all offloads.</dd>
+</dl>
+</li>
+</ul>
+<a id="offloadNever()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>offloadNever</h4>
+<pre class="methodSignature">public static&nbsp;<a href="GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api">GrpcExecutionStrategy</a>&nbsp;offloadNever()</pre>
 <div class="block">A <a href="GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api"><code>GrpcExecutionStrategy</code></a> that disables all offloads.</div>
 <dl>
 <dt><span class="returnLabel">Returns:</span></dt>

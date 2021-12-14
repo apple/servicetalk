@@ -276,8 +276,13 @@ extends <a href="CloseableIterable.html" title="interface in io.servicetalk.conc
  <p>
  By default the <code>timeoutSupplier</code> will be used for each interaction with
  <a href="BlockingIterator.html#hasNext(long,java.util.concurrent.TimeUnit)"><code>BlockingIterator.hasNext(long, TimeUnit)</code></a> and <a href="BlockingIterator.html#next(long,java.util.concurrent.TimeUnit)"><code>BlockingIterator.next(long, TimeUnit)</code></a>. However
- implementations of <a href="BlockingIterable.html" title="interface in io.servicetalk.concurrent"><code>BlockingIterable</code></a> may decide to only apply the timeout when they are not be sure if
- an interaction with the <a href="BlockingIterator.html" title="interface in io.servicetalk.concurrent"><code>BlockingIterator</code></a> will block or not.</div>
+ implementations of <a href="BlockingIterable.html" title="interface in io.servicetalk.concurrent"><code>BlockingIterable</code></a> may decide to only apply the timeout when they are not sure if
+ an interaction with the <a href="BlockingIterator.html" title="interface in io.servicetalk.concurrent"><code>BlockingIterator</code></a> will block or not.
+ <p>
+ Note: This method can sneaky-throw an <code>InterruptedException</code> when a blocking operation internally does so.
+ The reason it's not declared is that the <code>Iterator</code> and <code>AutoCloseable</code> interfaces do not
+ declare checked exceptions and <a href="BlockingIterator.html" title="interface in io.servicetalk.concurrent"><code>BlockingIterator</code></a> extends them to allow use in try-with-resources
+ and enhanced for loop.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>action</code> - The action to be performed for each element.</dd>
@@ -311,7 +316,12 @@ extends <a href="CloseableIterable.html" title="interface in io.servicetalk.conc
  By default the <code>timeout</code> will be used for each interaction with
  <a href="BlockingIterator.html#hasNext(long,java.util.concurrent.TimeUnit)"><code>BlockingIterator.hasNext(long, TimeUnit)</code></a> and <a href="BlockingIterator.html#next(long,java.util.concurrent.TimeUnit)"><code>BlockingIterator.next(long, TimeUnit)</code></a>. However
  implementations of <a href="BlockingIterable.html" title="interface in io.servicetalk.concurrent"><code>BlockingIterable</code></a> may decide to only apply the timeout when they are not be sure if
- an interaction with the <a href="BlockingIterator.html" title="interface in io.servicetalk.concurrent"><code>BlockingIterator</code></a> will block or not.</div>
+ an interaction with the <a href="BlockingIterator.html" title="interface in io.servicetalk.concurrent"><code>BlockingIterator</code></a> will block or not.
+ <p>
+ Note: This method can sneaky-throw an <code>InterruptedException</code> when a blocking operation internally does so.
+ The reason it's not declared is that the <code>Iterator</code> and <code>AutoCloseable</code> interfaces do not
+ declare checked exceptions and <a href="BlockingIterator.html" title="interface in io.servicetalk.concurrent"><code>BlockingIterator</code></a> extends them to allow use in try-with-resources
+ and enhanced for loop.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>action</code> - The action to be performed for each element.</dd>

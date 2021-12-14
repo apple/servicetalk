@@ -26,8 +26,8 @@
     catch(err) {
     }
 //-->
-var data = {"i0":10,"i1":10,"i2":10,"i3":10,"i4":10,"i5":10};
-var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],8:["t4","Concrete Methods"]};
+var data = {"i0":10,"i1":42,"i2":10,"i3":10,"i4":10,"i5":10};
+var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],8:["t4","Concrete Methods"],32:["t6","Deprecated Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
 var tableTab = "tableTab";
@@ -181,7 +181,15 @@ implements <a href="../PublisherSource.Subscription.html" title="interface in io
 </tr>
 <tr class="altColor">
 <th class="colConstructorName" scope="row"><code><span class="memberNameLink"><a href="#%3Cinit%3E()">TestSubscription</a></span>()</code></th>
-<td class="colLast">&nbsp;</td>
+<td class="colLast">
+<div class="block">Creates a new instance.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colConstructorName" scope="row"><code><span class="memberNameLink"><a href="#%3Cinit%3E(java.lang.String)">TestSubscription</a></span>&#8203;(java.lang.String&nbsp;name)</code></th>
+<td class="colLast">
+<div class="block">Creates a new instance.</div>
+</td>
 </tr>
 </table>
 </li>
@@ -195,7 +203,7 @@ implements <a href="../PublisherSource.Subscription.html" title="interface in io
 </a>
 <h3>Method Summary</h3>
 <table class="memberSummary">
-<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t4" class="tableTab"><span><a href="javascript:show(8);">Concrete Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
+<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t4" class="tableTab"><span><a href="javascript:show(8);">Concrete Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t6" class="tableTab"><span><a href="javascript:show(32);">Deprecated Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
 <tr>
 <th class="colFirst" scope="col">Modifier and Type</th>
 <th class="colSecond" scope="col">Method</th>
@@ -212,7 +220,9 @@ implements <a href="../PublisherSource.Subscription.html" title="interface in io
 <td class="colFirst"><code>void</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#awaitRequestNUninterruptibly(long)">awaitRequestNUninterruptibly</a></span>&#8203;(long&nbsp;amount)</code></th>
 <td class="colLast">
-<div class="block">Wait until the <a href="../PublisherSource.Subscription.html#request(long)"><code>PublisherSource.Subscription.request(long)</code></a> amount exceeds <code>amount</code> without being interrupted.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">use <a href="#awaitRequestN(long)"><code>awaitRequestN(long)</code></a> instead.</div>
+</div>
 </td>
 </tr>
 <tr id="i2" class="altColor">
@@ -283,10 +293,25 @@ implements <a href="../PublisherSource.Subscription.html" title="interface in io
 <a id="&lt;init&gt;()">
 <!--   -->
 </a>
-<ul class="blockListLast">
+<ul class="blockList">
 <li class="blockList">
 <h4>TestSubscription</h4>
 <pre>public&nbsp;TestSubscription()</pre>
+<div class="block">Creates a new instance.</div>
+</li>
+</ul>
+<a id="&lt;init&gt;(java.lang.String)">
+<!--   -->
+</a>
+<ul class="blockListLast">
+<li class="blockList">
+<h4>TestSubscription</h4>
+<pre>public&nbsp;TestSubscription&#8203;(java.lang.String&nbsp;name)</pre>
+<div class="block">Creates a new instance.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>name</code> - a name for this subscription</dd>
+</dl>
 </li>
 </ul>
 </li>
@@ -375,7 +400,11 @@ implements <a href="../PublisherSource.Subscription.html" title="interface in io
 <ul class="blockList">
 <li class="blockList">
 <h4>awaitRequestNUninterruptibly</h4>
-<pre class="methodSignature">public&nbsp;void&nbsp;awaitRequestNUninterruptibly&#8203;(long&nbsp;amount)</pre>
+<pre class="methodSignature">@Deprecated
+public&nbsp;void&nbsp;awaitRequestNUninterruptibly&#8203;(long&nbsp;amount)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">use <a href="#awaitRequestN(long)"><code>awaitRequestN(long)</code></a> instead.</div>
+</div>
 <div class="block">Wait until the <a href="../PublisherSource.Subscription.html#request(long)"><code>PublisherSource.Subscription.request(long)</code></a> amount exceeds <code>amount</code> without being interrupted. This
  method catches an <code>InterruptedException</code> and discards it silently.</div>
 <dl>

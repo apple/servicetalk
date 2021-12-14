@@ -26,8 +26,8 @@
     catch(err) {
     }
 //-->
-var data = {"i0":9};
-var tabs = {65535:["t0","All Methods"],1:["t1","Static Methods"],8:["t4","Concrete Methods"]};
+var data = {"i0":6,"i1":10,"i2":10,"i3":10,"i4":9,"i5":10,"i6":10,"i7":10,"i8":10,"i9":10,"i10":10};
+var tabs = {65535:["t0","All Methods"],1:["t1","Static Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"],8:["t4","Concrete Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
 var tableTab = "tableTab";
@@ -94,7 +94,7 @@ loadScripts(document, 'script');</script>
 </ul>
 <ul class="subNavList">
 <li>Detail:&nbsp;</li>
-<li>Field&nbsp;|&nbsp;</li>
+<li><a href="#field.detail">Field</a>&nbsp;|&nbsp;</li>
 <li><a href="#constructor.detail">Constr</a>&nbsp;|&nbsp;</li>
 <li><a href="#method.detail">Method</a></li>
 </ul>
@@ -122,12 +122,7 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <li>java.lang.Object</li>
 <li>
 <ul class="inheritance">
-<li><a href="AbstractNonParameterizedJerseyStreamingHttpServiceTest.html" title="class in io.servicetalk.http.router.jersey">io.servicetalk.http.router.jersey.AbstractNonParameterizedJerseyStreamingHttpServiceTest</a></li>
-<li>
-<ul class="inheritance">
 <li>io.servicetalk.http.router.jersey.AbstractJerseyStreamingHttpServiceTest</li>
-</ul>
-</li>
 </ul>
 </li>
 </ul>
@@ -136,11 +131,11 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <li class="blockList">
 <dl>
 <dt>Direct Known Subclasses:</dt>
-<dd><code><a href="AbstractFilterInterceptorTest.html" title="class in io.servicetalk.http.router.jersey">AbstractFilterInterceptorTest</a></code>, <code><a href="ExceptionMapperTest.html" title="class in io.servicetalk.http.router.jersey">ExceptionMapperTest</a></code>, <code><a href="IllBehavedRequestFilterTest.html" title="class in io.servicetalk.http.router.jersey">IllBehavedRequestFilterTest</a></code>, <code><a href="MixedModeResourceTest.html" title="class in io.servicetalk.http.router.jersey">MixedModeResourceTest</a></code>, <code><a href="SecurityFilterTest.html" title="class in io.servicetalk.http.router.jersey">SecurityFilterTest</a></code></dd>
+<dd><code><a href="AbstractFilterInterceptorTest.html" title="class in io.servicetalk.http.router.jersey">AbstractFilterInterceptorTest</a></code>, <code><a href="AbstractResourceTest.html" title="class in io.servicetalk.http.router.jersey">AbstractResourceTest</a></code></dd>
 </dl>
 <hr>
 <pre>public abstract class <span class="typeNameLabel">AbstractJerseyStreamingHttpServiceTest</span>
-extends <a href="AbstractNonParameterizedJerseyStreamingHttpServiceTest.html" title="class in io.servicetalk.http.router.jersey">AbstractNonParameterizedJerseyStreamingHttpServiceTest</a></pre>
+extends java.lang.Object</pre>
 </li>
 </ul>
 </div>
@@ -154,13 +149,19 @@ extends <a href="AbstractNonParameterizedJerseyStreamingHttpServiceTest.html" ti
 <!--   -->
 </a>
 <h3>Nested Class Summary</h3>
-<ul class="blockList">
-<li class="blockList"><a id="nested.classes.inherited.from.class.io.servicetalk.http.router.jersey.AbstractNonParameterizedJerseyStreamingHttpServiceTest">
-<!--   -->
-</a>
-<h3>Nested classes/interfaces inherited from class&nbsp;io.servicetalk.http.router.jersey.<a href="AbstractNonParameterizedJerseyStreamingHttpServiceTest.html" title="class in io.servicetalk.http.router.jersey">AbstractNonParameterizedJerseyStreamingHttpServiceTest</a></h3>
-<code><a href="AbstractNonParameterizedJerseyStreamingHttpServiceTest.RouterApi.html" title="enum in io.servicetalk.http.router.jersey">AbstractNonParameterizedJerseyStreamingHttpServiceTest.RouterApi</a></code></li>
-</ul>
+<table class="memberSummary">
+<caption><span>Nested Classes</span><span class="tabEnd">&nbsp;</span></caption>
+<tr>
+<th class="colFirst" scope="col">Modifier and Type</th>
+<th class="colSecond" scope="col">Class</th>
+<th class="colLast" scope="col">Description</th>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>static class&nbsp;</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="AbstractJerseyStreamingHttpServiceTest.RouterApi.html" title="enum in io.servicetalk.http.router.jersey">AbstractJerseyStreamingHttpServiceTest.RouterApi</a></span></code></th>
+<td class="colLast">&nbsp;</td>
+</tr>
+</table>
 </li>
 </ul>
 </section>
@@ -171,13 +172,19 @@ extends <a href="AbstractNonParameterizedJerseyStreamingHttpServiceTest.html" ti
 <!--   -->
 </a>
 <h3>Field Summary</h3>
-<ul class="blockList">
-<li class="blockList"><a id="fields.inherited.from.class.io.servicetalk.http.router.jersey.AbstractNonParameterizedJerseyStreamingHttpServiceTest">
-<!--   -->
-</a>
-<h3>Fields inherited from class&nbsp;io.servicetalk.http.router.jersey.<a href="AbstractNonParameterizedJerseyStreamingHttpServiceTest.html" title="class in io.servicetalk.http.router.jersey">AbstractNonParameterizedJerseyStreamingHttpServiceTest</a></h3>
-<code><a href="AbstractNonParameterizedJerseyStreamingHttpServiceTest.html#api">api</a>, <a href="AbstractNonParameterizedJerseyStreamingHttpServiceTest.html#expected">expected</a>, <a href="AbstractNonParameterizedJerseyStreamingHttpServiceTest.html#rule">rule</a>, <a href="AbstractNonParameterizedJerseyStreamingHttpServiceTest.html#SERVER_CTX">SERVER_CTX</a>, <a href="AbstractNonParameterizedJerseyStreamingHttpServiceTest.html#timeout">timeout</a></code></li>
-</ul>
+<table class="memberSummary">
+<caption><span>Fields</span><span class="tabEnd">&nbsp;</span></caption>
+<tr>
+<th class="colFirst" scope="col">Modifier and Type</th>
+<th class="colSecond" scope="col">Field</th>
+<th class="colLast" scope="col">Description</th>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>protected <a href="AbstractJerseyStreamingHttpServiceTest.RouterApi.html" title="enum in io.servicetalk.http.router.jersey">AbstractJerseyStreamingHttpServiceTest.RouterApi</a></code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#api">api</a></span></code></th>
+<td class="colLast">&nbsp;</td>
+</tr>
+</table>
 </li>
 </ul>
 </section>
@@ -191,13 +198,11 @@ extends <a href="AbstractNonParameterizedJerseyStreamingHttpServiceTest.html" ti
 <table class="memberSummary">
 <caption><span>Constructors</span><span class="tabEnd">&nbsp;</span></caption>
 <tr>
-<th class="colFirst" scope="col">Modifier</th>
-<th class="colSecond" scope="col">Constructor</th>
+<th class="colFirst" scope="col">Constructor</th>
 <th class="colLast" scope="col">Description</th>
 </tr>
 <tr class="altColor">
-<td class="colFirst"><code>protected </code></td>
-<th class="colConstructorName" scope="row"><code><span class="memberNameLink"><a href="#%3Cinit%3E(io.servicetalk.http.router.jersey.AbstractNonParameterizedJerseyStreamingHttpServiceTest.RouterApi)">AbstractJerseyStreamingHttpServiceTest</a></span>&#8203;(<a href="AbstractNonParameterizedJerseyStreamingHttpServiceTest.RouterApi.html" title="enum in io.servicetalk.http.router.jersey">AbstractNonParameterizedJerseyStreamingHttpServiceTest.RouterApi</a>&nbsp;api)</code></th>
+<th class="colConstructorName" scope="row"><code><span class="memberNameLink"><a href="#%3Cinit%3E()">AbstractJerseyStreamingHttpServiceTest</a></span>()</code></th>
 <td class="colLast">&nbsp;</td>
 </tr>
 </table>
@@ -212,27 +217,81 @@ extends <a href="AbstractNonParameterizedJerseyStreamingHttpServiceTest.html" ti
 </a>
 <h3>Method Summary</h3>
 <table class="memberSummary">
-<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t1" class="tableTab"><span><a href="javascript:show(1);">Static Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t4" class="tableTab"><span><a href="javascript:show(8);">Concrete Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
+<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t1" class="tableTab"><span><a href="javascript:show(1);">Static Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t3" class="tableTab"><span><a href="javascript:show(4);">Abstract Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t4" class="tableTab"><span><a href="javascript:show(8);">Concrete Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
 <tr>
 <th class="colFirst" scope="col">Modifier and Type</th>
 <th class="colSecond" scope="col">Method</th>
 <th class="colLast" scope="col">Description</th>
 </tr>
 <tr id="i0" class="altColor">
-<td class="colFirst"><code>static java.util.Collection&lt;java.lang.Object[]&gt;</code></td>
-<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#data()">data</a></span>()</code></th>
+<td class="colFirst"><code>protected abstract javax.ws.rs.core.Application</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#application()">application</a></span>()</code></th>
+<td class="colLast">&nbsp;</td>
+</tr>
+<tr id="i1" class="rowColor">
+<td class="colFirst"><code>void</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#closeClient()">closeClient</a></span>()</code></th>
+<td class="colLast">&nbsp;</td>
+</tr>
+<tr id="i2" class="altColor">
+<td class="colFirst"><code>void</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#closeServer()">closeServer</a></span>()</code></th>
+<td class="colLast">&nbsp;</td>
+</tr>
+<tr id="i3" class="rowColor">
+<td class="colFirst"><code>protected <a href="../../api/StreamingHttpRequest.html" title="interface in io.servicetalk.http.api">StreamingHttpRequest</a></code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#post(java.lang.String,java.lang.CharSequence,java.lang.CharSequence)">post</a></span>&#8203;(java.lang.String&nbsp;path,
+    java.lang.CharSequence&nbsp;payload,
+    java.lang.CharSequence&nbsp;contentType)</code></th>
+<td class="colLast">&nbsp;</td>
+</tr>
+<tr id="i4" class="altColor">
+<td class="colFirst"><code>protected static void</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#runTwiceToEnsureEndpointCache(java.lang.Runnable)">runTwiceToEnsureEndpointCache</a></span>&#8203;(java.lang.Runnable&nbsp;test)</code></th>
 <td class="colLast">
-<div class="block">Some test classes eg.</div>
+<div class="block">Runs the provided <code>test</code> lambda multiple times.</div>
 </td>
 </tr>
+<tr id="i5" class="rowColor">
+<td class="colFirst"><code>protected <a href="../../api/StreamingHttpResponse.html" title="interface in io.servicetalk.http.api">StreamingHttpResponse</a></code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#sendAndAssertNoResponse(io.servicetalk.http.api.StreamingHttpRequest,io.servicetalk.http.api.HttpResponseStatus)">sendAndAssertNoResponse</a></span>&#8203;(<a href="../../api/StreamingHttpRequest.html" title="interface in io.servicetalk.http.api">StreamingHttpRequest</a>&nbsp;req,
+                       <a href="../../api/HttpResponseStatus.html" title="class in io.servicetalk.http.api">HttpResponseStatus</a>&nbsp;expectedStatus)</code></th>
+<td class="colLast">&nbsp;</td>
+</tr>
+<tr id="i6" class="altColor">
+<td class="colFirst"><code>protected <a href="../../api/StreamingHttpResponse.html" title="interface in io.servicetalk.http.api">StreamingHttpResponse</a></code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#sendAndAssertResponse(io.servicetalk.http.api.StreamingHttpRequest,io.servicetalk.http.api.HttpResponseStatus,java.lang.CharSequence,java.lang.String)">sendAndAssertResponse</a></span>&#8203;(<a href="../../api/StreamingHttpRequest.html" title="interface in io.servicetalk.http.api">StreamingHttpRequest</a>&nbsp;req,
+                     <a href="../../api/HttpResponseStatus.html" title="class in io.servicetalk.http.api">HttpResponseStatus</a>&nbsp;expectedStatus,
+                     java.lang.CharSequence&nbsp;expectedContentType,
+                     java.lang.String&nbsp;expectedContent)</code></th>
+<td class="colLast">&nbsp;</td>
+</tr>
+<tr id="i7" class="rowColor">
+<td class="colFirst"><code>protected <a href="../../api/StreamingHttpResponse.html" title="interface in io.servicetalk.http.api">StreamingHttpResponse</a></code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#sendAndAssertResponse(io.servicetalk.http.api.StreamingHttpRequest,io.servicetalk.http.api.HttpResponseStatus,java.lang.CharSequence,org.hamcrest.Matcher,java.util.function.Function)">sendAndAssertResponse</a></span>&#8203;(<a href="../../api/StreamingHttpRequest.html" title="interface in io.servicetalk.http.api">StreamingHttpRequest</a>&nbsp;req,
+                     <a href="../../api/HttpResponseStatus.html" title="class in io.servicetalk.http.api">HttpResponseStatus</a>&nbsp;expectedStatus,
+                     java.lang.CharSequence&nbsp;expectedContentType,
+                     org.hamcrest.Matcher&lt;java.lang.String&gt;&nbsp;contentMatcher,
+                     java.util.function.Function&lt;java.lang.String,&#8203;java.lang.Integer&gt;&nbsp;expectedContentLengthExtractor)</code></th>
+<td class="colLast">&nbsp;</td>
+</tr>
+<tr id="i8" class="altColor">
+<td class="colFirst"><code>protected java.lang.String</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#sendAndAssertStatusOnly(io.servicetalk.http.api.StreamingHttpRequest,io.servicetalk.http.api.HttpResponseStatus)">sendAndAssertStatusOnly</a></span>&#8203;(<a href="../../api/StreamingHttpRequest.html" title="interface in io.servicetalk.http.api">StreamingHttpRequest</a>&nbsp;req,
+                       <a href="../../api/HttpResponseStatus.html" title="class in io.servicetalk.http.api">HttpResponseStatus</a>&nbsp;expectedStatus)</code></th>
+<td class="colLast">&nbsp;</td>
+</tr>
+<tr id="i9" class="rowColor">
+<td class="colFirst"><code>protected void</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setUp(io.servicetalk.http.router.jersey.AbstractJerseyStreamingHttpServiceTest.RouterApi)">setUp</a></span>&#8203;(<a href="AbstractJerseyStreamingHttpServiceTest.RouterApi.html" title="enum in io.servicetalk.http.router.jersey">AbstractJerseyStreamingHttpServiceTest.RouterApi</a>&nbsp;api)</code></th>
+<td class="colLast">&nbsp;</td>
+</tr>
+<tr id="i10" class="altColor">
+<td class="colFirst"><code>protected java.lang.String</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#testUri(java.lang.String)">testUri</a></span>&#8203;(java.lang.String&nbsp;path)</code></th>
+<td class="colLast">&nbsp;</td>
+</tr>
 </table>
-<ul class="blockList">
-<li class="blockList"><a id="methods.inherited.from.class.io.servicetalk.http.router.jersey.AbstractNonParameterizedJerseyStreamingHttpServiceTest">
-<!--   -->
-</a>
-<h3>Methods inherited from class&nbsp;io.servicetalk.http.router.jersey.<a href="AbstractNonParameterizedJerseyStreamingHttpServiceTest.html" title="class in io.servicetalk.http.router.jersey">AbstractNonParameterizedJerseyStreamingHttpServiceTest</a></h3>
-<code><a href="AbstractNonParameterizedJerseyStreamingHttpServiceTest.html#application()">application</a>, <a href="AbstractNonParameterizedJerseyStreamingHttpServiceTest.html#buildRouter(io.servicetalk.http.api.HttpServerBuilder,io.servicetalk.http.api.BlockingHttpService)">buildRouter</a>, <a href="AbstractNonParameterizedJerseyStreamingHttpServiceTest.html#buildRouter(io.servicetalk.http.api.HttpServerBuilder,io.servicetalk.http.api.BlockingStreamingHttpService)">buildRouter</a>, <a href="AbstractNonParameterizedJerseyStreamingHttpServiceTest.html#buildRouter(io.servicetalk.http.api.HttpServerBuilder,io.servicetalk.http.api.HttpService)">buildRouter</a>, <a href="AbstractNonParameterizedJerseyStreamingHttpServiceTest.html#buildRouter(io.servicetalk.http.api.HttpServerBuilder,io.servicetalk.http.api.StreamingHttpService)">buildRouter</a>, <a href="AbstractNonParameterizedJerseyStreamingHttpServiceTest.html#closeClient()">closeClient</a>, <a href="AbstractNonParameterizedJerseyStreamingHttpServiceTest.html#closeServer()">closeServer</a>, <a href="AbstractNonParameterizedJerseyStreamingHttpServiceTest.html#configureBuilders(io.servicetalk.http.api.HttpServerBuilder,io.servicetalk.http.router.jersey.HttpJerseyRouterBuilder)">configureBuilders</a>, <a href="AbstractNonParameterizedJerseyStreamingHttpServiceTest.html#get(java.lang.String)">get</a>, <a href="AbstractNonParameterizedJerseyStreamingHttpServiceTest.html#getJsonResponseContentLengthExtractor()">getJsonResponseContentLengthExtractor</a>, <a href="AbstractNonParameterizedJerseyStreamingHttpServiceTest.html#head(java.lang.String)">head</a>, <a href="AbstractNonParameterizedJerseyStreamingHttpServiceTest.html#host()">host</a>, <a href="AbstractNonParameterizedJerseyStreamingHttpServiceTest.html#initServerAndClient()">initServerAndClient</a>, <a href="AbstractNonParameterizedJerseyStreamingHttpServiceTest.html#isStreamingJsonEnabled()">isStreamingJsonEnabled</a>, <a href="AbstractNonParameterizedJerseyStreamingHttpServiceTest.html#noPayloadRequest(io.servicetalk.http.api.HttpRequestMethod,java.lang.String)">noPayloadRequest</a>, <a href="AbstractNonParameterizedJerseyStreamingHttpServiceTest.html#options(java.lang.String)">options</a>, <a href="AbstractNonParameterizedJerseyStreamingHttpServiceTest.html#post(java.lang.String,java.lang.CharSequence,java.lang.CharSequence)">post</a>, <a href="AbstractNonParameterizedJerseyStreamingHttpServiceTest.html#put(java.lang.String,java.lang.CharSequence,java.lang.CharSequence)">put</a>, <a href="AbstractNonParameterizedJerseyStreamingHttpServiceTest.html#runTwiceToEnsureEndpointCache(java.lang.Runnable)">runTwiceToEnsureEndpointCache</a>, <a href="AbstractNonParameterizedJerseyStreamingHttpServiceTest.html#sendAndAssertNoResponse(io.servicetalk.http.api.StreamingHttpRequest,io.servicetalk.http.api.HttpResponseStatus)">sendAndAssertNoResponse</a>, <a href="AbstractNonParameterizedJerseyStreamingHttpServiceTest.html#sendAndAssertResponse(io.servicetalk.http.api.StreamingHttpRequest,io.servicetalk.http.api.HttpProtocolVersion,io.servicetalk.http.api.HttpResponseStatus,java.lang.CharSequence,org.hamcrest.Matcher,java.util.function.Function)">sendAndAssertResponse</a>, <a href="AbstractNonParameterizedJerseyStreamingHttpServiceTest.html#sendAndAssertResponse(io.servicetalk.http.api.StreamingHttpRequest,io.servicetalk.http.api.HttpResponseStatus,java.lang.CharSequence,java.lang.String)">sendAndAssertResponse</a>, <a href="AbstractNonParameterizedJerseyStreamingHttpServiceTest.html#sendAndAssertResponse(io.servicetalk.http.api.StreamingHttpRequest,io.servicetalk.http.api.HttpResponseStatus,java.lang.CharSequence,java.lang.String,int,java.util.concurrent.TimeUnit)">sendAndAssertResponse</a>, <a href="AbstractNonParameterizedJerseyStreamingHttpServiceTest.html#sendAndAssertResponse(io.servicetalk.http.api.StreamingHttpRequest,io.servicetalk.http.api.HttpResponseStatus,java.lang.CharSequence,org.hamcrest.Matcher,int)">sendAndAssertResponse</a>, <a href="AbstractNonParameterizedJerseyStreamingHttpServiceTest.html#sendAndAssertResponse(io.servicetalk.http.api.StreamingHttpRequest,io.servicetalk.http.api.HttpResponseStatus,java.lang.CharSequence,org.hamcrest.Matcher,java.util.function.Function)">sendAndAssertResponse</a>, <a href="AbstractNonParameterizedJerseyStreamingHttpServiceTest.html#sendAndAssertStatusOnly(io.servicetalk.http.api.StreamingHttpRequest,io.servicetalk.http.api.HttpResponseStatus)">sendAndAssertStatusOnly</a>, <a href="AbstractNonParameterizedJerseyStreamingHttpServiceTest.html#testUri(java.lang.String)">testUri</a>, <a href="AbstractNonParameterizedJerseyStreamingHttpServiceTest.html#withHeader(io.servicetalk.http.api.StreamingHttpRequest,java.lang.String,java.lang.String)">withHeader</a></code></li>
-</ul>
 <ul class="blockList">
 <li class="blockList"><a id="methods.inherited.from.class.java.lang.Object">
 <!--   -->
@@ -249,6 +308,25 @@ extends <a href="AbstractNonParameterizedJerseyStreamingHttpServiceTest.html" ti
 <div class="details">
 <ul class="blockList">
 <li class="blockList">
+<!-- ============ FIELD DETAIL =========== -->
+<section role="region">
+<ul class="blockList">
+<li class="blockList"><a id="field.detail">
+<!--   -->
+</a>
+<h3>Field Detail</h3>
+<a id="api">
+<!--   -->
+</a>
+<ul class="blockListLast">
+<li class="blockList">
+<h4>api</h4>
+<pre>protected&nbsp;<a href="AbstractJerseyStreamingHttpServiceTest.RouterApi.html" title="enum in io.servicetalk.http.router.jersey">AbstractJerseyStreamingHttpServiceTest.RouterApi</a> api</pre>
+</li>
+</ul>
+</li>
+</ul>
+</section>
 <!-- ========= CONSTRUCTOR DETAIL ======== -->
 <section role="region">
 <ul class="blockList">
@@ -256,13 +334,13 @@ extends <a href="AbstractNonParameterizedJerseyStreamingHttpServiceTest.html" ti
 <!--   -->
 </a>
 <h3>Constructor Detail</h3>
-<a id="&lt;init&gt;(io.servicetalk.http.router.jersey.AbstractNonParameterizedJerseyStreamingHttpServiceTest.RouterApi)">
+<a id="&lt;init&gt;()">
 <!--   -->
 </a>
 <ul class="blockListLast">
 <li class="blockList">
 <h4>AbstractJerseyStreamingHttpServiceTest</h4>
-<pre>protected&nbsp;AbstractJerseyStreamingHttpServiceTest&#8203;(<a href="AbstractNonParameterizedJerseyStreamingHttpServiceTest.RouterApi.html" title="enum in io.servicetalk.http.router.jersey">AbstractNonParameterizedJerseyStreamingHttpServiceTest.RouterApi</a>&nbsp;api)</pre>
+<pre>public&nbsp;AbstractJerseyStreamingHttpServiceTest()</pre>
 </li>
 </ul>
 </li>
@@ -275,15 +353,141 @@ extends <a href="AbstractNonParameterizedJerseyStreamingHttpServiceTest.html" ti
 <!--   -->
 </a>
 <h3>Method Detail</h3>
-<a id="data()">
+<a id="setUp(io.servicetalk.http.router.jersey.AbstractJerseyStreamingHttpServiceTest.RouterApi)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>setUp</h4>
+<pre class="methodSignature">protected&nbsp;void&nbsp;setUp&#8203;(<a href="AbstractJerseyStreamingHttpServiceTest.RouterApi.html" title="enum in io.servicetalk.http.router.jersey">AbstractJerseyStreamingHttpServiceTest.RouterApi</a>&nbsp;api)
+              throws java.lang.Exception</pre>
+<dl>
+<dt><span class="throwsLabel">Throws:</span></dt>
+<dd><code>java.lang.Exception</code></dd>
+</dl>
+</li>
+</ul>
+<a id="closeClient()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>closeClient</h4>
+<pre class="methodSignature">@AfterEach
+public final&nbsp;void&nbsp;closeClient()
+                       throws java.lang.Exception</pre>
+<dl>
+<dt><span class="throwsLabel">Throws:</span></dt>
+<dd><code>java.lang.Exception</code></dd>
+</dl>
+</li>
+</ul>
+<a id="closeServer()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>closeServer</h4>
+<pre class="methodSignature">@AfterEach
+public final&nbsp;void&nbsp;closeServer()
+                       throws java.lang.Exception</pre>
+<dl>
+<dt><span class="throwsLabel">Throws:</span></dt>
+<dd><code>java.lang.Exception</code></dd>
+</dl>
+</li>
+</ul>
+<a id="application()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>application</h4>
+<pre class="methodSignature">protected abstract&nbsp;javax.ws.rs.core.Application&nbsp;application()</pre>
+</li>
+</ul>
+<a id="testUri(java.lang.String)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>testUri</h4>
+<pre class="methodSignature">protected&nbsp;java.lang.String&nbsp;testUri&#8203;(java.lang.String&nbsp;path)</pre>
+</li>
+</ul>
+<a id="post(java.lang.String,java.lang.CharSequence,java.lang.CharSequence)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>post</h4>
+<pre class="methodSignature">protected&nbsp;<a href="../../api/StreamingHttpRequest.html" title="interface in io.servicetalk.http.api">StreamingHttpRequest</a>&nbsp;post&#8203;(java.lang.String&nbsp;path,
+                                    java.lang.CharSequence&nbsp;payload,
+                                    java.lang.CharSequence&nbsp;contentType)</pre>
+</li>
+</ul>
+<a id="sendAndAssertNoResponse(io.servicetalk.http.api.StreamingHttpRequest,io.servicetalk.http.api.HttpResponseStatus)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>sendAndAssertNoResponse</h4>
+<pre class="methodSignature">protected&nbsp;<a href="../../api/StreamingHttpResponse.html" title="interface in io.servicetalk.http.api">StreamingHttpResponse</a>&nbsp;sendAndAssertNoResponse&#8203;(<a href="../../api/StreamingHttpRequest.html" title="interface in io.servicetalk.http.api">StreamingHttpRequest</a>&nbsp;req,
+                                                        <a href="../../api/HttpResponseStatus.html" title="class in io.servicetalk.http.api">HttpResponseStatus</a>&nbsp;expectedStatus)</pre>
+</li>
+</ul>
+<a id="sendAndAssertStatusOnly(io.servicetalk.http.api.StreamingHttpRequest,io.servicetalk.http.api.HttpResponseStatus)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>sendAndAssertStatusOnly</h4>
+<pre class="methodSignature">protected&nbsp;java.lang.String&nbsp;sendAndAssertStatusOnly&#8203;(<a href="../../api/StreamingHttpRequest.html" title="interface in io.servicetalk.http.api">StreamingHttpRequest</a>&nbsp;req,
+                                                   <a href="../../api/HttpResponseStatus.html" title="class in io.servicetalk.http.api">HttpResponseStatus</a>&nbsp;expectedStatus)</pre>
+</li>
+</ul>
+<a id="sendAndAssertResponse(io.servicetalk.http.api.StreamingHttpRequest,io.servicetalk.http.api.HttpResponseStatus,java.lang.CharSequence,java.lang.String)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>sendAndAssertResponse</h4>
+<pre class="methodSignature">protected&nbsp;<a href="../../api/StreamingHttpResponse.html" title="interface in io.servicetalk.http.api">StreamingHttpResponse</a>&nbsp;sendAndAssertResponse&#8203;(<a href="../../api/StreamingHttpRequest.html" title="interface in io.servicetalk.http.api">StreamingHttpRequest</a>&nbsp;req,
+                                                      <a href="../../api/HttpResponseStatus.html" title="class in io.servicetalk.http.api">HttpResponseStatus</a>&nbsp;expectedStatus,
+                                                      @Nullable
+                                                      java.lang.CharSequence&nbsp;expectedContentType,
+                                                      java.lang.String&nbsp;expectedContent)</pre>
+</li>
+</ul>
+<a id="sendAndAssertResponse(io.servicetalk.http.api.StreamingHttpRequest,io.servicetalk.http.api.HttpResponseStatus,java.lang.CharSequence,org.hamcrest.Matcher,java.util.function.Function)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>sendAndAssertResponse</h4>
+<pre class="methodSignature">protected&nbsp;<a href="../../api/StreamingHttpResponse.html" title="interface in io.servicetalk.http.api">StreamingHttpResponse</a>&nbsp;sendAndAssertResponse&#8203;(<a href="../../api/StreamingHttpRequest.html" title="interface in io.servicetalk.http.api">StreamingHttpRequest</a>&nbsp;req,
+                                                      <a href="../../api/HttpResponseStatus.html" title="class in io.servicetalk.http.api">HttpResponseStatus</a>&nbsp;expectedStatus,
+                                                      @Nullable
+                                                      java.lang.CharSequence&nbsp;expectedContentType,
+                                                      org.hamcrest.Matcher&lt;java.lang.String&gt;&nbsp;contentMatcher,
+                                                      java.util.function.Function&lt;java.lang.String,&#8203;java.lang.Integer&gt;&nbsp;expectedContentLengthExtractor)</pre>
+</li>
+</ul>
+<a id="runTwiceToEnsureEndpointCache(java.lang.Runnable)">
 <!--   -->
 </a>
 <ul class="blockListLast">
 <li class="blockList">
-<h4>data</h4>
-<pre class="methodSignature">public static&nbsp;java.util.Collection&lt;java.lang.Object[]&gt;&nbsp;data()</pre>
-<div class="block">Some test classes eg. <a href="ExecutionStrategyTest.html" title="class in io.servicetalk.http.router.jersey"><code>ExecutionStrategyTest</code></a> come with their own parameters, JUnit only supports
- a single level of parameters.</div>
+<h4>runTwiceToEnsureEndpointCache</h4>
+<pre class="methodSignature">protected static&nbsp;void&nbsp;runTwiceToEnsureEndpointCache&#8203;(java.lang.Runnable&nbsp;test)</pre>
+<div class="block">Runs the provided <code>test</code> lambda multiple times.
+ <p>
+ some tests depend on Endpoint enhancement which is now backed by a cache, so we test the test code multiple times
+ to ensure that the caching of endpoints doesn't cause any weird side effects.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>test</code> - <code>Runnable</code> test callback will be executed multiple times, typically this is run from a @<code>Test</code> within a single setup/teardown cycle</dd>
+</dl>
 </li>
 </ul>
 </li>
@@ -344,7 +548,7 @@ extends <a href="AbstractNonParameterizedJerseyStreamingHttpServiceTest.html" ti
 </ul>
 <ul class="subNavList">
 <li>Detail:&nbsp;</li>
-<li>Field&nbsp;|&nbsp;</li>
+<li><a href="#field.detail">Field</a>&nbsp;|&nbsp;</li>
 <li><a href="#constructor.detail">Constr</a>&nbsp;|&nbsp;</li>
 <li><a href="#method.detail">Method</a></li>
 </ul>

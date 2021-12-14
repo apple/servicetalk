@@ -26,8 +26,8 @@
     catch(err) {
     }
 //-->
-var data = {"i0":6};
-var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"]};
+var data = {"i0":38,"i1":18};
+var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"],16:["t5","Default Methods"],32:["t6","Deprecated Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
 var tableTab = "tableTab";
@@ -132,7 +132,7 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </dl>
 <dl>
 <dt>All Known Implementing Classes:</dt>
-<dd><code><a href="../../http/netty/DefaultHttpLoadBalancerFactory.html" title="class in io.servicetalk.http.netty">DefaultHttpLoadBalancerFactory</a></code>, <code><a href="../../loadbalancer/RoundRobinLoadBalancer.RoundRobinLoadBalancerFactory.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancer.RoundRobinLoadBalancerFactory</a></code></dd>
+<dd><code><a href="../../http/netty/DefaultHttpLoadBalancerFactory.html" title="class in io.servicetalk.http.netty">DefaultHttpLoadBalancerFactory</a></code>, <code><a href="../../loadbalancer/RoundRobinLoadBalancer.RoundRobinLoadBalancerFactory.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancer.RoundRobinLoadBalancerFactory</a></code>, <code><a href="../../loadbalancer/RoundRobinLoadBalancerFactory.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancerFactory</a></code></dd>
 </dl>
 <dl>
 <dt>Functional Interface:</dt>
@@ -156,7 +156,7 @@ public interface <span class="typeNameLabel">LoadBalancerFactory&lt;ResolvedAddr
 </a>
 <h3>Method Summary</h3>
 <table class="memberSummary">
-<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t3" class="tableTab"><span><a href="javascript:show(4);">Abstract Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
+<caption><span id="t0" class="activeTableTab"><span>All Methods</span><span class="tabEnd">&nbsp;</span></span><span id="t2" class="tableTab"><span><a href="javascript:show(2);">Instance Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t3" class="tableTab"><span><a href="javascript:show(4);">Abstract Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t5" class="tableTab"><span><a href="javascript:show(16);">Default Methods</a></span><span class="tabEnd">&nbsp;</span></span><span id="t6" class="tableTab"><span><a href="javascript:show(32);">Deprecated Methods</a></span><span class="tabEnd">&nbsp;</span></span></caption>
 <tr>
 <th class="colFirst" scope="col">Modifier and Type</th>
 <th class="colSecond" scope="col">Method</th>
@@ -165,6 +165,18 @@ public interface <span class="typeNameLabel">LoadBalancerFactory&lt;ResolvedAddr
 <tr id="i0" class="altColor">
 <td class="colFirst"><code>&lt;T extends <a href="LoadBalancerFactory.html" title="type parameter in LoadBalancerFactory">C</a>&gt;<br><a href="LoadBalancer.html" title="interface in io.servicetalk.client.api">LoadBalancer</a>&lt;T&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#newLoadBalancer(io.servicetalk.concurrent.api.Publisher,io.servicetalk.client.api.ConnectionFactory)">newLoadBalancer</a></span>&#8203;(<a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;? extends <a href="ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;<a href="LoadBalancerFactory.html" title="type parameter in LoadBalancerFactory">ResolvedAddress</a>&gt;&gt;&nbsp;eventPublisher,
+               <a href="ConnectionFactory.html" title="interface in io.servicetalk.client.api">ConnectionFactory</a>&lt;<a href="LoadBalancerFactory.html" title="type parameter in LoadBalancerFactory">ResolvedAddress</a>,&#8203;T&gt;&nbsp;connectionFactory)</code></th>
+<td class="colLast">
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">In the future only <a href="#newLoadBalancer(java.lang.String,io.servicetalk.concurrent.api.Publisher,io.servicetalk.client.api.ConnectionFactory)"><code>newLoadBalancer(String, Publisher, ConnectionFactory)</code></a> will remain,
+ please use that method instead.</div>
+</div>
+</td>
+</tr>
+<tr id="i1" class="rowColor">
+<td class="colFirst"><code>default &lt;T extends <a href="LoadBalancerFactory.html" title="type parameter in LoadBalancerFactory">C</a>&gt;<br><a href="LoadBalancer.html" title="interface in io.servicetalk.client.api">LoadBalancer</a>&lt;T&gt;</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#newLoadBalancer(java.lang.String,io.servicetalk.concurrent.api.Publisher,io.servicetalk.client.api.ConnectionFactory)">newLoadBalancer</a></span>&#8203;(java.lang.String&nbsp;targetResource,
+               <a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;? extends java.util.Collection&lt;? extends <a href="ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;<a href="LoadBalancerFactory.html" title="type parameter in LoadBalancerFactory">ResolvedAddress</a>&gt;&gt;&gt;&nbsp;eventPublisher,
                <a href="ConnectionFactory.html" title="interface in io.servicetalk.client.api">ConnectionFactory</a>&lt;<a href="LoadBalancerFactory.html" title="type parameter in LoadBalancerFactory">ResolvedAddress</a>,&#8203;T&gt;&nbsp;connectionFactory)</code></th>
 <td class="colLast">
 <div class="block">Create a new <a href="LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>.</div>
@@ -190,18 +202,57 @@ public interface <span class="typeNameLabel">LoadBalancerFactory&lt;ResolvedAddr
 <a id="newLoadBalancer(io.servicetalk.concurrent.api.Publisher,io.servicetalk.client.api.ConnectionFactory)">
 <!--   -->
 </a>
-<ul class="blockListLast">
+<ul class="blockList">
 <li class="blockList">
 <h4>newLoadBalancer</h4>
-<pre class="methodSignature">&lt;T extends <a href="LoadBalancerFactory.html" title="type parameter in LoadBalancerFactory">C</a>&gt;&nbsp;<a href="LoadBalancer.html" title="interface in io.servicetalk.client.api">LoadBalancer</a>&lt;T&gt;&nbsp;newLoadBalancer&#8203;(<a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;? extends <a href="ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;<a href="LoadBalancerFactory.html" title="type parameter in LoadBalancerFactory">ResolvedAddress</a>&gt;&gt;&nbsp;eventPublisher,
+<pre class="methodSignature">@Deprecated
+&lt;T extends <a href="LoadBalancerFactory.html" title="type parameter in LoadBalancerFactory">C</a>&gt;&nbsp;<a href="LoadBalancer.html" title="interface in io.servicetalk.client.api">LoadBalancer</a>&lt;T&gt;&nbsp;newLoadBalancer&#8203;(<a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;? extends <a href="ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;<a href="LoadBalancerFactory.html" title="type parameter in LoadBalancerFactory">ResolvedAddress</a>&gt;&gt;&nbsp;eventPublisher,
                                               <a href="ConnectionFactory.html" title="interface in io.servicetalk.client.api">ConnectionFactory</a>&lt;<a href="LoadBalancerFactory.html" title="type parameter in LoadBalancerFactory">ResolvedAddress</a>,&#8203;T&gt;&nbsp;connectionFactory)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">In the future only <a href="#newLoadBalancer(java.lang.String,io.servicetalk.concurrent.api.Publisher,io.servicetalk.client.api.ConnectionFactory)"><code>newLoadBalancer(String, Publisher, ConnectionFactory)</code></a> will remain,
+ please use that method instead.</div>
+</div>
 <div class="block">Create a new <a href="LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>.</div>
 <dl>
 <dt><span class="paramLabel">Type Parameters:</span></dt>
 <dd><code>T</code> - Type of connections created by the passed <a href="ConnectionFactory.html" title="interface in io.servicetalk.client.api"><code>ConnectionFactory</code></a>.</dd>
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>eventPublisher</code> - A stream of <a href="ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscovererEvent</code></a>s which the <a href="LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> can use to
- connect to physical hosts. Typically generated from a <a href="ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>.</dd>
+ connect to physical hosts. Typically generated from a
+ <a href="ServiceDiscoverer.html#discover(UnresolvedAddress)"><code>ServiceDiscoverer</code></a>.</dd>
+<dd><code>connectionFactory</code> - <a href="ConnectionFactory.html" title="interface in io.servicetalk.client.api"><code>ConnectionFactory</code></a> that the returned <a href="LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> will use to generate
+ new connections. Returned <a href="LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> will own the responsibility for this <a href="ConnectionFactory.html" title="interface in io.servicetalk.client.api"><code>ConnectionFactory</code></a>
+ and hence will call <a href="../../concurrent/api/AsyncCloseable.html#closeAsync()"><code>AsyncCloseable.closeAsync()</code></a> when <a href="../../concurrent/api/AsyncCloseable.html#closeAsync()"><code>AsyncCloseable.closeAsync()</code></a> is called.</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd>a new <a href="LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>.</dd>
+</dl>
+</li>
+</ul>
+<a id="newLoadBalancer(java.lang.String,io.servicetalk.concurrent.api.Publisher,io.servicetalk.client.api.ConnectionFactory)">
+<!--   -->
+</a>
+<ul class="blockListLast">
+<li class="blockList">
+<h4>newLoadBalancer</h4>
+<pre class="methodSignature">default&nbsp;&lt;T extends <a href="LoadBalancerFactory.html" title="type parameter in LoadBalancerFactory">C</a>&gt;&nbsp;<a href="LoadBalancer.html" title="interface in io.servicetalk.client.api">LoadBalancer</a>&lt;T&gt;&nbsp;newLoadBalancer&#8203;(java.lang.String&nbsp;targetResource,
+                                                      <a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;? extends java.util.Collection&lt;? extends <a href="ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;<a href="LoadBalancerFactory.html" title="type parameter in LoadBalancerFactory">ResolvedAddress</a>&gt;&gt;&gt;&nbsp;eventPublisher,
+                                                      <a href="ConnectionFactory.html" title="interface in io.servicetalk.client.api">ConnectionFactory</a>&lt;<a href="LoadBalancerFactory.html" title="type parameter in LoadBalancerFactory">ResolvedAddress</a>,&#8203;T&gt;&nbsp;connectionFactory)</pre>
+<div class="block">Create a new <a href="LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>.
+ <p>
+ Note this method has a default implementation to not break the <code>FunctionalInterface</code> contract, however
+ in a future release the other deprecated <a href="#newLoadBalancer(io.servicetalk.concurrent.api.Publisher,io.servicetalk.client.api.ConnectionFactory)"><code>method</code></a>
+ will be removed and this method will become the functional interface.</div>
+<dl>
+<dt><span class="paramLabel">Type Parameters:</span></dt>
+<dd><code>T</code> - Type of connections created by the passed <a href="ConnectionFactory.html" title="interface in io.servicetalk.client.api"><code>ConnectionFactory</code></a>.</dd>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>targetResource</code> - A <code>String</code> representation of the target resource for which the created instance
+ will perform load balancing. Bear in mind, load balancing is performed over the a collection of hosts provided
+ via the <code>eventPublisher</code> which may not correspond directly to a single unresolved address, but potentially
+ a merged collection.</dd>
+<dd><code>eventPublisher</code> - A stream of <code>Collection</code>&lt;<a href="ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscovererEvent</code></a>&gt;
+ which the <a href="LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> can use to connect to physical hosts. Typically generated
+ from <a href="ServiceDiscoverer.html#discover(UnresolvedAddress)"><code>ServiceDiscoverer</code></a>.</dd>
 <dd><code>connectionFactory</code> - <a href="ConnectionFactory.html" title="interface in io.servicetalk.client.api"><code>ConnectionFactory</code></a> that the returned <a href="LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> will use to generate
  new connections. Returned <a href="LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> will own the responsibility for this <a href="ConnectionFactory.html" title="interface in io.servicetalk.client.api"><code>ConnectionFactory</code></a>
  and hence will call <a href="../../concurrent/api/AsyncCloseable.html#closeAsync()"><code>AsyncCloseable.closeAsync()</code></a> when <a href="../../concurrent/api/AsyncCloseable.html#closeAsync()"><code>AsyncCloseable.closeAsync()</code></a> is called.</dd>

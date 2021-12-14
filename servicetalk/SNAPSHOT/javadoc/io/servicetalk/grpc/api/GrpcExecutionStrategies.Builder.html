@@ -26,7 +26,7 @@
     catch(err) {
     }
 //-->
-var data = {"i0":10,"i1":10,"i2":10,"i3":10,"i4":10,"i5":10,"i6":10,"i7":42};
+var data = {"i0":10,"i1":42,"i2":10,"i3":10,"i4":10,"i5":10,"i6":10,"i7":42};
 var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],8:["t4","Concrete Methods"],32:["t6","Deprecated Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
@@ -189,7 +189,10 @@ extends java.lang.Object</pre>
 <td class="colFirst"><code><a href="GrpcExecutionStrategies.Builder.html" title="class in io.servicetalk.grpc.api">GrpcExecutionStrategies.Builder</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#executor(io.servicetalk.concurrent.api.Executor)">executor</a></span>&#8203;(<a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;executor)</code></th>
 <td class="colLast">
-<div class="block">Specify an <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> to use.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Set the executor to use on the <a href="../../transport/api/ExecutionContext.html" title="interface in io.servicetalk.transport.api"><code>ExecutionContext</code></a> using
+ <code>executor(Executor)</code> methods on client/server builders.</div>
+</div>
 </td>
 </tr>
 <tr id="i2" class="altColor">
@@ -232,7 +235,8 @@ extends java.lang.Object</pre>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#offloadWithThreadAffinity()">offloadWithThreadAffinity</a></span>()</code></th>
 <td class="colLast">
 <div class="block"><span class="deprecatedLabel">Deprecated.</span>
-<div class="deprecationComment">Use a single threaded executor with <a href="#executor(io.servicetalk.concurrent.api.Executor)"><code>executor(Executor)</code></a> to ensure affinity.</div>
+<div class="deprecationComment">Use a single threaded executor set on <a href="../../transport/api/ExecutionContext.html" title="interface in io.servicetalk.transport.api"><code>ExecutionContext</code></a> using
+ <code>executor(Executor)</code> methods on client/server builders to ensure affinity.</div>
 </div>
 </td>
 </tr>
@@ -355,7 +359,12 @@ extends java.lang.Object</pre>
 <ul class="blockList">
 <li class="blockList">
 <h4>executor</h4>
-<pre class="methodSignature">public&nbsp;<a href="GrpcExecutionStrategies.Builder.html" title="class in io.servicetalk.grpc.api">GrpcExecutionStrategies.Builder</a>&nbsp;executor&#8203;(<a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;executor)</pre>
+<pre class="methodSignature">@Deprecated
+public&nbsp;<a href="GrpcExecutionStrategies.Builder.html" title="class in io.servicetalk.grpc.api">GrpcExecutionStrategies.Builder</a>&nbsp;executor&#8203;(<a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;executor)</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Set the executor to use on the <a href="../../transport/api/ExecutionContext.html" title="interface in io.servicetalk.transport.api"><code>ExecutionContext</code></a> using
+ <code>executor(Executor)</code> methods on client/server builders.</div>
+</div>
 <div class="block">Specify an <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> to use.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
@@ -374,7 +383,8 @@ extends java.lang.Object</pre>
 <pre class="methodSignature">@Deprecated
 public&nbsp;<a href="GrpcExecutionStrategies.Builder.html" title="class in io.servicetalk.grpc.api">GrpcExecutionStrategies.Builder</a>&nbsp;offloadWithThreadAffinity()</pre>
 <div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
-<div class="deprecationComment">Use a single threaded executor with <a href="#executor(io.servicetalk.concurrent.api.Executor)"><code>executor(Executor)</code></a> to ensure affinity.</div>
+<div class="deprecationComment">Use a single threaded executor set on <a href="../../transport/api/ExecutionContext.html" title="interface in io.servicetalk.transport.api"><code>ExecutionContext</code></a> using
+ <code>executor(Executor)</code> methods on client/server builders to ensure affinity.</div>
 </div>
 <div class="block">Enable thread affinity while offloading. When enabled, offloading implementation will favor using a
  single thread per subscribe of a source.</div>

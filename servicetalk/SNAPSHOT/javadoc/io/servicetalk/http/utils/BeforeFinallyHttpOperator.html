@@ -185,6 +185,13 @@ implements <a href="../../concurrent/api/SingleOperator.html" title="interface i
 </td>
 </tr>
 <tr class="rowColor">
+<th class="colConstructorName" scope="row"><code><span class="memberNameLink"><a href="#%3Cinit%3E(io.servicetalk.concurrent.api.TerminalSignalConsumer,boolean)">BeforeFinallyHttpOperator</a></span>&#8203;(<a href="../../concurrent/api/TerminalSignalConsumer.html" title="interface in io.servicetalk.concurrent.api">TerminalSignalConsumer</a>&nbsp;beforeFinally,
+                         boolean&nbsp;discardEventsAfterCancel)</code></th>
+<td class="colLast">
+<div class="block">Create a new instance.</div>
+</td>
+</tr>
+<tr class="altColor">
 <th class="colConstructorName" scope="row"><code><span class="memberNameLink"><a href="#%3Cinit%3E(java.lang.Runnable)">BeforeFinallyHttpOperator</a></span>&#8203;(java.lang.Runnable&nbsp;beforeFinally)</code></th>
 <td class="colLast">
 <div class="block">Create a new instance.</div>
@@ -264,7 +271,7 @@ implements <a href="../../concurrent/api/SingleOperator.html" title="interface i
 <a id="&lt;init&gt;(java.lang.Runnable)">
 <!--   -->
 </a>
-<ul class="blockListLast">
+<ul class="blockList">
 <li class="blockList">
 <h4>BeforeFinallyHttpOperator</h4>
 <pre>public&nbsp;BeforeFinallyHttpOperator&#8203;(java.lang.Runnable&nbsp;beforeFinally)</pre>
@@ -273,6 +280,25 @@ implements <a href="../../concurrent/api/SingleOperator.html" title="interface i
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>beforeFinally</code> - the callback which is executed just once whenever the sources reach a terminal state
  across both sources.</dd>
+</dl>
+</li>
+</ul>
+<a id="&lt;init&gt;(io.servicetalk.concurrent.api.TerminalSignalConsumer,boolean)">
+<!--   -->
+</a>
+<ul class="blockListLast">
+<li class="blockList">
+<h4>BeforeFinallyHttpOperator</h4>
+<pre>public&nbsp;BeforeFinallyHttpOperator&#8203;(<a href="../../concurrent/api/TerminalSignalConsumer.html" title="interface in io.servicetalk.concurrent.api">TerminalSignalConsumer</a>&nbsp;beforeFinally,
+                                 boolean&nbsp;discardEventsAfterCancel)</pre>
+<div class="block">Create a new instance.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>beforeFinally</code> - the callback which is executed just once whenever the sources reach a terminal state
+ across both sources.</dd>
+<dd><code>discardEventsAfterCancel</code> - if <code>true</code> further events will be discarded if those arrive after
+ <a href="../../concurrent/api/TerminalSignalConsumer.html#cancel()"><code>TerminalSignalConsumer.cancel()</code></a> is invoked. Otherwise, events may still be delivered if they race with
+ cancellation.</dd>
 </dl>
 </li>
 </ul>

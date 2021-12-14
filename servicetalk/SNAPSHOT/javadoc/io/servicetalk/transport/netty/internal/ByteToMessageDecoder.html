@@ -162,7 +162,7 @@ extends io.netty.channel.ChannelInboundHandlerAdapter</pre>
      }
  </pre>
 
- <h3>Frame detection</h3>
+ <p><strong>Frame detection</strong></p>
  <p>
  Generally frame detection should be handled earlier in the pipeline by adding a
  <code>DelimiterBasedFrameDecoder</code>, <code>FixedLengthFrameDecoder</code>, <code>LengthFieldBasedFrameDecoder</code>,
@@ -177,7 +177,7 @@ extends io.netty.channel.ChannelInboundHandlerAdapter</pre>
  One <strong>MUST</strong> use the reader index when using methods like <code>ByteBuf.getInt(int)</code>.
  For example calling <code>in.getInt(0)</code> is assuming the frame starts at the beginning of the buffer, which
  is not always the case. Use <code>in.getInt(in.readerIndex())</code> instead.
- <h3>Pitfalls</h3>
+ <p><strong>Pitfalls</strong></p>
  <p>
  Be aware that sub-classes of <a href="ByteToMessageDecoder.html" title="class in io.servicetalk.transport.netty.internal"><code>ByteToMessageDecoder</code></a> <strong>MUST NOT</strong>
  annotated with <code>ChannelHandler.Sharable</code>.
