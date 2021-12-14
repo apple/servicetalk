@@ -462,6 +462,20 @@ HttpResponse resp = client.request(client.get("/"));
 
 ----
 
+=== Native transport
+
+Netty implements more performant JNI link:https://netty.io/wiki/native-transports.html[native transports]. Using those
+instead of Java NIO will allow users to achieve better performance numbers, reduce latencies, and make application more
+reactive to the network events. To verify that the native transport is available use
+`io.netty.channel.epoll.Epoll.isAvailable()` or `io.netty.channel.kqueue.KQueue.isAvailable()`.
+
+Users of the latest Linux kernels may experiment with link:https://unixism.net/loti/what_is_io_uring.html[io_uring], an
+asynchronous I/O API through
+link:https://github.com/netty/netty-incubator-transport-io_uring[netty-incubator-transport-io_uring] module. Read
+documentation for the netty module to understand all requirements, limitations, and production-readiness.
+Availability of this feature can be checked by `io.netty.incubator.channel.uring.IOUring`. If it's available, use
+`-Dio.servicetalk.transport.netty.tryIoUring=true` system property to opt-in for io_uring transport instead of epoll.
+
 === HTTP Service auto payload-draining
 If a user forgets to consume the request payload (e.g. returns an `HTTP 4xx` status code and doesn't care about the
 request payload) this may have negative impacts on subsequent requests on the same connection:
