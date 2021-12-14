@@ -58,12 +58,6 @@ final class CatchAllTransportObserver implements TransportObserver {
                 CatchAllConnectionObserver::new, NoopConnectionObserver.INSTANCE);
     }
 
-    @Override
-    public ConnectionObserver onNewConnection(@Nullable final Object localAddress, final Object remoteAddress) {
-        return safeReport(() -> observer.onNewConnection(localAddress, remoteAddress), observer, "new connection",
-                CatchAllConnectionObserver::new, NoopConnectionObserver.INSTANCE);
-    }
-
     private static final class CatchAllConnectionObserver implements ConnectionObserver {
 
         private final ConnectionObserver observer;

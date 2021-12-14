@@ -43,12 +43,6 @@ final class BiTransportObserver implements TransportObserver {
                 second.onNewConnection(localAddress, remoteAddress));
     }
 
-    @Override
-    public ConnectionObserver onNewConnection(@Nullable final Object localAddress, final Object remoteAddress) {
-        return new BiConnectionObserver(first.onNewConnection(localAddress, remoteAddress),
-                second.onNewConnection(localAddress, remoteAddress));
-    }
-
     private static final class BiConnectionObserver implements ConnectionObserver {
 
         private final ConnectionObserver first;
