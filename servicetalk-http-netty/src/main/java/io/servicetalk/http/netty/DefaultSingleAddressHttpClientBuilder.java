@@ -20,7 +20,6 @@ import io.servicetalk.buffer.api.CharSequences;
 import io.servicetalk.client.api.AutoRetryStrategyProvider;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
-import io.servicetalk.client.api.DefaultAutoRetryStrategyProvider.Builder;
 import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.ServiceDiscoverer;
@@ -48,6 +47,7 @@ import io.servicetalk.http.api.ServiceDiscoveryRetryStrategy;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.SingleAddressHttpClientSecurityConfigurator;
 import io.servicetalk.http.api.StreamingHttpClient;
+import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
@@ -96,6 +96,10 @@ import static java.util.Objects.requireNonNull;
  * @param <R> the type of address after resolution (resolved address)
  */
 final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHttpClientBuilder<U, R> {
+
+    private static final RetryingHttpRequesterFilter DEFAULT_AUTO_RETRIES =
+            new RetryingHttpRequesterFilter.Builder().build();
+
     static final Duration SD_RETRY_STRATEGY_INIT_DURATION = ofSeconds(10);
     static final Duration SD_RETRY_STRATEGY_JITTER = ofSeconds(5);
     @Nullable
@@ -117,11 +121,23 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     @Nullable
     private StreamingHttpConnectionFilterFactory connectionFilterFactory;
     @Nullable
-    private StreamingHttpClientFilterFactory clientFilterFactory;
+    private ContextAwareStreamingHttpClientFilterFactory clientFilterFactory;
     @Nullable
-    private AutoRetryStrategyProvider autoRetry = new Builder().build();
+    private AutoRetryStrategyProvider autoRetry = new io.servicetalk.client.api.DefaultAutoRetryStrategyProvider
+            .Builder().build();
     private ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> connectionFactoryFilter =
             ConnectionFactoryFilter.identity();
+
+    //FIXME: 0.42 - to be removed when auto-retry is removed.
+    @Deprecated
+    boolean customAutoRetry;
+
+    //FIXME: 0.42 - to be removed when auto-retry is removed.
+    @Deprecated
+    boolean retryingFilterAppended;
+
+    @Nullable
+    private RetryingHttpRequesterFilter retryingHttpRequesterFilter;
 
     DefaultSingleAddressHttpClientBuilder(
             final U address, final ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer) {
@@ -160,6 +176,9 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         addHostHeaderFallbackFilter = from.addHostHeaderFallbackFilter;
         autoRetry = from.autoRetry;
         connectionFactoryFilter = from.connectionFactoryFilter;
+        retryingHttpRequesterFilter = from.retryingHttpRequesterFilter;
+        retryingFilterAppended = from.retryingFilterAppended;
+        customAutoRetry = from.customAutoRetry;
     }
 
     private DefaultSingleAddressHttpClientBuilder<U, R> copy() {
@@ -311,7 +330,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
                             sdEvents,
                             connectionFactory));
 
-            StreamingHttpClientFilterFactory currClientFilterFactory = ctx.builder.clientFilterFactory;
+            ContextAwareStreamingHttpClientFilterFactory currClientFilterFactory = ctx.builder.clientFilterFactory;
             if (roConfig.hasProxy() && sslContext == null) {
                 // If we're talking to a proxy over http (not https), rewrite the request-target to absolute-form, as
                 // specified by the RFC: https://tools.ietf.org/html/rfc7230#section-5.3.2
@@ -325,12 +344,17 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
 
             FilterableStreamingHttpClient lbClient = closeOnException.prepend(
                     new LoadBalancedStreamingHttpClient(ctx.executionContext, lb, reqRespFactory));
-            if (ctx.builder.autoRetry != null) {
+            if (ctx.builder.customAutoRetry) {
                 lbClient = new AutoRetryFilter(lbClient,
                         ctx.builder.autoRetry.newStrategy(lb.eventStream(), ctx.sdStatus));
+            } else if (ctx.builder.autoRetry != null && !ctx.builder.retryingFilterAppended) {
+                ctx.builder.retryingHttpRequesterFilter = DEFAULT_AUTO_RETRIES;
+                currClientFilterFactory = appendFilter(currClientFilterFactory,
+                        ctx.builder.retryingHttpRequesterFilter);
             }
             return new FilterableClientToClient(currClientFilterFactory != null ?
-                    currClientFilterFactory.create(lbClient) : lbClient, executionStrategy,
+                    currClientFilterFactory.create(lbClient, lb.eventStream(), ctx.sdStatus) : lbClient,
+                    executionStrategy,
                     ctx.builder.influencerChainBuilder.buildForClient(executionStrategy));
         } catch (final Throwable t) {
             closeOnException.closeAsync().subscribe();
@@ -373,20 +397,42 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
                 ctx.builder.address.toString() : ctx.builder.address + " (via " + ctx.proxyAddress + ")";
     }
 
-    private static StreamingHttpClientFilterFactory appendFilter(
-            @Nullable final StreamingHttpClientFilterFactory currClientFilterFactory,
+    private static ContextAwareStreamingHttpClientFilterFactory appendFilter(
+            @Nullable final ContextAwareStreamingHttpClientFilterFactory currClientFilterFactory,
             final StreamingHttpClientFilterFactory appendClientFilterFactory) {
         return appendFilter0(appendFilter0(currClientFilterFactory, appendClientFilterFactory),
                 NEW_TO_DEPRECATED_FILTER);
     }
 
-    private static StreamingHttpClientFilterFactory appendFilter0(
-            @Nullable final StreamingHttpClientFilterFactory currClientFilterFactory,
+    private static ContextAwareStreamingHttpClientFilterFactory appendFilter0(
+            @Nullable final ContextAwareStreamingHttpClientFilterFactory currClientFilterFactory,
             final StreamingHttpClientFilterFactory appendClientFilterFactory) {
-        if (currClientFilterFactory == null) {
-            return appendClientFilterFactory;
+        if (appendClientFilterFactory instanceof RetryingHttpRequesterFilter) {
+            if (currClientFilterFactory == null) {
+                return (client, lbEventStream, sdStatus) -> {
+                    final RetryingHttpRequesterFilter.ContextAwareRetryingHttpClientFilter filter =
+                            (RetryingHttpRequesterFilter.ContextAwareRetryingHttpClientFilter)
+                                    appendClientFilterFactory.create(client);
+                    filter.inject(lbEventStream, sdStatus);
+                    return filter;
+                };
+            } else {
+                return (client, lbEventStream, sdStatus) -> {
+                    final RetryingHttpRequesterFilter.ContextAwareRetryingHttpClientFilter filter =
+                            (RetryingHttpRequesterFilter.ContextAwareRetryingHttpClientFilter)
+                                    appendClientFilterFactory.create(client);
+                    filter.inject(lbEventStream, sdStatus);
+                    return currClientFilterFactory.create(filter, lbEventStream, sdStatus);
+                };
+            }
         } else {
-            return client -> currClientFilterFactory.create(appendClientFilterFactory.create(client));
+            if (currClientFilterFactory == null) {
+                return (client, lbEventStream, sdError) -> appendClientFilterFactory.create(client);
+            } else {
+                return (client, lbEventStream, sdError) ->
+                        currClientFilterFactory.create(appendClientFilterFactory.create(client),
+                                lbEventStream, sdError);
+            }
         }
     }
 
@@ -524,6 +570,12 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
             final AutoRetryStrategyProvider autoRetryStrategyProvider) {
         autoRetry = autoRetryStrategyProvider == DISABLE_AUTO_RETRIES ? null :
                 requireNonNull(autoRetryStrategyProvider);
+        if (retryingFilterAppended && autoRetryStrategyProvider != DISABLE_AUTO_RETRIES) {
+            throw new IllegalStateException("Retrying HTTP requester filter (or AutoRetry) was already found in " +
+                    "the filter chain, only a single instance of that is allowed.");
+        }
+        customAutoRetry = autoRetryStrategyProvider != DISABLE_AUTO_RETRIES;
+        retryingFilterAppended = autoRetryStrategyProvider != DISABLE_AUTO_RETRIES;
         return this;
     }
 
@@ -538,6 +590,18 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     public DefaultSingleAddressHttpClientBuilder<U, R> appendClientFilter(
             final StreamingHttpClientFilterFactory factory) {
         requireNonNull(factory);
+        // FIXME 0.42 - remove extra check
+        if (factory instanceof RetryingHttpRequesterFilter ||
+                factory instanceof io.servicetalk.http.utils.RetryingHttpRequesterFilter) {
+            if (retryingFilterAppended) {
+                throw new IllegalStateException("Retrying HTTP requester filter (or AutoRetry) was already found in " +
+                        "the filter chain, only a single instance of that is allowed.");
+            }
+            retryingFilterAppended = true;
+            if (factory instanceof RetryingHttpRequesterFilter) {
+                retryingHttpRequesterFilter = (RetryingHttpRequesterFilter) factory;
+            }
+        }
         clientFilterFactory = appendFilter(clientFilterFactory, factory);
         influencerChainBuilder.add(factory);
         return this;
@@ -861,6 +925,18 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
                 throw new IllegalStateException("HeadersFactory config not found for selected protocol: " + version);
             }
             return factory;
+        }
+    }
+
+    @FunctionalInterface
+    interface ContextAwareStreamingHttpClientFilterFactory extends StreamingHttpClientFilterFactory {
+        StreamingHttpClientFilter create(FilterableStreamingHttpClient client,
+                                         @Nullable Publisher<Object> lbEventStream,
+                                         @Nullable Completable sdStatus);
+
+        @Override
+        default StreamingHttpClientFilter create(FilterableStreamingHttpClient client) {
+            return create(client, null, null);
         }
     }
 }

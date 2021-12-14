@@ -187,7 +187,12 @@ abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> ex
      *
      * @param autoRetryStrategyProvider {@link AutoRetryStrategyProvider} for the automatic retry strategy.
      * @return {@code this}
+     * @see io.servicetalk.client.api.DefaultAutoRetryStrategyProvider
+     * @deprecated {@link io.servicetalk.client.api.AutoRetryStrategyProvider.AutoRetryStrategy} is going away in
+     * future ServiceTalk releases. Similar behavior is offered through
+     * {@code io.servicetalk.http.netty.RetryingHttpRequesterFilter}.
      */
+    @Deprecated
     public abstract HttpClientBuilder<U, R, SDE> autoRetryStrategy(
             AutoRetryStrategyProvider autoRetryStrategyProvider);
 

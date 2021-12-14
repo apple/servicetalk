@@ -27,13 +27,19 @@ import static io.servicetalk.concurrent.api.Completable.failed;
 
 /**
  * A provider for {@link AutoRetryStrategy}.
+ * @deprecated The capabilities of the auto-retry have been introduced under a new universal retrying filter,
+ * available from {@code io.servicetalk.http.netty.RetryingHttpRequesterFilter}.
  */
 @FunctionalInterface
+@Deprecated
 public interface AutoRetryStrategyProvider {
 
     /**
      * An {@link AutoRetryStrategyProvider} that disables automatic retries;
+     * @deprecated Alternative available {@code io.servicetalk.http.netty.RetryingHttpRequesterFilter
+     * .disableAutoRetries()}.
      */
+    @Deprecated
     AutoRetryStrategyProvider DISABLE_AUTO_RETRIES = (lbEventStream, sdErrorStream) -> (___, cause) -> failed(cause);
 
     /**
