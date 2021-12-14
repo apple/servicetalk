@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
+import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
 import static java.util.Objects.requireNonNull;
@@ -54,6 +55,12 @@ final class CatchAllTransportObserver implements TransportObserver {
     @Override
     public ConnectionObserver onNewConnection() {
         return safeReport(observer::onNewConnection, observer, "new connection",
+                CatchAllConnectionObserver::new, NoopConnectionObserver.INSTANCE);
+    }
+
+    @Override
+    public ConnectionObserver onNewConnection(@Nullable final Object localAddress, final Object remoteAddress) {
+        return safeReport(() -> observer.onNewConnection(localAddress, remoteAddress), observer, "new connection",
                 CatchAllConnectionObserver::new, NoopConnectionObserver.INSTANCE);
     }
 
