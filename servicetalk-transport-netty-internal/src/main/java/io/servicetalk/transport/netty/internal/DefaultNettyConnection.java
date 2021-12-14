@@ -338,7 +338,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
 
                 @Override
                 public void onNext(@Nullable final Read read) {
-                    observer.itemRead();
+                    observer.itemRead(read);
                     target.onNext(read);
                 }
 
