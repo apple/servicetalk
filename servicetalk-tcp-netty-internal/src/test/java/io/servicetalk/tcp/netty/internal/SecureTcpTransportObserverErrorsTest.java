@@ -163,8 +163,8 @@ final class SecureTcpTransportObserverErrorsTest extends AbstractTransportObserv
             connection.set(c);
             clientConnected.countDown();
         });
-        verify(clientTransportObserver, await()).onNewConnection();
-        verify(serverTransportObserver, await()).onNewConnection();
+        verify(clientTransportObserver, await()).onNewConnection(any(), any());
+        verify(serverTransportObserver, await()).onNewConnection(any(), any());
         switch (errorReason) {
             case SECURE_CLIENT_TO_PLAIN_SERVER:
                 verify(clientConnectionObserver, await()).onSecurityHandshake();

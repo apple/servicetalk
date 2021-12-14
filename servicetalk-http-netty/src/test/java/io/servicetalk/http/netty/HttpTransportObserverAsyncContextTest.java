@@ -41,6 +41,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.context.api.ContextMap.Key.newKey;
@@ -168,7 +169,7 @@ class HttpTransportObserverAsyncContextTest extends AbstractNettyHttpServerTest 
         }
 
         @Override
-        public ConnectionObserver onNewConnection() {
+        public ConnectionObserver onNewConnection(@Nullable final Object localAddress, final Object remoteAddress) {
             // Use String.valueOf(...) here and in all other callbacks to prevent passing `null` value to the
             // ConcurrentHashMap which does not allow `null` values:
             storageMap.put("onNewConnection", valueOf(AsyncContext.get(key)));
@@ -282,7 +283,7 @@ class HttpTransportObserverAsyncContextTest extends AbstractNettyHttpServerTest 
             }
 
             @Override
-            public void itemRead() {
+            public void itemRead(@Nullable final Object item) {
                 storageMap.put("itemRead", valueOf(AsyncContext.get(key)));
             }
 
@@ -310,7 +311,7 @@ class HttpTransportObserverAsyncContextTest extends AbstractNettyHttpServerTest 
             }
 
             @Override
-            public void itemReceived() {
+            public void itemReceived(@Nullable final Object item) {
                 storageMap.put("itemReceived", valueOf(AsyncContext.get(key)));
             }
 
@@ -323,7 +324,11 @@ class HttpTransportObserverAsyncContextTest extends AbstractNettyHttpServerTest 
             // concurrently. Users should use other callbacks above to retrieve the request context and keep it in a
             // class local variable.
             @Override
-            public void itemWritten() {
+            public void itemWritten(@Nullable final Object item) {
+            }
+
+            @Override
+            public void itemFlushed() {
             }
 
             @Override

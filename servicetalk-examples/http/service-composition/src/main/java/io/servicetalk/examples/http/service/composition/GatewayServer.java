@@ -21,8 +21,8 @@ import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.http.netty.HttpServers;
+import io.servicetalk.http.netty.RetryingHttpRequesterFilter;
 import io.servicetalk.http.router.predicate.HttpPredicateRouterBuilder;
-import io.servicetalk.http.utils.RetryingHttpRequesterFilter;
 import io.servicetalk.http.utils.TimeoutHttpRequesterFilter;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
@@ -36,6 +36,8 @@ import static io.servicetalk.examples.http.service.composition.backends.PortRegi
 import static io.servicetalk.examples.http.service.composition.backends.PortRegistry.RATINGS_BACKEND_ADDRESS;
 import static io.servicetalk.examples.http.service.composition.backends.PortRegistry.RECOMMENDATIONS_BACKEND_ADDRESS;
 import static io.servicetalk.examples.http.service.composition.backends.PortRegistry.USER_BACKEND_ADDRESS;
+import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolicy.ofConstantBackoffDeltaJitter;
+import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolicy.ofExponentialBackoffDeltaJitter;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofSeconds;
@@ -110,9 +112,10 @@ public final class GatewayServer {
         return resources.prepend(
                 HttpClients.forSingleAddress(serviceAddress)
                         // Set retry and timeout filters for all clients.
-                        .appendClientFilter(new RetryingHttpRequesterFilter.Builder()
-                                .maxRetries(3)
-                                .buildWithExponentialBackoffDeltaJitter(ofMillis(100), ofMillis(50), ofSeconds(30)))
+                        .appendClientFilter(
+                                new RetryingHttpRequesterFilter.Builder().retryOther((__, ___) ->
+                                    ofExponentialBackoffDeltaJitter(ofMillis(100), ofMillis(50), ofSeconds(30), 3))
+                                .build())
                         // Apply a timeout filter for the client to guard against latent clients.
                         .appendClientFilter(new TimeoutHttpRequesterFilter(ofMillis(500), false))
                         // Apply a filter that returns an error if any response status code is not 200 OK

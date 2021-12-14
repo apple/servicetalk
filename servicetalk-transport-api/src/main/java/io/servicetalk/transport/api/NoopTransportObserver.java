@@ -22,6 +22,7 @@ import io.servicetalk.transport.api.ConnectionObserver.SecurityHandshakeObserver
 import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
 import io.servicetalk.transport.api.ConnectionObserver.WriteObserver;
 
+import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
 final class NoopTransportObserver implements TransportObserver {
@@ -33,7 +34,7 @@ final class NoopTransportObserver implements TransportObserver {
     }
 
     @Override
-    public ConnectionObserver onNewConnection() {
+    public ConnectionObserver onNewConnection(@Nullable final Object localAddress, final Object remoteAddress) {
         return NoopConnectionObserver.INSTANCE;
     }
 
@@ -174,7 +175,7 @@ final class NoopTransportObserver implements TransportObserver {
         }
 
         @Override
-        public void itemRead() {
+        public void itemRead(@Nullable final Object item) {
         }
 
         @Override
@@ -203,7 +204,7 @@ final class NoopTransportObserver implements TransportObserver {
         }
 
         @Override
-        public void itemReceived() {
+        public void itemReceived(@Nullable final Object item) {
         }
 
         @Override
@@ -211,7 +212,11 @@ final class NoopTransportObserver implements TransportObserver {
         }
 
         @Override
-        public void itemWritten() {
+        public void itemWritten(@Nullable final Object item) {
+        }
+
+        @Override
+        public void itemFlushed() {
         }
 
         @Override

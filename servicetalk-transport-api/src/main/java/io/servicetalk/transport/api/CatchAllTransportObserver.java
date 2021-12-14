@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
+import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
 import static java.util.Objects.requireNonNull;
@@ -52,8 +53,8 @@ final class CatchAllTransportObserver implements TransportObserver {
     }
 
     @Override
-    public ConnectionObserver onNewConnection() {
-        return safeReport(observer::onNewConnection, observer, "new connection",
+    public ConnectionObserver onNewConnection(@Nullable final Object localAddress, final Object remoteAddress) {
+        return safeReport(() -> observer.onNewConnection(localAddress, remoteAddress), observer, "new connection",
                 CatchAllConnectionObserver::new, NoopConnectionObserver.INSTANCE);
     }
 
@@ -214,8 +215,8 @@ final class CatchAllTransportObserver implements TransportObserver {
         }
 
         @Override
-        public void itemRead() {
-            safeReport(observer::itemRead, observer, "item read");
+        public void itemRead(@Nullable final Object item) {
+            safeReport(() -> observer.itemRead(item), observer, "item read");
         }
 
         @Override
@@ -248,8 +249,8 @@ final class CatchAllTransportObserver implements TransportObserver {
         }
 
         @Override
-        public void itemReceived() {
-            safeReport(observer::itemReceived, observer, "item received");
+        public void itemReceived(@Nullable final Object item) {
+            safeReport(() -> observer.itemReceived(item), observer, "item received");
         }
 
         @Override
@@ -258,8 +259,13 @@ final class CatchAllTransportObserver implements TransportObserver {
         }
 
         @Override
-        public void itemWritten() {
-            safeReport(observer::itemWritten, observer, "item written");
+        public void itemWritten(@Nullable final Object item) {
+            safeReport(() -> observer.itemWritten(item), observer, "item written");
+        }
+
+        @Override
+        public void itemFlushed() {
+            safeReport(observer::itemFlushed, observer, "item flushed");
         }
 
         @Override

@@ -15,6 +15,10 @@
  */
 package io.servicetalk.transport.api;
 
+import io.servicetalk.transport.api.NoopTransportObserver.NoopConnectionObserver;
+
+import javax.annotation.Nullable;
+
 /**
  * An observer interface that provides visibility into transport events.
  */
@@ -24,6 +28,20 @@ public interface TransportObserver {
      * Callback when transport starts initializing a new network connection.
      *
      * @return a new {@link ConnectionObserver} that provides visibility into events associated with a new connection
+     * @deprecated Use {@link #onNewConnection(Object, Object)}
      */
-    ConnectionObserver onNewConnection();
+    @Deprecated
+    default ConnectionObserver onNewConnection() {
+        // FIXME: 0.43 - remove deprecated method
+        return NoopConnectionObserver.INSTANCE;
+    }
+
+    /**
+     * Callback when transport starts initializing a new network connection.
+     *
+     * @param localAddress a local address of a new connection, if known
+     * @param remoteAddress a remote address of a new connection
+     * @return a new {@link ConnectionObserver} that provides visibility into events associated with a new connection
+     */
+    ConnectionObserver onNewConnection(@Nullable Object localAddress, Object remoteAddress);
 }

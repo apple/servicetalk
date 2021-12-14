@@ -66,7 +66,7 @@ public class AbstractTransportObserverTest extends AbstractTcpServerTest {
         clientDataObserver = mock(DataObserver.class, "clientDataObserver");
         clientReadObserver = mock(ReadObserver.class, "clientReadObserver");
         clientWriteObserver = mock(WriteObserver.class, "clientWriteObserver");
-        when(clientTransportObserver.onNewConnection()).thenReturn(clientConnectionObserver);
+        when(clientTransportObserver.onNewConnection(any(), any())).thenReturn(clientConnectionObserver);
         when(clientConnectionObserver.onSecurityHandshake()).thenReturn(clientSecurityHandshakeObserver);
         when(clientConnectionObserver.connectionEstablished(any(ConnectionInfo.class))).thenReturn(clientDataObserver);
         when(clientDataObserver.onNewRead()).thenReturn(clientReadObserver);
@@ -78,7 +78,7 @@ public class AbstractTransportObserverTest extends AbstractTcpServerTest {
         serverDataObserver = mock(DataObserver.class, "serverDataObserver");
         serverReadObserver = mock(ReadObserver.class, "serverReadObserver");
         serverWriteObserver = mock(WriteObserver.class, "serverWriteObserver");
-        when(serverTransportObserver.onNewConnection()).thenReturn(serverConnectionObserver);
+        when(serverTransportObserver.onNewConnection(any(), any())).thenReturn(serverConnectionObserver);
         when(serverConnectionObserver.onSecurityHandshake()).thenReturn(serverSecurityHandshakeObserver);
         when(serverConnectionObserver.connectionEstablished(any(ConnectionInfo.class))).thenReturn(serverDataObserver);
         when(serverDataObserver.onNewRead()).thenReturn(serverReadObserver);
@@ -128,9 +128,10 @@ public class AbstractTransportObserverTest extends AbstractTcpServerTest {
                                     boolean completeExpected) {
         verify(dataObserver).onNewWrite();
         verify(writeObserver, atLeastOnce()).requestedToWrite(anyLong());
-        verify(writeObserver).itemReceived();
+        verify(writeObserver).itemReceived(any());
         verify(writeObserver).onFlushRequest();
-        verify(writeObserver).itemWritten();
+        verify(writeObserver).itemWritten(any());
+        verify(writeObserver).itemFlushed();
         if (completeExpected) {
             verify(writeObserver).writeComplete();
         }
@@ -139,7 +140,7 @@ public class AbstractTransportObserverTest extends AbstractTcpServerTest {
     static void verifyReadObserver(DataObserver dataObserver, ReadObserver readObserver) {
         verify(dataObserver).onNewRead();
         verify(readObserver).requestedToRead(anyLong());
-        verify(readObserver, atLeastOnce()).itemRead();
+        verify(readObserver, atLeastOnce()).itemRead(any());
     }
 
     static VerificationWithTimeout await() {

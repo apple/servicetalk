@@ -15,6 +15,7 @@
  */
 package io.servicetalk.transport.api;
 
+import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
 /**
@@ -215,8 +216,20 @@ public interface ConnectionObserver {
          * Invokes when a new item is read.
          * <p>
          * Content of the read items should be inspected at the higher level API when these items are consumed.
+         *
+         * @deprecated Use {@link #itemRead(Object)}
          */
-        void itemRead();
+        @Deprecated
+        default void itemRead() {
+            // FIXME: 0.43 - remove deprecated method
+        }
+
+        /**
+         * Invokes when a new item is read.
+         *
+         * @param item an item that was read
+         */
+        void itemRead(@Nullable Object item);
 
         /**
          * Callback when the read operation fails with an {@link Throwable error}.
@@ -256,8 +269,20 @@ public interface ConnectionObserver {
          * Callback when an item is received and ready to be written.
          * <p>
          * Content of the received items should be inspected at the higher level API when these items are produced.
+         *
+         * @deprecated Use {{@link #itemReceived(Object)}}
          */
-        void itemReceived();
+        @Deprecated
+        default void itemReceived() {
+            // FIXME: 0.43 - remove deprecated method
+        }
+
+        /**
+         * Callback when an item is received and ready to be written.
+         *
+         * @param item received item
+         */
+        void itemReceived(@Nullable Object item);
 
         /**
          * Callback when flush operation is requested.
@@ -268,8 +293,25 @@ public interface ConnectionObserver {
          * Callback when an item is written to the transport.
          * <p>
          * Content of the written items should be inspected at the higher level API when these items are produced.
+         *
+         * @deprecated Use {@link #itemWritten(Object)}
          */
-        void itemWritten();
+        @Deprecated
+        default void itemWritten() {
+            // FIXME: 0.43 - remove deprecated method
+        }
+
+        /**
+         * Callback when an item is serialized and written to the socket.
+         *
+         * @param item written item
+         */
+        void itemWritten(@Nullable Object item);
+
+        /**
+         * Callback when an item is flushed to the network. Items are flushed in order they have been written.
+         */
+        void itemFlushed();
 
         /**
          * Callback when the write operation fails with an {@link Throwable error}.

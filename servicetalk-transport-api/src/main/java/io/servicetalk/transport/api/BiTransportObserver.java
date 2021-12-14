@@ -22,6 +22,7 @@ import io.servicetalk.transport.api.ConnectionObserver.SecurityHandshakeObserver
 import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
 import io.servicetalk.transport.api.ConnectionObserver.WriteObserver;
 
+import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
 import static io.servicetalk.transport.api.TransportObservers.asSafeObserver;
@@ -37,8 +38,9 @@ final class BiTransportObserver implements TransportObserver {
     }
 
     @Override
-    public ConnectionObserver onNewConnection() {
-        return new BiConnectionObserver(first.onNewConnection(), second.onNewConnection());
+    public ConnectionObserver onNewConnection(@Nullable final Object localAddress, final Object remoteAddress) {
+        return new BiConnectionObserver(first.onNewConnection(localAddress, remoteAddress),
+                second.onNewConnection(localAddress, remoteAddress));
     }
 
     private static final class BiConnectionObserver implements ConnectionObserver {
@@ -216,9 +218,9 @@ final class BiTransportObserver implements TransportObserver {
         }
 
         @Override
-        public void itemRead() {
-            first.itemRead();
-            second.itemRead();
+        public void itemRead(@Nullable final Object item) {
+            first.itemRead(item);
+            second.itemRead(item);
         }
 
         @Override
@@ -257,9 +259,9 @@ final class BiTransportObserver implements TransportObserver {
         }
 
         @Override
-        public void itemReceived() {
-            first.itemReceived();
-            second.itemReceived();
+        public void itemReceived(@Nullable final Object item) {
+            first.itemReceived(item);
+            second.itemReceived(item);
         }
 
         @Override
@@ -269,9 +271,15 @@ final class BiTransportObserver implements TransportObserver {
         }
 
         @Override
-        public void itemWritten() {
-            first.itemWritten();
-            second.itemWritten();
+        public void itemWritten(@Nullable final Object item) {
+            first.itemWritten(item);
+            second.itemWritten(item);
+        }
+
+        @Override
+        public void itemFlushed() {
+            first.itemFlushed();
+            second.itemFlushed();
         }
 
         @Override

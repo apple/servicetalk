@@ -38,6 +38,11 @@ public interface BlockingIterator<T> extends CloseableIterator<T> {
      * The equivalent of {@link #hasNext()} but only waits for {@code timeout} duration amount of time.
      * <p>
      * Note that {@link #close()} is not required to interrupt this call.
+     * <p>
+     * Also note, this method can sneaky-throw an {@link InterruptedException} when a blocking operation internally
+     * does so. The reason it's not declared is that the {@link java.util.Iterator} and {@link AutoCloseable}
+     * interfaces do not declare checked exceptions and {@link BlockingIterator} extends them to allow use in
+     * try-with-resources and enhanced for loop.
      * @param timeout The duration of time to wait. If this value is non-positive that means the timeout expiration is
      * immediate or in the past. In this case, if this implementation cannot determine if there is more data immediately
      * (e.g. without external dependencies) then a {@link TimeoutException} should be thrown, otherwise the method can
@@ -54,6 +59,11 @@ public interface BlockingIterator<T> extends CloseableIterator<T> {
      * The equivalent of {@link #next()} but only waits for {@code timeout} duration of time.
      * <p>
      * Note that {@link #close()} is not required to interrupt this call.
+     * <p>
+     * Also note, this method can sneaky-throw an {@link InterruptedException} when a blocking operation internally
+     * does so. The reason it's not declared is that the {@link java.util.Iterator} and {@link AutoCloseable}
+     * interfaces do not declare checked exceptions and {@link BlockingIterator} extends them to allow use in
+     * try-with-resources and enhanced for loop.
      * @param timeout The duration of time to wait. If this value is non-positive that means the timeout expiration is
      * immediate or in the past. In this case, if this implementation cannot determine if there is more data immediately
      * (e.g. without external dependencies) then a {@link TimeoutException} should be thrown, otherwise the method can
@@ -67,6 +77,14 @@ public interface BlockingIterator<T> extends CloseableIterator<T> {
     @Nullable
     T next(long timeout, TimeUnit unit) throws TimeoutException;
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Note, this method can sneaky-throw an {@link InterruptedException} when a blocking operation internally
+     * does so. The reason it's not declared is that the {@link java.util.Iterator} and {@link AutoCloseable}
+     * interfaces do not declare checked exceptions and {@link BlockingIterator} extends them to allow use in
+     * try-with-resources and enhanced for loop.
+     */
     @Nullable
     @Override
     T next();

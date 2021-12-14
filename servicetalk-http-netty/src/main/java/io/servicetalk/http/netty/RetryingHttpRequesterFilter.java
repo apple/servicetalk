@@ -31,7 +31,6 @@ import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponseMetaData;
-import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -73,17 +72,14 @@ import static java.util.Objects.requireNonNull;
  * Similarly, max-retries for each flow can be set in the {@link BackOffPolicy}, as well
  * as a total max-retries to be respected by both flows, as set in
  * {@link Builder#maxTotalRetries(int)}.
- * <p>
- * Note that applying this filter on a client it will automatically disable the use of
- * {@link SingleAddressHttpClientBuilder#appendClientFilter(StreamingHttpClientFilterFactory)}.
  * @see RetryStrategies
  */
 public final class RetryingHttpRequesterFilter
         implements StreamingHttpClientFilterFactory, ExecutionStrategyInfluencer<HttpExecutionStrategy> {
 
-    public static final RetryingHttpRequesterFilter DISABLE_RETRIES =
+    private static final RetryingHttpRequesterFilter DISABLE_RETRIES =
             new RetryingHttpRequesterFilter(false, true, 0, null,
-                (__, ___) -> NO_RETRIES);
+                    (__, ___) -> NO_RETRIES);
 
     private final boolean waitForLb;
     private final boolean ignoreSdErrors;
@@ -91,13 +87,6 @@ public final class RetryingHttpRequesterFilter
     @Nullable
     private final Function<HttpResponseMetaData, HttpResponseException> responseMapper;
     private final BiFunction<HttpRequestMetaData, Throwable, BackOffPolicy> retryFor;
-    @Nullable
-    private Publisher<Object> lbEventStream;
-    @Nullable
-    private LoadBalancerReadySubscriber loadBalancerReadySubscriber;
-
-    @Nullable
-    private Completable sdStatus;
 
     RetryingHttpRequesterFilter(
             final boolean waitForLb, final boolean ignoreSdErrors, final int maxTotalRetries,
@@ -110,61 +99,9 @@ public final class RetryingHttpRequesterFilter
         this.retryFor = retryFor;
     }
 
-    private Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                  final StreamingHttpRequest request,
-                                                  final Executor executor) {
-        Single<StreamingHttpResponse> single = delegate.request(request);
-        if (responseMapper != null) {
-            single = single.map(resp -> {
-                final HttpResponseException exception = responseMapper.apply(resp);
-                if (exception != null) {
-                    throw exception;
-                }
-
-                return resp;
-            });
-        }
-
-        return single.retryWhen(retryStrategy(executor, request));
-    }
-
-    private BiIntFunction<Throwable, Completable> retryStrategy(final Executor executor,
-                                                                final HttpRequestMetaData requestMetaData) {
-        return (count, t) -> {
-            if (count > maxTotalRetries) {
-                return failed(t);
-            }
-
-            if (loadBalancerReadySubscriber != null && t instanceof NoAvailableHostException) {
-                final Completable onHostsAvailable = loadBalancerReadySubscriber.onHostsAvailable();
-                return sdStatus == null ? onHostsAvailable : onHostsAvailable.ambWith(sdStatus);
-            }
-
-            final BackOffPolicy backOffPolicy = retryFor.apply(requestMetaData, t);
-            if (backOffPolicy != NO_RETRIES) {
-                if (t instanceof DelayedRetry) {
-                    final Duration constant = ((DelayedRetry) t).delay();
-                    return backOffPolicy.newStrategy(executor).apply(count, t).concat(executor.timer(constant));
-                }
-
-                return backOffPolicy.newStrategy(executor).apply(count, t);
-            }
-
-            return failed(t);
-        };
-    }
-
-    void inject(final Publisher<Object> lbEventStream) {
-        this.lbEventStream = lbEventStream;
-    }
-
-    void inject(final Completable sdStatus) {
-        this.sdStatus = ignoreSdErrors ? null : sdStatus;
-    }
-
     @Override
     public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {
-        return new ContextAwareClientFilter(client);
+        return new ContextAwareRetryingHttpClientFilter(client);
     }
 
     @Override
@@ -173,27 +110,35 @@ public final class RetryingHttpRequesterFilter
         return HttpExecutionStrategies.offloadNone();
     }
 
-    private final class ContextAwareClientFilter extends StreamingHttpClientFilter {
+    final class ContextAwareRetryingHttpClientFilter extends StreamingHttpClientFilter {
+
+        private final Executor executor;
+        @Nullable
+        private Completable sdStatus;
 
         @Nullable
         private AsyncCloseable closeAsync;
 
-        private final Executor executor;
+        @Nullable
+        private LoadBalancerReadySubscriber loadBalancerReadySubscriber;
 
         /**
          * Create a new instance.
          *
          * @param delegate The {@link FilterableStreamingHttpClient} to delegate all calls to.
          */
-        private ContextAwareClientFilter(final FilterableStreamingHttpClient delegate) {
+        private ContextAwareRetryingHttpClientFilter(final FilterableStreamingHttpClient delegate) {
             super(delegate);
             this.executor = delegate.executionContext().executor();
-            init();
         }
 
-        public void init() {
+        void inject(@Nullable final Publisher<Object> lbEventStream,
+                    @Nullable final Completable sdStatus) {
+            assert lbEventStream != null;
+            assert sdStatus != null;
+            this.sdStatus = ignoreSdErrors ? null : sdStatus;
+
             if (waitForLb) {
-                assert lbEventStream != null;
                 loadBalancerReadySubscriber = new LoadBalancerReadySubscriber();
                 closeAsync = toAsyncCloseable(__ -> {
                     loadBalancerReadySubscriber.cancel();
@@ -206,6 +151,33 @@ public final class RetryingHttpRequesterFilter
             }
         }
 
+        // Visible for testing
+        BiIntFunction<Throwable, Completable> retryStrategy(final Executor executor,
+                                                            final HttpRequestMetaData requestMetaData) {
+            return (count, t) -> {
+                if (count > maxTotalRetries) {
+                    return failed(t);
+                }
+
+                if (loadBalancerReadySubscriber != null && t instanceof NoAvailableHostException) {
+                    final Completable onHostsAvailable = loadBalancerReadySubscriber.onHostsAvailable();
+                    return sdStatus == null ? onHostsAvailable : onHostsAvailable.ambWith(sdStatus);
+                }
+
+                final BackOffPolicy backOffPolicy = retryFor.apply(requestMetaData, t);
+                if (backOffPolicy != NO_RETRIES) {
+                    if (t instanceof DelayedRetry) {
+                        final Duration constant = ((DelayedRetry) t).delay();
+                        return backOffPolicy.newStrategy(executor).apply(count, t).concat(executor.timer(constant));
+                    }
+
+                    return backOffPolicy.newStrategy(executor).apply(count, t);
+                }
+
+                return failed(t);
+            };
+        }
+
         @Override
         public Single<? extends FilterableReservedStreamingHttpConnection> reserveConnection(
                 final HttpRequestMetaData metaData) {
@@ -216,7 +188,19 @@ public final class RetryingHttpRequesterFilter
         @Override
         protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                         final StreamingHttpRequest request) {
-            return RetryingHttpRequesterFilter.this.request(delegate(), request, executor);
+            Single<StreamingHttpResponse> single = delegate.request(request);
+            if (responseMapper != null) {
+                single = single.map(resp -> {
+                    final HttpResponseException exception = responseMapper.apply(resp);
+                    if (exception != null) {
+                        throw exception;
+                    }
+
+                    return resp;
+                });
+            }
+
+            return single.retryWhen(retryStrategy(executor, request));
         }
 
         @Override
@@ -234,6 +218,15 @@ public final class RetryingHttpRequesterFilter
             }
             return super.closeAsyncGracefully();
         }
+    }
+
+    /**
+     * Retrying filter that disables any form of retry behaviour. All types of failures will not be re-attempted.
+     * @return a retrying filter that disables any form of retry behaviour. All types of failures will not be
+     * re-attempted.
+     */
+    public static RetryingHttpRequesterFilter disableAutoRetries() {
+        return DISABLE_RETRIES;
     }
 
     /**
@@ -263,7 +256,7 @@ public final class RetryingHttpRequesterFilter
         @Override
         public String toString() {
             return super.toString() +
-                ", metaData=" + metaData.toString(DEFAULT_HEADER_FILTER);
+                    ", metaData=" + metaData.toString(DEFAULT_HEADER_FILTER);
         }
     }
 
@@ -273,6 +266,10 @@ public final class RetryingHttpRequesterFilter
     public static final class BackOffPolicy {
 
         private static final Duration FULL_JITTER = ofDays(1024);
+
+        /**
+         * Special {@link BackOffPolicy} to signal no retries.
+         */
         public static final BackOffPolicy NO_RETRIES = ofNoRetries();
 
         @Nullable
@@ -691,7 +688,6 @@ public final class RetryingHttpRequesterFilter
          * retried.
          * To disable retries you can return {@link BackOffPolicy#NO_RETRIES} from the {@code mapper}.
          * <strong>It's important that this {@link Function} doesn't block to avoid performance impacts.</strong>
-
          * @param mapper {@link BiFunction} that checks whether a given combination of
          * {@link HttpRequestMetaData meta-data} and {@link Throwable cause} should be retried, producing a
          * {@link BackOffPolicy} in such cases.
