@@ -47,6 +47,18 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
      * Creates a new instance.
      *
      * @param observer {@link ConnectionObserver} to report network events.
+     * @param secure {@code true} if the observed connection is secure.
+     * @deprecated Use {@link #ConnectionObserverInitializer(ConnectionObserver, boolean, boolean)}
+     */
+    @Deprecated // this ctor is not used by ST and left only for backward compatibility
+    public ConnectionObserverInitializer(final ConnectionObserver observer, final boolean secure) {
+        this(observer, secure, false);
+    }
+
+    /**
+     * Creates a new instance.
+     *
+     * @param observer {@link ConnectionObserver} to report network events.
      * @param secure {@code true} if the observed connection is secure
      * @param client {@code true} if this initializer is used on the client-side
      */
