@@ -16,7 +16,6 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.ConnectionFactory;
-import io.servicetalk.client.api.DefaultAutoRetryStrategyProvider;
 import io.servicetalk.client.api.DelegatingConnectionFactory;
 import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.client.api.LoadBalancer;
@@ -30,7 +29,6 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
-import io.servicetalk.http.utils.RetryingHttpRequesterFilter;
 import io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory;
 import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.HostAndPort;
@@ -39,7 +37,6 @@ import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.TransportObserver;
 
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.net.InetSocketAddress;
@@ -50,20 +47,20 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.http.netty.HttpClients.forResolvedAddress;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.http.netty.HttpServers.forAddress;
 import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolicy.NO_RETRIES;
 import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolicy.ofImmediate;
 import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.Builder;
 import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.HttpResponseException;
+import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.disableAutoRetries;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
-import static java.time.Duration.ofSeconds;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
 class RetryingHttpRequesterFilterTest {
@@ -106,6 +103,16 @@ class RetryingHttpRequesterFilterTest {
         }
         closeable.append(svcCtx);
         closeable.close();
+    }
+
+    @Test
+    void disableAutoRetry() {
+        failingClient = failingConnClientBuilder
+                .appendClientFilter(disableAutoRetries())
+                .buildBlocking();
+        Exception e = assertThrows(Exception.class, () -> failingClient.request(failingClient.get("/")));
+        assertThat(e, instanceOf(RetryableException.class));
+        assertThat("Unexpected calls to select.", lbSelectInvoked.get(), is(1));
     }
 
     @Test
@@ -169,50 +176,6 @@ class RetryingHttpRequesterFilterTest {
             assertThat("Unexpected exception.", e, instanceOf(HttpResponseException.class));
             assertThat("Unexpected calls to select.", lbSelectInvoked.get(), is(4));
         }
-    }
-
-    @Test()
-    void singleInstanceOldNew() {
-        Assertions.assertThrows(IllegalStateException.class, () -> forResolvedAddress(localAddress(8888))
-                .appendClientFilter(new RetryingHttpRequesterFilter.Builder()
-                        .buildWithConstantBackoffFullJitter(ofSeconds(1)))
-                .appendClientFilter(new Builder().build())
-                .build());
-    }
-
-    @Test()
-    void singleInstanceNewOld() {
-        Assertions.assertThrows(IllegalStateException.class, () -> forResolvedAddress(localAddress(8888))
-                .appendClientFilter(new Builder().build())
-                .appendClientFilter(new RetryingHttpRequesterFilter.Builder()
-                        .buildWithConstantBackoffFullJitter(ofSeconds(1)))
-                .build());
-    }
-
-    @Test()
-    void singleInstanceOldOld() {
-        Assertions.assertThrows(IllegalStateException.class, () -> forResolvedAddress(localAddress(8888))
-                .appendClientFilter(new RetryingHttpRequesterFilter.Builder()
-                        .buildWithConstantBackoffFullJitter(ofSeconds(1)))
-                .appendClientFilter(new RetryingHttpRequesterFilter.Builder()
-                        .buildWithConstantBackoffFullJitter(ofSeconds(1)))
-                .build());
-    }
-
-    @Test()
-    void singleInstanceNewNew() {
-        Assertions.assertThrows(IllegalStateException.class, () -> forResolvedAddress(localAddress(8888))
-                .appendClientFilter(new Builder().build())
-                .appendClientFilter(new Builder().build())
-                .build());
-    }
-
-    @Test()
-    void singleInstanceNewForceAutoRetry() {
-        Assertions.assertThrows(IllegalStateException.class, () -> forResolvedAddress(localAddress(8888))
-                .appendClientFilter(new Builder().build())
-                .autoRetryStrategy(new DefaultAutoRetryStrategyProvider.Builder().build())
-                .build());
     }
 
     private final class InspectingLoadBalancerFactory<C extends LoadBalancedConnection>

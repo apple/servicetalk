@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.client.api.AutoRetryStrategyProvider;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableReservedStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
@@ -40,10 +39,6 @@ import io.servicetalk.http.utils.RedirectingHttpRequesterFilter;
  * {@link SingleAddressHttpClientBuilder#appendClientFilter(StreamingHttpClientFilterFactory) client builder} to account
  * for all work done by other filters. If it's preferred to get visibility in all retried or redirected requests,
  * consider adding it after {@link RetryingHttpRequesterFilter} or {@link RedirectingHttpRequesterFilter}.
- * Alternatively, it can be applied as the first filter at
- * {@link SingleAddressHttpClientBuilder#appendConnectionFilter(StreamingHttpConnectionFilterFactory) connection level}
- * to also get visibility into
- * {@link SingleAddressHttpClientBuilder#autoRetryStrategy(AutoRetryStrategyProvider) automatic retries}.
  */
 public class HttpLifecycleObserverRequesterFilter extends AbstractLifecycleObserverHttpFilter implements
         StreamingHttpClientFilterFactory, StreamingHttpConnectionFilterFactory {

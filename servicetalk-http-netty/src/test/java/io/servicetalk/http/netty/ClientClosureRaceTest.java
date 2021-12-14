@@ -18,7 +18,6 @@ package io.servicetalk.http.netty;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
-import io.servicetalk.http.utils.RetryingHttpRequesterFilter;
 import io.servicetalk.transport.api.HostAndPort;
 
 import org.junit.jupiter.api.AfterAll;
@@ -46,6 +45,8 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.Single.collectUnordered;
 import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1;
+import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolicy.ofConstantBackoffFullJitter;
+import static java.lang.Integer.MAX_VALUE;
 import static java.net.InetAddress.getLoopbackAddress;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.time.Duration.ofNanos;
@@ -175,13 +176,13 @@ class ClientClosureRaceTest {
     private SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> newClientBuilder() {
         final RetryingHttpRequesterFilter.Builder retryBuilder = new RetryingHttpRequesterFilter.Builder();
         return HttpClients.forSingleAddress(HostAndPort.of((InetSocketAddress) serverSocket.getLocalSocketAddress()))
-                .appendClientFilter(retryBuilder.maxRetries(Integer.MAX_VALUE)
-                        .retryFor((md, t) ->
-                            // This test has the server intentionally hard-close the connection after responding
-                            // to the first request, however some tests use pipelining and may write multiple requests
-                            // on the same connection which would result in a non-retryable exception. Since this test
-                            // doesn't care about idempotency it should always retry.
-                            true
-                        ).buildWithConstantBackoffFullJitter(ofNanos(1)));
+                .appendClientFilter(retryBuilder
+                        .retryOther((md, t) ->
+                                // This test has the server intentionally hard-close the connection after responding
+                                // to the first request, however some tests use pipelining and may write multiple
+                                // requests on the same connection which would result in a non-retryable exception.
+                                // Since this test doesn't care about idempotency it should always retry.
+                                ofConstantBackoffFullJitter(ofNanos(1), MAX_VALUE)
+                        ).build());
     }
 }
