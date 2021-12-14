@@ -33,6 +33,7 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponses;
 import io.servicetalk.http.api.TestStreamingHttpClient;
+import io.servicetalk.http.netty.RetryingHttpRequesterFilter.ContextAwareRetryingHttpClientFilter;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -185,8 +186,11 @@ class LoadBalancerReadyHttpClientTest {
     private static StreamingHttpClientFilterFactory newAutomaticRetryFilterFactory(
             TestPublisher<Object> loadBalancerPublisher, TestCompletable sdStatusCompletable) {
         final RetryingHttpRequesterFilter filter = new RetryingHttpRequesterFilter.Builder().maxTotalRetries(1).build();
-        return client -> filter.create(new ContextAwareDelegateStreamingHttpClient(client, loadBalancerPublisher,
-                sdStatusCompletable));
+        return client -> {
+            final ContextAwareRetryingHttpClientFilter f = (ContextAwareRetryingHttpClientFilter) filter.create(client);
+            f.inject(loadBalancerPublisher, sdStatusCompletable);
+            return f;
+        };
     }
 
     private static final class DeferredSuccessSupplier<T> implements Supplier<Single<T>> {

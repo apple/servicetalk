@@ -213,13 +213,14 @@ class RetryingHttpRequesterFilterAutoRetryStrategiesTest {
     }
 
     private ContextAwareRetryingHttpClientFilter newFilter(final RetryingHttpRequesterFilter filter) {
-        final ContextAwareDelegateStreamingHttpClient client = mock(ContextAwareDelegateStreamingHttpClient.class);
+        final FilterableClientToClient client = mock(FilterableClientToClient.class);
         final HttpExecutionContext executionContext = mock(HttpExecutionContext.class);
         when(executionContext.executor()).then((Answer<Executor>) invocation -> immediate());
         when(client.executionContext()).then(__ -> executionContext);
-        when(client.sdStatus()).then(__ -> sdStatus);
-        when(client.lbEventStream()).then(__ -> lbEvents);
-        return (ContextAwareRetryingHttpClientFilter) filter.create(client);
+        final ContextAwareRetryingHttpClientFilter retryingHttpClientFilter =
+                (ContextAwareRetryingHttpClientFilter) filter.create(client);
+        retryingHttpClientFilter.inject(lbEvents, sdStatus);
+        return retryingHttpClientFilter;
     }
 
     @Nonnull

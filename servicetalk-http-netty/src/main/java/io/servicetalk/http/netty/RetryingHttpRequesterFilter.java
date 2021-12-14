@@ -100,11 +100,7 @@ public final class RetryingHttpRequesterFilter
 
     @Override
     public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {
-        final Publisher<Object> lbEventStream = ((ContextAwareDelegateStreamingHttpClient) client).lbEventStream();
-        final Completable sdStatus = ((ContextAwareDelegateStreamingHttpClient) client).sdStatus();
-        assert lbEventStream != null;
-        assert sdStatus != null;
-        return new ContextAwareRetryingHttpClientFilter(client, lbEventStream, ignoreSdErrors ? null : sdStatus);
+        return new ContextAwareRetryingHttpClientFilter(client);
     }
 
     @Override
@@ -116,9 +112,8 @@ public final class RetryingHttpRequesterFilter
     final class ContextAwareRetryingHttpClientFilter extends StreamingHttpClientFilter {
 
         private final Executor executor;
-        private final Publisher<Object> lbEventStream;
         @Nullable
-        private final Completable sdStatus;
+        private Completable sdStatus;
 
         @Nullable
         private AsyncCloseable closeAsync;
@@ -131,17 +126,17 @@ public final class RetryingHttpRequesterFilter
          *
          * @param delegate The {@link FilterableStreamingHttpClient} to delegate all calls to.
          */
-        private ContextAwareRetryingHttpClientFilter(final FilterableStreamingHttpClient delegate,
-                                                     final Publisher<Object> lbEventStream,
-                                                     @Nullable final Completable sdStatus) {
+        private ContextAwareRetryingHttpClientFilter(final FilterableStreamingHttpClient delegate) {
             super(delegate);
             this.executor = delegate.executionContext().executor();
-            this.lbEventStream = lbEventStream;
-            this.sdStatus = sdStatus;
-            init();
         }
 
-        public void init() {
+        void inject(@Nullable final Publisher<Object> lbEventStream,
+                    @Nullable final Completable sdStatus) {
+            assert lbEventStream != null;
+            assert sdStatus != null;
+            this.sdStatus = ignoreSdErrors ? null : sdStatus;
+
             if (waitForLb) {
                 loadBalancerReadySubscriber = new LoadBalancerReadySubscriber();
                 closeAsync = toAsyncCloseable(__ -> {

@@ -120,7 +120,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     @Nullable
     private StreamingHttpConnectionFilterFactory connectionFilterFactory;
     @Nullable
-    private StreamingHttpClientFilterFactory clientFilterFactory;
+    private ContextAwareStreamingHttpClientFilterFactory clientFilterFactory;
 
     private ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> connectionFactoryFilter =
             ConnectionFactoryFilter.identity();
@@ -312,7 +312,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                             sdEvents,
                             connectionFactory));
 
-            StreamingHttpClientFilterFactory currClientFilterFactory = ctx.builder.clientFilterFactory;
+            ContextAwareStreamingHttpClientFilterFactory currClientFilterFactory = ctx.builder.clientFilterFactory;
             if (roConfig.hasProxy() && sslContext == null) {
                 // If we're talking to a proxy over http (not https), rewrite the request-target to absolute-form, as
                 // specified by the RFC: https://tools.ietf.org/html/rfc7230#section-5.3.2
@@ -336,8 +336,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                     targetAddress(ctx), executionStrategy, computedStrategy);
 
             return new FilterableClientToClient(currClientFilterFactory != null ?
-                    currClientFilterFactory.create(new ContextAwareDelegateStreamingHttpClient(lbClient,
-                            lb.eventStream(), ctx.sdStatus)) : lbClient,
+                    currClientFilterFactory.create(lbClient, lb.eventStream(), ctx.sdStatus) : lbClient,
                     computedStrategy);
         } catch (final Throwable t) {
             closeOnException.closeAsync().subscribe();
@@ -380,16 +379,35 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                 ctx.builder.address.toString() : ctx.builder.address + " (via " + ctx.proxyAddress + ")";
     }
 
-    private static StreamingHttpClientFilterFactory appendFilter(
-            @Nullable final StreamingHttpClientFilterFactory currClientFilterFactory,
+    private static ContextAwareStreamingHttpClientFilterFactory appendFilter(
+            @Nullable final ContextAwareStreamingHttpClientFilterFactory currClientFilterFactory,
             final StreamingHttpClientFilterFactory appendClientFilterFactory) {
-        if (currClientFilterFactory == null) {
-            return appendClientFilterFactory;
+        if (appendClientFilterFactory instanceof RetryingHttpRequesterFilter) {
+            if (currClientFilterFactory == null) {
+                return (client, lbEventStream, sdStatus) -> {
+                    final RetryingHttpRequesterFilter.ContextAwareRetryingHttpClientFilter filter =
+                            (RetryingHttpRequesterFilter.ContextAwareRetryingHttpClientFilter)
+                                    appendClientFilterFactory.create(client);
+                    filter.inject(lbEventStream, sdStatus);
+                    return filter;
+                };
+            } else {
+                return (client, lbEventStream, sdStatus) -> {
+                    final RetryingHttpRequesterFilter.ContextAwareRetryingHttpClientFilter filter =
+                            (RetryingHttpRequesterFilter.ContextAwareRetryingHttpClientFilter)
+                                    appendClientFilterFactory.create(client);
+                    filter.inject(lbEventStream, sdStatus);
+                    return currClientFilterFactory.create(filter, lbEventStream, sdStatus);
+                };
+            }
         } else {
-            return client -> currClientFilterFactory.create(
-                    new ContextAwareDelegateStreamingHttpClient(appendClientFilterFactory.create(client),
-                            ((ContextAwareDelegateStreamingHttpClient) client).lbEventStream(),
-                            ((ContextAwareDelegateStreamingHttpClient) client).sdStatus()));
+            if (currClientFilterFactory == null) {
+                return (client, lbEventStream, sdError) -> appendClientFilterFactory.create(client);
+            } else {
+                return (client, lbEventStream, sdError) ->
+                        currClientFilterFactory.create(appendClientFilterFactory.create(client),
+                                lbEventStream, sdError);
+            }
         }
     }
 
@@ -687,7 +705,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         }
     }
 
-    private static final class SdStatusCompletable extends Completable {
+    static final class SdStatusCompletable extends Completable {
         private volatile CompletableSource.Processor processor = newCompletableProcessor();
         private boolean seenError;  //  this is only accessed from nextError and resetError which are not concurrent
 
