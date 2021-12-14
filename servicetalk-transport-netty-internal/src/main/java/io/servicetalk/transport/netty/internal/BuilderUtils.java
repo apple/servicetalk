@@ -38,6 +38,9 @@ import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.channel.unix.DomainSocketAddress;
+import io.netty.incubator.channel.uring.IOUringDatagramChannel;
+import io.netty.incubator.channel.uring.IOUringServerSocketChannel;
+import io.netty.incubator.channel.uring.IOUringSocketChannel;
 import io.netty.util.NetUtil;
 
 import java.io.Closeable;
@@ -50,6 +53,7 @@ import java.net.UnknownHostException;
 import javax.annotation.Nullable;
 
 import static io.netty.util.NetUtil.createByteArrayFromIpAddressString;
+import static io.servicetalk.transport.netty.internal.NativeTransportUtils.useIoUring;
 import static java.net.InetAddress.getByAddress;
 
 /**
@@ -93,7 +97,9 @@ public final class BuilderUtils {
      */
     public static Class<? extends ServerChannel> serverChannel(EventLoopGroup group,
                                                                Class<? extends SocketAddress> addressClass) {
-        if (useEpoll(group)) {
+        if (useIoUring(group)) {
+            return IOUringServerSocketChannel.class;
+        } else if (useEpoll(group)) {
             return DomainSocketAddress.class.isAssignableFrom(addressClass) ? EpollServerDomainSocketChannel.class :
                     EpollServerSocketChannel.class;
         } else if (useKQueue(group)) {
@@ -113,7 +119,12 @@ public final class BuilderUtils {
      */
     public static Class<? extends Channel> socketChannel(EventLoopGroup group,
                                                          Class<? extends SocketAddress> addressClass) {
-        if (useEpoll(group)) {
+        if (useIoUring(group)) {
+            if (DomainSocketAddress.class.isAssignableFrom(addressClass)) {
+                throw new IllegalArgumentException("io_uring does not support DomainSocketAddress");
+            }
+            return IOUringSocketChannel.class;
+        } else if (useEpoll(group)) {
             return DomainSocketAddress.class.isAssignableFrom(addressClass) ? EpollDomainSocketChannel.class :
                     EpollSocketChannel.class;
         } else if (useKQueue(group)) {
@@ -133,6 +144,9 @@ public final class BuilderUtils {
      */
     @Nullable
     public static Channel socketChannel(EventLoopGroup group, FileDescriptorSocketAddress address) {
+        if (useIoUring(group)) {
+            throw new IllegalArgumentException("io_uring does not support FileDescriptorSocketAddress");
+        }
         if (useEpoll(group)) {
             return new EpollSocketChannel(address.getValue());
         }
@@ -187,7 +201,9 @@ public final class BuilderUtils {
      * @return the class that should be used for bootstrapping
      */
     public static Class<? extends DatagramChannel> datagramChannel(EventLoopGroup group) {
-        if (useEpoll(group)) {
+        if (useIoUring(group)) {
+            return IOUringDatagramChannel.class;
+        } else if (useEpoll(group)) {
             return EpollDatagramChannel.class;
         } else if (useKQueue(group)) {
             return KQueueDatagramChannel.class;
