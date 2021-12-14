@@ -43,6 +43,7 @@ import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpClient;
+import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -100,6 +101,9 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultSingleAddressHttpClientBuilder.class);
 
+    private static final RetryingHttpRequesterFilter DEFAULT_AUTO_RETRIES =
+            new RetryingHttpRequesterFilter.Builder().build();
+
     static final Duration SD_RETRY_STRATEGY_INIT_DURATION = ofSeconds(10);
     static final Duration SD_RETRY_STRATEGY_JITTER = ofSeconds(5);
     @Nullable
@@ -119,7 +123,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     @Nullable
     private StreamingHttpConnectionFilterFactory connectionFilterFactory;
     @Nullable
-    private StreamingHttpClientFilterFactory clientFilterFactory;
+    private ContextAwareStreamingHttpClientFilterFactory clientFilterFactory;
     @Nullable
     private AutoRetryStrategyProvider autoRetry = new io.servicetalk.client.api.DefaultAutoRetryStrategyProvider
             .Builder().build();
@@ -259,14 +263,6 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         return buildStreaming(copyBuildCtx());
     }
 
-    private static <U, R> void injectRetryingFilterDependencies(final HttpClientBuildContext<U, R> ctx,
-            final LoadBalancer<LoadBalancedStreamingHttpConnection> loadBalancer) {
-        if (ctx.builder.retryingHttpRequesterFilter != null) {
-            ctx.builder.retryingHttpRequesterFilter.inject(ctx.sdStatus);
-            ctx.builder.retryingHttpRequesterFilter.inject(loadBalancer.eventStream());
-        }
-    }
-
     private static <U, R> StreamingHttpClient buildStreaming(final HttpClientBuildContext<U, R> ctx) {
         final ReadOnlyHttpClientConfig roConfig = ctx.httpConfig().asReadOnly();
         final HttpExecutionContext executionContext = ctx.builder.executionContextBuilder.build();
@@ -332,7 +328,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                             sdEvents,
                             connectionFactory));
 
-            StreamingHttpClientFilterFactory currClientFilterFactory = ctx.builder.clientFilterFactory;
+            ContextAwareStreamingHttpClientFilterFactory currClientFilterFactory = ctx.builder.clientFilterFactory;
             if (roConfig.hasProxy() && sslContext == null) {
                 // If we're talking to a proxy over http (not https), rewrite the request-target to absolute-form, as
                 // specified by the RFC: https://tools.ietf.org/html/rfc7230#section-5.3.2
@@ -350,16 +346,16 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                 lbClient = new AutoRetryFilter(lbClient,
                         ctx.builder.autoRetry.newStrategy(lb.eventStream(), ctx.sdStatus));
             } else if (ctx.builder.autoRetry != null && !ctx.builder.retryingFilterAppended) {
-                ctx.builder.retryingHttpRequesterFilter = new RetryingHttpRequesterFilter.Builder().build();
+                ctx.builder.retryingHttpRequesterFilter = DEFAULT_AUTO_RETRIES;
                 currClientFilterFactory = appendFilter(currClientFilterFactory,
                         ctx.builder.retryingHttpRequesterFilter);
             }
             HttpExecutionStrategy computedStrategy = ctx.builder.strategyComputation.buildForClient(executionStrategy);
             LOGGER.debug("Client for {} created with base strategy {} → computed strategy {}",
                     targetAddress(ctx), executionStrategy, computedStrategy);
-            injectRetryingFilterDependencies(ctx, lb);
             return new FilterableClientToClient(currClientFilterFactory != null ?
-                    currClientFilterFactory.create(lbClient) : lbClient, computedStrategy);
+                    currClientFilterFactory.create(lbClient, lb.eventStream(), ctx.sdStatus) :
+                        lbClient, computedStrategy);
         } catch (final Throwable t) {
             closeOnException.closeAsync().subscribe();
             throw t;
@@ -401,13 +397,35 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                 ctx.builder.address.toString() : ctx.builder.address + " (via " + ctx.proxyAddress + ")";
     }
 
-    private static StreamingHttpClientFilterFactory appendFilter(
-            @Nullable final StreamingHttpClientFilterFactory currClientFilterFactory,
+    private static ContextAwareStreamingHttpClientFilterFactory appendFilter(
+            @Nullable final ContextAwareStreamingHttpClientFilterFactory currClientFilterFactory,
             final StreamingHttpClientFilterFactory appendClientFilterFactory) {
-        if (currClientFilterFactory == null) {
-            return appendClientFilterFactory;
+        if (appendClientFilterFactory instanceof RetryingHttpRequesterFilter) {
+            if (currClientFilterFactory == null) {
+                return (client, lbEventStream, sdStatus) -> {
+                    final RetryingHttpRequesterFilter.ContextAwareRetryingHttpClientFilter filter =
+                            (RetryingHttpRequesterFilter.ContextAwareRetryingHttpClientFilter)
+                                    appendClientFilterFactory.create(client);
+                    filter.inject(lbEventStream, sdStatus);
+                    return filter;
+                };
+            } else {
+                return (client, lbEventStream, sdStatus) -> {
+                    final RetryingHttpRequesterFilter.ContextAwareRetryingHttpClientFilter filter =
+                            (RetryingHttpRequesterFilter.ContextAwareRetryingHttpClientFilter)
+                                    appendClientFilterFactory.create(client);
+                    filter.inject(lbEventStream, sdStatus);
+                    return currClientFilterFactory.create(filter, lbEventStream, sdStatus);
+                };
+            }
         } else {
-            return client -> currClientFilterFactory.create(appendClientFilterFactory.create(client));
+            if (currClientFilterFactory == null) {
+                return (client, lbEventStream, sdError) -> appendClientFilterFactory.create(client);
+            } else {
+                return (client, lbEventStream, sdError) ->
+                        currClientFilterFactory.create(appendClientFilterFactory.create(client),
+                                lbEventStream, sdError);
+            }
         }
     }
 
@@ -867,6 +885,18 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                 throw new IllegalStateException("HeadersFactory config not found for selected protocol: " + version);
             }
             return factory;
+        }
+    }
+
+    @FunctionalInterface
+    interface ContextAwareStreamingHttpClientFilterFactory extends StreamingHttpClientFilterFactory {
+        StreamingHttpClientFilter create(FilterableStreamingHttpClient client,
+                                         @Nullable Publisher<Object> lbEventStream,
+                                         @Nullable Completable sdStatus);
+
+        @Override
+        default StreamingHttpClientFilter create(FilterableStreamingHttpClient client) {
+            return create(client, null, null);
         }
     }
 }
