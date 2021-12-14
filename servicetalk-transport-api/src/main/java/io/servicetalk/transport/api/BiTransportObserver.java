@@ -229,12 +229,6 @@ final class BiTransportObserver implements TransportObserver {
         }
 
         @Override
-        public void itemRead(@Nullable final Object item) {
-            first.itemRead(item);
-            second.itemRead(item);
-        }
-
-        @Override
         public void readFailed(final Throwable cause) {
             first.readFailed(cause);
             second.readFailed(cause);
@@ -276,27 +270,9 @@ final class BiTransportObserver implements TransportObserver {
         }
 
         @Override
-        public void itemReceived(@Nullable final Object item) {
-            first.itemReceived(item);
-            second.itemReceived(item);
-        }
-
-        @Override
         public void onFlushRequest() {
             first.onFlushRequest();
             second.onFlushRequest();
-        }
-
-        @Override
-        public void itemWritten(@Nullable final Object item) {
-            first.itemWritten(item);
-            second.itemWritten(item);
-        }
-
-        @Override
-        public void itemFlushed() {
-            first.itemFlushed();
-            second.itemFlushed();
         }
 
         @Override

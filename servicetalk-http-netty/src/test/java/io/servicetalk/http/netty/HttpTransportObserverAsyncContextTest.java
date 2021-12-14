@@ -293,11 +293,6 @@ class HttpTransportObserverAsyncContextTest extends AbstractNettyHttpServerTest 
             }
 
             @Override
-            public void itemRead(@Nullable final Object item) {
-                storageMap.put("itemRead", valueOf(AsyncContext.get(key)));
-            }
-
-            @Override
             public void readFailed(final Throwable cause) {
                 storageMap.put("readFailed", valueOf(AsyncContext.get(key)));
             }
@@ -326,11 +321,6 @@ class HttpTransportObserverAsyncContextTest extends AbstractNettyHttpServerTest 
             }
 
             @Override
-            public void itemReceived(@Nullable final Object item) {
-                storageMap.put("itemReceived", valueOf(AsyncContext.get(key)));
-            }
-
-            @Override
             public void onFlushRequest() {
                 storageMap.put("onFlushRequest", valueOf(AsyncContext.get(key)));
             }
@@ -338,14 +328,6 @@ class HttpTransportObserverAsyncContextTest extends AbstractNettyHttpServerTest 
             // For the following callbacks AsyncContext is unknown because protocols can write multiple requests
             // concurrently. Users should use other callbacks above to retrieve the request context and keep it in a
             // class local variable.
-            @Override
-            public void itemWritten(@Nullable final Object item) {
-            }
-
-            @Override
-            public void itemFlushed() {
-            }
-
             @Override
             public void itemWritten(@Nullable final Object item) {
             }
