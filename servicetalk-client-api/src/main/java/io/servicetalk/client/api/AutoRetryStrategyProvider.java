@@ -36,7 +36,10 @@ public interface AutoRetryStrategyProvider {
 
     /**
      * An {@link AutoRetryStrategyProvider} that disables automatic retries;
+     * @deprecated Alternative available {@code io.servicetalk.http.netty.RetryingHttpRequesterFilter
+     * .disableAutoRetries()}.
      */
+    @Deprecated
     AutoRetryStrategyProvider DISABLE_AUTO_RETRIES = (lbEventStream, sdErrorStream) -> (___, cause) -> failed(cause);
 
     /**
