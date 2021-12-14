@@ -89,7 +89,7 @@ class HttpOffloadingTest {
 
     private StreamingHttpConnection httpConnection;
     private final Queue<Throwable> errors = new ConcurrentLinkedQueue<>();
-    private CountDownLatch terminated = new CountDownLatch(1);
+    private final CountDownLatch terminated = new CountDownLatch(1);
     private ServerContext serverContext;
     private OffloadingVerifyingServiceStreaming service;
     private StreamingHttpClient client;
@@ -98,9 +98,10 @@ class HttpOffloadingTest {
     private Predicate<Thread> wrongPublishThread;
 
     void setup(boolean offloadClose) throws Exception {
+        Thread testThread = Thread.currentThread();
         wrongPublishThread = offloadClose ?
                 IoThreadFactory.IoThread::isIoThread :
-                ((Predicate<Thread>) IoThreadFactory.IoThread::isIoThread).negate();
+                (Thread thread) -> thread != testThread && !IoThreadFactory.IoThread.isIoThread(thread);
         service = new OffloadingVerifyingServiceStreaming();
         serverContext = forAddress(localAddress(0))
             .ioExecutor(SERVER_CTX.ioExecutor())

@@ -38,6 +38,11 @@ final class NoopTransportObserver implements TransportObserver {
         return NoopConnectionObserver.INSTANCE;
     }
 
+    @Override
+    public ConnectionObserver onNewConnection(@Nullable final Object localAddress, final Object remoteAddress) {
+        return NoopConnectionObserver.INSTANCE;
+    }
+
     static final class NoopConnectionObserver implements ConnectionObserver {
 
         static final ConnectionObserver INSTANCE = new NoopConnectionObserver();
@@ -179,6 +184,10 @@ final class NoopTransportObserver implements TransportObserver {
         }
 
         @Override
+        public void itemRead(@Nullable final Object item) {
+        }
+
+        @Override
         public void readFailed(final Throwable cause) {
         }
 
@@ -208,7 +217,19 @@ final class NoopTransportObserver implements TransportObserver {
         }
 
         @Override
+        public void itemReceived(@Nullable final Object item) {
+        }
+
+        @Override
         public void onFlushRequest() {
+        }
+
+        @Override
+        public void itemWritten(@Nullable final Object item) {
+        }
+
+        @Override
+        public void itemFlushed() {
         }
 
         @Override

@@ -285,6 +285,15 @@ public interface ConnectionObserver {
         void itemReceived(@Nullable Object item);
 
         /**
+         * Callback when an item is received and ready to be written.
+         *
+         * @param item received item
+         */
+        default void itemReceived(@Nullable Object item) {
+            itemReceived(); // FIXME: 0.42 - remove default impl
+        }
+
+        /**
          * Callback when flush operation is requested.
          */
         void onFlushRequest();
@@ -312,6 +321,22 @@ public interface ConnectionObserver {
          * Callback when an item is flushed to the network. Items are flushed in order they have been written.
          */
         void itemFlushed();
+
+        /**
+         * Callback when an item is serialized and written to the socket.
+         *
+         * @param item written item
+         */
+        default void itemWritten(@Nullable Object item) {
+            itemWritten();  // FIXME: 0.42 - remove default impl
+        }
+
+        /**
+         * Callback when an item is flushed to the network. Items are flushed in order they have been written.
+         */
+        default void itemFlushed() {
+            // FIXME: 0.42 - remove default impl
+        }
 
         /**
          * Callback when the write operation fails with an {@link Throwable error}.
