@@ -92,6 +92,12 @@
     <a class="nav-link" href="../../servicetalk-examples/0.41/http/index.html#Mutual-TLS">Mutual TLS</a>
   </li>
   <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/0.41/http/index.html#Observer">Observer</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/0.41/http/index.html#Redirects">Redirects</a>
+  </li>
+  <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/0.41/http/index.html#uds">Unix Domain Sockets</a>
   </li>
   <li class="nav-item" data-depth="3">
@@ -111,6 +117,9 @@
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/0.41/grpc/index.html#Deadlines">Deadlines</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/0.41/grpc/index.html#Observer">Observer</a>
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/0.41/grpc/index.html#errors">Application Errors</a>
@@ -1007,13 +1016,13 @@ namely:</p>
 <div class="ulist">
 <ul>
 <li>
-<p>No result, just termination (<a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Completable.java"><code>Completable</code></a>).</p>
+<p>No result, just termination (<a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Completable.java"><code>Completable</code></a>).</p>
 </li>
 <li>
-<p>Exactly one result (<a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Single.java"><code>Single</code></a>).</p>
+<p>Exactly one result (<a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Single.java"><code>Single</code></a>).</p>
 </li>
 <li>
-<p>Zero or many results (<a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Publisher.java"><code>Publisher</code></a>).</p>
+<p>Zero or many results (<a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Publisher.java"><code>Publisher</code></a>).</p>
 </li>
 </ul>
 </div>
@@ -1035,8 +1044,8 @@ from a specific standard by defining its own <a href="#specifications">primitive
 standard. In order to make sure we are following the specifications correctly, we verify our sources using the
 <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/tck">ReactiveStreams TCK</a>. For interoperability
 we provide ReactiveStreams
-<a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-concurrent-reactivestreams/src/main/java/io/servicetalk/concurrent/reactivestreams/ReactiveStreamsAdapters.java">adapters</a>
-and JDK Flow <a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-concurrent-jdkflow/src/main/java/io/servicetalk/concurrent/jdkflow/JdkFlowAdapters.java">adapters</a>.</p>
+<a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-concurrent-reactivestreams/src/main/java/io/servicetalk/concurrent/reactivestreams/ReactiveStreamsAdapters.java">adapters</a>
+and JDK Flow <a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-concurrent-jdkflow/src/main/java/io/servicetalk/concurrent/jdkflow/JdkFlowAdapters.java">adapters</a>.</p>
 </div>
 </div>
 </div>
@@ -1130,7 +1139,7 @@ that hides the complexity of flow control and cancellation while enabling easier
 <div class="sect2">
 <h3 id="publisher-source"><a class="anchor" href="#publisher-source"></a><a class="link" href="#publisher-source">Publisher source</a></h3>
 <div class="paragraph">
-<p>A <a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-concurrent/src/main/java/io/servicetalk/concurrent/PublisherSource.java"><code>PublisherSource</code></a>
+<p>A <a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-concurrent/src/main/java/io/servicetalk/concurrent/PublisherSource.java"><code>PublisherSource</code></a>
 is an asynchronous primitive that mimics <a href="https://www.reactive-streams.org">ReactiveStreams</a> interfaces and is
 designed to be used when the source may produce zero or potentially infinite number of results.</p>
 </div>
@@ -1138,7 +1147,7 @@ designed to be used when the source may produce zero or potentially infinite num
 <div class="sect2">
 <h3 id="single-source"><a class="anchor" href="#single-source"></a><a class="link" href="#single-source">Single source</a></h3>
 <div class="paragraph">
-<p>A <a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-concurrent/src/main/java/io/servicetalk/concurrent/SingleSource.java"><code>SingleSource</code></a>
+<p>A <a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-concurrent/src/main/java/io/servicetalk/concurrent/SingleSource.java"><code>SingleSource</code></a>
 is an asynchronous primitive that is designed to be used when the source will produce exactly one result or terminate
 with an error.</p>
 </div>
@@ -1146,7 +1155,7 @@ with an error.</p>
 <div class="sect2">
 <h3 id="completable-source"><a class="anchor" href="#completable-source"></a><a class="link" href="#completable-source">Completable source</a></h3>
 <div class="paragraph">
-<p>A <a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-concurrent/src/main/java/io/servicetalk/concurrent/CompletableSource.java"><code>CompletableSource</code></a>
+<p>A <a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-concurrent/src/main/java/io/servicetalk/concurrent/CompletableSource.java"><code>CompletableSource</code></a>
 is an asynchronous primitive that is designed to be used when the source will complete or terminate with an error.</p>
 </div>
 </div>
@@ -1204,21 +1213,21 @@ users to use those APIs.</p>
 <div class="sect2">
 <h3 id="publisher"><a class="anchor" href="#publisher"></a><a class="link" href="#publisher">Publisher</a></h3>
 <div class="paragraph">
-<p>A <a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Publisher.java"><code>Publisher</code></a>
+<p>A <a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Publisher.java"><code>Publisher</code></a>
 extends <a href="#publisher-source">Publisher source</a> and adds commonly used operators.</p>
 </div>
 </div>
 <div class="sect2">
 <h3 id="single"><a class="anchor" href="#single"></a><a class="link" href="#single">Single</a></h3>
 <div class="paragraph">
-<p>A <a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Single.java"><code>Single</code></a>
+<p>A <a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Single.java"><code>Single</code></a>
 extends <a href="#single-source">Single source</a> and adds commonly used operators.</p>
 </div>
 </div>
 <div class="sect2">
 <h3 id="completable"><a class="anchor" href="#completable"></a><a class="link" href="#completable">Completable</a></h3>
 <div class="paragraph">
-<p>A <a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Completable.java"><code>Completable</code></a>
+<p>A <a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Completable.java"><code>Completable</code></a>
 extends <a href="#completable-source">Completable source</a> and adds commonly used operators.</p>
 </div>
 </div>

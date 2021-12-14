@@ -92,6 +92,12 @@
     <a class="nav-link" href="#Mutual-TLS">Mutual TLS</a>
   </li>
   <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="#Observer">Observer</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="#Redirects">Redirects</a>
+  </li>
+  <li class="nav-item" data-depth="3">
     <a class="nav-link" href="#uds">Unix Domain Sockets</a>
   </li>
   <li class="nav-item" data-depth="3">
@@ -111,6 +117,9 @@
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../grpc/index.html#Deadlines">Deadlines</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../grpc/index.html#Observer">Observer</a>
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../grpc/index.html#errors">Application Errors</a>
@@ -1001,7 +1010,7 @@
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>The <a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-examples/http"><code>http</code></a>
+<p>The <a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-examples/http"><code>http</code></a>
 folder contains examples for the <a href="https://tools.ietf.org/html/rfc7231">HTTP</a> protocol.</p>
 </div>
 </div>
@@ -1021,15 +1030,15 @@ instead of a stream.</p>
 <div class="ulist">
 <ul>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/HelloWorldServer.java">HelloWorldServer</a> - a server that demonstrates the asynchronous API and
+<p><a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/HelloWorldServer.java">HelloWorldServer</a> - a server that demonstrates the asynchronous API and
 responds with a simple <code>Hello World!</code> response body as a <code>text/plain</code>.</p>
 </li>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/HelloWorldClient.java">HelloWorldClient</a> - a client that sends a <code>GET</code> request to the
-<a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/HelloWorldServer.java">server</a> and receives the response as a single content.</p>
+<p><a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/HelloWorldClient.java">HelloWorldClient</a> - a client that sends a <code>GET</code> request to the
+<a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/HelloWorldServer.java">server</a> and receives the response as a single content.</p>
 </li>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/HelloWorldUrlClient.java">HelloWorldUrlClient</a> - a client that sends a <code>GET</code> request to the
+<p><a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/HelloWorldUrlClient.java">HelloWorldUrlClient</a> - a client that sends a <code>GET</code> request to the
 specified URL in absolute-form and receives the response as a single content.</p>
 </li>
 </ul>
@@ -1043,16 +1052,16 @@ specified URL in absolute-form and receives the response as a single content.</p
 <div class="ulist">
 <ul>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/streaming/HelloWorldStreamingServer.java">HelloWorldStreamingServer</a> - a server that responds with a
+<p><a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/streaming/HelloWorldStreamingServer.java">HelloWorldStreamingServer</a> - a server that responds with a
 stream of <code>text/plain</code> payload body for every request.</p>
 </li>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/streaming/HelloWorldStreamingClient.java">HelloWorldStreamingClient</a> - a client that sends a <code>GET</code>
-request to the <a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/streaming/HelloWorldStreamingServer.java">server</a> and receives the response payload
+<p><a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/streaming/HelloWorldStreamingClient.java">HelloWorldStreamingClient</a> - a client that sends a <code>GET</code>
+request to the <a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/streaming/HelloWorldStreamingServer.java">server</a> and receives the response payload
 body as a stream of buffers.</p>
 </li>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/streaming/HelloWorldStreamingUrlClient.java">HelloWorldStreamingUrlClient</a> - a client that sends a
+<p><a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/streaming/HelloWorldStreamingUrlClient.java">HelloWorldStreamingUrlClient</a> - a client that sends a
 <code>GET</code> request to the specified URL in absolute-form and receives the response payload body as a stream of buffers.</p>
 </li>
 </ul>
@@ -1067,16 +1076,16 @@ APIs will block if content is requested but there is no content available.</p>
 <div class="ulist">
 <ul>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldServer.java">BlockingHelloWorldServer</a> - a server that demonstrates the
+<p><a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldServer.java">BlockingHelloWorldServer</a> - a server that demonstrates the
 blocking API and responds with a simple <code>Hello World!</code> response body as a <code>text/plain</code>.</p>
 </li>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldClient.java">BlockingHelloWorldClient</a> - a client that sends a <code>GET</code> request to
-the <a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldServer.java">server</a> and receives the response payload body as one aggregated
+<p><a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldClient.java">BlockingHelloWorldClient</a> - a client that sends a <code>GET</code> request to
+the <a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldServer.java">server</a> and receives the response payload body as one aggregated
 object.</p>
 </li>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldUrlClient.java">BlockingHelloWorldUrlClient</a> - a client that sends a <code>GET</code>
+<p><a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldUrlClient.java">BlockingHelloWorldUrlClient</a> - a client that sends a <code>GET</code>
 request to the specified URL in absolute-form and receives the response payload body as one aggregated object.</p>
 </li>
 </ul>
@@ -1090,16 +1099,16 @@ request to the specified URL in absolute-form and receives the response payload 
 <div class="ulist">
 <ul>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/streaming/BlockingHelloWorldStreamingServer.java">BlockingHelloWorldStreamingServer</a> - a server
+<p><a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/streaming/BlockingHelloWorldStreamingServer.java">BlockingHelloWorldStreamingServer</a> - a server
 that responds with an iterable stream of <code>text/plain</code> payload body for every request.</p>
 </li>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/streaming/BlockingHelloWorldStreamingClient.java">BlockingHelloWorldStreamingClient</a> - a client
-that sends a <code>GET</code> request to the <a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/streaming/BlockingHelloWorldStreamingServer.java">server</a> and
+<p><a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/streaming/BlockingHelloWorldStreamingClient.java">BlockingHelloWorldStreamingClient</a> - a client
+that sends a <code>GET</code> request to the <a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/streaming/BlockingHelloWorldStreamingServer.java">server</a> and
 receives the response payload body as a blocking iterable stream of buffers.</p>
 </li>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/streaming/BlockingHelloWorldStreamingUrlClient.java">BlockingHelloWorldStreamingUrlClient</a> - a
+<p><a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/streaming/BlockingHelloWorldStreamingUrlClient.java">BlockingHelloWorldStreamingUrlClient</a> - a
 client that sends a <code>GET</code> request to the specified URL in absolute-form and receives the response payload body as a
 blocking iterable stream of buffers.</p>
 </li>
@@ -1118,12 +1127,12 @@ needed for the other API variants as the usage of content encoding filters is th
 <div class="ulist">
 <ul>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-examples/http/compression/src/main/java/io/servicetalk/examples/http/compression/CompressionFilterExampleServer.java">CompressionFilterExampleServer</a> - a server that demonstrates
+<p><a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-examples/http/compression/src/main/java/io/servicetalk/examples/http/compression/CompressionFilterExampleServer.java">CompressionFilterExampleServer</a> - a server that demonstrates
 the asynchronous API and responds with a simple <code>Hello World!</code> response body, optionally customized for a specific name for <code>POST</code> requests, as a <code>text/plain</code>.</p>
 </li>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-examples/http/compression/src/main/java/io/servicetalk/examples/http/compression/CompressionFilterExampleClient.java">CompressionFilterExampleClient.java</a> - a client that
-sends a <code>POST</code> request containing a name to the <a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-examples/http/compression/src/main/java/io/servicetalk/examples/http/compression/CompressionFilterExampleServer.java">server</a> and
+<p><a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-examples/http/compression/src/main/java/io/servicetalk/examples/http/compression/CompressionFilterExampleClient.java">CompressionFilterExampleClient.java</a> - a client that
+sends a <code>POST</code> request containing a name to the <a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-examples/http/compression/src/main/java/io/servicetalk/examples/http/compression/CompressionFilterExampleServer.java">server</a> and
 receives a response greeting the posted name as a single content.</p>
 </li>
 </ul>
@@ -1143,11 +1152,11 @@ receives a response greeting the posted name as a single content.</p>
 <div class="ulist">
 <ul>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-examples/http/debugging/src/main/java/io/servicetalk/examples/http/debugging/DebuggingExampleServer.java">DebuggingExampleServer</a> - the async <code>Hello World!</code>
+<p><a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-examples/http/debugging/src/main/java/io/servicetalk/examples/http/debugging/DebuggingExampleServer.java">DebuggingExampleServer</a> - the async <code>Hello World!</code>
 server enhanced with debugging capabilities.</p>
 </li>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-examples/http/debugging/src/main/java/io/servicetalk/examples/http/debugging/DebuggingExampleClient.java">DebuggingExampleClient.java</a> - the async <code>Hello World!</code> client enhanced with debugging capabilities.</p>
+<p><a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-examples/http/debugging/src/main/java/io/servicetalk/examples/http/debugging/DebuggingExampleClient.java">DebuggingExampleClient.java</a> - the async <code>Hello World!</code> client enhanced with debugging capabilities.</p>
 </li>
 </ul>
 </div>
@@ -1164,10 +1173,10 @@ server enhanced with debugging capabilities.</p>
 <div class="ulist">
 <ul>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-examples/http/timeout/src/main/java/io/servicetalk/examples/http/timeout/TimeoutServer.java">TimeoutServer</a> - the async <code>Hello World!</code> server client enhanced to use timeout capabilities.</p>
+<p><a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-examples/http/timeout/src/main/java/io/servicetalk/examples/http/timeout/TimeoutServer.java">TimeoutServer</a> - the async <code>Hello World!</code> server client enhanced to use timeout capabilities.</p>
 </li>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-examples/http/timeout/src/main/java/io/servicetalk/examples/http/timeout/TimeoutClient.java">TimeoutClient.java</a> - the async <code>Hello World!</code> client enhanced to use timeout capabilities.</p>
+<p><a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-examples/http/timeout/src/main/java/io/servicetalk/examples/http/timeout/TimeoutClient.java">TimeoutClient.java</a> - the async <code>Hello World!</code> client enhanced to use timeout capabilities.</p>
 </li>
 </ul>
 </div>
@@ -1178,15 +1187,15 @@ server enhanced with debugging capabilities.</p>
 <div class="sectionbody">
 <div class="paragraph">
 <p>An example similar to "Hello World" examples, which demonstrates
-<a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-examples/http/serialization/src/main/java/io/servicetalk/examples/http/serialization/async">asynchronous-aggregated</a>,
-<a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-examples/http/serialization/src/main/java/io/servicetalk/examples/http/serialization/async/streaming">asynchronous-streaming</a>,
-<a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-examples/http/serialization/src/main/java/io/servicetalk/examples/http/serialization/blocking">blocking-aggregated</a>, and
-<a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-examples/http/serialization/src/main/java/io/servicetalk/examples/http/serialization/blocking/streaming">blocking-streaming</a>
+<a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-examples/http/serialization/src/main/java/io/servicetalk/examples/http/serialization/async">asynchronous-aggregated</a>,
+<a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-examples/http/serialization/src/main/java/io/servicetalk/examples/http/serialization/async/streaming">asynchronous-streaming</a>,
+<a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-examples/http/serialization/src/main/java/io/servicetalk/examples/http/serialization/blocking">blocking-aggregated</a>, and
+<a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-examples/http/serialization/src/main/java/io/servicetalk/examples/http/serialization/blocking/streaming">blocking-streaming</a>
 client and server with JSON serialization of simple pojo classes.</p>
 </div>
 <div class="paragraph">
-<p>Client sends a <code>POST</code> request with a JSON payload <a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-examples/http/serialization/src/main/java/io/servicetalk/examples/http/serialization/CreatePojoRequest.java">PojoRequest</a> and expects a response
-with <code>Content-Type: application/json</code> and <a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-examples/http/serialization/src/main/java/io/servicetalk/examples/http/serialization/PojoResponse.java">MyPojo</a> as a payload.</p>
+<p>Client sends a <code>POST</code> request with a JSON payload <a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-examples/http/serialization/src/main/java/io/servicetalk/examples/http/serialization/CreatePojoRequest.java">PojoRequest</a> and expects a response
+with <code>Content-Type: application/json</code> and <a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-examples/http/serialization/src/main/java/io/servicetalk/examples/http/serialization/PojoResponse.java">MyPojo</a> as a payload.</p>
 </div>
 </div>
 </div>
@@ -1206,11 +1215,11 @@ aggregated/streaming) are exposed.</p>
 <div class="ulist">
 <ul>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-examples/http/jaxrs/src/main/java/io/servicetalk/examples/http/jaxrs/HelloWorldJaxRsServer.java">HelloWorldJaxRsServer</a> - a JAX-RS based hello world server that demonstrates how to
+<p><a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-examples/http/jaxrs/src/main/java/io/servicetalk/examples/http/jaxrs/HelloWorldJaxRsServer.java">HelloWorldJaxRsServer</a> - a JAX-RS based hello world server that demonstrates how to
 write blocking as well as asynchronous resource methods.</p>
 </li>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-examples/http/jaxrs/src/main/java/io/servicetalk/examples/http/jaxrs/HelloWorldJaxRsResource.java">HelloWorldJaxRsResource</a> - a JAX-RS resource having different methods for
+<p><a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-examples/http/jaxrs/src/main/java/io/servicetalk/examples/http/jaxrs/HelloWorldJaxRsResource.java">HelloWorldJaxRsResource</a> - a JAX-RS resource having different methods for
 blocking and asynchronous interactions.</p>
 </li>
 </ul>
@@ -1225,7 +1234,7 @@ blocking and asynchronous interactions.</p>
 </div>
 <div class="paragraph">
 <p>More examples of how to use the resource can be found in the
-<a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-examples/http/jaxrs/src/main/java/io/servicetalk/examples/http/jaxrs/HelloWorldJaxRsResource.java">HelloWorldJaxRsResource</a> javadocs.</p>
+<a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-examples/http/jaxrs/src/main/java/io/servicetalk/examples/http/jaxrs/HelloWorldJaxRsResource.java">HelloWorldJaxRsResource</a> javadocs.</p>
 </div>
 </div>
 </div>
@@ -1235,7 +1244,7 @@ blocking and asynchronous interactions.</p>
 <div class="sectionbody">
 <div class="paragraph">
 <p>This example demonstrates some basic functionality of the
-<a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpMetaData.java">HttpMetaData</a> classes:</p>
+<a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpMetaData.java">HttpMetaData</a> classes:</p>
 </div>
 <div class="ulist">
 <ul>
@@ -1259,10 +1268,10 @@ blocking and asynchronous interactions.</p>
 <div class="ulist">
 <ul>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-examples/http/metadata/src/main/java/io/servicetalk/examples/http/metadata/MetaDataDemoServer.java">MetaDataDemoServer</a> - A server that provides greetings in various languages.</p>
+<p><a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-examples/http/metadata/src/main/java/io/servicetalk/examples/http/metadata/MetaDataDemoServer.java">MetaDataDemoServer</a> - A server that provides greetings in various languages.</p>
 </li>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-examples/http/metadata/src/main/java/io/servicetalk/examples/http/metadata/MetaDataDemoClient.java">MetaDataDemoClient</a> - A client that requests greetings in various languages.</p>
+<p><a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-examples/http/metadata/src/main/java/io/servicetalk/examples/http/metadata/MetaDataDemoClient.java">MetaDataDemoClient</a> - A client that requests greetings in various languages.</p>
 </li>
 </ul>
 </div>
@@ -1293,10 +1302,10 @@ across all the HTTP APIs.
 <div class="ulist">
 <ul>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-examples/http/mutual-tls/src/main/java/io/servicetalk/examples/http/mutualtls/HttpServerMutualTLS.java">HttpServerMutualTLS</a> - A server that sets the trust manager and key manager, and requires client authentication.</p>
+<p><a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-examples/http/mutual-tls/src/main/java/io/servicetalk/examples/http/mutualtls/HttpServerMutualTLS.java">HttpServerMutualTLS</a> - A server that sets the trust manager and key manager, and requires client authentication.</p>
 </li>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-examples/http/mutual-tls/src/main/java/io/servicetalk/examples/http/mutualtls/HttpClientMutualTLS.java">HttpClientMutualTLS</a> - A client that sets the trust manager and key manager.</p>
+<p><a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-examples/http/mutual-tls/src/main/java/io/servicetalk/examples/http/mutualtls/HttpClientMutualTLS.java">HttpClientMutualTLS</a> - A client that sets the trust manager and key manager.</p>
 </li>
 </ul>
 </div>
@@ -1316,6 +1325,65 @@ the same across all the HTTP APIs.
 </div>
 </div>
 <div class="sect1">
+<h2 id="Observer"><a class="anchor" href="#Observer"></a><a class="link" href="#Observer">Observer</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This example demonstrates the following:
+- Use of
+<a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpLifecycleObserver.java">HttpLifecycleObserver</a> to log a summary of each request/response.</p>
+</div>
+<div class="paragraph">
+<p>Using the following classes:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-examples/http/observer/src/main/java/io/servicetalk/examples/http/observer/LifecycleObserverServer.java">LifecycleObserverServer</a> - A server that installs a
+<a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpLifecycleObserver.java">HttpLifecycleObserver</a>
+on the server builder.</p>
+</li>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-examples/http/observer/src/main/java/io/servicetalk/examples/http/observer/LifecycleObserverClient.java">LifecycleObserverClient</a> - A client that installs a
+<a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpLifecycleObserver.java">HttpLifecycleObserver</a>
+on via a client filter on the client builder.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="Redirects"><a class="anchor" href="#Redirects"></a><a class="link" href="#Redirects">Redirects</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Extends the async "Hello World" example to demonstrate different ways that users can support redirects in ServiceTalk
+applications. You should read and understand the async "Hello World" example first to understand the additions this
+example adds. No separate example is needed for the other API variants as the usage of the debugging features are the
+same for all API styles.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-examples/http/redirects/src/main/java/io/servicetalk/examples/http/redirects/RedirectingServer.java">RedirectingServer</a> -
+Starts two servers, one of them (HTTP) redirects to another (HTTPS).</p>
+</li>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-examples/http/redirects/src/main/java/io/servicetalk/examples/http/redirects/SingleAddressRedirectClient.java">SingleAddressRedirectClient.java</a> -
+Async <code>Hello World</code> example that demonstrates how relative redirects can be handled automatically by a single-address client.</p>
+</li>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-examples/http/redirects/src/main/java/io/servicetalk/examples/http/redirects/MultiAddressUrlRedirectClient.java">MultiAddressUrlRedirectClient.java</a> -
+Async <code>Hello World</code> example that demonstrates how redirects can be handled automatically by a multi-address client.
+It demonstrates how users can preserve headers and payload body of the original request while redirecting to non-relative locations.</p>
+</li>
+<li>
+<p><a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-examples/http/redirects/src/main/java/io/servicetalk/examples/http/redirects/ManualRedirectClient.java">ManualRedirectClient.java</a> -
+Async <code>Hello World</code> example that demonstrates how redirects can be handled manually between multiple single-address clients.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
 <h2 id="HTTP2"><a class="anchor" href="#HTTP2"></a><a class="link" href="#HTTP2">HTTP/2</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
@@ -1331,11 +1399,11 @@ ServiceTalk.</p>
 <div class="ulist">
 <ul>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-examples/http/http2/src/main/java/io/servicetalk/examples/http/http2/priorknowledge/Http2PriorKnowledgeServer.java">Http2PriorKnowledgeServer</a> -
+<p><a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-examples/http/http2/src/main/java/io/servicetalk/examples/http/http2/priorknowledge/Http2PriorKnowledgeServer.java">Http2PriorKnowledgeServer</a> -
 A server that uses HTTP/2 with Prior Knowledge.</p>
 </li>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-examples/http/http2/src/main/java/io/servicetalk/examples/http/http2/priorknowledge/Http2PriorKnowledgeClient.java">Http2PriorKnowledgeClient</a> -
+<p><a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-examples/http/http2/src/main/java/io/servicetalk/examples/http/http2/priorknowledge/Http2PriorKnowledgeClient.java">Http2PriorKnowledgeClient</a> -
 A client that uses HTTP/2 with Prior Knowledge.</p>
 </li>
 </ul>
@@ -1350,11 +1418,11 @@ communication protocol:</p>
 <div class="ulist">
 <ul>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-examples/http/http2/src/main/java/io/servicetalk/examples/http/http2/alpn/HttpServerWithAlpn.java">HttpServerWithAlpn</a> -
+<p><a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-examples/http/http2/src/main/java/io/servicetalk/examples/http/http2/alpn/HttpServerWithAlpn.java">HttpServerWithAlpn</a> -
 A server that negotiates HTTP/2 or HTTP/1.1 using ALPN extension for TLS connections.</p>
 </li>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-examples/http/http2/src/main/java/io/servicetalk/examples/http/http2/alpn/HttpClientWithAlpn.java">HttpClientWithAlpn</a> -
+<p><a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-examples/http/http2/src/main/java/io/servicetalk/examples/http/http2/alpn/HttpClientWithAlpn.java">HttpClientWithAlpn</a> -
 A client that negotiates HTTP/2 or HTTP/1.1 using ALPN extension for TLS connections.</p>
 </li>
 </ul>
@@ -1407,7 +1475,7 @@ For more information see <a href="service-composition.html" class="page">Service
 <div class="sectionbody">
 <div class="paragraph">
 <p>This example demonstrates how client and server can use unix domain sockets. See
-the <a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-examples/http/uds">uds example code</a> for more details.</p>
+the <a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-examples/http/uds">uds example code</a> for more details.</p>
 </div>
 <div class="admonitionblock note">
 <table>

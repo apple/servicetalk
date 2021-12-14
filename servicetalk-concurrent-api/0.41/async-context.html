@@ -92,6 +92,12 @@
     <a class="nav-link" href="../../servicetalk-examples/0.41/http/index.html#Mutual-TLS">Mutual TLS</a>
   </li>
   <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/0.41/http/index.html#Observer">Observer</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/0.41/http/index.html#Redirects">Redirects</a>
+  </li>
+  <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/0.41/http/index.html#uds">Unix Domain Sockets</a>
   </li>
   <li class="nav-item" data-depth="3">
@@ -111,6 +117,9 @@
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/0.41/grpc/index.html#Deadlines">Deadlines</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/0.41/grpc/index.html#Observer">Observer</a>
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/0.41/grpc/index.html#errors">Application Errors</a>
@@ -1027,7 +1036,7 @@ single.map(response -&gt; {
 })// do something else in the function composition chain
 
 // AuthenticationFilter.java
-public static final Key&lt;String&gt; USER_ID_KEY = Key.newKey("userId");
+public static final Key&lt;String&gt; USER_ID_KEY = Key.newKey("userId", String.class);
 
 public static Single&lt;Resposne&gt; authenticate(Single&lt;Response&gt; responseSingle) {
   AsyncContext.put(USER_ID_KEY, client.headers().get("userId"));
@@ -1167,11 +1176,11 @@ utilities (e.g. <code>Runnable asyncContextBoundary(Runnable)</code>) to create 
 boundary, save the <code>original</code> context before executing user code on the new thread, restore the <code>current</code> context
 while executing user code, and then restore the <code>original</code> context. This requires object wrapping/unwrapping and
 leveraging <code>ThreadLocal</code> (or an
-<a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/AsyncContextMapHolder.java">AsyncContextMapHolder</a>
+<a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-context-api/src/main/java/io/servicetalk/context/api/ContextMapHolder.java">ContextMapHolder</a>
 ) to retain the state. We also need to capture the current context at <code>subscribe</code>, propagate it up the operator chain,
 and capture it effectively in the source (or in a wrapped <code>Subscriber</code> just outside the source). These mechanics are
 similar to how the
-<a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-concurrent-internal/src/main/java/io/servicetalk/concurrent/internal/SignalOffloader.java">SignalOffloader</a>
+<a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-concurrent-internal/src/main/java/io/servicetalk/concurrent/internal/SignalOffloader.java">SignalOffloader</a>
 is captured and propagated, and we use a similar approach here.</p>
 </div>
 </div>
@@ -1238,7 +1247,7 @@ passing it. The <code>ThreadLocal</code> class provides general retention of thr
 frequency in which we need to save/restore the static state has been shown to introduce non-trivial costs. Since we know
 that all of our threads will require this thread local state we can have our threads explicitly have a <code>AsyncContext</code>
 member variable (see
-<a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/AsyncContextMapHolder.java">AsyncContextMapHolder</a>
+<a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-context-api/src/main/java/io/servicetalk/context/api/ContextMapHolder.java">ContextMapHolder</a>
 ). There is also additional wrapping/unwrapping introduced on the asynchronous boundaries so there is additional object
 allocation.</p>
 </div>

@@ -92,6 +92,12 @@
     <a class="nav-link" href="../../servicetalk-examples/0.41/http/index.html#Mutual-TLS">Mutual TLS</a>
   </li>
   <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/0.41/http/index.html#Observer">Observer</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/0.41/http/index.html#Redirects">Redirects</a>
+  </li>
+  <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/0.41/http/index.html#uds">Unix Domain Sockets</a>
   </li>
   <li class="nav-item" data-depth="3">
@@ -111,6 +117,9 @@
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/0.41/grpc/index.html#Deadlines">Deadlines</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/0.41/grpc/index.html#Observer">Observer</a>
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/0.41/grpc/index.html#errors">Application Errors</a>
@@ -1083,11 +1092,11 @@ its operators, and the <code>Executor</code>.</p>
 <p>All operators inherit the <code>Executor</code> from the source, unless overridden explicitly by the user.</p>
 </li>
 <li>
-<p>A <a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-concurrent-internal//src/main/java/io/servicetalk/concurrent/internal/SignalOffloader.java"><code>SignalOffloader</code></a>
+<p>A <a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-concurrent-internal//src/main/java/io/servicetalk/concurrent/internal/SignalOffloader.java"><code>SignalOffloader</code></a>
 is chosen when a <code>Subscriber</code> subscribes to a source decorated by zero or more operators.</p>
 </li>
 <li>
-<p>The chosen <a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-concurrent-internal//src/main/java/io/servicetalk/concurrent/internal/SignalOffloader.java"><code>SignalOffloader</code></a>
+<p>The chosen <a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-concurrent-internal//src/main/java/io/servicetalk/concurrent/internal/SignalOffloader.java"><code>SignalOffloader</code></a>
 is passed to all operators and then to the source, per <code>Subscriber</code>.</p>
 </li>
 </ul>

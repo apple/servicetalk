@@ -92,6 +92,12 @@
     <a class="nav-link" href="../../servicetalk-examples/0.41/http/index.html#Mutual-TLS">Mutual TLS</a>
   </li>
   <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/0.41/http/index.html#Observer">Observer</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/0.41/http/index.html#Redirects">Redirects</a>
+  </li>
+  <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/0.41/http/index.html#uds">Unix Domain Sockets</a>
   </li>
   <li class="nav-item" data-depth="3">
@@ -111,6 +117,9 @@
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/0.41/grpc/index.html#Deadlines">Deadlines</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/0.41/grpc/index.html#Observer">Observer</a>
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/0.41/grpc/index.html#errors">Application Errors</a>
@@ -1677,7 +1686,7 @@ Be sure to thoroughly test the routes for which you intend to disable offloading
 It is currently not possible to disable offloading if any JAX-RS resource uses <code>@Suspended AsyncResponse</code>,
 <code>CompletionStage</code> responses or Server-Sent Events. A workaround for this consists in using the Predicate router
 to selectively offload such resources, as shown in this
-<a href="https://github.com/apple/servicetalk/blob/0.41.0/servicetalk-http-router-jersey/src/testFixtures/java/io/servicetalk/http/router/jersey/MixedModeResourceTest.java">test</a>.
+<a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-http-router-jersey/src/testFixtures/java/io/servicetalk/http/router/jersey/MixedModeResourceTest.java">test</a>.
 </td>
 </tr>
 </table>
