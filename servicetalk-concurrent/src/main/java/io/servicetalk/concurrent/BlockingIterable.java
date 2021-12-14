@@ -46,8 +46,13 @@ public interface BlockingIterable<T> extends CloseableIterable<T> {
      * <p>
      * By default the {@code timeoutSupplier} will be used for each interaction with
      * {@link BlockingIterator#hasNext(long, TimeUnit)} and {@link BlockingIterator#next(long, TimeUnit)}. However
-     * implementations of {@link BlockingIterable} may decide to only apply the timeout when they are not be sure if
+     * implementations of {@link BlockingIterable} may decide to only apply the timeout when they are not sure if
      * an interaction with the {@link BlockingIterator} will block or not.
+     * <p>
+     * Note: This method can sneaky-throw an {@link InterruptedException} when a blocking operation internally does so.
+     * The reason it's not declared is that the {@link java.util.Iterator} and {@link AutoCloseable} interfaces do not
+     * declare checked exceptions and {@link BlockingIterator} extends them to allow use in try-with-resources
+     * and enhanced for loop.
      * @param action The action to be performed for each element.
      * @param timeoutSupplier A {@link LongSupplier} that provides the timeout duration for the next call to
      * {@link BlockingIterator#hasNext(long, TimeUnit)} and {@link BlockingIterator#next(long, TimeUnit)}. These
@@ -77,6 +82,11 @@ public interface BlockingIterable<T> extends CloseableIterable<T> {
      * {@link BlockingIterator#hasNext(long, TimeUnit)} and {@link BlockingIterator#next(long, TimeUnit)}. However
      * implementations of {@link BlockingIterable} may decide to only apply the timeout when they are not be sure if
      * an interaction with the {@link BlockingIterator} will block or not.
+     * <p>
+     * Note: This method can sneaky-throw an {@link InterruptedException} when a blocking operation internally does so.
+     * The reason it's not declared is that the {@link java.util.Iterator} and {@link AutoCloseable} interfaces do not
+     * declare checked exceptions and {@link BlockingIterator} extends them to allow use in try-with-resources
+     * and enhanced for loop.
      * @param action The action to be performed for each element.
      * @param timeout An approximate total duration for the overall completion of this method. This value is used to
      * approximate because the actual duration maybe longer if data is available without blocking.
