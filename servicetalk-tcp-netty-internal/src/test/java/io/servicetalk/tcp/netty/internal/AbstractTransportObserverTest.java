@@ -128,9 +128,10 @@ public class AbstractTransportObserverTest extends AbstractTcpServerTest {
                                     boolean completeExpected) {
         verify(dataObserver).onNewWrite();
         verify(writeObserver, atLeastOnce()).requestedToWrite(anyLong());
-        verify(writeObserver).itemReceived();
+        verify(writeObserver).itemReceived(any());
         verify(writeObserver).onFlushRequest();
-        verify(writeObserver).itemWritten();
+        verify(writeObserver).itemWritten(any());
+        verify(writeObserver).itemFlushed();
         if (completeExpected) {
             verify(writeObserver).writeComplete();
         }
@@ -139,7 +140,7 @@ public class AbstractTransportObserverTest extends AbstractTcpServerTest {
     static void verifyReadObserver(DataObserver dataObserver, ReadObserver readObserver) {
         verify(dataObserver).onNewRead();
         verify(readObserver).requestedToRead(anyLong());
-        verify(readObserver, atLeastOnce()).itemRead();
+        verify(readObserver, atLeastOnce()).itemRead(any());
     }
 
     static VerificationWithTimeout await() {

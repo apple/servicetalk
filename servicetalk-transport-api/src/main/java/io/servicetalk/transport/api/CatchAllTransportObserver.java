@@ -58,6 +58,12 @@ final class CatchAllTransportObserver implements TransportObserver {
                 CatchAllConnectionObserver::new, NoopConnectionObserver.INSTANCE);
     }
 
+    @Override
+    public ConnectionObserver onNewConnection(@Nullable final Object localAddress, final Object remoteAddress) {
+        return safeReport(() -> observer.onNewConnection(localAddress, remoteAddress), observer, "new connection",
+                CatchAllConnectionObserver::new, NoopConnectionObserver.INSTANCE);
+    }
+
     private static final class CatchAllConnectionObserver implements ConnectionObserver {
 
         private final ConnectionObserver observer;
@@ -220,6 +226,11 @@ final class CatchAllTransportObserver implements TransportObserver {
         }
 
         @Override
+        public void itemRead(@Nullable final Object item) {
+            safeReport(() -> observer.itemRead(item), observer, "item read");
+        }
+
+        @Override
         public void readFailed(final Throwable cause) {
             safeReport(() -> observer.readFailed(cause), observer, "read failed", cause);
         }
@@ -254,6 +265,11 @@ final class CatchAllTransportObserver implements TransportObserver {
         }
 
         @Override
+        public void itemReceived(@Nullable final Object item) {
+            safeReport(() -> observer.itemReceived(item), observer, "item received");
+        }
+
+        @Override
         public void onFlushRequest() {
             safeReport(observer::onFlushRequest, observer, "flush request");
         }
@@ -261,6 +277,16 @@ final class CatchAllTransportObserver implements TransportObserver {
         @Override
         public void itemWritten() {
             safeReport(observer::itemWritten, observer, "item written");
+        }
+
+        @Override
+        public void itemWritten(@Nullable final Object item) {
+            safeReport(() -> observer.itemWritten(item), observer, "item written");
+        }
+
+        @Override
+        public void itemFlushed() {
+            safeReport(observer::itemFlushed, observer, "item flushed");
         }
 
         @Override
