@@ -892,7 +892,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     interface ContextAwareStreamingHttpClientFilterFactory extends StreamingHttpClientFilterFactory {
         StreamingHttpClientFilter create(FilterableStreamingHttpClient client,
                                          @Nullable Publisher<Object> lbEventStream,
-                                         @Nullable SdStatusCompletable sdStatus);
+                                         @Nullable Completable sdStatus);
 
         @Override
         default StreamingHttpClientFilter create(FilterableStreamingHttpClient client) {
