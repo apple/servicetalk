@@ -61,8 +61,8 @@ final class FilterPublisher<T> extends AbstractSynchronousPublisherOperator<T, T
 
             @Override
             public void onNext(T t) {
-                // If predicate or keySelector throws we propagate to the caller which is responsible to terminate
-                // its subscriber and cancel the subscription.
+                // If predicate throws we propagate to the caller which is responsible to terminate its subscriber and
+                // cancel the subscription.
                 if (predicate.test(t)) {
                     subscriber.onNext(t);
                 } else {
