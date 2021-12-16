@@ -33,6 +33,7 @@ import java.io.InputStream;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.concurrent.CompletionStage;
@@ -138,6 +139,55 @@ public abstract class Publisher<T> {
      */
     public final Publisher<T> filter(Predicate<? super T> predicate) {
         return new FilterPublisher<>(this, predicate);
+    }
+
+    /**
+     * Only emits distinct signals observed by this {@link Publisher}.
+     * <p>
+     * This method provides a data transformation in sequential programming similar to:
+     * <pre>{@code
+     *     List<T> results = ...;
+     *     for (T t : resultOfThisPublisher()) {
+     *         if (!results.contains(t)) {
+     *             results.add(t);
+     *         }
+     *     }
+     *     return results;
+     * }</pre>
+     *
+     * @return A {@link Publisher} that emits distinct signals observed by this {@link Publisher}.
+     * @see <a href="http://reactivex.io/documentation/operators/distinct.html">ReactiveX distinct operator.</a>
+     */
+    public final Publisher<T> distinct() {
+        return distinct(Function.identity(), HashSet::new);
+    }
+
+    /**
+     * Only emits distinct signals observed by this {@link Publisher}.
+     * <p>
+     * This method provides a data transformation in sequential programming similar to:
+     * <pre>{@code
+     *     List<T> results = ...;
+     *     Collection<K> keys = collectionSupplier.get();
+     *     for (T t : resultOfThisPublisher()) {
+     *         if (keys.add(keySelector.apply(t))) {
+     *             results.add(t);
+     *         }
+     *     }
+     *     return results;
+     * }</pre>
+     *
+     * @param keySelector Translates each {@link T} into a {@link K} that is used for distinctness comparison.
+     * @param collectionSupplier Used to obtain a new {@link Collection} on each subscribe operation to track previously
+     * seen {@link K}s. If {@link Collection#add(Object)} returns {@code true} it is considered distinct from prior
+     * signals and emitted to the returned {@link Publisher}.
+     * @param <K> The type of key used to determine distinctness of each signal.
+     * @return A {@link Publisher} emits distinct signals observed by this {@link Publisher}.
+     * @see <a href="http://reactivex.io/documentation/operators/distinct.html">ReactiveX distinct operator.</a>
+     */
+    public final <K> Publisher<T> distinct(Function<? super T, K> keySelector,
+                                           Supplier<? extends Collection<? super K>> collectionSupplier) {
+        return new DistinctPublisher<>(this, keySelector, collectionSupplier);
     }
 
     /**
