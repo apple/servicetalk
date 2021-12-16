@@ -54,6 +54,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.EmptyPublisher.emptyPublisher;
 import static io.servicetalk.concurrent.api.Executors.global;
+import static io.servicetalk.concurrent.api.FilterPublisher.newDistinctSupplier;
 import static io.servicetalk.concurrent.api.NeverPublisher.neverPublisher;
 import static io.servicetalk.concurrent.api.PublisherDoOnUtils.doOnCancelSupplier;
 import static io.servicetalk.concurrent.api.PublisherDoOnUtils.doOnCompleteSupplier;
@@ -137,11 +138,39 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/filter.html">ReactiveX filter operator.</a>
      */
     public final Publisher<T> filter(Predicate<? super T> predicate) {
-        return new FilterPublisher<>(this, predicate);
+        return filter(() -> predicate);
+    }
+
+    /**
+     * Filters items emitted by this {@link Publisher}.
+     * <p>
+     * This method provides a data transformation in sequential programming similar to:
+     * <pre>{@code
+     *     List<T> results = ...;
+     *     Predicate<K> filter = filterSupplier.get();
+     *     for (T t : resultOfThisPublisher()) {
+     *         if (filter.test(t)) {
+     *             results.add(t);
+     *         }
+     *     }
+     *     return results;
+     * }</pre>
+     *
+     * @param filterSupplier Used to obtain a new {@link Predicate} such that if {@link Predicate#test(Object)} returns
+     * {@code true} the item is emitted to the returned {@link Publisher}. This {@link Predicate} is unique per
+     * subscribe and may therefore keep state and can be used for example to track distinct signals.
+     * @return A {@link Publisher} emits filtered signals observed by this {@link Publisher}.
+     * @see <a href="http://reactivex.io/documentation/operators/filter.html">ReactiveX filter operator.</a>
+     * @see <a href="http://reactivex.io/documentation/operators/distinct.html">ReactiveX distinct operator.</a>
+     */
+    public final Publisher<T> filter(Supplier<? extends Predicate<? super T>> filterSupplier) {
+        return new FilterPublisher<>(this, filterSupplier);
     }
 
     /**
      * Only emits distinct signals observed by this {@link Publisher}.
+     * <p>
+     * {@link Publisher#filter(Supplier)} can be used to customize the distinctness criteria.
      * <p>
      * This method provides a data transformation in sequential programming similar to:
      * <pre>{@code
@@ -156,34 +185,10 @@ public abstract class Publisher<T> {
      *
      * @return A {@link Publisher} that emits distinct signals observed by this {@link Publisher}.
      * @see <a href="http://reactivex.io/documentation/operators/distinct.html">ReactiveX distinct operator.</a>
+     * @see Publisher#filter(Supplier)
      */
     public final Publisher<T> distinct() {
-        return new DistinctPublisher<>(this);
-    }
-
-    /**
-     * Only emits distinct signals observed by this {@link Publisher}.
-     * <p>
-     * This method provides a data transformation in sequential programming similar to:
-     * <pre>{@code
-     *     List<T> results = ...;
-     *     Predicate<K> distinctChecker = predicateSupplier.get();
-     *     for (T t : resultOfThisPublisher()) {
-     *         if (distinctChecker.test(t)) {
-     *             results.add(t);
-     *         }
-     *     }
-     *     return results;
-     * }</pre>
-     *
-     * @param predicateSupplier Used to obtain a new {@link Predicate} on each subscribe that tracks previously
-     * seen {@link T}s. If {@link Predicate#test(Object)} returns {@code true} the signal is considered distinct from
-     * prior signals and emitted to the returned {@link Publisher}.
-     * @return A {@link Publisher} emits distinct signals observed by this {@link Publisher}.
-     * @see <a href="http://reactivex.io/documentation/operators/distinct.html">ReactiveX distinct operator.</a>
-     */
-    public final Publisher<T> distinct(Supplier<? extends Predicate<? super T>> predicateSupplier) {
-        return new DistinctPublisher<>(this, predicateSupplier);
+        return filter(newDistinctSupplier());
     }
 
     /**

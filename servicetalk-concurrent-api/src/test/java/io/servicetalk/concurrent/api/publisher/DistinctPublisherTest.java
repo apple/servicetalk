@@ -50,7 +50,7 @@ class DistinctPublisherTest {
 
     @Test
     void duplicatesAllowedWhenKeyComparatorAllows() {
-        toSource(Publisher.from(1, 2, 2, 3).distinct(() -> new Predicate<Integer>() {
+        toSource(Publisher.from(1, 2, 2, 3).filter(() -> new Predicate<Integer>() {
                     private final AtomicInteger count = new AtomicInteger();
                     private final Set<String> set = new HashSet<>();
                     @Override
