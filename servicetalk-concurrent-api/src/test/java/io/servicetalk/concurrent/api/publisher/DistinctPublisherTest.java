@@ -21,7 +21,9 @@ import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -48,9 +50,15 @@ class DistinctPublisherTest {
 
     @Test
     void duplicatesAllowedWhenKeyComparatorAllows() {
-        final AtomicInteger state = new AtomicInteger(); // state outside the subscriber just for this test.
-        toSource(Publisher.from(1, 2, 2, 3)
-                .distinct(i -> i.toString() + "/" + state.incrementAndGet(), HashSet::new)).subscribe(subscriber);
+        toSource(Publisher.from(1, 2, 2, 3).distinct(() -> new Predicate<Integer>() {
+                    private final AtomicInteger count = new AtomicInteger();
+                    private final Set<String> set = new HashSet<>();
+                    @Override
+                    public boolean test(final Integer i) {
+                        count.incrementAndGet();
+                        return set.add(i.toString() + "/" + count.incrementAndGet());
+                    }
+                })).subscribe(subscriber);
         subscriber.awaitSubscription().request(4);
         assertThat(subscriber.takeOnNext(4), contains(1, 2, 2, 3));
         subscriber.awaitOnComplete();

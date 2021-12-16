@@ -17,22 +17,30 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 
-import java.util.Collection;
-import java.util.function.Function;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateSubscription;
 import static java.util.Objects.requireNonNull;
 
-final class DistinctPublisher<T, K> extends AbstractSynchronousPublisherOperator<T, T> {
-    private final Function<? super T, K> keySelector;
-    private final Supplier<? extends Collection<? super K>> collectionSupplier;
+final class DistinctPublisher<T> extends AbstractSynchronousPublisherOperator<T, T> {
+    private final Supplier<? extends Predicate<? super T>> collectionSupplier;
 
-    DistinctPublisher(final Publisher<T> source, final Function<? super T, K> keySelector,
-                      final Supplier<? extends Collection<? super K>> collectionSupplier) {
+    DistinctPublisher(final Publisher<T> source) {
+        this(source, () -> new Predicate<T>() {
+            private final Set<T> set = new HashSet<>();
+            @Override
+            public boolean test(final T t) {
+                return set.add(t);
+            }
+        });
+    }
+
+    DistinctPublisher(final Publisher<T> source, final Supplier<? extends Predicate<? super T>> collectionSupplier) {
         super(source);
-        this.keySelector = keySelector;
         this.collectionSupplier = collectionSupplier;
     }
 
@@ -41,7 +49,7 @@ final class DistinctPublisher<T, K> extends AbstractSynchronousPublisherOperator
         return new Subscriber<T>() {
             @Nullable
             private Subscription subscription;
-            private final Collection<? super K> collection = requireNonNull(collectionSupplier.get());
+            private final Predicate<? super T> predicate = requireNonNull(collectionSupplier.get());
 
             @Override
             public void onSubscribe(Subscription s) {
@@ -53,9 +61,9 @@ final class DistinctPublisher<T, K> extends AbstractSynchronousPublisherOperator
 
             @Override
             public void onNext(T t) {
-                // If collection or keySelector throws we propagate to the caller which is responsible to terminate
+                // If predicate or keySelector throws we propagate to the caller which is responsible to terminate
                 // its subscriber and cancel the subscription.
-                if (collection.add(keySelector.apply(t))) {
+                if (predicate.test(t)) {
                     subscriber.onNext(t);
                 } else {
                     assert subscription != null;
