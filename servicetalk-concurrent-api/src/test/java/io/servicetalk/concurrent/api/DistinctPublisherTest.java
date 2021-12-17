@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.concurrent.api.publisher;
+package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.jupiter.api.Test;

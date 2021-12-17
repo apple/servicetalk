@@ -163,29 +163,25 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/filter.html">ReactiveX filter operator.</a>
      * @see <a href="http://reactivex.io/documentation/operators/distinct.html">ReactiveX distinct operator.</a>
      */
-    public final Publisher<T> filter(Supplier<? extends Predicate<? super T>> filterSupplier) {
+    final Publisher<T> filter(Supplier<? extends Predicate<? super T>> filterSupplier) {
         return new FilterPublisher<>(this, filterSupplier);
     }
 
     /**
-     * Only emits distinct signals observed by this {@link Publisher}.
-     * <p>
-     * {@link Publisher#filter(Supplier)} can be used to customize the distinctness criteria.
+     * Only emits distinct signals observed by this {@link Publisher}. Signals are compared using
+     * {@link T#hashCode()} and {@link T#equals(Object)}.
      * <p>
      * This method provides a data transformation in sequential programming similar to:
      * <pre>{@code
-     *     List<T> results = ...;
+     *     Set<T> results = ...;
      *     for (T t : resultOfThisPublisher()) {
-     *         if (!results.contains(t)) {
-     *             results.add(t);
-     *         }
+     *         results.add(t);
      *     }
      *     return results;
      * }</pre>
      *
      * @return A {@link Publisher} that emits distinct signals observed by this {@link Publisher}.
      * @see <a href="http://reactivex.io/documentation/operators/distinct.html">ReactiveX distinct operator.</a>
-     * @see Publisher#filter(Supplier)
      */
     public final Publisher<T> distinct() {
         return filter(newDistinctSupplier());
