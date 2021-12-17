@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,12 @@
  * limitations under the License.
  */
 
-buildscript {
-  dependencies {
-    classpath "gradle.plugin.com.github.jengelman.gradle.plugins:shadow:$shadowPluginVersion"
-    classpath "com.google.protobuf:protobuf-gradle-plugin:$protobufGradlePluginVersion"
-  }
+plugins {
+  id "com.github.johnrengelman.shadow" version "$shadowPluginVersion"
+  id "com.google.protobuf" version "$protobufGradlePluginVersion"
 }
 
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
-apply plugin: "com.github.johnrengelman.shadow"
-apply plugin: "com.google.protobuf"
 
 dependencies {
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
