@@ -169,7 +169,7 @@ public abstract class Publisher<T> {
 
     /**
      * Only emits distinct signals observed by this {@link Publisher}. Signals are compared using
-     * {@link T#hashCode()} and {@link T#equals(Object)}.
+     * {@link Object#hashCode()} and {@link Object#equals(Object)}.
      * <p>
      * This method provides a data transformation in sequential programming similar to:
      * <pre>{@code
