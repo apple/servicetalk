@@ -56,7 +56,6 @@ import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponential
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HeaderUtils.DEFAULT_HEADER_FILTER;
 import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolicy.NO_RETRIES;
-import static java.lang.Integer.MAX_VALUE;
 import static java.time.Duration.ZERO;
 import static java.time.Duration.ofDays;
 import static java.util.Objects.requireNonNull;
@@ -530,7 +529,7 @@ public final class RetryingHttpRequesterFilter
         private boolean waitForLb = true;
         private boolean ignoreSdErrors;
 
-        private int maxRetries = MAX_VALUE;
+        private int maxRetries = 5;
 
         @Nullable
         private Function<HttpResponseMetaData, HttpResponseException> responseMapper;
