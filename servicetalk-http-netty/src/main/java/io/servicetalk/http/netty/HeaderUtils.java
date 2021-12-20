@@ -32,7 +32,6 @@ import io.netty.util.AsciiString;
 
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.CharSequences.parseLong;
@@ -204,6 +203,26 @@ final class HeaderUtils {
                 flatMessage.concat(messageBody.ignoreElements());
     }
 
+    private static final class ContentLengthList<T> extends ArrayList<T> {
+        int contentLength;
+
+        ContentLengthList(int contentLength, int arraySize) {
+            super(arraySize);
+            this.contentLength = contentLength;
+        }
+
+        @Override
+        public int hashCode() {
+            return 31 * contentLength + super.hashCode();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            return o instanceof ContentLengthList && ((ContentLengthList<?>) o).contentLength == contentLength &&
+                    super.equals(o);
+        }
+    }
+
     private static Publisher<Object> setContentLength(final HttpMetaData metadata,
                                                       final Publisher<Object> messageBody,
                                                       final BiIntConsumer<HttpHeaders> contentLengthUpdater,
@@ -217,16 +236,21 @@ final class HeaderUtils {
                 // avoid allocating a list if the Publisher emits only a single Buffer
                 return item;
             }
-            List<Object> items;
-            if (reduction instanceof List) {
+            final ContentLengthList<Object> items;
+            if (reduction instanceof ContentLengthList) {
                 @SuppressWarnings("unchecked")
-                List<Object> itemsUnchecked = (List<Object>) reduction;
+                ContentLengthList<Object> itemsUnchecked = (ContentLengthList<Object>) reduction;
                 items = itemsUnchecked;
             } else {
                 // this method is called if the payload has been aggregated, we expect <buffer*, trailers?>.
-                items = new ArrayList<>(2);
+                items = new ContentLengthList<>(
+                        reduction instanceof Buffer ? ((Buffer) reduction).readableBytes() : 0, 2);
                 items.add(reduction);
             }
+            if (item instanceof Buffer) {
+                items.contentLength += ((Buffer) item).readableBytes();
+            }
+
             items.add(item);
             return items;
         }).flatMapPublisher(reduction -> {
@@ -240,20 +264,16 @@ final class HeaderUtils {
             } else if (reduction instanceof Buffer) {
                 final Buffer buffer = (Buffer) reduction;
                 contentLength = buffer.readableBytes();
-                if (appendTrailers) {
-                    flatRequest = contentLength != 0 ? from(metadata, buffer, EmptyHttpHeaders.INSTANCE) :
-                                    from(metadata, EmptyHttpHeaders.INSTANCE);
+                if (contentLength == 0) {
+                    flatRequest = appendTrailers ? from(metadata, EmptyHttpHeaders.INSTANCE) : from(metadata);
                 } else {
-                    flatRequest = contentLength != 0 ? from(metadata, buffer) : from(metadata);
+                    flatRequest = appendTrailers ? from(metadata, buffer, EmptyHttpHeaders.INSTANCE) :
+                            from(metadata, buffer);
                 }
-            } else if (reduction instanceof List) {
+            } else if (reduction instanceof ContentLengthList) {
                 @SuppressWarnings("unchecked")
-                final List<Object> items = (List<Object>) reduction;
-                for (Object item : items) {
-                    if (item instanceof Buffer) {
-                        contentLength += ((Buffer) item).readableBytes();
-                    }
-                }
+                final ContentLengthList<Object> items = (ContentLengthList<Object>) reduction;
+                contentLength = items.contentLength;
                 if (appendTrailers && !(items.get(items.size() - 1) instanceof HttpHeaders)) {
                     items.add(EmptyHttpHeaders.INSTANCE);
                 }

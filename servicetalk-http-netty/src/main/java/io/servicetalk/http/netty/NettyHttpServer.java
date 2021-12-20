@@ -109,7 +109,6 @@ import static io.servicetalk.transport.netty.internal.SplittingFlushStrategy.Flu
 import static io.servicetalk.transport.netty.internal.SplittingFlushStrategy.FlushBoundaryProvider.FlushBoundary.Start;
 
 final class NettyHttpServer {
-
     private static final Logger LOGGER = LoggerFactory.getLogger(NettyHttpServer.class);
 
     private NettyHttpServer() {
@@ -249,8 +248,7 @@ final class NettyHttpServer {
         private final NettyConnection<Object, Object> connection;
         private final HttpHeadersFactory headersFactory;
         private final HttpExecutionContext executionContext;
-        @Nullable
-        private final SplittingFlushStrategy splittingFlushStrategy;
+        private final SplittingFlushStrategy flushStrategy;
         private final boolean drainRequestPayloadBody;
         private final boolean requireTrailerHeader;
 
@@ -273,41 +271,39 @@ final class NettyHttpServer {
                     connection.executionContext().ioExecutor(), connection.executionContext().executor(),
                     HttpExecutionStrategies.offloadNever());
             this.service = service;
-            // H2 uses child channels, doesn't support pipelining, and doesn't repeat the write operation on the same
-            // channel. We therefore don't need the splitting flush in this case.
-            if (protocol().major() <= 1) {
-                this.splittingFlushStrategy = new SplittingFlushStrategy(connection.defaultFlushStrategy(),
-                        new FlushBoundaryProvider() {
-                            private long contentLength;
-                            @Override
-                            public FlushBoundary detectBoundary(@Nullable final Object itemWritten) {
-                                if (itemWritten instanceof HttpResponseMetaData) {
-                                    final HttpResponseMetaData metadata = (HttpResponseMetaData) itemWritten;
-                                    contentLength = getContentLength(metadata);
-                                    // The content length maybe unknown at this point (e.g. 204 response) but then later
-                                    // determined to be 0. In that case we should conservatively use End and rely upon
-                                    // adjustForMissingBoundaries to accommodate if more data comes. Otherwise the
-                                    // FlushStrategy may not trigger a flush (e.g. flushOnEnd) and if so the response
-                                    // won't actually be written.
-                                    return contentLength > 0 ||
-                                            (contentLength < 0 && isTransferEncodingChunked(metadata.headers())) ?
-                                            Start : End;
-                                }
-                                if (itemWritten instanceof Buffer) {
-                                    return contentLength > 0 &&
-                                            (contentLength -= ((Buffer) itemWritten).readableBytes()) <= 0 ?
-                                            End : InProgress;
-                                }
-                                if (itemWritten instanceof HttpHeaders) {
-                                    return End;
-                                }
-                                return InProgress;
+            flushStrategy = new SplittingFlushStrategy(connection.defaultFlushStrategy(),
+                    // h2 may return a single HttpResponseMetaData for an empty response in some scenarios,
+                    // otherwise a trailers object will be included to indicate the end because content-length isn't
+                    // mutually exclusive from trailers in h2.
+                    protocol().major() > 1 ?
+                            itemWritten -> (itemWritten instanceof HttpResponseMetaData &&
+                                        emptyMessageBody((HttpResponseMetaData) itemWritten)) ||
+                                    itemWritten instanceof HttpHeaders ? End : InProgress :
+                    new FlushBoundaryProvider() {
+                        private long contentLength;
+                        @Override
+                        public FlushBoundary detectBoundary(@Nullable final Object itemWritten) {
+                            if (itemWritten instanceof HttpResponseMetaData) {
+                                final HttpResponseMetaData metadata = (HttpResponseMetaData) itemWritten;
+                                contentLength = getContentLength(metadata);
+                                // The content length maybe unknown at this point (e.g. 204 response) but then later
+                                // determined to be 0. In that case we should conservatively use End and rely upon
+                                // adjustForMissingBoundaries to accommodate if more data comes. Otherwise the
+                                // FlushStrategy may not trigger a flush (e.g. flushOnEnd) and if so the response
+                                // won't actually be written.
+                                return contentLength > 0 || (contentLength < 0 &&
+                                        (!emptyMessageBody(metadata) &&
+                                                isTransferEncodingChunked(metadata.headers()))) ? Start : End;
                             }
-                        });
-                connection.updateFlushStrategy((current, isCurrentOriginal) -> splittingFlushStrategy);
-            } else {
-                this.splittingFlushStrategy = null;
-            }
+                            if (itemWritten instanceof Buffer) {
+                                return contentLength > 0 &&
+                                        (contentLength -= ((Buffer) itemWritten).readableBytes()) <= 0 ?
+                                        End : InProgress;
+                            }
+                            return itemWritten instanceof HttpHeaders ? End : InProgress;
+                        }
+                    });
+            connection.updateFlushStrategy((current, isCurrentOriginal) -> flushStrategy);
             this.drainRequestPayloadBody = drainRequestPayloadBody;
             this.requireTrailerHeader = requireTrailerHeader;
         }
@@ -325,8 +321,7 @@ final class NettyHttpServer {
 
         @Override
         public Cancellable updateFlushStrategy(final FlushStrategyProvider strategyProvider) {
-            return splittingFlushStrategy == null ? connection.updateFlushStrategy(strategyProvider) :
-                    splittingFlushStrategy.updateFlushStrategy(strategyProvider);
+            return flushStrategy.updateFlushStrategy(strategyProvider);
         }
 
         @Override
@@ -390,22 +385,19 @@ final class NettyHttpServer {
                             // adjustForMissingBoundaries to accommodate for missing End boundaries, so just flush on
                             // each. SplittingFlushStrategy should be removed when NettyHttpServer writes per request
                             // instead of a single stream with repeat() operator, and this code can also be removed.
-                            if (isHeadRequest && splittingFlushStrategy != null) {
-                                splittingFlushStrategy.updateFlushStrategy(
+                            Cancellable c = null;
+                            if (isHeadRequest) {
+                                flushStrategy.updateFlushStrategy(
                                         (prev, isOriginal) -> isOriginal ? flushOnEach() : prev, 1);
                             } else {
                                 final FlushStrategy flushStrategy = determineFlushStrategyForApi(response);
                                 if (flushStrategy != null) {
-                                    final FlushStrategyProvider provider = (prev, isOriginal) ->
-                                            isOriginal ? flushStrategy : prev;
-                                    if (splittingFlushStrategy != null) {
-                                        splittingFlushStrategy.updateFlushStrategy(provider, 1);
-                                    } else {
-                                        updateFlushStrategy(provider);
-                                    }
+                                    c = updateFlushStrategy((prev, isOriginal) -> isOriginal ? flushStrategy : prev);
                                 }
                             }
-                            return handleResponse(protocol(), requestMethod, response);
+
+                            Publisher<Object> pub = handleResponse(protocol(), requestMethod, response);
+                            return c == null ? pub : pub.beforeFinally(c::cancel);
                         });
 
                 if (drainRequestPayloadBody) {
