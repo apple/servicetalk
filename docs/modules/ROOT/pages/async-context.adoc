@@ -6,11 +6,11 @@ ifndef::env-github[]
 ifndef::source-root[:source-root: https://github.com/apple/servicetalk/blob/{page-origin-refname}]
 endif::[]
 
-= Async context
+= `AsyncContext`
 
 ServiceTalk is a fully asynchronous framework and therefore multiple requests may be multiplexed on the same thread.
 Also depending on the application's threading model a single request may be processed on different threads. This means
-that libraries that rely upon ThreadLocal storage such as http://www.slf4j.org/manual.html#mdc[`MDC`] would not work as
+that libraries that rely upon ThreadLocal storage such as https://www.slf4j.org/manual.html#mdc[`MDC`] would not work as
 expected. To overcome this limitation, we provide an abstraction called `AsyncContext` which hooks into the internal
 async machinery to make sure thread local context data is propagated along with the request.
 
@@ -29,7 +29,7 @@ Some APIs / features assume static state that is coupled with the current thread
 asynchronous execution and also share threads for processing different requests. For example the
 link:https://github.com/opentracing/opentracing-java/blob/master/opentracing-api/src/main/java/io/opentracing/Tracer.java[OpenTracing APIs]
 and the
-link:http://www.slf4j.org/api/org/slf4j/MDC.html[MDC APIs] assume state is stored in some static structure.
+link:https://www.slf4j.org/api/org/slf4j/MDC.html[MDC APIs] assume state is stored in some static structure.
 
 **API is decoupled from application data APIs**
 
