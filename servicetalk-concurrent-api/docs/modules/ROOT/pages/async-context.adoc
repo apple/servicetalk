@@ -6,7 +6,7 @@ ifndef::env-github[]
 ifndef::source-root[:source-root: https://github.com/apple/servicetalk/blob/{page-origin-refname}]
 endif::[]
 
-= Async Context
+= AsyncContext
 
 `AsyncContext` is designed to provide a static API to retain state associated across asynchronous boundaries.
 Motivation for providing support for `AsyncContext` can be found
