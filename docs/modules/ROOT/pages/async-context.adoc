@@ -6,7 +6,7 @@ ifndef::env-github[]
 ifndef::source-root[:source-root: https://github.com/apple/servicetalk/blob/{page-origin-refname}]
 endif::[]
 
-= AsyncContext
+= `AsyncContext`
 
 ServiceTalk is a fully asynchronous framework and therefore multiple requests may be multiplexed on the same thread.
 Also depending on the application's threading model a single request may be processed on different threads. This means
