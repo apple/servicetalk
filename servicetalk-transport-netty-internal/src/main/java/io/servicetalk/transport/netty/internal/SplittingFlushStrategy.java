@@ -101,7 +101,6 @@ public final class SplittingFlushStrategy implements FlushStrategy {
      */
     @FunctionalInterface
     public interface FlushBoundaryProvider {
-
         /**
          * An enumeration for boundary of flushes on which this {@link SplittingFlushStrategy} splits writes.
          */
@@ -115,7 +114,7 @@ public final class SplittingFlushStrategy implements FlushStrategy {
          * Detect the {@link FlushBoundary} for the passed {@code itemWritten}.
          *
          * @param itemWritten Item written which determines the {@link FlushBoundary}.
-         * @return {@link FlushBoundary} representing the passed  {@code itemWritten}.
+         * @return {@link FlushBoundary} representing the passed {@code itemWritten}.
          */
         FlushBoundary detectBoundary(@Nullable Object itemWritten);
     }
@@ -150,7 +149,14 @@ public final class SplittingFlushStrategy implements FlushStrategy {
 
         @Override
         public void itemWritten(@Nullable final Object written) {
-            FlushBoundary boundary = flushBoundaryProvider.detectBoundary(written);
+            FlushBoundary boundary;
+            try {
+                boundary = flushBoundaryProvider.detectBoundary(written);
+            } catch (Throwable cause) {
+                // Exceptions are not supported, consider this a boundary to force a flush. This may happen if there are
+                // multiple content-length headers which haven't been caught by other validation yet.
+                boundary = End;
+            }
             adjustForMissingBoundaries(boundary);
             previousBoundary = boundary;
             switch (boundary) {
