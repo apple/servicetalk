@@ -705,6 +705,16 @@ public final class RetryingHttpRequesterFilter
          * @return A new retrying {@link RetryingHttpRequesterFilter}
          */
         public RetryingHttpRequesterFilter build() {
+            final BiFunction<HttpRequestMetaData, RetryableException, BackOffPolicy> retryRetryableExceptions =
+                    this.retryRetryableExceptions;
+            final BiFunction<HttpRequestMetaData, IOException, BackOffPolicy> retryIdempotentRequests =
+                    this.retryIdempotentRequests;
+            final BiFunction<HttpRequestMetaData, DelayedRetry, BackOffPolicy> retryDelayedRetries =
+                    this.retryDelayedRetries;
+            final BiFunction<HttpRequestMetaData, HttpResponseException, BackOffPolicy> retryResponses =
+                    this.retryResponses;
+            final BiFunction<HttpRequestMetaData, Throwable, BackOffPolicy> retryOther = this.retryOther;
+
             final BiFunction<HttpRequestMetaData, Throwable, BackOffPolicy> allPredicate =
                     (requestMetaData, throwable) -> {
                         if (throwable instanceof RetryableException) {
