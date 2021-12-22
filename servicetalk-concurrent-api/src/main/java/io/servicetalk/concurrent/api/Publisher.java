@@ -119,6 +119,26 @@ public abstract class Publisher<T> {
     }
 
     /**
+     * Cast this {@link Publisher} from type {@link T} to type {@link R}.
+     * <p>
+     * This method provides a data transformation in sequential programming similar to:
+     * <pre>{@code
+     *     List<R> results = ...;
+     *     for (T t : resultOfThisPublisher()) {
+     *         results.add(clazz.cast(t));
+     *     }
+     *     return results;
+     * }</pre>
+     * @param clazz The type to cast to.
+     * @param <R> The resulting type of the cast operation.
+     * @return The cast of this {@link Publisher} to type {@link R}.
+     * @see <a href="https://reactivex.io/documentation/operators/map.html">ReactiveX cast operator.</a>
+     */
+    public final <R> Publisher<R> cast(Class<R> clazz) {
+        return map(clazz::cast);
+    }
+
+    /**
      * Filters items emitted by this {@link Publisher}.
      * <p>
      * This method provides a data transformation in sequential programming similar to:
@@ -134,11 +154,32 @@ public abstract class Publisher<T> {
      *
      * @param predicate for the filter.
      * @return A {@link Publisher} that only emits the items that pass the {@code predicate}.
-     *
      * @see <a href="http://reactivex.io/documentation/operators/filter.html">ReactiveX filter operator.</a>
      */
     public final Publisher<T> filter(Predicate<? super T> predicate) {
         return filter(() -> predicate);
+    }
+
+    /**
+     * Filters items so that only items of type {@link R} are emitted by the return value.
+     * <p>
+     * This method provides a data transformation in sequential programming similar to:
+     * <pre>{@code
+     *     List<R> results = ...;
+     *     for (T t : resultOfThisPublisher()) {
+     *         if (clazz.isInstance(t)) {
+     *             results.add((R) t);
+     *         }
+     *     }
+     *     return results;
+     * }</pre>
+     * @param clazz The type to filter and cast to.
+     * @param <R> The resulting type of the cast operation.
+     * @return a {@link Publisher} that only emits
+     * @see <a href="https://reactivex.io/documentation/operators/filter.html">ReactiveX ofType operator.</a>
+     */
+    public final <R> Publisher<R> ofType(Class<R> clazz) {
+        return filter(clazz::isInstance).cast(clazz);
     }
 
     /**
