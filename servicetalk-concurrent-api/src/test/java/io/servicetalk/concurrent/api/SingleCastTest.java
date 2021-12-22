@@ -18,6 +18,10 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import java.util.stream.Stream;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -28,12 +32,13 @@ class SingleCastTest {
     private final TestSingle<Object> source = new TestSingle<>();
     private final TestSingleSubscriber<Integer> subscriber = new TestSingleSubscriber<>();
 
-    @Test
-    void correctTypeSucceeds() {
+    @ParameterizedTest
+    @MethodSource("correctTypeParams")
+    void correctTypeSucceeds(Integer v) {
         toSource(source.cast(Integer.class)).subscribe(subscriber);
         subscriber.awaitSubscription();
-        source.onSuccess(1);
-        assertThat(subscriber.awaitOnSuccess(), is(1));
+        source.onSuccess(v);
+        assertThat(subscriber.awaitOnSuccess(), is(v));
     }
 
     @Test
@@ -42,5 +47,9 @@ class SingleCastTest {
         subscriber.awaitSubscription();
         source.onSuccess("error");
         assertThat(subscriber.awaitOnError(), instanceOf(ClassCastException.class));
+    }
+
+    private static Stream<Integer> correctTypeParams() {
+        return Stream.of(1, null);
     }
 }

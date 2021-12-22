@@ -131,7 +131,8 @@ public abstract class Publisher<T> {
      * }</pre>
      * @param clazz The type to cast to.
      * @param <R> The resulting type of the cast operation.
-     * @return The cast of this {@link Publisher} to type {@link R}.
+     * @return The cast of this {@link Publisher} to type {@link R}. Terminate with a {@link ClassCastException} if
+     * signals cannot be cast to type {@link R}.
      * @see <a href="https://reactivex.io/documentation/operators/map.html">ReactiveX cast operator.</a>
      */
     public final <R> Publisher<R> cast(Class<R> clazz) {
@@ -161,7 +162,7 @@ public abstract class Publisher<T> {
     }
 
     /**
-     * Filters items so that only items of type {@link R} are emitted by the return value.
+     * Filters items so that only non-{@code null} items of type {@link R} are emitted by the return value.
      * <p>
      * This method provides a data transformation in sequential programming similar to:
      * <pre>{@code

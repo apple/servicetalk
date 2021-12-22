@@ -18,6 +18,10 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import java.util.stream.Stream;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -38,11 +42,12 @@ class PublisherOfTypeTest {
         subscriber.awaitOnComplete();
     }
 
-    @Test
-    void someSignals() {
+    @ParameterizedTest
+    @MethodSource("someSignalsParams")
+    void someSignals(String param) {
         toSource(source.ofType(Integer.class)).subscribe(subscriber);
         subscriber.awaitSubscription().request(2);
-        source.onNext(1, "NotInteger");
+        source.onNext(1, param);
         assertThat(subscriber.takeOnNext(), is(1));
         source.onComplete();
         subscriber.awaitOnComplete();
@@ -55,5 +60,9 @@ class PublisherOfTypeTest {
         source.onNext("NotInteger1", "NotInteger2");
         source.onComplete();
         subscriber.awaitOnComplete();
+    }
+
+    private static Stream<String> someSignalsParams() {
+        return Stream.of("NotInteger", null);
     }
 }

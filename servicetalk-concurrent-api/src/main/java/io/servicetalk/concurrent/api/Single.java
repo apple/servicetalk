@@ -110,7 +110,8 @@ public abstract class Single<T> {
      * }</pre>
      * @param clazz The type to cast to.
      * @param <R> The resulting type of the cast operation.
-     * @return The cast of this {@link Single} to type {@link R}.
+     * @return The cast of this {@link Single} to type {@link R}. Terminates with a {@link ClassCastException} if
+     * signals cannot be cast to type {@link R}.
      * @see <a href="https://reactivex.io/documentation/operators/map.html">ReactiveX cast operator.</a>
      */
     public final <R> Single<R> cast(Class<R> clazz) {

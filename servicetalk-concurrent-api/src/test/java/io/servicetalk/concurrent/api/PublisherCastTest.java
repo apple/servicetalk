@@ -18,6 +18,11 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import java.util.stream.Stream;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -29,12 +34,13 @@ class PublisherCastTest {
     private final TestPublisher<Object> source = new TestPublisher<>();
     private final TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
 
-    @Test
-    void correctTypeSucceeds() {
+    @ParameterizedTest
+    @MethodSource("correctTypeParams")
+    void correctTypeSucceeds(Integer v1, Integer v2) {
         toSource(source.cast(Integer.class)).subscribe(subscriber);
         subscriber.awaitSubscription().request(2);
-        source.onNext(1, 2);
-        assertThat(subscriber.takeOnNext(2), contains(1, 2));
+        source.onNext(v1, v2);
+        assertThat(subscriber.takeOnNext(2), contains(v1, v2));
         source.onComplete();
         subscriber.awaitOnComplete();
     }
@@ -46,5 +52,14 @@ class PublisherCastTest {
         source.onNext(1, "error");
         assertThat(subscriber.takeOnNext(), is(1));
         assertThat(subscriber.awaitOnError(), instanceOf(ClassCastException.class));
+    }
+
+    private static Stream<Arguments> correctTypeParams() {
+        return Stream.of(
+                Arguments.of(1, 2),
+                Arguments.of(null, 2),
+                Arguments.of(1, null),
+                Arguments.of(null, null)
+        );
     }
 }
