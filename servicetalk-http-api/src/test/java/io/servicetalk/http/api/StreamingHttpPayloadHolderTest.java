@@ -107,6 +107,7 @@ class StreamingHttpPayloadHolderTest {
         } else {
             when(headers.valuesIterator(TRANSFER_ENCODING)).then(__ -> emptyIterator());
         }
+        when(headers.set(any(), (CharSequence) any())).thenReturn(headers);
         payloadSource = sourceType == SourceType.None ? null : new TestPublisher<>();
         final DefaultPayloadInfo payloadInfo = forTransportReceive(false, HTTP_1_1, headers);
         if (payloadSource == null) {
