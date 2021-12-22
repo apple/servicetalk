@@ -102,6 +102,24 @@ public abstract class Single<T> {
     }
 
     /**
+     * Cast this {@link Single} from type {@link T} to type {@link R}.
+     * <p>
+     * This method provides a data transformation in sequential programming similar to:
+     * <pre>{@code
+     *     T tResult = resultOfThisSingle();
+     *     R rResult = clazz.cast(tResult);
+     * }</pre>
+     * @param clazz The type to cast to.
+     * @param <R> The resulting type of the cast operation.
+     * @return The cast of this {@link Single} to type {@link R}. Terminates with a {@link ClassCastException} if
+     * signals cannot be cast to type {@link R}.
+     * @see <a href="https://reactivex.io/documentation/operators/map.html">ReactiveX cast operator.</a>
+     */
+    public final <R> Single<R> cast(Class<R> clazz) {
+        return map(clazz::cast);
+    }
+
+    /**
      * Transform errors emitted on this {@link Single} into {@link Subscriber#onSuccess(Object)} signal
      * (e.g. swallows the error).
      * <p>
