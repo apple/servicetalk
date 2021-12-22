@@ -32,6 +32,7 @@ import java.util.function.ToIntFunction;
 
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HeaderUtils.hasContentType;
+import static io.servicetalk.http.api.HttpHeaderNames.ACCEPT;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_JSON;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_X_WWW_FORM_URLENCODED;
@@ -62,34 +63,41 @@ public final class HttpSerializers {
 
     private static final HttpSerializerDeserializer<Map<String, List<String>>> FORM_ENCODED_UTF_8 =
             new DefaultHttpSerializerDeserializer<>(new FormUrlEncodedSerializer(UTF_8),
-                    headers -> headers.set(CONTENT_TYPE, APPLICATION_X_WWW_FORM_URLENCODED_UTF_8),
+                    headers -> headers.set(CONTENT_TYPE, APPLICATION_X_WWW_FORM_URLENCODED_UTF_8)
+                                      .set(ACCEPT, APPLICATION_X_WWW_FORM_URLENCODED),
                     headers -> hasContentType(headers, APPLICATION_X_WWW_FORM_URLENCODED, UTF_8));
     private static final HttpSerializerDeserializer<String> TEXT_UTF_8 =
             new DefaultHttpSerializerDeserializer<>(stringSerializer(UTF_8),
-                    headers -> headers.set(CONTENT_TYPE, TEXT_PLAIN_UTF_8),
+                    headers -> headers.set(CONTENT_TYPE, TEXT_PLAIN_UTF_8)
+                                      .set(ACCEPT, TEXT_PLAIN),
                     headers -> hasContentType(headers, TEXT_PLAIN, UTF_8));
     private static final HttpSerializerDeserializer<String> TEXT_ASCII =
             new DefaultHttpSerializerDeserializer<>(stringSerializer(US_ASCII),
-            headers -> headers.set(CONTENT_TYPE, TEXT_PLAIN_US_ASCII),
+            headers -> headers.set(CONTENT_TYPE, TEXT_PLAIN_US_ASCII)
+                              .set(ACCEPT, TEXT_PLAIN),
             headers -> hasContentType(headers, TEXT_PLAIN, US_ASCII));
     private static final int MAX_BYTES_PER_CHAR_UTF8 = (int) UTF_8.newEncoder().maxBytesPerChar();
     private static final HttpStreamingSerializerDeserializer<String> APP_STREAMING_FIX_LEN_UTF_8 =
             streamingSerializer(new FixedLengthStreamingSerializer<>(stringSerializer(UTF_8),
                             str -> str.length() * MAX_BYTES_PER_CHAR_UTF8),
-                    headers -> headers.set(CONTENT_TYPE, APPLICATION_TEXT_FIXED_UTF_8),
+                    headers -> headers.set(CONTENT_TYPE, APPLICATION_TEXT_FIXED_UTF_8)
+                                      .set(ACCEPT, APPLICATION_TEXT_FIXED),
                     headers -> hasContentType(headers, APPLICATION_TEXT_FIXED, UTF_8));
     private static final HttpStreamingSerializerDeserializer<String> APP_STREAMING_FIX_LEN_ASCII =
             streamingSerializer(new FixedLengthStreamingSerializer<>(stringSerializer(US_ASCII), String::length),
-                    headers -> headers.set(CONTENT_TYPE, APPLICATION_TEXT_FIXED_US_ASCII),
+                    headers -> headers.set(CONTENT_TYPE, APPLICATION_TEXT_FIXED_US_ASCII)
+                                      .set(ACCEPT, APPLICATION_TEXT_FIXED),
                     headers -> hasContentType(headers, APPLICATION_TEXT_FIXED, US_ASCII));
     private static final HttpStreamingSerializerDeserializer<String> APP_STREAMING_VAR_LEN_UTF_8 =
             streamingSerializer(new VarIntLengthStreamingSerializer<>(stringSerializer(UTF_8),
                             str -> str.length() * MAX_BYTES_PER_CHAR_UTF8),
-                    headers -> headers.set(CONTENT_TYPE, APPLICATION_TEXT_VAR_INT_UTF_8),
+                    headers -> headers.set(CONTENT_TYPE, APPLICATION_TEXT_VAR_INT_UTF_8)
+                                      .set(ACCEPT, APPLICATION_TEXT_VARINT),
                     headers -> hasContentType(headers, APPLICATION_TEXT_VARINT, UTF_8));
     private static final HttpStreamingSerializerDeserializer<String> APP_STREAMING_VAR_LEN_ASCII =
             streamingSerializer(new VarIntLengthStreamingSerializer<>(stringSerializer(US_ASCII), String::length),
-                    headers -> headers.set(CONTENT_TYPE, APPLICATION_TEXT_VAR_INT_US_ASCII),
+                    headers -> headers.set(CONTENT_TYPE, APPLICATION_TEXT_VAR_INT_US_ASCII)
+                                      .set(ACCEPT, APPLICATION_TEXT_VARINT),
                     headers -> hasContentType(headers, APPLICATION_TEXT_VARINT, US_ASCII));
 
     private HttpSerializers() {
@@ -123,7 +131,8 @@ public final class HttpSerializers {
         final CharSequence contentType = newAsciiString(APPLICATION_X_WWW_FORM_URLENCODED + "; charset=" +
                 charset.name());
         return new DefaultHttpSerializerDeserializer<>(new FormUrlEncodedSerializer(charset),
-                headers -> headers.set(CONTENT_TYPE, contentType),
+                headers -> headers.set(CONTENT_TYPE, contentType)
+                                  .set(ACCEPT, APPLICATION_X_WWW_FORM_URLENCODED),
                 headers -> hasContentType(headers, APPLICATION_X_WWW_FORM_URLENCODED, charset));
     }
 
@@ -162,7 +171,8 @@ public final class HttpSerializers {
         }
         final CharSequence contentType = newAsciiString("text/plain; charset=" + charset.name());
         return new DefaultHttpSerializerDeserializer<>(stringSerializer(charset),
-                headers -> headers.set(CONTENT_TYPE, contentType),
+                headers -> headers.set(CONTENT_TYPE, contentType)
+                                  .set(ACCEPT, TEXT_PLAIN),
                 headers -> hasContentType(headers, TEXT_PLAIN, charset));
     }
 
@@ -252,7 +262,8 @@ public final class HttpSerializers {
         CharSequence contentType = newAsciiString(APPLICATION_TEXT_FIXED + "; charset=" + charset.name());
         return streamingSerializer(new FixedLengthStreamingSerializer<>(stringSerializer(charset),
                         str -> str.length() * maxBytesPerChar),
-                headers -> headers.set(CONTENT_TYPE, contentType),
+                headers -> headers.set(CONTENT_TYPE, contentType)
+                                  .set(ACCEPT, APPLICATION_TEXT_FIXED),
                 headers -> hasContentType(headers, APPLICATION_TEXT_FIXED, charset));
     }
 
@@ -278,7 +289,8 @@ public final class HttpSerializers {
         CharSequence contentType = newAsciiString(APPLICATION_TEXT_VARINT + "; charset=" + charset.name());
         return streamingSerializer(new VarIntLengthStreamingSerializer<>(stringSerializer(charset),
                         str -> str.length() * maxBytesPerChar),
-                headers -> headers.set(CONTENT_TYPE, contentType),
+                headers -> headers.set(CONTENT_TYPE, contentType)
+                                  .set(ACCEPT, APPLICATION_TEXT_VARINT),
                 headers -> hasContentType(headers, APPLICATION_TEXT_VARINT, charset));
     }
 
@@ -321,7 +333,8 @@ public final class HttpSerializers {
      */
     public static <T> HttpSerializerDeserializer<T> jsonSerializer(SerializerDeserializer<T> serializer) {
         return new DefaultHttpSerializerDeserializer<>(serializer,
-                headers -> headers.set(CONTENT_TYPE, APPLICATION_JSON),
+                headers -> headers.set(CONTENT_TYPE, APPLICATION_JSON)
+                                  .set(ACCEPT, APPLICATION_JSON),
                 headers -> hasContentType(headers, APPLICATION_JSON, null));
     }
 
@@ -335,7 +348,8 @@ public final class HttpSerializers {
     public static <T> HttpStreamingSerializerDeserializer<T> jsonStreamingSerializer(
             StreamingSerializerDeserializer<T> serializer) {
         return new DefaultHttpStreamingSerializerDeserializer<>(serializer,
-                headers -> headers.set(CONTENT_TYPE, APPLICATION_JSON),
+                headers -> headers.set(CONTENT_TYPE, APPLICATION_JSON)
+                                  .set(ACCEPT, APPLICATION_JSON),
                 headers -> hasContentType(headers, APPLICATION_JSON, null));
     }
 
