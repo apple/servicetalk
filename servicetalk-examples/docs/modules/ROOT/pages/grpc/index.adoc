@@ -96,6 +96,17 @@ https://grpc.io/docs/what-is-grpc/core-concepts/#deadlines[gRPC deadlines] (aka 
 – Sends hello requests to the server with 1 minute deadline and 3 second deadline and receives a greeting response
 within that time or cancels the request.
 
+[#Debugging]
+== Debugging
+
+Extends the blocking "Hello World" example to demonstrate configuration of debugging features.
+
+* link:{source-root}/servicetalk-examples/grpc/debugging/src/main/java/io/servicetalk/examples/grpc/debugging/DebuggingServer.java[DebuggingServer]
+– Waits for hello request from the client and responds with a greeting response.
+* link:{source-root}/servicetalk-examples/grpc/debugging/src/main/java/io/servicetalk/examples/grpc/debugging/DebuggingClient.java[DebuggingClient]
+– Sends hello requests to the server and receives a greeting response.
+
+
 [#Observer]
 == Observer
 This example demonstrates the following:
