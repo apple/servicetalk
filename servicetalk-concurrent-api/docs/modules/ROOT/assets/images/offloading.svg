@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xl="http://www.w3.org/1999/xlink" xmlns:dc="http://purl.org/dc/elements/1.1/" version="1.1" viewBox="144.03137 -16.5 1028.9686 1385.9375" width="1028.9686" height="1385.9375">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xl="http://www.w3.org/1999/xlink" role="img" version="1.1" viewBox="144.03137 -16.5 1028.9686 1385.9375" width="1028.9686" height="1385.9375">
+  <title>ServiceTalk Source/Subscription Offloading</title>
+  <desc>Shows thread offloading during subscribe and publish using the subscribeOn() and publishOn() operators.
+  Subscribe offloads from application thread to executor thread and publish offloads from Netty Event loop to
+  executor thread.</desc>
   <defs>
     <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="FilledDiamond_Marker" stroke-linejoin="miter" stroke-miterlimit="10" viewBox="-1 -3 6 6" markerWidth="6" markerHeight="6" color="black">
       <g>
@@ -112,8 +116,8 @@
     <linearGradient id="Obj_Gradient_23" xl:href="#Gradient" gradientTransform="translate(727.0083 387.90527) rotate(89.92462) scale(47.689493)"/>
   </defs>
   <metadata> Produced by OmniGraffle 7.19.2\n2022-01-04 20:41:33 +0000</metadata>
-  <g id="Canvas_1" stroke="none" stroke-opacity="1" fill-opacity="1" fill="none" stroke-dasharray="none">
-    <title>Canvas 1</title>
+  <g id="Subscribe_and_Publish_Offloading" stroke="none" stroke-opacity="1" fill-opacity="1" fill="none" stroke-dasharray="none">
+    <title>Subscribe and Publish Offloading</title>
     <rect fill="white" x="144.03137" y="-16.5" width="1028.9686" height="1385.9375"/>
     <g id="Canvas_1_Layer_1">
       <title>Layer 1</title>
