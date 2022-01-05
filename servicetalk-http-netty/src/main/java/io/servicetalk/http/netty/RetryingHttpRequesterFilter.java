@@ -56,8 +56,7 @@ import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponential
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HeaderUtils.DEFAULT_HEADER_FILTER;
 import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolicy.NO_RETRIES;
-import static java.lang.Integer.MAX_VALUE;
-import static java.time.Duration.ZERO;
+import static io.servicetalk.utils.internal.DurationUtils.ensurePositive;
 import static java.time.Duration.ofDays;
 import static java.util.Objects.requireNonNull;
 
@@ -68,7 +67,7 @@ import static java.util.Objects.requireNonNull;
  * as part of a service response if needed, through {@link Builder#responseMapper(Function)}.
  * <p>
  * Retries can have different criteria and different backoff polices, as defined from the relevant Builder methods (i.e.
- * {@link Builder#retryOther(BiFunction)}.
+ * {@link Builder#retryOther(BiFunction)}).
  * Similarly, max-retries for each flow can be set in the {@link BackOffPolicy}, as well
  * as a total max-retries to be respected by both flows, as set in
  * {@link Builder#maxTotalRetries(int)}.
@@ -267,13 +266,11 @@ public final class RetryingHttpRequesterFilter
 
         private static final Duration FULL_JITTER = ofDays(1024);
 
-        /**
-         * Special {@link BackOffPolicy} to signal no retries.
-         */
-        public static final BackOffPolicy NO_RETRIES = ofNoRetries();
+        static final BackOffPolicy NO_RETRIES = new BackOffPolicy(0);
 
         @Nullable
         final Duration initialDelay;
+        @Nullable
         final Duration jitter;
         @Nullable
         final Duration maxDelay;
@@ -282,18 +279,34 @@ public final class RetryingHttpRequesterFilter
         final boolean exponential;
         final int maxRetries;
 
-        BackOffPolicy(@Nullable final Duration initialDelay,
+        BackOffPolicy(final Duration initialDelay,
                       final Duration jitter,
                       @Nullable final Duration maxDelay,
                       @Nullable final Executor timerExecutor,
                       final boolean exponential,
                       final int maxRetries) {
-            this.initialDelay = initialDelay;
-            this.jitter = jitter;
-            this.maxDelay = maxDelay;
+            this.initialDelay = ensurePositive(initialDelay, "Initial delay should be a positive value.");
+            this.jitter = ensurePositive(jitter, "jitter should be a positive value.");
+            this.maxDelay = maxDelay != null ? ensurePositive(maxDelay, "Max delay (if provided), should be a " +
+                    "positive value.") : null;
             this.timerExecutor = timerExecutor;
             this.exponential = exponential;
-            this.maxRetries = maxRetries > 0 ? maxRetries : (exponential ? 2 : 1);
+            if (maxRetries <= 0) {
+                throw new IllegalArgumentException("maxRetries: " + maxRetries + " (expected > 0).");
+            }
+            this.maxRetries = maxRetries;
+        }
+
+        BackOffPolicy(final int maxRetries) {
+            this.initialDelay = null;
+            this.jitter = null;
+            this.maxDelay = null;
+            this.timerExecutor = null;
+            this.exponential = false;
+            if (maxRetries < 0) {
+                throw new IllegalArgumentException("maxRetries: " + maxRetries + " (expected >= 0).");
+            }
+            this.maxRetries = maxRetries;
         }
 
         /**
@@ -301,7 +314,7 @@ public final class RetryingHttpRequesterFilter
          * @return a new {@link BackOffPolicy} that retries failures instantly up-to 3 max retries.
          */
         public static BackOffPolicy ofImmediate() {
-            return new BackOffPolicy(null, ZERO, null, null, false, 3);
+            return new BackOffPolicy(3);
         }
 
         /**
@@ -311,15 +324,15 @@ public final class RetryingHttpRequesterFilter
          * @return a new {@link BackOffPolicy} that retries failures instantly up-to provided max retries.
          */
         public static BackOffPolicy ofImmediate(final int maxRetries) {
-            return new BackOffPolicy(null, ZERO, null, null, false, maxRetries);
+            return new BackOffPolicy(maxRetries);
         }
 
         /**
          * Special {@link BackOffPolicy} that signals that no retries will be attempted.
          * @return a special {@link BackOffPolicy} that signals that no retries will be attempted.
          */
-        private static BackOffPolicy ofNoRetries() {
-            return new BackOffPolicy(null, ZERO, null, null, false, 0);
+        public static BackOffPolicy ofNoRetries() {
+            return NO_RETRIES;
         }
 
         /**
@@ -482,6 +495,7 @@ public final class RetryingHttpRequesterFilter
             if (initialDelay == null) {
                 return (count, throwable) -> count <= maxRetries ? completed() : failed(throwable);
             } else {
+                assert jitter != null;
                 final Executor effectiveExecutor = timerExecutor == null ?
                         requireNonNull(alternativeTimerExecutor) : timerExecutor;
                 if (exponential) {
@@ -530,7 +544,7 @@ public final class RetryingHttpRequesterFilter
         private boolean waitForLb = true;
         private boolean ignoreSdErrors;
 
-        private int maxRetries = MAX_VALUE;
+        private int maxTotalRetries = 4;
 
         @Nullable
         private Function<HttpResponseMetaData, HttpResponseException> responseMapper;
@@ -585,7 +599,8 @@ public final class RetryingHttpRequesterFilter
          * {@link #retryRetryableExceptions(BiFunction)}, {@link #retryResponses(BiFunction)},
          * {@link #retryOther(BiFunction)}).
          *
-         * If not set, max total retries will be infinite.
+         * Maximum total retries guards the LB/SD readiness flow, making sure LB connection issues will also be
+         * retried with a limit.
          *
          * @param maxRetries Maximum number of allowed retries before giving up
          * @return {@code this}
@@ -594,7 +609,7 @@ public final class RetryingHttpRequesterFilter
             if (maxRetries <= 0) {
                 throw new IllegalArgumentException("maxRetries: " + maxRetries + " (expected: >0)");
             }
-            this.maxRetries = maxRetries;
+            this.maxTotalRetries = maxRetries;
             return this;
         }
 
@@ -649,7 +664,7 @@ public final class RetryingHttpRequesterFilter
 
         /**
          * The retrying-filter will evaluate the {@link DelayedRetry} marker interface
-         * of an exception and use the provided {@link DelayedRetry#delay() delay} as a constant delay on-top ofthe
+         * of an exception and use the provided {@link DelayedRetry#delay() delay} as a constant delay on-top of the
          * retry period already defined.
          * In case a max-delay was set in this builder, the {@link DelayedRetry#delay() constant-delay} overrides
          * it and takes precedence.
@@ -746,7 +761,8 @@ public final class RetryingHttpRequesterFilter
 
                         return NO_RETRIES;
                     };
-            return new RetryingHttpRequesterFilter(waitForLb, ignoreSdErrors, maxRetries, responseMapper, allPredicate);
+            return new RetryingHttpRequesterFilter(waitForLb, ignoreSdErrors, maxTotalRetries, responseMapper,
+                    allPredicate);
         }
     }
 }

@@ -42,13 +42,14 @@ import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
-import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolicy.NO_RETRIES;
+import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolicy.ofNoRetries;
 import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.disableAutoRetries;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.core.IsNull.nullValue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -85,7 +86,8 @@ class RetryingHttpRequesterFilterAutoRetryStrategiesTest {
     @Test
     void disableRetryAllRetryableExWithRetryable() {
         final ContextAwareRetryingHttpClientFilter filter =
-                newFilter(new RetryingHttpRequesterFilter.Builder().retryRetryableExceptions((__, ___) -> NO_RETRIES));
+                newFilter(new RetryingHttpRequesterFilter.Builder()
+                        .retryRetryableExceptions((__, ___) -> ofNoRetries()));
 
         Completable retry = applyRetry(filter, 1, RETRYABLE_EXCEPTION);
         toSource(retry).subscribe(retrySubscriber);
@@ -95,7 +97,8 @@ class RetryingHttpRequesterFilterAutoRetryStrategiesTest {
     @Test
     void disableRetryAllRetryableExWithNoAvailableHost() {
         final ContextAwareRetryingHttpClientFilter filter =
-                newFilter(new RetryingHttpRequesterFilter.Builder().retryRetryableExceptions((__, ___) -> NO_RETRIES));
+                newFilter(new RetryingHttpRequesterFilter.Builder()
+                        .retryRetryableExceptions((__, ___) -> ofNoRetries()));
 
         Completable retry = applyRetry(filter, 1, NO_AVAILABLE_HOST);
         toSource(retry).subscribe(retrySubscriber);
@@ -107,7 +110,8 @@ class RetryingHttpRequesterFilterAutoRetryStrategiesTest {
     @Test
     void disableRetryAllRetryableExWithNoAvailableHostAndUnknownHostException() {
         final ContextAwareRetryingHttpClientFilter filter =
-                newFilter(new RetryingHttpRequesterFilter.Builder().retryRetryableExceptions((__, ___) -> NO_RETRIES));
+                newFilter(new RetryingHttpRequesterFilter.Builder()
+                        .retryRetryableExceptions((__, ___) -> ofNoRetries()));
 
         Completable retry = applyRetry(filter, 1, NO_AVAILABLE_HOST);
         toSource(retry).subscribe(retrySubscriber);
@@ -148,6 +152,25 @@ class RetryingHttpRequesterFilterAutoRetryStrategiesTest {
         assertThat(retrySubscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         lbEvents.onNext(LOAD_BALANCER_READY_EVENT);
         verifyRetryResultCompleted();
+    }
+
+    @Test
+    void defaultForNoAvailableHostMaxRetries() {
+        final ContextAwareRetryingHttpClientFilter filter =
+                newFilter(new RetryingHttpRequesterFilter.Builder().ignoreServiceDiscovererErrors(true));
+        lbEvents.onComplete();
+        for (int i = 1; i <= 5; i++) {
+            Completable retry = applyRetry(filter, i, NO_AVAILABLE_HOST);
+            TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
+            toSource(retry).subscribe(subscriber);
+            if (i < 5) {
+                subscriber.awaitOnComplete();
+            } else {
+                assertThrows(NoAvailableHostException.class, () -> {
+                    throw subscriber.awaitOnError();
+                });
+            }
+        }
     }
 
     @Test
