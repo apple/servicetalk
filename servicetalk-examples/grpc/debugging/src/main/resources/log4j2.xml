@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+  ~ Copyright © 2022 Apple Inc. and the ServiceTalk project authors
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -21,18 +21,33 @@
     </Console>
   </Appenders>
   <Loggers>
-    <!-- Prints server start and shutdown -->
-    <Logger name="io.servicetalk.http.netty.H2ServerParentConnectionContext" level="DEBUG"/>
-
     <!-- Enables wire logging and h2-frame logging messages -->
     <Logger name="servicetalk-examples-wire-logger" level="TRACE"/>
     <Logger name="servicetalk-examples-h2-frame-logger" level="TRACE"/>
 
+    <!-- Additional useful loggers of interest - include relevant loggers in your log4j2.xml file -->
+
+    <!-- Prints server start and shutdown -->
+    <Logger name="io.servicetalk.http.netty.H2ServerParentConnectionContext" level="DEBUG"/>
+
     <!-- Prints default subscriber errors-->
     <Logger name="io.servicetalk.concurrent.api" level="DEBUG"/>
 
-    <!-- Use `-Dservicetalk.logger.level=DEBUG` to change the root logger level via command line  -->
-    <Root level="${sys:servicetalk.logger.level:-INFO}">
+    <!-- Gives visibility into internal state of the LoadBalancer -->
+    <Logger name="io.servicetalk.loadbalancer" level="DEBUG"/>
+
+    <!--  Prints results of each DNS resolution -->
+    <Logger name="io.servicetalk.dns.discovery.netty" level="DEBUG"/>
+    <Logger name="io.netty.resolver.dns" level="DEBUG"/>
+
+    <!-- Gives visibility into HTTP processing -->
+    <Logger name="io.servicetalk.http" level="DEBUG"/>
+
+    <!-- Gives visibility for transport events. -->
+    <Logger name="io.servicetalk.transport" level="DEBUG"/>
+
+    <!-- Use `-Dservicetalk.logger.level=INFO` to change the root logger level via command line  -->
+    <Root level="${sys:servicetalk.logger.level:-DEBUG}">
       <AppenderRef ref="Console"/>
     </Root>
   </Loggers>
