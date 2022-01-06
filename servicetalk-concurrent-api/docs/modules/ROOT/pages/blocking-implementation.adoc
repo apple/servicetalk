@@ -49,18 +49,24 @@ carefully limit the scope of work done by I/O threads and, when practical, perfo
 other non-precious thread. Moving work from I/O threads to other threads is called “offloading” and is a core technique
 used by ServiceTalk.
 
-ServiceTalk will, by default, execute most application code on an offloaded “safe” thread. If the application developer
-knows that their code cannot block and always executes quickly in near constant time they can request that ServiceTalk
-not offload their code. This will improve application performance by reducing latency and overhead. Requests to not
-offload will be honored by ServiceTalk if all the other components in the same execution path have also opted out of
-offloading. As a last resort, work tasks may also be queued to be performed as threads are available.
+ServiceTalk will, by default, execute most application code on an offloaded “safe” thread. For efficiency, some
+interfaces are invoked synchronously and must not block. Usually these interfaces are functional interfaces that are
+meant to be low–overhead pure functions. These interfaces are explictly about the non-blocking requirement. Examples
+of application code which must not block and may execute on event loop thread include the `Predicate` provided to the `appendServiceFilter(Predicate<StreamingHttpRequest>,
+StreamingHttpServiceFilterFactory)` method of link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpServerBuilder.java[HttpServerBuilder].
 
-ServiceTalk is designed to be full asynchronous except where the API provides explicit blocking behaviour as a
+For most invocations of application code, if the application developer knows that their code cannot block and always
+executes quickly in near constant time they can request that ServiceTalk not offload their code. This will improve
+application performance by reducing latency and overhead. Requests to not offload will be honored by ServiceTalk if all
+the other components in the same execution path have also opted out of offloading. As a last resort, work tasks may also
+be queued to be performed as threads are available.
+
+ServiceTalk is designed to be fully asynchronous except where the API provides explicit blocking behaviour as a
 convenience. Offloading is the execution of program logic code using a thread (or equivalent) other than the application
 thread which originally initiated the operation. Offloading is used for two purposes within ServiceTalk; firstly for the
 execution needed for the handling of asynchronous events, aka Signals, and secondly when handling asynchronous events,
 protecting scarce resources from being monopolized by blocking, untrusted or expensive application code. Asynchronous
-execution requires offloading—the initiating application thread is not available. Protective offloading is a practical
+execution requires offloading – the initiating application thread is not available. Protective offloading is a practical
 consideration, but just as necessary for reliable and predictable operation.
 
 Task based offloading uses an `Executor` in the traditional way to run the offloaded tasks. Often the Executor has a
@@ -72,10 +78,10 @@ threads.
 == Offloading and asynchronous sources
 
 ServiceTalk allows control of the thread that will be used for the signals of an asynchronous source. A safe
-used based upon the decision logic described earlier but for time consuming tasks an `Executor` may be specified.
-The `subscribeOn()` and `publishOn()` operators will offload execution from the default thread to a thread from the
-provided `Executor`. The below diagram illustrates the interaction between an asynchronous source, its `Subscriber`,
-its operators, and the `Executor`.
+used based upon the decision logic described earlier but for time–consuming tasks an `Executor` may be specified.
+The `subscribeOn(Executor)` and `publishOn(Executor)` operators will offload execution from the default thread to a
+thread from the provided `Executor`. The below diagram illustrates the interaction between an asynchronous source, its
+`Subscriber`, its operators, and the `Executor`.
 
 image::offloading.svg[Offloading]
 
@@ -113,5 +119,5 @@ Taking the same example from xref:{page-version}@servicetalk-concurrent-api::blo
 
 In the above example the operators `map` and `filter` do not need to offload since they do not do
 any asynchronous work. However, `flatmap` should be offloaded since it asynchronously executes another request. Adding
-a `publishOn(Executor)` operator before `flatmap` ensures that the event loop thread which delivered the original
+a `publishOn(Executor)` operator before `flatMap` ensures that the event loop thread which delivered the original
 response is not blocked.
