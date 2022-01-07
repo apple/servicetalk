@@ -170,35 +170,35 @@ class RetryingHttpRequesterFilterTest {
         }
     }
 
-    @Test()
+    @Test
     void singleInstanceOldNew() {
-        Assertions.assertThrows(IllegalStateException.class, () -> forResolvedAddress(localAddress(8888))
+        forResolvedAddress(localAddress(8888))
                 .appendClientFilter(new RetryingHttpRequesterFilter.Builder()
                         .buildWithConstantBackoffFullJitter(ofSeconds(1)))
                 .appendClientFilter(new Builder().build())
-                .build());
+                .build();
     }
 
-    @Test()
+    @Test
     void singleInstanceNewOld() {
-        Assertions.assertThrows(IllegalStateException.class, () -> forResolvedAddress(localAddress(8888))
+        forResolvedAddress(localAddress(8888))
                 .appendClientFilter(new Builder().build())
                 .appendClientFilter(new RetryingHttpRequesterFilter.Builder()
                         .buildWithConstantBackoffFullJitter(ofSeconds(1)))
-                .build());
+                .build();
     }
 
-    @Test()
+    @Test
     void singleInstanceOldOld() {
-        Assertions.assertThrows(IllegalStateException.class, () -> forResolvedAddress(localAddress(8888))
+        forResolvedAddress(localAddress(8888))
                 .appendClientFilter(new RetryingHttpRequesterFilter.Builder()
                         .buildWithConstantBackoffFullJitter(ofSeconds(1)))
                 .appendClientFilter(new RetryingHttpRequesterFilter.Builder()
                         .buildWithConstantBackoffFullJitter(ofSeconds(1)))
-                .build());
+                .build();
     }
 
-    @Test()
+    @Test
     void singleInstanceNewNew() {
         Assertions.assertThrows(IllegalStateException.class, () -> forResolvedAddress(localAddress(8888))
                 .appendClientFilter(new Builder().build())
@@ -206,12 +206,38 @@ class RetryingHttpRequesterFilterTest {
                 .build());
     }
 
-    @Test()
-    void singleInstanceNewForceAutoRetry() {
+    @Test
+    void singleInstanceNewFilterAndAutoRetry() {
         Assertions.assertThrows(IllegalStateException.class, () -> forResolvedAddress(localAddress(8888))
                 .appendClientFilter(new Builder().build())
                 .autoRetryStrategy(new DefaultAutoRetryStrategyProvider.Builder().build())
                 .build());
+    }
+
+    @Test
+    void singleInstanceAutoRetryAndNewFilter() {
+        Assertions.assertThrows(IllegalStateException.class, () -> forResolvedAddress(localAddress(8888))
+                .autoRetryStrategy(new DefaultAutoRetryStrategyProvider.Builder().build())
+                .appendClientFilter(new Builder().build())
+                .build());
+    }
+
+    @Test
+    void singleInstanceAutoRetryAndOldFilter() {
+        forResolvedAddress(localAddress(8888))
+                .autoRetryStrategy(new DefaultAutoRetryStrategyProvider.Builder().build())
+                .appendClientFilter(new RetryingHttpRequesterFilter.Builder()
+                        .buildWithConstantBackoffFullJitter(ofSeconds(1)))
+                .build();
+    }
+
+    @Test
+    void singleInstanceOldFilterAndAutoRetry() {
+        forResolvedAddress(localAddress(8888))
+                .appendClientFilter(new RetryingHttpRequesterFilter.Builder()
+                        .buildWithConstantBackoffFullJitter(ofSeconds(1)))
+                .autoRetryStrategy(new DefaultAutoRetryStrategyProvider.Builder().build())
+                .build();
     }
 
     private final class InspectingLoadBalancerFactory<C extends LoadBalancedConnection>
