@@ -37,6 +37,7 @@ import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.TransportObserver;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.net.InetSocketAddress;
@@ -47,10 +48,11 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.http.netty.HttpClients.forResolvedAddress;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.http.netty.HttpServers.forAddress;
-import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolicy.NO_RETRIES;
 import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolicy.ofImmediate;
+import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolicy.ofNoRetries;
 import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.Builder;
 import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.HttpResponseException;
 import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.disableAutoRetries;
@@ -133,12 +135,29 @@ class RetryingHttpRequesterFilterTest {
     void requestRetryingPredicate() {
         failingClient = failingConnClientBuilder
                 .appendClientFilter(new Builder()
-                        .retryRetryableExceptions((requestMetaData, e) -> NO_RETRIES)
+                        .retryRetryableExceptions((requestMetaData, e) -> ofNoRetries())
                         .retryOther((requestMetaData, throwable) ->
-                                requestMetaData.requestTarget().equals("/retry") ? ofImmediate() : NO_RETRIES).build())
+                                requestMetaData.requestTarget().equals("/retry") ? ofImmediate() :
+                                        ofNoRetries()).build())
                 .buildBlocking();
+        assertRequestRetryingPred(failingClient);
+    }
+
+    @Test
+    void requestRetryingPredicateWithConditionalAppend() {
+        failingClient = failingConnClientBuilder
+                .appendClientFilter((__) -> true, new Builder()
+                        .retryRetryableExceptions((requestMetaData, e) -> ofNoRetries())
+                        .retryOther((requestMetaData, throwable) ->
+                                requestMetaData.requestTarget().equals("/retry") ? ofImmediate() :
+                                        ofNoRetries()).build())
+                .buildBlocking();
+        assertRequestRetryingPred(failingClient);
+    }
+
+    private void assertRequestRetryingPred(final BlockingHttpClient client) {
         try {
-            failingClient.request(failingClient.get("/"));
+            client.request(client.get("/"));
             fail("Request is expected to fail.");
         } catch (Exception e) {
             assertThat("Unexpected exception.", e, instanceOf(RetryableException.class));
@@ -147,7 +166,7 @@ class RetryingHttpRequesterFilterTest {
         }
 
         try {
-            failingClient.request(failingClient.get("/retry"));
+            client.request(client.get("/retry"));
             fail("Request is expected to fail.");
         } catch (Exception e) {
             assertThat("Unexpected exception.", e, instanceOf(RetryableException.class));
@@ -163,7 +182,7 @@ class RetryingHttpRequesterFilterTest {
                         .responseMapper(metaData -> metaData.headers().contains(RETRYABLE_HEADER) ?
                                     new HttpResponseException("Retryable header", metaData) : null)
                         // Disable request retrying
-                        .retryRetryableExceptions((requestMetaData, e) -> NO_RETRIES)
+                        .retryRetryableExceptions((requestMetaData, e) -> ofNoRetries())
                         // Retry only responses marked so
                         .retryResponses((requestMetaData, throwable) -> ofImmediate())
                         .build())
@@ -176,6 +195,14 @@ class RetryingHttpRequesterFilterTest {
             assertThat("Unexpected exception.", e, instanceOf(HttpResponseException.class));
             assertThat("Unexpected calls to select.", lbSelectInvoked.get(), is(4));
         }
+    }
+
+    @Test()
+    void singleInstanceFilter() {
+        Assertions.assertThrows(IllegalStateException.class, () -> forResolvedAddress(localAddress(8888))
+                .appendClientFilter(new Builder().build())
+                .appendClientFilter(new Builder().build())
+                .build());
     }
 
     private final class InspectingLoadBalancerFactory<C extends LoadBalancedConnection>

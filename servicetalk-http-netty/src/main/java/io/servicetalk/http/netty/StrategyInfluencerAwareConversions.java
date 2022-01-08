@@ -15,6 +15,8 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
@@ -26,8 +28,10 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
+import io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.ContextAwareStreamingHttpClientFilterFactory;
 
 import java.util.function.Predicate;
+import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
 
@@ -74,19 +78,28 @@ final class StrategyInfluencerAwareConversions {
         };
     }
 
-    static StreamingHttpClientFilterFactory toConditionalClientFilterFactory(
+    static ContextAwareStreamingHttpClientFilterFactory toConditionalClientFilterFactory(
             final Predicate<StreamingHttpRequest> predicate, final StreamingHttpClientFilterFactory original) {
         requireNonNull(predicate);
         requireNonNull(original);
 
-        return new StreamingHttpClientFilterFactory() {
+        return new ContextAwareStreamingHttpClientFilterFactory() {
             @Override
             public HttpExecutionStrategy requiredOffloads() {
                 return original.requiredOffloads();
             }
 
             @Override
-            public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {
+            public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client,
+                                                    @Nullable final Publisher<Object> lbEventStream,
+                                                    @Nullable final Completable sdStatus) {
+                if (original instanceof RetryingHttpRequesterFilter) {
+                    final RetryingHttpRequesterFilter.ContextAwareRetryingHttpClientFilter filter =
+                            (RetryingHttpRequesterFilter.ContextAwareRetryingHttpClientFilter)
+                                    original.create(client);
+                    filter.inject(lbEventStream, sdStatus);
+                    return new ConditionalHttpClientFilter(predicate, filter, client);
+                }
                 return new ConditionalHttpClientFilter(predicate, original.create(client), client);
             }
         };
