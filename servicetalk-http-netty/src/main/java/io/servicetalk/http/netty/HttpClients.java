@@ -42,7 +42,6 @@ import java.util.function.Function;
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.forUnknownHostAndPort;
-import static io.servicetalk.transport.netty.internal.BuilderUtils.toResolvedInetSocketAddress;
 import static java.util.function.Function.identity;
 
 /**
