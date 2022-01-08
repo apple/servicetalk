@@ -238,7 +238,22 @@ public final class RetryingHttpRequesterFilter
 
         private static final long serialVersionUID = -7182949760823647710L;
 
+        // FIXME: 0.43 - remove deprecated method
+        /**
+         * {@link HttpResponseMetaData} of the response that caused this exception.
+         *
+         * @deprecated Use {@link #metaData()}.
+         */
+        @Deprecated
         public final HttpResponseMetaData metaData;
+
+        // FIXME: 0.43 - remove deprecated method
+        /**
+         * Exception detail message.
+         *
+         * @deprecated Use {@link #getMessage()}.
+         */
+        @Deprecated
         public final String message;
 
         public HttpResponseException(final String message, final HttpResponseMetaData metaData) {
@@ -250,6 +265,14 @@ public final class RetryingHttpRequesterFilter
         @Override
         public synchronized Throwable fillInStackTrace() {
             return this;
+        }
+
+        /**
+         * {@link HttpResponseMetaData} of the response that caused this exception.
+         * @return The {@link HttpResponseMetaData} of the response that caused this exception.
+         */
+        public HttpResponseMetaData metaData() {
+            return metaData;
         }
 
         @Override
@@ -266,7 +289,14 @@ public final class RetryingHttpRequesterFilter
 
         private static final Duration FULL_JITTER = ofDays(1024);
 
-        static final BackOffPolicy NO_RETRIES = new BackOffPolicy(0);
+        // FIXME: 0.43 - change field accessor to default
+        /**
+         * Special {@link BackOffPolicy} to signal no retries.
+         * @deprecated This will be removed in a future release of ST. Alternative offering here
+         * {@link BackOffPolicy#ofNoRetries()}.
+         */
+        @Deprecated
+        public static final BackOffPolicy NO_RETRIES = new BackOffPolicy(0);
 
         @Nullable
         final Duration initialDelay;

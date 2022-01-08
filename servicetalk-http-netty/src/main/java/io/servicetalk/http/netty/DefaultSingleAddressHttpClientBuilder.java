@@ -400,6 +400,15 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                     return currClientFilterFactory.create(filter, lbEventStream, sdStatus);
                 };
             }
+        } else if (appendClientFilterFactory instanceof ContextAwareStreamingHttpClientFilterFactory) {
+            if (currClientFilterFactory == null) {
+                return ((ContextAwareStreamingHttpClientFilterFactory) appendClientFilterFactory);
+            } else {
+                return (client, lbEventStream, sdError) ->
+                        currClientFilterFactory.create(
+                                ((ContextAwareStreamingHttpClientFilterFactory) appendClientFilterFactory)
+                                        .create(client, lbEventStream, sdError), lbEventStream, sdError);
+            }
         } else {
             if (currClientFilterFactory == null) {
                 return (client, lbEventStream, sdError) -> appendClientFilterFactory.create(client);
