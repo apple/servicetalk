@@ -542,13 +542,17 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     public SingleAddressHttpClientBuilder<U, R> appendClientFilter(final Predicate<StreamingHttpRequest> predicate,
                                                                    final StreamingHttpClientFilterFactory factory) {
         if (factory instanceof RetryingHttpRequesterFilter) {
-            if (retryingHttpRequesterFilter != null) {
-                throw new IllegalStateException("Retrying HTTP requester filter was already found in " +
-                        "the filter chain, only a single instance of that is allowed.");
-            }
+            ensureSingleRetryFilter();
             retryingHttpRequesterFilter = (RetryingHttpRequesterFilter) factory;
         }
         return appendClientFilter(toConditionalClientFilterFactory(predicate, factory));
+    }
+
+    private void ensureSingleRetryFilter() {
+        if (retryingHttpRequesterFilter != null) {
+            throw new IllegalStateException("Retrying HTTP requester filter was already found in " +
+                    "the filter chain, only a single instance of that is allowed.");
+        }
     }
 
     @Override
@@ -563,10 +567,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
             final StreamingHttpClientFilterFactory factory) {
         requireNonNull(factory);
         if (factory instanceof RetryingHttpRequesterFilter) {
-            if (retryingHttpRequesterFilter != null) {
-                throw new IllegalStateException("Retrying HTTP requester filter was already found in " +
-                        "the filter chain, only a single instance of that is allowed.");
-            }
+            ensureSingleRetryFilter();
             retryingHttpRequesterFilter = (RetryingHttpRequesterFilter) factory;
         }
         clientFilterFactory = appendFilter(clientFilterFactory, factory);
