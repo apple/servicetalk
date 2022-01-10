@@ -47,103 +47,54 @@ import static io.servicetalk.logging.api.LogLevel.TRACE;
  *
  * <p>When configured correctly the output should be similar to the following:
  * <pre>
- * 2022-01-06 12:48:50,653                           main [DEBUG] AsyncContext                   - Enabled.
- * 2022-01-06 12:48:51,241 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-wire-logger - [id: 0x35810888] REGISTERED
- * 2022-01-06 12:48:51,241 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-wire-logger - [id: 0x35810888] CONNECT: localhost/127.0.0.1:8080
- * 2022-01-06 12:48:51,247 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-wire-logger - [id: 0x35810888, L:/127.0.0.1:55604 - R:localhost/127.0.0.1:8080] ACTIVE
- * 2022-01-06 12:48:51,248 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-wire-logger - [id: 0x35810888, L:/127.0.0.1:55604 - R:localhost/127.0.0.1:8080] WRITE: 24B
- * +-------------------------------------------------+
- * |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |
- * +--------+-------------------------------------------------+----------------+
- * |00000000| 50 52 49 20 2a 20 48 54 54 50 2f 32 2e 30 0d 0a |PRI * HTTP/2.0..|
- * |00000010| 0d 0a 53 4d 0d 0a 0d 0a                         |..SM....        |
- * +--------+-------------------------------------------------+----------------+
- * 2022-01-06 12:48:51,255 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-h2-frame-logger - [id: 0x35810888, L:/127.0.0.1:55604 - R:localhost/127.0.0.1:8080] OUTBOUND SETTINGS: ack=false settings={ENABLE_PUSH=0, MAX_CONCURRENT_STREAMS=0, MAX_HEADER_LIST_SIZE=8192}
- * 2022-01-06 12:48:51,272 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-wire-logger - [id: 0x35810888, L:/127.0.0.1:55604 - R:localhost/127.0.0.1:8080] WRITE: 27B
- * +-------------------------------------------------+
- * |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |
- * +--------+-------------------------------------------------+----------------+
- * |00000000| 00 00 12 04 00 00 00 00 00 00 02 00 00 00 00 00 |................|
- * |00000010| 03 00 00 00 00 00 06 00 00 20 00                |......... .     |
- * +--------+-------------------------------------------------+----------------+
- * 2022-01-06 12:48:51,355 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-h2-frame-logger - [id: 0x35810888, L:/127.0.0.1:55604 - R:localhost/127.0.0.1:8080] OUTBOUND HEADERS: streamId=3 headers=DefaultHttp2Headers[:authority: localhost:8080, :method: POST, :scheme: http, :path: /helloworld.Greeter/SayHello, user-agent: servicetalk-grpc/, te: trailers, content-type: application/grpc+proto, content-length: 12] padding=0 endStream=false
- * 2022-01-06 12:48:51,360 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-wire-logger - [id: 0x35810888, L:/127.0.0.1:55604 - R:localhost/127.0.0.1:8080] WRITE: 9B
- * +-------------------------------------------------+
- * |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |
- * +--------+-------------------------------------------------+----------------+
- * |00000000| 00 00 6c 01 04 00 00 00 03                      |..l......       |
- * +--------+-------------------------------------------------+----------------+
- * 2022-01-06 12:48:51,361 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-wire-logger - [id: 0x35810888, L:/127.0.0.1:55604 - R:localhost/127.0.0.1:8080] WRITE: 108B
- * +-------------------------------------------------+
- * |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |
- * +--------+-------------------------------------------------+----------------+
- * |00000000| 41 0e 6c 6f 63 61 6c 68 6f 73 74 3a 38 30 38 30 |A.localhost:8080|
- * |00000010| 83 86 44 1c 2f 68 65 6c 6c 6f 77 6f 72 6c 64 2e |..D./helloworld.|
- * |00000020| 47 72 65 65 74 65 72 2f 53 61 79 48 65 6c 6c 6f |Greeter/SayHello|
- * |00000030| 7a 11 73 65 72 76 69 63 65 74 61 6c 6b 2d 67 72 |z.servicetalk-gr|
- * |00000040| 70 63 2f 40 02 74 65 08 74 72 61 69 6c 65 72 73 |pc/@.te.trailers|
- * |00000050| 5f 16 61 70 70 6c 69 63 61 74 69 6f 6e 2f 67 72 |_.application/gr|
- * |00000060| 70 63 2b 70 72 6f 74 6f 5c 02 31 32             |pc+proto\.12    |
- * +--------+-------------------------------------------------+----------------+
- * 2022-01-06 12:48:51,374 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-h2-frame-logger - [id: 0x35810888, L:/127.0.0.1:55604 - R:localhost/127.0.0.1:8080] OUTBOUND DATA: streamId=3 padding=0 endStream=true length=12 bytes=00000000070a05576f726c64
- * 2022-01-06 12:48:51,374 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-wire-logger - [id: 0x35810888, L:/127.0.0.1:55604 - R:localhost/127.0.0.1:8080] WRITE: 9B
- * +-------------------------------------------------+
- * |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |
- * +--------+-------------------------------------------------+----------------+
- * |00000000| 00 00 0c 00 01 00 00 00 03                      |.........       |
- * +--------+-------------------------------------------------+----------------+
- * 2022-01-06 12:48:51,374 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-wire-logger - [id: 0x35810888, L:/127.0.0.1:55604 - R:localhost/127.0.0.1:8080] WRITE: 12B
- * +-------------------------------------------------+
- * |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |
- * +--------+-------------------------------------------------+----------------+
- * |00000000| 00 00 00 00 07 0a 05 57 6f 72 6c 64             |.......World    |
- * +--------+-------------------------------------------------+----------------+
- * 2022-01-06 12:48:51,375 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-wire-logger - [id: 0x35810888, L:/127.0.0.1:55604 - R:localhost/127.0.0.1:8080] FLUSH
- * 2022-01-06 12:48:51,378 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-wire-logger - [id: 0x35810888, L:/127.0.0.1:55604 - R:localhost/127.0.0.1:8080] READ_REQUEST
- * 2022-01-06 12:48:51,486 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-wire-logger - [id: 0x35810888, L:/127.0.0.1:55604 - R:localhost/127.0.0.1:8080] READ: 24B
- * +-------------------------------------------------+
- * |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |
- * +--------+-------------------------------------------------+----------------+
- * |00000000| 00 00 06 04 00 00 00 00 00 00 06 00 00 20 00 00 |............. ..|
- * |00000010| 00 00 04 01 00 00 00 00                         |........        |
- * +--------+-------------------------------------------------+----------------+
- * 2022-01-06 12:48:51,489 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-h2-frame-logger - [id: 0x35810888, L:/127.0.0.1:55604 - R:localhost/127.0.0.1:8080] INBOUND SETTINGS: ack=false settings={MAX_HEADER_LIST_SIZE=8192}
- * 2022-01-06 12:48:51,493 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-h2-frame-logger - [id: 0x35810888, L:/127.0.0.1:55604 - R:localhost/127.0.0.1:8080] OUTBOUND SETTINGS: ack=true
- * 2022-01-06 12:48:51,493 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-wire-logger - [id: 0x35810888, L:/127.0.0.1:55604 - R:localhost/127.0.0.1:8080] WRITE: 9B
- * +-------------------------------------------------+
- * |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |
- * +--------+-------------------------------------------------+----------------+
- * |00000000| 00 00 00 04 01 00 00 00 00                      |.........       |
- * +--------+-------------------------------------------------+----------------+
- * 2022-01-06 12:48:51,493 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-wire-logger - [id: 0x35810888, L:/127.0.0.1:55604 - R:localhost/127.0.0.1:8080] FLUSH
- * 2022-01-06 12:48:51,493 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-h2-frame-logger - [id: 0x35810888, L:/127.0.0.1:55604 - R:localhost/127.0.0.1:8080] INBOUND SETTINGS: ack=true
- * 2022-01-06 12:48:51,493 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-wire-logger - [id: 0x35810888, L:/127.0.0.1:55604 - R:localhost/127.0.0.1:8080] READ_COMPLETE
- * 2022-01-06 12:48:51,494 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-wire-logger - [id: 0x35810888, L:/127.0.0.1:55604 - R:localhost/127.0.0.1:8080] FLUSH
- * 2022-01-06 12:48:51,494 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-wire-logger - [id: 0x35810888, L:/127.0.0.1:55604 - R:localhost/127.0.0.1:8080] READ_REQUEST
- * 2022-01-06 12:48:51,552 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-wire-logger - [id: 0x35810888, L:/127.0.0.1:55604 - R:localhost/127.0.0.1:8080] READ: 108B
- * +-------------------------------------------------+
- * |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |
- * +--------+-------------------------------------------------+----------------+
- * |00000000| 00 00 30 01 04 00 00 00 03 88 76 11 73 65 72 76 |..0.......v.serv|
- * |00000010| 69 63 65 74 61 6c 6b 2d 67 72 70 63 2f 5f 16 61 |icetalk-grpc/_.a|
- * |00000020| 70 70 6c 69 63 61 74 69 6f 6e 2f 67 72 70 63 2b |pplication/grpc+|
- * |00000030| 70 72 6f 74 6f 5c 02 31 38 00 00 12 00 00 00 00 |proto\.18.......|
- * |00000040| 00 03 00 00 00 00 0d 0a 0b 48 65 6c 6c 6f 20 57 |.........Hello W|
- * |00000050| 6f 72 6c 64 00 00 0f 01 05 00 00 00 03 40 0b 67 |orld.........@.g|
- * |00000060| 72 70 63 2d 73 74 61 74 75 73 01 30             |rpc-status.0    |
- * +--------+-------------------------------------------------+----------------+
- * 2022-01-06 12:48:51,555 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-h2-frame-logger - [id: 0x35810888, L:/127.0.0.1:55604 - R:localhost/127.0.0.1:8080] INBOUND HEADERS: streamId=3 headers=DefaultHttp2Headers[:status: 200, server: servicetalk-grpc/, content-type: application/grpc+proto, content-length: 18] padding=0 endStream=false
- * 2022-01-06 12:48:51,563 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-h2-frame-logger - [id: 0x35810888, L:/127.0.0.1:55604 - R:localhost/127.0.0.1:8080] INBOUND DATA: streamId=3 padding=0 endStream=false length=18 bytes=000000000d0a0b48656c6c6f20576f726c64
- * 2022-01-06 12:48:51,564 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-h2-frame-logger - [id: 0x35810888, L:/127.0.0.1:55604 - R:localhost/127.0.0.1:8080] INBOUND HEADERS: streamId=3 headers=DefaultHttp2Headers[grpc-status: 0] padding=0 endStream=true
- * 2022-01-06 12:48:51,566 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-wire-logger - [id: 0x35810888, L:/127.0.0.1:55604 - R:localhost/127.0.0.1:8080] READ_COMPLETE
- * 2022-01-06 12:48:51,566 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-wire-logger - [id: 0x35810888, L:/127.0.0.1:55604 - R:localhost/127.0.0.1:8080] FLUSH
- * 2022-01-06 12:48:51,566 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-wire-logger - [id: 0x35810888, L:/127.0.0.1:55604 - R:localhost/127.0.0.1:8080] FLUSH
- * 2022-01-06 12:48:51,567 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-wire-logger - [id: 0x35810888, L:/127.0.0.1:55604 - R:localhost/127.0.0.1:8080] READ_REQUEST
+ * 2022-01-10 10:34:46,942                           main [DEBUG] AsyncContext                   - Enabled.
+ * 2022-01-10 10:34:47,224                           main [DEBUG] GlobalDnsServiceDiscoverer     - Initialized HostAndPortClientInitializer
+ * 2022-01-10 10:34:47,324                           main [DEBUG] DefaultSingleAddressHttpClientBuilder - Client for localhost:8080 created with base strategy DEFAULT_HTTP_EXECUTION_STRATEGY → computed strategy DEFAULT_HTTP_EXECUTION_STRATEGY
+ * 2022-01-10 10:34:47,334 servicetalk-global-io-executor-1-1 [DEBUG] DefaultDnsClient               - DnsClient io.servicetalk.dns.discovery.netty.DefaultDnsClient@1a83d58e, sending events for address: A* lookups for localhost (size 1) [DefaultServiceDiscovererEvent{address=localhost/127.0.0.1, status=available}].
+ * 2022-01-10 10:34:47,334 servicetalk-global-io-executor-1-1 [DEBUG] RoundRobinLoadBalancer         - Load balancer for localhost:8080#1: received new ServiceDiscoverer event DefaultServiceDiscovererEvent{address=localhost/127.0.0.1:8080, status=available}. Inferred status: available.
+ * 2022-01-10 10:34:47,344 servicetalk-global-io-executor-1-1 [DEBUG] RoundRobinLoadBalancer         - Load balancer for localhost:8080#1: now using 1 addresses: [Host{address=localhost/127.0.0.1:8080, state=ACTIVE(failedConnections=0), #connections=0}].
+ * 2022-01-10 10:34:47,526 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-wire-logger - [id: 0x1ae4aa52] REGISTERED
+ * 2022-01-10 10:34:47,526 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-wire-logger - [id: 0x1ae4aa52] CONNECT: localhost/127.0.0.1:8080
+ * 2022-01-10 10:34:47,530 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-wire-logger - [id: 0x1ae4aa52, L:/127.0.0.1:51110 - R:localhost/127.0.0.1:8080] ACTIVE
+ * 2022-01-10 10:34:47,531 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-wire-logger - [id: 0x1ae4aa52, L:/127.0.0.1:51110 - R:localhost/127.0.0.1:8080] WRITE: 24B
+ * 2022-01-10 10:34:47,534 servicetalk-global-io-executor-1-2 [DEBUG] Recycler                       - -Dio.netty.recycler.maxCapacityPerThread: 4096
+ * 2022-01-10 10:34:47,534 servicetalk-global-io-executor-1-2 [DEBUG] Recycler                       - -Dio.netty.recycler.ratio: 8
+ * 2022-01-10 10:34:47,534 servicetalk-global-io-executor-1-2 [DEBUG] Recycler                       - -Dio.netty.recycler.chunkSize: 32
+ * 2022-01-10 10:34:47,536 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-h2-frame-logger - [id: 0x1ae4aa52, L:/127.0.0.1:51110 - R:localhost/127.0.0.1:8080] OUTBOUND SETTINGS: ack=false settings={ENABLE_PUSH=0, MAX_CONCURRENT_STREAMS=0, MAX_HEADER_LIST_SIZE=8192}
+ * 2022-01-10 10:34:47,552 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-wire-logger - [id: 0x1ae4aa52, L:/127.0.0.1:51110 - R:localhost/127.0.0.1:8080] WRITE: 27B
+ * 2022-01-10 10:34:47,553 servicetalk-global-io-executor-1-2 [DEBUG] HttpDebugUtils                 - [id: 0x1ae4aa52, L:/127.0.0.1:51110 - R:localhost/127.0.0.1:8080] HTTP/2.0 pipeline initialized: ServiceTalkWireLogger#0, Http2FrameCodec#0, Http2MultiplexHandler#0, H2ClientParentConnectionContext$DefaultH2ClientParentConnection#0, DefaultChannelPipeline$TailContext#0
+ * 2022-01-10 10:34:47,562 servicetalk-global-io-executor-1-2 [DEBUG] PlatformDependent              - jctools Unbounded/ChunkedArrayQueue: available.
+ * 2022-01-10 10:34:47,587 servicetalk-global-io-executor-1-2 [DEBUG] CloseHandler                   - io.servicetalk.transport.netty.internal.CloseHandler.LogLevel=null
+ * 2022-01-10 10:34:47,639 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-h2-frame-logger - [id: 0x1ae4aa52, L:/127.0.0.1:51110 - R:localhost/127.0.0.1:8080] OUTBOUND HEADERS: streamId=3 headers=8 padding=0 endStream=false
+ * 2022-01-10 10:34:47,644 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-wire-logger - [id: 0x1ae4aa52, L:/127.0.0.1:51110 - R:localhost/127.0.0.1:8080] WRITE: 9B
+ * 2022-01-10 10:34:47,645 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-wire-logger - [id: 0x1ae4aa52, L:/127.0.0.1:51110 - R:localhost/127.0.0.1:8080] WRITE: 108B
+ * 2022-01-10 10:34:47,657 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-h2-frame-logger - [id: 0x1ae4aa52, L:/127.0.0.1:51110 - R:localhost/127.0.0.1:8080] OUTBOUND DATA: streamId=3 padding=0 endStream=true length=12
+ * 2022-01-10 10:34:47,657 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-wire-logger - [id: 0x1ae4aa52, L:/127.0.0.1:51110 - R:localhost/127.0.0.1:8080] WRITE: 9B
+ * 2022-01-10 10:34:47,657 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-wire-logger - [id: 0x1ae4aa52, L:/127.0.0.1:51110 - R:localhost/127.0.0.1:8080] WRITE: 12B
+ * 2022-01-10 10:34:47,658 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-wire-logger - [id: 0x1ae4aa52, L:/127.0.0.1:51110 - R:localhost/127.0.0.1:8080] FLUSH
+ * 2022-01-10 10:34:47,661 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-wire-logger - [id: 0x1ae4aa52, L:/127.0.0.1:51110 - R:localhost/127.0.0.1:8080] READ_REQUEST
+ * 2022-01-10 10:34:47,777 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-wire-logger - [id: 0x1ae4aa52, L:/127.0.0.1:51110 - R:localhost/127.0.0.1:8080] READ: 24B
+ * 2022-01-10 10:34:47,780 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-h2-frame-logger - [id: 0x1ae4aa52, L:/127.0.0.1:51110 - R:localhost/127.0.0.1:8080] INBOUND SETTINGS: ack=false settings={MAX_HEADER_LIST_SIZE=8192}
+ * 2022-01-10 10:34:47,784 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-h2-frame-logger - [id: 0x1ae4aa52, L:/127.0.0.1:51110 - R:localhost/127.0.0.1:8080] OUTBOUND SETTINGS: ack=true
+ * 2022-01-10 10:34:47,784 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-wire-logger - [id: 0x1ae4aa52, L:/127.0.0.1:51110 - R:localhost/127.0.0.1:8080] WRITE: 9B
+ * 2022-01-10 10:34:47,784 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-wire-logger - [id: 0x1ae4aa52, L:/127.0.0.1:51110 - R:localhost/127.0.0.1:8080] FLUSH
+ * 2022-01-10 10:34:47,784 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-h2-frame-logger - [id: 0x1ae4aa52, L:/127.0.0.1:51110 - R:localhost/127.0.0.1:8080] INBOUND SETTINGS: ack=true
+ * 2022-01-10 10:34:47,784 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-wire-logger - [id: 0x1ae4aa52, L:/127.0.0.1:51110 - R:localhost/127.0.0.1:8080] READ_COMPLETE
+ * 2022-01-10 10:34:47,785 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-wire-logger - [id: 0x1ae4aa52, L:/127.0.0.1:51110 - R:localhost/127.0.0.1:8080] FLUSH
+ * 2022-01-10 10:34:47,785 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-wire-logger - [id: 0x1ae4aa52, L:/127.0.0.1:51110 - R:localhost/127.0.0.1:8080] READ_REQUEST
+ * 2022-01-10 10:34:47,847 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-wire-logger - [id: 0x1ae4aa52, L:/127.0.0.1:51110 - R:localhost/127.0.0.1:8080] READ: 108B
+ * 2022-01-10 10:34:47,849 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-h2-frame-logger - [id: 0x1ae4aa52, L:/127.0.0.1:51110 - R:localhost/127.0.0.1:8080] INBOUND HEADERS: streamId=3 headers=4 padding=0 endStream=false
+ * 2022-01-10 10:34:47,858 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-h2-frame-logger - [id: 0x1ae4aa52, L:/127.0.0.1:51110 - R:localhost/127.0.0.1:8080] INBOUND DATA: streamId=3 padding=0 endStream=false length=18
+ * 2022-01-10 10:34:47,859 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-h2-frame-logger - [id: 0x1ae4aa52, L:/127.0.0.1:51110 - R:localhost/127.0.0.1:8080] INBOUND HEADERS: streamId=3 headers=1 padding=0 endStream=true
+ * 2022-01-10 10:34:47,861 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-wire-logger - [id: 0x1ae4aa52, L:/127.0.0.1:51110 - R:localhost/127.0.0.1:8080] READ_COMPLETE
+ * 2022-01-10 10:34:47,861 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-wire-logger - [id: 0x1ae4aa52, L:/127.0.0.1:51110 - R:localhost/127.0.0.1:8080] FLUSH
+ * 2022-01-10 10:34:47,861 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-wire-logger - [id: 0x1ae4aa52, L:/127.0.0.1:51110 - R:localhost/127.0.0.1:8080] FLUSH
+ * 2022-01-10 10:34:47,861 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-wire-logger - [id: 0x1ae4aa52, L:/127.0.0.1:51110 - R:localhost/127.0.0.1:8080] READ_REQUEST
  * message: "Hello World"
  *
- * 2022-01-06 12:48:51,623 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-wire-logger - [id: 0x35810888, L:/127.0.0.1:55604 - R:localhost/127.0.0.1:8080] CLOSE
- * 2022-01-06 12:48:51,624 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-wire-logger - [id: 0x35810888, L:/127.0.0.1:55604 ! R:localhost/127.0.0.1:8080] INACTIVE
- * 2022-01-06 12:48:51,624 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-wire-logger - [id: 0x35810888, L:/127.0.0.1:55604 ! R:localhost/127.0.0.1:8080] UNREGISTERED
+ * 2022-01-10 10:34:47,913 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-wire-logger - [id: 0x1ae4aa52, L:/127.0.0.1:51110 - R:localhost/127.0.0.1:8080] CLOSE
+ * 2022-01-10 10:34:47,914 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-wire-logger - [id: 0x1ae4aa52, L:/127.0.0.1:51110 ! R:localhost/127.0.0.1:8080] INACTIVE
+ * 2022-01-10 10:34:47,914 servicetalk-global-io-executor-1-2 [TRACE] servicetalk-examples-wire-logger - [id: 0x1ae4aa52, L:/127.0.0.1:51110 ! R:localhost/127.0.0.1:8080] UNREGISTERED
  * </pre>
  */
 public final class DebuggingClient {
@@ -169,18 +120,24 @@ public final class DebuggingClient {
                          */
                         // .executionStrategy(HHttpExecutionStrategies.offloadNever())
                         /*
-                         * 3. Enables detailed logging of I/O and I/O states.
-                         * Be sure to also enable the logger in your logging config file (log4j2.xml for this example).
+                         * 3. Enables detailed logging of I/O and I/O states, but not payload bodies.
+                         * Be sure to also enable the logger in your logging config file,
+                         * {@code log4j2.xml} for this example.
+                         * Dumping of protocol bodies is disabled to reduce output but can be enabled by using
+                         * {@code Boolean.TRUE::booleanValue}.
                          */
-                        .enableWireLogging("servicetalk-examples-wire-logger", TRACE, Boolean.TRUE::booleanValue)
+                        .enableWireLogging("servicetalk-examples-wire-logger", TRACE, Boolean.FALSE::booleanValue)
 
                         /*
-                         * 4. Enables detailed logging of HTTP2 frames.
-                         * Be sure to also enable the logger in your logging config file (log4j2.xml for this example).
+                         * 4. Enables detailed logging of HTTP2 frames, but not frame contents.
+                         * Be sure to also enable the logger in your logging config file,
+                         * {@code log4j2.xml} for this example.
+                         * Dumping of protocol bodies is disabled to reduce output but can be enabled by using
+                         * {@code Boolean.TRUE::booleanValue}.
                          */
                         .protocols(HttpProtocolConfigs.h2()
                                 .enableFrameLogging(
-                                        "servicetalk-examples-h2-frame-logger", TRACE, Boolean.TRUE::booleanValue)
+                                        "servicetalk-examples-h2-frame-logger", TRACE, Boolean.FALSE::booleanValue)
                                 .build()))
                 .buildBlocking(new ClientFactory())) {
             HelloReply reply = client.sayHello(HelloRequest.newBuilder().setName("World").build());

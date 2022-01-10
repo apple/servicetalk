@@ -17,3 +17,7 @@
 package io.servicetalk.examples.grpc.debugging;
 
 import io.servicetalk.annotations.ElementsAreNonnullByDefault;
+
+/**
+ * Blocking "Hello World" example of ServiceTalk gRPC extended to demonstrate configuring of debugging features.
+ */
