@@ -30,12 +30,13 @@ import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.logging.api.LogLevel.TRACE;
 
 /**
- * The async "Hello World" example with debugging features enabled. Four debugging features are demonstrated:
+ * The async "Hello World" example with debugging features enabled. Five debugging features are demonstrated:
  * <ol>
  *     <li>Disabling {@link AsyncContext}</li>
  *     <li>Disabling {@link HttpExecutionStrategy offloading}</li>
  *     <li>Enabling {@link SingleAddressHttpClientBuilder#enableWireLogging(String, LogLevel, BooleanSupplier) HTTP wire logging}</li>
  *     <li>Enabling {@link H2ProtocolConfigBuilder#enableFrameLogging(String, LogLevel, BooleanSupplier) HTTP/2 frame logging}</li>
+ *     <li>Enabling additional logger verbosity in the {@code log4j2.xml} configuration file</li>
  * </ol>
  * <p>The wire and frame logging features require that you configure a logger with an appropriate log level. For this
  * example {@code log4j2.xml} is used by both the client and server and configures the
@@ -147,7 +148,7 @@ public final class DebuggingExampleClient {
                  * significantly change application behavior and introduce unexpected blocking. It is most useful for
                  * being able to directly trace through situations that would normally involve a thread handoff.
                  */
-                // .executionStrategy(HttpExecutionStrategies.noOffloadsStrategy())
+                // .executionStrategy(HttpExecutionStrategies.offloadNever())
 
                 /*
                  * 3. Enables detailed logging of I/O and I/O states.
