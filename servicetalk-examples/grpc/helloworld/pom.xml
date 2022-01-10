@@ -13,8 +13,8 @@
     <servicetalk.version>0.42.0</servicetalk.version>
     <protobuf-maven-plugin.version>0.6.1</protobuf-maven-plugin.version>
     <protoc.version>3.12.3</protoc.version>
-    <os-mave-plugin.version>1.6.0</os-mave-plugin.version>
-    <maven-compiler-plugin.version>3.8.0</maven-compiler-plugin.version>
+    <os-maven-plugin.version>1.6.0</os-maven-plugin.version>
+    <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
   </properties>
 
   <build>
@@ -22,7 +22,7 @@
       <extension>
         <groupId>kr.motd.maven</groupId>
         <artifactId>os-maven-plugin</artifactId>
-        <version>${os-mave-plugin.version}</version>
+        <version>${os-maven-plugin.version}</version>
       </extension>
     </extensions>
 
