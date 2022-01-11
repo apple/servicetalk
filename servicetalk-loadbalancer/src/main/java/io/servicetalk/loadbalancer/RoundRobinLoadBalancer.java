@@ -76,7 +76,7 @@ import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflo
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory.DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD;
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory.DEFAULT_HEALTH_CHECK_INTERVAL;
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory.EAGER_CONNECTION_SHUTDOWN_ENABLED;
-import static io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory.FACTORY_COUNT;
+import static java.lang.Integer.toHexString;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
@@ -177,14 +177,14 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                            final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory,
                            @Nullable final Boolean eagerConnectionShutdown,
                            @Nullable final HealthCheckConfig healthCheckConfig) {
-        this("unknown#" + FACTORY_COUNT.incrementAndGet(), eventPublisher.map(Collections::singletonList),
+        this("unknown", eventPublisher.map(Collections::singletonList),
                 connectionFactory, eagerConnectionShutdown, healthCheckConfig);
     }
 
     /**
      * Creates a new instance.
      *
-     * @param targetResource {@link String} representation of the target resource for which this instance
+     * @param targetResourceName {@link String} representation of the target resource for which this instance
      * is performing load balancing.
      * @param eventPublisher provides a stream of addresses to connect to.
      * @param connectionFactory a function which creates new connections.
@@ -204,12 +204,12 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
      * @see io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory
      */
     RoundRobinLoadBalancer(
-            final String targetResource,
+            final String targetResourceName,
             final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
             final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory,
             @Nullable final Boolean eagerConnectionShutdown,
             @Nullable final HealthCheckConfig healthCheckConfig) {
-        this.targetResource = requireNonNull(targetResource);
+        this.targetResource = requireNonNull(targetResourceName) + " (instance @" + toHexString(hashCode()) + ')';
         Processor<Object, Object> eventStreamProcessor = newPublisherProcessorDropHeadOnOverflow(32);
         this.eventStream = fromSource(eventStreamProcessor);
         this.connectionFactory = requireNonNull(connectionFactory);
@@ -553,7 +553,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                 final String targetResource,
                 final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
                 final ConnectionFactory<ResolvedAddress, T> connectionFactory) {
-            return new RoundRobinLoadBalancer<>(requireNonNull(targetResource) + '#' + FACTORY_COUNT.incrementAndGet(),
+            return new RoundRobinLoadBalancer<>(requireNonNull(targetResource),
                     eventPublisher, connectionFactory, EAGER_CONNECTION_SHUTDOWN_ENABLED,
                     new HealthCheckConfig(SharedExecutor.getInstance(),
                             DEFAULT_HEALTH_CHECK_INTERVAL, DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD));
