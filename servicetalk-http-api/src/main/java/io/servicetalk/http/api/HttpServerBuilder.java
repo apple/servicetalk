@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -115,6 +115,11 @@ public interface HttpServerBuilder {
 
     /**
      * Sets a {@link HttpLifecycleObserver} that provides visibility into HTTP lifecycle events.
+     * <p>
+     * This method allows to set a {@link HttpLifecycleObserver} in a position that captures entire state of the
+     * execution chain, including all filters and internal post-processing. If it's necessary to observe an exchange
+     * after other filters or apply it conditionally, consider using
+     * {@code io.servicetalk.http.netty.HttpLifecycleObserverServiceFilter} instead.
      *
      * @param lifecycleObserver A {@link HttpLifecycleObserver} that provides visibility into HTTP lifecycle events.
      * @return {@code this}.

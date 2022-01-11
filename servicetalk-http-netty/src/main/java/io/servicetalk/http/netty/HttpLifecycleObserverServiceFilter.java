@@ -16,7 +16,12 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.HttpExceptionMapperServiceFilter;
 import io.servicetalk.http.api.HttpLifecycleObserver;
+import io.servicetalk.http.api.HttpLifecycleObserver.HttpResponseObserver;
+import io.servicetalk.http.api.HttpResponseMetaData;
+import io.servicetalk.http.api.HttpResponseStatus;
+import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -24,13 +29,25 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
+import io.servicetalk.http.utils.TimeoutHttpServiceFilter;
 
 /**
  * An HTTP service filter that tracks events during request/response lifecycle.
  * <p>
- * This filter have to be used after the last exception mapping being done by {@link NettyHttpServer}.
+ * When this filter is used the result of the observed behavior will depend on the position of the filter in the
+ * execution chain. Moving it before or after other filters, like {@link TimeoutHttpServiceFilter}, may result in
+ * different {@link HttpLifecycleObserver} callbacks being triggered
+ * (seeing {@link HttpResponseObserver#onResponseCancel()} vs {@link  HttpResponseObserver#onResponseError(Throwable)}).
+ * If any of the prior filters short circuit the request processing or modify {@link HttpResponseMetaData}, those won't
+ * be observed. Presence of the tracing or MDC information also depends on position of this filter compare to filters
+ * that populate context.
+ * <p>
+ * If it's desired to observe a real {@link HttpResponseStatus} returned from the server, consider using
+ * {@link HttpServerBuilder#lifecycleObserver(HttpLifecycleObserver)} instead or place
+ * {@link HttpExceptionMapperServiceFilter } right after this filter to make sure all {@link Throwable}(s) are mapped
+ * into an HTTP response.
  */
-final class HttpLifecycleObserverServiceFilter extends AbstractLifecycleObserverHttpFilter implements
+public final class HttpLifecycleObserverServiceFilter extends AbstractLifecycleObserverHttpFilter implements
             StreamingHttpServiceFilterFactory {
 
     /**
