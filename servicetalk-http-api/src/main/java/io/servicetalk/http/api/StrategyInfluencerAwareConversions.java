@@ -15,7 +15,11 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Publisher;
+
 import java.util.function.Predicate;
+import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
 
@@ -37,7 +41,9 @@ final class StrategyInfluencerAwareConversions {
                 }
 
                 @Override
-                public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {
+                public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client,
+                                                        @Nullable final Publisher<Object> lbEventStream,
+                                                        @Nullable final Completable sdStatus) {
                     return original.create(address, client);
                 }
             };
@@ -108,7 +114,7 @@ final class StrategyInfluencerAwareConversions {
         return connection -> new ConditionalHttpConnectionFilter(predicate, original.create(connection), connection);
     }
 
-    static StreamingHttpClientFilterFactory toConditionalClientFilterFactory(
+    static ContextAwareStreamingHttpClientFilterFactory toConditionalClientFilterFactory(
             final Predicate<StreamingHttpRequest> predicate, final StreamingHttpClientFilterFactory original) {
         requireNonNull(predicate);
         requireNonNull(original);
@@ -122,12 +128,26 @@ final class StrategyInfluencerAwareConversions {
                 }
 
                 @Override
-                public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {
+                public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client,
+                                                        @Nullable final Publisher<Object> lbEventStream,
+                                                        @Nullable final Completable sdStatus) {
+                    if (original instanceof ContextAwareStreamingHttpClientFilterFactory) {
+                        return new ConditionalHttpClientFilter(predicate,
+                                ((ContextAwareStreamingHttpClientFilterFactory) original).create(client,
+                                        lbEventStream, sdStatus), client);
+                    }
                     return new ConditionalHttpClientFilter(predicate, original.create(client), client);
                 }
             };
         }
-        return client -> new ConditionalHttpClientFilter(predicate, original.create(client), client);
+
+        if (original instanceof ContextAwareStreamingHttpClientFilterFactory) {
+            return (client, lbEventStream, sdStatus) -> new ConditionalHttpClientFilter(predicate,
+                    ((ContextAwareStreamingHttpClientFilterFactory) original).create(client,
+                            lbEventStream, sdStatus), client);
+        }
+
+        return (client, __, ___) -> new ConditionalHttpClientFilter(predicate, original.create(client), client);
     }
 
     static <U> MultiAddressHttpClientFilterFactory<U> toMultiAddressConditionalFilterFactory(
@@ -164,7 +184,7 @@ final class StrategyInfluencerAwareConversions {
     }
 
     interface StrategyInfluencingStreamingClientFilterFactory
-            extends StreamingHttpClientFilterFactory, HttpExecutionStrategyInfluencer {
+            extends ContextAwareStreamingHttpClientFilterFactory, HttpExecutionStrategyInfluencer {
     }
 
     interface StrategyInfluencingMultiAddressHttpClientFilterFactory<U>

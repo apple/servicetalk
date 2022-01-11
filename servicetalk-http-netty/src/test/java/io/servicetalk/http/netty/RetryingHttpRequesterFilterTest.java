@@ -21,6 +21,7 @@ import io.servicetalk.client.api.DelegatingConnectionFactory;
 import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
+import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.AsyncCloseables;
 import io.servicetalk.concurrent.api.Completable;
@@ -48,12 +49,13 @@ import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.defer;
+import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.netty.HttpClients.forResolvedAddress;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.http.netty.HttpServers.forAddress;
-import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolicy.NO_RETRIES;
 import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolicy.ofImmediate;
+import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolicy.ofNoRetries;
 import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.Builder;
 import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.HttpResponseException;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
@@ -72,6 +74,7 @@ class RetryingHttpRequesterFilterTest {
     private final ServerContext svcCtx;
     private final SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> normalClientBuilder;
     private final SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> failingConnClientBuilder;
+    private final SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> noAvailableHostConnClientBuilder;
     private final AtomicInteger lbSelectInvoked;
 
     @Nullable
@@ -79,6 +82,9 @@ class RetryingHttpRequesterFilterTest {
 
     @Nullable
     private BlockingHttpClient failingClient;
+
+    @Nullable
+    private BlockingHttpClient noAvailableHostConnClient;
 
     RetryingHttpRequesterFilterTest() throws Exception {
         svcCtx = forAddress(localAddress(0))
@@ -88,6 +94,10 @@ class RetryingHttpRequesterFilterTest {
                 .loadBalancerFactory(DefaultHttpLoadBalancerFactory.Builder
                         .from(new InspectingLoadBalancerFactory<>()).build())
                 .appendConnectionFactoryFilter(ClosingConnectionFactory::new);
+        noAvailableHostConnClientBuilder = forSingleAddress(serverHostAndPort(svcCtx))
+                .loadBalancerFactory(DefaultHttpLoadBalancerFactory.Builder
+                        .from(new InspectingLoadBalancerFactory<>()).build())
+                .appendConnectionFactoryFilter(NAHConnectionFactory::new);
         normalClientBuilder = forSingleAddress(serverHostAndPort(svcCtx))
                 .loadBalancerFactory(DefaultHttpLoadBalancerFactory.Builder
                         .from(new InspectingLoadBalancerFactory<>()).build());
@@ -102,6 +112,9 @@ class RetryingHttpRequesterFilterTest {
         }
         if (failingClient != null) {
             closeable.append(failingClient.asClient());
+        }
+        if (noAvailableHostConnClient != null) {
+            closeable.append(noAvailableHostConnClient.asClient());
         }
         closeable.append(svcCtx);
         closeable.close();
@@ -125,12 +138,34 @@ class RetryingHttpRequesterFilterTest {
     void requestRetryingPredicate() {
         failingClient = failingConnClientBuilder
                 .appendClientFilter(new Builder()
-                        .retryRetryableExceptions((requestMetaData, e) -> NO_RETRIES)
+                        .retryRetryableExceptions((requestMetaData, e) -> ofNoRetries())
                         .retryOther((requestMetaData, throwable) ->
-                                requestMetaData.requestTarget().equals("/retry") ? ofImmediate() : NO_RETRIES).build())
+                                requestMetaData.requestTarget().equals("/retry") ? ofImmediate() :
+                                        ofNoRetries()).build())
+                .buildBlocking();
+        assertRequestRetryingPred(failingClient);
+    }
+
+    @Test
+    void requestRetryingPredicateWithConditionalAppend() {
+        noAvailableHostConnClient = noAvailableHostConnClientBuilder
+                .appendClientFilter((__) -> true,
+                        // Disable retryable exceptions, rely only on LB flow.
+                        new Builder().retryRetryableExceptions((__, ___) -> ofNoRetries()).build())
                 .buildBlocking();
         try {
-            failingClient.request(failingClient.get("/"));
+            noAvailableHostConnClient.request(noAvailableHostConnClient.get("/"));
+            fail("Request is expected to fail.");
+        } catch (Exception e) {
+            assertThat("Unexpected exception.", e, instanceOf(RetryableException.class));
+            // 4 Retries
+            assertThat("Unexpected calls to select.", lbSelectInvoked.get(), is(5));
+        }
+    }
+
+    private void assertRequestRetryingPred(final BlockingHttpClient client) {
+        try {
+            client.request(client.get("/"));
             fail("Request is expected to fail.");
         } catch (Exception e) {
             assertThat("Unexpected exception.", e, instanceOf(RetryableException.class));
@@ -139,7 +174,7 @@ class RetryingHttpRequesterFilterTest {
         }
 
         try {
-            failingClient.request(failingClient.get("/retry"));
+            client.request(client.get("/retry"));
             fail("Request is expected to fail.");
         } catch (Exception e) {
             assertThat("Unexpected exception.", e, instanceOf(RetryableException.class));
@@ -155,7 +190,7 @@ class RetryingHttpRequesterFilterTest {
                         .responseMapper(metaData -> metaData.headers().contains(RETRYABLE_HEADER) ?
                                     new HttpResponseException("Retryable header", metaData) : null)
                         // Disable request retrying
-                        .retryRetryableExceptions((requestMetaData, e) -> NO_RETRIES)
+                        .retryRetryableExceptions((requestMetaData, e) -> ofNoRetries())
                         // Retry only responses marked so
                         .retryResponses((requestMetaData, throwable) -> ofImmediate())
                         .build())
@@ -311,6 +346,21 @@ class RetryingHttpRequesterFilterTest {
                                                                        @Nullable final TransportObserver observer) {
             return delegate().newConnection(inetSocketAddress, observer)
                     .flatMap(c -> c.closeAsync().concat(succeeded(c)));
+        }
+    }
+
+    private static final class NAHConnectionFactory
+            extends DelegatingConnectionFactory<InetSocketAddress, FilterableStreamingHttpConnection> {
+        NAHConnectionFactory(
+                final ConnectionFactory<InetSocketAddress, FilterableStreamingHttpConnection> original) {
+            super(original);
+        }
+
+        @Override
+        public Single<FilterableStreamingHttpConnection> newConnection(final InetSocketAddress inetSocketAddress,
+                                                                       @Nullable final TransportObserver observer) {
+            return delegate().newConnection(inetSocketAddress, observer)
+                    .flatMap(c -> c.closeAsync().concat(failed(new NoAvailableHostException(""))));
         }
     }
 }
