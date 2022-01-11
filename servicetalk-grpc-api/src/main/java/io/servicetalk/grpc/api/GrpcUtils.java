@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019-2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,6 +76,7 @@ import static io.servicetalk.grpc.api.GrpcHeaderValues.SERVICETALK_USER_AGENT;
 import static io.servicetalk.grpc.api.GrpcStatusCode.CANCELLED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.DEADLINE_EXCEEDED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.INTERNAL;
+import static io.servicetalk.grpc.api.GrpcStatusCode.OK;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNIMPLEMENTED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNKNOWN;
 import static io.servicetalk.grpc.api.GrpcStatusCode.fromHttp2ErrorCode;
@@ -92,7 +93,8 @@ import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 final class GrpcUtils {
-    private static final GrpcStatus STATUS_OK = GrpcStatus.fromCodeValue(GrpcStatusCode.OK.value());
+    static final GrpcStatus STATUS_OK = GrpcStatus.fromCodeValue(GrpcStatusCode.OK.value());
+    private static final String OK_STRING = valueOf(GrpcStatusCode.OK.value());
     private static final BufferDecoderGroup EMPTY_BUFFER_DECODER_GROUP = new BufferDecoderGroupBuilder().build();
 
     private static final StatelessTrailersTransformer<Buffer> ENSURE_GRPC_STATUS_RECEIVED =
@@ -160,16 +162,6 @@ final class GrpcUtils {
                 .transform(new GrpcStatusUpdater(allocator, STATUS_OK));
     }
 
-    static StreamingHttpResponse newResponse(final StreamingHttpResponseFactory responseFactory,
-                                             final CharSequence contentType,
-                                             @Nullable final CharSequence encoding,
-                                             @Nullable final CharSequence acceptedEncoding,
-                                             final GrpcStatus status,
-                                             final BufferAllocator allocator) {
-        return newStreamingResponse(responseFactory, contentType, encoding, acceptedEncoding)
-                .transform(new GrpcStatusUpdater(allocator, status));
-    }
-
     static HttpResponse newResponse(final HttpResponseFactory responseFactory,
                                     final CharSequence contentType,
                                     @Nullable final CharSequence encoding,
@@ -213,7 +205,7 @@ final class GrpcUtils {
 
     static void setStatus(final HttpHeaders trailers, final GrpcStatus status, @Nullable final Status details,
                           @Nullable final BufferAllocator allocator) {
-        trailers.set(GRPC_STATUS, valueOf(status.code().value()));
+        trailers.set(GRPC_STATUS, status.code() == OK ? OK_STRING : valueOf(status.code().value()));
         if (status.description() != null) {
             trailers.set(GRPC_STATUS_MESSAGE, status.description());
         }
@@ -734,13 +726,19 @@ final class GrpcUtils {
 
         @Override
         protected HttpHeaders payloadComplete(final HttpHeaders trailers) {
-            setStatus(trailers, successStatus, null, allocator);
+            if (!trailers.contains(GRPC_STATUS)) {
+                setStatus(trailers, successStatus, null, allocator);
+            }
             return trailers;
         }
 
         @Override
         protected HttpHeaders payloadFailed(final Throwable cause, final HttpHeaders trailers) {
-            setStatus(trailers, cause, allocator);
+            final CharSequence grpcStatus = trailers.get(GRPC_STATUS);
+            if (grpcStatus == null || OK_STRING.contentEquals(grpcStatus)) {
+                // Override OK grpc-status:
+                setStatus(trailers, cause, allocator);
+            }
             // Swallow exception as we are converting it to the trailers.
             return trailers;
         }

@@ -130,7 +130,9 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
                 final Publisher<Buffer> transformedPayloadBody = transformer.apply(oldMessageBody.liftSync(
                         new PreserveTrailersBufferOperator(trailersProcessor)));
                 payloadInfo.setEmpty(transformedPayloadBody == EMPTY);
-                return merge(transformedPayloadBody, fromSource(trailersProcessor)).shareContextOnSubscribe();
+                return transformedPayloadBody.map(item -> (Object) item)
+                        .concat(fromSource(trailersProcessor)).shareContextOnSubscribe();
+                // return merge(transformedPayloadBody, fromSource(trailersProcessor)).shareContextOnSubscribe();
             });
         } else {
             final Publisher<Buffer> transformedPayloadBody = transformer.apply(payloadBody());

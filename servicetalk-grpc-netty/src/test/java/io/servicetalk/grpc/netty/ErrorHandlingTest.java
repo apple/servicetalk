@@ -44,11 +44,15 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
+import io.servicetalk.http.netty.H2ProtocolConfig;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
 import com.google.rpc.Status;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -71,6 +75,8 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.defaultStrategy;
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.offloadNever;
+import static io.servicetalk.http.netty.HttpProtocolConfigs.h2;
+import static io.servicetalk.logging.api.LogLevel.TRACE;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
@@ -90,12 +96,23 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+@Timeout(2)
 class ErrorHandlingTest {
+    @RegisterExtension
+    static final ExecutionContextExtension SERVER_CTX =
+            ExecutionContextExtension.cached("server-io", "server-executor");
+    @RegisterExtension
+    public static final ExecutionContextExtension CLIENT_CTX =
+            ExecutionContextExtension.cached("client-io", "client-executor");
+
     private static final StreamingHttpClientFilterFactory IDENTITY_CLIENT_FILTER =
             c -> new StreamingHttpClientFilter(c) { };
     private static final StreamingHttpServiceFilterFactory IDENTITY_FILTER =
             s -> new StreamingHttpServiceFilter(s) { };
     private static final String REQ_THROW_NAME = "THROW";
+    private static final H2ProtocolConfig H2_PROTOCOL_WITH_FRAME_LOGGING = h2()
+            .enableFrameLogging("servicetalk-tests-h2-frame-logger", TRACE, () -> true)
+            .build();
 
     @Nullable
     private TestMode testMode;
@@ -115,6 +132,10 @@ class ErrorHandlingTest {
         HttpFilterThrowsGrpcException,
         HttpFilterEmitsError,
         HttpFilterEmitsGrpcException,
+        HttpFilterThrowsInPayload,
+        HttpFilterThrowsGrpcExceptionInPayload,
+        HttpFilterEmitsErrorInPayload,
+        HttpFilterEmitsErrorGrpcExceptionInPayload,
         ServiceThrows,
         ServiceThrowsGrpcException,
         ServiceOperatorThrows,
@@ -193,6 +214,22 @@ class ErrorHandlingTest {
                 serviceFilterFactory = new ErrorProducingSvcFilter(false, cannedException);
                 serviceFactory = setupForSuccess();
                 break;
+            case HttpFilterThrowsInPayload:
+                serviceFilterFactory = new ErrorProducingPayloadSvcFilter(true, DELIBERATE_EXCEPTION);
+                serviceFactory = setupForSuccess();
+                break;
+            case HttpFilterThrowsGrpcExceptionInPayload:
+                serviceFilterFactory = new ErrorProducingPayloadSvcFilter(true, cannedException);
+                serviceFactory = setupForSuccess();
+                break;
+            case HttpFilterEmitsErrorInPayload:
+                serviceFilterFactory = new ErrorProducingPayloadSvcFilter(false, DELIBERATE_EXCEPTION);
+                serviceFactory = setupForSuccess();
+                break;
+            case HttpFilterEmitsErrorGrpcExceptionInPayload:
+                serviceFilterFactory = new ErrorProducingPayloadSvcFilter(false, cannedException);
+                serviceFactory = setupForSuccess();
+                break;
             case ServiceThrows:
                 serviceFactory = setupForServiceThrows(DELIBERATE_EXCEPTION);
                 break;
@@ -241,15 +278,21 @@ class ErrorHandlingTest {
         final StreamingHttpServiceFilterFactory filterFactory = serviceFilterFactory;
         serverContext = GrpcServers.forAddress(localAddress(0))
                 .initializeHttp(builder -> builder
+                        .ioExecutor(SERVER_CTX.ioExecutor())
+                        .executor(SERVER_CTX.executor())
                         .appendServiceFilter(filterFactory)
-                        .executionStrategy(serverStrategy))
+                        .executionStrategy(serverStrategy)
+                        .protocols(H2_PROTOCOL_WITH_FRAME_LOGGING))
                 .listenAndAwait(serviceFactory);
         final StreamingHttpClientFilterFactory pickedClientFilterFactory = clientFilterFactory;
         GrpcClientBuilder<HostAndPort, InetSocketAddress> clientBuilder =
                 GrpcClients.forAddress(serverHostAndPort(serverContext))
                         .initializeHttp(builder -> builder
+                                .ioExecutor(CLIENT_CTX.ioExecutor())
+                                .executor(CLIENT_CTX.executor())
                                 .appendClientFilter(pickedClientFilterFactory)
-                                .executionStrategy(clientStrategy));
+                                .executionStrategy(clientStrategy)
+                                .protocols(H2_PROTOCOL_WITH_FRAME_LOGGING));
         client = clientBuilder.build(new ClientFactory());
         blockingClient = clientBuilder.buildBlocking(new ClientFactory());
     }
@@ -568,6 +611,10 @@ class ErrorHandlingTest {
             case HttpFilterThrowsGrpcException:
             case HttpFilterEmitsError:
             case HttpFilterEmitsGrpcException:
+            case HttpFilterThrowsInPayload:
+            case HttpFilterEmitsErrorInPayload:
+            case HttpFilterThrowsGrpcExceptionInPayload:
+            case HttpFilterEmitsErrorGrpcExceptionInPayload:
             case ServiceThrows:
             case ServiceThrowsGrpcException:
             case ServiceOperatorThrows:
@@ -612,6 +659,10 @@ class ErrorHandlingTest {
             case HttpFilterThrowsGrpcException:
             case HttpFilterEmitsError:
             case HttpFilterEmitsGrpcException:
+            case HttpFilterThrowsInPayload:
+            case HttpFilterEmitsErrorInPayload:
+            case HttpFilterThrowsGrpcExceptionInPayload:
+            case HttpFilterEmitsErrorGrpcExceptionInPayload:
             case ServiceThrows:
             case ServiceThrowsGrpcException:
             case ServiceOperatorThrows:
@@ -646,6 +697,8 @@ class ErrorHandlingTest {
             case HttpClientFilterEmitsError:
             case HttpFilterThrows:
             case HttpFilterEmitsError:
+            case HttpFilterThrowsInPayload:
+            case HttpFilterEmitsErrorInPayload:
             case ServiceThrows:
             case ServiceOperatorThrows:
             case BlockingServiceThrows:
@@ -657,6 +710,8 @@ class ErrorHandlingTest {
             case HttpClientFilterEmitsGrpcException:
             case HttpFilterThrowsGrpcException:
             case HttpFilterEmitsGrpcException:
+            case HttpFilterThrowsGrpcExceptionInPayload:
+            case HttpFilterEmitsErrorGrpcExceptionInPayload:
             case ServiceThrowsGrpcException:
             case ServiceOperatorThrowsGrpcException:
             case ServiceSecondOperatorThrowsGrpcException:
@@ -716,6 +771,35 @@ class ErrorHandlingTest {
                         return throwException(cause);
                     }
                     return Single.failed(cause);
+                }
+            };
+        }
+    }
+
+    private static final class ErrorProducingPayloadSvcFilter implements StreamingHttpServiceFilterFactory {
+
+        private final boolean throwEx;
+        private final Throwable cause;
+
+        ErrorProducingPayloadSvcFilter(final boolean throwEx, final Throwable cause) {
+            this.throwEx = throwEx;
+            this.cause = cause;
+        }
+
+        @Override
+        public StreamingHttpServiceFilter create(final StreamingHttpService service) {
+            return new StreamingHttpServiceFilter(service) {
+                @Override
+                public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
+                                                            final StreamingHttpRequest request,
+                                                            final StreamingHttpResponseFactory responseFactory) {
+                    return delegate().handle(ctx, request, responseFactory)
+                            .map(response -> response.transformPayloadBody(payload -> {
+                                if (throwEx) {
+                                    return payload.beforeOnNext(item -> throwException(cause));
+                                }
+                                return payload.ignoreElements().concat(Publisher.failed(cause));
+                            }));
                 }
             };
         }

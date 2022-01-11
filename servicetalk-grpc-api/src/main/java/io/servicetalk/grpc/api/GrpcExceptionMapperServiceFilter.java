@@ -15,7 +15,9 @@
  */
 package io.servicetalk.grpc.api;
 
+import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.grpc.api.GrpcUtils.GrpcStatusUpdater;
 import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpServiceContext;
@@ -27,7 +29,9 @@ import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.grpc.api.GrpcHeaderNames.GRPC_STATUS;
 import static io.servicetalk.grpc.api.GrpcHeaderValues.APPLICATION_GRPC;
+import static io.servicetalk.grpc.api.GrpcUtils.STATUS_OK;
 import static io.servicetalk.grpc.api.GrpcUtils.newErrorResponse;
 
 /**
@@ -55,20 +59,29 @@ public final class GrpcExceptionMapperServiceFilter implements StreamingHttpServ
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                         final StreamingHttpRequest request,
                                                         final StreamingHttpResponseFactory responseFactory) {
+                final BufferAllocator allocator = ctx.executionContext().bufferAllocator();
                 final Single<StreamingHttpResponse> handle;
                 try {
-                    handle = delegate().handle(ctx, request, responseFactory);
+                    handle = delegate().handle(ctx, request, responseFactory).map(response -> {
+                        // Some responses may already have a grpc-status in headers, see GrpcRouter
+                        if (response.headers().contains(GRPC_STATUS)) {
+                            return response;
+                        }
+                        return response.transform(new GrpcStatusUpdater(allocator, STATUS_OK));
+                    });
+
                 } catch (Throwable cause) {
-                    return succeeded(convertToGrpcErrorResponse(ctx, responseFactory, cause));
+                    return succeeded(convertToGrpcErrorResponse(responseFactory, cause, allocator));
                 }
-                return handle.onErrorReturn(cause -> convertToGrpcErrorResponse(ctx, responseFactory, cause));
+                return handle.onErrorReturn(cause -> convertToGrpcErrorResponse(responseFactory, cause, allocator));
             }
         };
     }
 
-    private static StreamingHttpResponse convertToGrpcErrorResponse(
-            final HttpServiceContext ctx, final StreamingHttpResponseFactory responseFactory, final Throwable cause) {
-        return newErrorResponse(responseFactory, APPLICATION_GRPC, cause, ctx.executionContext().bufferAllocator());
+    private static StreamingHttpResponse convertToGrpcErrorResponse(final StreamingHttpResponseFactory responseFactory,
+                                                                    final Throwable cause,
+                                                                    final BufferAllocator allocator) {
+        return newErrorResponse(responseFactory, APPLICATION_GRPC, cause, allocator);
     }
 
     @Override
