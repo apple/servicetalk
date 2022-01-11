@@ -70,6 +70,7 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
+import static java.lang.Integer.toHexString;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
@@ -127,7 +128,7 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
     /**
      * Creates a new instance.
      *
-     * @param targetResource {@link String} representation of the target resource for which this instance
+     * @param targetResourceName {@link String} representation of the target resource for which this instance
      * is performing load balancing.
      * @param eventPublisher provides a stream of addresses to connect to.
      * @param connectionFactory a function which creates new connections.
@@ -137,11 +138,11 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
      * @see io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory
      */
     RoundRobinLoadBalancer(
-            final String targetResource,
+            final String targetResourceName,
             final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
             final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory,
             @Nullable final HealthCheckConfig healthCheckConfig) {
-        this.targetResource = requireNonNull(targetResource);
+        this.targetResource = requireNonNull(targetResourceName) + " (instance @" + toHexString(hashCode()) + ')';
         Processor<Object, Object> eventStreamProcessor = newPublisherProcessorDropHeadOnOverflow(32);
         this.eventStream = fromSource(eventStreamProcessor);
         this.connectionFactory = requireNonNull(connectionFactory);
