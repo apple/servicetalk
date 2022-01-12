@@ -15,12 +15,14 @@
  */
 package io.servicetalk.grpc.api;
 
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.grpc.api.GrpcUtils.GrpcStatusUpdater;
 import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpServiceContext;
+import io.servicetalk.http.api.StatelessTrailersTransformer;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
@@ -31,8 +33,10 @@ import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.grpc.api.GrpcHeaderNames.GRPC_STATUS;
 import static io.servicetalk.grpc.api.GrpcHeaderValues.APPLICATION_GRPC;
+import static io.servicetalk.grpc.api.GrpcStatusCode.OK;
 import static io.servicetalk.grpc.api.GrpcUtils.STATUS_OK;
 import static io.servicetalk.grpc.api.GrpcUtils.newErrorResponse;
+import static io.servicetalk.grpc.api.GrpcUtils.setStatus;
 
 /**
  * Filter that maps known {@link Throwable} subtypes into an gRPC response with an appropriate {@link GrpcStatusCode}.
@@ -87,5 +91,35 @@ public final class GrpcExceptionMapperServiceFilter implements StreamingHttpServ
     @Override
     public HttpExecutionStrategy requiredOffloads() {
         return HttpExecutionStrategies.offloadNone();
+    }
+
+    private static final class GrpcStatusUpdater extends StatelessTrailersTransformer<Buffer> {
+        private final BufferAllocator allocator;
+        private final GrpcStatus successStatus;
+
+        GrpcStatusUpdater(final BufferAllocator allocator, final GrpcStatus successStatus) {
+            this.allocator = allocator;
+            this.successStatus = successStatus;
+        }
+
+        @Override
+        protected HttpHeaders payloadComplete(final HttpHeaders trailers) {
+            // No need to do anything if the grpc-status is already set:
+            if (!trailers.contains(GRPC_STATUS)) {
+                setStatus(trailers, successStatus, null, allocator);
+            }
+            return trailers;
+        }
+
+        @Override
+        protected HttpHeaders payloadFailed(final Throwable cause, final HttpHeaders trailers) {
+            final CharSequence grpcStatus = trailers.get(GRPC_STATUS);
+            if (grpcStatus == null || OK.strValue().contentEquals(grpcStatus)) {
+                // Override OK grpc-status:
+                setStatus(trailers, cause, allocator);
+            }
+            // Swallow exception as we are converting it to the trailers.
+            return trailers;
+        }
     }
 }

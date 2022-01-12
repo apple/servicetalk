@@ -89,9 +89,11 @@ public enum GrpcStatusCode {
     }
 
     private final int value;
+    private final String strValue;
 
     GrpcStatusCode(int value) {
         this.value = value;
+        this.strValue = String.valueOf(value);
     }
 
     /**
@@ -126,6 +128,15 @@ public enum GrpcStatusCode {
      */
     public int value() {
         return value;
+    }
+
+    /**
+     * Returns the string code value.
+     *
+     * @return the string code value.
+     */
+    String strValue() {
+        return strValue;
     }
 
     /**

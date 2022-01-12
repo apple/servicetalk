@@ -88,13 +88,11 @@ import static io.servicetalk.http.api.HttpHeaderNames.TE;
 import static io.servicetalk.http.api.HttpHeaderNames.USER_AGENT;
 import static io.servicetalk.http.api.HttpHeaderValues.TRAILERS;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
-import static java.lang.String.valueOf;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 final class GrpcUtils {
-    static final GrpcStatus STATUS_OK = GrpcStatus.fromCodeValue(GrpcStatusCode.OK.value());
-    private static final String OK_STRING = valueOf(GrpcStatusCode.OK.value());
+    static final GrpcStatus STATUS_OK = GrpcStatus.fromCodeValue(OK.value());
     private static final BufferDecoderGroup EMPTY_BUFFER_DECODER_GROUP = new BufferDecoderGroupBuilder().build();
 
     private static final StatelessTrailersTransformer<Buffer> ENSURE_GRPC_STATUS_RECEIVED =
@@ -205,7 +203,7 @@ final class GrpcUtils {
 
     static void setStatus(final HttpHeaders trailers, final GrpcStatus status, @Nullable final Status details,
                           @Nullable final BufferAllocator allocator) {
-        trailers.set(GRPC_STATUS, status.code() == OK ? OK_STRING : valueOf(status.code().value()));
+        trailers.set(GRPC_STATUS, status.code().strValue());
         if (status.description() != null) {
             trailers.set(GRPC_STATUS_MESSAGE, status.description());
         }
@@ -715,7 +713,7 @@ final class GrpcUtils {
         }
     }
 
-    static final class GrpcStatusUpdater extends StatelessTrailersTransformer<Buffer> {
+    private static final class GrpcStatusUpdater extends StatelessTrailersTransformer<Buffer> {
         private final BufferAllocator allocator;
         private final GrpcStatus successStatus;
 
@@ -726,19 +724,13 @@ final class GrpcUtils {
 
         @Override
         protected HttpHeaders payloadComplete(final HttpHeaders trailers) {
-            if (!trailers.contains(GRPC_STATUS)) {
-                setStatus(trailers, successStatus, null, allocator);
-            }
+            setStatus(trailers, successStatus, null, allocator);
             return trailers;
         }
 
         @Override
         protected HttpHeaders payloadFailed(final Throwable cause, final HttpHeaders trailers) {
-            final CharSequence grpcStatus = trailers.get(GRPC_STATUS);
-            if (grpcStatus == null || OK_STRING.contentEquals(grpcStatus)) {
-                // Override OK grpc-status:
-                setStatus(trailers, cause, allocator);
-            }
+            setStatus(trailers, cause, allocator);
             // Swallow exception as we are converting it to the trailers.
             return trailers;
         }
