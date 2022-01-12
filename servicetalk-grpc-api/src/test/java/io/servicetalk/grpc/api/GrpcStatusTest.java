@@ -19,22 +19,22 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class GrpcStatusTest {
+class GrpcStatusTest {
 
     @Test
-    public void testGrpcStatusFromIntCodeValue() {
+    void testGrpcStatusFromIntCodeValue() {
         final GrpcStatus grpcStatus = GrpcStatus.fromCodeValue(0);
         assertEquals(GrpcStatusCode.OK, grpcStatus.code());
     }
 
     @Test
-    public void testGrpcStatusFromStringCodeValue() {
+    void testGrpcStatusFromStringCodeValue() {
         final GrpcStatus grpcStatus = GrpcStatus.fromCodeValue("0");
         assertEquals(GrpcStatusCode.OK, grpcStatus.code());
     }
 
     @Test
-    public void testGrpcStatusUnknownFromIntCodeValue() {
+    void testGrpcStatusUnknownFromIntCodeValue() {
         int unknownCode = 255;
         final GrpcStatus grpcStatus = GrpcStatus.fromCodeValue(unknownCode);
         assertEquals(GrpcStatusCode.UNKNOWN, grpcStatus.code());
@@ -42,7 +42,7 @@ public class GrpcStatusTest {
     }
 
     @Test
-    public void testGrpcStatusUnknownFromStringCodeValue() {
+    void testGrpcStatusUnknownFromStringCodeValue() {
         final String unknownCode = "255";
         final GrpcStatus grpcStatus = GrpcStatus.fromCodeValue(unknownCode);
         assertEquals(GrpcStatusCode.UNKNOWN, grpcStatus.code());
@@ -50,7 +50,7 @@ public class GrpcStatusTest {
     }
 
     @Test
-    public void testGrpcStatusUnknownFromUnparsableStringCodeValue() {
+    void testGrpcStatusUnknownFromUnparsableStringCodeValue() {
         final String unknownCode = "1f";
         final GrpcStatus grpcStatus = GrpcStatus.fromCodeValue(unknownCode);
         assertEquals(GrpcStatusCode.UNKNOWN, grpcStatus.code());
