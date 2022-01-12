@@ -97,7 +97,7 @@ import static org.mockito.Mockito.when;
 
 class ErrorHandlingTest {
     @RegisterExtension
-    static final ExecutionContextExtension SERVER_CTX =
+    public static final ExecutionContextExtension SERVER_CTX =
             ExecutionContextExtension.cached("server-io", "server-executor");
     @RegisterExtension
     public static final ExecutionContextExtension CLIENT_CTX =
