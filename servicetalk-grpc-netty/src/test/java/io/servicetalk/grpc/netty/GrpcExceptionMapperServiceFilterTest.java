@@ -13,18 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.grpc.api;
+package io.servicetalk.grpc.netty;
 
-import io.servicetalk.grpc.api.GrpcServerBuilder.CatchAllHttpServiceFilter;
+import io.servicetalk.grpc.api.GrpcExceptionMapperServiceFilter;
 
 import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.http.netty.AsyncContextHttpFilterVerifier.verifyServerFilterAsyncContextVisibility;
 
-class CatchAllHttpServiceFilterTest {
+class GrpcExceptionMapperServiceFilterTest {
 
     @Test
     void verifyAsyncContext() throws Exception {
-        verifyServerFilterAsyncContextVisibility(CatchAllHttpServiceFilter.INSTANCE);
+        verifyServerFilterAsyncContextVisibility(GrpcExceptionMapperServiceFilter.INSTANCE);
     }
 }

@@ -21,17 +21,11 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.grpc.internal.DeadlineUtils;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpLifecycleObserver;
 import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpServerBuilder;
-import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
-import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.http.api.StreamingHttpResponseFactory;
-import io.servicetalk.http.api.StreamingHttpService;
-import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ConnectionAcceptor;
@@ -50,9 +44,7 @@ import java.util.Map;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 
-import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.FutureUtils.awaitResult;
-import static io.servicetalk.grpc.api.GrpcUtils.newErrorResponse;
 
 /**
  * A builder for building a <a href="https://www.grpc.io">gRPC</a> server.
@@ -600,46 +592,6 @@ public abstract class GrpcServerBuilder {
         // TODO(dj): Move to DefaultGrpcServerBuilder
         // This code depends on GrpcUtils which is inaccessible from the servicetalk-grpc-netty module.
         // When this class is converted to an interface we can also refactor that part.
-        httpServerBuilder.appendServiceFilter(CatchAllHttpServiceFilter.INSTANCE);
-    }
-
-    static final class CatchAllHttpServiceFilter implements StreamingHttpServiceFilterFactory,
-                                                            HttpExecutionStrategyInfluencer {
-
-        static final StreamingHttpServiceFilterFactory INSTANCE = new CatchAllHttpServiceFilter();
-
-        private CatchAllHttpServiceFilter() {
-            // Singleton
-        }
-
-        @Override
-        public StreamingHttpServiceFilter create(final StreamingHttpService service) {
-            return new StreamingHttpServiceFilter(service) {
-
-                @Override
-                public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
-                                                            final StreamingHttpRequest request,
-                                                            final StreamingHttpResponseFactory responseFactory) {
-                    final Single<StreamingHttpResponse> handle;
-                    try {
-                        handle = delegate().handle(ctx, request, responseFactory);
-                    } catch (Throwable cause) {
-                        return succeeded(convertToGrpcErrorResponse(ctx, responseFactory, cause));
-                    }
-                    return handle.onErrorReturn(cause -> convertToGrpcErrorResponse(ctx, responseFactory, cause));
-                }
-            };
-        }
-
-        private static StreamingHttpResponse convertToGrpcErrorResponse(
-                final HttpServiceContext ctx, final StreamingHttpResponseFactory responseFactory,
-                final Throwable cause) {
-            return newErrorResponse(responseFactory, null, null, cause, ctx.executionContext().bufferAllocator());
-        }
-
-        @Override
-        public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
-            return strategy;    // no influence since we do not block
-        }
+        httpServerBuilder.appendServiceFilter(GrpcExceptionMapperServiceFilter.INSTANCE);
     }
 }

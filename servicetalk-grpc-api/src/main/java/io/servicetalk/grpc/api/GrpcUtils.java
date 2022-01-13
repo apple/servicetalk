@@ -72,7 +72,7 @@ import static java.lang.String.valueOf;
 final class GrpcUtils {
     // TODO could/should add "+proto"
     private static final CharSequence GRPC_CONTENT_TYPE = newAsciiString("application/grpc");
-    private static final CharSequence GRPC_STATUS_CODE_TRAILER = newAsciiString("grpc-status");
+    static final CharSequence GRPC_STATUS_CODE_TRAILER = newAsciiString("grpc-status");
     private static final CharSequence GRPC_STATUS_DETAILS_TRAILER = newAsciiString("grpc-status-details-bin");
     private static final CharSequence GRPC_STATUS_MESSAGE_TRAILER = newAsciiString("grpc-message");
     // TODO (nkant): add project version
