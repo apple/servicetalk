@@ -364,8 +364,8 @@ final class GrpcRouter {
                                         .onErrorReturn(cause -> {
                                             LOGGER.debug("Unexpected exception from aggregated response for path : {}",
                                                     methodDescriptor.httpPath(), cause);
-                                            return newErrorResponse(responseFactory,
-                                                    responseContentType, cause, ctx.executionContext().bufferAllocator());
+                                            return newErrorResponse(responseFactory, responseContentType, cause,
+                                                    ctx.executionContext().bufferAllocator());
                                         });
                             } catch (Throwable t) {
                                 LOGGER.debug("Unexpected exception from aggregated endpoint for path: {}",
