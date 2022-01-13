@@ -44,7 +44,7 @@ import io.servicetalk.http.utils.TimeoutHttpServiceFilter;
  * <p>
  * If it's desired to observe a real {@link HttpResponseStatus} returned from the server, consider using
  * {@link HttpServerBuilder#lifecycleObserver(HttpLifecycleObserver)} instead or place
- * {@link HttpExceptionMapperServiceFilter } right after this filter to make sure all {@link Throwable}(s) are mapped
+ * {@link HttpExceptionMapperServiceFilter} right after this filter to make sure all {@link Throwable}(s) are mapped
  * into an HTTP response.
  */
 public final class HttpLifecycleObserverServiceFilter extends AbstractLifecycleObserverHttpFilter implements
