@@ -1,7 +1,7 @@
 name: CodeQL
 on:
   push:
-    branches: [ main, '0.41' ]
+    branches: [ main, '0.41', '0.42' ]
   pull_request:
     # The branches below must be a subset of the branches above
     branches: [ main, '0.41' ]
