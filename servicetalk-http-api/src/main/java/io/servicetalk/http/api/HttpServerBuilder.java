@@ -116,7 +116,7 @@ public interface HttpServerBuilder {
     /**
      * Sets a {@link HttpLifecycleObserver} that provides visibility into HTTP lifecycle events.
      * <p>
-     * This method allows to set a {@link HttpLifecycleObserver} in a position that captures entire state of the
+     * This method allows setting a {@link HttpLifecycleObserver} in a position that captures entire state of the
      * execution chain, including all filters and internal post-processing. If it's necessary to observe an exchange
      * after other filters or apply it conditionally, consider using
      * {@code io.servicetalk.http.netty.HttpLifecycleObserverServiceFilter} instead.
