@@ -46,6 +46,8 @@ import io.servicetalk.serializer.api.SerializerDeserializer;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.rpc.Status;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -724,6 +726,8 @@ final class GrpcUtils {
     }
 
     static final class GrpcStatusUpdater extends StatelessTrailersTransformer<Buffer> {
+        private static final Logger LOGGER = LoggerFactory.getLogger(GrpcStatusUpdater.class);
+
         private final BufferAllocator allocator;
         private final GrpcStatus successStatus;
 
@@ -742,6 +746,7 @@ final class GrpcUtils {
         protected HttpHeaders payloadFailed(final Throwable cause, final HttpHeaders trailers) {
             setStatus(trailers, cause, allocator);
             // Swallow exception as we are converting it to the trailers.
+            LOGGER.debug("Converted an exception into grpc-status: {}", trailers.get(GRPC_STATUS), cause);
             return trailers;
         }
     }
