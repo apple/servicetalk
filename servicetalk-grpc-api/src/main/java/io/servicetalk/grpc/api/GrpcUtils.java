@@ -189,9 +189,6 @@ final class GrpcUtils {
         return response;
     }
 
-    // This code has a copy in io.servicetalk.grpc.netty.GrpcUtils.newErrorResponse
-    // but cannot be shared because we don't have an internal module for grpc code that is both using the api module
-    // and is also used in the api module as that would lead to circular dependency. Remember to modify both locations.
     static StreamingHttpResponse newErrorResponse(final StreamingHttpResponseFactory responseFactory,
                                                   final CharSequence contentType, final Throwable cause,
                                                   final BufferAllocator allocator) {
@@ -214,9 +211,6 @@ final class GrpcUtils {
         setStatus(trailers, STATUS_OK, null, null);
     }
 
-    // This code has a copy in io.servicetalk.grpc.netty.GrpcUtils.setStatus
-    // but cannot be shared because we don't have an internal module for grpc code that is both using the api module
-    // and is also used in the api module as that would lead to circular dependency. Remember to modify both locations.
     static void setStatus(final HttpHeaders trailers, final GrpcStatus status, @Nullable final Status details,
                           @Nullable final BufferAllocator allocator) {
         trailers.set(GRPC_STATUS, valueOf(status.code().value()));
@@ -230,9 +224,6 @@ final class GrpcUtils {
         }
     }
 
-    // This code has a copy in io.servicetalk.grpc.netty.GrpcUtils.setStatus
-    // but cannot be shared because we don't have an internal module for grpc code that is both using the api module
-    // and is also used in the api module as that would lead to circular dependency. Remember to modify both locations.
     static void setStatus(final HttpHeaders trailers, final Throwable cause, final BufferAllocator allocator) {
         if (cause instanceof GrpcStatusException) {
             GrpcStatusException grpcStatusException = (GrpcStatusException) cause;
@@ -242,9 +233,6 @@ final class GrpcUtils {
         }
     }
 
-    // This code has a copy in io.servicetalk.grpc.netty.GrpcUtils.toGrpcStatus
-    // but cannot be shared because we don't have an internal module for grpc code that is both using the api module
-    // and is also used in the api module as that would lead to circular dependency. Remember to modify both locations.
     static GrpcStatus toGrpcStatus(Throwable cause) {
         final GrpcStatus status;
         if (cause instanceof Http2Exception) {
@@ -378,9 +366,6 @@ final class GrpcUtils {
         return result == null ? identityEncoder : result;
     }
 
-    // This code has a copy in io.servicetalk.grpc.netty.GrpcUtils.initResponse
-    // but cannot be shared because we don't have an internal module for grpc code that is both using the api module
-    // and is also used in the api module as that would lead to circular dependency. Remember to modify both locations.
     static void initResponse(final HttpResponseMetaData response,
                              final CharSequence contentType,
                              @Nullable final CharSequence encoding,
