@@ -42,7 +42,7 @@ import io.servicetalk.http.utils.TimeoutHttpServiceFilter;
  * be observed. Presence of the tracing or MDC information also depends on position of this filter compare to filters
  * that populate context.
  * <p>
- * If it's desired to observe a real {@link HttpResponseStatus} returned from the server, consider using
+ * If observing the real {@link HttpResponseStatus} returned from the server is desired, consider using
  * {@link HttpServerBuilder#lifecycleObserver(HttpLifecycleObserver)} instead or place
  * {@link HttpExceptionMapperServiceFilter} right after this filter to make sure all {@link Throwable}(s) are mapped
  * into an HTTP response.
