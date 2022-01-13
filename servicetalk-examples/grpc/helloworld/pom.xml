@@ -10,11 +10,11 @@
 
   <properties>
     <!-- servicetalk.version is updated automatically by release.sh during the ServiceTalk release process -->
-    <servicetalk.version>0.40.0</servicetalk.version>
+    <servicetalk.version>0.41.13</servicetalk.version>
     <protobuf-maven-plugin.version>0.6.1</protobuf-maven-plugin.version>
-    <protoc.version>3.12.3</protoc.version>
-    <os-mave-plugin.version>1.6.0</os-mave-plugin.version>
-    <maven-compiler-plugin.version>3.8.0</maven-compiler-plugin.version>
+    <protoc.version>3.19.2</protoc.version>
+    <os-maven-plugin.version>1.6.0</os-maven-plugin.version>
+    <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
   </properties>
 
   <build>
@@ -22,7 +22,7 @@
       <extension>
         <groupId>kr.motd.maven</groupId>
         <artifactId>os-maven-plugin</artifactId>
-        <version>${os-mave-plugin.version}</version>
+        <version>${os-maven-plugin.version}</version>
       </extension>
     </extensions>
 
@@ -64,21 +64,34 @@
     </plugins>
   </build>
 
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>io.servicetalk</groupId>
+        <artifactId>servicetalk-bom</artifactId>
+        <version>${servicetalk.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
   <dependencies>
     <dependency>
       <groupId>io.servicetalk</groupId>
       <artifactId>servicetalk-annotations</artifactId>
-      <version>${servicetalk.version}</version>
     </dependency>
     <dependency>
       <groupId>io.servicetalk</groupId>
       <artifactId>servicetalk-grpc-netty</artifactId>
-      <version>${servicetalk.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.servicetalk</groupId>
+      <artifactId>servicetalk-grpc-protoc</artifactId>
     </dependency>
     <dependency>
       <groupId>io.servicetalk</groupId>
       <artifactId>servicetalk-grpc-protobuf</artifactId>
-      <version>${servicetalk.version}</version>
     </dependency>
   </dependencies>
 </project>
