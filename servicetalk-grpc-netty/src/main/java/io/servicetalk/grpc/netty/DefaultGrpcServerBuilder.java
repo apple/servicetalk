@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.grpc.api.GrpcBindableService;
+import io.servicetalk.grpc.api.GrpcExceptionMapperServiceFilter;
 import io.servicetalk.grpc.api.GrpcExecutionStrategy;
 import io.servicetalk.grpc.api.GrpcLifecycleObserver;
 import io.servicetalk.grpc.api.GrpcServerBuilder;
@@ -158,7 +159,7 @@ final class DefaultGrpcServerBuilder implements GrpcServerBuilder, ServerBinder 
         final ExecutionContextInterceptorHttpServerBuilder interceptor =
                 new ExecutionContextInterceptorHttpServerBuilder(httpServerBuilderSupplier.get());
 
-        interceptor.appendNonOffloadingServiceFilter(CatchAllHttpServiceFilter.INSTANCE);
+        interceptor.appendNonOffloadingServiceFilter(GrpcExceptionMapperServiceFilter.INSTANCE);
 
         directCallInitializer.initialize(interceptor);
         initializer.initialize(interceptor);

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,13 +21,13 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.BlockingHttpService;
 import io.servicetalk.http.api.BlockingStreamingHttpService;
 import io.servicetalk.http.api.HttpApiConversions;
+import io.servicetalk.http.api.HttpExceptionMapperServiceFilter;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.HttpLifecycleObserver;
 import io.servicetalk.http.api.HttpProtocolConfig;
-import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServerContext;
 import io.servicetalk.http.api.HttpService;
@@ -39,7 +39,6 @@ import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import io.servicetalk.logging.api.LogLevel;
-import io.servicetalk.serializer.api.SerializationException;
 import io.servicetalk.transport.api.ConnectionAcceptorFactory;
 import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
@@ -56,21 +55,14 @@ import java.net.SocketOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
-import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
-import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
-import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
-import static io.servicetalk.http.api.HttpResponseStatus.SERVICE_UNAVAILABLE;
-import static io.servicetalk.http.api.HttpResponseStatus.UNSUPPORTED_MEDIA_TYPE;
 import static io.servicetalk.http.netty.StrategyInfluencerAwareConversions.toConditionalServiceFilterFactory;
 import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
 import static java.util.Objects.requireNonNull;
@@ -372,7 +364,7 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
 
     private static StreamingHttpService applyInternalFilters(StreamingHttpService service,
                                                              @Nullable final HttpLifecycleObserver lifecycleObserver) {
-        service = ExceptionMapperServiceFilter.INSTANCE.create(service);
+        service = HttpExceptionMapperServiceFilter.INSTANCE.create(service);
         service = KeepAliveServiceFilter.INSTANCE.create(service);
         if (lifecycleObserver != null) {
             service = new HttpLifecycleObserverServiceFilter(lifecycleObserver).create(service);
@@ -380,66 +372,6 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
         // TODO: apply ClearAsyncContextHttpServiceFilter here when it's moved to http-netty module by
         //  https://github.com/apple/servicetalk/pull/1820
         return service;
-    }
-
-    /**
-     * Internal filter that makes sure we handle all exceptions from user-defined service and filters.
-     */
-    private static final class ExceptionMapperServiceFilter implements StreamingHttpServiceFilterFactory {
-
-        static final StreamingHttpServiceFilterFactory INSTANCE = new ExceptionMapperServiceFilter();
-
-        private static final Logger LOGGER = LoggerFactory.getLogger(ExceptionMapperServiceFilter.class);
-
-        private ExceptionMapperServiceFilter() {
-            // Singleton
-        }
-
-        @Override
-        public StreamingHttpServiceFilter create(final StreamingHttpService service) {
-            return new StreamingHttpServiceFilter(service) {
-                @Override
-                public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
-                                                            final StreamingHttpRequest request,
-                                                            final StreamingHttpResponseFactory responseFactory) {
-                    Single<StreamingHttpResponse> respSingle;
-                    try {
-                        respSingle = delegate().handle(ctx, request, responseFactory);
-                    } catch (Throwable cause) {
-                        respSingle = failed(cause);
-                    }
-                    return respSingle.onErrorReturn(cause -> newErrorResponse(cause, ctx, request, responseFactory));
-                }
-            };
-        }
-
-        private static StreamingHttpResponse newErrorResponse(final Throwable cause,
-                                                              final HttpServiceContext ctx,
-                                                              final StreamingHttpRequest request,
-                                                              final StreamingHttpResponseFactory responseFactory) {
-            final HttpResponseStatus status;
-            if (cause instanceof RejectedExecutionException) {
-                status = SERVICE_UNAVAILABLE;
-                LOGGER.error("Task rejected by service processing for connection={}, request='{} {} {}'. Returning: {}",
-                        ctx, request.method(), request.requestTarget(), request.version(), status, cause);
-            } else if (cause instanceof SerializationException) {
-                // It is assumed that a failure occurred when attempting to deserialize the request.
-                status = UNSUPPORTED_MEDIA_TYPE;
-                LOGGER.error("Failed to deserialize or serialize for connection={}, request='{} {} {}'. Returning: {}",
-                        ctx, request.method(), request.requestTarget(), request.version(), status, cause);
-            } else {
-                status = INTERNAL_SERVER_ERROR;
-                LOGGER.error("Unexpected exception during service processing for connection={}, request='{} {} {}'. " +
-                        "Trying to return: {}", ctx, request.method(), request.requestTarget(), request.version(),
-                        status, cause);
-            }
-            return responseFactory.newResponse(status).setHeader(CONTENT_LENGTH, ZERO);
-        }
-
-        @Override
-        public HttpExecutionStrategy requiredOffloads() {
-            return HttpExecutionStrategies.offloadNone();    // no influence since we do not block
-        }
     }
 
     /**
