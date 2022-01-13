@@ -303,6 +303,7 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
             // Subscription shares common state hence a requestN after termination/cancellation must be ignored
             return;
         }
+        LOGGER.debug("{} Cancelling subscription", channel);
         resetSubscription();
 
         // If a cancel occurs with a valid subscription we need to clear any pending data and set a fatalError so that

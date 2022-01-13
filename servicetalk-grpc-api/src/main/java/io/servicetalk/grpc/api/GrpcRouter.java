@@ -361,9 +361,15 @@ final class GrpcRouter {
                                                     .payloadBody(serializer.serialize(rawResp,
                                                             ctx.executionContext().bufferAllocator()));
                                         })
-                                        .onErrorReturn(cause -> newErrorResponse(responseFactory,
-                                            responseContentType, cause, ctx.executionContext().bufferAllocator()));
+                                        .onErrorReturn(cause -> {
+                                            LOGGER.debug("Unexpected exception from aggregated response for path : {}",
+                                                    methodDescriptor.httpPath(), cause);
+                                            return newErrorResponse(responseFactory,
+                                                    responseContentType, cause, ctx.executionContext().bufferAllocator());
+                                        });
                             } catch (Throwable t) {
+                                LOGGER.debug("Unexpected exception from aggregated endpoint for path: {}",
+                                        methodDescriptor.httpPath(), t);
                                 return succeeded(newErrorResponse(responseFactory, responseContentType, t,
                                         ctx.executionContext().bufferAllocator()));
                             }
@@ -427,6 +433,8 @@ final class GrpcRouter {
                                             serializer.messageEncoding(), acceptedEncoding, response, serializer,
                                             ctx.executionContext().bufferAllocator()));
                                 } catch (Throwable t) {
+                                    LOGGER.debug("Unexpected exception from streaming endpoint for path: {}",
+                                            methodDescriptor.httpPath(), t);
                                     return succeeded(newErrorResponse(responseFactory, responseContentType, t,
                                             ctx.executionContext().bufferAllocator()));
                                 }
@@ -568,6 +576,8 @@ final class GrpcRouter {
                                         .payloadBody(serializer.serialize(rawResp,
                                                 ctx.executionContext().bufferAllocator()));
                             } catch (Throwable t) {
+                                LOGGER.debug("Unexpected exception from blocking aggregated endpoint for path: {}",
+                                        methodDescriptor.httpPath(), t);
                                 return newErrorResponse(responseFactory, responseContentType, t,
                                         ctx.executionContext().bufferAllocator());
                             }
