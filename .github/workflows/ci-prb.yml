@@ -1,7 +1,7 @@
 name: PR Builder
 on:
   pull_request:
-    branches: [ main, '0.41' ]
+    branches: [ main, '0.41', '0.42' ]
 jobs:
   build:
     name: Build JDK ${{ matrix.java }} ${{ matrix.os }}
