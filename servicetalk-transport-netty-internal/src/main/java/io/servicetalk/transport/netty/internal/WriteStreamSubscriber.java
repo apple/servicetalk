@@ -506,7 +506,9 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
 
         private void terminateSubscriber(@Nullable Throwable cause) {
             if (cause == null) {
-                LOGGER.debug("{} Terminate subscriber, state: {}", channel, Integer.toString(state, 2));
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("{} Terminate subscriber, state: {}", channel, Integer.toString(state, 2));
+                }
                 try {
                     observer.writeComplete();
                     subscriber.onComplete();
@@ -520,8 +522,10 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
                 Throwable enrichedCause = enrichProtocolError.apply(cause);
                 assignConnectionError(channel, enrichedCause);
                 enrichedCause = !written ? new AbortedFirstWriteException(enrichedCause) : enrichedCause;
-                LOGGER.debug("{} Terminate subscriber with an error, state: {}", channel, Integer.toString(state, 2),
-                        cause);
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("{} Terminate subscriber with an error, state: {}",
+                            channel, Integer.toString(state, 2), cause);
+                }
                 try {
                     observer.writeFailed(enrichedCause);
                     subscriber.onError(enrichedCause);
