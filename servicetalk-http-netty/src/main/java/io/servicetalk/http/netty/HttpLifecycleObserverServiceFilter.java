@@ -35,7 +35,7 @@ import io.servicetalk.http.utils.TimeoutHttpServiceFilter;
  * An HTTP service filter that tracks events during request/response lifecycle.
  * <p>
  * When this filter is used the result of the observed behavior will depend on the position of the filter in the
- * execution chain. Moving it before or after other filters, like {@link TimeoutHttpServiceFilter}, may result in
+ * execution chain. Moving it before or after other filters, such as {@link TimeoutHttpServiceFilter}, may result in
  * different {@link HttpLifecycleObserver} callbacks being triggered
  * (seeing {@link HttpResponseObserver#onResponseCancel()} vs {@link  HttpResponseObserver#onResponseError(Throwable)}).
  * If any of the prior filters short circuit the request processing or modify {@link HttpResponseMetaData}, those won't
