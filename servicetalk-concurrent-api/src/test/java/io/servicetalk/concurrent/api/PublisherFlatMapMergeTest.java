@@ -191,35 +191,6 @@ class PublisherFlatMapMergeTest {
     }
 
     @Test
-    void singleConcurrencyAsync() {
-        CountDownLatch latch = new CountDownLatch(4);
-        Publisher<Integer> flatMappedPublisher = publisher
-                .publishOn(executor)
-                .afterRequest(request -> {
-                    System.out.println("request: " + request + " " + Thread.currentThread());
-                })
-                .flatMapMerge(i -> from(i).publishOn(executor).map(ii -> {
-                    latch.countDown();
-                    try {
-                        // continue after everyone (but the last) has gotten to this point.
-                        latch.await();
-                    } catch (InterruptedException e) {
-                        e.printStackTrace(System.err);
-                    }
-                    System.out.println("map: " + Thread.currentThread());
-                    return ii + 1;
-                }), 1);
-        toSource(flatMappedPublisher).subscribe(subscriber);
-        subscriber.awaitSubscription().request(4);
-        publisher.onNext(1, 2, 3, 4);
-        publisher.onComplete();
-        List<Integer> results = subscriber.takeOnNext(4);
-        subscriber.awaitOnComplete();
-        assertThat("Expected different results", results, containsInAnyOrder(2, 3, 4, 5));
-        subscriber.awaitOnComplete();
-    }
-
-    @Test
     void singleConcurrencyNullComplete() {
         toSource(publisher.flatMapMerge(i -> from((Integer) null), 1)).subscribe(subscriber);
         subscriber.awaitSubscription().request(1);

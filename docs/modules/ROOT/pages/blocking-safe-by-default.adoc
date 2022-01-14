@@ -55,12 +55,13 @@ often either naive hence sub-optimal or fairly complex. ServiceTalk internally d
 it does not offload more than what is required. In other words, it reduces offloading when it can determine that no user
 code can interact with the event loop on a certain path.
 
+[#execution-strategy]
 === Execution Strategy
 
-The primary purpose of an link:{source-root}/servicetalk-transport-api/src/main/java/io/servicetalk/transport/api/ExecutionStrategy.java[Execution Strategy] is to define which interaction paths require offloading.
-
-For example, at the xref:{page-version}@servicetalk-http-api::blocking-safe-by-default.adoc[HTTP] transport layer
-(no application level protocol), four offload paths are available:
+The primary purpose of an link:{source-root}/servicetalk-transport-api/src/main/java/io/servicetalk/transport/api/ExecutionStrategy.java[Execution Strategy]
+is to define which interaction paths of a particular transport or protocol layer require offloading. For
+example, at the xref:{page-version}@servicetalk-http-api::blocking-safe-by-default.adoc[HTTP] transport layer, four
+offload paths are available:
 
 . Sending data to the transport.
 . Receiving data from the transport.
@@ -68,8 +69,9 @@ For example, at the xref:{page-version}@servicetalk-http-api::blocking-safe-by-d
 . Closing the transport.
 
 A given application, filter or component may indicate that it requires offloading for none, some or all of these
-interactions. Other transports or interfaces may define a specific execution strategy which is specific to the
-interaction paths they provide.
+interactions. Protocols other than HTTP will have their own APIs that would otherwise execute user code on an
+`EventLoop` thread and define their own `ExecutionStrategy` to control which of those interaction paths APIs are
+subject to offloading.
 
 [#influencing-offloading-decisions]
 === Influencing offloading decisions
