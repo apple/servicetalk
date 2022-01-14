@@ -20,6 +20,7 @@ import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 import static io.servicetalk.http.api.DefaultStreamingStrategyInfluencer.DEFAULT_STREAMING_STRATEGY_INFLUENCER;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadAll;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 
 /**
  * An entity that wishes to influence {@link HttpExecutionStrategy} for an HTTP client or server.
@@ -57,7 +58,7 @@ public interface HttpExecutionStrategyInfluencer extends ExecutionStrategyInflue
     default HttpExecutionStrategy requiredOffloads() {
         // safe default--implementations are expected to override
         HttpExecutionStrategy result = influenceStrategy(defaultStrategy());
-        return defaultStrategy() == result ? offloadAll() : result;
+        return defaultStrategy() == result ? offloadNone() : result;
     }
 
     /**

@@ -19,7 +19,9 @@ import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadAll;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 
 class HttpExecutionStrategyTest {
@@ -126,6 +128,37 @@ class HttpExecutionStrategyTest {
         InfluenceOnly influenceOnly = new InfluenceOnly();
         assertThat(influenceOnly.requiredOffloads(), sameInstance(MAGIC_INFLUENCE_STRATEGY));
         assertThat(influenceOnly.influenceStrategy(defaultStrategy()), sameInstance(MAGIC_INFLUENCE_STRATEGY));
+    }
+
+    @Test
+    void onlyNoInfluenceStrategyImplemented() {
+        class NoInfluence implements HttpExecutionStrategyInfluencer {
+            @Override
+            public HttpExecutionStrategy influenceStrategy(HttpExecutionStrategy strategy) {
+                return strategy;
+            }
+        }
+
+        NoInfluence noInfluence = new NoInfluence();
+        assertThat(noInfluence.requiredOffloads(), sameInstance(HttpExecutionStrategies.offloadNone()));
+        assertThat(noInfluence.influenceStrategy(defaultStrategy()), sameInstance(defaultStrategy()));
+    }
+
+    @Test
+    void onlyInfluencingInfluenceStrategyImplemented() {
+        final HttpExecutionStrategy offloadSend = HttpExecutionStrategies.customStrategyBuilder().offloadSend().build();
+        class Influence implements HttpExecutionStrategyInfluencer {
+            @Override
+            public HttpExecutionStrategy influenceStrategy(HttpExecutionStrategy strategy) {
+                return offloadSend.merge(strategy);
+            }
+        }
+
+        Influence influence = new Influence();
+        assertThat(influence.requiredOffloads(), is(offloadSend));
+        assertThat(influence.influenceStrategy(offloadNone()), is(offloadSend));
+        assertThat(influence.influenceStrategy(defaultStrategy()), is(offloadSend));
+        assertThat(influence.influenceStrategy(offloadSend), is(offloadSend));
     }
 
     @Test
