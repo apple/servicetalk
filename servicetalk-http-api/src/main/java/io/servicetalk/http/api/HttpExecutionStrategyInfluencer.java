@@ -17,7 +17,12 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 
+import java.lang.reflect.Method;
+
 import static io.servicetalk.http.api.DefaultStreamingStrategyInfluencer.DEFAULT_STREAMING_STRATEGY_INFLUENCER;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadAll;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 
 /**
  * An entity that wishes to influence {@link HttpExecutionStrategy} for an HTTP client or server.
@@ -34,7 +39,16 @@ public interface HttpExecutionStrategyInfluencer extends ExecutionStrategyInflue
      */
     @Deprecated
     default HttpExecutionStrategy influenceStrategy(HttpExecutionStrategy strategy) {
-        return requiredOffloads().merge(strategy);
+        boolean defaultRequiredOffloads;
+        try {
+            // avoid infinite recursion of default requiredOffloads calling this default
+            Method requiredOffloads = this.getClass().getMethod("requiredOffloads");
+            defaultRequiredOffloads = requiredOffloads.getDeclaringClass() == HttpExecutionStrategyInfluencer.class &&
+                    requiredOffloads.isDefault();
+        } catch (NoSuchMethodException impossible) {
+            defaultRequiredOffloads = true;
+        }
+        return defaultRequiredOffloads ? offloadAll() : requiredOffloads().merge(strategy);
     }
 
     /**
@@ -47,7 +61,8 @@ public interface HttpExecutionStrategyInfluencer extends ExecutionStrategyInflue
     @Override
     default HttpExecutionStrategy requiredOffloads() {
         // safe default--implementations are expected to override
-        return HttpExecutionStrategies.offloadAll();
+        HttpExecutionStrategy result = influenceStrategy(defaultStrategy());
+        return defaultStrategy() == result ? offloadNone() : result;
     }
 
     /**
