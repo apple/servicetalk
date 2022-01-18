@@ -116,6 +116,22 @@ class HttpExecutionStrategyTest {
         assertThat(requiredOnly.influenceStrategy(defaultStrategy()), sameInstance(MAGIC_REQUIRED_STRATEGY));
     }
 
+    private interface MyOwnDefaultRequiredOffloads extends HttpExecutionStrategyInfluencer {
+        @Override
+        default HttpExecutionStrategy requiredOffloads() {
+            return MAGIC_REQUIRED_STRATEGY;
+        }
+    }
+
+    @Test
+    void requiredOffloadsSubInterfaceDefault() {
+        class RequiredDefault implements MyOwnDefaultRequiredOffloads { }
+
+        RequiredDefault requiredOnly = new RequiredDefault();
+        assertThat(requiredOnly.requiredOffloads(), sameInstance(MAGIC_REQUIRED_STRATEGY));
+        assertThat(requiredOnly.influenceStrategy(defaultStrategy()), sameInstance(MAGIC_REQUIRED_STRATEGY));
+    }
+
     @Test
     void onlyInfluenceStrategyImplemented() {
         class InfluenceOnly implements HttpExecutionStrategyInfluencer {

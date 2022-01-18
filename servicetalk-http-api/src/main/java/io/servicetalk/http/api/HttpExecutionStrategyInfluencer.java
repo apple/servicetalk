@@ -17,6 +17,8 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 
+import java.lang.reflect.Method;
+
 import static io.servicetalk.http.api.DefaultStreamingStrategyInfluencer.DEFAULT_STREAMING_STRATEGY_INFLUENCER;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadAll;
@@ -40,7 +42,9 @@ public interface HttpExecutionStrategyInfluencer extends ExecutionStrategyInflue
         boolean defaultRequiredOffloads;
         try {
             // avoid infinite recursion of default requiredOffloads calling this default
-            defaultRequiredOffloads = this.getClass().getMethod("requiredOffloads").isDefault();
+            Method requiredOffloads = this.getClass().getMethod("requiredOffloads");
+            defaultRequiredOffloads = requiredOffloads.getDeclaringClass() == HttpExecutionStrategyInfluencer.class &&
+                    requiredOffloads.isDefault();
         } catch (NoSuchMethodException impossible) {
             defaultRequiredOffloads = true;
         }
