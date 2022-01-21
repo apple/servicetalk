@@ -18,6 +18,7 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.BlockingIterable;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
+import static io.servicetalk.http.api.HttpContextKeys.HTTP_CLIENT_API_KEY;
 import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.RequestResponseFactories.toAggregated;
@@ -45,7 +46,9 @@ final class StreamingHttpClientToBlockingHttpClient implements BlockingHttpClien
 
     @Override
     public ReservedBlockingHttpConnection reserveConnection(final HttpRequestMetaData metaData) throws Exception {
-        metaData.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, strategy);
+        if (null == metaData.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, strategy)) {
+            metaData.context().put(HTTP_CLIENT_API_KEY, HttpApiConversions.ClientAPI.BLOCKING_AGGREGATED);
+        }
         return blockingInvocation(client.reserveConnection(metaData)
                 .map(c -> new ReservedStreamingHttpConnectionToReservedBlockingHttpConnection(c, this.strategy,
                         reqRespFactory)));
@@ -58,7 +61,9 @@ final class StreamingHttpClientToBlockingHttpClient implements BlockingHttpClien
 
     @Override
     public HttpResponse request(final HttpRequest request) throws Exception {
-        request.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, strategy);
+        if (null == request.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, strategy)) {
+            request.context().put(HTTP_CLIENT_API_KEY, HttpApiConversions.ClientAPI.BLOCKING_AGGREGATED);
+        }
         return BlockingUtils.request(client, request);
     }
 

@@ -28,7 +28,7 @@ final class StreamingHttpConnectionToHttpConnection implements HttpConnection {
      * For aggregation, we invoke the user callback (Single from client#request()) after the payload is completed,
      * hence we need to offload data.
      */
-    static final HttpExecutionStrategy DEFAULT_CONNECTION_STRATEGY = OFFLOAD_RECEIVE_DATA_EVENT_STRATEGY;
+    static final HttpExecutionStrategy DEFAULT_ASYNC_CONNECTION_STRATEGY = OFFLOAD_RECEIVE_DATA_EVENT_STRATEGY;
     private final StreamingHttpConnection connection;
     private final HttpExecutionStrategy strategy;
     private final HttpConnectionContext context;
@@ -37,7 +37,7 @@ final class StreamingHttpConnectionToHttpConnection implements HttpConnection {
 
     StreamingHttpConnectionToHttpConnection(final StreamingHttpConnection connection,
                                             final HttpExecutionStrategy strategy) {
-        this.strategy = defaultStrategy() == strategy ? DEFAULT_CONNECTION_STRATEGY : strategy;
+        this.strategy = defaultStrategy() == strategy ? DEFAULT_ASYNC_CONNECTION_STRATEGY : strategy;
         this.connection = connection;
         final HttpConnectionContext originalCtx = connection.connectionContext();
         executionContext = new DelegatingHttpExecutionContext(connection.executionContext()) {

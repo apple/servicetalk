@@ -18,6 +18,7 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.BlockingIterable;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
+import static io.servicetalk.http.api.HttpContextKeys.HTTP_CLIENT_API_KEY;
 import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.RequestResponseFactories.toBlockingStreaming;
@@ -48,7 +49,9 @@ final class StreamingHttpClientToBlockingStreamingHttpClient implements Blocking
             throws Exception {
         // It is assumed that users will always apply timeouts at the StreamingHttpService layer (e.g. via filter).
         // So we don't apply any explicit timeout here and just wait forever.
-        metaData.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, strategy);
+        if (null == metaData.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, strategy)) {
+            metaData.context().put(HTTP_CLIENT_API_KEY, HttpApiConversions.ClientAPI.BLOCKING_STREAMING);
+        }
         return blockingInvocation(client.reserveConnection(metaData)
                 .map(c -> new ReservedStreamingHttpConnectionToBlockingStreaming(c, this.strategy, reqRespFactory)));
     }
@@ -60,7 +63,9 @@ final class StreamingHttpClientToBlockingStreamingHttpClient implements Blocking
 
     @Override
     public BlockingStreamingHttpResponse request(final BlockingStreamingHttpRequest request) throws Exception {
-        request.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, strategy);
+        if (null == request.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, strategy)) {
+            request.context().put(HTTP_CLIENT_API_KEY, HttpApiConversions.ClientAPI.BLOCKING_STREAMING);
+        }
         return blockingInvocation(client.request(request.toStreamingRequest())).toBlockingStreamingResponse();
     }
 

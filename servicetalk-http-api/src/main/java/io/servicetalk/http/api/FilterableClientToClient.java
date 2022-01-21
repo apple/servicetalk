@@ -13,29 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.netty;
+package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.BlockingHttpClient;
-import io.servicetalk.http.api.BlockingStreamingHttpClient;
-import io.servicetalk.http.api.FilterableStreamingHttpClient;
-import io.servicetalk.http.api.HttpClient;
-import io.servicetalk.http.api.HttpConnectionContext;
-import io.servicetalk.http.api.HttpEventKey;
-import io.servicetalk.http.api.HttpExecutionContext;
-import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpRequestMetaData;
-import io.servicetalk.http.api.HttpRequestMethod;
-import io.servicetalk.http.api.ReservedBlockingHttpConnection;
-import io.servicetalk.http.api.ReservedBlockingStreamingHttpConnection;
-import io.servicetalk.http.api.ReservedHttpConnection;
-import io.servicetalk.http.api.ReservedStreamingHttpConnection;
-import io.servicetalk.http.api.StreamingHttpClient;
-import io.servicetalk.http.api.StreamingHttpRequest;
-import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.http.api.StreamingHttpResponseFactory;
 
 import static io.servicetalk.http.api.HttpApiConversions.toBlockingClient;
 import static io.servicetalk.http.api.HttpApiConversions.toBlockingStreamingClient;
@@ -47,32 +29,46 @@ import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KE
 
 final class FilterableClientToClient implements StreamingHttpClient {
     private final FilterableStreamingHttpClient client;
-    private final HttpExecutionStrategy strategy;
+    private final DelegatingHttpExecutionContext executionContext;
 
     FilterableClientToClient(FilterableStreamingHttpClient filteredClient, HttpExecutionStrategy strategy) {
         client = filteredClient;
-        this.strategy = strategy;
+        this.executionContext = new DelegatingHttpExecutionContext(client.executionContext()) {
+            @Override
+            public HttpExecutionStrategy executionStrategy() {
+                return strategy;
+            }
+        };
     }
 
     @Override
     public HttpClient asClient() {
-        return toClient(this, strategy);
+        return toClient(this, executionContext.executionStrategy());
     }
 
     @Override
     public BlockingStreamingHttpClient asBlockingStreamingClient() {
-        return toBlockingStreamingClient(this, strategy);
+        return toBlockingStreamingClient(this, executionContext.executionStrategy());
     }
 
     @Override
     public BlockingHttpClient asBlockingClient() {
-        return toBlockingClient(this, strategy);
+        return toBlockingClient(this, executionContext.executionStrategy());
     }
 
     @Override
     public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
         return Single.defer(() -> {
-            request.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, strategy);
+            request.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, executionContext.executionStrategy());
+            // HttpExecutionStrategy currentStrategy = request.context().getOrDefault(
+            //         HTTP_EXECUTION_STRATEGY_KEY, defaultStrategy());
+            // if (defaultStrategy() == currentStrategy) {
+            //     HttpApiConversions.ClientAPI clientApi = request.context().getOrDefault(
+            //             HTTP_CLIENT_API_KEY, HttpApiConversions.ClientAPI.ASYNC_STREAMING);
+            //     request.context().put(HTTP_EXECUTION_STRATEGY_KEY, clientApi.defaultStrategy().merge(strategy));
+            // } else {
+            //     request.context().put(HTTP_EXECUTION_STRATEGY_KEY, strategy);
+            // }
             return client.request(request).shareContextOnSubscribe();
         });
     }
@@ -80,21 +76,21 @@ final class FilterableClientToClient implements StreamingHttpClient {
     @Override
     public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpRequestMetaData metaData) {
         return Single.defer(() -> {
-            metaData.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, strategy);
+            metaData.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, executionContext.executionStrategy());
             return client.reserveConnection(metaData).map(rc -> new ReservedStreamingHttpConnection() {
                 @Override
                 public ReservedHttpConnection asConnection() {
-                    return toReservedConnection(this, strategy);
+                    return toReservedConnection(this, executionContext.executionStrategy());
                 }
 
                 @Override
                 public ReservedBlockingStreamingHttpConnection asBlockingStreamingConnection() {
-                    return toReservedBlockingStreamingConnection(this, strategy);
+                    return toReservedBlockingStreamingConnection(this, executionContext.executionStrategy());
                 }
 
                 @Override
                 public ReservedBlockingHttpConnection asBlockingConnection() {
-                    return toReservedBlockingConnection(this, strategy);
+                    return toReservedBlockingConnection(this, executionContext.executionStrategy());
                 }
 
                 @Override
@@ -109,7 +105,7 @@ final class FilterableClientToClient implements StreamingHttpClient {
                     // the method without strategy just as we do for the regular connection.
                     return Single.defer(() -> {
                         request.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY,
-                                FilterableClientToClient.this.strategy);
+                                FilterableClientToClient.this.executionContext.executionStrategy());
                         return rc.request(request).shareContextOnSubscribe();
                     });
                 }
@@ -159,7 +155,7 @@ final class FilterableClientToClient implements StreamingHttpClient {
 
     @Override
     public HttpExecutionContext executionContext() {
-        return client.executionContext();
+        return executionContext;
     }
 
     @Override

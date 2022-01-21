@@ -68,6 +68,7 @@ import static io.netty.util.NetUtil.toSocketAddressString;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoffDeltaJitter;
+import static io.servicetalk.http.api.HttpApiConversions.toStreamingClient;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.netty.AlpnIds.HTTP_2;
@@ -293,7 +294,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
             HttpExecutionStrategy computedStrategy = ctx.builder.strategyComputation.buildForClient(executionStrategy);
             LOGGER.debug("Client for {} created with base strategy {} → computed strategy {}",
                     targetAddress(ctx), executionStrategy, computedStrategy);
-            return new FilterableClientToClient(currClientFilterFactory != null ?
+            return toStreamingClient(currClientFilterFactory != null ?
                     currClientFilterFactory.create(lbClient, lb.eventStream(), ctx.sdStatus) :
                         lbClient, computedStrategy);
         } catch (final Throwable t) {

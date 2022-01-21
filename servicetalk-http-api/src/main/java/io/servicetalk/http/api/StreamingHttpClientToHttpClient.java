@@ -19,10 +19,11 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 
+import static io.servicetalk.http.api.HttpContextKeys.HTTP_CLIENT_API_KEY;
 import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.RequestResponseFactories.toAggregated;
-import static io.servicetalk.http.api.StreamingHttpConnectionToHttpConnection.DEFAULT_CONNECTION_STRATEGY;
+import static io.servicetalk.http.api.StreamingHttpConnectionToHttpConnection.DEFAULT_ASYNC_CONNECTION_STRATEGY;
 import static java.util.Objects.requireNonNull;
 
 final class StreamingHttpClientToHttpClient implements HttpClient {
@@ -32,7 +33,7 @@ final class StreamingHttpClientToHttpClient implements HttpClient {
     private final HttpRequestResponseFactory reqRespFactory;
 
     StreamingHttpClientToHttpClient(final StreamingHttpClient client, final HttpExecutionStrategy strategy) {
-        this.strategy = defaultStrategy() == strategy ? DEFAULT_CONNECTION_STRATEGY : strategy;
+        this.strategy = defaultStrategy() == strategy ? DEFAULT_ASYNC_CONNECTION_STRATEGY : strategy;
         this.client = client;
         context = new DelegatingHttpExecutionContext(client.executionContext()) {
             @Override
@@ -46,7 +47,9 @@ final class StreamingHttpClientToHttpClient implements HttpClient {
     @Override
     public Single<HttpResponse> request(final HttpRequest request) {
         return Single.defer(() -> {
-            request.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, strategy);
+            if (null == request.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, strategy)) {
+                request.context().put(HTTP_CLIENT_API_KEY, HttpApiConversions.ClientAPI.ASYNC_AGGREGATED);
+            }
             return client.request(request.toStreamingRequest())
                     .flatMap(response -> response.toResponse().shareContextOnSubscribe())
                     .shareContextOnSubscribe();
@@ -56,7 +59,9 @@ final class StreamingHttpClientToHttpClient implements HttpClient {
     @Override
     public Single<ReservedHttpConnection> reserveConnection(final HttpRequestMetaData metaData) {
         return Single.defer(() -> {
-            metaData.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, strategy);
+            if (null == metaData.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, strategy)) {
+                metaData.context().put(HTTP_CLIENT_API_KEY, HttpApiConversions.ClientAPI.ASYNC_AGGREGATED);
+            }
             return client.reserveConnection(metaData)
                     .map(c -> new ReservedStreamingHttpConnectionToReservedHttpConnection(c, this.strategy,
                             reqRespFactory))
@@ -118,7 +123,7 @@ final class StreamingHttpClientToHttpClient implements HttpClient {
 
         ReservedStreamingHttpConnectionToReservedHttpConnection(final ReservedStreamingHttpConnection connection,
                                                                 final HttpExecutionStrategy strategy) {
-            this(connection, defaultStrategy() == strategy ? DEFAULT_CONNECTION_STRATEGY : strategy,
+            this(connection, defaultStrategy() == strategy ? DEFAULT_ASYNC_CONNECTION_STRATEGY : strategy,
                     toAggregated(connection));
         }
 

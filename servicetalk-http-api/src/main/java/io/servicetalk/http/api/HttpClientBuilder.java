@@ -27,7 +27,7 @@ import io.servicetalk.transport.api.IoExecutor;
  * @param <R> the type of address after resolution (resolved address)
  * @param <SDE> the type of {@link ServiceDiscovererEvent}
  */
-interface HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> {
+public interface HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> {
 
     /**
      * Sets the {@link Executor} for all connections created from this builder.

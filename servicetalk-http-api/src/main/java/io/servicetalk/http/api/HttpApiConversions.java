@@ -20,11 +20,31 @@ import io.servicetalk.http.api.StreamingHttpClientToBlockingStreamingHttpClient.
 import io.servicetalk.http.api.StreamingHttpClientToHttpClient.ReservedStreamingHttpConnectionToReservedHttpConnection;
 
 import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
+import static io.servicetalk.http.api.StreamingHttpConnectionToBlockingHttpConnection.DEFAULT_BLOCKING_CONNECTION_STRATEGY;
+import static io.servicetalk.http.api.StreamingHttpConnectionToBlockingStreamingHttpConnection.DEFAULT_BLOCKING_STREAMING_CONNECTION_STRATEGY;
+import static io.servicetalk.http.api.StreamingHttpConnectionToHttpConnection.DEFAULT_ASYNC_CONNECTION_STRATEGY;
 
 /**
  * Conversion routines to {@link StreamingHttpService}.
  */
 public final class HttpApiConversions {
+
+    enum ClientAPI {
+        BLOCKING_AGGREGATED(DEFAULT_BLOCKING_CONNECTION_STRATEGY),
+        BLOCKING_STREAMING(DEFAULT_BLOCKING_STREAMING_CONNECTION_STRATEGY),
+        ASYNC_AGGREGATED(DEFAULT_ASYNC_CONNECTION_STRATEGY),
+        ASYNC_STREAMING(DefaultHttpExecutionStrategy.OFFLOADD_ALL_REQRESP_EVENT_STRATEGY);
+
+        private final HttpExecutionStrategy defaultApiStrategy;
+
+        ClientAPI(HttpExecutionStrategy defaultApiStrategy) {
+            this.defaultApiStrategy = defaultApiStrategy;
+        }
+
+        public HttpExecutionStrategy defaultStrategy() {
+            return defaultApiStrategy;
+        }
+    }
 
     private HttpApiConversions() {
         // no instances
@@ -217,6 +237,18 @@ public final class HttpApiConversions {
      */
     public static HttpClient toClient(StreamingHttpClient original, HttpExecutionStrategy strategy) {
         return new StreamingHttpClientToHttpClient(original, strategy);
+    }
+
+    /**
+     * Convert from {@link FilterableStreamingHttpClient} to {@link StreamingHttpClient}.
+     *
+     * @param client orignal {@link FilterableClientToClient} to convert.
+     * @param strategy required strategy for the service when invoking the resulting {@link HttpClient}
+     * @return The conversion result.
+     */
+    public static StreamingHttpClient toStreamingClient(final FilterableStreamingHttpClient client,
+                                                        final HttpExecutionStrategy strategy) {
+        return new FilterableClientToClient(client, strategy);
     }
 
     /**
