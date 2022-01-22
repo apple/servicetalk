@@ -1,5 +1,5 @@
 /*
- * Copyright © 2022 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import javax.ws.rs.core.Application;
 
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
 import static io.servicetalk.data.jackson.jersey.ServiceTalkJacksonSerializerFeature.ST_JSON_FEATURE;
-import static io.servicetalk.data.jackson.jersey.ServiceTalkJacksonSerializerFeature.contextResolverFor;
+import static io.servicetalk.data.jackson.jersey.ServiceTalkJacksonSerializerFeature.newContextResolver;
 import static io.servicetalk.data.jackson.jersey.resources.SingleJsonResources.PATH;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_JSON;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
@@ -37,9 +37,7 @@ import static java.util.Collections.singletonMap;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.glassfish.jersey.internal.InternalProperties.JSON_FEATURE;
 
-// FIXME 0.43 - Remove deprecation
-@Deprecated
-class CustomJacksonSerializationProviderTest extends AbstractJerseyStreamingHttpServiceTest {
+class CustomJacksonSerializationFactoryTest extends AbstractJerseyStreamingHttpServiceTest {
 
     static class TestApplication extends Application {
         @Override
@@ -49,7 +47,7 @@ class CustomJacksonSerializationProviderTest extends AbstractJerseyStreamingHttp
 
         @Override
         public Set<Object> getSingletons() {
-            return singleton(contextResolverFor(new ObjectMapper().disable(FAIL_ON_UNKNOWN_PROPERTIES)));
+            return singleton(newContextResolver(new ObjectMapper().disable(FAIL_ON_UNKNOWN_PROPERTIES)));
         }
 
         @Override
