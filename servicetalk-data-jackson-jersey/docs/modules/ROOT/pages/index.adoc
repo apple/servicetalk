@@ -12,16 +12,16 @@ CAUTION: This serializer can not currently be used with Server-Sent Events (SSE)
 If you have configured a Jackson `ObjectMapper` and want to use it with this module, you need to provide it to the
 JAX-RS runtime as
 a https://eclipse-ee4j.github.io/jaxrs-api/apidocs/2.1.6/javax/ws/rs/ext/ContextResolver.html[`ContextResolver`].
-To help with this, `ServiceTalkJacksonSerializerFeature` provides a helper method named `contextResolverFor` that
-can build a `ContextResolver<JacksonSerializationProvider>` from an `ObjectMapper` instance.
+To help with this, `ServiceTalkJacksonSerializerFeature` provides a helper method named `newContextResolver` that
+can build a `ContextResolver<JacksonSerializerFactory>` from an `ObjectMapper` instance.
 
 It is up to the user to properly register this `ContextResolver` with their application.
 
-== Using a custom JacksonSerializationProvider
+== Using a custom JacksonSerializerFactory
 
 Like with `ObjectMapper`, if you want to use a custom `ServiceTalkJacksonSerializerFeature` you need to provide it as
 a https://eclipse-ee4j.github.io/jaxrs-api/apidocs/2.1.6/javax/ws/rs/ext/ContextResolver.html[`ContextResolver`].
-`ServiceTalkJacksonSerializerFeature` provides a helper method named `contextResolverFor` that
-can build a `ContextResolver<JacksonSerializationProvider>` from an `ServiceTalkJacksonSerializerFeature` instance.
+`ServiceTalkJacksonSerializerFeature` provides a helper method named `newContextResolver` that
+can build a `ContextResolver<JacksonSerializerFactory>` from an `ServiceTalkJacksonSerializerFeature` instance.
 
 It is up to the user to properly register this `ContextResolver` with their application.
