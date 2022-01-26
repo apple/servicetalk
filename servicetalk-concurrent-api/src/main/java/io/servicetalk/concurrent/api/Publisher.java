@@ -2408,7 +2408,8 @@ public abstract class Publisher<T> {
      * @param minSubscribers The upstream subscribe operation will not happen until after this many {@link Subscriber}
      * subscribe to the return value.
      * @param cancelUpstream {@code true} if upstream should be {@link Subscription#cancel() cancelled} when all
-     * downstream {@link Subscriber}s cancel.
+     * downstream {@link Subscriber}s cancel. {@code false} means that cancel will not be propagated upstream even if
+     * all downstream {@link Subscriber}s cancel, and the upstream Subscription will stay valid until termination.
      * @return a {@link Publisher} that subscribes a single time upstream but allows for multiple downstream
      * {@link Subscriber}s. Signals from upstream will be multicast to each downstream {@link Subscriber}.
      * @see <a href="http://reactivex.io/documentation/operators/publish.html">ReactiveX multicast operator</a>
@@ -2470,7 +2471,8 @@ public abstract class Publisher<T> {
      * @param queueLimit The number of elements which will be queued for each {@link Subscriber} in order to compensate
      * for unequal demand.
      * @param cancelUpstream {@code true} if upstream should be {@link Subscription#cancel() cancelled} when all
-     * downstream {@link Subscriber}s cancel.
+     * downstream {@link Subscriber}s cancel.{@code false} means that cancel will not be propagated upstream even if
+     * all downstream {@link Subscriber}s cancel, and the upstream Subscription will stay valid until termination.
      * @return a {@link Publisher} that subscribes a single time upstream but allows for multiple downstream
      * {@link Subscriber}s. Signals from upstream will be multicast to each downstream {@link Subscriber}.
      * @see <a href="http://reactivex.io/documentation/operators/publish.html">ReactiveX multicast operator</a>
@@ -2540,7 +2542,8 @@ public abstract class Publisher<T> {
      * @param queueLimit The number of elements which will be queued for each {@link Subscriber} in order to compensate
      * for unequal demand.
      * @param cancelUpstream {@code true} if upstream should be {@link Subscription#cancel() cancelled} when all
-     * downstream {@link Subscriber}s cancel.
+     * downstream {@link Subscriber}s cancel. {@code false} means that cancel will not be propagated upstream even if
+     * all downstream {@link Subscriber}s cancel, and the upstream Subscription will stay valid until termination.
      * @param terminalResubscribe A {@link Function} that is invoked when a terminal signal arrives from upstream, and
      * returns a {@link Completable} whose termination resets the state of the returned {@link Publisher} and allows
      * for downstream resubscribing. The argument to this function is as follows:
