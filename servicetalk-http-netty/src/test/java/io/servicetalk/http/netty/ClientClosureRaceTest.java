@@ -46,6 +46,7 @@ import static io.servicetalk.concurrent.api.Single.collectUnordered;
 import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1;
 import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolicy.ofConstantBackoffFullJitter;
+import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolicy.ofImmediate;
 import static java.lang.Integer.MAX_VALUE;
 import static java.net.InetAddress.getLoopbackAddress;
 import static java.nio.charset.StandardCharsets.US_ASCII;
@@ -176,7 +177,8 @@ class ClientClosureRaceTest {
     private SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> newClientBuilder() {
         final RetryingHttpRequesterFilter.Builder retryBuilder = new RetryingHttpRequesterFilter.Builder();
         return HttpClients.forSingleAddress(HostAndPort.of((InetSocketAddress) serverSocket.getLocalSocketAddress()))
-                .appendClientFilter(retryBuilder
+                .appendClientFilter(retryBuilder.maxTotalRetries(MAX_VALUE)
+                        .retryRetryableExceptions((__, ___) -> ofImmediate(MAX_VALUE))
                         .retryOther((md, t) ->
                                 // This test has the server intentionally hard-close the connection after responding
                                 // to the first request, however some tests use pipelining and may write multiple
