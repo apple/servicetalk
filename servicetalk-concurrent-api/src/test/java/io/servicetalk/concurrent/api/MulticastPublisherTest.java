@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021-2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -127,18 +127,48 @@ class MulticastPublisherTest {
         }
     }
 
-    @Test
-    void singleSubscriberCancel() throws InterruptedException {
-        toSource(source.multicast(1)).subscribe(subscriber1);
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void singleSubscriberCancel(boolean cancelUpstream) throws InterruptedException {
+        toSource(source.multicast(1, cancelUpstream)).subscribe(subscriber1);
         Subscription subscription1 = subscriber1.awaitSubscription();
         subscription1.cancel();
         subscription1.cancel(); // multiple cancels should be safe.
-        subscription.awaitCancelled();
+        if (cancelUpstream) {
+            subscription.awaitCancelled();
+        } else {
+            assertThat(subscription.isCancelled(), is(false));
+        }
     }
 
     @Test
-    void subscriberCancelThenRequestIsNoop() throws InterruptedException {
-        Publisher<Integer> publisher = source.multicast(2);
+    void singleSubscriberCancelStillDeliversData() throws InterruptedException {
+        Publisher<Integer> publisher = source.multicast(1, false);
+        toSource(publisher).subscribe(subscriber1);
+        Subscription subscription1 = subscriber1.awaitSubscription();
+        subscription1.request(1);
+        subscription.awaitRequestN(1);
+        subscription1.cancel();
+        assertThat(subscription.isCancelled(), is(false));
+
+        toSource(publisher).subscribe(subscriber2);
+        Subscription subscription2 = subscriber2.awaitSubscription();
+
+        source.onNext(1); // first subscriber already issued demand, we can deliver and signal must be queued.
+        assertThat(subscriber2.pollOnNext(10, MILLISECONDS), nullValue());
+
+        subscription2.request(1);
+        assertThat(subscriber1.pollOnNext(10, MILLISECONDS), nullValue());
+        assertThat(subscriber2.takeOnNext(), is(1));
+
+        subscription2.cancel();
+        assertThat(subscription.isCancelled(), is(false));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void subscriberCancelThenRequestIsNoop(boolean cancelUpstream) throws InterruptedException {
+        Publisher<Integer> publisher = source.multicast(2, cancelUpstream);
         toSource(publisher).subscribe(subscriber1);
         Subscription subscription1 = subscriber1.awaitSubscription();
         assertThat(subscription.requested(), is(0L));
@@ -162,6 +192,13 @@ class MulticastPublisherTest {
         source.onNext(2);
         assertThat(subscriber1.pollOnNext(10, MILLISECONDS), nullValue());
         assertThat(subscriber2.takeOnNext(), is(2));
+
+        subscription2.cancel();
+        if (cancelUpstream) {
+            subscription.awaitCancelled();
+        } else {
+            assertThat(subscription.isCancelled(), is(false));
+        }
     }
 
     @ParameterizedTest
@@ -281,9 +318,9 @@ class MulticastPublisherTest {
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void twoSubscribersCancel(boolean firstSubscription) throws InterruptedException {
-        Publisher<Integer> publisher = source.multicast(2);
+    @MethodSource("trueFalseStream")
+    void twoSubscribersCancel(boolean firstSubscription, boolean cancelUpstream) throws InterruptedException {
+        Publisher<Integer> publisher = source.multicast(2, cancelUpstream);
         toSource(publisher).subscribe(subscriber1);
         Subscription subscription1 = subscriber1.awaitSubscription();
         toSource(publisher).subscribe(subscriber2);
@@ -321,6 +358,15 @@ class MulticastPublisherTest {
         subscription3.request(1);
         assertThat(subscriber3.takeOnNext(), is(1));
         subscriber3.awaitOnComplete();
+    }
+
+    private static Stream<Arguments> trueFalseStream() {
+        return Stream.of(
+                Arguments.of(true, true),
+                Arguments.of(true, false),
+                Arguments.of(false, true),
+                Arguments.of(false, false)
+        );
     }
 
     @ParameterizedTest
@@ -377,9 +423,9 @@ class MulticastPublisherTest {
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void threeSubscribersOneLateAfterCancel(boolean cancelMax) throws InterruptedException {
-        Publisher<Integer> publisher = source.multicast(2);
+    @MethodSource("trueFalseStream")
+    void threeSubscribersOneLateAfterCancel(boolean cancelMax, boolean cancelUpstream) throws InterruptedException {
+        Publisher<Integer> publisher = source.multicast(2, cancelUpstream);
         toSource(publisher).subscribe(subscriber1);
         Subscription localSubscription1 = subscriber1.awaitSubscription();
         localSubscription1.request(5);
@@ -733,10 +779,10 @@ class MulticastPublisherTest {
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void threeConcurrentLateSubscriber(boolean cancelEarlySub) throws Exception {
+    @MethodSource("trueFalseStream")
+    void threeConcurrentLateSubscriber(boolean cancelEarlySub, boolean cancelUpstream) throws Exception {
         final int expectedSignals = 1000;
-        Publisher<Integer> publisher = source.multicast(2, expectedSignals);
+        Publisher<Integer> publisher = source.multicast(2, expectedSignals, cancelUpstream);
         toSource(publisher).subscribe(subscriber1);
         Subscription subscription1 = subscriber1.awaitSubscription();
         subscription1.request(expectedSignals);

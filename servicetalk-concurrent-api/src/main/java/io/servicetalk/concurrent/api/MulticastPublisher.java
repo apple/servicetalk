@@ -60,10 +60,11 @@ final class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> 
     private final Function<Throwable, Completable> terminalResubscribe;
     private final int minSubscribers;
     private final boolean exactlyMinSubscribers;
+    private final boolean cancelUpstream;
     private volatile State state;
 
-    MulticastPublisher(Publisher<T> original, int minSubscribers, boolean exactlyMinSubscribers, int maxQueueSize,
-                       Function<Throwable, Completable> terminalResubscribe) {
+    MulticastPublisher(Publisher<T> original, int minSubscribers, boolean exactlyMinSubscribers, boolean cancelUpstream,
+                       int maxQueueSize, Function<Throwable, Completable> terminalResubscribe) {
         if (minSubscribers < 1) {
             throw new IllegalArgumentException("minSubscribers: " + minSubscribers + " (expected >1)");
         }
@@ -73,6 +74,7 @@ final class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> 
         this.original = original;
         this.minSubscribers = minSubscribers;
         this.exactlyMinSubscribers = exactlyMinSubscribers;
+        this.cancelUpstream = cancelUpstream;
         this.terminalResubscribe = requireNonNull(terminalResubscribe);
         state = new State(maxQueueSize, minSubscribers);
     }
@@ -113,7 +115,7 @@ final class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> 
                     System.arraycopy(currSubs, i + 1, newSubs, i, newSubs.length - i);
                 }
                 if (newSubscribersUpdater.compareAndSet(this, currSubs, newSubs)) {
-                    if (newSubs.length == 0) {
+                    if (cancelUpstream && newSubs.length == 0) {
                         // Reset the state when all subscribers have cancelled to allow for re-subscribe.
                         state = new State(maxQueueSize, minSubscribers);
                         return true;
