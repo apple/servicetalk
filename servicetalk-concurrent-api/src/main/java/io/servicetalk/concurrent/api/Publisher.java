@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -2356,7 +2356,7 @@ public abstract class Publisher<T> {
      */
     @Deprecated
     public final Publisher<T> multicastToExactly(int expectedSubscribers, int queueLimit) {
-        return new MulticastPublisher<>(this, expectedSubscribers, true, queueLimit, t -> completed());
+        return new MulticastPublisher<>(this, expectedSubscribers, true, true, queueLimit, t -> completed());
     }
 
     /**
@@ -2384,7 +2384,38 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/publish.html">ReactiveX multicast operator</a>
      */
     public final Publisher<T> multicast(int minSubscribers) {
-        return multicast(minSubscribers, 64);
+        return multicast(minSubscribers, true);
+    }
+
+    /**
+     * Create a {@link Publisher} that subscribes a single time upstream but allows for multiple downstream
+     * {@link Subscriber}s. Signals from upstream will be multicast to each downstream {@link Subscriber}.
+     * <p>
+     * Downstream {@link Subscriber}s may subscribe after the upstream subscribe, but signals that were delivered before
+     * the downstream {@link Subscriber} subscribed will not be queued.
+     * <p>
+     * Upstream outstanding {@link Subscription#request(long) Subscription demand} may be limited to provide an upper
+     * bound on queue sizes (e.g. demand from downstream {@link Subscriber}s will vary).
+     * In sequential programming this is similar to the following:
+     * <pre>{@code
+     *     List<T> results = resultOfThisPublisher();
+     *     List<List<T>> multiResults = ...; // simulating multiple Subscribers
+     *     for (int i = 0; i < expectedSubscribers; ++i) {
+     *         multiResults.add(results);
+     *     }
+     *     return multiResults;
+     * }</pre>
+     * @param minSubscribers The upstream subscribe operation will not happen until after this many {@link Subscriber}
+     * subscribe to the return value.
+     * @param cancelUpstream {@code true} if upstream should be {@link Subscription#cancel() cancelled} when all
+     * downstream {@link Subscriber}s cancel. {@code false} means that cancel will not be propagated upstream even if
+     * all downstream {@link Subscriber}s cancel, and the upstream Subscription will stay valid until termination.
+     * @return a {@link Publisher} that subscribes a single time upstream but allows for multiple downstream
+     * {@link Subscriber}s. Signals from upstream will be multicast to each downstream {@link Subscriber}.
+     * @see <a href="http://reactivex.io/documentation/operators/publish.html">ReactiveX multicast operator</a>
+     */
+    public final Publisher<T> multicast(int minSubscribers, boolean cancelUpstream) {
+        return multicast(minSubscribers, 64, cancelUpstream);
     }
 
     /**
@@ -2414,7 +2445,40 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/publish.html">ReactiveX multicast operator</a>
      */
     public final Publisher<T> multicast(int minSubscribers, int queueLimit) {
-        return multicast(minSubscribers, queueLimit, t -> completed());
+        return multicast(minSubscribers, queueLimit, true);
+    }
+
+    /**
+     * Create a {@link Publisher} that subscribes a single time upstream but allows for multiple downstream
+     * {@link Subscriber}s. Signals from upstream will be multicast to each downstream {@link Subscriber}.
+     * <p>
+     * Downstream {@link Subscriber}s may subscribe after the upstream subscribe, but signals that were delivered before
+     * the downstream {@link Subscriber} subscribed will not be queued.
+     * <p>
+     * Upstream outstanding {@link Subscription#request(long) Subscription demand} may be limited to provide an upper
+     * bound on queue sizes (e.g. demand from downstream {@link Subscriber}s will vary).
+     * In sequential programming this is similar to the following:
+     * <pre>{@code
+     *     List<T> results = resultOfThisPublisher();
+     *     List<List<T>> multiResults = ...; // simulating multiple Subscribers
+     *     for (int i = 0; i < expectedSubscribers; ++i) {
+     *         multiResults.add(results);
+     *     }
+     *     return multiResults;
+     * }</pre>
+     * @param minSubscribers The upstream subscribe operation will not happen until after this many {@link Subscriber}
+     * subscribe to the return value.
+     * @param queueLimit The number of elements which will be queued for each {@link Subscriber} in order to compensate
+     * for unequal demand.
+     * @param cancelUpstream {@code true} if upstream should be {@link Subscription#cancel() cancelled} when all
+     * downstream {@link Subscriber}s cancel.{@code false} means that cancel will not be propagated upstream even if
+     * all downstream {@link Subscriber}s cancel, and the upstream Subscription will stay valid until termination.
+     * @return a {@link Publisher} that subscribes a single time upstream but allows for multiple downstream
+     * {@link Subscriber}s. Signals from upstream will be multicast to each downstream {@link Subscriber}.
+     * @see <a href="http://reactivex.io/documentation/operators/publish.html">ReactiveX multicast operator</a>
+     */
+    public final Publisher<T> multicast(int minSubscribers, int queueLimit, boolean cancelUpstream) {
+        return multicast(minSubscribers, queueLimit, cancelUpstream, t -> completed());
     }
 
     /**
@@ -2452,7 +2516,48 @@ public abstract class Publisher<T> {
      */
     public final Publisher<T> multicast(int minSubscribers, int queueLimit,
                                         Function<Throwable, Completable> terminalResubscribe) {
-        return new MulticastPublisher<>(this, minSubscribers, false, queueLimit, terminalResubscribe);
+        return multicast(minSubscribers, queueLimit, true, terminalResubscribe);
+    }
+
+    /**
+     * Create a {@link Publisher} that subscribes a single time upstream but allows for multiple downstream
+     * {@link Subscriber}s. Signals from upstream will be multicast to each downstream {@link Subscriber}.
+     * <p>
+     * Downstream {@link Subscriber}s may subscribe after the upstream subscribe, but signals that were delivered before
+     * the downstream {@link Subscriber} subscribed will not be queued.
+     * <p>
+     * Upstream outstanding {@link Subscription#request(long) Subscription demand} may be limited to provide an upper
+     * bound on queue sizes (e.g. demand from downstream {@link Subscriber}s will vary).
+     * In sequential programming this is similar to the following:
+     * <pre>{@code
+     *     List<T> results = resultOfThisPublisher();
+     *     List<List<T>> multiResults = ...; // simulating multiple Subscribers
+     *     for (int i = 0; i < expectedSubscribers; ++i) {
+     *         multiResults.add(results);
+     *     }
+     *     return multiResults;
+     * }</pre>
+     * @param minSubscribers The upstream subscribe operation will not happen until after this many {@link Subscriber}
+     * subscribe to the return value.
+     * @param queueLimit The number of elements which will be queued for each {@link Subscriber} in order to compensate
+     * for unequal demand.
+     * @param cancelUpstream {@code true} if upstream should be {@link Subscription#cancel() cancelled} when all
+     * downstream {@link Subscriber}s cancel. {@code false} means that cancel will not be propagated upstream even if
+     * all downstream {@link Subscriber}s cancel, and the upstream Subscription will stay valid until termination.
+     * @param terminalResubscribe A {@link Function} that is invoked when a terminal signal arrives from upstream, and
+     * returns a {@link Completable} whose termination resets the state of the returned {@link Publisher} and allows
+     * for downstream resubscribing. The argument to this function is as follows:
+     * <ul>
+     *     <li>{@code null} if upstream terminates with {@link Subscriber#onComplete()}</li>
+     *     <li>otherwise the {@link Throwable} from {@link Subscriber#onError(Throwable)}</li>
+     * </ul>
+     * @return a {@link Publisher} that subscribes a single time upstream but allows for multiple downstream
+     * {@link Subscriber}s. Signals from upstream will be multicast to each downstream {@link Subscriber}.
+     * @see <a href="http://reactivex.io/documentation/operators/publish.html">ReactiveX multicast operator</a>
+     */
+    public final Publisher<T> multicast(int minSubscribers, int queueLimit, boolean cancelUpstream,
+                                        Function<Throwable, Completable> terminalResubscribe) {
+        return new MulticastPublisher<>(this, minSubscribers, false, cancelUpstream, queueLimit, terminalResubscribe);
     }
 
     /**
