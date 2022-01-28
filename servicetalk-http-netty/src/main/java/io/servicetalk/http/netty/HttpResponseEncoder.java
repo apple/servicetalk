@@ -37,6 +37,8 @@ import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 
+import io.netty.channel.ChannelHandlerContext;
+
 import java.util.Queue;
 
 import static io.netty.handler.codec.http.HttpConstants.SP;
@@ -45,16 +47,19 @@ import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_VERSION;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
 import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
+import static io.servicetalk.http.api.HttpResponseStatus.CONTINUE;
 import static io.servicetalk.http.api.HttpResponseStatus.NOT_MODIFIED;
 import static io.servicetalk.http.api.HttpResponseStatus.NO_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatus.SWITCHING_PROTOCOLS;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.INFORMATIONAL_1XX;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESSFUL_2XX;
-import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static java.util.Objects.requireNonNull;
 
 final class HttpResponseEncoder extends HttpObjectEncoder<HttpResponseMetaData> {
+    static final OnResponse NOOP_ON_RESPONSE = (ctx, status) -> { /* noop */ };
+
     private final Queue<HttpRequestMethod> methodQueue;
+    private final OnResponse onResponse;
 
     /**
      * Create a new instance.
@@ -63,26 +68,15 @@ final class HttpResponseEncoder extends HttpObjectEncoder<HttpResponseMetaData> 
      * initial line and the headers for a guess for future buffer allocations.
      * @param trailersEncodedSizeAccumulator  Used to calculate an exponential moving average of the encoded size of
      * the trailers for a guess for future buffer allocations.
-     * @param closeHandler the {@link CloseHandler}
+     * @param closeHandler the {@link CloseHandler}.
+     * @param onResponse listener for encoded responses.
      */
     HttpResponseEncoder(Queue<HttpRequestMethod> methodQueue, int headersEncodedSizeAccumulator,
-                        int trailersEncodedSizeAccumulator, final CloseHandler closeHandler) {
+                        int trailersEncodedSizeAccumulator, final CloseHandler closeHandler,
+                        final OnResponse onResponse) {
         super(headersEncodedSizeAccumulator, trailersEncodedSizeAccumulator, closeHandler);
         this.methodQueue = requireNonNull(methodQueue);
-    }
-
-    /**
-     * Create a new instance.
-     * @param methodQueue A queue used to enforce HTTP protocol semantics related to request/response lengths.
-     * @param headersEncodedSizeAccumulator Used to calculate an exponential moving average of the encoded size of the
-     * initial line and the headers for a guess for future buffer allocations.
-     * @param trailersEncodedSizeAccumulator  Used to calculate an exponential moving average of the encoded size of
-     * the trailers for a guess for future buffer allocations.
-     */
-    HttpResponseEncoder(Queue<HttpRequestMethod> methodQueue,
-                        int headersEncodedSizeAccumulator, int trailersEncodedSizeAccumulator) {
-        this(methodQueue, headersEncodedSizeAccumulator, trailersEncodedSizeAccumulator,
-                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER);
+        this.onResponse = requireNonNull(onResponse);
     }
 
     @Override
@@ -91,11 +85,12 @@ final class HttpResponseEncoder extends HttpObjectEncoder<HttpResponseMetaData> 
     }
 
     @Override
-    protected void encodeInitialLine(Buffer stBuffer, HttpResponseMetaData message) {
+    protected void encodeInitialLine(ChannelHandlerContext ctx, Buffer stBuffer, HttpResponseMetaData message) {
         message.version().writeTo(stBuffer);
         stBuffer.writeByte(SP);
         message.status().writeTo(stBuffer);
         stBuffer.writeShort(CRLF_SHORT);
+        onResponse.onResponse(ctx, message.status());
     }
 
     @Override
@@ -163,5 +158,23 @@ final class HttpResponseEncoder extends HttpObjectEncoder<HttpResponseMetaData> 
             return true;
         }
         return status.code() == NO_CONTENT.code() || status.code() == NOT_MODIFIED.code();
+    }
+
+    @Override
+    protected boolean isContinue(final HttpResponseMetaData msg) {
+        return msg.status().code() == CONTINUE.code();
+    }
+
+    /**
+     * Notifies when a response is sent.
+     */
+    interface OnResponse {
+
+        /**
+         * Notifies which {@link HttpResponseStatus.StatusClass} a response belongs to.
+         *
+         * @param status returned status code of the response
+         */
+        void onResponse(ChannelHandlerContext ctx, HttpResponseStatus status);
     }
 }

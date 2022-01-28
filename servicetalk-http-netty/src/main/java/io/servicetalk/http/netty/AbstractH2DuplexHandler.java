@@ -67,8 +67,8 @@ abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
     }
 
     final void writeMetaData(ChannelHandlerContext ctx, HttpMetaData metaData, Http2Headers h2Headers,
-                             ChannelPromise promise) {
-        final boolean endStream = emptyMessageBody(metaData);
+                             boolean maybeEndStream, ChannelPromise promise) {
+        final boolean endStream = maybeEndStream && emptyMessageBody(metaData);
         if (endStream) {
             closeHandler.protocolPayloadEndOutbound(ctx, promise);
         }

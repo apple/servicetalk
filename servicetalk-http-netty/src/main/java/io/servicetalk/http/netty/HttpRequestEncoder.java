@@ -35,6 +35,8 @@ import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 
+import io.netty.channel.ChannelHandlerContext;
+
 import java.util.Queue;
 
 import static io.netty.handler.codec.http.HttpConstants.SP;
@@ -101,7 +103,7 @@ final class HttpRequestEncoder extends HttpObjectEncoder<HttpRequestMetaData> {
     }
 
     @Override
-    protected void encodeInitialLine(Buffer stBuffer, HttpRequestMetaData message) {
+    protected void encodeInitialLine(ChannelHandlerContext ctx, Buffer stBuffer, HttpRequestMetaData message) {
         message.method().writeTo(stBuffer);
 
         String uri = message.requestTarget();

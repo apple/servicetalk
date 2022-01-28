@@ -20,6 +20,7 @@ import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.transport.netty.internal.CloseHandler;
+import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.utils.internal.IllegalCharacterException;
 
 import io.netty.buffer.ByteBuf;
@@ -155,6 +156,34 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
         // a 204 (No Content), or 304 (Not Modified) status code cannot contain a message body:
         return HEAD.equals(method)
                 || msg.status().code() == NO_CONTENT.code() || msg.status().code() == NOT_MODIFIED.code();
+    }
+
+    @Override
+    protected boolean isInterim(final HttpResponseMetaData msg) {
+        // All known informational status codes are interim and don't need to be propagated to the business logic
+        return msg.status().statusClass() == INFORMATIONAL_1XX;
+    }
+
+    @Override
+    protected void onMetaDataRead(final ChannelHandlerContext ctx, final HttpResponseMetaData msg) {
+        if (msg.status().statusClass() == SUCCESSFUL_2XX) {
+            // Any 2XX should also let the request payload body to proceed if "Expect: 100-continue" was used.
+            ctx.fireUserEventTriggered(DefaultNettyConnection.ContinueUserEvent.INSTANCE);
+        } else if (msg.status().statusClass() != INFORMATIONAL_1XX) {
+            // All other non-informational responses should cancel ongoing write operation when write waits for
+            // continuation.
+            ctx.fireUserEventTriggered(DefaultNettyConnection.CancelWriteUserEvent.INSTANCE);
+        }
+    }
+
+    @Override
+    protected void onDataSeen() {
+        // noop
+    }
+
+    @Override
+    protected void onStateReset() {
+        // noop
     }
 
     private static int nettyBufferToStatusCode(final ByteBuf buffer, final int start, final int length) {

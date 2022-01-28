@@ -40,6 +40,7 @@ import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.transport.netty.internal.ByteToMessageDecoder;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.transport.netty.internal.CloseHandler.DiscardFurtherInboundEvent;
+import io.servicetalk.transport.netty.internal.DefaultNettyConnection.ContinueUserEvent;
 import io.servicetalk.utils.internal.IllegalCharacterException;
 
 import io.netty.buffer.ByteBuf;
@@ -284,7 +285,10 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
 
                 message = createMessage(buffer, aStart, aEnd - aStart, bStart, bEnd - bStart, cStart, cLength);
                 currentState = State.READ_HEADER;
-                closeHandler.protocolPayloadBeginInbound(ctx);
+                if (!isInterim(message)) {
+                    // Don't notify CloseHandler if it's interim 100 (Continue) response
+                    closeHandler.protocolPayloadBeginInbound(ctx);
+                }
                 // fall-through
             }
             case READ_HEADER: {
@@ -296,13 +300,28 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                 if (shouldClose(message)) {
                     closeHandler.protocolClosingInbound(ctx);
                 }
+                onMetaDataRead(ctx, message);
                 currentState = nextState;
                 switch (nextState) {
                     case SKIP_CONTROL_CHARS:
                         // fast-path
                         // No content is expected.
-                        ctx.fireChannelRead(message);
-                        closeHandler.protocolPayloadEndInbound(ctx);
+                        if (isInterim(message)) {
+                            // We don't expose 1xx "interim responses" [2] to the user, and discard them to make way for
+                            // the "real" response.
+                            //
+                            // A client MUST be able to parse one or more 1xx responses received
+                            //    prior to a final response, even if the client does not expect one.  A
+                            //    user agent MAY ignore unexpected 1xx responses. [2]
+                            // 1xx responses are terminated by the first empty line after
+                            //    the status-line (the empty line signaling the end of the header
+                            //    section). [1]
+                            // [1] https://tools.ietf.org/html/rfc7231#section-6.2
+                            ctx.fireUserEventTriggered(ContinueUserEvent.INSTANCE);
+                        } else {
+                            ctx.fireChannelRead(message);
+                            closeHandler.protocolPayloadEndInbound(ctx);
+                        }
                         resetNow();
                         return;
                     case READ_CHUNK_SIZE:
@@ -343,6 +362,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                 // Keep reading data as a chunk until the end of connection is reached.
                 int toRead = buffer.readableBytes();
                 if (toRead > 0) {
+                    onDataSeen();
                     ByteBuf content = buffer.readRetainedSlice(toRead);
                     cumulationIndex = buffer.readerIndex();
                     ctx.fireChannelRead(newBufferFrom(content));
@@ -361,6 +381,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                 if (toRead == 0) {
                     return;
                 }
+                onDataSeen();
 
                 if (toRead > chunkSize) {
                     toRead = (int) chunkSize;
@@ -388,6 +409,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                 if (longLFIndex < 0) {
                     return;
                 }
+                onDataSeen();
                 final int lfIndex = crlfIndex(longLFIndex);
                 long chunkSize = getChunkSize(buffer, lfIndex);
                 consumeCRLF(buffer, lfIndex);
@@ -405,6 +427,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                 if (toRead == 0) {
                     return;
                 }
+                onDataSeen();
                 Buffer chunk = newBufferFrom(buffer.readRetainedSlice(toRead));
                 chunkSize -= toRead;
                 cumulationIndex = buffer.readerIndex();
@@ -539,6 +562,14 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
 
     protected abstract boolean isContentAlwaysEmpty(T msg);
 
+    protected abstract boolean isInterim(T msg);
+
+    protected abstract void onMetaDataRead(ChannelHandlerContext ctx, T msg);
+
+    protected abstract void onDataSeen();
+
+    protected abstract void onStateReset();
+
     /**
      * Returns true if the server switched to a different protocol than HTTP/1.0 or HTTP/1.1, e.g. HTTP/2 or Websocket.
      * Returns false if the upgrade happened in a different layer, e.g. upgrade from HTTP/1.1 to HTTP/1.1 over TLS.
@@ -553,7 +584,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                         !AsciiString.contains(newProtocol, HTTP_1_1.toString());
     }
 
-    private void resetNow() {
+    protected final void resetNow() {
         T message = this.message;
         this.message = null;
         this.trailer = null;
@@ -570,6 +601,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
 
         currentState = State.SKIP_CONTROL_CHARS;
         skippedControls = 0;
+        onStateReset();
     }
 
     /**

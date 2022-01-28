@@ -425,7 +425,7 @@ class HttpRequestEncoderTest extends HttpEncoderTest<HttpRequestMetaData> {
                                             channel2 -> {
                                                 serverChannelRef.compareAndSet(null, channel2);
                                                 serverChannelLatch.countDown();
-                                            }), defaultStrategy(), mock(Protocol.class), observer, false),
+                                            }), defaultStrategy(), mock(Protocol.class), observer, false, __ -> false),
                             connection -> { }).toFuture().get());
             ReadOnlyHttpClientConfig cConfig = new HttpClientConfig().asReadOnly();
             assert cConfig.h1Config() != null;
@@ -455,7 +455,8 @@ class HttpRequestEncoderTest extends HttpEncoderTest<HttpRequestMetaData> {
                                                                     serverCloseTrigger.onComplete();
                                                                 }
                                                             }
-                                                        })), defaultStrategy(), HTTP_1_1, connectionObserver, true);
+                                                        })), defaultStrategy(), HTTP_1_1, connectionObserver, true,
+                                        __ -> false);
                             },
                             NoopTransportObserver.INSTANCE).toFuture().get());
 

@@ -51,7 +51,7 @@ class NettyChannelPublisherRefCountTest {
         publisher = DefaultNettyConnection.initChannel(channel,
                         DEFAULT_ALLOCATOR, immediate(), null, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
                         defaultFlushStrategy(), null, channel2 -> { }, offloadAll(), mock(Protocol.class),
-                        NoopConnectionObserver.INSTANCE, true).toFuture().get()
+                        NoopConnectionObserver.INSTANCE, true, __ -> false).toFuture().get()
                 .read();
     }
 

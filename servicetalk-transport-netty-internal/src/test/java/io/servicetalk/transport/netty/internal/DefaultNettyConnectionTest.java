@@ -114,7 +114,8 @@ class DefaultNettyConnectionTest {
         CloseHandler closeHandler = closeHandlerFactory.apply(channel);
         conn = DefaultNettyConnection.<Buffer, Buffer>initChannel(channel, allocator, executor,
                 null, closeHandler, defaultFlushStrategy(), null, trailerProtocolEndEventEmitter(closeHandler),
-                offloadAll(), mock(Protocol.class), NoopConnectionObserver.INSTANCE, true).toFuture().get();
+                offloadAll(), mock(Protocol.class), NoopConnectionObserver.INSTANCE, true, __ -> false)
+                .toFuture().get();
         publisher = new TestPublisher<>();
     }
 

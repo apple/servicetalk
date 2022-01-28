@@ -37,16 +37,19 @@ import io.servicetalk.http.api.HttpHeaderValues;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpMetaData;
 import io.servicetalk.transport.netty.internal.CloseHandler;
+import io.servicetalk.transport.netty.internal.DefaultNettyConnection.CancelWriteUserEvent;
+import io.servicetalk.transport.netty.internal.DefaultNettyConnection.ContinueUserEvent;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
+import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.concurrent.PromiseCombiner;
 
 import java.io.IOException;
 import java.util.Map;
+import javax.annotation.Nullable;
 
 import static io.netty.buffer.ByteBufUtil.writeMediumBE;
 import static io.netty.buffer.ByteBufUtil.writeShortBE;
@@ -66,12 +69,13 @@ import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
+import static io.servicetalk.http.netty.HeaderUtils.EXPECT_CONTINUE;
 import static io.servicetalk.http.netty.HttpKeepAlive.shouldClose;
 import static java.lang.Long.toHexString;
 import static java.lang.Math.max;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 
-abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutboundHandlerAdapter {
+abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelDuplexHandler {
     static final int CRLF_SHORT = (CR << 8) | LF;
     private static final int ZERO_CRLF_MEDIUM = ('0' << 16) | CRLF_SHORT;
     private static final int COLON_AND_SPACE_SHORT = (COLON << 8) | SP;
@@ -106,6 +110,11 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
     private final CloseHandler closeHandler;
 
     /**
+     * Used to remember when outgoing request has "Expect: 100-continue" header.
+     */
+    private boolean expectContinue;
+
+    /**
      * Create a new instance.
      * @param headersEncodedSizeAccumulator Used to calculate an exponential moving average of the encoded size of the
      * initial line and the headers for a guess for future buffer allocations.
@@ -134,9 +143,11 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
             }
 
             T metaData = castMetaData(msg);
-            closeHandler.protocolPayloadBeginOutbound(ctx);
-            if (shouldClose(metaData)) {
-                closeHandler.protocolClosingOutbound(ctx);
+            if (!isContinue(metaData)) {
+                closeHandler.protocolPayloadBeginOutbound(ctx);
+                if (shouldClose(metaData)) {
+                    closeHandler.protocolClosingOutbound(ctx);
+                }
             }
 
             // We prefer a direct allocation here because it is expected the resulted encoded Buffer will be written
@@ -147,18 +158,22 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
                 Buffer stBuf = newBufferFrom(byteBuf);
 
                 // Encode the message.
-                encodeInitialLine(stBuf, metaData);
+                encodeInitialLine(ctx, stBuf, metaData);
                 if (isContentAlwaysEmpty(metaData)) {
                     state = CONTENT_LEN_EMPTY;
-                    closeHandler.protocolPayloadEndOutbound(ctx, promise);
+                    if (!isContinue(metaData)) {
+                        closeHandler.protocolPayloadEndOutbound(ctx, promise);
+                    }
                 } else if (isTransferEncodingChunked(metaData.headers())) {
                     state = CONTENT_LEN_CHUNKED;
+                    expectContinue = EXPECT_CONTINUE.test(metaData);
                 } else {
                     state = getContentLength(metaData);
                     assert state > CONTENT_LEN_LARGEST_VALUE;
                     if (state == 0) {
-                        state = CONTENT_LEN_CONSUMED;
-                        closeHandler.protocolPayloadEndOutbound(ctx, promise);
+                        contentLenConsumed(ctx, promise);
+                    } else {
+                        expectContinue = EXPECT_CONTINUE.test(metaData);
                     }
                 }
 
@@ -191,8 +206,7 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
                 tryTooMuchContent(ctx, readableBytes, promise);
             } else {
                 if (state == 0) {
-                    state = CONTENT_LEN_CONSUMED;
-                    closeHandler.protocolPayloadEndOutbound(ctx, promise);
+                    contentLenConsumed(ctx, promise);
                 }
                 ctx.write(encodeAndRetain(stBuffer), promise);
             }
@@ -216,6 +230,24 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
                 ctx.write(EMPTY_BUFFER, promise);
             }
         }
+    }
+
+    @Override
+    public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) {
+        if (expectContinue && evt == ContinueUserEvent.INSTANCE) {
+            // Reset the flag after receiving 100 (Continue).
+            expectContinue = false;
+        } else if (expectContinue && evt == CancelWriteUserEvent.INSTANCE) {
+            // Mark as content consumed and reset the flag to prepare for the next request on the same connection.
+            contentLenConsumed(ctx, null);
+            expectContinue = false;
+        }
+        ctx.fireUserEventTriggered(evt);
+    }
+
+    private void contentLenConsumed(final ChannelHandlerContext ctx, @Nullable final ChannelPromise promise) {
+        state = CONTENT_LEN_CONSUMED;
+        closeHandler.protocolPayloadEndOutbound(ctx, promise);
     }
 
     private static void tryFailNonEmptyTrailers(ChannelHandlerContext ctx, HttpHeaders trailers,
@@ -274,6 +306,10 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
         return false;
     }
 
+    protected boolean isContinue(@SuppressWarnings("unused") T msg) {
+        return false;
+    }
+
     private void sanitizeHeadersBeforeEncode(T msg) {
         if (state == CONTENT_LEN_CHUNKED && HTTP_1_1.equals(msg.version())) {
             // A sender MUST remove the received Content-Length field prior to forwarding a "Transfer-Encoding: chunked"
@@ -300,7 +336,7 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
      * @param buf The {@link Buffer} to encode to.
      * @param message The message to encode.
      */
-    protected abstract void encodeInitialLine(Buffer buf, T message);
+    protected abstract void encodeInitialLine(ChannelHandlerContext ctx, Buffer buf, T message);
 
     /**
      * Get the expected length of content when {@link HttpHeaderNames#TRANSFER_ENCODING} is not

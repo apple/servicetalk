@@ -79,12 +79,18 @@ final class NonPipelinedCloseHandler extends CloseHandler {
     }
 
     @Override
-    public void protocolPayloadEndOutbound(final ChannelHandlerContext ctx, final ChannelPromise promise) {
-        ctx.pipeline().fireUserEventTriggered(OutboundDataEndEvent.INSTANCE);
-        promise.addListener(f -> {
-            state = unset(state, WRITE);
-            outboundEventCheckClose(ctx.channel(), closeEvent);
-        });
+    public void protocolPayloadEndOutbound(final ChannelHandlerContext ctx, @Nullable final ChannelPromise promise) {
+        if (promise == null) {
+            protocolPayloadEndOutbound0(ctx);
+        } else {
+            ctx.pipeline().fireUserEventTriggered(OutboundDataEndEvent.INSTANCE);
+            promise.addListener(f -> protocolPayloadEndOutbound0(ctx));
+        }
+    }
+
+    private void protocolPayloadEndOutbound0(final ChannelHandlerContext ctx) {
+        state = unset(state, WRITE);
+        outboundEventCheckClose(ctx.channel(), closeEvent);
     }
 
     @Override

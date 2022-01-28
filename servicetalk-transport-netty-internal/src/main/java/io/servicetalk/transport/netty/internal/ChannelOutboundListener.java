@@ -28,11 +28,23 @@ interface ChannelOutboundListener {
     void channelWritable();
 
     /**
+     * Signals that further write operations can be continued.
+     */
+    void continueWriting();
+
+    /**
      * Notification that the channel's outbound side has been closed and will no longer accept writes.
      * <p>
      * Always called from the event loop thread.
      */
     void channelOutboundClosed();
+
+    /**
+     * Request to terminate the source of data.
+     * <p>
+     * Could happen if protocol supports termination/cancellation of the data it supposes to send.
+     */
+    void terminateSource();
 
     /**
      * Notification that the channel has been closed.

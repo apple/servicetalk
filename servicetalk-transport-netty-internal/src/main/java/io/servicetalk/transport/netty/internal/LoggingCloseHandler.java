@@ -23,6 +23,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 
 import java.util.function.Consumer;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.logging.slf4j.internal.Slf4jFixedLevelLoggers.newLogger;
 
@@ -54,7 +55,7 @@ final class LoggingCloseHandler extends CloseHandler {
     }
 
     @Override
-    public void protocolPayloadEndOutbound(ChannelHandlerContext ctx, final ChannelPromise promise) {
+    public void protocolPayloadEndOutbound(ChannelHandlerContext ctx, @Nullable final ChannelPromise promise) {
         logger.log("{} protocolPayloadEndOutbound {}", ctx.channel(), delegate);
         delegate.protocolPayloadEndOutbound(ctx, promise);
     }
