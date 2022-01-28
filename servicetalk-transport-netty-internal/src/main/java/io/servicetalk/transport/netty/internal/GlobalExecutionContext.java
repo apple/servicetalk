@@ -15,6 +15,7 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Executors;
@@ -26,6 +27,9 @@ import io.servicetalk.transport.api.IoExecutor;
 import io.netty.channel.EventLoopGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.transport.api.ExecutionStrategy.offloadAll;
@@ -132,6 +136,17 @@ public final class GlobalExecutionContext {
         @Override
         public Executor asExecutor() {
             return delegate.asExecutor();
+        }
+
+        @Override
+        public Cancellable execute(final Runnable task) throws RejectedExecutionException {
+            return delegate.execute(task);
+        }
+
+        @Override
+        public Cancellable schedule(final Runnable task, final long delay, final TimeUnit unit)
+                throws RejectedExecutionException {
+            return delegate.schedule(task, delay, unit);
         }
     }
 

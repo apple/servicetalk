@@ -15,15 +15,15 @@
  */
 package io.servicetalk.transport.api;
 
+import io.servicetalk.concurrent.Executor;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 
-import java.util.concurrent.Executor;
 import java.util.function.BooleanSupplier;
 
 /**
  * {@link Executor} that handles IO.
  */
-public interface IoExecutor extends ListenableAsyncCloseable {
+public interface IoExecutor extends Executor, ListenableAsyncCloseable {
 
     /**
      * Determine if <a href="https://en.wikipedia.org/wiki/Unix_domain_socket">Unix Domain Sockets</a> are supported.
