@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.client.api.AddressOwenedConnection;
 import io.servicetalk.client.api.LoadBalancedConnection;
 
 /**
@@ -22,5 +23,5 @@ import io.servicetalk.client.api.LoadBalancedConnection;
  * LoadBalancedConnection} contract.
  */
 public interface FilterableStreamingHttpLoadBalancedConnection
-        extends FilterableStreamingHttpConnection, LoadBalancedConnection {
+        extends FilterableStreamingHttpConnection, LoadBalancedConnection, AddressOwenedConnection {
 }

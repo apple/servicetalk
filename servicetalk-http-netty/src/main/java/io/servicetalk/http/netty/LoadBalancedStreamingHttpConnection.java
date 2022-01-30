@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.client.api.LoadBalancedAddress;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.internal.ReservableRequestConcurrencyController;
 import io.servicetalk.concurrent.api.Completable;
@@ -61,6 +62,11 @@ final class LoadBalancedStreamingHttpConnection implements FilterableStreamingHt
         this.filteredConnection = filteredConnection;
         this.limiter = requireNonNull(limiter);
         this.connectStrategy = connectStrategy;
+    }
+
+    @Override
+    public void parent(final LoadBalancedAddress<?> parent) {
+        filteredConnection.parent(parent);
     }
 
     @Override

@@ -16,6 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.ConnectionFactory;
+import io.servicetalk.client.api.LoadBalancedAddress;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
@@ -135,9 +136,15 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
             implements FilterableStreamingHttpLoadBalancedConnection {
 
         private final FilterableStreamingHttpConnection delegate;
+        volatile LoadBalancedAddress<?> parent;
 
         DefaultFilterableStreamingHttpLoadBalancedConnection(final FilterableStreamingHttpConnection delegate) {
             this.delegate = requireNonNull(delegate);
+        }
+
+        @Override
+        public void parent(final LoadBalancedAddress<?> parent) {
+            this.parent = parent;
         }
 
         @Override

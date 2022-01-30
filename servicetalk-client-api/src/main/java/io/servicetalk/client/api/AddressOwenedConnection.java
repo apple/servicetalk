@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,13 +15,15 @@
  */
 package io.servicetalk.client.api;
 
-import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
-
 /**
- * A connection managed by a {@link LoadBalancer}.
- * <p>
- * Note: {@link ScoreSupplier} contract provides this connection's score, where 0.0 is the lowest score and 1.0 is the
- * highest. {@link LoadBalancer}s prefer connections with a higher score.
+ * Used to define a {@link LoadBalancedConnection} that is owened by an {@link LoadBalancedAddress}.
+ * It creates this association by calling the {@link #parent(LoadBalancedAddress)} during connection creation.
  */
-public interface LoadBalancedConnection extends ListenableAsyncCloseable, ScoreSupplier, AddressOwenedConnection {
+public interface AddressOwenedConnection {
+
+    /**
+     * Associates the {@link LoadBalancedAddress} as the parent of this {@link LoadBalancedConnection}.
+     * @param parent the {@link LoadBalancedAddress} the parent of this {@link LoadBalancedConnection}.
+     */
+    void parent(LoadBalancedAddress<?> parent);
 }

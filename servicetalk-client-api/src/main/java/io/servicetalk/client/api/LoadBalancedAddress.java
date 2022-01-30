@@ -18,6 +18,9 @@ package io.servicetalk.client.api;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 
+import java.util.function.IntUnaryOperator;
+import java.util.function.LongUnaryOperator;
+
 /**
  * An address managed by a {@link LoadBalancer}.
  * <p>
@@ -47,4 +50,13 @@ public interface LoadBalancedAddress<C extends LoadBalancedConnection>
     default float weight(float weight) {
         return 1f;
     }
+
+    /**
+     * Used to communicate individual {@link LoadBalancedConnection} connection interaction score to the owner
+     * {@code this} address. The provided {@link LongUnaryOperator} is expected to run in an atomic manner,
+     * thus no further synchronization principles are needed outside this.
+     * @param updateFunction the {@link LongUnaryOperator} operator to read and update the score
+     * sum of {@code this} address.
+     */
+    void updateConnectionsScore(LongUnaryOperator updateFunction);
 }
