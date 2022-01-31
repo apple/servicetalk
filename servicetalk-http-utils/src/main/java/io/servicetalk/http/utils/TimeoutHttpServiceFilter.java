@@ -15,9 +15,10 @@
  */
 package io.servicetalk.http.utils;
 
+import io.servicetalk.concurrent.Executor;
 import io.servicetalk.concurrent.TimeSource;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -35,6 +36,11 @@ import java.util.function.BiFunction;
  *
  * <p>The timeout applies either the response metadata (headers) completion or the complete reception of the response
  * payload body and optional trailers.
+ *
+ * <p>If no executor is specified at construction an executor from {@link HttpExecutionContext} associated with the
+ * service will be used. If the {@link HttpExecutionContext#executionStrategy()} specifies an
+ * {@link io.servicetalk.http.api.HttpExecutionStrategy} with offloads then {@link HttpExecutionContext#executor()} will
+ * be used and if no offloads are specified then {@link HttpExecutionContext#ioExecutor()} will be used.
  *
  * <p>The order with which this filter is applied may be highly significant. For example, appending it before a retry
  * filter would have different results than applying it after the retry filter; timeout would apply for all retries vs
@@ -151,9 +157,11 @@ public final class TimeoutHttpServiceFilter extends AbstractTimeoutHttpFilter
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                         final StreamingHttpRequest request,
                                                         final StreamingHttpResponseFactory responseFactory) {
+                HttpExecutionContext executionContext = ctx.executionContext();
                 return TimeoutHttpServiceFilter.this.withTimeout(request,
                         r -> delegate().handle(ctx, r, responseFactory),
-                        ctx.executionContext().executor());
+                        executionContext.executionStrategy().hasOffloads() ?
+                                executionContext.executor() : executionContext.ioExecutor());
             }
         };
     }
