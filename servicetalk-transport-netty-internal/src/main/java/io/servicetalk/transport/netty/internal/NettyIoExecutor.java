@@ -24,7 +24,7 @@ import io.servicetalk.transport.api.IoExecutor;
  * Implementations of this interface assumes that they would not be used to run blocking code.
  * If this assumption is violated, it will impact eventloop responsiveness and hence should be avoided.
  */
-public interface NettyIoExecutor extends IoExecutor {
+public interface NettyIoExecutor extends IoExecutor, Executor {
     /**
      * Get an {@link Executor} which will use an {@link IoExecutor} thread for execution.
      * <p><strong>Caution</strong></p>
