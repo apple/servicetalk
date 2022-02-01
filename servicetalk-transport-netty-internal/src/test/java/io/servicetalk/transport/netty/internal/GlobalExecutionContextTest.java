@@ -35,7 +35,7 @@ class GlobalExecutionContextTest {
         gec.executor().schedule(scheduleLatch::countDown, 5, MILLISECONDS);
         NettyIoExecutor ioExecutor = toNettyIoExecutor(gec.ioExecutor());
         assertThat("global ioExecutor does not support IoThread", ioExecutor.isIoThreadSupported());
-        ioExecutor.asExecutor().schedule(scheduleLatch::countDown, 5, MILLISECONDS);
+        ioExecutor.schedule(scheduleLatch::countDown, 5, MILLISECONDS);
         scheduleLatch.await();
     }
 }

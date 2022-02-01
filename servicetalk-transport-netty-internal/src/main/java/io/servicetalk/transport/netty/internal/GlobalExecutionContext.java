@@ -134,6 +134,7 @@ public final class GlobalExecutionContext {
         }
 
         @Override
+        @Deprecated
         public Executor asExecutor() {
             return delegate.asExecutor();
         }

@@ -15,7 +15,7 @@
  */
 package io.servicetalk.transport.api;
 
-import io.servicetalk.concurrent.Executor;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 
 import java.util.function.BooleanSupplier;
