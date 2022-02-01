@@ -24,7 +24,7 @@ import java.util.function.Supplier;
  * A general abstraction to execute immediate and delayed tasks.
  *
  * <h2>Long running tasks</h2>
- * {@link Executor} implementations are expected to run long running (blocking) tasks which may depend on other tasks
+ * {@link Executor} implementations are expected to run long-running (blocking) tasks which may depend on other tasks
  * submitted to the same {@link Executor} instance.
  * In order to avoid deadlocks, it is generally a good idea to not allow task queuing in the {@link Executor}.
  */
