@@ -15,15 +15,17 @@
  */
 package io.servicetalk.transport.api;
 
+import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 
 /**
  * {@link Executor} that handles IO.
  */
-public interface IoExecutor extends Executor, ListenableAsyncCloseable {
+public interface IoExecutor extends Executor {
 
     /**
      * Determine if <a href="https://en.wikipedia.org/wiki/Unix_domain_socket">Unix Domain Sockets</a> are supported.
@@ -59,5 +61,17 @@ public interface IoExecutor extends Executor, ListenableAsyncCloseable {
         return isIoThreadSupported() ?
                 IoThreadFactory.IoThread::currentThreadIsIoThread : // offload if on IO thread
                 Boolean.TRUE::booleanValue; // unconditional
+    }
+
+    // FIXME: 0.43 - remove default method
+    @Override
+    default Cancellable execute(Runnable task) throws RejectedExecutionException {
+        throw new UnsupportedOperationException("No existing IoExecutor implementations require this default");
+    }
+
+    // FIXME: 0.43 - remove default method
+    @Override
+    default Cancellable schedule(Runnable task, long delay, TimeUnit unit) throws RejectedExecutionException {
+        throw new UnsupportedOperationException("No existing IoExecutor implementations require this default");
     }
 }

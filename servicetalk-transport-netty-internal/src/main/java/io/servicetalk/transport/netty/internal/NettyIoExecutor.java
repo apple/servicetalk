@@ -33,6 +33,7 @@ public interface NettyIoExecutor extends IoExecutor {
      * @return an {@link Executor} which will use an {@link IoExecutor} thread for execution.
      * @deprecated IoExecutor now implements {@link Executor} so this method is redundant.
      */
+    // FIXME 0.43 - remove deprecated method
     @Deprecated
     Executor asExecutor();
 }
