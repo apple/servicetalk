@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.http.api.NewToDeprecatedFilter.NEW_TO_DEPRECATED_FILTER;
 import static java.util.Objects.requireNonNull;
 
 final class StrategyInfluencerAwareConversions {
@@ -67,7 +68,8 @@ final class StrategyInfluencerAwareConversions {
                 }
             };
         }
-        return (address, client) -> new StreamingHttpClientFilter(original.create(client));
+        return (address, client) -> new StreamingHttpClientFilter(
+                NEW_TO_DEPRECATED_FILTER.create(original.create(client)));
     }
 
     static StreamingHttpServiceFilterFactory toConditionalServiceFilterFactory(
