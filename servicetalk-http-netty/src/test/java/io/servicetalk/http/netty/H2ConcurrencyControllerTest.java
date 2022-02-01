@@ -74,7 +74,8 @@ class H2ConcurrencyControllerTest {
 
     @RegisterExtension
     static final ExecutionContextExtension CTX =
-        ExecutionContextExtension.cached("client-io", "client-executor");
+        ExecutionContextExtension.cached("client-io", "client-executor")
+                .setClassLevel(true);
 
     private EventLoopGroup serverEventLoopGroup;
     private Channel serverAcceptorChannel;
