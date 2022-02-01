@@ -15,14 +15,16 @@
  */
 package io.servicetalk.transport.api;
 
-import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
+import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.api.Executor;
 
-import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
 
 /**
  * {@link Executor} that handles IO.
  */
-public interface IoExecutor extends ListenableAsyncCloseable {
+public interface IoExecutor extends Executor {
 
     /**
      * Determine if <a href="https://en.wikipedia.org/wiki/Unix_domain_socket">Unix Domain Sockets</a> are supported.
@@ -38,4 +40,16 @@ public interface IoExecutor extends ListenableAsyncCloseable {
      * @return {@code true} if supported
      */
     boolean isFileDescriptorSocketAddressSupported();
+
+    // FIXME: 0.43 - remove default method
+    @Override
+    default Cancellable execute(Runnable task) throws RejectedExecutionException {
+        throw new UnsupportedOperationException("No existing IoExecutor implementations require this default");
+    }
+
+    // FIXME: 0.43 - remove default method
+    @Override
+    default Cancellable schedule(Runnable task, long delay, TimeUnit unit) throws RejectedExecutionException {
+        throw new UnsupportedOperationException("No existing IoExecutor implementations require this default");
+    }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -138,7 +138,7 @@ final class DefaultDnsClient implements DnsClient {
         this.nettyIoExecutor = toEventLoopAwareNettyIoExecutor(ioExecutor).next();
         // We must use nettyIoExecutor for the repeater for thread safety!
         srvHostNameRepeater = repeatWithConstantBackoffDeltaJitter(
-                srvHostNameRepeatInitialDelay, srvHostNameRepeatJitter, nettyIoExecutor.asExecutor());
+                srvHostNameRepeatInitialDelay, srvHostNameRepeatJitter, nettyIoExecutor);
         this.ttlCache = new MinTtlCache(new DefaultDnsCache(minTTL, Integer.MAX_VALUE, minTTL), minTTL);
         this.observer = observer;
         this.missingRecordStatus = missingRecordStatus;
@@ -147,7 +147,7 @@ final class DefaultDnsClient implements DnsClient {
                 closeAsync0();
                 return completed();
             }
-            return nettyIoExecutor.asExecutor().submit(this::closeAsync0);
+            return nettyIoExecutor.submit(this::closeAsync0);
         });
         final EventLoop eventLoop = this.nettyIoExecutor.eventLoopGroup().next();
         @SuppressWarnings("unchecked")
@@ -461,7 +461,7 @@ final class DefaultDnsClient implements DnsClient {
             if (nettyIoExecutor.isCurrentThreadEventLoop()) {
                 handleSubscribe0(subscriber);
             } else {
-                nettyIoExecutor.asExecutor().execute(() -> handleSubscribe0(subscriber));
+                nettyIoExecutor.execute(() -> handleSubscribe0(subscriber));
             }
         }
 
@@ -537,7 +537,7 @@ final class DefaultDnsClient implements DnsClient {
                 if (nettyIoExecutor.isCurrentThreadEventLoop()) {
                     request0(n);
                 } else {
-                    nettyIoExecutor.asExecutor().execute(() -> request0(n));
+                    nettyIoExecutor.execute(() -> request0(n));
                 }
             }
 
@@ -546,7 +546,7 @@ final class DefaultDnsClient implements DnsClient {
                 if (nettyIoExecutor.isCurrentThreadEventLoop()) {
                     cancel0();
                 } else {
-                    nettyIoExecutor.asExecutor().execute(this::cancel0);
+                    nettyIoExecutor.execute(this::cancel0);
                 }
             }
 
@@ -634,8 +634,7 @@ final class DefaultDnsClient implements DnsClient {
 
                 // This value is coming from DNS TTL for which the unit is seconds and the minimum value we accept
                 // in the builder is 1 second.
-                cancellableForQuery = nettyIoExecutor.asExecutor().schedule(
-                        this::doQuery0, nanos, NANOSECONDS);
+                cancellableForQuery = nettyIoExecutor.schedule(this::doQuery0, nanos, NANOSECONDS);
             }
 
             private void handleResolveDone0(final Future<DnsAnswer<T>> addressFuture,

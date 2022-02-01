@@ -85,6 +85,7 @@ abstract class AbstractNettyIoExecutor<T extends EventLoopGroup> implements Nett
     }
 
     @Override
+    @Deprecated
     public Executor asExecutor() {
         return this;
     }

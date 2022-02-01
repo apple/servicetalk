@@ -31,6 +31,9 @@ public interface NettyIoExecutor extends IoExecutor {
      * Implementation of this method assumes there would be no blocking code inside the submitted {@link Runnable}s.
      * If this assumption is violated, it will impact EventLoop responsiveness and hence should be avoided.
      * @return an {@link Executor} which will use an {@link IoExecutor} thread for execution.
+     * @deprecated IoExecutor now implements {@link Executor} so this method is redundant.
      */
+    // FIXME 0.43 - remove deprecated method
+    @Deprecated
     Executor asExecutor();
 }

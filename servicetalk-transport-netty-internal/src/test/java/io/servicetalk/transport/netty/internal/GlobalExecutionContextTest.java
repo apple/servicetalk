@@ -32,7 +32,7 @@ class GlobalExecutionContextTest {
         ExecutionContext gec = globalExecutionContext();
         CountDownLatch scheduleLatch = new CountDownLatch(2);
         gec.executor().schedule(scheduleLatch::countDown, 1, SECONDS);
-        toNettyIoExecutor(gec.ioExecutor()).asExecutor().schedule(scheduleLatch::countDown, 1, SECONDS);
+        toNettyIoExecutor(gec.ioExecutor()).schedule(scheduleLatch::countDown, 1, SECONDS);
         scheduleLatch.await();
     }
 }
