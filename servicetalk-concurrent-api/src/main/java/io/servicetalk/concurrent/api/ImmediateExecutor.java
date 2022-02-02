@@ -25,6 +25,9 @@ import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Executors.from;
 import static io.servicetalk.concurrent.api.NoopOffloader.NOOP_OFFLOADER;
 
+/**
+ * Implements {@link Executor} for {@link Executors#immediate()}.
+ */
 final class ImmediateExecutor extends AbstractOffloaderAwareExecutor {
 
     private static final Executor IMMEDIATE = from(Runnable::run);

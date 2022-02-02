@@ -64,7 +64,7 @@ final class TimeoutCompletable extends AbstractNoHandleSubscribeCompletable {
                 offloader, contextMap, contextProvider);
     }
 
-    private static final class TimeoutSubscriber implements Subscriber, Cancellable, Runnable {
+    private static final class TimeoutSubscriber implements Subscriber, Cancellable {
         /**
          * Create a local instance because the instance is used as part of the local state machine.
          */
@@ -106,7 +106,7 @@ final class TimeoutCompletable extends AbstractNoHandleSubscribeCompletable {
                 // it enabled for the Subscriber, however the user explicitly specifies the Executor with this operator
                 // so they can wrap the Executor in this case.
                 localTimerCancellable = requireNonNull(
-                        parent.timeoutExecutor.schedule(s, parent.durationNs, NANOSECONDS));
+                        parent.timeoutExecutor.schedule(s::timerFires, parent.durationNs, NANOSECONDS));
             } catch (Throwable cause) {
                 localTimerCancellable = IGNORE_CANCEL;
                 // We must set this to ignore so there are no further interactions with Subscriber in the future.
@@ -169,8 +169,7 @@ final class TimeoutCompletable extends AbstractNoHandleSubscribeCompletable {
             }
         }
 
-        @Override
-        public void run() {
+        private void timerFires() {
             Cancellable oldCancellable = cancellableUpdater.getAndSet(this, LOCAL_IGNORE_CANCEL);
             if (oldCancellable != LOCAL_IGNORE_CANCEL) {
                 // The timeout may be running on a different Executor than the original async source. If that is the

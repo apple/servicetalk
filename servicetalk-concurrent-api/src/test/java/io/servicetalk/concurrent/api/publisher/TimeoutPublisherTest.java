@@ -83,7 +83,7 @@ class TimeoutPublisherTest {
     }
 
     @RegisterExtension
-    final ExecutorExtension<TestExecutor> executorExtension = ExecutorExtension.withTestExecutor();
+    static final ExecutorExtension<TestExecutor> executorExtension = ExecutorExtension.withTestExecutor();
 
     private final TestPublisher<Integer> publisher = new TestPublisher<>();
     private final TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();

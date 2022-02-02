@@ -83,6 +83,15 @@ public interface ExecutionStrategy {
     <T> Publisher<T> offloadReceive(Executor fallback, Publisher<T> original);
 
     /**
+     * Returns {@code true} if the instance has offloading for any operation.
+     *
+     * @return {@code true} if the instance has offloading for any operation.
+     */
+    default boolean hasOffloads() {
+        return false;
+    }
+
+    /**
      * Returns the {@link Executor}, if any, for this {@link ExecutionStrategy}.
      *
      * @return {@link Executor} for this {@link ExecutionStrategy}. {@code null} if none specified.

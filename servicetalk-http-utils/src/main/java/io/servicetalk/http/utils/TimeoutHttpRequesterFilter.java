@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
+import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
@@ -35,6 +36,11 @@ import java.time.Duration;
  *
  * <p>The timeout applies either the response metadata (headers) completion or the complete reception of the response
  * payload body and optional trailers.
+ *
+ * <p>If no executor is specified at construction an executor from {@link HttpExecutionContext} associated with the
+ * client or connection will be used. If the {@link HttpExecutionContext#executionStrategy()} specifies an
+ * {@link HttpExecutionStrategy} with offloads then {@link HttpExecutionContext#executor()} will be used and if no
+ * offloads are specified then {@link HttpExecutionContext#ioExecutor()} will be used.
  *
  * <p>The order with which this filter is applied may be highly significant. For example, appending it before a retry
  * filter would have different results than applying it after the retry filter; timeout would apply for all retries vs
@@ -121,9 +127,11 @@ public final class TimeoutHttpRequesterFilter extends AbstractTimeoutHttpFilter
             protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                             final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
+                HttpExecutionContext executionContext = client.executionContext();
                 return TimeoutHttpRequesterFilter.this.withTimeout(request,
                         r -> delegate.request(strategy, r),
-                        client.executionContext().executor());
+                        executionContext.executionStrategy().hasOffloads() ?
+                                executionContext.executor() : executionContext.ioExecutor());
             }
         };
     }
@@ -134,9 +142,11 @@ public final class TimeoutHttpRequesterFilter extends AbstractTimeoutHttpFilter
             @Override
             public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                          final StreamingHttpRequest request) {
+                HttpExecutionContext executionContext = connection.executionContext();
                 return TimeoutHttpRequesterFilter.this.withTimeout(request,
                         r -> delegate().request(strategy, r),
-                        connection.executionContext().executor());
+                        executionContext.executionStrategy().hasOffloads() ?
+                                executionContext.executor() : executionContext.ioExecutor());
             }
         };
     }

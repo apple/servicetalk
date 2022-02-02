@@ -46,8 +46,7 @@ abstract class AbstractTimeoutHttpFilter implements HttpExecutionStrategyInfluen
     private final boolean fullRequestResponse;
 
     /**
-     * Executor that will be used for timeout actions. This is optional and the connection or request context executor
-     * or global executor will be used if not specified.
+     * Optional executor that will be used for scheduling and execution of timeout actions. If unspecified, the
      */
     @Nullable
     private final Executor timeoutExecutor;
@@ -84,9 +83,8 @@ abstract class AbstractTimeoutHttpFilter implements HttpExecutionStrategyInfluen
      */
     final Single<StreamingHttpResponse> withTimeout(final StreamingHttpRequest request,
             final Function<StreamingHttpRequest, Single<StreamingHttpResponse>> responseFunction,
-            @Nullable final Executor contextExecutor) {
+            final Executor contextExecutor) {
 
-        // timeoutExecutor → context executor → global default executor
         final Executor useForTimeout = null != this.timeoutExecutor ? this.timeoutExecutor : contextExecutor;
 
         return Single.defer(() -> {

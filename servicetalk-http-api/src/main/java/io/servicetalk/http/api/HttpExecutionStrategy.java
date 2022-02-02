@@ -99,6 +99,11 @@ public interface HttpExecutionStrategy extends ExecutionStrategy {
     @Deprecated
     StreamingHttpService offloadService(Executor fallback, StreamingHttpService handler);
 
+    @Override
+    default boolean hasOffloads() {
+        return isMetadataReceiveOffloaded() || isDataReceiveOffloaded() || isSendOffloaded();
+    }
+
     /**
      * Returns {@code true} if metadata receive offloading is enabled for this {@link ExecutionStrategy}.
      *
