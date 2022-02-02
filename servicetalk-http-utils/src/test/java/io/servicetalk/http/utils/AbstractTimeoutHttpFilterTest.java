@@ -27,6 +27,7 @@ import io.servicetalk.concurrent.api.TestSingle;
 import io.servicetalk.concurrent.api.test.StepVerifiers;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.EmptyHttpHeaders;
+import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -138,7 +139,9 @@ abstract class AbstractTimeoutHttpFilterTest {
     }
 
     static Iterable<HttpExecutionStrategy> executionStrategies() {
-        return Arrays.asList(offloadNever(), offloadNone(), defaultStrategy(), offloadAll());
+        return Arrays.asList(offloadNever(), offloadNone(),
+                HttpExecutionStrategies.customStrategyBuilder().offloadEvent().build(),
+                defaultStrategy(), offloadAll());
     }
 
     @ParameterizedTest

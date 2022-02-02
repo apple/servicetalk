@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionContext;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
@@ -41,8 +42,8 @@ import java.util.function.BiFunction;
  *
  * <p>If no executor is specified at construction an executor from {@link HttpExecutionContext} associated with the
  * client or connection will be used. If the {@link HttpExecutionContext#executionStrategy()} specifies an
- * {@link io.servicetalk.http.api.HttpExecutionStrategy} with offloads then {@link HttpExecutionContext#executor()} will
- * be used and if no offloads are specified then {@link HttpExecutionContext#ioExecutor()} will be used.
+ * {@link HttpExecutionStrategy} with offloads then {@link HttpExecutionContext#executor()} will be used and if no
+ * offloads are specified then {@link HttpExecutionContext#ioExecutor()} will be used.
  *
  * <p>The order with which this filter is applied may be highly significant. For example, appending it before a retry
  * filter would have different results than applying it after the retry filter; timeout would apply for all retries vs
