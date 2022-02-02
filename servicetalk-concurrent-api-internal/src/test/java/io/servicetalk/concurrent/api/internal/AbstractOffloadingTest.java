@@ -80,9 +80,9 @@ public abstract class AbstractOffloadingTest {
     protected static final Matcher<String> OFFLOAD_EXECUTOR = startsWith("TestExecutor");
 
     @RegisterExtension
-    public final ExecutorExtension<Executor> app = APP_ISOLATION ?
+    public static final ExecutorExtension<Executor> APP_EXECUTOR_EXT = APP_ISOLATION ?
             withCachedExecutor(APP_EXECUTOR_PREFIX) :
-            ExecutorExtension.withExecutor(() -> immediate());
+            ExecutorExtension.withExecutor(() -> immediate()).setClassLevel(true);
     @RegisterExtension
     public final ExecutorExtension<TestExecutor> testExecutor = ExecutorExtension.withTestExecutor();
 

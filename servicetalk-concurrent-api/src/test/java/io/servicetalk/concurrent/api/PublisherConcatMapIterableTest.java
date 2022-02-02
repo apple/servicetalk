@@ -61,7 +61,7 @@ import static org.mockito.Mockito.mock;
 
 class PublisherConcatMapIterableTest {
     @RegisterExtension
-    static final ExecutorExtension<Executor> EXECUTOR_RULE = ExecutorExtension.withCachedExecutor();
+    static final ExecutorExtension<Executor> EXECUTOR_RULE = ExecutorExtension.withCachedExecutor().setClassLevel(true);
 
     private final TestPublisher<List<String>> publisher = new TestPublisher<>();
     private final TestPublisher<BlockingIterable<String>> cancellablePublisher = new TestPublisher<>();

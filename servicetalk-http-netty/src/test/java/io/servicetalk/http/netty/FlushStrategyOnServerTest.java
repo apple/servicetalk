@@ -71,7 +71,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 class FlushStrategyOnServerTest {
 
     @RegisterExtension
-    static final ExecutorExtension<Executor> EXECUTOR_RULE = ExecutorExtension.withCachedExecutor();
+    static final ExecutorExtension<Executor> EXECUTOR_RULE = ExecutorExtension.withCachedExecutor().setClassLevel(true);
     private static final String USE_AGGREGATED_RESP = "aggregated-resp";
     private static final String USE_EMPTY_RESP_BODY = "empty-resp-body";
 

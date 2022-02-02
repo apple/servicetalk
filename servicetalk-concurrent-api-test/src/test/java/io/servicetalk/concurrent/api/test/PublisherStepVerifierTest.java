@@ -65,7 +65,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class PublisherStepVerifierTest {
     private static final ContextMap.Key<Integer> ASYNC_KEY = newKey("ASYNC_KEY", Integer.class);
     @RegisterExtension
-    static final ExecutorExtension<Executor> EXECUTOR_RULE = ExecutorExtension.withCachedExecutor();
+    static final ExecutorExtension<Executor> EXECUTOR_RULE = ExecutorExtension.withCachedExecutor().setClassLevel(true);
 
     @Test
     void expectSubscription() {

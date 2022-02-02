@@ -73,10 +73,12 @@ final class ExecutionStrategyTest extends AbstractJerseyStreamingHttpServiceTest
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     @RegisterExtension
-    static final ExecutorExtension<Executor> ROUTER_EXEC = ExecutorExtension.withCachedExecutor("router");
+    static final ExecutorExtension<Executor> ROUTER_EXEC =
+            ExecutorExtension.withCachedExecutor("router").setClassLevel(true);
 
     @RegisterExtension
-    static final ExecutorExtension<Executor> ROUTE_EXEC = ExecutorExtension.withCachedExecutor("route");
+    static final ExecutorExtension<Executor> ROUTE_EXEC =
+            ExecutorExtension.withCachedExecutor("route").setClassLevel(true);
 
     public static class TestApplication extends Application {
         @Override
