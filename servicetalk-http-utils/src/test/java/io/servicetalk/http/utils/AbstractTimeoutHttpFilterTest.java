@@ -17,6 +17,9 @@ package io.servicetalk.http.utils;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.TimeSource;
+import io.servicetalk.concurrent.api.DefaultThreadFactory;
+import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
@@ -24,14 +27,21 @@ import io.servicetalk.concurrent.api.TestSingle;
 import io.servicetalk.concurrent.api.test.StepVerifiers;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.EmptyHttpHeaders;
+import io.servicetalk.http.api.HttpExecutionStrategies;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.transport.api.IoThreadFactory;
+import io.servicetalk.transport.netty.NettyIoExecutors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -41,6 +51,10 @@ import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.TimeoutTracingInfoExtension.DEFAULT_TIMEOUT_SECONDS;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadAll;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.StreamingHttpResponses.newResponse;
@@ -56,14 +70,21 @@ import static org.mockito.Mockito.mock;
 
 abstract class AbstractTimeoutHttpFilterTest {
 
+    private static final String EXECUTOR_NAME_PREFIX = "Timeout-Executor";
+    protected static final Executor EXECUTOR = Executors.newCachedThreadExecutor(
+            new DefaultThreadFactory(EXECUTOR_NAME_PREFIX));
+    protected static final IoExecutor IO_EXECUTOR = NettyIoExecutors.createIoExecutor("Timeout-IoExecutor");
+
     abstract void newFilter(Duration duration);
 
     abstract Single<StreamingHttpResponse> applyFilter(Duration duration, boolean fullRequestResponse,
+                                                       HttpExecutionStrategy strategy,
                                                        Single<StreamingHttpResponse> responseSingle);
 
     abstract Single<StreamingHttpResponse> applyFilter(
             BiFunction<HttpRequestMetaData, TimeSource, Duration> timeoutForRequest,
             boolean fullRequestResponse,
+            HttpExecutionStrategy strategy,
             Single<StreamingHttpResponse> responseSingle);
 
     @Test
@@ -78,7 +99,7 @@ abstract class AbstractTimeoutHttpFilterTest {
     @ValueSource(booleans = {false, true})
     void responseTimeout(boolean fullRequestResponse) {
         TestSingle<StreamingHttpResponse> responseSingle = new TestSingle<>();
-        StepVerifiers.create(applyFilter(ofNanos(1L), fullRequestResponse, responseSingle))
+        StepVerifiers.create(applyFilter(ofNanos(1L), fullRequestResponse, defaultStrategy(), responseSingle))
                 .expectError(TimeoutException.class)
                 .verify();
         assertThat("No subscribe for response single", responseSingle.isSubscribed(), is(true));
@@ -98,7 +119,7 @@ abstract class AbstractTimeoutHttpFilterTest {
 
     private void responseWithNonPositiveTimeout(Duration timeout, boolean fullRequestResponse) {
         TestSingle<StreamingHttpResponse> responseSingle = new TestSingle<>();
-        StepVerifiers.create(applyFilter((req, ts) -> timeout, fullRequestResponse, responseSingle))
+        StepVerifiers.create(applyFilter((req, ts) -> timeout, fullRequestResponse, defaultStrategy(), responseSingle))
                 .expectError(TimeoutException.class)
                 .verify();
         assertThat("No subscribe for payload body", responseSingle.isSubscribed(), is(true));
@@ -108,7 +129,8 @@ abstract class AbstractTimeoutHttpFilterTest {
     @ValueSource(booleans = {false, true})
     void responseCompletesBeforeTimeout(boolean fullRequestResponse) {
         TestSingle<StreamingHttpResponse> responseSingle = new TestSingle<>();
-        StepVerifiers.create(applyFilter(ofSeconds(DEFAULT_TIMEOUT_SECONDS / 2), fullRequestResponse, responseSingle))
+        StepVerifiers.create(applyFilter(ofSeconds(DEFAULT_TIMEOUT_SECONDS / 2),
+                        fullRequestResponse, defaultStrategy(), responseSingle))
                 .then(() -> immediate().schedule(() -> responseSingle.onSuccess(mock(StreamingHttpResponse.class)),
                         ofMillis(50L)))
                 .expectSuccess()
@@ -116,15 +138,23 @@ abstract class AbstractTimeoutHttpFilterTest {
         assertThat("No subscribe for response single", responseSingle.isSubscribed(), is(true));
     }
 
-    @Test
-    void payloadBodyTimeout() {
+    static Iterable<HttpExecutionStrategy> executionStrategies() {
+        return Arrays.asList(offloadNever(), offloadNone(),
+                HttpExecutionStrategies.customStrategyBuilder().offloadEvent().build(),
+                defaultStrategy(), offloadAll());
+    }
+
+    @ParameterizedTest
+    @MethodSource("executionStrategies")
+    void payloadBodyTimeout(HttpExecutionStrategy strategy) {
         TestPublisher<Buffer> payloadBody = new TestPublisher<>();
         AtomicBoolean responseSucceeded = new AtomicBoolean();
-        StepVerifiers.create(applyFilter(ofMillis(100L), true, responseWith(payloadBody))
-                .whenOnSuccess(__ -> responseSucceeded.set(true))
-                .flatMapPublisher(StreamingHttpResponse::payloadBody))
+        StepVerifiers.create(applyFilter(ofMillis(100L), true, strategy, responseWith(payloadBody))
+                    .whenOnSuccess(__ -> responseSucceeded.set(true))
+                    .flatMapPublisher(StreamingHttpResponse::payloadBody))
                 .thenRequest(MAX_VALUE)
-                .expectError(TimeoutException.class)
+                .expectErrorMatches(t -> TimeoutException.class.isInstance(t) &&
+                        (Thread.currentThread() instanceof IoThreadFactory.IoThread ^ strategy.hasOffloads()))
                 .verify();
         assertThat("Response did not succeeded", responseSucceeded.get(), is(true));
         assertThat("No subscribe for payload body", payloadBody.isSubscribed(), is(true));
@@ -135,9 +165,9 @@ abstract class AbstractTimeoutHttpFilterTest {
         Duration timeout = ofMillis(100L);
         TestPublisher<Buffer> payloadBody = new TestPublisher<>();
         AtomicBoolean responseSucceeded = new AtomicBoolean();
-        StepVerifiers.create(applyFilter(timeout, false, responseWith(payloadBody))
-                .whenOnSuccess(__ -> responseSucceeded.set(true))
-                .flatMapPublisher(StreamingHttpResponse::payloadBody))
+        StepVerifiers.create(applyFilter(timeout, false, defaultStrategy(), responseWith(payloadBody))
+                    .whenOnSuccess(__ -> responseSucceeded.set(true))
+                    .flatMapPublisher(StreamingHttpResponse::payloadBody))
                 .expectSubscriptionConsumed(subscription ->
                         immediate().schedule(subscription::cancel, timeout.plusMillis(10L)))
                 .thenRequest(MAX_VALUE)
@@ -155,7 +185,8 @@ abstract class AbstractTimeoutHttpFilterTest {
         Duration timeout = ofMillis(100L);
         TestPublisher<Buffer> payloadBody = new TestPublisher<>();
         AtomicReference<StreamingHttpResponse> response = new AtomicReference<>();
-        StepVerifiers.create(applyFilter(timeout, true, responseWith(payloadBody)))
+        StepVerifiers.create(applyFilter(timeout, true,
+                        defaultStrategy(), responseWith(payloadBody)))
                 .expectSuccessConsumed(response::set)
                 .verify();
 
@@ -170,7 +201,8 @@ abstract class AbstractTimeoutHttpFilterTest {
     void payloadBodyCompletesBeforeTimeout() {
         TestPublisher<Buffer> payloadBody = new TestPublisher<>();
         AtomicReference<StreamingHttpResponse> response = new AtomicReference<>();
-        StepVerifiers.create(applyFilter(ofSeconds(DEFAULT_TIMEOUT_SECONDS / 2), true, responseWith(payloadBody)))
+        StepVerifiers.create(applyFilter(ofSeconds(DEFAULT_TIMEOUT_SECONDS / 2),
+                        true, defaultStrategy(), responseWith(payloadBody)))
                 .expectSuccessConsumed(response::set)
                 .verify();
 

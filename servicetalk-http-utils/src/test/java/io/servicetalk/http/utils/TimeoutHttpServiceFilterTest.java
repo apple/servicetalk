@@ -17,7 +17,9 @@ package io.servicetalk.http.utils;
 
 import io.servicetalk.concurrent.TimeSource;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.DefaultHttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionContext;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -29,6 +31,7 @@ import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import java.time.Duration;
 import java.util.function.BiFunction;
 
+import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -42,20 +45,26 @@ public class TimeoutHttpServiceFilterTest extends AbstractTimeoutHttpFilterTest 
 
     @Override
     Single<StreamingHttpResponse> applyFilter(Duration duration, boolean fullRequestResponse,
+                                              final HttpExecutionStrategy strategy,
                                               Single<StreamingHttpResponse> responseSingle) {
-        return applyFilter(new TimeoutHttpServiceFilter(duration, fullRequestResponse), responseSingle);
+        return applyFilter(new TimeoutHttpServiceFilter(duration, fullRequestResponse), strategy, responseSingle);
     }
 
     @Override
     Single<StreamingHttpResponse> applyFilter(BiFunction<HttpRequestMetaData, TimeSource, Duration> timeoutForRequest,
                                               boolean fullRequestResponse,
+                                              final HttpExecutionStrategy strategy,
                                               Single<StreamingHttpResponse> responseSingle) {
-        return applyFilter(new TimeoutHttpServiceFilter(timeoutForRequest, fullRequestResponse), responseSingle);
+        return applyFilter(new TimeoutHttpServiceFilter(timeoutForRequest, fullRequestResponse),
+                strategy, responseSingle);
     }
 
     private static Single<StreamingHttpResponse> applyFilter(TimeoutHttpServiceFilter filterFactory,
-                                                             Single<StreamingHttpResponse> responseSingle) {
-        HttpExecutionContext executionContext = mock(HttpExecutionContext.class);
+                                                             final HttpExecutionStrategy strategy,
+                                                             final Single<StreamingHttpResponse> responseSingle) {
+        HttpExecutionContext executionContext =
+                new DefaultHttpExecutionContext(DEFAULT_ALLOCATOR, IO_EXECUTOR, EXECUTOR, strategy);
+
         HttpServiceContext serviceContext = mock(HttpServiceContext.class);
         when(serviceContext.executionContext()).thenReturn(executionContext);
         StreamingHttpService service = mock(StreamingHttpService.class);
