@@ -20,6 +20,9 @@ import org.slf4j.LoggerFactory;
 
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 
+/**
+ * Implements {@link Executor} for {@link Executors#global()}.
+ */
 final class GlobalExecutor extends DelegatingExecutor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GlobalExecutor.class);
