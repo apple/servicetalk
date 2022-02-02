@@ -113,10 +113,12 @@ class GracefulConnectionClosureHandlingTest {
 
     @RegisterExtension
     static final ExecutionContextExtension SERVER_CTX =
-            ExecutionContextExtension.cached("server-io", "server-executor");
+            ExecutionContextExtension.cached("server-io", "server-executor")
+                    .setClassLevel(true);
     @RegisterExtension
     static final ExecutionContextExtension CLIENT_CTX =
-            ExecutionContextExtension.cached("client-io", "client-executor");
+            ExecutionContextExtension.cached("client-io", "client-executor")
+                    .setClassLevel(true);
 
     private static final String REQUEST_CONTENT = "request_content";
     private static final String RESPONSE_CONTENT = "response_content";

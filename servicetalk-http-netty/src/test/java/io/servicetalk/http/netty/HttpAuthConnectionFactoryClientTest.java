@@ -51,7 +51,7 @@ class HttpAuthConnectionFactoryClientTest {
 
     @RegisterExtension
     static final ExecutionContextExtension CTX =
-        immediate();
+        immediate().setClassLevel(true);
 
     @Nullable
     private StreamingHttpClient client;

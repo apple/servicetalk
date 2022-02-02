@@ -71,7 +71,8 @@ class HttpServerOverrideOffloadingTest {
 
     @RegisterExtension
     private static final ExecutionContextExtension EXECUTION_CONTEXT =
-            ExecutionContextExtension.cached(IO_EXECUTOR_THREAD_NAME_PREFIX, EXECUTOR_THREAD_NAME_PREFIX);
+            ExecutionContextExtension.cached(IO_EXECUTOR_THREAD_NAME_PREFIX, EXECUTOR_THREAD_NAME_PREFIX)
+                    .setClassLevel(true);
     private OffloadingTesterService routeService;
     private ServerContext server;
 

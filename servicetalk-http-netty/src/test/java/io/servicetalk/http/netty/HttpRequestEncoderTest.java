@@ -112,11 +112,11 @@ class HttpRequestEncoderTest extends HttpEncoderTest<HttpRequestMetaData> {
     static final ExecutionContextExtension SEC =
             new ExecutionContextExtension(() -> allocator,
                     () -> createIoExecutor("server-io"),
-                    Executors::immediate);
+                    Executors::immediate).setClassLevel(true);;
     @RegisterExtension
     static final ExecutionContextExtension CEC = new ExecutionContextExtension(() -> allocator,
             () -> createIoExecutor("client-io"),
-            Executors::newCachedThreadExecutor);
+            Executors::newCachedThreadExecutor).setClassLevel(true);;
 
     @Override
     EmbeddedChannel newEmbeddedChannel() {

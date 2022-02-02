@@ -56,10 +56,12 @@ class Tls13Test {
 
     @RegisterExtension
     static final ExecutionContextExtension SERVER_CTX =
-        ExecutionContextExtension.cached("server-io", "server-executor");
+        ExecutionContextExtension.cached("server-io", "server-executor")
+                .setClassLevel(true);
     @RegisterExtension
     static final ExecutionContextExtension CLIENT_CTX =
-        ExecutionContextExtension.cached("client-io", "client-executor");
+        ExecutionContextExtension.cached("client-io", "client-executor")
+                .setClassLevel(true);
 
     private static final String TLS1_3 = "TLSv1.3";
     private static final String TLS1_3_REQUIRED_CIPHER = "TLS_AES_128_GCM_SHA256";
