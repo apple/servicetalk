@@ -61,7 +61,7 @@ public abstract class AbstractConditionalHttpFilterTest {
     private static final ContextMap.Key<String> CTX_KEY = newKey("test-key", String.class);
 
     @RegisterExtension
-    static final ExecutionContextExtension TEST_CTX = cached();
+    static final ExecutionContextExtension TEST_CTX = cached().setClassLevel(true);
 
     protected static final Predicate<StreamingHttpRequest> TEST_REQ_PREDICATE = req -> {
         AsyncContext.put(CTX_KEY, "in-predicate");

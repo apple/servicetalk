@@ -58,10 +58,10 @@ import static org.mockito.Mockito.verify;
 class DefaultMultiAddressUrlHttpClientBuilderTest {
 
     @RegisterExtension
-    static final ExecutionContextExtension CTX = immediate();
+    static final ExecutionContextExtension CTX = immediate().setClassLevel(true);
 
     @RegisterExtension
-    static final ExecutionContextExtension INTERNAL_CLIENT_CTX = cached();
+    static final ExecutionContextExtension INTERNAL_CLIENT_CTX = cached().setClassLevel(true);
 
     @Test
     void buildWithDefaults() throws Exception {

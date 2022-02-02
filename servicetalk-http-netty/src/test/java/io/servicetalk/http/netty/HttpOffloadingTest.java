@@ -82,10 +82,12 @@ class HttpOffloadingTest {
 
     @RegisterExtension
     static final ExecutionContextExtension CLIENT_CTX =
-        ExecutionContextExtension.cached(new NettyIoThreadFactory(IO_EXECUTOR_NAME_PREFIX));
+        ExecutionContextExtension.cached(new NettyIoThreadFactory(IO_EXECUTOR_NAME_PREFIX))
+                .setClassLevel(true);
     @RegisterExtension
     static final ExecutionContextExtension SERVER_CTX =
-        ExecutionContextExtension.cached(new NettyIoThreadFactory(IO_EXECUTOR_NAME_PREFIX));
+        ExecutionContextExtension.cached(new NettyIoThreadFactory(IO_EXECUTOR_NAME_PREFIX))
+                .setClassLevel(true);
 
     private StreamingHttpConnection httpConnection;
     private final Queue<Throwable> errors = new ConcurrentLinkedQueue<>();

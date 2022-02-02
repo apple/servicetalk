@@ -47,8 +47,8 @@ public final class ExecutionContextExtension implements AfterEachCallback, Befor
                                                         AfterAllCallback, BeforeAllCallback,
                                                         ExecutionContext<ExecutionStrategy> {
 
-    private static final String IO_THREAD_PREFIX = "exec-ctx-rule-io";
-    private static final String EXEC_THREAD_PREFIX = "exec-ctx-rule-exec";
+    private static final String IO_THREAD_PREFIX = "exec-ctx-ext-io";
+    private static final String EXEC_THREAD_PREFIX = "exec-ctx-ext-exec";
     private final Supplier<Executor> executorSupplier;
     private final Supplier<IoExecutor> ioExecutorSupplier;
     private final Supplier<BufferAllocator> allocatorSupplier;
@@ -116,6 +116,13 @@ public final class ExecutionContextExtension implements AfterEachCallback, Befor
         return fixed(1, nettyIoThreadFactory);
     }
 
+    /**
+     * Set to true if the extension is being shared among all tests in a class.
+     *
+     * @param classLevel true if extension is shared between tests within test class otherwise false to create a new
+     * instance for each test.
+     * @return this
+     */
     public ExecutionContextExtension setClassLevel(final boolean classLevel) {
         this.classLevel = classLevel;
         return this;

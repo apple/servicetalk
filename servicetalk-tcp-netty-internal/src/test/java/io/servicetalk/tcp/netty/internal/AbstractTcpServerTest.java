@@ -44,10 +44,12 @@ public abstract class AbstractTcpServerTest {
 
     @RegisterExtension
     static final ExecutionContextExtension SERVER_CTX =
-        ExecutionContextExtension.cached("server-io", "server-executor");
+        ExecutionContextExtension.cached("server-io", "server-executor")
+                .setClassLevel(true);
     @RegisterExtension
     public static final ExecutionContextExtension CLIENT_CTX =
-            ExecutionContextExtension.cached("client-io", "client-executor");
+            ExecutionContextExtension.cached("client-io", "client-executor")
+                    .setClassLevel(true);
 
     private InfluencerConnectionAcceptor connectionAcceptor =
             InfluencerConnectionAcceptor.withStrategy(ACCEPT_ALL, ConnectExecutionStrategy.offloadNone());
