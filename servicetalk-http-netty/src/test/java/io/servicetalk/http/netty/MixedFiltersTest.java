@@ -21,6 +21,7 @@ import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpResponse;
+import io.servicetalk.http.api.MultiAddressHttpClientBuilder;
 import io.servicetalk.http.api.ReservedBlockingHttpConnection;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
@@ -94,15 +95,15 @@ class MixedFiltersTest {
     @ParameterizedTest(name = "{displayName} [{index}] filters={0}, forClient={1}, reservedConnection={2}, " +
             "conditional={3}")
     @MethodSource("arguments")
-    void test(List<ConditionalFilterFactory> filters, boolean forClient, boolean reservedConnection,
-              boolean conditional) throws Exception {
+    void testSingleClient(List<ConditionalFilterFactory> filters, boolean forClient, boolean reservedConnection,
+                          boolean conditional) throws Exception {
 
         String expected = filters.stream()
                 .filter(ConditionalFilterFactory::apply)
                 .map(ConditionalFilterFactory::toString)
                 .reduce((first, second) -> first + ',' + second)
                 .get();
-        test(builder -> {
+        testSingleClient(builder -> {
             if (forClient) {
                 if (conditional) {
                     filters.forEach(cff -> builder.appendClientFilter(__ -> cff.apply(), cff));
@@ -118,8 +119,36 @@ class MixedFiltersTest {
         }, reservedConnection, expected);
     }
 
-    private static void test(UnaryOperator<SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>> filters,
-                             boolean reservedConnection, CharSequence expectedValue) throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] filters={0}, forClient={1}, reservedConnection={2}, " +
+            "conditional={3}")
+    @MethodSource("arguments")
+    void testMultiClient(List<ConditionalFilterFactory> filters, boolean forClient, boolean reservedConnection,
+                         boolean conditional) throws Exception {
+
+        String expected = filters.stream()
+                .filter(ConditionalFilterFactory::apply)
+                .map(ConditionalFilterFactory::toString)
+                .reduce((first, second) -> first + ',' + second)
+                .get();
+        testMultiClient(builder -> {
+            if (forClient) {
+                if (conditional) {
+                    filters.forEach(cff -> builder.appendClientFilter(__ -> cff.apply(), cff));
+                } else {
+                    filters.forEach(builder::appendClientFilter);
+                }
+            } else if (conditional) {
+                filters.forEach(cff -> builder.appendConnectionFilter(__ -> cff.apply(), cff));
+            } else {
+                filters.forEach(builder::appendConnectionFilter);
+            }
+            return builder;
+        }, reservedConnection, expected);
+    }
+
+    private static void testSingleClient(
+            UnaryOperator<SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>> filters,
+            boolean reservedConnection, CharSequence expectedValue) throws Exception {
         try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok()
                         .setHeader(FILTERS_HEADER, requireNonNull(request.headers().get(FILTERS_HEADER))));
@@ -133,6 +162,29 @@ class MixedFiltersTest {
                 conn.release();
             } else {
                 response = client.request(client.get("/"));
+            }
+            assertThat(response.status(), is(OK));
+            assertThat(response.headers().get(FILTERS_HEADER), contentEqualTo(expectedValue));
+        }
+    }
+
+    private static void testMultiClient(
+            UnaryOperator<MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress>> filters,
+            boolean reservedConnection, CharSequence expectedValue) throws Exception {
+        try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
+                .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok()
+                        .setHeader(FILTERS_HEADER, requireNonNull(request.headers().get(FILTERS_HEADER))));
+             BlockingHttpClient client = filters.apply(HttpClients.forMultiAddressUrl())
+                     .buildBlocking()) {
+
+            HttpResponse response;
+            final String requestTarget = "http://" + serverHostAndPort(serverContext) + "/";
+            if (reservedConnection) {
+                ReservedBlockingHttpConnection conn = client.reserveConnection(client.get(requestTarget));
+                response = conn.request(conn.get(requestTarget));
+                conn.release();
+            } else {
+                response = client.request(client.get(requestTarget));
             }
             assertThat(response.status(), is(OK));
             assertThat(response.headers().get(FILTERS_HEADER), contentEqualTo(expectedValue));

@@ -66,6 +66,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import static io.netty.handler.codec.http.HttpScheme.HTTP;
@@ -75,6 +76,7 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncClo
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverCompleteFromSource;
 import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.defaultReqRespFactory;
+import static io.servicetalk.http.netty.NewToDeprecatedFilter.NEW_TO_DEPRECATED_FILTER;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -127,8 +129,8 @@ final class DefaultMultiAddressUrlHttpClientBuilder
                                     buildContext.executionContext.bufferAllocator())));
 
             // Need to wrap the top level client (group) in order for non-relative redirects to work
-            urlClient = redirectConfig == null ? urlClient :
-                    new RedirectingHttpRequesterFilter(redirectConfig).create(urlClient);
+            urlClient = redirectConfig == null ? urlClient : new RedirectingHttpRequesterFilter(redirectConfig)
+                    .create(NEW_TO_DEPRECATED_FILTER.create(urlClient));
 
             return new FilterableClientToClient(urlClient, buildContext.executionContext.executionStrategy(),
                     buildContext.builder.buildStrategyInfluencerForClient(
@@ -481,6 +483,14 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             final MultiAddressHttpClientFilterFactory<HostAndPort> next) {
         requireNonNull(next);
         builderTemplate.appendToStrategyInfluencer(next);
+        return appendClientFilter0(appendClientFilter0(current, next),
+                NEW_TO_DEPRECATED_FILTER.asMultiAddressClientFilter());
+    }
+
+    @Nonnull
+    private MultiAddressHttpClientFilterFactory<HostAndPort> appendClientFilter0(
+            final @Nullable MultiAddressHttpClientFilterFactory<HostAndPort> current,
+            final MultiAddressHttpClientFilterFactory<HostAndPort> next) {
         return current == null ? next : (group, client) -> current.create(group, next.create(group, client));
     }
 
