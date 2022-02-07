@@ -40,9 +40,10 @@ interface ChannelOutboundListener {
     void channelOutboundClosed();
 
     /**
-     * Request to terminate the source of data.
+     * Request to terminate the source of data, without affecting a state of the channel.
      * <p>
-     * Could happen if protocol supports termination/cancellation of the data it supposes to send.
+     * Could happen if protocol supports termination/cancellation of the data it supposes to send, and the channel can
+     * be reused for next requests.
      */
     void terminateSource();
 

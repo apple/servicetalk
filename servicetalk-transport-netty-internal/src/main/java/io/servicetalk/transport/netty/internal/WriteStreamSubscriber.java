@@ -174,7 +174,10 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
             long capacityAfter = channel.bytesBeforeUnwritable();
             observer.itemWritten(msg);
             demandEstimator.onItemWrite(msg, capacityBefore, capacityAfter);
-            // Request more items only if there is no need to wait for continuation:
+            // Client-side always starts a request with request(1) to probe a Channel with meta-data before continuing
+            // to write the payload body, see https://github.com/apple/servicetalk/pull/1644.
+            // Requests that await feedback from the remote peer should not request more until they receive
+            // continueWriting() signal.
             if (!isClient || !(shouldWaitFlag = shouldWait.test(msg))) {
                 requestMoreIfRequired(subscription, capacityAfter);
             }

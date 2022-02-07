@@ -150,12 +150,12 @@ final class RequestResponseCloseHandler extends CloseHandler {
 
     @Override
     public void protocolPayloadEndOutbound(final ChannelHandlerContext ctx, @Nullable final ChannelPromise promise) {
-        if (promise != null && (isClient || (closeEvent != null && pending == 0))) {
-            ctx.pipeline().fireUserEventTriggered(OutboundDataEndEvent.INSTANCE);
-        }
         if (promise == null) {
             protocolPayloadEndOutbound0(ctx);
         } else {
+            if (isClient || closeEvent != null && pending == 0) {
+                ctx.pipeline().fireUserEventTriggered(OutboundDataEndEvent.INSTANCE);
+            }
             promise.addListener(f -> protocolPayloadEndOutbound0(ctx));
         }
     }

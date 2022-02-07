@@ -34,6 +34,7 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.transport.netty.internal.CloseHandler;
+import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 
 import io.netty.channel.ChannelHandlerContext;
 
@@ -41,8 +42,8 @@ import java.util.Queue;
 
 import static io.netty.handler.codec.http.HttpConstants.SP;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
+import static io.servicetalk.http.netty.HeaderUtils.REQ_EXPECT_CONTINUE;
 import static io.servicetalk.http.netty.HeaderUtils.shouldAddZeroContentLength;
-import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static java.util.Objects.requireNonNull;
 
 final class HttpRequestEncoder extends HttpObjectEncoder<HttpRequestMetaData> {
@@ -54,18 +55,9 @@ final class HttpRequestEncoder extends HttpObjectEncoder<HttpRequestMetaData> {
     private final Queue<HttpRequestMethod> methodQueue;
 
     /**
-     * Create a new instance.
-     * @param methodQueue A queue used to enforce HTTP protocol semantics related to request/response lengths.
-     * @param headersEncodedSizeAccumulator Used to calculate an exponential moving average of the encoded size of the
-     * initial line and the headers for a guess for future buffer allocations.
-     * @param trailersEncodedSizeAccumulator  Used to calculate an exponential moving average of the encoded size of
-     * the trailers for a guess for future buffer allocations.
+     * Used to remember when an outgoing request has "Expect: 100-continue" header.
      */
-    HttpRequestEncoder(Queue<HttpRequestMethod> methodQueue,
-                       int headersEncodedSizeAccumulator, int trailersEncodedSizeAccumulator) {
-        this(methodQueue, headersEncodedSizeAccumulator, trailersEncodedSizeAccumulator,
-                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER);
-    }
+    private boolean expectContinue;
 
     /**
      * Create a new instance.
@@ -153,5 +145,23 @@ final class HttpRequestEncoder extends HttpObjectEncoder<HttpRequestMetaData> {
     protected long getContentLength(final HttpRequestMetaData message) {
         final long len = HttpObjectDecoder.getContentLength(message);
         return len < 0 && shouldAddZeroContentLength(message.method()) ? 0 : len;
+    }
+
+    @Override
+    protected void onMetaData(final HttpRequestMetaData metaData) {
+        expectContinue = REQ_EXPECT_CONTINUE.test(metaData);
+    }
+
+    @Override
+    public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) {
+        if (expectContinue && evt == DefaultNettyConnection.ContinueUserEvent.INSTANCE) {
+            // Reset the flag after receiving 100 (Continue).
+            expectContinue = false;
+        } else if (expectContinue && evt == DefaultNettyConnection.CancelWriteUserEvent.INSTANCE) {
+            // Mark as content consumed and reset the flag to prepare for the next request on the same connection.
+            contentLenConsumed(ctx, null);
+            expectContinue = false;
+        }
+        ctx.fireUserEventTriggered(evt);
     }
 }

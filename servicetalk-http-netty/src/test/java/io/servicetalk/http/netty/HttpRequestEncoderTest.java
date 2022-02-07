@@ -83,6 +83,7 @@ import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
+import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedRequestResponse;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlushStrategy;
 import static java.lang.Integer.toHexString;
@@ -119,7 +120,8 @@ class HttpRequestEncoderTest extends HttpEncoderTest<HttpRequestMetaData> {
 
     @Override
     EmbeddedChannel newEmbeddedChannel() {
-        return new EmbeddedChannel(new HttpRequestEncoder(new ArrayDeque<>(), 256, 256));
+        return new EmbeddedChannel(new HttpRequestEncoder(new ArrayDeque<>(), 256, 256,
+                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER));
     }
 
     @Override

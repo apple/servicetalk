@@ -37,8 +37,6 @@ import io.servicetalk.http.api.HttpHeaderValues;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpMetaData;
 import io.servicetalk.transport.netty.internal.CloseHandler;
-import io.servicetalk.transport.netty.internal.DefaultNettyConnection.CancelWriteUserEvent;
-import io.servicetalk.transport.netty.internal.DefaultNettyConnection.ContinueUserEvent;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
@@ -69,7 +67,6 @@ import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
-import static io.servicetalk.http.netty.HeaderUtils.REQ_EXPECT_CONTINUE;
 import static io.servicetalk.http.netty.HttpKeepAlive.shouldClose;
 import static java.lang.Long.toHexString;
 import static java.lang.Math.max;
@@ -108,11 +105,6 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelDuplexHa
      */
     private float trailersEncodedSizeAccumulator;
     private final CloseHandler closeHandler;
-
-    /**
-     * Used to remember when outgoing request has "Expect: 100-continue" header.
-     */
-    private boolean expectContinue;
 
     /**
      * Create a new instance.
@@ -159,6 +151,7 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelDuplexHa
 
                 // Encode the message.
                 encodeInitialLine(ctx, stBuf, metaData);
+                onMetaData(metaData);
                 if (isContentAlwaysEmpty(metaData)) {
                     state = CONTENT_LEN_EMPTY;
                     if (!isContinue(metaData)) {
@@ -166,14 +159,11 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelDuplexHa
                     }
                 } else if (isTransferEncodingChunked(metaData.headers())) {
                     state = CONTENT_LEN_CHUNKED;
-                    expectContinue = REQ_EXPECT_CONTINUE.test(metaData);
                 } else {
                     state = getContentLength(metaData);
                     assert state > CONTENT_LEN_LARGEST_VALUE;
                     if (state == 0) {
                         contentLenConsumed(ctx, promise);
-                    } else {
-                        expectContinue = REQ_EXPECT_CONTINUE.test(metaData);
                     }
                 }
 
@@ -232,24 +222,6 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelDuplexHa
         }
     }
 
-    @Override
-    public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) {
-        if (expectContinue && evt == ContinueUserEvent.INSTANCE) {
-            // Reset the flag after receiving 100 (Continue).
-            expectContinue = false;
-        } else if (expectContinue && evt == CancelWriteUserEvent.INSTANCE) {
-            // Mark as content consumed and reset the flag to prepare for the next request on the same connection.
-            contentLenConsumed(ctx, null);
-            expectContinue = false;
-        }
-        ctx.fireUserEventTriggered(evt);
-    }
-
-    private void contentLenConsumed(final ChannelHandlerContext ctx, @Nullable final ChannelPromise promise) {
-        state = CONTENT_LEN_CONSUMED;
-        closeHandler.protocolPayloadEndOutbound(ctx, promise);
-    }
-
     private static void tryFailNonEmptyTrailers(ChannelHandlerContext ctx, HttpHeaders trailers,
                                                 ChannelPromise promise) {
         promise.tryFailure(new IOException("Trailers are only supported for HTTP/1.x with " +
@@ -306,8 +278,22 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelDuplexHa
         return false;
     }
 
+    /**
+     * Determines when a {@code msg} is a continuation signal.
+     *
+     * @param msg a message to analyze
+     * @return {@code true} if it's a continuation message.
+     */
     protected boolean isContinue(@SuppressWarnings("unused") T msg) {
         return false;
+    }
+
+    /**
+     * Callback when a meta-data object have been encoded.
+     * @param metaData
+     */
+    protected void onMetaData(final T metaData) {
+        // noop
     }
 
     private void sanitizeHeadersBeforeEncode(T msg) {
@@ -317,6 +303,17 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelDuplexHa
             msg.headers().remove(CONTENT_LENGTH);
         }
         sanitizeHeadersBeforeEncode(msg, state == CONTENT_LEN_EMPTY);
+    }
+
+    /**
+     * Allows to signal when a content have been consumed.
+     *
+     * @param ctx the {@link ChannelHandlerContext} for which the write operation is made.
+     * @param promise the {@link ChannelPromise} to notify once the operation completes.
+     */
+    protected final void contentLenConsumed(final ChannelHandlerContext ctx, @Nullable final ChannelPromise promise) {
+        state = CONTENT_LEN_CONSUMED;
+        closeHandler.protocolPayloadEndOutbound(ctx, promise);
     }
 
     /**
@@ -333,6 +330,7 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelDuplexHa
 
     /**
      * Encode the <a href="https://tools.ietf.org/html/rfc7230.html#section-3.1">start line</a>.
+     * @param ctx the {@link ChannelHandlerContext} for which the write operation is made.
      * @param buf The {@link Buffer} to encode to.
      * @param message The message to encode.
      */
