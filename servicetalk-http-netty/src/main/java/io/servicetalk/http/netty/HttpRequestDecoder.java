@@ -36,7 +36,7 @@ import static io.servicetalk.http.api.HttpRequestMethod.Properties.NONE;
 import static io.servicetalk.http.api.HttpResponseStatus.CONTINUE;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.INFORMATIONAL_1XX;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESSFUL_2XX;
-import static io.servicetalk.http.netty.HeaderUtils.EXPECT_CONTINUE;
+import static io.servicetalk.http.netty.HeaderUtils.REQ_EXPECT_CONTINUE;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Objects.requireNonNull;
 
@@ -142,7 +142,7 @@ final class HttpRequestDecoder extends HttpObjectDecoder<HttpRequestMetaData> im
 
     @Override
     protected void onMetaDataRead(final ChannelHandlerContext ctx, final HttpRequestMetaData msg) {
-        expectContinue = EXPECT_CONTINUE.test(msg);
+        expectContinue = REQ_EXPECT_CONTINUE.test(msg);
     }
 
     @Override
@@ -151,7 +151,12 @@ final class HttpRequestDecoder extends HttpObjectDecoder<HttpRequestMetaData> im
     }
 
     @Override
-    protected void onStateReset() {
+    protected void resetNow() {
+        super.resetNow();
+        onStateReset();
+    }
+
+    private void onStateReset() {
         expectContinue = false;
         seenPayloadBody = false;
     }

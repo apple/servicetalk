@@ -69,7 +69,7 @@ import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
-import static io.servicetalk.http.netty.HeaderUtils.EXPECT_CONTINUE;
+import static io.servicetalk.http.netty.HeaderUtils.REQ_EXPECT_CONTINUE;
 import static io.servicetalk.http.netty.HttpKeepAlive.shouldClose;
 import static java.lang.Long.toHexString;
 import static java.lang.Math.max;
@@ -166,14 +166,14 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelDuplexHa
                     }
                 } else if (isTransferEncodingChunked(metaData.headers())) {
                     state = CONTENT_LEN_CHUNKED;
-                    expectContinue = EXPECT_CONTINUE.test(metaData);
+                    expectContinue = REQ_EXPECT_CONTINUE.test(metaData);
                 } else {
                     state = getContentLength(metaData);
                     assert state > CONTENT_LEN_LARGEST_VALUE;
                     if (state == 0) {
                         contentLenConsumed(ctx, promise);
                     } else {
-                        expectContinue = EXPECT_CONTINUE.test(metaData);
+                        expectContinue = REQ_EXPECT_CONTINUE.test(metaData);
                     }
                 }
 

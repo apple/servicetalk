@@ -250,3 +250,27 @@ deserialization format and also adding a `content-type` header identifying the r
 
 For more information about how to use serializers and deserializers see
 xref:{page-version}@servicetalk-examples::http/index.adoc#Serialization[these] examples.
+
+== Expect: 100-continue
+
+HTTP protocol defines link:https://datatracker.ietf.org/doc/html/rfc7231#section-5.1.1[Expect] header with
+`100-continue` expectation. This feature allows users to defer sending a request payload body until after the server
+responds with link:https://datatracker.ietf.org/doc/html/rfc7231#section-6.2.1[100 Continue] status code signaling that
+it's ready to receive and process the payload body.
+
+NOTE: This feature is expected to be used with streaming API (see
+xref:{page-version}@servicetalk::programming-paradigms.adoc[Programming paradigms]) because only streaming API can
+give granular control of how and when a request payload body is produced and consumed.
+
+Server-side users should subscribe to the request payload body when they are ready to consume it. It will generate
+`100 Continue` interim response. After the request is consumed, service should produce a final response with a correct
+status code. If service decides to reject a request, an appropriate `4xx` status code should be returned. Put meaningful
+tracing headers in the final response.
+
+TIP: The interim response is not propagated as a response
+returned by the client because the client has to wait for a final status code returned by the server. There are a couple
+of other ways how to get visibility into interim response: using wire-logging for HTTP/1.x or frame-logging for HTTP/2
+(see link:{source-root}servicetalk-examples/grpc/debugging/src/main/java/io/servicetalk/examples/grpc/debugging/DebuggingClient.java[DebuggingClient]
+as an example) or by monitoring when
+link:{source-root}servicetalk-transport-api/src/main/java/io/servicetalk/transport/api/ConnectionObserver.java[WriteObserver]
+signals that more items are requested to write.

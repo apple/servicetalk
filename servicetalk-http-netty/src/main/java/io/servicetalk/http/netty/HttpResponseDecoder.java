@@ -181,11 +181,6 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
         // noop
     }
 
-    @Override
-    protected void onStateReset() {
-        // noop
-    }
-
     private static int nettyBufferToStatusCode(final ByteBuf buffer, final int start, final int length) {
         ensureStatusCodeLength(length);
         final int medium = buffer.getUnsignedMedium(start);

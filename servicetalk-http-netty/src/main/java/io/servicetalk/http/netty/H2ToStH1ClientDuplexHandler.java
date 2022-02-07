@@ -50,7 +50,7 @@ import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.INFORMATION
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESSFUL_2XX;
 import static io.servicetalk.http.netty.H2ToStH1Utils.h1HeadersToH2Headers;
 import static io.servicetalk.http.netty.H2ToStH1Utils.h2HeadersSanitizeForH1;
-import static io.servicetalk.http.netty.HeaderUtils.EXPECT_CONTINUE;
+import static io.servicetalk.http.netty.HeaderUtils.REQ_EXPECT_CONTINUE;
 import static io.servicetalk.http.netty.HeaderUtils.responseMayHaveContent;
 import static io.servicetalk.http.netty.HeaderUtils.serverMaySendPayloadBodyFor;
 
@@ -73,7 +73,7 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
             closeHandler.protocolPayloadBeginOutbound(ctx);
             HttpRequestMetaData metaData = (HttpRequestMetaData) msg;
             HttpHeaders h1Headers = metaData.headers();
-            waitForContinuation = EXPECT_CONTINUE.test(msg);
+            waitForContinuation = REQ_EXPECT_CONTINUE.test(msg);
             CharSequence host = h1Headers.getAndRemove(HOST);
             Http2Headers h2Headers = h1HeadersToH2Headers(h1Headers);
             if (host == null) {

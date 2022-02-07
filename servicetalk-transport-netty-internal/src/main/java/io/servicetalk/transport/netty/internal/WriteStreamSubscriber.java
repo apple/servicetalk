@@ -215,8 +215,10 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
     @Override
     public void continueWriting() {
         assert eventLoop.inEventLoop();
-        shouldWaitFlag = false; // Reset the flag to avoid promise.sourceTerminated(null)
-        requestMoreIfRequired(subscription, -1L);
+        if (shouldWaitFlag) {
+            shouldWaitFlag = false; // Reset the flag to avoid promise.sourceTerminated(null)
+            requestMoreIfRequired(subscription, -1L);
+        }
     }
 
     @Override

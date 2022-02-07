@@ -93,7 +93,7 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
 import static io.servicetalk.http.api.StreamingHttpRequests.newTransportRequest;
 import static io.servicetalk.http.netty.AbstractStreamingHttpConnection.determineFlushStrategyForApi;
-import static io.servicetalk.http.netty.HeaderUtils.EXPECT_CONTINUE;
+import static io.servicetalk.http.netty.HeaderUtils.REQ_EXPECT_CONTINUE;
 import static io.servicetalk.http.netty.HeaderUtils.addResponseTransferEncodingIfNecessary;
 import static io.servicetalk.http.netty.HeaderUtils.canAddResponseContentLength;
 import static io.servicetalk.http.netty.HeaderUtils.emptyMessageBody;
@@ -341,7 +341,7 @@ final class NettyHttpServer {
                 // closure.
                 final SingleSubscriberProcessor requestCompletion = new SingleSubscriberProcessor();
                 final AtomicBoolean payloadSubscribed = drainRequestPayloadBody ? new AtomicBoolean() : null;
-                final MutableBoolean continueSent = EXPECT_CONTINUE.test(rawRequest) ? new MutableBoolean() : null;
+                final MutableBoolean continueSent = REQ_EXPECT_CONTINUE.test(rawRequest) ? new MutableBoolean() : null;
                 final StreamingHttpRequest request = rawRequest.transformMessageBody(
                         // Cancellation is assumed to close the connection, or be ignored if this Subscriber has already
                         // terminated. That means we don't need to trigger the processor as completed because we don't

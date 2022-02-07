@@ -568,8 +568,6 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
 
     protected abstract void onDataSeen();
 
-    protected abstract void onStateReset();
-
     /**
      * Returns true if the server switched to a different protocol than HTTP/1.0 or HTTP/1.1, e.g. HTTP/2 or Websocket.
      * Returns false if the upgrade happened in a different layer, e.g. upgrade from HTTP/1.1 to HTTP/1.1 over TLS.
@@ -584,7 +582,12 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                         !AsciiString.contains(newProtocol, HTTP_1_1.toString());
     }
 
-    protected final void resetNow() {
+    /**
+     * Resets the state of the decoder to prepare it for parsing a new incoming message.
+     * <p>
+     * Subclasses that override this method have to invoke this implementation using {@code super} keyword.
+     */
+    protected void resetNow() {
         T message = this.message;
         this.message = null;
         this.trailer = null;
@@ -601,7 +604,6 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
 
         currentState = State.SKIP_CONTROL_CHARS;
         skippedControls = 0;
-        onStateReset();
     }
 
     /**

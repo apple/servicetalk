@@ -43,7 +43,7 @@ import static io.netty.handler.codec.http2.Http2Headers.PseudoHeaderName.PATH;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.api.HttpRequestMetaDataFactory.newRequestMetaData;
 import static io.servicetalk.http.api.HttpRequestMethod.Properties.NONE;
-import static io.servicetalk.http.api.HttpResponseStatus.CONTINUE;
+import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.INFORMATIONAL_1XX;
 import static io.servicetalk.http.netty.H2ToStH1Utils.h1HeadersToH2Headers;
 import static io.servicetalk.http.netty.H2ToStH1Utils.h2HeadersSanitizeForH1;
 import static io.servicetalk.http.netty.HeaderUtils.clientMaySendPayloadBodyFor;
@@ -60,8 +60,10 @@ final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
         if (msg instanceof HttpResponseMetaData) {
-            final boolean maybeEndStream = ((HttpResponseMetaData) msg).status().code() != CONTINUE.code();
+            final boolean maybeEndStream = ((HttpResponseMetaData) msg).status().statusClass() != INFORMATIONAL_1XX;
             if (maybeEndStream) {
+                // We don't expose 1xx "interim responses" [2] to the user, and discard them to make way for the
+                // "real" response.
                 closeHandler.protocolPayloadBeginOutbound(ctx);
             }
             HttpResponseMetaData metaData = (HttpResponseMetaData) msg;

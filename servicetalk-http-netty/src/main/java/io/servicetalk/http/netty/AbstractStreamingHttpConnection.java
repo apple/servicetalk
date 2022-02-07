@@ -160,10 +160,10 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
     @Nullable
     static FlushStrategy determineFlushStrategyForApi(final HttpMetaData request) {
         // For non-aggregated, don't change the flush strategy, keep the default.
-        return isAggregated(request) ? flushOnEnd() : null;
+        return isSafeToAggregateOrEmpty(request) ? flushOnEnd() : null;
     }
 
-    static boolean isAggregated(final HttpMetaData request) {
+    static boolean isSafeToAggregateOrEmpty(final HttpMetaData request) {
         return isPayloadEmpty(request) || isSafeToAggregate(request);
     }
 
