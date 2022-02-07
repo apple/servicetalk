@@ -68,10 +68,12 @@ class KeepAliveTest {
 
     @RegisterExtension
     static final ExecutionContextExtension SERVER_CTX =
-        ExecutionContextExtension.cached("server-io", "server-executor");
+        ExecutionContextExtension.cached("server-io", "server-executor")
+                .setClassLevel(true);
     @RegisterExtension
     static final ExecutionContextExtension CLIENT_CTX =
-            ExecutionContextExtension.cached("client-io", "client-executor");
+            ExecutionContextExtension.cached("client-io", "client-executor")
+                    .setClassLevel(true);
 
     @Nullable
     private TesterClient client;

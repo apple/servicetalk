@@ -73,7 +73,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class PrematureClosureBeforeResponsePayloadBodyTest {
 
     @RegisterExtension
-    static final ExecutionContextExtension SERVER_CTX = ExecutionContextExtension.immediate();
+    static final ExecutionContextExtension SERVER_CTX = ExecutionContextExtension.immediate().setClassLevel(true);
 
     private ServerSocketChannel server;
     private BlockingHttpClient client;

@@ -53,7 +53,8 @@ class ServerGracefulConnectionClosureHandlingTest {
 
     @RegisterExtension
     static final ExecutionContextExtension SERVER_CTX =
-        ExecutionContextExtension.cached("server-io", "server-executor");
+        ExecutionContextExtension.cached("server-io", "server-executor")
+                .setClassLevel(true);
 
     private static final HttpStreamingSerializer<String> RAW_STRING_SERIALIZER =
             stringStreamingSerializer(UTF_8, hdr -> { });

@@ -162,7 +162,7 @@ class DefaultHttpExecutionStrategyTest {
         };
         if (params.offloadSend || params.offloadReceiveMeta || params.offloadReceiveData) {
             NettyIoExecutor ioExecutor = (NettyIoExecutor) contextRule.ioExecutor();
-            ioExecutor.asExecutor().submit(runHandle).toFuture().get();
+            ioExecutor.submit(runHandle).toFuture().get();
         } else {
             runHandle.call();
         }

@@ -23,6 +23,9 @@ import java.util.concurrent.TimeUnit;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Executors.from;
 
+/**
+ * Implements {@link Executor} for {@link Executors#immediate()}.
+ */
 final class ImmediateExecutor extends AbstractExecutor {
 
     private static final Executor IMMEDIATE = from(Runnable::run);

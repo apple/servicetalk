@@ -81,10 +81,12 @@ class GrpcLifecycleObserverTest {
 
     @RegisterExtension
     static final ExecutionContextExtension SERVER_CTX =
-            ExecutionContextExtension.cached("server-io", "server-executor");
+            ExecutionContextExtension.cached("server-io", "server-executor")
+                    .setClassLevel(true);
     @RegisterExtension
     static final ExecutionContextExtension CLIENT_CTX =
-            ExecutionContextExtension.cached("client-io", "client-executor");
+            ExecutionContextExtension.cached("client-io", "client-executor")
+                    .setClassLevel(true);
 
     private static final String CONTENT = "content";
     private static final GrpcLifecycleObserver LOGGING = logging("servicetalk-tests-lifecycle-observer-logger", TRACE);
