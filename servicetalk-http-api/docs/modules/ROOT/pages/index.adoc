@@ -270,7 +270,7 @@ tracing headers in the final response.
 TIP: The interim response is not propagated as a response
 returned by the client because the client has to wait for a final status code returned by the server. There are a couple
 of other ways how to get visibility into interim response: using wire-logging for HTTP/1.x or frame-logging for HTTP/2
-(see link:{source-root}servicetalk-examples/grpc/debugging/src/main/java/io/servicetalk/examples/grpc/debugging/DebuggingClient.java[DebuggingClient]
+(see link:{source-root}/servicetalk-examples/grpc/debugging/src/main/java/io/servicetalk/examples/grpc/debugging/DebuggingClient.java[DebuggingClient]
 as an example) or by monitoring when
-link:{source-root}servicetalk-transport-api/src/main/java/io/servicetalk/transport/api/ConnectionObserver.java[WriteObserver]
+link:{source-root}/servicetalk-transport-api/src/main/java/io/servicetalk/transport/api/ConnectionObserver.java[WriteObserver]
 signals that more items are requested to write.
