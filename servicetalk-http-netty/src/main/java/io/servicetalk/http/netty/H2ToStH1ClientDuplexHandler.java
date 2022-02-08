@@ -73,7 +73,7 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
             closeHandler.protocolPayloadBeginOutbound(ctx);
             HttpRequestMetaData metaData = (HttpRequestMetaData) msg;
             HttpHeaders h1Headers = metaData.headers();
-            waitForContinuation = REQ_EXPECT_CONTINUE.test(msg);
+            waitForContinuation = REQ_EXPECT_CONTINUE.test(metaData);
             CharSequence host = h1Headers.getAndRemove(HOST);
             Http2Headers h2Headers = h1HeadersToH2Headers(h1Headers);
             if (host == null) {

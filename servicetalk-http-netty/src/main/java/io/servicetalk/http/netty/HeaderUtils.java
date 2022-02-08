@@ -64,15 +64,18 @@ import static io.servicetalk.http.netty.AbstractStreamingHttpConnection.isSafeTo
 
 final class HeaderUtils {
 
-    // A Predicate that validates when `expect: 100-continue` feature have to be handled
-    static final Predicate<Object> REQ_EXPECT_CONTINUE = msg -> {
+    // Predicates that validate when `expect: 100-continue` feature have to be handled
+    static final Predicate<HttpRequestMetaData> REQ_EXPECT_CONTINUE = reqMetaData -> {
+        // Versions prior HTTP/1.1 do not support Expect-Continue
+        return !isSafeToAggregateOrEmpty(reqMetaData) && reqMetaData.version().compareTo(HTTP_1_1) >= 0 &&
+                reqMetaData.headers().containsIgnoreCase(EXPECT, CONTINUE);
+    };
+
+    static final Predicate<Object> OBJ_EXPECT_CONTINUE = msg -> {
         if (!(msg instanceof HttpRequestMetaData)) {
             return false;
         }
-        final HttpRequestMetaData metaData = (HttpRequestMetaData) msg;
-        // Versions prior HTTP/1.1 do not support Expect-Continue
-        return !isSafeToAggregateOrEmpty(metaData) && metaData.version().compareTo(HTTP_1_1) >= 0 &&
-                metaData.headers().containsIgnoreCase(EXPECT, CONTINUE);
+        return REQ_EXPECT_CONTINUE.test((HttpRequestMetaData) msg);
     };
 
     private HeaderUtils() {
