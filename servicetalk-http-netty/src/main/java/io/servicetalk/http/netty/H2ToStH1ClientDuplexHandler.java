@@ -127,13 +127,13 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
                             httpStatus.statusClass() == SUCCESSFUL_2XX) {
                         // Write of payload body can continue for either 100 or 2XX response code:
                         ctx.fireUserEventTriggered(ContinueUserEvent.INSTANCE);
-                    } else if (httpStatus.statusClass() != INFORMATIONAL_1XX) {
-                        // All other non-informational responses should cancel ongoing write operation when write waits
-                        // for continuation.
+                    } else if (!isInterim(httpStatus)) {
+                        // All other non-interim responses should cancel ongoing write operation when write waits for
+                        // continuation.
                         ctx.fireUserEventTriggered(CancelWriteUserEvent.INSTANCE);
                     }
                 }
-                if (httpStatus.statusClass() == INFORMATIONAL_1XX) {
+                if (isInterim(httpStatus)) {
                     // We don't expose 1xx "interim responses" [2] to the user, and discard them to make way for the
                     // "real" response.
                     //
@@ -206,5 +206,10 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
         }
         return new NettyH2HeadersToHttpHeaders(h2Headers, headersFactory.validateCookies(),
                 headersFactory.validateValues());
+    }
+
+    private static boolean isInterim(final HttpResponseStatus status) {
+        // All known informational status codes are interim and don't need to be propagated to the business logic
+        return status.statusClass() == INFORMATIONAL_1XX;
     }
 }

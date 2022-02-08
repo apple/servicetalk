@@ -76,7 +76,7 @@ class HttpResponseDecoderTest extends HttpObjectDecoderTest {
     private final EmbeddedChannel channelSpecException = newChannel(true);
 
     private EmbeddedChannel newChannel(boolean allowLFWithoutCR) {
-        return new EmbeddedChannel(new HttpResponseDecoder(methodQueue,
+        return new EmbeddedChannel(new HttpResponseDecoder(methodQueue, new ArrayDeque<>(),
                 getByteBufAllocator(DEFAULT_ALLOCATOR), DefaultHttpHeadersFactory.INSTANCE, 8192, 8192,
                 false, allowLFWithoutCR, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER));
     }

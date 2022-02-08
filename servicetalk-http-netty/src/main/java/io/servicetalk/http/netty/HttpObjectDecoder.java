@@ -40,7 +40,6 @@ import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.transport.netty.internal.ByteToMessageDecoder;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.transport.netty.internal.CloseHandler.DiscardFurtherInboundEvent;
-import io.servicetalk.transport.netty.internal.DefaultNettyConnection.ContinueUserEvent;
 import io.servicetalk.utils.internal.IllegalCharacterException;
 
 import io.netty.buffer.ByteBuf;
@@ -306,7 +305,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                     case SKIP_CONTROL_CHARS:
                         // fast-path
                         // No content is expected.
-                        if (isInterim(message)) {
+                        if (!isInterim(message)) {
                             // We don't expose 1xx "interim responses" [2] to the user, and discard them to make way for
                             // the "real" response.
                             //
@@ -317,8 +316,6 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                             //    the status-line (the empty line signaling the end of the header
                             //    section). [1]
                             // [1] https://tools.ietf.org/html/rfc7231#section-6.2
-                            ctx.fireUserEventTriggered(ContinueUserEvent.INSTANCE);
-                        } else {
                             ctx.fireChannelRead(message);
                             closeHandler.protocolPayloadEndInbound(ctx);
                         }

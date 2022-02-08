@@ -151,7 +151,7 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelDuplexHa
 
                 // Encode the message.
                 encodeInitialLine(ctx, stBuf, metaData);
-                onMetaData(metaData);
+                onMetaData(ctx, metaData);
                 if (isContentAlwaysEmpty(metaData)) {
                     state = CONTENT_LEN_EMPTY;
                     if (!isContinue(metaData)) {
@@ -290,9 +290,11 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelDuplexHa
 
     /**
      * Callback when a meta-data object have been encoded.
-     * @param metaData
+     *
+     * @param ctx the {@link ChannelHandlerContext} for which the write operation is made.
+     * @param metaData the meta-data message.
      */
-    protected void onMetaData(final T metaData) {
+    protected void onMetaData(final ChannelHandlerContext ctx, final T metaData) {
         // noop
     }
 

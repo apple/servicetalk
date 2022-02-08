@@ -34,25 +34,33 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.transport.netty.internal.CloseHandler;
-import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
+import io.servicetalk.transport.netty.internal.DefaultNettyConnection.CancelWriteUserEvent;
+import io.servicetalk.transport.netty.internal.DefaultNettyConnection.ContinueUserEvent;
 
 import io.netty.channel.ChannelHandlerContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.util.ArrayDeque;
 import java.util.Queue;
 
 import static io.netty.handler.codec.http.HttpConstants.SP;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.netty.HeaderUtils.REQ_EXPECT_CONTINUE;
 import static io.servicetalk.http.netty.HeaderUtils.shouldAddZeroContentLength;
+import static io.servicetalk.http.netty.HttpResponseDecoder.EXPECT_CONTINUE_SIGNAL;
 import static java.util.Objects.requireNonNull;
 
 final class HttpRequestEncoder extends HttpObjectEncoder<HttpRequestMetaData> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(HttpRequestEncoder.class);
+
     private static final char SLASH = '/';
     private static final char QUESTION_MARK = '?';
     private static final int SLASH_AND_SPACE_SHORT = (SLASH << 8) | SP;
     private static final int SPACE_SLASH_AND_SPACE_MEDIUM = (SP << 16) | SLASH_AND_SPACE_SHORT;
 
     private final Queue<HttpRequestMethod> methodQueue;
+    private final ArrayDeque<Object> signalsQueue;
 
     /**
      * Used to remember when an outgoing request has "Expect: 100-continue" header.
@@ -62,17 +70,19 @@ final class HttpRequestEncoder extends HttpObjectEncoder<HttpRequestMetaData> {
     /**
      * Create a new instance.
      * @param methodQueue A queue used to enforce HTTP protocol semantics related to request/response lengths.
+     * @param signalsQueue A queue used to communicate extra signals between encoder and decoder.
      * @param headersEncodedSizeAccumulator Used to calculate an exponential moving average of the encoded size of the
      * initial line and the headers for a guess for future buffer allocations.
      * @param trailersEncodedSizeAccumulator  Used to calculate an exponential moving average of the encoded size of
      * the trailers for a guess for future buffer allocations.
      * @param closeHandler observes protocol state events
      */
-    HttpRequestEncoder(Queue<HttpRequestMethod> methodQueue,
-                       int headersEncodedSizeAccumulator, int trailersEncodedSizeAccumulator,
+    HttpRequestEncoder(final Queue<HttpRequestMethod> methodQueue, final ArrayDeque<Object> signalsQueue,
+                       final int headersEncodedSizeAccumulator, final int trailersEncodedSizeAccumulator,
                        final CloseHandler closeHandler) {
         super(headersEncodedSizeAccumulator, trailersEncodedSizeAccumulator, closeHandler);
         this.methodQueue = requireNonNull(methodQueue);
+        this.signalsQueue = requireNonNull(signalsQueue);
     }
 
     @Override
@@ -148,19 +158,28 @@ final class HttpRequestEncoder extends HttpObjectEncoder<HttpRequestMetaData> {
     }
 
     @Override
-    protected void onMetaData(final HttpRequestMetaData metaData) {
+    protected void onMetaData(final ChannelHandlerContext ctx, final HttpRequestMetaData metaData) {
         expectContinue = REQ_EXPECT_CONTINUE.test(metaData);
+        if (expectContinue) {
+            if (!signalsQueue.offer(EXPECT_CONTINUE_SIGNAL)) {
+                LOGGER.error(
+                    "{} Can not signal to the decoder that outgoing request {} contains `Expect: 100-continue` header.",
+                    ctx.channel(), metaData);
+            }
+        }
     }
 
     @Override
     public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) {
-        if (expectContinue && evt == DefaultNettyConnection.ContinueUserEvent.INSTANCE) {
-            // Reset the flag after receiving 100 (Continue).
-            expectContinue = false;
-        } else if (expectContinue && evt == DefaultNettyConnection.CancelWriteUserEvent.INSTANCE) {
-            // Mark as content consumed and reset the flag to prepare for the next request on the same connection.
-            contentLenConsumed(ctx, null);
-            expectContinue = false;
+        if (expectContinue) {
+            if (evt == ContinueUserEvent.INSTANCE) {
+                // Reset the flag after receiving 100 (Continue).
+                expectContinue = false;
+            } else if (evt == CancelWriteUserEvent.INSTANCE) {
+                // Mark as content consumed and reset the flag to prepare for the next request on the same connection.
+                contentLenConsumed(ctx, null);
+                expectContinue = false;
+            }
         }
         ctx.fireUserEventTriggered(evt);
     }

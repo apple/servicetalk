@@ -44,12 +44,13 @@ final class HttpClientChannelInitializer implements ChannelInitializer {
         // user-code. Therefore, ByteBufs must be copied to unpooled memory before HttpObjectDecoder.
         this.delegate = new CopyByteBufHandlerChannelInitializer(alloc).andThen(channel -> {
             final Queue<HttpRequestMethod> methodQueue = new ArrayDeque<>(min(8, config.maxPipelinedRequests()));
+            final ArrayDeque<Object> signalsQueue = new ArrayDeque<>(0);
             final ChannelPipeline pipeline = channel.pipeline();
-            pipeline.addLast(new HttpResponseDecoder(methodQueue, alloc, config.headersFactory(),
+            pipeline.addLast(new HttpResponseDecoder(methodQueue, signalsQueue, alloc, config.headersFactory(),
                     config.maxStartLineLength(), config.maxHeaderFieldLength(),
                     config.specExceptions().allowPrematureClosureBeforePayloadBody(),
                     config.specExceptions().allowLFWithoutCR(), closeHandler));
-            pipeline.addLast(new HttpRequestEncoder(methodQueue,
+            pipeline.addLast(new HttpRequestEncoder(methodQueue, signalsQueue,
                     config.headersEncodedSizeEstimate(), config.trailersEncodedSizeEstimate(), closeHandler));
         });
     }

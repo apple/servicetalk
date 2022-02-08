@@ -20,7 +20,8 @@ import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.transport.netty.internal.CloseHandler;
-import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
+import io.servicetalk.transport.netty.internal.DefaultNettyConnection.CancelWriteUserEvent;
+import io.servicetalk.transport.netty.internal.DefaultNettyConnection.ContinueUserEvent;
 import io.servicetalk.utils.internal.IllegalCharacterException;
 
 import io.netty.buffer.ByteBuf;
@@ -39,6 +40,7 @@ import static io.servicetalk.http.api.HttpHeaderValues.WEBSOCKET;
 import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
 import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
 import static io.servicetalk.http.api.HttpResponseMetaDataFactory.newResponseMetaData;
+import static io.servicetalk.http.api.HttpResponseStatus.CONTINUE;
 import static io.servicetalk.http.api.HttpResponseStatus.NOT_MODIFIED;
 import static io.servicetalk.http.api.HttpResponseStatus.NO_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatus.SWITCHING_PROTOCOLS;
@@ -52,6 +54,7 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
 
     private static final byte[] FIRST_BYTES = "HTTP/".getBytes(US_ASCII);
     private static final byte DEL = 127;
+    static final Object EXPECT_CONTINUE_SIGNAL = new Object();
 
     private static final ByteProcessor ENSURE_REASON_PHRASE = value -> {
         // Any control character (0x00-0x1F) except HT
@@ -62,14 +65,17 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
     };
 
     private final Queue<HttpRequestMethod> methodQueue;
+    private final Queue<Object> signalsQueue;
 
-    HttpResponseDecoder(final Queue<HttpRequestMethod> methodQueue, final ByteBufAllocator alloc,
+    HttpResponseDecoder(final Queue<HttpRequestMethod> methodQueue, final Queue<Object> signalsQueue,
+                        final ByteBufAllocator alloc,
                         final HttpHeadersFactory headersFactory, final int maxStartLineLength, int maxHeaderFieldLength,
                         final boolean allowPrematureClosureBeforePayloadBody, final boolean allowLFWithoutCR,
                         final CloseHandler closeHandler) {
         super(alloc, headersFactory, maxStartLineLength, maxHeaderFieldLength, allowPrematureClosureBeforePayloadBody,
                 allowLFWithoutCR, closeHandler);
         this.methodQueue = requireNonNull(methodQueue);
+        this.signalsQueue = requireNonNull(signalsQueue);
     }
 
     @Override
@@ -159,13 +165,17 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
 
     @Override
     protected void onMetaDataRead(final ChannelHandlerContext ctx, final HttpResponseMetaData msg) {
-        if (msg.status().statusClass() == SUCCESSFUL_2XX) {
-            // Any 2XX should also let the request payload body to proceed if "Expect: 100-continue" was used.
-            ctx.fireUserEventTriggered(DefaultNettyConnection.ContinueUserEvent.INSTANCE);
-        } else if (msg.status().statusClass() != INFORMATIONAL_1XX) {
-            // All other non-informational responses should cancel ongoing write operation when write waits for
-            // continuation.
-            ctx.fireUserEventTriggered(DefaultNettyConnection.CancelWriteUserEvent.INSTANCE);
+        if (signalsQueue.poll() != EXPECT_CONTINUE_SIGNAL) {
+            return;
+        }
+        // Process a response for "Expect: 100-continue" request.
+        final HttpResponseStatus status = msg.status();
+        if (status.code() == CONTINUE.code() || status.statusClass() == SUCCESSFUL_2XX) {
+            // Write of payload body can continue for either 100 or 2XX response code:
+            ctx.fireUserEventTriggered(ContinueUserEvent.INSTANCE);
+        } else if (!isInterim(msg)) {
+            // All other non-interim responses should cancel ongoing write operation when write waits for continuation.
+            ctx.fireUserEventTriggered(CancelWriteUserEvent.INSTANCE);
         }
     }
 
