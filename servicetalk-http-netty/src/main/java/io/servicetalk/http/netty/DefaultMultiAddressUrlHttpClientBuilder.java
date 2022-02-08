@@ -75,6 +75,12 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseabl
 import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverCompleteFromSource;
+import static io.servicetalk.http.api.HttpRequestMethod.DELETE;
+import static io.servicetalk.http.api.HttpRequestMethod.GET;
+import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
+import static io.servicetalk.http.api.HttpRequestMethod.PATCH;
+import static io.servicetalk.http.api.HttpRequestMethod.POST;
+import static io.servicetalk.http.api.HttpRequestMethod.PUT;
 import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.defaultReqRespFactory;
 import static io.servicetalk.http.netty.NewToDeprecatedFilter.NEW_TO_DEPRECATED_FILTER;
 import static java.util.Objects.requireNonNull;
@@ -93,7 +99,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
 
     private static final String HTTPS_SCHEME = HTTPS.toString();
     private static final RedirectConfig DEFAULT_REDIRECT_CONFIG = new RedirectConfigBuilder()
-            .allowNonRelativeRedirects(true).build();
+            .allowNonRelativeRedirects(true).allowedMethods(GET, HEAD, POST, PUT, DELETE, PATCH).build();
 
     private final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate;
 
