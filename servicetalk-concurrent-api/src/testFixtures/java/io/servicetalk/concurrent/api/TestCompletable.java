@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -82,7 +83,7 @@ public final class TestCompletable extends Completable implements CompletableSou
      * {@link Thread#isInterrupted()} will be set upon return.
      */
     public void awaitSubscribed() {
-        AwaitUtils.awaitUninterruptibly(subscriberLatch);
+        AwaitUtils.await(subscriberLatch);
     }
 
     @Override
@@ -163,7 +164,7 @@ public final class TestCompletable extends Completable implements CompletableSou
     }
 
     /**
-     * Allows for creating {@link TestCompletable}s with non-default settings. For defaults, see <b>Defaults</b> section
+     * Allows creation of {@link TestCompletable}s with non-default settings. For defaults, see <b>Defaults</b> section
      * of class javadoc.
      */
     public static class Builder {
@@ -347,7 +348,10 @@ public final class TestCompletable extends Completable implements CompletableSou
         private Subscriber waitForSubscriber() {
             try {
                 return realSubscriberSingle.toFuture().get();
-            } catch (InterruptedException | ExecutionException e) {
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return throwException(e);
+            } catch (ExecutionException e) {
                 throw new RuntimeException(e);
             }
         }

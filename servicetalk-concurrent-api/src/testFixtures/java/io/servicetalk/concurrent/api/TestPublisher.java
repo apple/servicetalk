@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -51,6 +52,7 @@ import static java.util.Objects.requireNonNull;
  */
 public final class TestPublisher<T> extends Publisher<T> implements PublisherSource<T> {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestPublisher.class);
+    @SuppressWarnings("rawtypes")
     private static final AtomicReferenceFieldUpdater<TestPublisher, Subscriber> subscriberUpdater =
             AtomicReferenceFieldUpdater.newUpdater(TestPublisher.class, Subscriber.class, "subscriber");
     private final Function<Subscriber<? super T>, Subscriber<? super T>> subscriberFunction;
@@ -83,7 +85,7 @@ public final class TestPublisher<T> extends Publisher<T> implements PublisherSou
      * {@link Thread#isInterrupted()} will be set upon return.
      */
     public void awaitSubscribed() {
-        AwaitUtils.awaitUninterruptibly(subscriberLatch);
+        AwaitUtils.await(subscriberLatch);
     }
 
     @Override
@@ -414,7 +416,10 @@ public final class TestPublisher<T> extends Publisher<T> implements PublisherSou
         private Subscriber<? super T> waitForSubscriber() {
             try {
                 return realSubscriberSingle.toFuture().get();
-            } catch (InterruptedException | ExecutionException e) {
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return throwException(e);
+            } catch (ExecutionException e) {
                 throw new RuntimeException(e);
             }
         }

@@ -20,94 +20,87 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
+/**
+ * Utilities to do blocking await calls for tests.
+ */
 public final class AwaitUtils {
     private AwaitUtils() {
         // no instances
     }
 
-    public static void awaitUninterruptibly(CountDownLatch latch) {
-        boolean interrupted = false;
+    /**
+     * Await a {@link CountDownLatch} until the latch is counted down, throws unchecked InterruptedException.
+     * @param latch the {@link CountDownLatch} to await.
+     */
+    public static void await(CountDownLatch latch) {
         try {
-            do {
-                try {
-                    latch.await();
-                    return;
-                } catch (InterruptedException e) {
-                    interrupted = true;
-                }
-            } while (true);
-        } finally {
-            if (interrupted) {
-                Thread.currentThread().interrupt();
-            }
+            latch.await();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throwException(e);
         }
     }
 
-    public static boolean awaitUninterruptibly(CountDownLatch latch, long timeout, TimeUnit unit) {
-        final long startTime = System.nanoTime();
+    /**
+     * Await a {@link CountDownLatch} until the latch is counted down or the given time duration expires,
+     * throws unchecked InterruptedException.
+     * @param latch the {@link CountDownLatch} to await.
+     * @param timeout the timeout duration to await for.
+     * @param unit the units applied to {@code timeout}.
+     * @return true if the count reached zero and false if the waiting time elapsed before the count reached zero
+     */
+    public static boolean await(CountDownLatch latch, long timeout, TimeUnit unit) {
         final long timeoutNanos = NANOSECONDS.convert(timeout, unit);
-        long waitTime = timeoutNanos;
-        boolean interrupted = false;
+
         try {
-            do {
-                try {
-                    return latch.await(waitTime, NANOSECONDS);
-                } catch (InterruptedException e) {
-                    interrupted = true;
-                }
-                waitTime = timeoutNanos - (System.nanoTime() - startTime);
-                if (waitTime <= 0) {
-                    return true;
-                }
-            } while (true);
-        } finally {
-            if (interrupted) {
-                Thread.currentThread().interrupt();
-            }
+            return latch.await(timeoutNanos, NANOSECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throwException(e);
+            return false;
         }
     }
 
-    public static <T> T takeUninterruptibly(BlockingQueue<T> queue) {
-        boolean interrupted = false;
+    /**
+     * {@link BlockingQueue#take()} from the queue or throws unchecked exception in the case
+     * of InterruptedException.
+     * @param queue The queue to take from.
+     * @param <T> The types of objects in the queue.
+     * @return see {@link BlockingQueue#take()}.
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> T take(BlockingQueue<T> queue) {
         try {
-            do {
-                try {
-                    return queue.take();
-                } catch (InterruptedException e) {
-                    interrupted = true;
-                }
-            } while (true);
-        } finally {
-            if (interrupted) {
-                Thread.currentThread().interrupt();
-            }
+            return queue.take();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throwException(e);
+            // Returning Object cast to type T is not necessary as the method will either return or throw exception
+            // before even reaching this statement. However, this is necessary to compile successfully.
+            return (T) new Object();
         }
     }
 
+    /**
+     * {@link BlockingQueue#poll(long, TimeUnit)} from the queue, throws unchecked Exception if
+     * thread is interrupted while waiting.
+     * @param queue the queue to poll from.
+     * @param timeout the timeout duration to poll for.
+     * @param unit the units applied to {@code timeout}.
+     * @param <T> The types of objects in the queue.
+     * @return see {@link BlockingQueue#poll(long, TimeUnit)}.
+     */
     @Nullable
-    public static <T> T pollUninterruptibly(BlockingQueue<T> queue, long timeout, TimeUnit unit) {
-        final long startTime = System.nanoTime();
-        final long timeoutNanos = NANOSECONDS.convert(timeout, unit);
-        long waitTime = timeout;
-        boolean interrupted = false;
+    public static <T> T poll(BlockingQueue<T> queue, long timeout, TimeUnit unit) {
         try {
-            do {
-                try {
-                    return queue.poll(waitTime, NANOSECONDS);
-                } catch (InterruptedException e) {
-                    interrupted = true;
-                }
-                waitTime = timeoutNanos - (System.nanoTime() - startTime);
-                if (waitTime <= 0) {
-                    return null;
-                }
-            } while (true);
-        } finally {
-            if (interrupted) {
-                Thread.currentThread().interrupt();
-            }
+            return queue.poll(timeout, unit);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throwException(e);
+            return null;
         }
     }
 }
