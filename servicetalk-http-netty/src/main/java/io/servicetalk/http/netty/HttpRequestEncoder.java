@@ -31,36 +31,34 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.concurrent.internal.QueueFullException;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
+import io.servicetalk.http.netty.HttpResponseDecoder.Signal;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection.CancelWriteUserEvent;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection.ContinueUserEvent;
 
 import io.netty.channel.ChannelHandlerContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.util.ArrayDeque;
 import java.util.Queue;
 
 import static io.netty.handler.codec.http.HttpConstants.SP;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.netty.HeaderUtils.REQ_EXPECT_CONTINUE;
 import static io.servicetalk.http.netty.HeaderUtils.shouldAddZeroContentLength;
-import static io.servicetalk.http.netty.HttpResponseDecoder.EXPECT_CONTINUE_SIGNAL;
+import static io.servicetalk.http.netty.HttpResponseDecoder.Signal.REQUEST_SIGNAL;
+import static io.servicetalk.http.netty.HttpResponseDecoder.Signal.REQUEST_WITH_EXPECT_CONTINUE_SIGNAL;
 import static java.util.Objects.requireNonNull;
 
 final class HttpRequestEncoder extends HttpObjectEncoder<HttpRequestMetaData> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(HttpRequestEncoder.class);
-
     private static final char SLASH = '/';
     private static final char QUESTION_MARK = '?';
     private static final int SLASH_AND_SPACE_SHORT = (SLASH << 8) | SP;
     private static final int SPACE_SLASH_AND_SPACE_MEDIUM = (SP << 16) | SLASH_AND_SPACE_SHORT;
 
     private final Queue<HttpRequestMethod> methodQueue;
-    private final ArrayDeque<Object> signalsQueue;
+    private final Queue<Signal> signalsQueue;
 
     /**
      * Used to remember when an outgoing request has "Expect: 100-continue" header.
@@ -77,7 +75,7 @@ final class HttpRequestEncoder extends HttpObjectEncoder<HttpRequestMetaData> {
      * the trailers for a guess for future buffer allocations.
      * @param closeHandler observes protocol state events
      */
-    HttpRequestEncoder(final Queue<HttpRequestMethod> methodQueue, final ArrayDeque<Object> signalsQueue,
+    HttpRequestEncoder(final Queue<HttpRequestMethod> methodQueue, final Queue<Signal> signalsQueue,
                        final int headersEncodedSizeAccumulator, final int trailersEncodedSizeAccumulator,
                        final CloseHandler closeHandler) {
         super(headersEncodedSizeAccumulator, trailersEncodedSizeAccumulator, closeHandler);
@@ -160,10 +158,10 @@ final class HttpRequestEncoder extends HttpObjectEncoder<HttpRequestMetaData> {
     @Override
     protected void onMetaData(final ChannelHandlerContext ctx, final HttpRequestMetaData metaData) {
         expectContinue = REQ_EXPECT_CONTINUE.test(metaData);
-        if (expectContinue && !signalsQueue.offer(EXPECT_CONTINUE_SIGNAL)) {
-            LOGGER.error(
-                    "{} Can not signal to the decoder that outgoing request {} contains `Expect: 100-continue` header.",
-                    ctx.channel(), metaData);
+        // Offer signals for all request types. Otherwise, decoder may receive a wrong signal if client sends multiple
+        // pipelined requests.
+        if (!signalsQueue.offer(expectContinue ? REQUEST_WITH_EXPECT_CONTINUE_SIGNAL : REQUEST_SIGNAL)) {
+            throw new QueueFullException("Can not enqueue a request type for the decoder");
         }
     }
 

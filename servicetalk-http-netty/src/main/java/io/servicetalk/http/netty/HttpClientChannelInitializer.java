@@ -16,6 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.HttpRequestMethod;
+import io.servicetalk.http.netty.HttpResponseDecoder.Signal;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.transport.netty.internal.CopyByteBufHandlerChannelInitializer;
@@ -43,8 +44,9 @@ final class HttpClientChannelInitializer implements ChannelInitializer {
         // H1 slices passed memory chunks into headers and payload body without copying and will emit them to the
         // user-code. Therefore, ByteBufs must be copied to unpooled memory before HttpObjectDecoder.
         this.delegate = new CopyByteBufHandlerChannelInitializer(alloc).andThen(channel -> {
-            final Queue<HttpRequestMethod> methodQueue = new ArrayDeque<>(min(8, config.maxPipelinedRequests()));
-            final ArrayDeque<Object> signalsQueue = new ArrayDeque<>(0);
+            final int minPipelinedRequests = min(8, config.maxPipelinedRequests());
+            final Queue<HttpRequestMethod> methodQueue = new ArrayDeque<>(minPipelinedRequests);
+            final ArrayDeque<Signal> signalsQueue = new ArrayDeque<>(minPipelinedRequests);
             final ChannelPipeline pipeline = channel.pipeline();
             pipeline.addLast(new HttpResponseDecoder(methodQueue, signalsQueue, alloc, config.headersFactory(),
                     config.maxStartLineLength(), config.maxHeaderFieldLength(),

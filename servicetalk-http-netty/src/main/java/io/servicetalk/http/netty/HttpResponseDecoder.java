@@ -46,15 +46,19 @@ import static io.servicetalk.http.api.HttpResponseStatus.NO_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatus.SWITCHING_PROTOCOLS;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.INFORMATIONAL_1XX;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESSFUL_2XX;
+import static io.servicetalk.http.netty.HttpResponseDecoder.Signal.REQUEST_WITH_EXPECT_CONTINUE_SIGNAL;
 import static java.lang.Math.min;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Objects.requireNonNull;
 
 final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> {
 
+    enum Signal {
+        REQUEST_SIGNAL, REQUEST_WITH_EXPECT_CONTINUE_SIGNAL;
+    }
+
     private static final byte[] FIRST_BYTES = "HTTP/".getBytes(US_ASCII);
     private static final byte DEL = 127;
-    static final Object EXPECT_CONTINUE_SIGNAL = new Object();
 
     private static final ByteProcessor ENSURE_REASON_PHRASE = value -> {
         // Any control character (0x00-0x1F) except HT
@@ -65,9 +69,9 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
     };
 
     private final Queue<HttpRequestMethod> methodQueue;
-    private final Queue<Object> signalsQueue;
+    private final Queue<Signal> signalsQueue;
 
-    HttpResponseDecoder(final Queue<HttpRequestMethod> methodQueue, final Queue<Object> signalsQueue,
+    HttpResponseDecoder(final Queue<HttpRequestMethod> methodQueue, final Queue<Signal> signalsQueue,
                         final ByteBufAllocator alloc,
                         final HttpHeadersFactory headersFactory, final int maxStartLineLength, int maxHeaderFieldLength,
                         final boolean allowPrematureClosureBeforePayloadBody, final boolean allowLFWithoutCR,
@@ -165,7 +169,9 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
 
     @Override
     protected void onMetaDataRead(final ChannelHandlerContext ctx, final HttpResponseMetaData msg) {
-        if (signalsQueue.poll() != EXPECT_CONTINUE_SIGNAL) {
+        final Object signal = signalsQueue.poll();
+        assert signal != null;
+        if (signal != REQUEST_WITH_EXPECT_CONTINUE_SIGNAL) {
             return;
         }
         // Process a response for "Expect: 100-continue" request.

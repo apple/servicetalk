@@ -141,6 +141,8 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelDuplexHa
             } else if (state == -1) {
                 unknownContentLengthNewRequest(ctx);
             }
+
+            onMetaData(ctx, metaData);
             if (realResponse) {
                 // Notify the CloseHandler only about "real" messages. We don't expose "interim messages", like 1xx
                 // responses to the user, and handle them internally.
@@ -160,7 +162,6 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelDuplexHa
 
                 // Encode the message.
                 encodeInitialLine(ctx, stBuf, metaData);
-                onMetaData(ctx, metaData);
                 if (isContentAlwaysEmpty(metaData)) {
                     state = CONTENT_LEN_EMPTY;
                     if (realResponse) {
