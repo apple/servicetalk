@@ -38,6 +38,7 @@ import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.HttpResponseStatus;
+import io.servicetalk.http.netty.HttpResponseDecoder.Signal;
 
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.jupiter.api.Test;
@@ -59,6 +60,7 @@ import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
 import static io.servicetalk.http.api.HttpResponseStatus.BAD_REQUEST;
 import static io.servicetalk.http.api.HttpResponseStatus.NO_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
+import static io.servicetalk.http.netty.HttpResponseDecoder.Signal.REQUEST_SIGNAL;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static java.lang.Integer.toHexString;
 import static java.nio.charset.StandardCharsets.US_ASCII;
@@ -70,13 +72,24 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 
 class HttpResponseDecoderTest extends HttpObjectDecoderTest {
 
+    private static final class PollLikePeakArrayDeque<T> extends ArrayDeque<T> {
+        private static final long serialVersionUID = -8160337336374186819L;
+
+        @Override
+        public T poll() {
+            return peek();  // Prevent taking an element out of the queue to allow reuse for multiple tests
+        }
+    }
+
     private final Queue<HttpRequestMethod> methodQueue = new ArrayDeque<>();
 
     private final EmbeddedChannel channel = newChannel(false);
     private final EmbeddedChannel channelSpecException = newChannel(true);
 
     private EmbeddedChannel newChannel(boolean allowLFWithoutCR) {
-        return new EmbeddedChannel(new HttpResponseDecoder(methodQueue, new ArrayDeque<>(),
+        final ArrayDeque<Signal> signalsQueue = new PollLikePeakArrayDeque<>();
+        signalsQueue.offer(REQUEST_SIGNAL);
+        return new EmbeddedChannel(new HttpResponseDecoder(methodQueue, signalsQueue,
                 getByteBufAllocator(DEFAULT_ALLOCATOR), DefaultHttpHeadersFactory.INSTANCE, 8192, 8192,
                 false, allowLFWithoutCR, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER));
     }

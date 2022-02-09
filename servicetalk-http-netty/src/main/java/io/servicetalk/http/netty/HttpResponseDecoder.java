@@ -30,6 +30,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.DecoderException;
 import io.netty.util.ByteProcessor;
 
+import java.util.Deque;
 import java.util.Queue;
 
 import static io.netty.handler.codec.http.HttpConstants.HT;
@@ -46,6 +47,7 @@ import static io.servicetalk.http.api.HttpResponseStatus.NO_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatus.SWITCHING_PROTOCOLS;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.INFORMATIONAL_1XX;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESSFUL_2XX;
+import static io.servicetalk.http.netty.HttpResponseDecoder.Signal.REQUEST_SIGNAL;
 import static io.servicetalk.http.netty.HttpResponseDecoder.Signal.REQUEST_WITH_EXPECT_CONTINUE_SIGNAL;
 import static java.lang.Math.min;
 import static java.nio.charset.StandardCharsets.US_ASCII;
@@ -69,9 +71,9 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
     };
 
     private final Queue<HttpRequestMethod> methodQueue;
-    private final Queue<Signal> signalsQueue;
+    private final Deque<Signal> signalsQueue;
 
-    HttpResponseDecoder(final Queue<HttpRequestMethod> methodQueue, final Queue<Signal> signalsQueue,
+    HttpResponseDecoder(final Queue<HttpRequestMethod> methodQueue, final Deque<Signal> signalsQueue,
                         final ByteBufAllocator alloc,
                         final HttpHeadersFactory headersFactory, final int maxStartLineLength, int maxHeaderFieldLength,
                         final boolean allowPrematureClosureBeforePayloadBody, final boolean allowLFWithoutCR,
@@ -176,7 +178,11 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
         }
         // Process a response for "Expect: 100-continue" request.
         final HttpResponseStatus status = msg.status();
-        if (status.code() == CONTINUE.code() || status.statusClass() == SUCCESSFUL_2XX) {
+        if (status.code() == CONTINUE.code()) {
+            ctx.fireUserEventTriggered(ContinueUserEvent.INSTANCE);
+            // Offer REQUEST_SIGNAL to suppress any events for the final response.
+            signalsQueue.offerLast(REQUEST_SIGNAL);
+        } else if (status.statusClass() == SUCCESSFUL_2XX) {
             // Write of payload body can continue for either 100 or 2XX response code:
             ctx.fireUserEventTriggered(ContinueUserEvent.INSTANCE);
         } else if (!isInterim(msg)) {

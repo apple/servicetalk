@@ -60,14 +60,13 @@ import static io.servicetalk.http.api.HttpRequestMethod.TRACE;
 import static io.servicetalk.http.api.HttpResponseStatus.NO_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.INFORMATIONAL_1XX;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESSFUL_2XX;
-import static io.servicetalk.http.netty.AbstractStreamingHttpConnection.isSafeToAggregateOrEmpty;
 
 final class HeaderUtils {
 
     // Predicates that validate when `expect: 100-continue` feature has to be handled.
     static final Predicate<HttpRequestMetaData> REQ_EXPECT_CONTINUE = reqMetaData -> {
         // Versions prior HTTP/1.1 do not support Expect-Continue
-        return !isSafeToAggregateOrEmpty(reqMetaData) && reqMetaData.version().compareTo(HTTP_1_1) >= 0 &&
+        return reqMetaData.version().compareTo(HTTP_1_1) >= 0 &&
                 reqMetaData.headers().containsIgnoreCase(EXPECT, CONTINUE);
     };
 

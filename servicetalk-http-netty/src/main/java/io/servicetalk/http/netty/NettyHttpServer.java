@@ -92,7 +92,7 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
 import static io.servicetalk.http.api.StreamingHttpRequests.newTransportRequest;
-import static io.servicetalk.http.netty.AbstractStreamingHttpConnection.determineFlushStrategyForApi;
+import static io.servicetalk.http.netty.AbstractStreamingHttpConnection.isSafeToAggregateOrEmpty;
 import static io.servicetalk.http.netty.HeaderUtils.REQ_EXPECT_CONTINUE;
 import static io.servicetalk.http.netty.HeaderUtils.addResponseTransferEncodingIfNecessary;
 import static io.servicetalk.http.netty.HeaderUtils.canAddResponseContentLength;
@@ -105,6 +105,7 @@ import static io.servicetalk.http.netty.HttpObjectDecoder.getContentLength;
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.CHANNEL_CLOSED_INBOUND;
 import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedRequestResponse;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.flushOnEach;
+import static io.servicetalk.transport.netty.internal.FlushStrategies.flushOnEnd;
 import static io.servicetalk.transport.netty.internal.SplittingFlushStrategy.FlushBoundaryProvider.FlushBoundary.End;
 import static io.servicetalk.transport.netty.internal.SplittingFlushStrategy.FlushBoundaryProvider.FlushBoundary.InProgress;
 import static io.servicetalk.transport.netty.internal.SplittingFlushStrategy.FlushBoundaryProvider.FlushBoundary.Start;
@@ -461,6 +462,12 @@ final class NettyHttpServer {
                 addResponseTransferEncodingIfNecessary(response, requestMethod);
                 return flatResponse;
             }
+        }
+
+        @Nullable
+        private static FlushStrategy determineFlushStrategyForApi(final HttpResponseMetaData response) {
+            // For non-aggregated, don't change the flush strategy, keep the default.
+            return isSafeToAggregateOrEmpty(response) ? flushOnEnd() : null;
         }
 
         @Override
