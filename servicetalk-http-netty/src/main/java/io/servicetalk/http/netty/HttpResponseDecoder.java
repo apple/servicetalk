@@ -54,7 +54,7 @@ import static java.util.Objects.requireNonNull;
 final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> {
 
     enum Signal {
-        REQUEST_SIGNAL, REQUEST_WITH_EXPECT_CONTINUE_SIGNAL;
+        REQUEST_SIGNAL, REQUEST_WITH_EXPECT_CONTINUE_SIGNAL
     }
 
     private static final byte[] FIRST_BYTES = "HTTP/".getBytes(US_ASCII);
