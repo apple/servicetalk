@@ -43,7 +43,7 @@ import static io.netty.handler.codec.http2.Http2Headers.PseudoHeaderName.PATH;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.api.HttpRequestMetaDataFactory.newRequestMetaData;
 import static io.servicetalk.http.api.HttpRequestMethod.Properties.NONE;
-import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.INFORMATIONAL_1XX;
+import static io.servicetalk.http.netty.H2ToStH1ClientDuplexHandler.isInterim;
 import static io.servicetalk.http.netty.H2ToStH1Utils.h1HeadersToH2Headers;
 import static io.servicetalk.http.netty.H2ToStH1Utils.h2HeadersSanitizeForH1;
 import static io.servicetalk.http.netty.HeaderUtils.clientMaySendPayloadBodyFor;
@@ -61,7 +61,8 @@ final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
         if (msg instanceof HttpResponseMetaData) {
-            final boolean realResponse = ((HttpResponseMetaData) msg).status().statusClass() != INFORMATIONAL_1XX;
+            HttpResponseMetaData metaData = (HttpResponseMetaData) msg;
+            boolean realResponse = !isInterim(metaData.status());
             if (realResponse) {
                 // Notify the CloseHandler only about "real" responses. We don't expose 1xx "interim responses" to the
                 // user, and handle them internally.
@@ -71,7 +72,6 @@ final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
                 // Discard an "interim response" if it arrives after a "real response" is already sent.
                 return;
             }
-            HttpResponseMetaData metaData = (HttpResponseMetaData) msg;
             Http2Headers h2Headers = h1HeadersToH2Headers(metaData.headers());
             h2Headers.status(metaData.status().codeAsCharSequence());
             writeMetaData(ctx, metaData, h2Headers, realResponse, promise);

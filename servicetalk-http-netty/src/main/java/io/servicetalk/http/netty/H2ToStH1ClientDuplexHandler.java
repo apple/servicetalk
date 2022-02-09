@@ -122,18 +122,25 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
                     throw new IllegalArgumentException("a response must have " + STATUS + " header");
                 }
                 httpStatus = HttpResponseStatus.of(status);
+                boolean realResponse = !isInterim(httpStatus);
+                if (realResponse) {
+                    // Don't notify CloseHandler if it's interim 100 (Continue) response
+                    closeHandler.protocolPayloadBeginInbound(ctx);
+                }
                 if (waitForContinuation) {
                     if (httpStatus.code() == HttpResponseStatus.CONTINUE.code() ||
                             httpStatus.statusClass() == SUCCESSFUL_2XX) {
+                        waitForContinuation = false;
                         // Write of payload body can continue for either 100 or 2XX response code:
                         ctx.fireUserEventTriggered(ContinueUserEvent.INSTANCE);
-                    } else if (!isInterim(httpStatus)) {
+                    } else if (realResponse) {
+                        waitForContinuation = false;
                         // All other non-interim responses should cancel ongoing write operation when write waits for
                         // continuation.
                         ctx.fireUserEventTriggered(CancelWriteUserEvent.INSTANCE);
                     }
                 }
-                if (isInterim(httpStatus)) {
+                if (!realResponse) {
                     // We don't expose 1xx "interim responses" [2] to the user, and discard them to make way for the
                     // "real" response.
                     //
@@ -151,7 +158,6 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
                     return;
                 }
                 readHeaders = true;
-                closeHandler.protocolPayloadBeginInbound(ctx);
             } else {
                 httpStatus = null;
             }
@@ -208,7 +214,7 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
                 headersFactory.validateValues());
     }
 
-    private static boolean isInterim(final HttpResponseStatus status) {
+    static boolean isInterim(final HttpResponseStatus status) {
         // All known informational status codes are interim and don't need to be propagated to the business logic
         return status.statusClass() == INFORMATIONAL_1XX;
     }
