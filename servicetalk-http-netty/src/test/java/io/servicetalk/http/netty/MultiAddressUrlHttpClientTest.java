@@ -22,7 +22,6 @@ import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 import io.servicetalk.http.api.HttpResponseStatus;
-import io.servicetalk.http.api.RedirectConfigBuilder;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -33,6 +32,8 @@ import io.servicetalk.transport.api.ServerContext;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
@@ -51,7 +52,9 @@ import static io.servicetalk.http.api.HttpHeaderNames.LOCATION;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
+import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.HttpRequestMethod.OPTIONS;
+import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static io.servicetalk.http.api.HttpResponseStatus.ACCEPTED;
 import static io.servicetalk.http.api.HttpResponseStatus.BAD_GATEWAY;
 import static io.servicetalk.http.api.HttpResponseStatus.BAD_REQUEST;
@@ -97,7 +100,6 @@ class MultiAddressUrlHttpClientTest {
         afterClassCloseables = newCompositeCloseable();
 
         client = afterClassCloseables.append(HttpClients.forMultiAddressUrl()
-                .followRedirects(new RedirectConfigBuilder().allowNonRelativeRedirects(true).build())
                 .initializer((scheme, address, builder) -> builder.serviceDiscoverer(sdThatSupportsInvalidHostname()))
                 .buildStreaming());
 
@@ -243,16 +245,18 @@ class MultiAddressUrlHttpClientTest {
         assertThat(subscriber.awaitOnError(), is(instanceOf(IllegalArgumentException.class)));
     }
 
-    @Test
-    void requestWithRedirect() throws Exception {
-        StreamingHttpRequest request = client.get(format("http://%s/301", hostHeader))
+    @ParameterizedTest(name = "{displayName} [{index}] usePost={0}")
+    @ValueSource(booleans = {false, true})
+    void requestWithRedirect(boolean usePost) throws Exception {
+        StreamingHttpRequest request = client.newRequest(usePost ? POST : GET, format("http://%s/301", hostHeader))
                 .setHeader(X_REQUESTED_LOCATION, format("http://%s/200", hostHeader));  // Location for redirect
         requestAndValidate(request, OK, "/200");
     }
 
-    @Test
-    void requestWithRelativeRedirect() throws Exception {
-        StreamingHttpRequest request = client.get(format("http://%s/301", hostHeader))
+    @ParameterizedTest(name = "{displayName} [{index}] usePost={0}")
+    @ValueSource(booleans = {false, true})
+    void requestWithRelativeRedirect(boolean usePost) throws Exception {
+        StreamingHttpRequest request = client.newRequest(usePost ? POST : GET, format("http://%s/301", hostHeader))
                 .setHeader(X_REQUESTED_LOCATION, "/200");  // Location for redirect
         requestAndValidate(request, OK, "/200");
     }

@@ -33,6 +33,12 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import static io.servicetalk.http.api.HttpRequestMethod.DELETE;
+import static io.servicetalk.http.api.HttpRequestMethod.GET;
+import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
+import static io.servicetalk.http.api.HttpRequestMethod.PATCH;
+import static io.servicetalk.http.api.HttpRequestMethod.POST;
+import static io.servicetalk.http.api.HttpRequestMethod.PUT;
 import static io.servicetalk.http.api.StrategyInfluencerAwareConversions.toMultiAddressConditionalFilterFactory;
 import static java.util.Objects.requireNonNull;
 
@@ -355,7 +361,7 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
     @Deprecated
     public MultiAddressHttpClientBuilder<U, R> maxRedirects(int maxRedirects) {
         return followRedirects(new RedirectConfigBuilder().maxRedirects(maxRedirects)
-                .allowNonRelativeRedirects(true).build());
+                .allowNonRelativeRedirects(true).allowedMethods(GET, HEAD, POST, PUT, DELETE, PATCH).build());
     }
 
     /**
