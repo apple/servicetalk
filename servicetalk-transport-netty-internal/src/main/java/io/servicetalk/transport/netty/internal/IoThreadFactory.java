@@ -16,6 +16,8 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.api.AsyncContextMap;
+import io.servicetalk.context.api.ContextMap;
+import io.servicetalk.context.api.ContextMapHolder;
 import io.servicetalk.transport.netty.internal.IoThreadFactory.NettyIoThread;
 
 import io.netty.util.concurrent.FastThreadLocalThread;
@@ -90,8 +92,10 @@ public class IoThreadFactory implements java.util.concurrent.ThreadFactory,
     }
 
     static final class NettyIoThread extends FastThreadLocalThread
-            implements io.servicetalk.transport.api.IoThreadFactory.IoThread {
+            implements io.servicetalk.transport.api.IoThreadFactory.IoThread, ContextMapHolder {
 
+        @Nullable
+        private ContextMap context;
         @Nullable
         private AsyncContextMap asyncContextMap;
 
@@ -108,6 +112,18 @@ public class IoThreadFactory implements java.util.concurrent.ThreadFactory,
         @Override
         public AsyncContextMap asyncContextMap() {
             return asyncContextMap;
+        }
+
+        @Nullable
+        @Override
+        public ContextMap context() {
+            return context;
+        }
+
+        @Override
+        public NettyIoThread context(@Nullable final ContextMap context) {
+            this.context = context;
+            return this;
         }
     }
 }
