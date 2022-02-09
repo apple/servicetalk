@@ -75,7 +75,7 @@ class ExecutionStrategyTest {
 
     @RegisterExtension
     static final ExecutorExtension<Executor> CONTEXT_EXEC =
-            ExecutorExtension.withCachedExecutor(CONTEXT_EXEC_NAME_PREFIX);
+            ExecutorExtension.withCachedExecutor(CONTEXT_EXEC_NAME_PREFIX).setClassLevel(true);
 
     private static final TestRequest REQUEST = TestRequest.newBuilder().setName("name").build();
 

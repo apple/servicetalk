@@ -28,6 +28,7 @@ import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
+import org.junit.jupiter.api.extension.Extension;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -39,9 +40,12 @@ import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor;
 
 /**
- * Test helper that creates and disposes an {@link ExecutionContext} for your test case or suite.
+ * An {@link Extension} that creates and disposes an {@link ExecutionContext} for your test case or suite.
  * <p>
- * Can be used with a @{@link RegisterExtension} field.
+ * Can be used with a {@link RegisterExtension} field. If used with a class static field then use
+ * {@link #setClassLevel(boolean) setClassLevel(true)} to create contained {@link ExecutionContext} instance only once
+ * for all tests in class.
+ *
  */
 public final class ExecutionContextExtension implements AfterEachCallback, BeforeEachCallback,
                                                         AfterAllCallback, BeforeAllCallback,

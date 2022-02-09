@@ -77,10 +77,10 @@ import static org.mockito.Mockito.when;
 class BufferStrategiesTest {
 
     @RegisterExtension
-    static final ExecutorExtension<Executor> EXECUTOR_EXTENSION = withCachedExecutor();
+    static final ExecutorExtension<Executor> EXECUTOR_EXTENSION = withCachedExecutor().setClassLevel(true);
 
     @RegisterExtension
-    static final ExecutorExtension<TestExecutor> TEST_EXECUTOR_EXTENSION = withTestExecutor();
+    final ExecutorExtension<TestExecutor> testExecutorExtension = withTestExecutor();
 
     @Test
     @Disabled("https://github.com/apple/servicetalk/issues/1259")
@@ -194,7 +194,7 @@ class BufferStrategiesTest {
 
     @Test
     void forTimeNoItems() {
-        TestExecutor executor = TEST_EXECUTOR_EXTENSION.executor();
+        TestExecutor executor = testExecutorExtension.executor();
         BlockingQueue<Iterable<Integer>> queue = new LinkedBlockingDeque<>();
         Cancellable cancellable = Publisher.<Integer>never()
                 .buffer(forCountOrTime(Integer.MAX_VALUE, ofMillis(1), executor))
@@ -214,7 +214,7 @@ class BufferStrategiesTest {
     @Test
     void forTimeWithItems() {
         TestPublisher<Integer> publisher = new TestPublisher<>();
-        TestExecutor executor = TEST_EXECUTOR_EXTENSION.executor();
+        TestExecutor executor = testExecutorExtension.executor();
         BlockingQueue<Iterable<Integer>> queue = new LinkedBlockingDeque<>();
         publisher.buffer(forCountOrTime(Integer.MAX_VALUE, ofMillis(1), executor))
                 .forEach(queue::add);
@@ -235,7 +235,7 @@ class BufferStrategiesTest {
     @Test
     void forCount1OrTimeWithItems() {
         TestPublisher<Integer> publisher = new TestPublisher<>();
-        TestExecutor executor = TEST_EXECUTOR_EXTENSION.executor();
+        TestExecutor executor = testExecutorExtension.executor();
         BlockingQueue<Iterable<Integer>> queue = new LinkedBlockingDeque<>();
         publisher.buffer(forCountOrTime(1, ofMillis(1), executor))
                 .forEach(queue::add);
@@ -259,7 +259,7 @@ class BufferStrategiesTest {
     @Test
     void forCountOrTimeWithItems() {
         TestPublisher<Integer> publisher = new TestPublisher<>();
-        TestExecutor executor = TEST_EXECUTOR_EXTENSION.executor();
+        TestExecutor executor = testExecutorExtension.executor();
         BlockingQueue<Iterable<Integer>> queue = new LinkedBlockingDeque<>();
         publisher.buffer(forCountOrTime(3, ofMillis(1), executor))
                 .forEach(queue::add);

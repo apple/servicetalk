@@ -113,7 +113,7 @@ import static org.mockito.Mockito.when;
 class RedirectingHttpRequesterFilterTest {
 
     @RegisterExtension
-    static final ExecutorExtension<Executor> EXECUTOR = ExecutorExtension.withCachedExecutor();
+    static final ExecutorExtension<Executor> EXECUTOR = ExecutorExtension.withCachedExecutor().setClassLevel(true);
 
     private static final String CUSTOM_HEADER = "custom-header";
     private static final String CUSTOM_TRAILER = "custom-trailer";

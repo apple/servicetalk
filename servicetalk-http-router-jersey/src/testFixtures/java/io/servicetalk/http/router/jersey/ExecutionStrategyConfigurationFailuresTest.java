@@ -40,7 +40,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class ExecutionStrategyConfigurationFailuresTest {
 
     @RegisterExtension
-    static final ExecutorExtension<Executor> TEST_EXEC = ExecutorExtension.withCachedExecutor("test");
+    static final ExecutorExtension<Executor> TEST_EXEC =
+            ExecutorExtension.withCachedExecutor("test").setClassLevel(true);
 
     @Test
     void invalidStrategies() {
