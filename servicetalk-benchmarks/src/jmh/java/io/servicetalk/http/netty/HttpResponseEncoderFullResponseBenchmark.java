@@ -43,6 +43,8 @@ import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseMetaDataFactory.newResponseMetaData;
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
+import static io.servicetalk.http.netty.HttpResponseEncoder.NOOP_ON_RESPONSE;
+import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 
 /*
  * This benchmark measures encoding of full HTTP request with headers and payload body. Everything is allocated using
@@ -71,7 +73,8 @@ public class HttpResponseEncoderFullResponseBenchmark {
                 .addHeader(CONTENT_TYPE, TEXT_PLAIN)
                 .addHeader(newAsciiString("X-Custom-Header-Name"), newAsciiString("X-Custom-Header-Value"));
 
-        channel = new EmbeddedChannel(new HttpResponseEncoder(new ArrayDeque<>(), 256, 256));
+        channel = new EmbeddedChannel(new HttpResponseEncoder(new ArrayDeque<>(), 256, 256,
+                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, NOOP_ON_RESPONSE));
     }
 
     @Benchmark

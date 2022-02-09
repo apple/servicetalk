@@ -40,13 +40,14 @@ import io.servicetalk.transport.netty.internal.CloseHandler;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
+import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.concurrent.PromiseCombiner;
 
 import java.io.IOException;
 import java.util.Map;
+import javax.annotation.Nullable;
 
 import static io.netty.buffer.ByteBufUtil.writeMediumBE;
 import static io.netty.buffer.ByteBufUtil.writeShortBE;
@@ -71,7 +72,7 @@ import static java.lang.Long.toHexString;
 import static java.lang.Math.max;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 
-abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutboundHandlerAdapter {
+abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelDuplexHandler {
     static final int CRLF_SHORT = (CR << 8) | LF;
     private static final int ZERO_CRLF_MEDIUM = ('0' << 16) | CRLF_SHORT;
     private static final int COLON_AND_SPACE_SHORT = (COLON << 8) | SP;
@@ -104,6 +105,7 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
      */
     private float trailersEncodedSizeAccumulator;
     private final CloseHandler closeHandler;
+    private boolean messageSent;
 
     /**
      * Create a new instance.
@@ -123,6 +125,13 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
         if (msg instanceof HttpMetaData) {
+            T metaData = castMetaData(msg);
+            final boolean realResponse = !isInterim(metaData);
+            if (!realResponse && messageSent) {
+                // Discard an "interim message" if it arrives after a "real message" has been sent.
+                return;
+            }
+
             if (state == CONTENT_LEN_CHUNKED) {
                 // The user didn't write any trailers, so just send the last chunk.
                 encodeAndWriteTrailers(ctx, EmptyHttpHeaders.INSTANCE, promise);
@@ -133,10 +142,15 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
                 unknownContentLengthNewRequest(ctx);
             }
 
-            T metaData = castMetaData(msg);
-            closeHandler.protocolPayloadBeginOutbound(ctx);
-            if (shouldClose(metaData)) {
-                closeHandler.protocolClosingOutbound(ctx);
+            onMetaData(ctx, metaData);
+            if (realResponse) {
+                // Notify the CloseHandler only about "real" messages. We don't expose "interim messages", like 1xx
+                // responses to the user, and handle them internally.
+                messageSent = true;
+                closeHandler.protocolPayloadBeginOutbound(ctx);
+                if (shouldClose(metaData)) {
+                    closeHandler.protocolClosingOutbound(ctx);
+                }
             }
 
             // We prefer a direct allocation here because it is expected the resulted encoded Buffer will be written
@@ -147,18 +161,19 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
                 Buffer stBuf = newBufferFrom(byteBuf);
 
                 // Encode the message.
-                encodeInitialLine(stBuf, metaData);
+                encodeInitialLine(ctx, stBuf, metaData);
                 if (isContentAlwaysEmpty(metaData)) {
                     state = CONTENT_LEN_EMPTY;
-                    closeHandler.protocolPayloadEndOutbound(ctx, promise);
+                    if (realResponse) {
+                        signalProtocolPayloadEndOutbound(ctx, promise);
+                    }
                 } else if (isTransferEncodingChunked(metaData.headers())) {
                     state = CONTENT_LEN_CHUNKED;
                 } else {
                     state = getContentLength(metaData);
                     assert state > CONTENT_LEN_LARGEST_VALUE;
                     if (state == 0) {
-                        state = CONTENT_LEN_CONSUMED;
-                        closeHandler.protocolPayloadEndOutbound(ctx, promise);
+                        contentLenConsumed(ctx, promise);
                     }
                 }
 
@@ -175,7 +190,12 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
                 return;
             }
 
-            ctx.write(byteBuf, promise);
+            if (realResponse) {
+                ctx.write(byteBuf, promise);
+            } else {
+                // All "interim messages" have to be flushed right away.
+                ctx.writeAndFlush(byteBuf, promise);
+            }
         } else if (msg instanceof Buffer) {
             final Buffer stBuffer = (Buffer) msg;
             final int readableBytes = stBuffer.readableBytes();
@@ -191,8 +211,7 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
                 tryTooMuchContent(ctx, readableBytes, promise);
             } else {
                 if (state == 0) {
-                    state = CONTENT_LEN_CONSUMED;
-                    closeHandler.protocolPayloadEndOutbound(ctx, promise);
+                    contentLenConsumed(ctx, promise);
                 }
                 ctx.write(encodeAndRetain(stBuffer), promise);
             }
@@ -201,7 +220,7 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
             state = CONTENT_LEN_INIT;
             final HttpHeaders trailers = (HttpHeaders) msg;
             if (isChunked) {
-                closeHandler.protocolPayloadEndOutbound(ctx, promise);
+                signalProtocolPayloadEndOutbound(ctx, promise);
                 encodeAndWriteTrailers(ctx, trailers, promise);
             } else if (!trailers.isEmpty()) {
                 tryFailNonEmptyTrailers(ctx, trailers, promise);
@@ -210,7 +229,7 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
             } else {
                 // Allow trailers to be written as a marker indicating the request is done.
                 if (state != CONTENT_LEN_CONSUMED) {
-                    closeHandler.protocolPayloadEndOutbound(ctx, promise);
+                    signalProtocolPayloadEndOutbound(ctx, promise);
                 }
                 state = CONTENT_LEN_INIT;
                 ctx.write(EMPTY_BUFFER, promise);
@@ -255,7 +274,7 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
         // If state == -1 we don't know the content length, signal end of outbound and best effort continue.
         ChannelPromise emptyWritePromise = ctx.newPromise();
         ctx.write(EMPTY_BUFFER, emptyWritePromise);
-        closeHandler.protocolPayloadEndOutbound(ctx, emptyWritePromise);
+        signalProtocolPayloadEndOutbound(ctx, emptyWritePromise);
     }
 
     private static void tryIoException(ChannelHandlerContext ctx, Throwable e, ChannelPromise promise) {
@@ -274,6 +293,26 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
         return false;
     }
 
+    /**
+     * Determines when a {@code msg} is interim.
+     *
+     * @param msg a message to analyze
+     * @return {@code true} if it's a continuation message.
+     */
+    protected boolean isInterim(@SuppressWarnings("unused") T msg) {
+        return false;
+    }
+
+    /**
+     * Callback when a meta-data object have been encoded.
+     *
+     * @param ctx the {@link ChannelHandlerContext} for which the write operation is made.
+     * @param metaData the meta-data message.
+     */
+    protected void onMetaData(final ChannelHandlerContext ctx, final T metaData) {
+        // noop
+    }
+
     private void sanitizeHeadersBeforeEncode(T msg) {
         if (state == CONTENT_LEN_CHUNKED && HTTP_1_1.equals(msg.version())) {
             // A sender MUST remove the received Content-Length field prior to forwarding a "Transfer-Encoding: chunked"
@@ -281,6 +320,23 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
             msg.headers().remove(CONTENT_LENGTH);
         }
         sanitizeHeadersBeforeEncode(msg, state == CONTENT_LEN_EMPTY);
+    }
+
+    /**
+     * Allows to signal when a content have been consumed.
+     *
+     * @param ctx the {@link ChannelHandlerContext} for which the write operation is made.
+     * @param promise the {@link ChannelPromise} to notify once the operation completes.
+     */
+    protected final void contentLenConsumed(final ChannelHandlerContext ctx, @Nullable final ChannelPromise promise) {
+        state = CONTENT_LEN_CONSUMED;
+        signalProtocolPayloadEndOutbound(ctx, promise);
+    }
+
+    protected final void signalProtocolPayloadEndOutbound(final ChannelHandlerContext ctx,
+                                                          @Nullable final ChannelPromise promise) {
+        messageSent = false;
+        closeHandler.protocolPayloadEndOutbound(ctx, promise);
     }
 
     /**
@@ -297,10 +353,11 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
 
     /**
      * Encode the <a href="https://tools.ietf.org/html/rfc7230.html#section-3.1">start line</a>.
+     * @param ctx the {@link ChannelHandlerContext} for which the write operation is made.
      * @param buf The {@link Buffer} to encode to.
      * @param message The message to encode.
      */
-    protected abstract void encodeInitialLine(Buffer buf, T message);
+    protected abstract void encodeInitialLine(ChannelHandlerContext ctx, Buffer buf, T message);
 
     /**
      * Get the expected length of content when {@link HttpHeaderNames#TRANSFER_ENCODING} is not

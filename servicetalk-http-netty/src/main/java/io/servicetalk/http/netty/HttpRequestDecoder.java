@@ -18,6 +18,8 @@ package io.servicetalk.http.netty;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
+import io.servicetalk.http.api.HttpResponseStatus;
+import io.servicetalk.http.netty.HttpResponseEncoder.OnResponse;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.utils.internal.IllegalCharacterException;
 
@@ -31,10 +33,14 @@ import java.util.Queue;
 
 import static io.servicetalk.http.api.HttpRequestMetaDataFactory.newRequestMetaData;
 import static io.servicetalk.http.api.HttpRequestMethod.Properties.NONE;
+import static io.servicetalk.http.api.HttpResponseStatus.CONTINUE;
+import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.INFORMATIONAL_1XX;
+import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESSFUL_2XX;
+import static io.servicetalk.http.netty.HeaderUtils.REQ_EXPECT_CONTINUE;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Objects.requireNonNull;
 
-final class HttpRequestDecoder extends HttpObjectDecoder<HttpRequestMetaData> {
+final class HttpRequestDecoder extends HttpObjectDecoder<HttpRequestMetaData> implements OnResponse {
     private static final ByteProcessor FIND_WS_AFTER_METHOD_NAME = value -> {
         if (isWS(value)) {
             return false;
@@ -48,6 +54,9 @@ final class HttpRequestDecoder extends HttpObjectDecoder<HttpRequestMetaData> {
     };
 
     private final Queue<HttpRequestMethod> methodQueue;
+    private final CloseHandler closeHandler;
+    private boolean expectContinue;
+    private boolean seenPayloadBody;
 
     HttpRequestDecoder(final Queue<HttpRequestMethod> methodQueue, final ByteBufAllocator alloc,
                        final HttpHeadersFactory headersFactory, final int maxStartLineLength,
@@ -56,6 +65,7 @@ final class HttpRequestDecoder extends HttpObjectDecoder<HttpRequestMetaData> {
         super(alloc, headersFactory, maxStartLineLength, maxHeaderFieldLength, allowPrematureClosureBeforePayloadBody,
                 allowLFWithoutCR, closeHandler);
         this.methodQueue = requireNonNull(methodQueue);
+        this.closeHandler = closeHandler;
     }
 
     @Override
@@ -123,5 +133,48 @@ final class HttpRequestDecoder extends HttpObjectDecoder<HttpRequestMetaData> {
         // iterate a decoded list it makes some assumptions about the base class ordering of events.
         methodQueue.add(msg.method());
         return false;
+    }
+
+    @Override
+    protected boolean isInterim(final HttpRequestMetaData msg) {
+        return false;   // Only response decoder may encounter interim messages
+    }
+
+    @Override
+    protected void onMetaDataRead(final ChannelHandlerContext ctx, final HttpRequestMetaData msg) {
+        expectContinue = REQ_EXPECT_CONTINUE.test(msg);
+    }
+
+    @Override
+    protected void onDataSeen() {
+        seenPayloadBody = true;
+    }
+
+    @Override
+    protected void resetNow() {
+        super.resetNow();
+        onStateReset();
+    }
+
+    private void onStateReset() {
+        expectContinue = false;
+        seenPayloadBody = false;
+    }
+
+    @Override
+    public void onResponse(final ChannelHandlerContext ctx, final HttpResponseStatus status) {
+        if (expectContinue && !seenPayloadBody) {
+            if (status == CONTINUE) {
+                // If server responds with 100 (Continue), no need to trigger resetNow() anymore because server expects
+                // to receive a payload body.
+                onStateReset();
+            } else if (status.statusClass() != SUCCESSFUL_2XX && status.statusClass() != INFORMATIONAL_1XX) {
+                // If a request expects continuation, but server responds with an error or redirect before it sees a
+                // request payload body, notify CloseHandler and reset the state to prepare for receiving a new request
+                // on the same connection.
+                closeHandler.protocolPayloadEndInbound(ctx);
+                resetNow();
+            }
+        }
     }
 }

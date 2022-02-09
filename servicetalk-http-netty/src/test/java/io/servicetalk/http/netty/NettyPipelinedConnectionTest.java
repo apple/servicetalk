@@ -111,7 +111,7 @@ class NettyPipelinedConnectionTest {
                             closeHandler.protocolPayloadEndInbound(ctx);
                         }
                     });
-                }, defaultStrategy(), mock(Protocol.class), NoopConnectionObserver.INSTANCE, true)
+                }, defaultStrategy(), mock(Protocol.class), NoopConnectionObserver.INSTANCE, true, __ -> false)
                         .toFuture().get();
         requester = new NettyPipelinedConnection<>(connection);
     }

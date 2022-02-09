@@ -31,16 +31,24 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.concurrent.internal.QueueFullException;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
+import io.servicetalk.http.netty.HttpResponseDecoder.Signal;
 import io.servicetalk.transport.netty.internal.CloseHandler;
+import io.servicetalk.transport.netty.internal.DefaultNettyConnection.CancelWriteUserEvent;
+import io.servicetalk.transport.netty.internal.DefaultNettyConnection.ContinueUserEvent;
+
+import io.netty.channel.ChannelHandlerContext;
 
 import java.util.Queue;
 
 import static io.netty.handler.codec.http.HttpConstants.SP;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
+import static io.servicetalk.http.netty.HeaderUtils.REQ_EXPECT_CONTINUE;
 import static io.servicetalk.http.netty.HeaderUtils.shouldAddZeroContentLength;
-import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
+import static io.servicetalk.http.netty.HttpResponseDecoder.Signal.REQUEST_SIGNAL;
+import static io.servicetalk.http.netty.HttpResponseDecoder.Signal.REQUEST_WITH_EXPECT_CONTINUE_SIGNAL;
 import static java.util.Objects.requireNonNull;
 
 final class HttpRequestEncoder extends HttpObjectEncoder<HttpRequestMetaData> {
@@ -50,35 +58,29 @@ final class HttpRequestEncoder extends HttpObjectEncoder<HttpRequestMetaData> {
     private static final int SPACE_SLASH_AND_SPACE_MEDIUM = (SP << 16) | SLASH_AND_SPACE_SHORT;
 
     private final Queue<HttpRequestMethod> methodQueue;
+    private final Queue<Signal> signalsQueue;
 
     /**
-     * Create a new instance.
-     * @param methodQueue A queue used to enforce HTTP protocol semantics related to request/response lengths.
-     * @param headersEncodedSizeAccumulator Used to calculate an exponential moving average of the encoded size of the
-     * initial line and the headers for a guess for future buffer allocations.
-     * @param trailersEncodedSizeAccumulator  Used to calculate an exponential moving average of the encoded size of
-     * the trailers for a guess for future buffer allocations.
+     * Used to remember when an outgoing request has "Expect: 100-continue" header.
      */
-    HttpRequestEncoder(Queue<HttpRequestMethod> methodQueue,
-                       int headersEncodedSizeAccumulator, int trailersEncodedSizeAccumulator) {
-        this(methodQueue, headersEncodedSizeAccumulator, trailersEncodedSizeAccumulator,
-                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER);
-    }
+    private boolean expectContinue;
 
     /**
      * Create a new instance.
      * @param methodQueue A queue used to enforce HTTP protocol semantics related to request/response lengths.
+     * @param signalsQueue A queue used to communicate extra signals between encoder and decoder.
      * @param headersEncodedSizeAccumulator Used to calculate an exponential moving average of the encoded size of the
      * initial line and the headers for a guess for future buffer allocations.
      * @param trailersEncodedSizeAccumulator  Used to calculate an exponential moving average of the encoded size of
      * the trailers for a guess for future buffer allocations.
      * @param closeHandler observes protocol state events
      */
-    HttpRequestEncoder(Queue<HttpRequestMethod> methodQueue,
-                       int headersEncodedSizeAccumulator, int trailersEncodedSizeAccumulator,
+    HttpRequestEncoder(final Queue<HttpRequestMethod> methodQueue, final Queue<Signal> signalsQueue,
+                       final int headersEncodedSizeAccumulator, final int trailersEncodedSizeAccumulator,
                        final CloseHandler closeHandler) {
         super(headersEncodedSizeAccumulator, trailersEncodedSizeAccumulator, closeHandler);
         this.methodQueue = requireNonNull(methodQueue);
+        this.signalsQueue = requireNonNull(signalsQueue);
     }
 
     @Override
@@ -101,7 +103,7 @@ final class HttpRequestEncoder extends HttpObjectEncoder<HttpRequestMetaData> {
     }
 
     @Override
-    protected void encodeInitialLine(Buffer stBuffer, HttpRequestMetaData message) {
+    protected void encodeInitialLine(ChannelHandlerContext ctx, Buffer stBuffer, HttpRequestMetaData message) {
         message.method().writeTo(stBuffer);
 
         String uri = message.requestTarget();
@@ -151,5 +153,30 @@ final class HttpRequestEncoder extends HttpObjectEncoder<HttpRequestMetaData> {
     protected long getContentLength(final HttpRequestMetaData message) {
         final long len = HttpObjectDecoder.getContentLength(message);
         return len < 0 && shouldAddZeroContentLength(message.method()) ? 0 : len;
+    }
+
+    @Override
+    protected void onMetaData(final ChannelHandlerContext ctx, final HttpRequestMetaData metaData) {
+        expectContinue = REQ_EXPECT_CONTINUE.test(metaData);
+        // Offer signals for all request types. Otherwise, decoder may receive a wrong signal if client sends multiple
+        // pipelined requests.
+        if (!signalsQueue.offer(expectContinue ? REQUEST_WITH_EXPECT_CONTINUE_SIGNAL : REQUEST_SIGNAL)) {
+            throw new QueueFullException("Can not enqueue a request type for the decoder");
+        }
+    }
+
+    @Override
+    public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) {
+        if (expectContinue) {
+            if (evt == ContinueUserEvent.INSTANCE) {
+                // Reset the flag after receiving 100 (Continue).
+                expectContinue = false;
+            } else if (evt == CancelWriteUserEvent.INSTANCE) {
+                // Mark as content consumed and reset the flag to prepare for the next request on the same connection.
+                contentLenConsumed(ctx, null);
+                expectContinue = false;
+            }
+        }
+        ctx.fireUserEventTriggered(evt);
     }
 }

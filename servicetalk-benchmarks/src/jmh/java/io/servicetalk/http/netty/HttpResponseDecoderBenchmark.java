@@ -45,6 +45,7 @@ import static io.servicetalk.buffer.netty.BufferUtils.toByteBuf;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.netty.HttpObjectEncoder.CRLF_SHORT;
 import static io.servicetalk.http.netty.HttpUtils.status;
+import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 
 /*
@@ -85,8 +86,9 @@ public class HttpResponseDecoderBenchmark {
         responseBuffer.writeShort(CRLF_SHORT);
         responseByteBuf = toByteBuf(responseBuffer.slice());
 
-        channel = new EmbeddedChannel(new HttpResponseDecoder(new ArrayDeque<>(),
-                getByteBufAllocator(DEFAULT_ALLOCATOR), DefaultHttpHeadersFactory.INSTANCE, 8192, 8192));
+        channel = new EmbeddedChannel(new HttpResponseDecoder(new ArrayDeque<>(), new PollLikePeakArrayDeque<>(),
+                getByteBufAllocator(DEFAULT_ALLOCATOR), DefaultHttpHeadersFactory.INSTANCE, 8192, 8192,
+                false, false, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER));
     }
 
     @Benchmark
@@ -101,5 +103,14 @@ public class HttpResponseDecoderBenchmark {
         }
 
         return response.headers().size() + trailers.size();
+    }
+
+    private static final class PollLikePeakArrayDeque<T> extends ArrayDeque<T> {
+        private static final long serialVersionUID = -8160337336374186819L;
+
+        @Override
+        public T poll() {
+            return peek();  // Prevent taking an element out of the queue to allow reuse for multiple tests
+        }
     }
 }

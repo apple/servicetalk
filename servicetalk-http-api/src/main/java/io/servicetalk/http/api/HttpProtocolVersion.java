@@ -20,11 +20,12 @@ import io.servicetalk.transport.api.ConnectionInfo.Protocol;
 
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.PREFER_HEAP_RO_ALLOCATOR;
 import static io.servicetalk.http.api.BufferUtils.writeReadOnlyBuffer;
+import static java.lang.Integer.compare;
 
 /**
  * HTTP <a href="https://tools.ietf.org/html/rfc7230.html#section-2.6">protocol versioning</a>.
  */
-public final class HttpProtocolVersion implements Protocol {
+public final class HttpProtocolVersion implements Protocol, Comparable<HttpProtocolVersion> {
     /**
      * HTTP/1.1 version described in <a href="https://tools.ietf.org/html/rfc7230">RFC 7230</a>.
      */
@@ -155,5 +156,11 @@ public final class HttpProtocolVersion implements Protocol {
      */
     static boolean h1TrailersSupported(HttpProtocolVersion version) {
         return version.major() == 1 && version.minor() > 0;
+    }
+
+    @Override
+    public int compareTo(final HttpProtocolVersion that) {
+        final int compareMajor = compare(this.major(), that.major());
+        return compareMajor == 0 ? compare(this.minor(), that.minor()) : compareMajor;
     }
 }

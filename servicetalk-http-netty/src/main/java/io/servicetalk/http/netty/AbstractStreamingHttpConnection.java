@@ -50,6 +50,7 @@ import static io.servicetalk.http.api.HttpApiConversions.isPayloadEmpty;
 import static io.servicetalk.http.api.HttpApiConversions.isSafeToAggregate;
 import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
 import static io.servicetalk.http.api.StreamingHttpResponses.newTransportResponse;
+import static io.servicetalk.http.netty.HeaderUtils.REQ_EXPECT_CONTINUE;
 import static io.servicetalk.http.netty.HeaderUtils.addRequestTransferEncodingIfNecessary;
 import static io.servicetalk.http.netty.HeaderUtils.canAddRequestContentLength;
 import static io.servicetalk.http.netty.HeaderUtils.emptyMessageBody;
@@ -158,9 +159,14 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
     }
 
     @Nullable
-    static FlushStrategy determineFlushStrategyForApi(final HttpMetaData request) {
-        // For non-aggregated, don't change the flush strategy, keep the default.
-        return isPayloadEmpty(request) || isSafeToAggregate(request) ? flushOnEnd() : null;
+    private static FlushStrategy determineFlushStrategyForApi(final HttpRequestMetaData request) {
+        // For non-aggregated requests or when "Expect: 100-continue" is detected, don't change the flush strategy,
+        // keep the default.
+        return isSafeToAggregateOrEmpty(request) && !REQ_EXPECT_CONTINUE.test(request) ? flushOnEnd() : null;
+    }
+
+    static boolean isSafeToAggregateOrEmpty(final HttpMetaData request) {
+        return isPayloadEmpty(request) || isSafeToAggregate(request);
     }
 
     @Override

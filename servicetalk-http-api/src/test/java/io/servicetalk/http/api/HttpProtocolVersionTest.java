@@ -23,7 +23,12 @@ import org.junit.jupiter.api.Test;
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_0;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.api.HttpProtocolVersion.of;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -85,5 +90,20 @@ class HttpProtocolVersionTest {
     @Test
     void testIllegalMinorVersionGT9() {
         assertThrows(IllegalArgumentException.class, () -> HttpProtocolVersion.of(1, 10));
+    }
+
+    @Test
+    void testCompareTo() {
+        assertThat(HTTP_1_0.compareTo(HTTP_1_1), lessThan(0));
+        assertThat(HTTP_1_0.compareTo(HTTP_2_0), lessThan(0));
+        assertThat(HTTP_1_1.compareTo(HTTP_2_0), lessThan(0));
+
+        assertThat(HTTP_1_0.compareTo(HTTP_1_0), is(0));
+        assertThat(HTTP_1_1.compareTo(HTTP_1_1), is(0));
+        assertThat(HTTP_2_0.compareTo(HTTP_2_0), is(0));
+
+        assertThat(HTTP_2_0.compareTo(HTTP_1_1), greaterThan(0));
+        assertThat(HTTP_2_0.compareTo(HTTP_1_0), greaterThan(0));
+        assertThat(HTTP_1_1.compareTo(HTTP_1_0), greaterThan(0));
     }
 }
