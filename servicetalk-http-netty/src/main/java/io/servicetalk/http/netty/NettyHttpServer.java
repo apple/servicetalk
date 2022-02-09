@@ -341,7 +341,7 @@ final class NettyHttpServer {
                 // closure.
                 final SingleSubscriberProcessor requestCompletion = new SingleSubscriberProcessor();
                 final AtomicBoolean payloadSubscribed = drainRequestPayloadBody ? new AtomicBoolean() : null;
-                final boolean expectContinue = REQ_EXPECT_CONTINUE.test(rawRequest);
+                final AtomicBoolean responseSent = REQ_EXPECT_CONTINUE.test(rawRequest) ? new AtomicBoolean() : null;
                 final StreamingHttpRequest request = rawRequest.transformMessageBody(
                         // Cancellation is assumed to close the connection, or be ignored if this Subscriber has already
                         // terminated. That means we don't need to trigger the processor as completed because we don't
@@ -350,8 +350,10 @@ final class NettyHttpServer {
                             if (drainRequestPayloadBody) {
                                 payloadSubscribed.set(true);
                             }
-                            if (expectContinue) {
-                                // After users subscribe to the request payload body, generate 100 (Continue) response.
+                            if (responseSent != null && !responseSent.get()) {
+                                // After users subscribe to the request payload body, generate 100 (Continue) response
+                                // if the final response wasn't sent already for this request. Concurrency between
+                                // 100 (Continue) and the final response is handled by Netty outbound encoders.
                                 // Use Netty Channel directly to avoid adjustments for SplittingFlushStrategy,
                                 // WriteStreamSubscriber, and CloseHandler state machines.
                                 final Channel channel = nettyChannel();
@@ -395,6 +397,13 @@ final class NettyHttpServer {
                 // ExceptionMapperServiceFilter
                 Publisher<Object> respPublisher = service.handle(this, request, streamingResponseFactory())
                         .flatMapPublisher(response -> {
+                            if (responseSent != null) {
+                                // While concurrency between 100 (Continue) and the final response is handled in Netty
+                                // encoders, it's necessary to prevent generating 100 (Continue) response after the full
+                                // final response is sent. Otherwise, there is a risk of sending 100 (Continue) after
+                                // the final response, which may trigger continuation for the next request in pipeline.
+                                responseSent.set(true);
+                            }
                             // SplittingFlushStrategy needs to be aware of protocols constraints in order to determine
                             // boundaries between responses. However it isn't aware of request data and content-length
                             // for HEAD requests won't actually be followed by payload. It also has a method
