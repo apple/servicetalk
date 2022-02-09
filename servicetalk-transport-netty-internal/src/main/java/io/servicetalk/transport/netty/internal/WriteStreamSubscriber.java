@@ -38,6 +38,7 @@ import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
@@ -108,10 +109,13 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
     private final CloseHandler closeHandler;
     private final WriteObserver observer;
     private final boolean isClient;
+    private final Predicate<Object> shouldWait;
+    private boolean shouldWaitFlag;
 
     WriteStreamSubscriber(Channel channel, WriteDemandEstimator demandEstimator, Subscriber subscriber,
                           CloseHandler closeHandler, WriteObserver observer,
-                          UnaryOperator<Throwable> enrichProtocolError, boolean isClient) {
+                          UnaryOperator<Throwable> enrichProtocolError, boolean isClient,
+                          Predicate<Object> shouldWait) {
         this.eventLoop = requireNonNull(channel.eventLoop());
         this.subscriber = subscriber;
         this.channel = channel;
@@ -120,6 +124,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
         this.closeHandler = closeHandler;
         this.observer = observer;
         this.isClient = isClient;
+        this.shouldWait = requireNonNull(shouldWait);
     }
 
     @Override
@@ -169,7 +174,13 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
             long capacityAfter = channel.bytesBeforeUnwritable();
             observer.itemWritten(msg);
             demandEstimator.onItemWrite(msg, capacityBefore, capacityAfter);
-            requestMoreIfRequired(subscription, capacityAfter);
+            // Client-side always starts a request with request(1) to probe a Channel with meta-data before continuing
+            // to write the payload body, see https://github.com/apple/servicetalk/pull/1644.
+            // Requests that await feedback from the remote peer should not request more until they receive
+            // continueWriting() signal.
+            if (!isClient || !(shouldWaitFlag = shouldWait.test(msg))) {
+                requestMoreIfRequired(subscription, capacityAfter);
+            }
         }
     }
 
@@ -195,7 +206,22 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
     @Override
     public void channelWritable() {
         assert eventLoop.inEventLoop();
-        requestMoreIfRequired(subscription, -1L);
+        final Subscription subscription = this.subscription;
+        if (isClient && subscription != null && !promise.written) {
+            // If nothing was written, make initial requestN
+            initialRequestN(subscription);
+        } else {
+            requestMoreIfRequired(subscription, -1L);
+        }
+    }
+
+    @Override
+    public void continueWriting() {
+        assert eventLoop.inEventLoop();
+        if (shouldWaitFlag) {
+            shouldWaitFlag = false; // Reset the flag to avoid promise.sourceTerminated(null)
+            requestMoreIfRequired(subscription, -1L);
+        }
     }
 
     @Override
@@ -211,6 +237,16 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
             sub.request(Long.MAX_VALUE);
         }
         promise.sourceTerminated(null);
+    }
+
+    @Override
+    public void terminateSource() {
+        assert eventLoop.inEventLoop();
+        // Terminate the source only if it awaits continuation.
+        if (shouldWaitFlag) {
+            assert promise.activeWrites == 0;   // We never start sending payload body until we receive 100 (Continue)
+            promise.sourceTerminated(null);
+        }
     }
 
     @Override

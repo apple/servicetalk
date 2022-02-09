@@ -36,6 +36,7 @@ import javax.net.ssl.SNIHostName;
 
 import static io.servicetalk.buffer.netty.BufferUtils.getByteBufAllocator;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
+import static io.servicetalk.http.netty.HeaderUtils.OBJ_EXPECT_CONTINUE;
 import static io.servicetalk.http.netty.HttpDebugUtils.showPipeline;
 import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedRequestResponse;
 import static java.util.Objects.requireNonNull;
@@ -69,7 +70,8 @@ final class StreamingConnectionFactory {
                 tcpConfig.flushStrategy(), tcpConfig.idleTimeoutMs(),
                 initializer.andThen(new HttpClientChannelInitializer(
                         getByteBufAllocator(executionContext.bufferAllocator()), h1Config, closeHandler)),
-                executionContext.executionStrategy(), HTTP_1_1, connectionObserver, true), HTTP_1_1, channel);
+                executionContext.executionStrategy(), HTTP_1_1, connectionObserver, true, OBJ_EXPECT_CONTINUE),
+                HTTP_1_1, channel);
     }
 
     static ReadOnlyTcpClientConfig withSslConfigPeerHost(Object resolvedRemoteAddress,

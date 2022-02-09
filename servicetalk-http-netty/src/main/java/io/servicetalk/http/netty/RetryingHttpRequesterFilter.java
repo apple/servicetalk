@@ -29,8 +29,10 @@ import io.servicetalk.http.api.FilterableReservedStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponseMetaData;
+import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -55,6 +57,9 @@ import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponential
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoffFullJitter;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HeaderUtils.DEFAULT_HEADER_FILTER;
+import static io.servicetalk.http.api.HttpHeaderNames.EXPECT;
+import static io.servicetalk.http.api.HttpHeaderValues.CONTINUE;
+import static io.servicetalk.http.api.HttpResponseStatus.EXPECTATION_FAILED;
 import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolicy.NO_RETRIES;
 import static io.servicetalk.utils.internal.DurationUtils.ensurePositive;
 import static java.time.Duration.ofDays;
@@ -234,7 +239,7 @@ public final class RetryingHttpRequesterFilter
      * {@link HttpResponseException}s are user-provided errors, resulting from an {@link HttpRequestMetaData}, through
      * the {@link Builder#responseMapper(Function)}.
      */
-    public static final class HttpResponseException extends RuntimeException {
+    public static class HttpResponseException extends RuntimeException {
 
         private static final long serialVersionUID = -7182949760823647710L;
 
@@ -256,6 +261,12 @@ public final class RetryingHttpRequesterFilter
         @Deprecated
         public final String message;
 
+        /**
+         * Create a new instance.
+         *
+         * @param message the description message.
+         * @param metaData received response meta-data.
+         */
         public HttpResponseException(final String message, final HttpResponseMetaData metaData) {
             super(message);
             this.metaData = requireNonNull(metaData);
@@ -571,10 +582,16 @@ public final class RetryingHttpRequesterFilter
      * To configure the maximum number of retry attempts see {@link #maxTotalRetries(int)}.
      */
     public static final class Builder {
+
+        private static final Function<HttpResponseMetaData, HttpResponseException> EXPECTATION_FAILED_MAPPER =
+                metaData -> EXPECTATION_FAILED.equals(metaData.status()) ?
+                        new ExpectationFailedException("Expectation failed", metaData) : null;
+
         private boolean waitForLb = true;
         private boolean ignoreSdErrors;
 
         private int maxTotalRetries = 4;
+        private boolean retryExpectationFailed;
 
         @Nullable
         private Function<HttpResponseMetaData, HttpResponseException> responseMapper;
@@ -648,7 +665,7 @@ public final class RetryingHttpRequesterFilter
          * retry behaviour through {@link #retryResponses(BiFunction)}.
          *
          * @param mapper a {@link Function} that maps a {@link HttpResponseMetaData} to an
-         * {@link HttpResponseException}.
+         * {@link HttpResponseException} or returns {@code null} if there is no mapping for response meta-data.
          * @return {@code this}
          */
         public Builder responseMapper(final Function<HttpResponseMetaData, HttpResponseException> mapper) {
@@ -689,6 +706,20 @@ public final class RetryingHttpRequesterFilter
         public Builder retryIdempotentRequests(
                 final BiFunction<HttpRequestMetaData, IOException, BackOffPolicy> mapper) {
             this.retryIdempotentRequests = requireNonNull(mapper);
+            return this;
+        }
+
+        /**
+         * Retries {@link HttpResponseStatus#EXPECTATION_FAILED} response without {@link HttpHeaderNames#EXPECT} header.
+         *
+         * @param retryExpectationFailed if {@code true}, filter will automatically map
+         * {@link HttpResponseStatus#EXPECTATION_FAILED} into {@link ExpectationFailedException} and retry a request
+         * without {@link HttpHeaderNames#EXPECT} header.
+         * @return {@code this}.
+         * @see <a href="https://datatracker.ietf.org/doc/html/rfc7231#section-5.1.1">Expect</a>
+         */
+        public Builder retryExpectationFailed(boolean retryExpectationFailed) {
+            this.retryExpectationFailed = retryExpectationFailed;
             return this;
         }
 
@@ -750,6 +781,18 @@ public final class RetryingHttpRequesterFilter
          * @return A new retrying {@link RetryingHttpRequesterFilter}
          */
         public RetryingHttpRequesterFilter build() {
+            final boolean retryExpectationFailed = this.retryExpectationFailed;
+            final Function<HttpResponseMetaData, HttpResponseException> thisResponseMapper = this.responseMapper;
+            final Function<HttpResponseMetaData, HttpResponseException> responseMapper;
+            if (retryExpectationFailed) {
+                responseMapper = thisResponseMapper == null ? EXPECTATION_FAILED_MAPPER : metaData -> {
+                    final HttpResponseException e = thisResponseMapper.apply(metaData);
+                    return e == null ? EXPECTATION_FAILED_MAPPER.apply(metaData) : e;
+                };
+            } else {
+                responseMapper = thisResponseMapper;
+            }
+
             final BiFunction<HttpRequestMetaData, RetryableException, BackOffPolicy> retryRetryableExceptions =
                     this.retryRetryableExceptions;
             final BiFunction<HttpRequestMetaData, IOException, BackOffPolicy> retryIdempotentRequests =
@@ -768,6 +811,12 @@ public final class RetryingHttpRequesterFilter
                             if (backOffPolicy != NO_RETRIES) {
                                 return backOffPolicy;
                             }
+                        }
+
+                        if (retryExpectationFailed && throwable instanceof ExpectationFailedException &&
+                                requestMetaData.headers().containsIgnoreCase(EXPECT, CONTINUE)) {
+                            requestMetaData.headers().remove(EXPECT);
+                            return BackOffPolicy.ofImmediate();
                         }
 
                         if (retryIdempotentRequests != null && throwable instanceof IOException

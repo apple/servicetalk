@@ -56,7 +56,7 @@ class WriteStreamSubscriberTest extends AbstractWriteTest {
         super.setUp();
         closeHandler = mock(CloseHandler.class);
         subscriber = new WriteStreamSubscriber(channel, demandEstimator, completableSubscriber, closeHandler,
-                NoopWriteObserver.INSTANCE, identity(), false);
+                NoopWriteObserver.INSTANCE, identity(), false, __ -> false);
         subscription = mock(Subscription.class);
         when(demandEstimator.estimateRequestN(anyLong())).thenReturn(1L);
         subscriber.onSubscribe(subscription);
@@ -114,7 +114,7 @@ class WriteStreamSubscriberTest extends AbstractWriteTest {
     @Test
     void testCancelBeforeOnSubscribe() {
         subscriber = new WriteStreamSubscriber(channel, demandEstimator, completableSubscriber,
-                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, NoopWriteObserver.INSTANCE, identity(), false);
+                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, NoopWriteObserver.INSTANCE, identity(), false, __ -> false);
         subscription = mock(Subscription.class);
         subscriber.cancel();
         subscriber.onSubscribe(subscription);
@@ -133,7 +133,7 @@ class WriteStreamSubscriberTest extends AbstractWriteTest {
     void testRequestMoreBeforeOnSubscribe() {
         reset(completableSubscriber);
         subscriber = new WriteStreamSubscriber(channel, demandEstimator, completableSubscriber,
-                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, NoopWriteObserver.INSTANCE, identity(), false);
+                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, NoopWriteObserver.INSTANCE, identity(), false, __ -> false);
         subscriber.channelWritable();
         subscription = mock(Subscription.class);
         subscriber.onSubscribe(subscription);
@@ -177,7 +177,7 @@ class WriteStreamSubscriberTest extends AbstractWriteTest {
         reset(completableSubscriber, demandEstimator);
         when(demandEstimator.estimateRequestN(anyLong())).thenReturn(10L);
         subscriber = new WriteStreamSubscriber(channel, demandEstimator, completableSubscriber,
-                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, NoopWriteObserver.INSTANCE, identity(), true);
+                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, NoopWriteObserver.INSTANCE, identity(), true, __ -> false);
         subscription = mock(Subscription.class);
         subscriber.onSubscribe(subscription);
         verify(subscription).request(1L);

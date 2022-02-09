@@ -59,4 +59,9 @@
     <Method name="noMaxActiveStreamsViolatedError" />
     <Bug pattern="RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE"/>
   </Match>
+  <!-- false positive in Java 11, see https://github.com/spotbugs/spotbugs/issues/756 -->
+  <Match>
+    <Class name="io.servicetalk.http.netty.ExpectContinueTest"/>
+    <Bug pattern="RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE"/>
+  </Match>
 </FindBugsFilter>
