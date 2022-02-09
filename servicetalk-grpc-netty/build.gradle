@@ -25,6 +25,7 @@ apply plugin: "com.google.protobuf"
 
 dependencies {
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
+  testImplementation enforcedPlatform("io.grpc:grpc-bom:$grpcVersion")
 
   api project(":servicetalk-grpc-api")
   api project(":servicetalk-grpc-utils")
@@ -57,12 +58,12 @@ dependencies {
   testImplementation project(":servicetalk-utils-internal")
   testImplementation project(":servicetalk-transport-netty")
   testImplementation project(":servicetalk-serializer-utils")
-  testImplementation "io.grpc:grpc-core:$grpcVersion"
-  testImplementation("io.grpc:grpc-netty:$grpcVersion") {
+  testImplementation "io.grpc:grpc-core"
+  testImplementation("io.grpc:grpc-netty") {
     exclude group: "io.netty"
   }
-  testImplementation "io.grpc:grpc-protobuf:$grpcVersion"
-  testImplementation "io.grpc:grpc-stub:$grpcVersion"
+  testImplementation "io.grpc:grpc-protobuf"
+  testImplementation "io.grpc:grpc-stub"
   testImplementation "io.netty:netty-tcnative-boringssl-static"
   testImplementation "jakarta.annotation:jakarta.annotation-api:$javaxAnnotationsApiVersion"
   testImplementation "org.junit.jupiter:junit-jupiter-api"
