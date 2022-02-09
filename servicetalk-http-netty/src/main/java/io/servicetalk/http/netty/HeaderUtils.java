@@ -24,6 +24,7 @@ import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpMetaData;
 import io.servicetalk.http.api.HttpProtocolVersion;
+import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -45,9 +46,12 @@ import static io.servicetalk.http.api.HttpApiConversions.isPayloadEmpty;
 import static io.servicetalk.http.api.HttpApiConversions.isSafeToAggregate;
 import static io.servicetalk.http.api.HttpApiConversions.mayHaveTrailers;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
+import static io.servicetalk.http.api.HttpHeaderNames.EXPECT;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
+import static io.servicetalk.http.api.HttpHeaderValues.CONTINUE;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
 import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
 import static io.servicetalk.http.api.HttpRequestMethod.PATCH;
@@ -60,6 +64,20 @@ import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESSFUL_
 
 final class HeaderUtils {
     static final Predicate<Object> LAST_CHUNK_PREDICATE = p -> p instanceof HttpHeaders;
+
+    // Predicates that validate when `expect: 100-continue` feature has to be handled.
+    static final Predicate<HttpRequestMetaData> REQ_EXPECT_CONTINUE = reqMetaData -> {
+        // Versions prior HTTP/1.1 do not support Expect-Continue
+        return reqMetaData.version().compareTo(HTTP_1_1) >= 0 &&
+                reqMetaData.headers().containsIgnoreCase(EXPECT, CONTINUE);
+    };
+
+    static final Predicate<Object> OBJ_EXPECT_CONTINUE = msg -> {
+        if (!(msg instanceof HttpRequestMetaData)) {
+            return false;
+        }
+        return REQ_EXPECT_CONTINUE.test((HttpRequestMetaData) msg);
+    };
 
     private HeaderUtils() {
         // no instances

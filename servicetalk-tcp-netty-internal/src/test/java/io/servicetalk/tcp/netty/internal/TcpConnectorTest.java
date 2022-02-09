@@ -115,7 +115,7 @@ final class TcpConnectorTest extends AbstractTcpServerTest {
                                     ctx.fireChannelActive();
                                 }
                             });
-                        }, CLIENT_CTX.executionStrategy(), mock(Protocol.class), connectionObserver, true),
+                        }, CLIENT_CTX.executionStrategy(), mock(Protocol.class), connectionObserver, true, __ -> false),
                 NoopTransportObserver.INSTANCE).toFuture().get();
         connection.closeAsync().toFuture().get();
 

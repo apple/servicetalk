@@ -37,12 +37,13 @@ import io.servicetalk.transport.netty.internal.CloseHandler;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
+import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.concurrent.PromiseCombiner;
 
 import java.util.Map;
+import javax.annotation.Nullable;
 
 import static io.netty.buffer.ByteBufUtil.writeMediumBE;
 import static io.netty.buffer.ByteBufUtil.writeShortBE;
@@ -66,7 +67,7 @@ import static java.lang.Long.toHexString;
 import static java.lang.Math.max;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 
-abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutboundHandlerAdapter {
+abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelDuplexHandler {
     static final int CRLF_SHORT = (CR << 8) | LF;
     private static final int ZERO_CRLF_MEDIUM = ('0' << 16) | CRLF_SHORT;
     private static final byte[] ZERO_CRLF_CRLF = {'0', CR, LF, CR, LF};
@@ -99,6 +100,7 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
      */
     private float trailersEncodedSizeAccumulator;
     private final CloseHandler closeHandler;
+    private boolean messageSent;
 
     /**
      * Create a new instance.
@@ -118,13 +120,26 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
         if (msg instanceof HttpMetaData) {
+            final T metaData = castMetaData(msg);
+            final boolean realResponse = !isInterim(metaData);
+            if (!realResponse && messageSent) {
+                // Discard an "interim message" if it arrives after a "real message" has been sent.
+                return;
+            }
+
             if (state != ST_INIT) {
                 throw new IllegalStateException("unexpected message type: " + simpleClassName(msg));
             }
-            T metaData = castMetaData(msg);
-            closeHandler.protocolPayloadBeginOutbound(ctx);
-            if (shouldClose(metaData)) {
-                closeHandler.protocolClosingOutbound(ctx);
+
+            onMetaData(ctx, metaData);
+            if (realResponse) {
+                // Notify the CloseHandler only about "real" messages. We don't expose "interim messages", like 1xx
+                // responses to the user, and handle them internally.
+                messageSent = true;
+                closeHandler.protocolPayloadBeginOutbound(ctx);
+                if (shouldClose(metaData)) {
+                    closeHandler.protocolClosingOutbound(ctx);
+                }
             }
 
             // We prefer a direct allocation here because it is expected the resulted encoded Buffer will be written
@@ -135,9 +150,15 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
                 Buffer stBuf = newBufferFrom(byteBuf);
 
                 // Encode the message.
-                encodeInitialLine(stBuf, metaData);
+                encodeInitialLine(ctx, stBuf, metaData);
                 state = isContentAlwaysEmpty(metaData) ? ST_CONTENT_ALWAYS_EMPTY :
                         isTransferEncodingChunked(metaData.headers()) ? ST_CONTENT_CHUNK : ST_CONTENT_NON_CHUNK;
+
+                if (!realResponse) {
+                    assert state == ST_CONTENT_ALWAYS_EMPTY;
+                    assert !messageSent;
+                    state = ST_INIT;    // Reset state to handle the final response after an interim one.
+                }
 
                 sanitizeHeadersBeforeEncode(metaData, state);
 
@@ -150,7 +171,13 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
                 byteBuf.release();
                 throw e;
             }
-            ctx.write(byteBuf, promise);
+
+            if (realResponse) {
+                ctx.write(byteBuf, promise);
+            } else {
+                // All "interim messages" have to be flushed right away.
+                ctx.writeAndFlush(byteBuf, promise);
+            }
         } else if (msg instanceof Buffer) {
             final Buffer stBuffer = (Buffer) msg;
             if (stBuffer.readableBytes() == 0) {
@@ -192,15 +219,28 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
                 }
             }
         } else if (msg instanceof HttpHeaders) {
-            closeHandler.protocolPayloadEndOutbound(ctx, promise);
-            final int oldState = state;
-            state = ST_INIT;
+            final int oldState = resetState(ctx, promise);
             if (oldState == ST_CONTENT_CHUNK) {
                 encodeAndWriteTrailers(ctx, (HttpHeaders) msg, promise);
             } else {
                 ctx.write(EMPTY_BUFFER, promise);
             }
         }
+    }
+
+    /**
+     * Resets the current state to prepare for processing of the next message.
+     *
+     * @param ctx the {@link ChannelHandlerContext} for which the write operation is made.
+     * @param promise the {@link ChannelPromise} to notify once the operation completes.
+     * @return the previous state before reset.
+     */
+    protected final int resetState(final ChannelHandlerContext ctx, @Nullable final ChannelPromise promise) {
+        messageSent = false;
+        closeHandler.protocolPayloadEndOutbound(ctx, promise);
+        final int oldState = state;
+        state = ST_INIT;
+        return oldState;
     }
 
     /**
@@ -212,6 +252,26 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
      */
     protected boolean isContentAlwaysEmpty(@SuppressWarnings("unused") T msg) {
         return false;
+    }
+
+    /**
+     * Determines when a {@code msg} is interim.
+     *
+     * @param msg a message to analyze
+     * @return {@code true} if it's a continuation message.
+     */
+    protected boolean isInterim(@SuppressWarnings("unused") T msg) {
+        return false;
+    }
+
+    /**
+     * Callback when a meta-data object have been encoded.
+     *
+     * @param ctx the {@link ChannelHandlerContext} for which the write operation is made.
+     * @param metaData the meta-data message.
+     */
+    protected void onMetaData(final ChannelHandlerContext ctx, final T metaData) {
+        // noop
     }
 
     private void sanitizeHeadersBeforeEncode(T msg, int state) {
@@ -237,10 +297,11 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
 
     /**
      * Encode the <a href="https://tools.ietf.org/html/rfc7230.html#section-3.1">start line</a>.
+     * @param ctx the {@link ChannelHandlerContext} for which the write operation is made.
      * @param buf The {@link Buffer} to encode to.
      * @param message The message to encode.
      */
-    protected abstract void encodeInitialLine(Buffer buf, T message);
+    protected abstract void encodeInitialLine(ChannelHandlerContext ctx, Buffer buf, T message);
 
     /**
      * Encode the {@link HttpHeaders} into a {@link ByteBuf}.

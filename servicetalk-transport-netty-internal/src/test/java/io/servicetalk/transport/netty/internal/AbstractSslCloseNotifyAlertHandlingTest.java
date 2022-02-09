@@ -76,7 +76,7 @@ abstract class AbstractSslCloseNotifyAlertHandlingTest {
                         }
                         ctx.write(msg, promise);
                     }
-                })), NOOP_STRATEGY, mock(Protocol.class), NoopConnectionObserver.INSTANCE, isClient)
+                })), NOOP_STRATEGY, mock(Protocol.class), NoopConnectionObserver.INSTANCE, isClient, __ -> false)
                 .toFuture().get();
     }
 

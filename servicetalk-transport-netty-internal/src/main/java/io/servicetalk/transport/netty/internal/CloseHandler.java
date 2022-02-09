@@ -89,10 +89,11 @@ public abstract class CloseHandler {
     /**
      * Signal end of outbound payload, including the {@link ChannelPromise} associated with the last write. Must be
      * called from the {@link EventLoop} for the {@link Channel}.
-     * @param promise The {@link ChannelPromise} associated with the last write operation.
+     * @param promise The {@link ChannelPromise} associated with the last write operation or {@code null} if payload
+     * ends without a write operation (aborted/cancelled).
      * @param ctx {@link ChannelHandlerContext}
      */
-    public abstract void protocolPayloadEndOutbound(ChannelHandlerContext ctx, ChannelPromise promise);
+    public abstract void protocolPayloadEndOutbound(ChannelHandlerContext ctx, @Nullable ChannelPromise promise);
 
     /**
      * Signal inbound close command observed, to be emitted from the {@link EventLoop} for the {@link Channel}.
@@ -293,7 +294,8 @@ public abstract class CloseHandler {
         }
 
         @Override
-        public void protocolPayloadEndOutbound(final ChannelHandlerContext ctx, final ChannelPromise promise) {
+        public void protocolPayloadEndOutbound(final ChannelHandlerContext ctx,
+                                               @Nullable final ChannelPromise promise) {
         }
 
         @Override

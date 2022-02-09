@@ -97,7 +97,8 @@ class NettyChannelPublisherTest {
                     readRequested = true;
                     super.read(ctx);
                 }
-            }), OFFLOAD_ALL_STRATEGY, mock(Protocol.class), NoopConnectionObserver.INSTANCE, true).toFuture().get();
+            }), OFFLOAD_ALL_STRATEGY, mock(Protocol.class), NoopConnectionObserver.INSTANCE, true, __ -> false)
+                        .toFuture().get();
         publisher = connection.read();
         channel.config().setAutoRead(false);
     }
@@ -145,7 +146,8 @@ class NettyChannelPublisherTest {
                             super.read(ctx);
                         }
                     });
-                }, OFFLOAD_ALL_STRATEGY, mock(Protocol.class), NoopConnectionObserver.INSTANCE, true).toFuture().get();
+                }, OFFLOAD_ALL_STRATEGY, mock(Protocol.class), NoopConnectionObserver.INSTANCE, true, __ -> false)
+                .toFuture().get();
         publisher = connection.read();
         channel.config().setAutoRead(false);
     }

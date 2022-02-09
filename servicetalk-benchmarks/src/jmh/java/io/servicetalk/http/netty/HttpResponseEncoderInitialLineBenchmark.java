@@ -39,7 +39,9 @@ import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseMetaDataFactory.newResponseMetaData;
+import static io.servicetalk.http.netty.HttpResponseEncoder.NOOP_ON_RESPONSE;
 import static io.servicetalk.http.netty.HttpUtils.status;
+import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 
 /*
  * This benchmark compares encoding of HTTP requests with different status codes (with short and long reason phrase,
@@ -71,7 +73,8 @@ public class HttpResponseEncoderInitialLineBenchmark {
         metaData = newResponseMetaData(HTTP_1_1, status(statusCode), INSTANCE.newHeaders())
                 .addHeader(CONTENT_LENGTH, ZERO);
 
-        channel = new EmbeddedChannel(new HttpResponseEncoder(new ArrayDeque<>(), 256, 256));
+        channel = new EmbeddedChannel(new HttpResponseEncoder(new ArrayDeque<>(), 256, 256,
+                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, NOOP_ON_RESPONSE));
     }
 
     @Benchmark

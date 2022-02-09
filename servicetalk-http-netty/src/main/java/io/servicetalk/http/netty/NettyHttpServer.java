@@ -94,8 +94,9 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpResponseStatus.SERVICE_UNAVAILABLE;
 import static io.servicetalk.http.api.StreamingHttpRequests.newTransportRequest;
-import static io.servicetalk.http.netty.AbstractStreamingHttpConnection.determineFlushStrategyForApi;
+import static io.servicetalk.http.netty.AbstractStreamingHttpConnection.isSafeToAggregateOrEmpty;
 import static io.servicetalk.http.netty.HeaderUtils.LAST_CHUNK_PREDICATE;
+import static io.servicetalk.http.netty.HeaderUtils.REQ_EXPECT_CONTINUE;
 import static io.servicetalk.http.netty.HeaderUtils.addResponseTransferEncodingIfNecessary;
 import static io.servicetalk.http.netty.HeaderUtils.canAddResponseContentLength;
 import static io.servicetalk.http.netty.HeaderUtils.emptyMessageBody;
@@ -105,6 +106,7 @@ import static io.servicetalk.http.netty.HttpDebugUtils.showPipeline;
 import static io.servicetalk.http.netty.HttpKeepAlive.responseKeepAlive;
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.CHANNEL_CLOSED_INBOUND;
 import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedRequestResponse;
+import static io.servicetalk.transport.netty.internal.FlushStrategies.flushOnEnd;
 import static io.servicetalk.transport.netty.internal.SplittingFlushStrategy.FlushBoundaryProvider.FlushBoundary.End;
 import static io.servicetalk.transport.netty.internal.SplittingFlushStrategy.FlushBoundaryProvider.FlushBoundary.InProgress;
 import static io.servicetalk.transport.netty.internal.SplittingFlushStrategy.FlushBoundaryProvider.FlushBoundary.Start;
@@ -173,7 +175,8 @@ final class NettyHttpServer {
                 httpExecutionContext.bufferAllocator(), httpExecutionContext.executor(), LAST_CHUNK_PREDICATE,
                 closeHandler, config.tcpConfig().flushStrategy(), config.tcpConfig().idleTimeoutMs(),
                 initializer.andThen(getChannelInitializer(getByteBufAllocator(httpExecutionContext.bufferAllocator()),
-                        h1Config, closeHandler)), httpExecutionContext.executionStrategy(), HTTP_1_1, observer, false)
+                        h1Config, closeHandler)), httpExecutionContext.executionStrategy(), HTTP_1_1, observer, false,
+                        __ -> false)
                 .map(conn -> new NettyHttpServerConnection(conn, service, httpExecutionContext.executionStrategy(),
                         HTTP_1_1, h1Config.headersFactory(), drainRequestPayloadBody,
                         config.allowDropTrailersReadFromTransport())), HTTP_1_1, channel);
@@ -186,12 +189,13 @@ final class NettyHttpServer {
         return new CopyByteBufHandlerChannelInitializer(alloc).andThen(channel -> {
             Queue<HttpRequestMethod> methodQueue = new ArrayDeque<>(2);
             final ChannelPipeline pipeline = channel.pipeline();
-            pipeline.addLast(new HttpRequestDecoder(methodQueue, alloc, config.headersFactory(),
+            final HttpRequestDecoder decoder = new HttpRequestDecoder(methodQueue, alloc, config.headersFactory(),
                     config.maxStartLineLength(), config.maxHeaderFieldLength(),
                     config.specExceptions().allowPrematureClosureBeforePayloadBody(),
-                    config.specExceptions().allowLFWithoutCR(), closeHandler));
+                    config.specExceptions().allowLFWithoutCR(), closeHandler);
+            pipeline.addLast(decoder);
             pipeline.addLast(new HttpResponseEncoder(methodQueue, config.headersEncodedSizeEstimate(),
-                    config.trailersEncodedSizeEstimate(), closeHandler));
+                    config.trailersEncodedSizeEstimate(), closeHandler, decoder));
         });
     }
 
@@ -314,6 +318,7 @@ final class NettyHttpServer {
                 // closure.
                 final SingleSubscriberProcessor requestCompletion = new SingleSubscriberProcessor();
                 final AtomicBoolean payloadSubscribed = drainRequestPayloadBody ? new AtomicBoolean() : null;
+                final AtomicBoolean responseSent = REQ_EXPECT_CONTINUE.test(rawRequest) ? new AtomicBoolean() : null;
                 final StreamingHttpRequest request = rawRequest.transformMessageBody(
                         // Cancellation is assumed to close the connection, or be ignored if this Subscriber has already
                         // terminated. That means we don't need to trigger the processor as completed because we don't
@@ -321,6 +326,20 @@ final class NettyHttpServer {
                         payload -> payload.afterSubscriber(() -> {
                             if (drainRequestPayloadBody) {
                                 payloadSubscribed.set(true);
+                            }
+                            if (responseSent != null && !responseSent.get()) {
+                                // After users subscribe to the request payload body, generate 100 (Continue) response
+                                // if the final response wasn't sent already for this request. Concurrency between
+                                // 100 (Continue) and the final response is handled by Netty outbound encoders.
+                                // Use Netty Channel directly to avoid adjustments for SplittingFlushStrategy,
+                                // WriteStreamSubscriber, and CloseHandler state machines.
+                                final Channel channel = nettyChannel();
+                                if (channel.eventLoop().inEventLoop()) {
+                                    channel.write(streamingResponseFactory().continueResponse());
+                                } else {
+                                    channel.eventLoop().execute(() ->
+                                            channel.write(streamingResponseFactory().continueResponse()));
+                                }
                             }
                             return new Subscriber<Object>() {
                                 @Override
@@ -356,6 +375,15 @@ final class NettyHttpServer {
                                     // ExceptionMapperServiceFilter
                                     return service.handle(this, req, streamingResponseFactory())
                                             .flatMapPublisher(response -> {
+                                                if (responseSent != null) {
+                                                    // While concurrency between 100 (Continue) and the final response
+                                                    // is handled in Netty encoders, it's necessary to prevent
+                                                    // generating 100 (Continue) response after the full final response
+                                                    // is sent. Otherwise, there is a risk of sending 100 (Continue)
+                                                    // after the final response, which may trigger continuation for the
+                                                    // next request in pipeline.
+                                                    responseSent.set(true);
+                                                }
                                                 final FlushStrategy flushStrategy =
                                                         determineFlushStrategyForApi(response);
                                                 if (flushStrategy != null) {
@@ -402,6 +430,12 @@ final class NettyHttpServer {
                 addResponseTransferEncodingIfNecessary(response, requestMethod);
                 return flatResponse;
             }
+        }
+
+        @Nullable
+        private static FlushStrategy determineFlushStrategyForApi(final HttpResponseMetaData response) {
+            // For non-aggregated, don't change the flush strategy, keep the default.
+            return isSafeToAggregateOrEmpty(response) ? flushOnEnd() : null;
         }
 
         private StreamingHttpResponse newErrorResponse(final Throwable cause, final Executor executor,

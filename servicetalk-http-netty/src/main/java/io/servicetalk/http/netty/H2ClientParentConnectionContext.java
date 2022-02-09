@@ -85,6 +85,7 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.handleException
 import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.netty.HeaderUtils.LAST_CHUNK_PREDICATE;
+import static io.servicetalk.http.netty.HeaderUtils.OBJ_EXPECT_CONTINUE;
 import static io.servicetalk.http.netty.HttpDebugUtils.showPipeline;
 import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.close;
 import static io.servicetalk.transport.netty.internal.ChannelSet.CHANNEL_CLOSEABLE_KEY;
@@ -360,7 +361,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                                     parentContext.sslSession(),
                                     parentContext.nettyChannel().config(),
                                     streamObserver,
-                                    true,
+                                    true, OBJ_EXPECT_CONTINUE,
                                     NettyHttp2ExceptionUtils::wrapIfNecessary);
 
                     // In h2 a stream is 1 to 1 with a request/response life cycle. This means there is no concept of
