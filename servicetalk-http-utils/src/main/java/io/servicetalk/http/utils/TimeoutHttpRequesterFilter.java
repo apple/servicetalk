@@ -15,8 +15,8 @@
  */
 package io.servicetalk.http.utils;
 
-import io.servicetalk.concurrent.Executor;
 import io.servicetalk.concurrent.TimeSource;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
