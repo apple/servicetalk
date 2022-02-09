@@ -232,6 +232,44 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
      * @param streamObserver {@link StreamObserver} to report internal events.
      * @param isClient tells if this {@link Channel} is for the client.
      * @param enrichProtocolError enriches protocol-specific {@link Throwable}s.
+     * @param <Read> Type of objects read from the {@link NettyConnection}.
+     * @param <Write> Type of objects written to the {@link NettyConnection}.
+     * @return A {@link Single} that completes with a {@link DefaultNettyConnection} after the channel is activated and
+     * ready to use.
+     * @deprecated Use {@code #initChildChannel(Channel, BufferAllocator, Executor, Predicate, CloseHandler,
+     * FlushStrategy, Long, ExecutionStrategy, Protocol, SSLSession, ChannelConfig, StreamObserver, boolean, Predicate,
+     * UnaryOperator)}.
+     */
+    @Deprecated
+    public static <Read, Write> DefaultNettyConnection<Read, Write> initChildChannel(
+            Channel channel, BufferAllocator allocator, Executor executor, Predicate<Read> terminalPredicate,
+            CloseHandler closeHandler, FlushStrategy flushStrategy, @Nullable Long idleTimeoutMs,
+            ExecutionStrategy executionStrategy, Protocol protocol, @Nullable SSLSession sslSession,
+            @Nullable ChannelConfig parentChannelConfig, StreamObserver streamObserver, boolean isClient,
+            UnaryOperator<Throwable> enrichProtocolError) {
+        return initChildChannel(channel, allocator, executor, terminalPredicate, closeHandler, flushStrategy,
+                idleTimeoutMs, executionStrategy, protocol, sslSession, parentChannelConfig, streamObserver, isClient,
+                __ -> false, enrichProtocolError);
+    }
+
+    /**
+     * Given a {@link Channel} this will initialize the {@link ChannelPipeline} just to create a
+     * {@link DefaultNettyConnection}. It is assumed this is a child channel and all TLS handshaking is completed.
+     * @param channel A newly created {@link Channel}.
+     * @param allocator The {@link BufferAllocator} to use for the {@link DefaultNettyConnection}.
+     * @param executor The {@link Executor} to use for the {@link DefaultNettyConnection}.
+     * @param terminalPredicate Used to determine which inbound signal on the {@link #read()} stream terminates the
+     * current message framing and will allow a resubscribe to consume the next framing.
+     * @param closeHandler Manages the half closure of the {@link DefaultNettyConnection}.
+     * @param flushStrategy Manages flushing of data for the {@link DefaultNettyConnection}.
+     * @param idleTimeoutMs Value for {@link ServiceTalkSocketOptions#IDLE_TIMEOUT IDLE_TIMEOUT} socket option.
+     * @param executionStrategy Used to derive the {@link #executionContext()}.
+     * @param protocol {@link Protocol} for the returned {@link DefaultNettyConnection}.
+     * @param sslSession Provides access to the {@link SSLSession} associated with this connection.
+     * @param parentChannelConfig {@link ChannelConfig} of the parent {@link Channel} to query {@link SocketOption}s.
+     * @param streamObserver {@link StreamObserver} to report internal events.
+     * @param isClient tells if this {@link Channel} is for the client.
+     * @param enrichProtocolError enriches protocol-specific {@link Throwable}s.
      * @param shouldWait predicate that tells when request payload body should wait for continuation signal.
      * @param <Read> Type of objects read from the {@link NettyConnection}.
      * @param <Write> Type of objects written to the {@link NettyConnection}.
@@ -251,6 +289,40 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         channel.pipeline().addLast(new NettyToStChannelInboundHandler<>(connection, null,
                 null, false, NoopConnectionObserver.INSTANCE));
         return connection;
+    }
+
+    /**
+     * Given a {@link Channel} this will initialize the {@link ChannelPipeline} and create a
+     * {@link DefaultNettyConnection}. The resulting single will complete after the TLS handshake has completed
+     * (if applicable) or otherwise after the channel is active and ready to use.
+     * @param channel A newly created {@link Channel}.
+     * @param allocator The {@link BufferAllocator} to use for the {@link DefaultNettyConnection}.
+     * @param executor The {@link Executor} to use for the {@link DefaultNettyConnection}.
+     * @param terminalPredicate Used to determine which inbound signal on the {@link #read()} stream terminates the
+     * current message framing and will allow a resubscribe to consume the next framing.
+     * @param closeHandler Manages the half closure of the {@link DefaultNettyConnection}.
+     * @param flushStrategy Manages flushing of data for the {@link DefaultNettyConnection}.
+     * @param idleTimeoutMs Value for {@link ServiceTalkSocketOptions#IDLE_TIMEOUT IDLE_TIMEOUT} socket option.
+     * @param initializer Synchronously initializes the pipeline upon subscribe.
+     * @param executionStrategy {@link ExecutionStrategy} to use for this connection.
+     * @param protocol {@link Protocol} for the returned {@link DefaultNettyConnection}.
+     * @param observer {@link ConnectionObserver} to report network events.
+     * @param isClient tells if this {@link Channel} is for the client.
+     * @param <Read> Type of objects read from the {@link NettyConnection}.
+     * @param <Write> Type of objects written to the {@link NettyConnection}.
+     * @return A {@link Single} that completes with a {@link DefaultNettyConnection} after the channel is activated and
+     * ready to use.
+     * @deprecated Use {@code #initChannel(Channel, BufferAllocator, Executor, Predicate, CloseHandler, FlushStrategy,
+     * Long, ChannelInitializer, ExecutionStrategy, Protocol, ConnectionObserver, boolean, Predicate)}.
+     */
+    @Deprecated
+    public static <Read, Write> Single<DefaultNettyConnection<Read, Write>> initChannel(
+            Channel channel, BufferAllocator allocator, Executor executor, Predicate<Read> terminalPredicate,
+            CloseHandler closeHandler, FlushStrategy flushStrategy, @Nullable Long idleTimeoutMs,
+            ChannelInitializer initializer, ExecutionStrategy executionStrategy, Protocol protocol,
+            ConnectionObserver observer, boolean isClient) {
+        return initChannel(channel, allocator, executor, terminalPredicate, closeHandler, flushStrategy, idleTimeoutMs,
+                initializer, executionStrategy, protocol, observer, isClient, __ -> false);
     }
 
     /**
