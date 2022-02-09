@@ -28,6 +28,7 @@ import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpMetaData;
+import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -46,6 +47,7 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpApiConversions.isPayloadEmpty;
 import static io.servicetalk.http.api.HttpApiConversions.isSafeToAggregate;
 import static io.servicetalk.http.api.StreamingHttpResponses.newTransportResponse;
+import static io.servicetalk.http.netty.HeaderUtils.REQ_EXPECT_CONTINUE;
 import static io.servicetalk.http.netty.HeaderUtils.addRequestTransferEncodingIfNecessary;
 import static io.servicetalk.http.netty.HeaderUtils.canAddRequestContentLength;
 import static io.servicetalk.http.netty.HeaderUtils.emptyMessageBody;
@@ -124,9 +126,14 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
     }
 
     @Nullable
-    static FlushStrategy determineFlushStrategyForApi(final HttpMetaData request) {
-        // For non-aggregated, don't change the flush strategy, keep the default.
-        return isPayloadEmpty(request) || isSafeToAggregate(request) ? flushOnEnd() : null;
+    private static FlushStrategy determineFlushStrategyForApi(final HttpRequestMetaData request) {
+        // For non-aggregated requests or when "Expect: 100-continue" is detected, don't change the flush strategy,
+        // keep the default.
+        return isSafeToAggregateOrEmpty(request) && !REQ_EXPECT_CONTINUE.test(request) ? flushOnEnd() : null;
+    }
+
+    static boolean isSafeToAggregateOrEmpty(final HttpMetaData request) {
+        return isPayloadEmpty(request) || isSafeToAggregate(request);
     }
 
     @Override

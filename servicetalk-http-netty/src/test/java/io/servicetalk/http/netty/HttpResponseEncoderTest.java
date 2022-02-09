@@ -40,6 +40,8 @@ import static io.servicetalk.http.api.HttpHeaderValues.KEEP_ALIVE;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseMetaDataFactory.newResponseMetaData;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
+import static io.servicetalk.http.netty.HttpResponseEncoder.NOOP_ON_RESPONSE;
+import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static java.lang.Integer.toHexString;
 import static java.lang.String.valueOf;
 import static java.nio.charset.StandardCharsets.US_ASCII;
@@ -52,7 +54,8 @@ class HttpResponseEncoderTest extends HttpEncoderTest<HttpResponseMetaData> {
 
     @Override
     EmbeddedChannel newEmbeddedChannel() {
-        return new EmbeddedChannel(new HttpResponseEncoder(new ArrayDeque<>(), 256, 256));
+        return new EmbeddedChannel(new HttpResponseEncoder(new ArrayDeque<>(), 256, 256,
+                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, NOOP_ON_RESPONSE));
     }
 
     @Override

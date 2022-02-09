@@ -109,7 +109,8 @@ class DefaultNettyConnectionTest {
                     return true;
                 },
                 closeHandlerFactory.apply(channel), defaultFlushStrategy(), null, trailerProtocolEndEventEmitter(),
-                OFFLOAD_ALL_STRATEGY, mock(Protocol.class), NoopConnectionObserver.INSTANCE, true).toFuture().get();
+                OFFLOAD_ALL_STRATEGY, mock(Protocol.class), NoopConnectionObserver.INSTANCE, true, __ -> false)
+                .toFuture().get();
         publisher = new TestPublisher<>();
     }
 

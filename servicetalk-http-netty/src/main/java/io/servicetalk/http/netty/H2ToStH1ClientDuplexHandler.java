@@ -24,6 +24,8 @@ import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
 import io.servicetalk.transport.netty.internal.CloseHandler;
+import io.servicetalk.transport.netty.internal.DefaultNettyConnection.CancelWriteUserEvent;
+import io.servicetalk.transport.netty.internal.DefaultNettyConnection.ContinueUserEvent;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
@@ -45,8 +47,10 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
 import static io.servicetalk.http.api.HttpResponseMetaDataFactory.newResponseMetaData;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.INFORMATIONAL_1XX;
+import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESSFUL_2XX;
 import static io.servicetalk.http.netty.H2ToStH1Utils.h1HeadersToH2Headers;
 import static io.servicetalk.http.netty.H2ToStH1Utils.h2HeadersSanitizeForH1;
+import static io.servicetalk.http.netty.HeaderUtils.REQ_EXPECT_CONTINUE;
 import static io.servicetalk.http.netty.HeaderUtils.responseMayHaveContent;
 import static io.servicetalk.http.netty.HeaderUtils.serverMaySendPayloadBodyFor;
 
@@ -55,6 +59,7 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
     private final HttpScheme scheme;
     @Nullable
     private HttpRequestMethod method;
+    private boolean waitForContinuation;
 
     H2ToStH1ClientDuplexHandler(boolean sslEnabled, BufferAllocator allocator, HttpHeadersFactory headersFactory,
                                 CloseHandler closeHandler, StreamObserver observer) {
@@ -68,6 +73,7 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
             closeHandler.protocolPayloadBeginOutbound(ctx);
             HttpRequestMetaData metaData = (HttpRequestMetaData) msg;
             HttpHeaders h1Headers = metaData.headers();
+            waitForContinuation = REQ_EXPECT_CONTINUE.test(metaData);
             CharSequence host = h1Headers.getAndRemove(HOST);
             Http2Headers h2Headers = h1HeadersToH2Headers(h1Headers);
             if (host == null) {
@@ -87,7 +93,7 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
                 h2Headers.path(metaData.requestTarget());
             }
             try {
-                writeMetaData(ctx, metaData, h2Headers, promise);
+                writeMetaData(ctx, metaData, h2Headers, true, promise);
             } finally {
                 final Http2StreamChannel streamChannel = (Http2StreamChannel) ctx.channel();
                 final int streamId = streamChannel.stream().id();
@@ -111,13 +117,30 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
             Http2Headers h2Headers = headersFrame.headers();
             final HttpResponseStatus httpStatus;
             if (!readHeaders) {
-                closeHandler.protocolPayloadBeginInbound(ctx);
                 CharSequence status = h2Headers.getAndRemove(STATUS.value());
                 if (status == null) {
                     throw new IllegalArgumentException("a response must have " + STATUS + " header");
                 }
                 httpStatus = HttpResponseStatus.of(status);
-                if (httpStatus.statusClass() == INFORMATIONAL_1XX) {
+                boolean realResponse = !isInterim(httpStatus);
+                if (realResponse) {
+                    // Don't notify CloseHandler if it's interim 100 (Continue) response
+                    closeHandler.protocolPayloadBeginInbound(ctx);
+                }
+                if (waitForContinuation) {
+                    if (httpStatus.code() == HttpResponseStatus.CONTINUE.code() ||
+                            httpStatus.statusClass() == SUCCESSFUL_2XX) {
+                        waitForContinuation = false;
+                        // Write of payload body can continue for either 100 or 2XX response code:
+                        ctx.fireUserEventTriggered(ContinueUserEvent.INSTANCE);
+                    } else if (realResponse) {
+                        waitForContinuation = false;
+                        // All other non-interim responses should cancel ongoing write operation when write waits for
+                        // continuation.
+                        ctx.fireUserEventTriggered(CancelWriteUserEvent.INSTANCE);
+                    }
+                }
+                if (!realResponse) {
                     // We don't expose 1xx "interim responses" [2] to the user, and discard them to make way for the
                     // "real" response.
                     //
@@ -190,5 +213,10 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
         }
         return new NettyH2HeadersToHttpHeaders(h2Headers, headersFactory.validateCookies(),
                 headersFactory.validateValues());
+    }
+
+    static boolean isInterim(final HttpResponseStatus status) {
+        // All known informational status codes are interim and don't need to be propagated to the business logic
+        return status.statusClass() == INFORMATIONAL_1XX;
     }
 }

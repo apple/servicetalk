@@ -20,6 +20,8 @@ import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.transport.netty.internal.CloseHandler;
+import io.servicetalk.transport.netty.internal.DefaultNettyConnection.CancelWriteUserEvent;
+import io.servicetalk.transport.netty.internal.DefaultNettyConnection.ContinueUserEvent;
 import io.servicetalk.utils.internal.IllegalCharacterException;
 
 import io.netty.buffer.ByteBuf;
@@ -28,6 +30,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.DecoderException;
 import io.netty.util.ByteProcessor;
 
+import java.util.Deque;
 import java.util.Queue;
 
 import static io.netty.handler.codec.http.HttpConstants.HT;
@@ -38,17 +41,23 @@ import static io.servicetalk.http.api.HttpHeaderValues.WEBSOCKET;
 import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
 import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
 import static io.servicetalk.http.api.HttpResponseMetaDataFactory.newResponseMetaData;
+import static io.servicetalk.http.api.HttpResponseStatus.CONTINUE;
 import static io.servicetalk.http.api.HttpResponseStatus.NOT_MODIFIED;
 import static io.servicetalk.http.api.HttpResponseStatus.NO_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatus.SWITCHING_PROTOCOLS;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.INFORMATIONAL_1XX;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESSFUL_2XX;
-import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
+import static io.servicetalk.http.netty.HttpResponseDecoder.Signal.REQUEST_SIGNAL;
+import static io.servicetalk.http.netty.HttpResponseDecoder.Signal.REQUEST_WITH_EXPECT_CONTINUE_SIGNAL;
 import static java.lang.Math.min;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Objects.requireNonNull;
 
 final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> {
+
+    enum Signal {
+        REQUEST_SIGNAL, REQUEST_WITH_EXPECT_CONTINUE_SIGNAL
+    }
 
     private static final byte[] FIRST_BYTES = "HTTP/".getBytes(US_ASCII);
     private static final byte DEL = 127;
@@ -62,20 +71,17 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
     };
 
     private final Queue<HttpRequestMethod> methodQueue;
+    private final Deque<Signal> signalsQueue;
 
-    HttpResponseDecoder(final Queue<HttpRequestMethod> methodQueue, final ByteBufAllocator alloc,
-                        final HttpHeadersFactory headersFactory, int maxStartLineLength, int maxHeaderFieldLength) {
-        this(methodQueue, alloc, headersFactory, maxStartLineLength, maxHeaderFieldLength,
-                false, false, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER);
-    }
-
-    HttpResponseDecoder(final Queue<HttpRequestMethod> methodQueue, final ByteBufAllocator alloc,
+    HttpResponseDecoder(final Queue<HttpRequestMethod> methodQueue, final Deque<Signal> signalsQueue,
+                        final ByteBufAllocator alloc,
                         final HttpHeadersFactory headersFactory, final int maxStartLineLength, int maxHeaderFieldLength,
                         final boolean allowPrematureClosureBeforePayloadBody, final boolean allowLFWithoutCR,
                         final CloseHandler closeHandler) {
         super(alloc, headersFactory, maxStartLineLength, maxHeaderFieldLength, allowPrematureClosureBeforePayloadBody,
                 allowLFWithoutCR, closeHandler);
         this.methodQueue = requireNonNull(methodQueue);
+        this.signalsQueue = requireNonNull(signalsQueue);
     }
 
     @Override
@@ -155,6 +161,39 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
         // a 204 (No Content), or 304 (Not Modified) status code cannot contain a message body:
         return HEAD.equals(method)
                 || msg.status().code() == NO_CONTENT.code() || msg.status().code() == NOT_MODIFIED.code();
+    }
+
+    @Override
+    protected boolean isInterim(final HttpResponseMetaData msg) {
+        // All known informational status codes are interim and don't need to be propagated to the business logic
+        return msg.status().statusClass() == INFORMATIONAL_1XX;
+    }
+
+    @Override
+    protected void onMetaDataRead(final ChannelHandlerContext ctx, final HttpResponseMetaData msg) {
+        final Object signal = signalsQueue.poll();
+        assert signal != null;
+        if (signal != REQUEST_WITH_EXPECT_CONTINUE_SIGNAL) {
+            return;
+        }
+        // Process a response for "Expect: 100-continue" request.
+        final HttpResponseStatus status = msg.status();
+        if (status.code() == CONTINUE.code()) {
+            ctx.fireUserEventTriggered(ContinueUserEvent.INSTANCE);
+            // Offer REQUEST_SIGNAL to suppress any events for the final response.
+            signalsQueue.offerLast(REQUEST_SIGNAL);
+        } else if (status.statusClass() == SUCCESSFUL_2XX) {
+            // Write of payload body can continue for either 100 or 2XX response code:
+            ctx.fireUserEventTriggered(ContinueUserEvent.INSTANCE);
+        } else if (!isInterim(msg)) {
+            // All other non-interim responses should cancel ongoing write operation when write waits for continuation.
+            ctx.fireUserEventTriggered(CancelWriteUserEvent.INSTANCE);
+        }
+    }
+
+    @Override
+    protected void onDataSeen() {
+        // noop
     }
 
     private static int nettyBufferToStatusCode(final ByteBuf buffer, final int start, final int length) {

@@ -250,3 +250,34 @@ deserialization format and also adding a `content-type` header identifying the r
 
 For more information about how to use serializers and deserializers see
 xref:{page-version}@servicetalk-examples::http/index.adoc#Serialization[these] examples.
+
+== Expect: 100-continue
+
+HTTP protocol defines link:https://datatracker.ietf.org/doc/html/rfc7231#section-5.1.1[Expect] header with
+`100-continue` expectation. This feature allows users to defer sending a request payload body until after the server
+responds with link:https://datatracker.ietf.org/doc/html/rfc7231#section-6.2.1[100 Continue] status code signaling that
+it's ready to receive and process the payload body.
+
+NOTE: xref:{page-version}@servicetalk-http-api::programming-paradigms.adoc#client-blocking-and-aggregated[Aggregated]
+client will automatically de-optimize its flush strategy to flush on each element of the request to force flushing of
+the request meta-data and deffer flushing payload body until after a `100 Continue` response is received.
+
+Server-side users should subscribe to the request payload body when they are ready to consume it. It will generate
+link:https://datatracker.ietf.org/doc/html/rfc7231#section-6.2.1[100 Continue] interim response. After the request is
+consumed, service should produce a final response with an appropriate status code. If service decides to reject a
+request before consuming a request payload body, an appropriate `4xx` status code, like
+link:https://datatracker.ietf.org/doc/html/rfc7231#section-6.5.14[417 Expectation Failed], should be returned. Put
+meaningful tracing headers in the final response.
+
+NOTE: xref:{page-version}@servicetalk-http-api::programming-paradigms.adoc#svc-blocking-and-aggregated[Aggregated]
+service will automatically subscribe to the request payload body before invoking the `handle` method, that will send
+`100 Continue` response back to the client. For manual control consider migrating to
+xref:{page-version}@servicetalk-http-api::programming-paradigms.adoc#svc-blocking-and-streaming[streaming] API or
+implement a filter to accept or reject requests before processing their payload body.
+
+TIP: The interim response is not propagated as a response
+returned by the client because the client has to wait for a final status code returned by the server. There are a couple
+of other ways how to get visibility into interim response: using wire-logging for HTTP/1.x or frame-logging for HTTP/2
+or by monitoring when
+link:{source-root}/servicetalk-transport-api/src/main/java/io/servicetalk/transport/api/ConnectionObserver.java[WriteObserver]
+signals that more items are requested to write.

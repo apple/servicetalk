@@ -100,7 +100,8 @@ class NettyPipelinedConnectionTest {
         final DefaultNettyConnection<Integer, Integer> connection =
                 DefaultNettyConnection.<Integer, Integer>initChannel(channel, DEFAULT_ALLOCATOR,
                 immediate(), obj -> true, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, defaultFlushStrategy(), null,
-                channel2 -> { }, defaultStrategy(), mock(Protocol.class), NoopConnectionObserver.INSTANCE, true)
+                channel2 -> {
+                }, defaultStrategy(), mock(Protocol.class), NoopConnectionObserver.INSTANCE, true, __ -> false)
                         .toFuture().get();
         requester = new NettyPipelinedConnection<>(connection);
     }
