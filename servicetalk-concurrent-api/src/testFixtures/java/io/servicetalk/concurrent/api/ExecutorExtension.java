@@ -15,10 +15,13 @@
  */
 package io.servicetalk.concurrent.api;
 
+import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.Extension;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
@@ -28,12 +31,19 @@ import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static java.lang.Thread.NORM_PRIORITY;
 
 /**
- * An {@link Extension} wrapper for an {@link Executor}.
+ * An {@link Extension} wrapper that creates and disposes an {@link Executor} for your test case or suite.
+ * <p>
+ * Can be used with a {@link RegisterExtension} field. If used with a class static field then use
+ * {@link #setClassLevel(boolean) setClassLevel(true)} to create contained {@link Executor} instance only once for
+ * all tests in class.
+ *
  * @param <E> The type of {@link Executor}.
  */
-public final class ExecutorExtension<E extends Executor> implements BeforeEachCallback, AfterEachCallback {
+public final class ExecutorExtension<E extends Executor> implements AfterEachCallback, BeforeEachCallback,
+                                                                    AfterAllCallback, BeforeAllCallback {
 
     private final Supplier<E> eSupplier;
+    private boolean classLevel;
     @Nullable
     private E executor;
 
@@ -54,6 +64,9 @@ public final class ExecutorExtension<E extends Executor> implements BeforeEachCa
      * Create an {@link ExecutorExtension} with a {@link TestExecutor}.
      * <p>
      * {@link #executor()} will return the {@link TestExecutor} to allow controlling the executor in tests.
+     * <p>
+     * The {@link TestExecutor} is designed to be used for a single test and should not be shared. Specifically, it is
+     * generally incompatible with {@link #setClassLevel(boolean) setClassLevel(true)}.
      *
      * @return a new {@link ExecutorExtension}.
      */
@@ -67,7 +80,7 @@ public final class ExecutorExtension<E extends Executor> implements BeforeEachCa
      * @param executorSupplier The {@link Executor} {@link Supplier} to use.
      * @return a new {@link ExecutorExtension}.
      */
-    public static ExecutorExtension<Executor> withExecutor(Supplier<Executor> executorSupplier) {
+    public static <E extends Executor> ExecutorExtension<E> withExecutor(Supplier<E> executorSupplier) {
         return new ExecutorExtension<>(executorSupplier);
     }
 
@@ -95,17 +108,56 @@ public final class ExecutorExtension<E extends Executor> implements BeforeEachCa
         return executor;
     }
 
-    @Override
-    public void beforeEach(ExtensionContext context) {
-        executor = eSupplier.get();
+    /**
+     * Set to true if the extension is being shared among all tests in a class.
+     *
+     * @param classLevel true if extension is shared between tests within test class otherwise false to create a new
+     * instance for each test.
+     * @return this
+     */
+    public ExecutorExtension<E> setClassLevel(final boolean classLevel) {
+        this.classLevel = classLevel;
+        return this;
     }
 
     @Override
     public void afterEach(ExtensionContext context) throws ExecutionException, InterruptedException {
+        if (!classLevel) {
+            closeExecutor();
+        }
+    }
+
+    @Override
+    public void beforeEach(ExtensionContext context) {
+        if (!classLevel) {
+            createExecutor();
+        }
+    }
+
+    private void createExecutor() {
+        executor = eSupplier.get();
+    }
+
+    private void closeExecutor() throws ExecutionException, InterruptedException {
         if (executor == null) {
             return;
         }
 
         executor.closeAsync().toFuture().get();
+        executor = null;
+    }
+
+    @Override
+    public void afterAll(final ExtensionContext context) throws ExecutionException, InterruptedException {
+        if (classLevel) {
+            closeExecutor();
+        }
+    }
+
+    @Override
+    public void beforeAll(final ExtensionContext context) {
+        if (classLevel) {
+            createExecutor();
+        }
     }
 }

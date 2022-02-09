@@ -43,7 +43,7 @@ import static org.mockito.Mockito.verify;
 
 class ClosableConcurrentStackTest {
     @RegisterExtension
-    static final ExecutorExtension<Executor> EXECUTOR_RULE = ExecutorExtension.withCachedExecutor();
+    static final ExecutorExtension<Executor> EXECUTOR_RULE = ExecutorExtension.withCachedExecutor().setClassLevel(true);
 
     @Test
     void singleThreadPushClose() {
