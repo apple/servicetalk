@@ -341,7 +341,7 @@ final class NettyHttpServer {
                 // closure.
                 final SingleSubscriberProcessor requestCompletion = new SingleSubscriberProcessor();
                 final AtomicBoolean payloadSubscribed = drainRequestPayloadBody ? new AtomicBoolean() : null;
-                final MutableBoolean continueSent = REQ_EXPECT_CONTINUE.test(rawRequest) ? new MutableBoolean() : null;
+                final boolean expectContinue = REQ_EXPECT_CONTINUE.test(rawRequest);
                 final StreamingHttpRequest request = rawRequest.transformMessageBody(
                         // Cancellation is assumed to close the connection, or be ignored if this Subscriber has already
                         // terminated. That means we don't need to trigger the processor as completed because we don't
@@ -350,22 +350,16 @@ final class NettyHttpServer {
                             if (drainRequestPayloadBody) {
                                 payloadSubscribed.set(true);
                             }
-                            // Return 100 (Continue) when users subscribe to the request payload body.
-                            if (continueSent != null) {
-                                synchronized (continueSent) {
-                                    if (!continueSent.value) {
-                                        continueSent.value = true;
-                                        // Use Netty Channel directly to avoid adjustments for SplittingFlushStrategy,
-                                        // WriteStreamSubscriber, and CloseHandler state machines
-                                        final Channel channel = nettyChannel();
-                                        LOGGER.debug("{} Responding with 100 (Continue)", channel);
-                                        if (channel.eventLoop().inEventLoop()) {
-                                            channel.writeAndFlush(streamingResponseFactory().continueResponse());
-                                        } else {
-                                            channel.eventLoop().execute(() -> channel
-                                                    .writeAndFlush(streamingResponseFactory().continueResponse()));
-                                        }
-                                    }
+                            if (expectContinue) {
+                                // After users subscribe to the request payload body, generate 100 (Continue) response.
+                                // Use Netty Channel directly to avoid adjustments for SplittingFlushStrategy,
+                                // WriteStreamSubscriber, and CloseHandler state machines.
+                                final Channel channel = nettyChannel();
+                                if (channel.eventLoop().inEventLoop()) {
+                                    channel.write(streamingResponseFactory().continueResponse());
+                                } else {
+                                    channel.eventLoop().execute(() ->
+                                            channel.write(streamingResponseFactory().continueResponse()));
                                 }
                             }
                             return new Subscriber<Object>() {
@@ -401,17 +395,6 @@ final class NettyHttpServer {
                 // ExceptionMapperServiceFilter
                 Publisher<Object> respPublisher = service.handle(this, request, streamingResponseFactory())
                         .flatMapPublisher(response -> {
-                            if (continueSent != null) {
-                                synchronized (continueSent) {
-                                    // Mark as "sent" to prevent sending 100 (Continue) after the final response have
-                                    // been already returned.
-                                    if (!continueSent.value) {
-                                        continueSent.value = true;
-                                        LOGGER.debug("{} Returning {}, no 100 (Continue) will be sent",
-                                                nettyChannel(), response);
-                                    }
-                                }
-                            }
                             // SplittingFlushStrategy needs to be aware of protocols constraints in order to determine
                             // boundaries between responses. However it isn't aware of request data and content-length
                             // for HEAD requests won't actually be followed by payload. It also has a method
@@ -655,9 +638,5 @@ final class NettyHttpServer {
             LOGGER.debug("{} Unexpected error received, closing {} {} due to:", connection, connection.protocol(),
                     HTTP_2_0.equals(connection.protocol()) ? "stream" : "connection", t);
         }
-    }
-
-    private static final class MutableBoolean {
-        boolean value;
     }
 }

@@ -64,7 +64,7 @@ import static io.servicetalk.http.netty.AbstractStreamingHttpConnection.isSafeTo
 
 final class HeaderUtils {
 
-    // Predicates that validate when `expect: 100-continue` feature have to be handled
+    // Predicates that validate when `expect: 100-continue` feature has to be handled.
     static final Predicate<HttpRequestMetaData> REQ_EXPECT_CONTINUE = reqMetaData -> {
         // Versions prior HTTP/1.1 do not support Expect-Continue
         return !isSafeToAggregateOrEmpty(reqMetaData) && reqMetaData.version().compareTo(HTTP_1_1) >= 0 &&

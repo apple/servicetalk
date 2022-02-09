@@ -105,6 +105,7 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelDuplexHa
      */
     private float trailersEncodedSizeAccumulator;
     private final CloseHandler closeHandler;
+    private boolean messageSent;
 
     /**
      * Create a new instance.
@@ -124,6 +125,13 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelDuplexHa
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
         if (msg instanceof HttpMetaData) {
+            T metaData = castMetaData(msg);
+            final boolean realResponse = !isInterim(metaData);
+            if (!realResponse && messageSent) {
+                // Discard an "interim message" if it arrives after a "real message" has been sent.
+                return;
+            }
+
             if (state == CONTENT_LEN_CHUNKED) {
                 // The user didn't write any trailers, so just send the last chunk.
                 encodeAndWriteTrailers(ctx, EmptyHttpHeaders.INSTANCE, promise);
@@ -133,9 +141,10 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelDuplexHa
             } else if (state == -1) {
                 unknownContentLengthNewRequest(ctx);
             }
-
-            T metaData = castMetaData(msg);
-            if (!isContinue(metaData)) {
+            if (realResponse) {
+                // Notify the CloseHandler only about "real" messages. We don't expose "interim messages", like 1xx
+                // responses to the user, and handle them internally.
+                messageSent = true;
                 closeHandler.protocolPayloadBeginOutbound(ctx);
                 if (shouldClose(metaData)) {
                     closeHandler.protocolClosingOutbound(ctx);
@@ -154,8 +163,8 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelDuplexHa
                 onMetaData(ctx, metaData);
                 if (isContentAlwaysEmpty(metaData)) {
                     state = CONTENT_LEN_EMPTY;
-                    if (!isContinue(metaData)) {
-                        closeHandler.protocolPayloadEndOutbound(ctx, promise);
+                    if (realResponse) {
+                        signalProtocolPayloadEndOutbound(ctx, promise);
                     }
                 } else if (isTransferEncodingChunked(metaData.headers())) {
                     state = CONTENT_LEN_CHUNKED;
@@ -180,7 +189,12 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelDuplexHa
                 return;
             }
 
-            ctx.write(byteBuf, promise);
+            if (realResponse) {
+                ctx.write(byteBuf, promise);
+            } else {
+                // All "interim messages" have to be flushed right away.
+                ctx.writeAndFlush(byteBuf, promise);
+            }
         } else if (msg instanceof Buffer) {
             final Buffer stBuffer = (Buffer) msg;
             final int readableBytes = stBuffer.readableBytes();
@@ -205,7 +219,7 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelDuplexHa
             state = CONTENT_LEN_INIT;
             final HttpHeaders trailers = (HttpHeaders) msg;
             if (isChunked) {
-                closeHandler.protocolPayloadEndOutbound(ctx, promise);
+                signalProtocolPayloadEndOutbound(ctx, promise);
                 encodeAndWriteTrailers(ctx, trailers, promise);
             } else if (!trailers.isEmpty()) {
                 tryFailNonEmptyTrailers(ctx, trailers, promise);
@@ -214,7 +228,7 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelDuplexHa
             } else {
                 // Allow trailers to be written as a marker indicating the request is done.
                 if (state != CONTENT_LEN_CONSUMED) {
-                    closeHandler.protocolPayloadEndOutbound(ctx, promise);
+                    signalProtocolPayloadEndOutbound(ctx, promise);
                 }
                 state = CONTENT_LEN_INIT;
                 ctx.write(EMPTY_BUFFER, promise);
@@ -259,7 +273,7 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelDuplexHa
         // If state == -1 we don't know the content length, signal end of outbound and best effort continue.
         ChannelPromise emptyWritePromise = ctx.newPromise();
         ctx.write(EMPTY_BUFFER, emptyWritePromise);
-        closeHandler.protocolPayloadEndOutbound(ctx, emptyWritePromise);
+        signalProtocolPayloadEndOutbound(ctx, emptyWritePromise);
     }
 
     private static void tryIoException(ChannelHandlerContext ctx, Throwable e, ChannelPromise promise) {
@@ -279,12 +293,12 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelDuplexHa
     }
 
     /**
-     * Determines when a {@code msg} is a continuation signal.
+     * Determines when a {@code msg} is interim.
      *
      * @param msg a message to analyze
      * @return {@code true} if it's a continuation message.
      */
-    protected boolean isContinue(@SuppressWarnings("unused") T msg) {
+    protected boolean isInterim(@SuppressWarnings("unused") T msg) {
         return false;
     }
 
@@ -315,6 +329,12 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelDuplexHa
      */
     protected final void contentLenConsumed(final ChannelHandlerContext ctx, @Nullable final ChannelPromise promise) {
         state = CONTENT_LEN_CONSUMED;
+        signalProtocolPayloadEndOutbound(ctx, promise);
+    }
+
+    protected final void signalProtocolPayloadEndOutbound(final ChannelHandlerContext ctx,
+                                                          @Nullable final ChannelPromise promise) {
+        messageSent = false;
         closeHandler.protocolPayloadEndOutbound(ctx, promise);
     }
 

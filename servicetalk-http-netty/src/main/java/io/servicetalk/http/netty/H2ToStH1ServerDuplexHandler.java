@@ -51,6 +51,7 @@ import static io.servicetalk.http.netty.HeaderUtils.shouldAddZeroContentLength;
 
 final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
     private boolean readHeaders;
+    private boolean responseSent;
 
     H2ToStH1ServerDuplexHandler(BufferAllocator allocator, HttpHeadersFactory headersFactory,
                                 CloseHandler closeHandler, StreamObserver observer) {
@@ -60,16 +61,20 @@ final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
         if (msg instanceof HttpResponseMetaData) {
-            final boolean maybeEndStream = ((HttpResponseMetaData) msg).status().statusClass() != INFORMATIONAL_1XX;
-            if (maybeEndStream) {
-                // We don't expose 1xx "interim responses" [2] to the user, and discard them to make way for the
-                // "real" response.
+            final boolean realResponse = ((HttpResponseMetaData) msg).status().statusClass() != INFORMATIONAL_1XX;
+            if (realResponse) {
+                // Notify the CloseHandler only about "real" responses. We don't expose 1xx "interim responses" to the
+                // user, and handle them internally.
+                responseSent = true;
                 closeHandler.protocolPayloadBeginOutbound(ctx);
+            } else if (responseSent) {
+                // Discard an "interim response" if it arrives after a "real response" is already sent.
+                return;
             }
             HttpResponseMetaData metaData = (HttpResponseMetaData) msg;
             Http2Headers h2Headers = h1HeadersToH2Headers(metaData.headers());
             h2Headers.status(metaData.status().codeAsCharSequence());
-            writeMetaData(ctx, metaData, h2Headers, maybeEndStream, promise);
+            writeMetaData(ctx, metaData, h2Headers, realResponse, promise);
         } else if (msg instanceof Buffer) {
             writeBuffer(ctx, (Buffer) msg, promise);
         } else if (msg instanceof HttpHeaders) {

@@ -47,7 +47,6 @@ import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_VERSION;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
 import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
-import static io.servicetalk.http.api.HttpResponseStatus.CONTINUE;
 import static io.servicetalk.http.api.HttpResponseStatus.NOT_MODIFIED;
 import static io.servicetalk.http.api.HttpResponseStatus.NO_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatus.SWITCHING_PROTOCOLS;
@@ -161,8 +160,8 @@ final class HttpResponseEncoder extends HttpObjectEncoder<HttpResponseMetaData> 
     }
 
     @Override
-    protected boolean isContinue(final HttpResponseMetaData msg) {
-        return msg.status().code() == CONTINUE.code();
+    protected boolean isInterim(final HttpResponseMetaData msg) {
+        return msg.status().statusClass() == INFORMATIONAL_1XX;
     }
 
     /**

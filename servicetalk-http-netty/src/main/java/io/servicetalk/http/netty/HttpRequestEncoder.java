@@ -160,12 +160,10 @@ final class HttpRequestEncoder extends HttpObjectEncoder<HttpRequestMetaData> {
     @Override
     protected void onMetaData(final ChannelHandlerContext ctx, final HttpRequestMetaData metaData) {
         expectContinue = REQ_EXPECT_CONTINUE.test(metaData);
-        if (expectContinue) {
-            if (!signalsQueue.offer(EXPECT_CONTINUE_SIGNAL)) {
-                LOGGER.error(
+        if (expectContinue && !signalsQueue.offer(EXPECT_CONTINUE_SIGNAL)) {
+            LOGGER.error(
                     "{} Can not signal to the decoder that outgoing request {} contains `Expect: 100-continue` header.",
                     ctx.channel(), metaData);
-            }
         }
     }
 

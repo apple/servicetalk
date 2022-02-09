@@ -67,12 +67,18 @@ abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
     }
 
     final void writeMetaData(ChannelHandlerContext ctx, HttpMetaData metaData, Http2Headers h2Headers,
-                             boolean maybeEndStream, ChannelPromise promise) {
-        final boolean endStream = maybeEndStream && emptyMessageBody(metaData);
+                             boolean realMessage, ChannelPromise promise) {
+        final boolean endStream = realMessage && emptyMessageBody(metaData);
         if (endStream) {
             closeHandler.protocolPayloadEndOutbound(ctx, promise);
         }
-        ctx.write(new DefaultHttp2HeadersFrame(h2Headers, endStream), promise);
+        final DefaultHttp2HeadersFrame frame = new DefaultHttp2HeadersFrame(h2Headers, endStream);
+        if (realMessage) {
+            ctx.write(frame, promise);
+        } else {
+            // All "interim messages" have to be flushed right away.
+            ctx.writeAndFlush(frame, promise);
+        }
     }
 
     static void writeBuffer(ChannelHandlerContext ctx, Buffer buffer, ChannelPromise promise) {
