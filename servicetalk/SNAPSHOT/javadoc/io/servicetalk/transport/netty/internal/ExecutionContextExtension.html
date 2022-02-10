@@ -137,9 +137,11 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <pre>public final class <span class="typeNameLabel">ExecutionContextExtension</span>
 extends java.lang.Object
 implements org.junit.jupiter.api.extension.AfterEachCallback, org.junit.jupiter.api.extension.BeforeEachCallback, org.junit.jupiter.api.extension.AfterAllCallback, org.junit.jupiter.api.extension.BeforeAllCallback, <a href="../../api/ExecutionContext.html" title="interface in io.servicetalk.transport.api">ExecutionContext</a>&lt;<a href="../../api/ExecutionStrategy.html" title="interface in io.servicetalk.transport.api">ExecutionStrategy</a>&gt;</pre>
-<div class="block">Test helper that creates and disposes an <a href="../../api/ExecutionContext.html" title="interface in io.servicetalk.transport.api"><code>ExecutionContext</code></a> for your test case or suite.
+<div class="block">An <code>Extension</code> that creates and disposes an <a href="../../api/ExecutionContext.html" title="interface in io.servicetalk.transport.api"><code>ExecutionContext</code></a> for your test case or suite.
  <p>
- Can be used with a @<code>RegisterExtension</code> field.</div>
+ Can be used with a <code>RegisterExtension</code> field. If used with a class static field then use
+ <a href="#setClassLevel(boolean)"><code>setClassLevel(true)</code></a> to create contained <a href="../../api/ExecutionContext.html" title="interface in io.servicetalk.transport.api"><code>ExecutionContext</code></a> instance only once
+ for all tests in class.</div>
 </li>
 </ul>
 </div>
@@ -255,7 +257,9 @@ implements org.junit.jupiter.api.extension.AfterEachCallback, org.junit.jupiter.
 <tr id="i12" class="altColor">
 <td class="colFirst"><code><a href="ExecutionContextExtension.html" title="class in io.servicetalk.transport.netty.internal">ExecutionContextExtension</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setClassLevel(boolean)">setClassLevel</a></span>&#8203;(boolean&nbsp;classLevel)</code></th>
-<td class="colLast">&nbsp;</td>
+<td class="colLast">
+<div class="block">Set to true if the extension is being shared among all tests in a class.</div>
+</td>
 </tr>
 <tr id="i13" class="rowColor">
 <td class="colFirst"><code>static <a href="ExecutionContextExtension.html" title="class in io.servicetalk.transport.netty.internal">ExecutionContextExtension</a></code></td>
@@ -374,6 +378,14 @@ implements org.junit.jupiter.api.extension.AfterEachCallback, org.junit.jupiter.
 <li class="blockList">
 <h4>setClassLevel</h4>
 <pre class="methodSignature">public&nbsp;<a href="ExecutionContextExtension.html" title="class in io.servicetalk.transport.netty.internal">ExecutionContextExtension</a>&nbsp;setClassLevel&#8203;(boolean&nbsp;classLevel)</pre>
+<div class="block">Set to true if the extension is being shared among all tests in a class.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>classLevel</code> - true if extension is shared between tests within test class otherwise false to create a new
+ instance for each test.</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd>this</dd>
+</dl>
 </li>
 </ul>
 <a id="bufferAllocator()">

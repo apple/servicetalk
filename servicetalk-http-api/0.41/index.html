@@ -1051,7 +1051,7 @@ Here is a quick start example of the
 </div>
 <div class="paragraph">
 <p>See
-<a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldClient.java">BlockingHelloWorldClient</a>.</p>
+<a href="https://github.com/apple/servicetalk/blob/0.41.14/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldClient.java">BlockingHelloWorldClient</a>.</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -1066,7 +1066,7 @@ Here is a quick start example of the
 </div>
 <div class="paragraph">
 <p>See
-<a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldServer.java">BlockingHelloWorldServer</a>.</p>
+<a href="https://github.com/apple/servicetalk/blob/0.41.14/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldServer.java">BlockingHelloWorldServer</a>.</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -1108,9 +1108,9 @@ the socket to the HTTP <code>Service</code> is visualized as follows:</p>
 </div>
 <div class="paragraph">
 <p>Each <code>Service</code> has access to a
-<a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpServiceContext.java">HttpServiceContext</a>
+<a href="https://github.com/apple/servicetalk/blob/0.41.14/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpServiceContext.java">HttpServiceContext</a>
 which provides additional context
-(via <a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-transport-api/src/main/java/io/servicetalk/transport/api/ConnectionContext.java">ConnectionContext</a>)
+(via <a href="https://github.com/apple/servicetalk/blob/0.41.14/servicetalk-transport-api/src/main/java/io/servicetalk/transport/api/ConnectionContext.java">ConnectionContext</a>)
 into the <code>Connection</code>/transport details for each request/response. This means that the <code>HttpService</code> may be invoked
 for multiple connections, from different threads, and even concurrently.</p>
 </div>
@@ -1119,9 +1119,9 @@ for multiple connections, from different threads, and even concurrently.</p>
 <div class="paragraph">
 <p>Filters provide a means to filter/intercept and modify each request/response life cycle. <code>Service</code> Filters are used to
 implement
-<a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-opentracing-http/src/main/java/io/servicetalk/opentracing/http/TracingHttpServiceFilter.java">tracing</a>
+<a href="https://github.com/apple/servicetalk/blob/0.41.14/servicetalk-opentracing-http/src/main/java/io/servicetalk/opentracing/http/TracingHttpServiceFilter.java">tracing</a>
 metrics, logging,
-<a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-http-utils/src/main/java/io/servicetalk/http/utils/auth/BasicAuthHttpServiceFilter.java">basic auth</a>,
+<a href="https://github.com/apple/servicetalk/blob/0.41.14/servicetalk-http-utils/src/main/java/io/servicetalk/http/utils/auth/BasicAuthHttpServiceFilter.java">basic auth</a>,
 and any other extension that needs request/response level visibility. The diagram below describes the control flow
 as related to <code>Service</code> filters:</p>
 </div>
@@ -1136,9 +1136,9 @@ as related to <code>Service</code> filters:</p>
 </div>
 <div class="paragraph">
 <p>To implement a <code>Service</code> filter you should implement the
-<a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-http-api/src/main/java/io/servicetalk/http/api/StreamingHttpServiceFilterFactory.java">Service Filter Factory</a> and append it
+<a href="https://github.com/apple/servicetalk/blob/0.41.14/servicetalk-http-api/src/main/java/io/servicetalk/http/api/StreamingHttpServiceFilterFactory.java">Service Filter Factory</a> and append it
 on the <code>HttpServerBuilder</code> via
-<a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpServerBuilder.java">HttpServerBuilder#appendServiceFilter(..)</a>.</p>
+<a href="https://github.com/apple/servicetalk/blob/0.41.14/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpServerBuilder.java">HttpServerBuilder#appendServiceFilter(..)</a>.</p>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -1164,8 +1164,8 @@ filter can be used with a <code>Service</code> in any other programming paradigm
 processing requirements. The control flow in ServiceTalk is represented by a "Router". A "Router" is a <code>Service</code> that
 owns the responsibility of multiplexing the control flow. ServiceTalk does not mandate a specific "Router"
 implementation but provides a couple reference implementations for common use cases (e.g.
-<a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-http-router-predicate">Predicate Router</a> and
-<a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-http-router-jersey">JAX-RS via Jersey</a>). The general component diagram of a "Router"
+<a href="https://github.com/apple/servicetalk/blob/0.41.14/servicetalk-http-router-predicate">Predicate Router</a> and
+<a href="https://github.com/apple/servicetalk/blob/0.41.14/servicetalk-http-router-jersey">JAX-RS via Jersey</a>). The general component diagram of a "Router"
 is as follows:</p>
 </div>
 <div class="listingblock">
@@ -1209,7 +1209,7 @@ address for each request. This <code>Client</code> simulates a browser type of u
 </div>
 <div class="paragraph">
 <p>Each of the above <code>Client</code>s can be created via the
-<a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-http-netty/src/main/java/io/servicetalk/http/netty/HttpClients.java">HttpClients</a> static factory.</p>
+<a href="https://github.com/apple/servicetalk/blob/0.41.14/servicetalk-http-netty/src/main/java/io/servicetalk/http/netty/HttpClients.java">HttpClients</a> static factory.</p>
 </div>
 </div>
 <div class="sect2">
@@ -1244,7 +1244,7 @@ which connection should be used.</p>
 <div class="paragraph">
 <p>Filters provide a means to filter/intercept and modify each request/response life cycle. <code>Client</code> Filters are used to
 implement
-<a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-opentracing-http/src/main/java/io/servicetalk/opentracing/http/TracingHttpRequesterFilter.java">tracing</a>
+<a href="https://github.com/apple/servicetalk/blob/0.41.14/servicetalk-opentracing-http/src/main/java/io/servicetalk/opentracing/http/TracingHttpRequesterFilter.java">tracing</a>
 metrics, logging, authorization, and any other extension that needs request/response level visibility.</p>
 </div>
 <div class="listingblock">
@@ -1264,9 +1264,9 @@ metrics, logging, authorization, and any other extension that needs request/resp
 </div>
 <div class="paragraph">
 <p>To implement a <code>Client</code> filter you should implement the
-<a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-http-api/src/main/java/io/servicetalk/http/api/StreamingHttpClientFilterFactory.java">Client Filter Factory</a> and append it on
+<a href="https://github.com/apple/servicetalk/blob/0.41.14/servicetalk-http-api/src/main/java/io/servicetalk/http/api/StreamingHttpClientFilterFactory.java">Client Filter Factory</a> and append it on
 the <code>HttpClientBuilder</code> via
-<a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpClientBuilder.java">HttpClientBuilder#appendClientFilter(..)</a>.</p>
+<a href="https://github.com/apple/servicetalk/blob/0.41.14/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpClientBuilder.java">HttpClientBuilder#appendClientFilter(..)</a>.</p>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -1290,7 +1290,7 @@ filter can be used with a <code>Client</code> in any other programming paradigm.
 <div class="paragraph">
 <p>The <code>Client</code> doesn&#8217;t have visibility into <code>Connection</code> specific information. For example, the <code>Connection</code> layer knows
 about transport details such as connected remote address and other elements in the
-<a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-transport-api/src/main/java/io/servicetalk/transport/api/ConnectionContext.java">ConnectionContext</a>.
+<a href="https://github.com/apple/servicetalk/blob/0.41.14/servicetalk-transport-api/src/main/java/io/servicetalk/transport/api/ConnectionContext.java">ConnectionContext</a>.
 If you have use cases that require this information in the request/response control flow you can use a
 <code>Connection Filter</code>. The diagram below illustrates how the <code>Connection Filter</code> interacts with the request/response
 control flow.</p>
@@ -1345,23 +1345,89 @@ different HTTP protocol versions see <a href="../../servicetalk-examples/0.41/ht
 <div class="sectionbody">
 <div class="paragraph">
 <p>Serialization factories are made available in the
-<a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpSerializationProviders.java">HttpSerializationProviders</a> static factory
+<a href="https://github.com/apple/servicetalk/blob/0.41.14/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpSerializationProviders.java">HttpSerializationProviders</a> static factory
 class.</p>
 </div>
 <div class="paragraph">
 <p>The core abstractions
-<a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpDeserializer.java">HttpDeserializer</a> and
-<a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpSerializer.java">HttpSerializer</a> are designed to be coupled to a
+<a href="https://github.com/apple/servicetalk/blob/0.41.14/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpDeserializer.java">HttpDeserializer</a> and
+<a href="https://github.com/apple/servicetalk/blob/0.41.14/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpSerializer.java">HttpSerializer</a> are designed to be coupled to a
 specific Java type <code>T</code> and accessed via a
-<a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpSerializationProvider.java">HttpSerializationProvider</a>. The
-<a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpDeserializer.java">HttpDeserializer</a> and
-<a href="https://github.com/apple/servicetalk/blob/0.41.12/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpSerializer.java">HttpSerializer</a> are also designed to handle the HTTP
+<a href="https://github.com/apple/servicetalk/blob/0.41.14/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpSerializationProvider.java">HttpSerializationProvider</a>. The
+<a href="https://github.com/apple/servicetalk/blob/0.41.14/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpDeserializer.java">HttpDeserializer</a> and
+<a href="https://github.com/apple/servicetalk/blob/0.41.14/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpSerializer.java">HttpSerializer</a> are also designed to handle the HTTP
 headers data behind the scenes. This means either checking if <code>content-type</code> format is compatible with the
 deserialization format and also adding a <code>content-type</code> header identifying the resulting serialization format.</p>
 </div>
 <div class="paragraph">
 <p>For more information about how to use serializers and deserializers see
 <a href="../../servicetalk-examples/0.41/http/index.html#Serialization" class="page">these</a> examples.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="expect-100-continue"><a class="anchor" href="#expect-100-continue"></a><a class="link" href="#expect-100-continue">Expect: 100-continue</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>HTTP protocol defines <a href="https://datatracker.ietf.org/doc/html/rfc7231#section-5.1.1">Expect</a> header with
+<code>100-continue</code> expectation. This feature allows users to defer sending a request payload body until after the server
+responds with <a href="https://datatracker.ietf.org/doc/html/rfc7231#section-6.2.1">100 Continue</a> status code signaling that
+it&#8217;s ready to receive and process the payload body.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<a href="programming-paradigms.html#client-blocking-and-aggregated" class="page">Aggregated</a>
+client will automatically de-optimize its flush strategy to flush on each element of the request to force flushing of
+the request meta-data and deffer flushing payload body until after a <code>100 Continue</code> response is received.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Server-side users should subscribe to the request payload body when they are ready to consume it. It will generate
+<a href="https://datatracker.ietf.org/doc/html/rfc7231#section-6.2.1">100 Continue</a> interim response. After the request is
+consumed, service should produce a final response with an appropriate status code. If service decides to reject a
+request before consuming a request payload body, an appropriate <code>4xx</code> status code, like
+<a href="https://datatracker.ietf.org/doc/html/rfc7231#section-6.5.14">417 Expectation Failed</a>, should be returned. Put
+meaningful tracing headers in the final response.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<a href="programming-paradigms.html#svc-blocking-and-aggregated" class="page">Aggregated</a>
+service will automatically subscribe to the request payload body before invoking the <code>handle</code> method, that will send
+<code>100 Continue</code> response back to the client. For manual control consider migrating to
+<a href="programming-paradigms.html#svc-blocking-and-streaming" class="page">streaming</a> API or
+implement a filter to accept or reject requests before processing their payload body.
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+The interim response is not propagated as a response
+returned by the client because the client has to wait for a final status code returned by the server. There are a couple
+of other ways how to get visibility into interim response: using wire-logging for HTTP/1.x or frame-logging for HTTP/2
+or by monitoring when
+<a href="https://github.com/apple/servicetalk/blob/0.41.14/servicetalk-transport-api/src/main/java/io/servicetalk/transport/api/ConnectionObserver.java">WriteObserver</a>
+signals that more items are requested to write.
+</td>
+</tr>
+</table>
 </div>
 </div>
 </div>

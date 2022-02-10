@@ -26,7 +26,7 @@
     catch(err) {
     }
 //-->
-var data = {"i0":10,"i1":10,"i2":10,"i3":9,"i4":9,"i5":9,"i6":9};
+var data = {"i0":10,"i1":10,"i2":10,"i3":10,"i4":10,"i5":10,"i6":9,"i7":9,"i8":9,"i9":9};
 var tabs = {65535:["t0","All Methods"],1:["t1","Static Methods"],2:["t2","Instance Methods"],8:["t4","Concrete Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
@@ -135,13 +135,17 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </dl>
 <dl>
 <dt>All Implemented Interfaces:</dt>
-<dd><code>org.junit.jupiter.api.extension.AfterEachCallback</code>, <code>org.junit.jupiter.api.extension.BeforeEachCallback</code>, <code>org.junit.jupiter.api.extension.Extension</code></dd>
+<dd><code>org.junit.jupiter.api.extension.AfterAllCallback</code>, <code>org.junit.jupiter.api.extension.AfterEachCallback</code>, <code>org.junit.jupiter.api.extension.BeforeAllCallback</code>, <code>org.junit.jupiter.api.extension.BeforeEachCallback</code>, <code>org.junit.jupiter.api.extension.Extension</code></dd>
 </dl>
 <hr>
 <pre>public final class <span class="typeNameLabel">ExecutorExtension&lt;E extends <a href="Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&gt;</span>
 extends java.lang.Object
-implements org.junit.jupiter.api.extension.BeforeEachCallback, org.junit.jupiter.api.extension.AfterEachCallback</pre>
-<div class="block">An <code>Extension</code> wrapper for an <a href="Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a>.</div>
+implements org.junit.jupiter.api.extension.AfterEachCallback, org.junit.jupiter.api.extension.BeforeEachCallback, org.junit.jupiter.api.extension.AfterAllCallback, org.junit.jupiter.api.extension.BeforeAllCallback</pre>
+<div class="block">An <code>Extension</code> wrapper that creates and disposes an <a href="Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> for your test case or suite.
+ <p>
+ Can be used with a <code>RegisterExtension</code> field. If used with a class static field then use
+ <a href="#setClassLevel(boolean)"><code>setClassLevel(true)</code></a> to create contained <a href="Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> instance only once for
+ all tests in class.</div>
 </li>
 </ul>
 </div>
@@ -164,29 +168,46 @@ implements org.junit.jupiter.api.extension.BeforeEachCallback, org.junit.jupiter
 </tr>
 <tr id="i0" class="altColor">
 <td class="colFirst"><code>void</code></td>
-<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#afterEach(org.junit.jupiter.api.extension.ExtensionContext)">afterEach</a></span>&#8203;(org.junit.jupiter.api.extension.ExtensionContext&nbsp;context)</code></th>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#afterAll(org.junit.jupiter.api.extension.ExtensionContext)">afterAll</a></span>&#8203;(org.junit.jupiter.api.extension.ExtensionContext&nbsp;context)</code></th>
 <td class="colLast">&nbsp;</td>
 </tr>
 <tr id="i1" class="rowColor">
 <td class="colFirst"><code>void</code></td>
-<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#beforeEach(org.junit.jupiter.api.extension.ExtensionContext)">beforeEach</a></span>&#8203;(org.junit.jupiter.api.extension.ExtensionContext&nbsp;context)</code></th>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#afterEach(org.junit.jupiter.api.extension.ExtensionContext)">afterEach</a></span>&#8203;(org.junit.jupiter.api.extension.ExtensionContext&nbsp;context)</code></th>
 <td class="colLast">&nbsp;</td>
 </tr>
 <tr id="i2" class="altColor">
+<td class="colFirst"><code>void</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#beforeAll(org.junit.jupiter.api.extension.ExtensionContext)">beforeAll</a></span>&#8203;(org.junit.jupiter.api.extension.ExtensionContext&nbsp;context)</code></th>
+<td class="colLast">&nbsp;</td>
+</tr>
+<tr id="i3" class="rowColor">
+<td class="colFirst"><code>void</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#beforeEach(org.junit.jupiter.api.extension.ExtensionContext)">beforeEach</a></span>&#8203;(org.junit.jupiter.api.extension.ExtensionContext&nbsp;context)</code></th>
+<td class="colLast">&nbsp;</td>
+</tr>
+<tr id="i4" class="altColor">
 <td class="colFirst"><code><a href="ExecutorExtension.html" title="type parameter in ExecutorExtension">E</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#executor()">executor</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Returns <a href="Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> created on the last call to <a href="#beforeEach(org.junit.jupiter.api.extension.ExtensionContext)"><code>beforeEach(ExtensionContext)</code></a> ()}.</div>
 </td>
 </tr>
-<tr id="i3" class="rowColor">
+<tr id="i5" class="rowColor">
+<td class="colFirst"><code><a href="ExecutorExtension.html" title="class in io.servicetalk.concurrent.api">ExecutorExtension</a>&lt;<a href="ExecutorExtension.html" title="type parameter in ExecutorExtension">E</a>&gt;</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#setClassLevel(boolean)">setClassLevel</a></span>&#8203;(boolean&nbsp;classLevel)</code></th>
+<td class="colLast">
+<div class="block">Set to true if the extension is being shared among all tests in a class.</div>
+</td>
+</tr>
+<tr id="i6" class="altColor">
 <td class="colFirst"><code>static <a href="ExecutorExtension.html" title="class in io.servicetalk.concurrent.api">ExecutorExtension</a>&lt;<a href="Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#withCachedExecutor()">withCachedExecutor</a></span>()</code></th>
 <td class="colLast">
 <div class="block">Create an <a href="ExecutorExtension.html" title="class in io.servicetalk.concurrent.api"><code>ExecutorExtension</code></a> with a default executor.</div>
 </td>
 </tr>
-<tr id="i4" class="altColor">
+<tr id="i7" class="rowColor">
 <td class="colFirst"><code>static <a href="ExecutorExtension.html" title="class in io.servicetalk.concurrent.api">ExecutorExtension</a>&lt;<a href="Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#withCachedExecutor(java.lang.String)">withCachedExecutor</a></span>&#8203;(java.lang.String&nbsp;namePrefix)</code></th>
 <td class="colLast">
@@ -194,14 +215,14 @@ implements org.junit.jupiter.api.extension.BeforeEachCallback, org.junit.jupiter
  with <code>namePrefix</code>.</div>
 </td>
 </tr>
-<tr id="i5" class="rowColor">
-<td class="colFirst"><code>static <a href="ExecutorExtension.html" title="class in io.servicetalk.concurrent.api">ExecutorExtension</a>&lt;<a href="Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&gt;</code></td>
-<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#withExecutor(java.util.function.Supplier)">withExecutor</a></span>&#8203;(java.util.function.Supplier&lt;<a href="Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&gt;&nbsp;executorSupplier)</code></th>
+<tr id="i8" class="altColor">
+<td class="colFirst"><code>static &lt;E extends <a href="Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&gt;<br><a href="ExecutorExtension.html" title="class in io.servicetalk.concurrent.api">ExecutorExtension</a>&lt;E&gt;</code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#withExecutor(java.util.function.Supplier)">withExecutor</a></span>&#8203;(java.util.function.Supplier&lt;E&gt;&nbsp;executorSupplier)</code></th>
 <td class="colLast">
 <div class="block">Create an <a href="ExecutorExtension.html" title="class in io.servicetalk.concurrent.api"><code>ExecutorExtension</code></a> with the specified <code>executor</code>.</div>
 </td>
 </tr>
-<tr id="i6" class="altColor">
+<tr id="i9" class="rowColor">
 <td class="colFirst"><code>static <a href="ExecutorExtension.html" title="class in io.servicetalk.concurrent.api">ExecutorExtension</a>&lt;<a href="TestExecutor.html" title="class in io.servicetalk.concurrent.api">TestExecutor</a>&gt;</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#withTestExecutor()">withTestExecutor</a></span>()</code></th>
 <td class="colLast">
@@ -255,7 +276,10 @@ implements org.junit.jupiter.api.extension.BeforeEachCallback, org.junit.jupiter
 <pre class="methodSignature">public static&nbsp;<a href="ExecutorExtension.html" title="class in io.servicetalk.concurrent.api">ExecutorExtension</a>&lt;<a href="TestExecutor.html" title="class in io.servicetalk.concurrent.api">TestExecutor</a>&gt;&nbsp;withTestExecutor()</pre>
 <div class="block">Create an <a href="ExecutorExtension.html" title="class in io.servicetalk.concurrent.api"><code>ExecutorExtension</code></a> with a <a href="TestExecutor.html" title="class in io.servicetalk.concurrent.api"><code>TestExecutor</code></a>.
  <p>
- <a href="#executor()"><code>executor()</code></a> will return the <a href="TestExecutor.html" title="class in io.servicetalk.concurrent.api"><code>TestExecutor</code></a> to allow controlling the executor in tests.</div>
+ <a href="#executor()"><code>executor()</code></a> will return the <a href="TestExecutor.html" title="class in io.servicetalk.concurrent.api"><code>TestExecutor</code></a> to allow controlling the executor in tests.
+ <p>
+ The <a href="TestExecutor.html" title="class in io.servicetalk.concurrent.api"><code>TestExecutor</code></a> is designed to be used for a single test and should not be shared. Specifically, it is
+ generally incompatible with <a href="#setClassLevel(boolean)"><code>setClassLevel(true)</code></a>.</div>
 <dl>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd>a new <a href="ExecutorExtension.html" title="class in io.servicetalk.concurrent.api"><code>ExecutorExtension</code></a>.</dd>
@@ -268,7 +292,7 @@ implements org.junit.jupiter.api.extension.BeforeEachCallback, org.junit.jupiter
 <ul class="blockList">
 <li class="blockList">
 <h4>withExecutor</h4>
-<pre class="methodSignature">public static&nbsp;<a href="ExecutorExtension.html" title="class in io.servicetalk.concurrent.api">ExecutorExtension</a>&lt;<a href="Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&gt;&nbsp;withExecutor&#8203;(java.util.function.Supplier&lt;<a href="Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&gt;&nbsp;executorSupplier)</pre>
+<pre class="methodSignature">public static&nbsp;&lt;E extends <a href="Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&gt;&nbsp;<a href="ExecutorExtension.html" title="class in io.servicetalk.concurrent.api">ExecutorExtension</a>&lt;E&gt;&nbsp;withExecutor&#8203;(java.util.function.Supplier&lt;E&gt;&nbsp;executorSupplier)</pre>
 <div class="block">Create an <a href="ExecutorExtension.html" title="class in io.servicetalk.concurrent.api"><code>ExecutorExtension</code></a> with the specified <code>executor</code>.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
@@ -311,6 +335,41 @@ implements org.junit.jupiter.api.extension.BeforeEachCallback, org.junit.jupiter
 </dl>
 </li>
 </ul>
+<a id="setClassLevel(boolean)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>setClassLevel</h4>
+<pre class="methodSignature">public&nbsp;<a href="ExecutorExtension.html" title="class in io.servicetalk.concurrent.api">ExecutorExtension</a>&lt;<a href="ExecutorExtension.html" title="type parameter in ExecutorExtension">E</a>&gt;&nbsp;setClassLevel&#8203;(boolean&nbsp;classLevel)</pre>
+<div class="block">Set to true if the extension is being shared among all tests in a class.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>classLevel</code> - true if extension is shared between tests within test class otherwise false to create a new
+ instance for each test.</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd>this</dd>
+</dl>
+</li>
+</ul>
+<a id="afterEach(org.junit.jupiter.api.extension.ExtensionContext)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>afterEach</h4>
+<pre class="methodSignature">public&nbsp;void&nbsp;afterEach&#8203;(org.junit.jupiter.api.extension.ExtensionContext&nbsp;context)
+               throws java.util.concurrent.ExecutionException,
+                      java.lang.InterruptedException</pre>
+<dl>
+<dt><span class="overrideSpecifyLabel">Specified by:</span></dt>
+<dd><code>afterEach</code>&nbsp;in interface&nbsp;<code>org.junit.jupiter.api.extension.AfterEachCallback</code></dd>
+<dt><span class="throwsLabel">Throws:</span></dt>
+<dd><code>java.util.concurrent.ExecutionException</code></dd>
+<dd><code>java.lang.InterruptedException</code></dd>
+</dl>
+</li>
+</ul>
 <a id="beforeEach(org.junit.jupiter.api.extension.ExtensionContext)">
 <!--   -->
 </a>
@@ -324,21 +383,34 @@ implements org.junit.jupiter.api.extension.BeforeEachCallback, org.junit.jupiter
 </dl>
 </li>
 </ul>
-<a id="afterEach(org.junit.jupiter.api.extension.ExtensionContext)">
+<a id="afterAll(org.junit.jupiter.api.extension.ExtensionContext)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>afterAll</h4>
+<pre class="methodSignature">public&nbsp;void&nbsp;afterAll&#8203;(org.junit.jupiter.api.extension.ExtensionContext&nbsp;context)
+              throws java.util.concurrent.ExecutionException,
+                     java.lang.InterruptedException</pre>
+<dl>
+<dt><span class="overrideSpecifyLabel">Specified by:</span></dt>
+<dd><code>afterAll</code>&nbsp;in interface&nbsp;<code>org.junit.jupiter.api.extension.AfterAllCallback</code></dd>
+<dt><span class="throwsLabel">Throws:</span></dt>
+<dd><code>java.util.concurrent.ExecutionException</code></dd>
+<dd><code>java.lang.InterruptedException</code></dd>
+</dl>
+</li>
+</ul>
+<a id="beforeAll(org.junit.jupiter.api.extension.ExtensionContext)">
 <!--   -->
 </a>
 <ul class="blockListLast">
 <li class="blockList">
-<h4>afterEach</h4>
-<pre class="methodSignature">public&nbsp;void&nbsp;afterEach&#8203;(org.junit.jupiter.api.extension.ExtensionContext&nbsp;context)
-               throws java.util.concurrent.ExecutionException,
-                      java.lang.InterruptedException</pre>
+<h4>beforeAll</h4>
+<pre class="methodSignature">public&nbsp;void&nbsp;beforeAll&#8203;(org.junit.jupiter.api.extension.ExtensionContext&nbsp;context)</pre>
 <dl>
 <dt><span class="overrideSpecifyLabel">Specified by:</span></dt>
-<dd><code>afterEach</code>&nbsp;in interface&nbsp;<code>org.junit.jupiter.api.extension.AfterEachCallback</code></dd>
-<dt><span class="throwsLabel">Throws:</span></dt>
-<dd><code>java.util.concurrent.ExecutionException</code></dd>
-<dd><code>java.lang.InterruptedException</code></dd>
+<dd><code>beforeAll</code>&nbsp;in interface&nbsp;<code>org.junit.jupiter.api.extension.BeforeAllCallback</code></dd>
 </dl>
 </li>
 </ul>

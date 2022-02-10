@@ -852,6 +852,8 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/encoding/api/EmptyBufferDecoderGroup.html#advertisedMessageEncoding()">advertisedMessageEncoding()</a></span> - Method in class io.servicetalk.encoding.api.<a href="io/servicetalk/encoding/api/EmptyBufferDecoderGroup.html" title="class in io.servicetalk.encoding.api">EmptyBufferDecoderGroup</a></dt>
 <dd>&nbsp;</dd>
+<dt><span class="memberNameLink"><a href="io/servicetalk/concurrent/api/ExecutorExtension.html#afterAll(org.junit.jupiter.api.extension.ExtensionContext)">afterAll(ExtensionContext)</a></span> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/ExecutorExtension.html" title="class in io.servicetalk.concurrent.api">ExecutorExtension</a></dt>
+<dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/transport/netty/internal/ExecutionContextExtension.html#afterAll(org.junit.jupiter.api.extension.ExtensionContext)">afterAll(ExtensionContext)</a></span> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/ExecutionContextExtension.html" title="class in io.servicetalk.transport.netty.internal">ExecutionContextExtension</a></dt>
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/concurrent/api/Completable.html#afterCancel(java.lang.Runnable)">afterCancel(Runnable)</a></span> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></dt>
@@ -1695,7 +1697,9 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/transport/netty/internal/NettyIoExecutor.html#asExecutor()">asExecutor()</a></span> - Method in interface io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NettyIoExecutor.html" title="interface in io.servicetalk.transport.netty.internal">NettyIoExecutor</a></dt>
 <dd>
-<div class="block">Get an <a href="io/servicetalk/concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> which will use an <a href="io/servicetalk/transport/api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a> thread for execution.</div>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">IoExecutor now implements <a href="io/servicetalk/concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> so this method is redundant.</div>
+</div>
 </dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/buffer/api/Buffer.html#asInputStream(io.servicetalk.buffer.api.Buffer)">asInputStream(Buffer)</a></span> - Static method in interface io.servicetalk.buffer.api.<a href="io/servicetalk/buffer/api/Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></dt>
 <dd>
@@ -2161,6 +2165,8 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <dd>
 <div class="block">Configure batching of spans before sending it to the zipkin collector.</div>
 </dd>
+<dt><span class="memberNameLink"><a href="io/servicetalk/concurrent/api/ExecutorExtension.html#beforeAll(org.junit.jupiter.api.extension.ExtensionContext)">beforeAll(ExtensionContext)</a></span> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/ExecutorExtension.html" title="class in io.servicetalk.concurrent.api">ExecutorExtension</a></dt>
+<dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/transport/netty/internal/ExecutionContextExtension.html#beforeAll(org.junit.jupiter.api.extension.ExtensionContext)">beforeAll(ExtensionContext)</a></span> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/ExecutionContextExtension.html" title="class in io.servicetalk.transport.netty.internal">ExecutionContextExtension</a></dt>
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/concurrent/api/Completable.html#beforeCancel(java.lang.Runnable)">beforeCancel(Runnable)</a></span> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></dt>
@@ -3072,6 +3078,14 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <dd>
 <div class="block">Calculate a hash code of a byte array assuming ASCII character encoding.</div>
 </dd>
+<dt><span class="memberNameLink"><a href="io/servicetalk/concurrent/api/Publisher.html#cast(java.lang.Class)">cast(Class&lt;R&gt;)</a></span> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a></dt>
+<dd>
+<div class="block">Cast this <a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> from type <a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> to type <a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>.</div>
+</dd>
+<dt><span class="memberNameLink"><a href="io/servicetalk/concurrent/api/Single.html#cast(java.lang.Class)">cast(Class&lt;R&gt;)</a></span> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a></dt>
+<dd>
+<div class="block">Cast this <a href="io/servicetalk/concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> from type <a href="io/servicetalk/concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> to type <a href="io/servicetalk/concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>.</div>
+</dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/http/api/StatelessTrailersTransformer.html#catchPayloadFailure(java.lang.Void,java.lang.Throwable,io.servicetalk.http.api.HttpHeaders)">catchPayloadFailure(Void, Throwable, HttpHeaders)</a></span> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/StatelessTrailersTransformer.html" title="class in io.servicetalk.http.api">StatelessTrailersTransformer</a></dt>
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/http/api/TrailersTransformer.html#catchPayloadFailure(State,java.lang.Throwable,io.servicetalk.http.api.HttpHeaders)">catchPayloadFailure(State, Throwable, HttpHeaders)</a></span> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/TrailersTransformer.html" title="interface in io.servicetalk.http.api">TrailersTransformer</a></dt>
@@ -3683,6 +3697,8 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <div class="block">Combine two potential <code>Throwable</code>s into one.</div>
 </dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/client/api/partition/PartitionAttributes.Key.html#compareTo(io.servicetalk.client.api.partition.PartitionAttributes.Key)">compareTo(PartitionAttributes.Key)</a></span> - Method in class io.servicetalk.client.api.partition.<a href="io/servicetalk/client/api/partition/PartitionAttributes.Key.html" title="class in io.servicetalk.client.api.partition">PartitionAttributes.Key</a></dt>
+<dd>&nbsp;</dd>
+<dt><span class="memberNameLink"><a href="io/servicetalk/http/api/HttpProtocolVersion.html#compareTo(io.servicetalk.http.api.HttpProtocolVersion)">compareTo(HttpProtocolVersion)</a></span> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpProtocolVersion.html" title="class in io.servicetalk.http.api">HttpProtocolVersion</a></dt>
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/http/api/HttpRequestMethod.html#compareTo(io.servicetalk.http.api.HttpRequestMethod)">compareTo(HttpRequestMethod)</a></span> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpRequestMethod.html" title="class in io.servicetalk.http.api">HttpRequestMethod</a></dt>
 <dd>&nbsp;</dd>
@@ -4481,6 +4497,8 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <dd>
 <div class="block">Create a new <a href="io/servicetalk/http/api/HttpResponseStatus.html#CONTINUE"><code>HttpResponseStatus.CONTINUE</code></a> response.</div>
 </dd>
+<dt><span class="memberNameLink"><a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html#continueWriting()">continueWriting()</a></span> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal">DefaultNettyConnection</a></dt>
+<dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/http/api/HttpHeaderNames.html#COOKIE">COOKIE</a></span> - Static variable in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpHeaderNames.html" title="class in io.servicetalk.http.api">HttpHeaderNames</a></dt>
 <dd>
 <div class="block"><code>"cookie"</code></div>
@@ -4605,16 +4623,22 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/opentracing/http/TracingHttpRequesterFilter.html#create(io.servicetalk.http.api.FilterableStreamingHttpConnection)">create(FilterableStreamingHttpConnection)</a></span> - Method in class io.servicetalk.opentracing.http.<a href="io/servicetalk/opentracing/http/TracingHttpRequesterFilter.html" title="class in io.servicetalk.opentracing.http">TracingHttpRequesterFilter</a></dt>
 <dd>&nbsp;</dd>
+<dt><span class="memberNameLink"><a href="io/servicetalk/grpc/api/GrpcExceptionMapperServiceFilter.html#create(io.servicetalk.http.api.StreamingHttpService)">create(StreamingHttpService)</a></span> - Method in class io.servicetalk.grpc.api.<a href="io/servicetalk/grpc/api/GrpcExceptionMapperServiceFilter.html" title="class in io.servicetalk.grpc.api">GrpcExceptionMapperServiceFilter</a></dt>
+<dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/http/api/ContentCodingHttpServiceFilter.html#create(io.servicetalk.http.api.StreamingHttpService)">create(StreamingHttpService)</a></span> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/ContentCodingHttpServiceFilter.html" title="class in io.servicetalk.http.api">ContentCodingHttpServiceFilter</a></dt>
 <dd>
 <div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span></div>
 &nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/http/api/ContentEncodingHttpServiceFilter.html#create(io.servicetalk.http.api.StreamingHttpService)">create(StreamingHttpService)</a></span> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/ContentEncodingHttpServiceFilter.html" title="class in io.servicetalk.http.api">ContentEncodingHttpServiceFilter</a></dt>
 <dd>&nbsp;</dd>
+<dt><span class="memberNameLink"><a href="io/servicetalk/http/api/HttpExceptionMapperServiceFilter.html#create(io.servicetalk.http.api.StreamingHttpService)">create(StreamingHttpService)</a></span> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpExceptionMapperServiceFilter.html" title="class in io.servicetalk.http.api">HttpExceptionMapperServiceFilter</a></dt>
+<dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/http/api/StreamingHttpServiceFilterFactory.html#create(io.servicetalk.http.api.StreamingHttpService)">create(StreamingHttpService)</a></span> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/StreamingHttpServiceFilterFactory.html" title="interface in io.servicetalk.http.api">StreamingHttpServiceFilterFactory</a></dt>
 <dd>
 <div class="block">Create a <a href="io/servicetalk/http/api/StreamingHttpServiceFilter.html" title="class in io.servicetalk.http.api"><code>StreamingHttpServiceFilter</code></a> using the provided <a href="io/servicetalk/http/api/StreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpService</code></a>.</div>
 </dd>
+<dt><span class="memberNameLink"><a href="io/servicetalk/http/netty/HttpLifecycleObserverServiceFilter.html#create(io.servicetalk.http.api.StreamingHttpService)">create(StreamingHttpService)</a></span> - Method in class io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/HttpLifecycleObserverServiceFilter.html" title="class in io.servicetalk.http.netty">HttpLifecycleObserverServiceFilter</a></dt>
+<dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/http/utils/auth/BasicAuthHttpServiceFilter.html#create(io.servicetalk.http.api.StreamingHttpService)">create(StreamingHttpService)</a></span> - Method in class io.servicetalk.http.utils.auth.<a href="io/servicetalk/http/utils/auth/BasicAuthHttpServiceFilter.html" title="class in io.servicetalk.http.utils.auth">BasicAuthHttpServiceFilter</a></dt>
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/http/utils/RequestTargetDecoderHttpServiceFilter.html#create(io.servicetalk.http.api.StreamingHttpService)">create(StreamingHttpService)</a></span> - Method in class io.servicetalk.http.utils.<a href="io/servicetalk/http/utils/RequestTargetDecoderHttpServiceFilter.html" title="class in io.servicetalk.http.utils">RequestTargetDecoderHttpServiceFilter</a></dt>
@@ -5041,6 +5065,14 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <dt><a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal"><span class="typeNameLink">DefaultNettyConnection</span></a>&lt;<a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html" title="type parameter in DefaultNettyConnection">Read</a>,&#8203;<a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html" title="type parameter in DefaultNettyConnection">Write</a>&gt; - Class in <a href="io/servicetalk/transport/netty/internal/package-summary.html">io.servicetalk.transport.netty.internal</a></dt>
 <dd>
 <div class="block">Implementation of <a href="io/servicetalk/transport/netty/internal/NettyConnection.html" title="interface in io.servicetalk.transport.netty.internal"><code>NettyConnection</code></a> backed by a netty <code>Channel</code>.</div>
+</dd>
+<dt><a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.CancelWriteUserEvent.html" title="class in io.servicetalk.transport.netty.internal"><span class="typeNameLink">DefaultNettyConnection.CancelWriteUserEvent</span></a> - Class in <a href="io/servicetalk/transport/netty/internal/package-summary.html">io.servicetalk.transport.netty.internal</a></dt>
+<dd>
+<div class="block">Netty UserEvent to signal cancellation of the write stream.</div>
+</dd>
+<dt><a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.ContinueUserEvent.html" title="class in io.servicetalk.transport.netty.internal"><span class="typeNameLink">DefaultNettyConnection.ContinueUserEvent</span></a> - Class in <a href="io/servicetalk/transport/netty/internal/package-summary.html">io.servicetalk.transport.netty.internal</a></dt>
+<dd>
+<div class="block">Netty UserEvent to signal continuation.</div>
 </dd>
 <dt><a href="io/servicetalk/client/api/internal/partition/DefaultPartitionAttributesBuilder.html" title="class in io.servicetalk.client.api.internal.partition"><span class="typeNameLink">DefaultPartitionAttributesBuilder</span></a> - Class in <a href="io/servicetalk/client/api/internal/partition/package-summary.html">io.servicetalk.client.api.internal.partition</a></dt>
 <dd>
@@ -5730,6 +5762,10 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <div class="block">Subscribe to the service discovery system for changes in the available <a href="io/servicetalk/client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> associated with
  <code>address</code>.</div>
 </dd>
+<dt><span class="memberNameLink"><a href="io/servicetalk/concurrent/api/Publisher.html#distinct()">distinct()</a></span> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a></dt>
+<dd>
+<div class="block">Only emits distinct signals observed by this <a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>.</div>
+</dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/dns/discovery/netty/DefaultDnsServiceDiscovererBuilder.html#dnsResolverAddressTypes(io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes)">dnsResolverAddressTypes(DnsResolverAddressTypes)</a></span> - Method in class io.servicetalk.dns.discovery.netty.<a href="io/servicetalk/dns/discovery/netty/DefaultDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty">DefaultDnsServiceDiscovererBuilder</a></dt>
 <dd>
 <div class="block">Sets the list of the protocol families of the address resolved.</div>
@@ -6225,6 +6261,8 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <dd>
 <div class="block">Executes the passed <code>task</code> as soon as possible.</div>
 </dd>
+<dt><span class="memberNameLink"><a href="io/servicetalk/transport/api/IoExecutor.html#execute(java.lang.Runnable)">execute(Runnable)</a></span> - Method in interface io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/IoExecutor.html" title="interface in io.servicetalk.transport.api">IoExecutor</a></dt>
+<dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/concurrent/api/TestExecutor.html#executeNextScheduledTask()">executeNextScheduledTask()</a></span> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/TestExecutor.html" title="class in io.servicetalk.concurrent.api">TestExecutor</a></dt>
 <dd>
 <div class="block">Execute the next scheduled (<code>schedule</code>/<code>timer</code> methods) task whose time has come.</div>
@@ -6329,7 +6367,7 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </dd>
 <dt><a href="io/servicetalk/transport/netty/internal/ExecutionContextExtension.html" title="class in io.servicetalk.transport.netty.internal"><span class="typeNameLink">ExecutionContextExtension</span></a> - Class in <a href="io/servicetalk/transport/netty/internal/package-summary.html">io.servicetalk.transport.netty.internal</a></dt>
 <dd>
-<div class="block">Test helper that creates and disposes an <a href="io/servicetalk/transport/api/ExecutionContext.html" title="interface in io.servicetalk.transport.api"><code>ExecutionContext</code></a> for your test case or suite.</div>
+<div class="block">An <code>Extension</code> that creates and disposes an <a href="io/servicetalk/transport/api/ExecutionContext.html" title="interface in io.servicetalk.transport.api"><code>ExecutionContext</code></a> for your test case or suite.</div>
 </dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/transport/netty/internal/ExecutionContextExtension.html#%3Cinit%3E(java.util.function.Supplier,java.util.function.Supplier,java.util.function.Supplier)">ExecutionContextExtension(Supplier&lt;BufferAllocator&gt;, Supplier&lt;IoExecutor&gt;, Supplier&lt;Executor&gt;)</a></span> - Constructor for class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/ExecutionContextExtension.html" title="class in io.servicetalk.transport.netty.internal">ExecutionContextExtension</a></dt>
 <dd>&nbsp;</dd>
@@ -6447,7 +6485,7 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </dd>
 <dt><a href="io/servicetalk/concurrent/api/ExecutorExtension.html" title="class in io.servicetalk.concurrent.api"><span class="typeNameLink">ExecutorExtension</span></a>&lt;<a href="io/servicetalk/concurrent/api/ExecutorExtension.html" title="type parameter in ExecutorExtension">E</a> extends <a href="io/servicetalk/concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&gt; - Class in <a href="io/servicetalk/concurrent/api/package-summary.html">io.servicetalk.concurrent.api</a></dt>
 <dd>
-<div class="block">An <code>Extension</code> wrapper for an <a href="io/servicetalk/concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a>.</div>
+<div class="block">An <code>Extension</code> wrapper that creates and disposes an <a href="io/servicetalk/concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> for your test case or suite.</div>
 </dd>
 <dt><a href="io/servicetalk/concurrent/api/Executors.html" title="class in io.servicetalk.concurrent.api"><span class="typeNameLink">Executors</span></a> - Class in <a href="io/servicetalk/concurrent/api/package-summary.html">io.servicetalk.concurrent.api</a></dt>
 <dd>
@@ -6472,6 +6510,11 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <dt><span class="memberNameLink"><a href="io/servicetalk/http/api/StreamingHttpResponseFactory.html#expectationFailed()">expectationFailed()</a></span> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/StreamingHttpResponseFactory.html" title="interface in io.servicetalk.http.api">StreamingHttpResponseFactory</a></dt>
 <dd>
 <div class="block">Create a new <a href="io/servicetalk/http/api/HttpResponseStatus.html#EXPECTATION_FAILED"><code>HttpResponseStatus.EXPECTATION_FAILED</code></a> response.</div>
+</dd>
+<dt><a href="io/servicetalk/http/netty/ExpectationFailedException.html" title="class in io.servicetalk.http.netty"><span class="typeNameLink">ExpectationFailedException</span></a> - Exception in <a href="io/servicetalk/http/netty/package-summary.html">io.servicetalk.http.netty</a></dt>
+<dd>
+<div class="block">An exception that represents <a href="https://datatracker.ietf.org/doc/html/rfc7231#section-6.5.14">
+     417 Expectation Failed</a> response status code.</div>
 </dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/concurrent/api/test/CompletableFirstStep.html#expectCancellable()">expectCancellable()</a></span> - Method in interface io.servicetalk.concurrent.api.test.<a href="io/servicetalk/concurrent/api/test/CompletableFirstStep.html" title="interface in io.servicetalk.concurrent.api.test">CompletableFirstStep</a></dt>
 <dd>
@@ -8422,6 +8465,10 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <dd>
 <div class="block">A factory to create <a href="https://www.grpc.io">gRPC</a> clients.</div>
 </dd>
+<dt><a href="io/servicetalk/grpc/api/GrpcExceptionMapperServiceFilter.html" title="class in io.servicetalk.grpc.api"><span class="typeNameLink">GrpcExceptionMapperServiceFilter</span></a> - Class in <a href="io/servicetalk/grpc/api/package-summary.html">io.servicetalk.grpc.api</a></dt>
+<dd>
+<div class="block">Filter that maps known <code>Throwable</code> subtypes into an gRPC response with an appropriate <a href="io/servicetalk/grpc/api/GrpcStatusCode.html" title="enum in io.servicetalk.grpc.api"><code>GrpcStatusCode</code></a>.</div>
+</dd>
 <dt><a href="io/servicetalk/grpc/api/GrpcExecutionContext.html" title="interface in io.servicetalk.grpc.api"><span class="typeNameLink">GrpcExecutionContext</span></a> - Interface in <a href="io/servicetalk/grpc/api/package-summary.html">io.servicetalk.grpc.api</a></dt>
 <dd>
 <div class="block">An extension of <a href="io/servicetalk/transport/api/ExecutionContext.html" title="interface in io.servicetalk.transport.api"><code>ExecutionContext</code></a> for <a href="https://www.grpc.io">gRPC</a>.</div>
@@ -9175,6 +9222,11 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <dd>
 <div class="block">A key which identifies a configuration setting for a connection.</div>
 </dd>
+<dt><a href="io/servicetalk/http/api/HttpExceptionMapperServiceFilter.html" title="class in io.servicetalk.http.api"><span class="typeNameLink">HttpExceptionMapperServiceFilter</span></a> - Class in <a href="io/servicetalk/http/api/package-summary.html">io.servicetalk.http.api</a></dt>
+<dd>
+<div class="block">Filter that maps known <code>Exception</code> subtypes into an HTTP response with an appropriate
+ <a href="io/servicetalk/http/api/HttpResponseStatus.html" title="class in io.servicetalk.http.api"><code>HttpResponseStatus</code></a>.</div>
+</dd>
 <dt><a href="io/servicetalk/http/api/HttpExecutionContext.html" title="interface in io.servicetalk.http.api"><span class="typeNameLink">HttpExecutionContext</span></a> - Interface in <a href="io/servicetalk/http/api/package-summary.html">io.servicetalk.http.api</a></dt>
 <dd>
 <div class="block">An extension of <a href="io/servicetalk/transport/api/ExecutionContext.html" title="interface in io.servicetalk.transport.api"><code>ExecutionContext</code></a> for HTTP.</div>
@@ -9247,6 +9299,10 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <dt><a href="io/servicetalk/http/utils/HttpLifecycleObservers.html" title="class in io.servicetalk.http.utils"><span class="typeNameLink">HttpLifecycleObservers</span></a> - Class in <a href="io/servicetalk/http/utils/package-summary.html">io.servicetalk.http.utils</a></dt>
 <dd>
 <div class="block">A factory to create different <a href="io/servicetalk/http/api/HttpLifecycleObserver.html" title="interface in io.servicetalk.http.api"><code>HttpLifecycleObserver</code></a>s.</div>
+</dd>
+<dt><a href="io/servicetalk/http/netty/HttpLifecycleObserverServiceFilter.html" title="class in io.servicetalk.http.netty"><span class="typeNameLink">HttpLifecycleObserverServiceFilter</span></a> - Class in <a href="io/servicetalk/http/netty/package-summary.html">io.servicetalk.http.netty</a></dt>
+<dd>
+<div class="block">An HTTP service filter that tracks events during request/response lifecycle.</div>
 </dd>
 <dt><a href="io/servicetalk/http/api/HttpLoadBalancerFactory.html" title="interface in io.servicetalk.http.api"><span class="typeNameLink">HttpLoadBalancerFactory</span></a>&lt;<a href="io/servicetalk/http/api/HttpLoadBalancerFactory.html" title="type parameter in HttpLoadBalancerFactory">ResolvedAddress</a>&gt; - Interface in <a href="io/servicetalk/http/api/package-summary.html">io.servicetalk.http.api</a></dt>
 <dd>
@@ -9356,7 +9412,9 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <div class="block">An HTTP response.</div>
 </dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.HttpResponseException.html#%3Cinit%3E(java.lang.String,io.servicetalk.http.api.HttpResponseMetaData)">HttpResponseException(String, HttpResponseMetaData)</a></span> - Constructor for exception io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.HttpResponseException.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.HttpResponseException</a></dt>
-<dd>&nbsp;</dd>
+<dd>
+<div class="block">Create a new instance.</div>
+</dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/http/api/BlockingHttpRequester.html#httpResponseFactory()">httpResponseFactory()</a></span> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/BlockingHttpRequester.html" title="interface in io.servicetalk.http.api">BlockingHttpRequester</a></dt>
 <dd>
 <div class="block">Get a <a href="io/servicetalk/http/api/HttpResponseFactory.html" title="interface in io.servicetalk.http.api"><code>HttpResponseFactory</code></a>.</div>
@@ -9727,12 +9785,12 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/transport/netty/internal/WireLoggingInitializer.html#init(io.netty.channel.Channel)">init(Channel)</a></span> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/WireLoggingInitializer.html" title="class in io.servicetalk.transport.netty.internal">WireLoggingInitializer</a></dt>
 <dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html#initChannel(io.netty.channel.Channel,io.servicetalk.buffer.api.BufferAllocator,io.servicetalk.concurrent.api.Executor,io.servicetalk.transport.api.IoExecutor,io.servicetalk.transport.netty.internal.CloseHandler,io.servicetalk.transport.netty.internal.FlushStrategy,java.lang.Long,io.servicetalk.transport.netty.internal.ChannelInitializer,io.servicetalk.transport.api.ExecutionStrategy,io.servicetalk.transport.api.ConnectionInfo.Protocol,io.servicetalk.transport.api.ConnectionObserver,boolean)">initChannel(Channel, BufferAllocator, Executor, IoExecutor, CloseHandler, FlushStrategy, Long, ChannelInitializer, ExecutionStrategy, ConnectionInfo.Protocol, ConnectionObserver, boolean)</a></span> - Static method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal">DefaultNettyConnection</a></dt>
+<dt><span class="memberNameLink"><a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html#initChannel(io.netty.channel.Channel,io.servicetalk.buffer.api.BufferAllocator,io.servicetalk.concurrent.api.Executor,io.servicetalk.transport.api.IoExecutor,io.servicetalk.transport.netty.internal.CloseHandler,io.servicetalk.transport.netty.internal.FlushStrategy,java.lang.Long,io.servicetalk.transport.netty.internal.ChannelInitializer,io.servicetalk.transport.api.ExecutionStrategy,io.servicetalk.transport.api.ConnectionInfo.Protocol,io.servicetalk.transport.api.ConnectionObserver,boolean,java.util.function.Predicate)">initChannel(Channel, BufferAllocator, Executor, IoExecutor, CloseHandler, FlushStrategy, Long, ChannelInitializer, ExecutionStrategy, ConnectionInfo.Protocol, ConnectionObserver, boolean, Predicate&lt;Object&gt;)</a></span> - Static method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal">DefaultNettyConnection</a></dt>
 <dd>
 <div class="block">Given a <code>Channel</code> this will initialize the <code>ChannelPipeline</code> and create a
  <a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal"><code>DefaultNettyConnection</code></a>.</div>
 </dd>
-<dt><span class="memberNameLink"><a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html#initChildChannel(io.netty.channel.Channel,io.servicetalk.transport.api.ExecutionContext,io.servicetalk.transport.netty.internal.CloseHandler,io.servicetalk.transport.netty.internal.FlushStrategy,java.lang.Long,io.servicetalk.transport.api.ConnectionInfo.Protocol,javax.net.ssl.SSLSession,io.netty.channel.ChannelConfig,io.servicetalk.transport.api.ConnectionObserver.StreamObserver,boolean,java.util.function.UnaryOperator)">initChildChannel(Channel, ExecutionContext&lt;?&gt;, CloseHandler, FlushStrategy, Long, ConnectionInfo.Protocol, SSLSession, ChannelConfig, ConnectionObserver.StreamObserver, boolean, UnaryOperator&lt;Throwable&gt;)</a></span> - Static method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal">DefaultNettyConnection</a></dt>
+<dt><span class="memberNameLink"><a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html#initChildChannel(io.netty.channel.Channel,io.servicetalk.transport.api.ExecutionContext,io.servicetalk.transport.netty.internal.CloseHandler,io.servicetalk.transport.netty.internal.FlushStrategy,java.lang.Long,io.servicetalk.transport.api.ConnectionInfo.Protocol,javax.net.ssl.SSLSession,io.netty.channel.ChannelConfig,io.servicetalk.transport.api.ConnectionObserver.StreamObserver,boolean,java.util.function.Predicate,java.util.function.UnaryOperator)">initChildChannel(Channel, ExecutionContext&lt;?&gt;, CloseHandler, FlushStrategy, Long, ConnectionInfo.Protocol, SSLSession, ChannelConfig, ConnectionObserver.StreamObserver, boolean, Predicate&lt;Object&gt;, UnaryOperator&lt;Throwable&gt;)</a></span> - Static method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal">DefaultNettyConnection</a></dt>
 <dd>
 <div class="block">Given a <code>Channel</code> this will initialize the <code>ChannelPipeline</code> just to create a
  <a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal"><code>DefaultNettyConnection</code></a>.</div>
@@ -9870,10 +9928,18 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/grpc/api/DefaultGrpcClientMetadata.html#INSTANCE">INSTANCE</a></span> - Static variable in class io.servicetalk.grpc.api.<a href="io/servicetalk/grpc/api/DefaultGrpcClientMetadata.html" title="class in io.servicetalk.grpc.api">DefaultGrpcClientMetadata</a></dt>
 <dd>&nbsp;</dd>
+<dt><span class="memberNameLink"><a href="io/servicetalk/grpc/api/GrpcExceptionMapperServiceFilter.html#INSTANCE">INSTANCE</a></span> - Static variable in class io.servicetalk.grpc.api.<a href="io/servicetalk/grpc/api/GrpcExceptionMapperServiceFilter.html" title="class in io.servicetalk.grpc.api">GrpcExceptionMapperServiceFilter</a></dt>
+<dd>
+<div class="block">Instance of <a href="io/servicetalk/grpc/api/GrpcExceptionMapperServiceFilter.html" title="class in io.servicetalk.grpc.api"><code>GrpcExceptionMapperServiceFilter</code></a>.</div>
+</dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/http/api/DefaultHttpHeadersFactory.html#INSTANCE">INSTANCE</a></span> - Static variable in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/DefaultHttpHeadersFactory.html" title="class in io.servicetalk.http.api">DefaultHttpHeadersFactory</a></dt>
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/http/api/EmptyHttpHeaders.html#INSTANCE">INSTANCE</a></span> - Static variable in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/EmptyHttpHeaders.html" title="class in io.servicetalk.http.api">EmptyHttpHeaders</a></dt>
 <dd>&nbsp;</dd>
+<dt><span class="memberNameLink"><a href="io/servicetalk/http/api/HttpExceptionMapperServiceFilter.html#INSTANCE">INSTANCE</a></span> - Static variable in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpExceptionMapperServiceFilter.html" title="class in io.servicetalk.http.api">HttpExceptionMapperServiceFilter</a></dt>
+<dd>
+<div class="block">Instance of <a href="io/servicetalk/http/api/HttpExceptionMapperServiceFilter.html" title="class in io.servicetalk.http.api"><code>HttpExceptionMapperServiceFilter</code></a>.</div>
+</dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/http/netty/H2HeadersFactory.html#INSTANCE">INSTANCE</a></span> - Static variable in class io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/H2HeadersFactory.html" title="class in io.servicetalk.http.netty">H2HeadersFactory</a></dt>
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/http/utils/EnforceSequentialModeRequesterFilter.html#INSTANCE">INSTANCE</a></span> - Static variable in class io.servicetalk.http.utils.<a href="io/servicetalk/http/utils/EnforceSequentialModeRequesterFilter.html" title="class in io.servicetalk.http.utils">EnforceSequentialModeRequesterFilter</a></dt>
@@ -9885,6 +9951,10 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <div class="block">Singleton instance.</div>
 </dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/transport/netty/internal/BufferHandler.html#INSTANCE">INSTANCE</a></span> - Static variable in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/BufferHandler.html" title="class in io.servicetalk.transport.netty.internal">BufferHandler</a></dt>
+<dd>&nbsp;</dd>
+<dt><span class="memberNameLink"><a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.CancelWriteUserEvent.html#INSTANCE">INSTANCE</a></span> - Static variable in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.CancelWriteUserEvent.html" title="class in io.servicetalk.transport.netty.internal">DefaultNettyConnection.CancelWriteUserEvent</a></dt>
+<dd>&nbsp;</dd>
+<dt><span class="memberNameLink"><a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.ContinueUserEvent.html#INSTANCE">INSTANCE</a></span> - Static variable in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.ContinueUserEvent.html" title="class in io.servicetalk.transport.netty.internal">DefaultNettyConnection.ContinueUserEvent</a></dt>
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/transport/netty/internal/NoopTransportObserver.html#INSTANCE">INSTANCE</a></span> - Static variable in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NoopTransportObserver.html" title="class in io.servicetalk.transport.netty.internal">NoopTransportObserver</a></dt>
 <dd>&nbsp;</dd>
@@ -10216,7 +10286,7 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </dd>
 <dt><a href="io/servicetalk/transport/api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><span class="typeNameLink">IoExecutor</span></a> - Interface in <a href="io/servicetalk/transport/api/package-summary.html">io.servicetalk.transport.api</a></dt>
 <dd>
-<div class="block"><code>Executor</code> that handles IO.</div>
+<div class="block"><a href="io/servicetalk/concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> that handles IO.</div>
 </dd>
 <dt><a href="io/servicetalk/transport/api/IoThreadFactory.html" title="interface in io.servicetalk.transport.api"><span class="typeNameLink">IoThreadFactory</span></a>&lt;<a href="io/servicetalk/transport/api/IoThreadFactory.html" title="type parameter in IoThreadFactory">T</a> extends java.lang.Thread &amp; <a href="io/servicetalk/transport/api/IoThreadFactory.IoThread.html" title="interface in io.servicetalk.transport.api">IoThreadFactory.IoThread</a>&gt; - Interface in <a href="io/servicetalk/transport/api/package-summary.html">io.servicetalk.transport.api</a></dt>
 <dd>
@@ -11468,7 +11538,11 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
  all involved <a href="io/servicetalk/concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a>s terminate.</div>
 </dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.HttpResponseException.html#message">message</a></span> - Variable in exception io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.HttpResponseException.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.HttpResponseException</a></dt>
-<dd>&nbsp;</dd>
+<dd>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <code>Throwable.getMessage()</code>.</div>
+</div>
+</dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/http/api/BlockingStreamingHttpRequest.html#messageBody()">messageBody()</a></span> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/BlockingStreamingHttpRequest.html" title="interface in io.servicetalk.http.api">BlockingStreamingHttpRequest</a></dt>
 <dd>
 <div class="block">Get the <a href="io/servicetalk/http/api/HttpMessageBodyIterable.html" title="interface in io.servicetalk.http.api"><code>HttpMessageBodyIterable</code></a> for this request.</div>
@@ -11537,7 +11611,15 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <div class="block">New instance.</div>
 </dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.HttpResponseException.html#metaData">metaData</a></span> - Variable in exception io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.HttpResponseException.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.HttpResponseException</a></dt>
-<dd>&nbsp;</dd>
+<dd>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.HttpResponseException.html#metaData()"><code>RetryingHttpRequesterFilter.HttpResponseException.metaData()</code></a>.</div>
+</div>
+</dd>
+<dt><span class="memberNameLink"><a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.HttpResponseException.html#metaData()">metaData()</a></span> - Method in exception io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.HttpResponseException.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.HttpResponseException</a></dt>
+<dd>
+<div class="block"><a href="io/servicetalk/http/api/HttpResponseMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpResponseMetaData</code></a> of the response that caused this exception.</div>
+</dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/http/api/HttpRequestMetaData.html#method()">method()</a></span> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a></dt>
 <dd>
 <div class="block">Returns the <a href="io/servicetalk/http/api/HttpRequestMethod.html" title="class in io.servicetalk.http.api"><code>HttpRequestMethod</code></a> of this <a href="io/servicetalk/http/api/StreamingHttpRequest.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpRequest</code></a>.</div>
@@ -11666,7 +11748,22 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <div class="block">Create a <a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> that subscribes a single time upstream but allows for multiple downstream
  <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a>s.</div>
 </dd>
+<dt><span class="memberNameLink"><a href="io/servicetalk/concurrent/api/Publisher.html#multicast(int,boolean)">multicast(int, boolean)</a></span> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a></dt>
+<dd>
+<div class="block">Create a <a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> that subscribes a single time upstream but allows for multiple downstream
+ <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a>s.</div>
+</dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/concurrent/api/Publisher.html#multicast(int,int)">multicast(int, int)</a></span> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a></dt>
+<dd>
+<div class="block">Create a <a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> that subscribes a single time upstream but allows for multiple downstream
+ <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a>s.</div>
+</dd>
+<dt><span class="memberNameLink"><a href="io/servicetalk/concurrent/api/Publisher.html#multicast(int,int,boolean)">multicast(int, int, boolean)</a></span> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a></dt>
+<dd>
+<div class="block">Create a <a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> that subscribes a single time upstream but allows for multiple downstream
+ <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a>s.</div>
+</dd>
+<dt><span class="memberNameLink"><a href="io/servicetalk/concurrent/api/Publisher.html#multicast(int,int,boolean,java.util.function.Function)">multicast(int, int, boolean, Function&lt;Throwable, Completable&gt;)</a></span> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a></dt>
 <dd>
 <div class="block">Create a <a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> that subscribes a single time upstream but allows for multiple downstream
  <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a>s.</div>
@@ -12440,7 +12537,10 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 </dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.BackOffPolicy.html#NO_RETRIES">NO_RETRIES</a></span> - Static variable in class io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.BackOffPolicy.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.BackOffPolicy</a></dt>
 <dd>
-<div class="block">Special <a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.BackOffPolicy.html" title="class in io.servicetalk.http.netty"><code>RetryingHttpRequesterFilter.BackOffPolicy</code></a> to signal no retries.</div>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">This will be removed in a future release of ST. Alternative offering here
+ <a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.BackOffPolicy.html#ofNoRetries()"><code>RetryingHttpRequesterFilter.BackOffPolicy.ofNoRetries()</code></a>.</div>
+</div>
 </dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/http/api/HttpHeaderValues.html#NO_STORE">NO_STORE</a></span> - Static variable in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpHeaderValues.html" title="class in io.servicetalk.http.api">HttpHeaderValues</a></dt>
 <dd>
@@ -12853,6 +12953,14 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <dt><span class="memberNameLink"><a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.BackOffPolicy.html#ofImmediate(int)">ofImmediate(int)</a></span> - Static method in class io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.BackOffPolicy.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.BackOffPolicy</a></dt>
 <dd>
 <div class="block">Creates a new <a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.BackOffPolicy.html" title="class in io.servicetalk.http.netty"><code>RetryingHttpRequesterFilter.BackOffPolicy</code></a> that retries failures instantly up-to provided max retries.</div>
+</dd>
+<dt><span class="memberNameLink"><a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.BackOffPolicy.html#ofNoRetries()">ofNoRetries()</a></span> - Static method in class io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.BackOffPolicy.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.BackOffPolicy</a></dt>
+<dd>
+<div class="block">Special <a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.BackOffPolicy.html" title="class in io.servicetalk.http.netty"><code>RetryingHttpRequesterFilter.BackOffPolicy</code></a> that signals that no retries will be attempted.</div>
+</dd>
+<dt><span class="memberNameLink"><a href="io/servicetalk/concurrent/api/Publisher.html#ofType(java.lang.Class)">ofType(Class&lt;R&gt;)</a></span> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a></dt>
+<dd>
+<div class="block">Filters items so that only non-<code>null</code> items of type <a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> are emitted by the return value.</div>
 </dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/http/api/AbstractHttpRequesterFilterTest.RequestHandler.html#ok()">ok()</a></span> - Static method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/AbstractHttpRequesterFilterTest.RequestHandler.html" title="interface in io.servicetalk.http.api">AbstractHttpRequesterFilterTest.RequestHandler</a></dt>
 <dd>
@@ -15603,6 +15711,8 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/client/api/TransportObserverConnectionFactoryFilter.html#requiredOffloads()">requiredOffloads()</a></span> - Method in class io.servicetalk.client.api.<a href="io/servicetalk/client/api/TransportObserverConnectionFactoryFilter.html" title="class in io.servicetalk.client.api">TransportObserverConnectionFactoryFilter</a></dt>
 <dd>&nbsp;</dd>
+<dt><span class="memberNameLink"><a href="io/servicetalk/grpc/api/GrpcExceptionMapperServiceFilter.html#requiredOffloads()">requiredOffloads()</a></span> - Method in class io.servicetalk.grpc.api.<a href="io/servicetalk/grpc/api/GrpcExceptionMapperServiceFilter.html" title="class in io.servicetalk.grpc.api">GrpcExceptionMapperServiceFilter</a></dt>
+<dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/http/api/BlockingHttpService.html#requiredOffloads()">requiredOffloads()</a></span> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/BlockingHttpService.html" title="interface in io.servicetalk.http.api">BlockingHttpService</a></dt>
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/http/api/BlockingStreamingHttpService.html#requiredOffloads()">requiredOffloads()</a></span> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/BlockingStreamingHttpService.html" title="interface in io.servicetalk.http.api">BlockingStreamingHttpService</a></dt>
@@ -15618,6 +15728,8 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <dt><span class="memberNameLink"><a href="io/servicetalk/http/api/ContentEncodingHttpRequesterFilter.html#requiredOffloads()">requiredOffloads()</a></span> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/ContentEncodingHttpRequesterFilter.html" title="class in io.servicetalk.http.api">ContentEncodingHttpRequesterFilter</a></dt>
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/http/api/ContentEncodingHttpServiceFilter.html#requiredOffloads()">requiredOffloads()</a></span> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/ContentEncodingHttpServiceFilter.html" title="class in io.servicetalk.http.api">ContentEncodingHttpServiceFilter</a></dt>
+<dd>&nbsp;</dd>
+<dt><span class="memberNameLink"><a href="io/servicetalk/http/api/HttpExceptionMapperServiceFilter.html#requiredOffloads()">requiredOffloads()</a></span> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpExceptionMapperServiceFilter.html" title="class in io.servicetalk.http.api">HttpExceptionMapperServiceFilter</a></dt>
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/http/api/HttpExecutionStrategyInfluencer.html#requiredOffloads()">requiredOffloads()</a></span> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpExecutionStrategyInfluencer.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategyInfluencer</a></dt>
 <dd>
@@ -15848,8 +15960,12 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <dt><span class="memberNameLink"><a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.Builder.html#retryDelayedRetries(java.util.function.BiFunction)">retryDelayedRetries(BiFunction&lt;HttpRequestMetaData, RetryingHttpRequesterFilter.DelayedRetry, RetryingHttpRequesterFilter.BackOffPolicy&gt;)</a></span> - Method in class io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.Builder.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.Builder</a></dt>
 <dd>
 <div class="block">The retrying-filter will evaluate the <a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.DelayedRetry.html" title="interface in io.servicetalk.http.netty"><code>RetryingHttpRequesterFilter.DelayedRetry</code></a> marker interface
- of an exception and use the provided <a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.DelayedRetry.html#delay()"><code>delay</code></a> as a constant delay on-top ofthe
+ of an exception and use the provided <a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.DelayedRetry.html#delay()"><code>delay</code></a> as a constant delay on-top of the
  retry period already defined.</div>
+</dd>
+<dt><span class="memberNameLink"><a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.Builder.html#retryExpectationFailed(boolean)">retryExpectationFailed(boolean)</a></span> - Method in class io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.Builder.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.Builder</a></dt>
+<dd>
+<div class="block">Retries <a href="io/servicetalk/http/api/HttpResponseStatus.html#EXPECTATION_FAILED"><code>HttpResponseStatus.EXPECTATION_FAILED</code></a> response without <a href="io/servicetalk/http/api/HttpHeaderNames.html#EXPECT"><code>HttpHeaderNames.EXPECT</code></a> header.</div>
 </dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.Builder.html#retryIdempotentRequests(java.util.function.BiFunction)">retryIdempotentRequests(BiFunction&lt;HttpRequestMetaData, IOException, RetryingHttpRequesterFilter.BackOffPolicy&gt;)</a></span> - Method in class io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.Builder.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.Builder</a></dt>
 <dd>
@@ -16124,6 +16240,8 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <dd>
 <div class="block">Executes the passed <code>task</code> after <code>delay</code> amount of <code>unit</code>s time has passed.</div>
 </dd>
+<dt><span class="memberNameLink"><a href="io/servicetalk/transport/api/IoExecutor.html#schedule(java.lang.Runnable,long,java.util.concurrent.TimeUnit)">schedule(Runnable, long, TimeUnit)</a></span> - Method in interface io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/IoExecutor.html" title="interface in io.servicetalk.transport.api">IoExecutor</a></dt>
+<dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/concurrent/api/DelegatingExecutor.html#schedule(java.lang.Runnable,java.time.Duration)">schedule(Runnable, Duration)</a></span> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/DelegatingExecutor.html" title="class in io.servicetalk.concurrent.api">DelegatingExecutor</a></dt>
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/concurrent/Executor.html#schedule(java.lang.Runnable,java.time.Duration)">schedule(Runnable, Duration)</a></span> - Method in interface io.servicetalk.concurrent.<a href="io/servicetalk/concurrent/Executor.html" title="interface in io.servicetalk.concurrent">Executor</a></dt>
@@ -17005,8 +17123,14 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <div class="block">Sets an advice for a user agent to use <code>UTF-8</code> charset when it generates
  <code>user-id:password</code> pair.</div>
 </dd>
+<dt><span class="memberNameLink"><a href="io/servicetalk/concurrent/api/ExecutorExtension.html#setClassLevel(boolean)">setClassLevel(boolean)</a></span> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/ExecutorExtension.html" title="class in io.servicetalk.concurrent.api">ExecutorExtension</a></dt>
+<dd>
+<div class="block">Set to true if the extension is being shared among all tests in a class.</div>
+</dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/transport/netty/internal/ExecutionContextExtension.html#setClassLevel(boolean)">setClassLevel(boolean)</a></span> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/ExecutionContextExtension.html" title="class in io.servicetalk.transport.netty.internal">ExecutionContextExtension</a></dt>
-<dd>&nbsp;</dd>
+<dd>
+<div class="block">Set to true if the extension is being shared among all tests in a class.</div>
+</dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/concurrent/internal/ThreadInterruptingCancellable.html#setDone()">setDone()</a></span> - Method in class io.servicetalk.concurrent.internal.<a href="io/servicetalk/concurrent/internal/ThreadInterruptingCancellable.html" title="class in io.servicetalk.concurrent.internal">ThreadInterruptingCancellable</a></dt>
 <dd>
 <div class="block">Indicates the operation associated with this <a href="io/servicetalk/concurrent/Cancellable.html" title="interface in io.servicetalk.concurrent"><code>Cancellable</code></a> is done and future calls to <a href="io/servicetalk/concurrent/internal/ThreadInterruptingCancellable.html#cancel()"><code>ThreadInterruptingCancellable.cancel()</code></a>
@@ -18386,6 +18510,8 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <dd>
 <div class="block">Terminates this holder, such that no further modifications of this holder are allowed.</div>
 </dd>
+<dt><span class="memberNameLink"><a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html#terminateSource()">terminateSource()</a></span> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal">DefaultNettyConnection</a></dt>
+<dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/http/api/RedirectConfig.RedirectPredicate.html#test(boolean,int,io.servicetalk.http.api.HttpRequestMetaData,io.servicetalk.http.api.HttpResponseMetaData)">test(boolean, int, HttpRequestMetaData, HttpResponseMetaData)</a></span> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/RedirectConfig.RedirectPredicate.html" title="interface in io.servicetalk.http.api">RedirectConfig.RedirectPredicate</a></dt>
 <dd>
 <div class="block">Decides if a redirect should be performed or not based on the given context.</div>
@@ -18815,10 +18941,10 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <div class="deprecationComment">Use <a href="io/servicetalk/http/utils/TimeoutHttpRequesterFilter.html#%3Cinit%3E(java.util.function.BiFunction,boolean)"><code>TimeoutHttpRequesterFilter(BiFunction, boolean)</code></a>.</div>
 </div>
 </dd>
-<dt><span class="memberNameLink"><a href="io/servicetalk/http/utils/TimeoutHttpRequesterFilter.html#%3Cinit%3E(io.servicetalk.http.utils.TimeoutFromRequest,boolean,io.servicetalk.concurrent.api.Executor)">TimeoutHttpRequesterFilter(TimeoutFromRequest, boolean, Executor)</a></span> - Constructor for class io.servicetalk.http.utils.<a href="io/servicetalk/http/utils/TimeoutHttpRequesterFilter.html" title="class in io.servicetalk.http.utils">TimeoutHttpRequesterFilter</a></dt>
+<dt><span class="memberNameLink"><a href="io/servicetalk/http/utils/TimeoutHttpRequesterFilter.html#%3Cinit%3E(io.servicetalk.http.utils.TimeoutFromRequest,boolean,io.servicetalk.concurrent.Executor)">TimeoutHttpRequesterFilter(TimeoutFromRequest, boolean, Executor)</a></span> - Constructor for class io.servicetalk.http.utils.<a href="io/servicetalk/http/utils/TimeoutHttpRequesterFilter.html" title="class in io.servicetalk.http.utils">TimeoutHttpRequesterFilter</a></dt>
 <dd>
 <div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
-<div class="deprecationComment">Use <a href="io/servicetalk/http/utils/TimeoutHttpRequesterFilter.html#%3Cinit%3E(java.util.function.BiFunction,boolean,io.servicetalk.concurrent.api.Executor)"><code>TimeoutHttpRequesterFilter(BiFunction, boolean, Executor)</code></a>.</div>
+<div class="deprecationComment">Use <a href="io/servicetalk/http/utils/TimeoutHttpRequesterFilter.html#%3Cinit%3E(java.util.function.BiFunction,boolean,io.servicetalk.concurrent.Executor)"><code>TimeoutHttpRequesterFilter(BiFunction, boolean, Executor)</code></a>.</div>
 </div>
 </dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/http/utils/TimeoutHttpRequesterFilter.html#%3Cinit%3E(java.time.Duration)">TimeoutHttpRequesterFilter(Duration)</a></span> - Constructor for class io.servicetalk.http.utils.<a href="io/servicetalk/http/utils/TimeoutHttpRequesterFilter.html" title="class in io.servicetalk.http.utils">TimeoutHttpRequesterFilter</a></dt>
@@ -18829,11 +18955,11 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <dd>
 <div class="block">Creates a new instance.</div>
 </dd>
-<dt><span class="memberNameLink"><a href="io/servicetalk/http/utils/TimeoutHttpRequesterFilter.html#%3Cinit%3E(java.time.Duration,boolean,io.servicetalk.concurrent.api.Executor)">TimeoutHttpRequesterFilter(Duration, boolean, Executor)</a></span> - Constructor for class io.servicetalk.http.utils.<a href="io/servicetalk/http/utils/TimeoutHttpRequesterFilter.html" title="class in io.servicetalk.http.utils">TimeoutHttpRequesterFilter</a></dt>
+<dt><span class="memberNameLink"><a href="io/servicetalk/http/utils/TimeoutHttpRequesterFilter.html#%3Cinit%3E(java.time.Duration,boolean,io.servicetalk.concurrent.Executor)">TimeoutHttpRequesterFilter(Duration, boolean, Executor)</a></span> - Constructor for class io.servicetalk.http.utils.<a href="io/servicetalk/http/utils/TimeoutHttpRequesterFilter.html" title="class in io.servicetalk.http.utils">TimeoutHttpRequesterFilter</a></dt>
 <dd>
 <div class="block">Creates a new instance.</div>
 </dd>
-<dt><span class="memberNameLink"><a href="io/servicetalk/http/utils/TimeoutHttpRequesterFilter.html#%3Cinit%3E(java.time.Duration,io.servicetalk.concurrent.api.Executor)">TimeoutHttpRequesterFilter(Duration, Executor)</a></span> - Constructor for class io.servicetalk.http.utils.<a href="io/servicetalk/http/utils/TimeoutHttpRequesterFilter.html" title="class in io.servicetalk.http.utils">TimeoutHttpRequesterFilter</a></dt>
+<dt><span class="memberNameLink"><a href="io/servicetalk/http/utils/TimeoutHttpRequesterFilter.html#%3Cinit%3E(java.time.Duration,io.servicetalk.concurrent.Executor)">TimeoutHttpRequesterFilter(Duration, Executor)</a></span> - Constructor for class io.servicetalk.http.utils.<a href="io/servicetalk/http/utils/TimeoutHttpRequesterFilter.html" title="class in io.servicetalk.http.utils">TimeoutHttpRequesterFilter</a></dt>
 <dd>
 <div class="block">Creates a new instance which requires only that the response metadata be received before the timeout.</div>
 </dd>
@@ -18841,7 +18967,7 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <dd>
 <div class="block">Creates a new instance.</div>
 </dd>
-<dt><span class="memberNameLink"><a href="io/servicetalk/http/utils/TimeoutHttpRequesterFilter.html#%3Cinit%3E(java.util.function.BiFunction,boolean,io.servicetalk.concurrent.api.Executor)">TimeoutHttpRequesterFilter(BiFunction&lt;HttpRequestMetaData, TimeSource, Duration&gt;, boolean, Executor)</a></span> - Constructor for class io.servicetalk.http.utils.<a href="io/servicetalk/http/utils/TimeoutHttpRequesterFilter.html" title="class in io.servicetalk.http.utils">TimeoutHttpRequesterFilter</a></dt>
+<dt><span class="memberNameLink"><a href="io/servicetalk/http/utils/TimeoutHttpRequesterFilter.html#%3Cinit%3E(java.util.function.BiFunction,boolean,io.servicetalk.concurrent.Executor)">TimeoutHttpRequesterFilter(BiFunction&lt;HttpRequestMetaData, TimeSource, Duration&gt;, boolean, Executor)</a></span> - Constructor for class io.servicetalk.http.utils.<a href="io/servicetalk/http/utils/TimeoutHttpRequesterFilter.html" title="class in io.servicetalk.http.utils">TimeoutHttpRequesterFilter</a></dt>
 <dd>
 <div class="block">Creates a new instance.</div>
 </dd>
@@ -18855,10 +18981,10 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <div class="deprecationComment">Use <a href="io/servicetalk/http/utils/TimeoutHttpServiceFilter.html#%3Cinit%3E(java.util.function.BiFunction,boolean)"><code>TimeoutHttpServiceFilter(BiFunction, boolean)</code></a>.</div>
 </div>
 </dd>
-<dt><span class="memberNameLink"><a href="io/servicetalk/http/utils/TimeoutHttpServiceFilter.html#%3Cinit%3E(io.servicetalk.http.utils.TimeoutFromRequest,boolean,io.servicetalk.concurrent.api.Executor)">TimeoutHttpServiceFilter(TimeoutFromRequest, boolean, Executor)</a></span> - Constructor for class io.servicetalk.http.utils.<a href="io/servicetalk/http/utils/TimeoutHttpServiceFilter.html" title="class in io.servicetalk.http.utils">TimeoutHttpServiceFilter</a></dt>
+<dt><span class="memberNameLink"><a href="io/servicetalk/http/utils/TimeoutHttpServiceFilter.html#%3Cinit%3E(io.servicetalk.http.utils.TimeoutFromRequest,boolean,io.servicetalk.concurrent.Executor)">TimeoutHttpServiceFilter(TimeoutFromRequest, boolean, Executor)</a></span> - Constructor for class io.servicetalk.http.utils.<a href="io/servicetalk/http/utils/TimeoutHttpServiceFilter.html" title="class in io.servicetalk.http.utils">TimeoutHttpServiceFilter</a></dt>
 <dd>
 <div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
-<div class="deprecationComment">Use <a href="io/servicetalk/http/utils/TimeoutHttpServiceFilter.html#%3Cinit%3E(java.util.function.BiFunction,boolean,io.servicetalk.concurrent.api.Executor)"><code>TimeoutHttpServiceFilter(BiFunction, boolean, Executor)</code></a>.</div>
+<div class="deprecationComment">Use <a href="io/servicetalk/http/utils/TimeoutHttpServiceFilter.html#%3Cinit%3E(java.util.function.BiFunction,boolean,io.servicetalk.concurrent.Executor)"><code>TimeoutHttpServiceFilter(BiFunction, boolean, Executor)</code></a>.</div>
 </div>
 </dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/http/utils/TimeoutHttpServiceFilter.html#%3Cinit%3E(java.time.Duration)">TimeoutHttpServiceFilter(Duration)</a></span> - Constructor for class io.servicetalk.http.utils.<a href="io/servicetalk/http/utils/TimeoutHttpServiceFilter.html" title="class in io.servicetalk.http.utils">TimeoutHttpServiceFilter</a></dt>
@@ -18869,11 +18995,11 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <dd>
 <div class="block">Creates a new instance.</div>
 </dd>
-<dt><span class="memberNameLink"><a href="io/servicetalk/http/utils/TimeoutHttpServiceFilter.html#%3Cinit%3E(java.time.Duration,boolean,io.servicetalk.concurrent.api.Executor)">TimeoutHttpServiceFilter(Duration, boolean, Executor)</a></span> - Constructor for class io.servicetalk.http.utils.<a href="io/servicetalk/http/utils/TimeoutHttpServiceFilter.html" title="class in io.servicetalk.http.utils">TimeoutHttpServiceFilter</a></dt>
+<dt><span class="memberNameLink"><a href="io/servicetalk/http/utils/TimeoutHttpServiceFilter.html#%3Cinit%3E(java.time.Duration,boolean,io.servicetalk.concurrent.Executor)">TimeoutHttpServiceFilter(Duration, boolean, Executor)</a></span> - Constructor for class io.servicetalk.http.utils.<a href="io/servicetalk/http/utils/TimeoutHttpServiceFilter.html" title="class in io.servicetalk.http.utils">TimeoutHttpServiceFilter</a></dt>
 <dd>
 <div class="block">Creates a new instance.</div>
 </dd>
-<dt><span class="memberNameLink"><a href="io/servicetalk/http/utils/TimeoutHttpServiceFilter.html#%3Cinit%3E(java.time.Duration,io.servicetalk.concurrent.api.Executor)">TimeoutHttpServiceFilter(Duration, Executor)</a></span> - Constructor for class io.servicetalk.http.utils.<a href="io/servicetalk/http/utils/TimeoutHttpServiceFilter.html" title="class in io.servicetalk.http.utils">TimeoutHttpServiceFilter</a></dt>
+<dt><span class="memberNameLink"><a href="io/servicetalk/http/utils/TimeoutHttpServiceFilter.html#%3Cinit%3E(java.time.Duration,io.servicetalk.concurrent.Executor)">TimeoutHttpServiceFilter(Duration, Executor)</a></span> - Constructor for class io.servicetalk.http.utils.<a href="io/servicetalk/http/utils/TimeoutHttpServiceFilter.html" title="class in io.servicetalk.http.utils">TimeoutHttpServiceFilter</a></dt>
 <dd>
 <div class="block">Creates a new instance which requires only that the response metadata be received before the timeout.</div>
 </dd>
@@ -18881,7 +19007,7 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <dd>
 <div class="block">Creates a new instance.</div>
 </dd>
-<dt><span class="memberNameLink"><a href="io/servicetalk/http/utils/TimeoutHttpServiceFilter.html#%3Cinit%3E(java.util.function.BiFunction,boolean,io.servicetalk.concurrent.api.Executor)">TimeoutHttpServiceFilter(BiFunction&lt;HttpRequestMetaData, TimeSource, Duration&gt;, boolean, Executor)</a></span> - Constructor for class io.servicetalk.http.utils.<a href="io/servicetalk/http/utils/TimeoutHttpServiceFilter.html" title="class in io.servicetalk.http.utils">TimeoutHttpServiceFilter</a></dt>
+<dt><span class="memberNameLink"><a href="io/servicetalk/http/utils/TimeoutHttpServiceFilter.html#%3Cinit%3E(java.util.function.BiFunction,boolean,io.servicetalk.concurrent.Executor)">TimeoutHttpServiceFilter(BiFunction&lt;HttpRequestMetaData, TimeSource, Duration&gt;, boolean, Executor)</a></span> - Constructor for class io.servicetalk.http.utils.<a href="io/servicetalk/http/utils/TimeoutHttpServiceFilter.html" title="class in io.servicetalk.http.utils">TimeoutHttpServiceFilter</a></dt>
 <dd>
 <div class="block">Creates a new instance.</div>
 </dd>
@@ -19431,6 +19557,10 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <dt><span class="memberNameLink"><a href="io/servicetalk/transport/api/DomainSocketAddress.html#toString()">toString()</a></span> - Method in class io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/DomainSocketAddress.html" title="class in io.servicetalk.transport.api">DomainSocketAddress</a></dt>
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/transport/api/FileDescriptorSocketAddress.html#toString()">toString()</a></span> - Method in class io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/FileDescriptorSocketAddress.html" title="class in io.servicetalk.transport.api">FileDescriptorSocketAddress</a></dt>
+<dd>&nbsp;</dd>
+<dt><span class="memberNameLink"><a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.CancelWriteUserEvent.html#toString()">toString()</a></span> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.CancelWriteUserEvent.html" title="class in io.servicetalk.transport.netty.internal">DefaultNettyConnection.CancelWriteUserEvent</a></dt>
+<dd>&nbsp;</dd>
+<dt><span class="memberNameLink"><a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.ContinueUserEvent.html#toString()">toString()</a></span> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.ContinueUserEvent.html" title="class in io.servicetalk.transport.netty.internal">DefaultNettyConnection.ContinueUserEvent</a></dt>
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html#toString()">toString()</a></span> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal">DefaultNettyConnection</a></dt>
 <dd>&nbsp;</dd>
@@ -20803,7 +20933,7 @@ the order they are declared.</div>
 <dd>
 <div class="block">Conversion to <a href="io/servicetalk/http/api/AbstractHttpRequesterFilterTest.RequestWithContextHandler.html" title="interface in io.servicetalk.http.api"><code>AbstractHttpRequesterFilterTest.RequestWithContextHandler</code></a>.</div>
 </dd>
-<dt><span class="memberNameLink"><a href="io/servicetalk/concurrent/api/ExecutorExtension.html#withExecutor(java.util.function.Supplier)">withExecutor(Supplier&lt;Executor&gt;)</a></span> - Static method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/ExecutorExtension.html" title="class in io.servicetalk.concurrent.api">ExecutorExtension</a></dt>
+<dt><span class="memberNameLink"><a href="io/servicetalk/concurrent/api/ExecutorExtension.html#withExecutor(java.util.function.Supplier)">withExecutor(Supplier&lt;E&gt;)</a></span> - Static method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/ExecutorExtension.html" title="class in io.servicetalk.concurrent.api">ExecutorExtension</a></dt>
 <dd>
 <div class="block">Create an <a href="io/servicetalk/concurrent/api/ExecutorExtension.html" title="class in io.servicetalk.concurrent.api"><code>ExecutorExtension</code></a> with the specified <code>executor</code>.</div>
 </dd>

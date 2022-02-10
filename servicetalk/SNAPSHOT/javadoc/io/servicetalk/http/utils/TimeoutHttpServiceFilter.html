@@ -142,6 +142,11 @@ implements <a href="../api/StreamingHttpServiceFilterFactory.html" title="interf
  <p>The timeout applies either the response metadata (headers) completion or the complete reception of the response
  payload body and optional trailers.
 
+ <p>If no executor is specified at construction an executor from <a href="../api/HttpExecutionContext.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionContext</code></a> associated with the
+ client or connection will be used. If the <a href="../api/HttpExecutionContext.html#executionStrategy()"><code>HttpExecutionContext.executionStrategy()</code></a> specifies an
+ <a href="../api/HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> with offloads then <a href="../../transport/api/ExecutionContext.html#executor()"><code>ExecutionContext.executor()</code></a> will be used and if no
+ offloads are specified then <a href="../../transport/api/ExecutionContext.html#ioExecutor()"><code>ExecutionContext.ioExecutor()</code></a> will be used.
+
  <p>The order with which this filter is applied may be highly significant. For example, appending it before a retry
  filter would have different results than applying it after the retry filter; timeout would apply for all retries vs
  timeout per retry.</div>
@@ -174,12 +179,12 @@ implements <a href="../api/StreamingHttpServiceFilterFactory.html" title="interf
 </td>
 </tr>
 <tr class="rowColor">
-<th class="colConstructorName" scope="row"><code><span class="memberNameLink"><a href="#%3Cinit%3E(io.servicetalk.http.utils.TimeoutFromRequest,boolean,io.servicetalk.concurrent.api.Executor)">TimeoutHttpServiceFilter</a></span>&#8203;(<a href="TimeoutFromRequest.html" title="interface in io.servicetalk.http.utils">TimeoutFromRequest</a>&nbsp;timeoutForRequest,
+<th class="colConstructorName" scope="row"><code><span class="memberNameLink"><a href="#%3Cinit%3E(io.servicetalk.http.utils.TimeoutFromRequest,boolean,io.servicetalk.concurrent.Executor)">TimeoutHttpServiceFilter</a></span>&#8203;(<a href="TimeoutFromRequest.html" title="interface in io.servicetalk.http.utils">TimeoutFromRequest</a>&nbsp;timeoutForRequest,
                         boolean&nbsp;fullRequestResponse,
-                        <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;timeoutExecutor)</code></th>
+                        <a href="../../concurrent/Executor.html" title="interface in io.servicetalk.concurrent">Executor</a>&nbsp;timeoutExecutor)</code></th>
 <td class="colLast">
 <div class="block"><span class="deprecatedLabel">Deprecated.</span>
-<div class="deprecationComment">Use <a href="#%3Cinit%3E(java.util.function.BiFunction,boolean,io.servicetalk.concurrent.api.Executor)"><code>TimeoutHttpServiceFilter(BiFunction, boolean, Executor)</code></a>.</div>
+<div class="deprecationComment">Use <a href="#%3Cinit%3E(java.util.function.BiFunction,boolean,io.servicetalk.concurrent.Executor)"><code>TimeoutHttpServiceFilter(BiFunction, boolean, Executor)</code></a>.</div>
 </div>
 </td>
 </tr>
@@ -197,16 +202,16 @@ implements <a href="../api/StreamingHttpServiceFilterFactory.html" title="interf
 </td>
 </tr>
 <tr class="altColor">
-<th class="colConstructorName" scope="row"><code><span class="memberNameLink"><a href="#%3Cinit%3E(java.time.Duration,boolean,io.servicetalk.concurrent.api.Executor)">TimeoutHttpServiceFilter</a></span>&#8203;(java.time.Duration&nbsp;duration,
+<th class="colConstructorName" scope="row"><code><span class="memberNameLink"><a href="#%3Cinit%3E(java.time.Duration,boolean,io.servicetalk.concurrent.Executor)">TimeoutHttpServiceFilter</a></span>&#8203;(java.time.Duration&nbsp;duration,
                         boolean&nbsp;fullRequestResponse,
-                        <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;timeoutExecutor)</code></th>
+                        <a href="../../concurrent/Executor.html" title="interface in io.servicetalk.concurrent">Executor</a>&nbsp;timeoutExecutor)</code></th>
 <td class="colLast">
 <div class="block">Creates a new instance.</div>
 </td>
 </tr>
 <tr class="rowColor">
-<th class="colConstructorName" scope="row"><code><span class="memberNameLink"><a href="#%3Cinit%3E(java.time.Duration,io.servicetalk.concurrent.api.Executor)">TimeoutHttpServiceFilter</a></span>&#8203;(java.time.Duration&nbsp;duration,
-                        <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;timeoutExecutor)</code></th>
+<th class="colConstructorName" scope="row"><code><span class="memberNameLink"><a href="#%3Cinit%3E(java.time.Duration,io.servicetalk.concurrent.Executor)">TimeoutHttpServiceFilter</a></span>&#8203;(java.time.Duration&nbsp;duration,
+                        <a href="../../concurrent/Executor.html" title="interface in io.servicetalk.concurrent">Executor</a>&nbsp;timeoutExecutor)</code></th>
 <td class="colLast">
 <div class="block">Creates a new instance which requires only that the response metadata be received before the timeout.</div>
 </td>
@@ -219,9 +224,9 @@ implements <a href="../api/StreamingHttpServiceFilterFactory.html" title="interf
 </td>
 </tr>
 <tr class="rowColor">
-<th class="colConstructorName" scope="row"><code><span class="memberNameLink"><a href="#%3Cinit%3E(java.util.function.BiFunction,boolean,io.servicetalk.concurrent.api.Executor)">TimeoutHttpServiceFilter</a></span>&#8203;(java.util.function.BiFunction&lt;<a href="../api/HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a>,&#8203;<a href="../../concurrent/TimeSource.html" title="interface in io.servicetalk.concurrent">TimeSource</a>,&#8203;java.time.Duration&gt;&nbsp;timeoutForRequest,
+<th class="colConstructorName" scope="row"><code><span class="memberNameLink"><a href="#%3Cinit%3E(java.util.function.BiFunction,boolean,io.servicetalk.concurrent.Executor)">TimeoutHttpServiceFilter</a></span>&#8203;(java.util.function.BiFunction&lt;<a href="../api/HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a>,&#8203;<a href="../../concurrent/TimeSource.html" title="interface in io.servicetalk.concurrent">TimeSource</a>,&#8203;java.time.Duration&gt;&nbsp;timeoutForRequest,
                         boolean&nbsp;fullRequestResponse,
-                        <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;timeoutExecutor)</code></th>
+                        <a href="../../concurrent/Executor.html" title="interface in io.servicetalk.concurrent">Executor</a>&nbsp;timeoutExecutor)</code></th>
 <td class="colLast">
 <div class="block">Creates a new instance.</div>
 </td>
@@ -303,19 +308,19 @@ implements <a href="../api/StreamingHttpServiceFilterFactory.html" title="interf
 </dl>
 </li>
 </ul>
-<a id="&lt;init&gt;(java.time.Duration,io.servicetalk.concurrent.api.Executor)">
+<a id="&lt;init&gt;(java.time.Duration,io.servicetalk.concurrent.Executor)">
 <!--   -->
 </a>
 <ul class="blockList">
 <li class="blockList">
 <h4>TimeoutHttpServiceFilter</h4>
 <pre>public&nbsp;TimeoutHttpServiceFilter&#8203;(java.time.Duration&nbsp;duration,
-                                <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;timeoutExecutor)</pre>
+                                <a href="../../concurrent/Executor.html" title="interface in io.servicetalk.concurrent">Executor</a>&nbsp;timeoutExecutor)</pre>
 <div class="block">Creates a new instance which requires only that the response metadata be received before the timeout.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>duration</code> - the timeout <code>Duration</code></dd>
-<dd><code>timeoutExecutor</code> - the <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> to use for managing the timer notifications</dd>
+<dd><code>timeoutExecutor</code> - the <a href="../../concurrent/Executor.html" title="interface in io.servicetalk.concurrent"><code>Executor</code></a> to use for managing the timer notifications</dd>
 </dl>
 </li>
 </ul>
@@ -336,7 +341,7 @@ implements <a href="../api/StreamingHttpServiceFilterFactory.html" title="interf
 </dl>
 </li>
 </ul>
-<a id="&lt;init&gt;(java.time.Duration,boolean,io.servicetalk.concurrent.api.Executor)">
+<a id="&lt;init&gt;(java.time.Duration,boolean,io.servicetalk.concurrent.Executor)">
 <!--   -->
 </a>
 <ul class="blockList">
@@ -344,14 +349,14 @@ implements <a href="../api/StreamingHttpServiceFilterFactory.html" title="interf
 <h4>TimeoutHttpServiceFilter</h4>
 <pre>public&nbsp;TimeoutHttpServiceFilter&#8203;(java.time.Duration&nbsp;duration,
                                 boolean&nbsp;fullRequestResponse,
-                                <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;timeoutExecutor)</pre>
+                                <a href="../../concurrent/Executor.html" title="interface in io.servicetalk.concurrent">Executor</a>&nbsp;timeoutExecutor)</pre>
 <div class="block">Creates a new instance.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>duration</code> - the timeout <code>Duration</code></dd>
 <dd><code>fullRequestResponse</code> - if <code>true</code> then timeout is for full request/response transaction otherwise only
  the response metadata must arrive before the timeout</dd>
-<dd><code>timeoutExecutor</code> - the <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> to use for managing the timer notifications</dd>
+<dd><code>timeoutExecutor</code> - the <a href="../../concurrent/Executor.html" title="interface in io.servicetalk.concurrent"><code>Executor</code></a> to use for managing the timer notifications</dd>
 </dl>
 </li>
 </ul>
@@ -395,7 +400,7 @@ public&nbsp;TimeoutHttpServiceFilter&#8203;(<a href="TimeoutFromRequest.html" ti
 </dl>
 </li>
 </ul>
-<a id="&lt;init&gt;(io.servicetalk.http.utils.TimeoutFromRequest,boolean,io.servicetalk.concurrent.api.Executor)">
+<a id="&lt;init&gt;(io.servicetalk.http.utils.TimeoutFromRequest,boolean,io.servicetalk.concurrent.Executor)">
 <!--   -->
 </a>
 <ul class="blockList">
@@ -404,9 +409,9 @@ public&nbsp;TimeoutHttpServiceFilter&#8203;(<a href="TimeoutFromRequest.html" ti
 <pre>@Deprecated
 public&nbsp;TimeoutHttpServiceFilter&#8203;(<a href="TimeoutFromRequest.html" title="interface in io.servicetalk.http.utils">TimeoutFromRequest</a>&nbsp;timeoutForRequest,
                                 boolean&nbsp;fullRequestResponse,
-                                <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;timeoutExecutor)</pre>
+                                <a href="../../concurrent/Executor.html" title="interface in io.servicetalk.concurrent">Executor</a>&nbsp;timeoutExecutor)</pre>
 <div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
-<div class="deprecationComment">Use <a href="#%3Cinit%3E(java.util.function.BiFunction,boolean,io.servicetalk.concurrent.api.Executor)"><code>TimeoutHttpServiceFilter(BiFunction, boolean, Executor)</code></a>.</div>
+<div class="deprecationComment">Use <a href="#%3Cinit%3E(java.util.function.BiFunction,boolean,io.servicetalk.concurrent.Executor)"><code>TimeoutHttpServiceFilter(BiFunction, boolean, Executor)</code></a>.</div>
 </div>
 <div class="block">Creates a new instance.</div>
 <dl>
@@ -415,11 +420,11 @@ public&nbsp;TimeoutHttpServiceFilter&#8203;(<a href="TimeoutFromRequest.html" ti
  other sources. If no timeout is to be applied then the function should return <code>null</code></dd>
 <dd><code>fullRequestResponse</code> - if <code>true</code> then timeout is for full request/response transaction otherwise only
  the response metadata must arrive before the timeout</dd>
-<dd><code>timeoutExecutor</code> - the <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> to use for managing the timer notifications</dd>
+<dd><code>timeoutExecutor</code> - the <a href="../../concurrent/Executor.html" title="interface in io.servicetalk.concurrent"><code>Executor</code></a> to use for managing the timer notifications</dd>
 </dl>
 </li>
 </ul>
-<a id="&lt;init&gt;(java.util.function.BiFunction,boolean,io.servicetalk.concurrent.api.Executor)">
+<a id="&lt;init&gt;(java.util.function.BiFunction,boolean,io.servicetalk.concurrent.Executor)">
 <!--   -->
 </a>
 <ul class="blockListLast">
@@ -427,7 +432,7 @@ public&nbsp;TimeoutHttpServiceFilter&#8203;(<a href="TimeoutFromRequest.html" ti
 <h4>TimeoutHttpServiceFilter</h4>
 <pre>public&nbsp;TimeoutHttpServiceFilter&#8203;(java.util.function.BiFunction&lt;<a href="../api/HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a>,&#8203;<a href="../../concurrent/TimeSource.html" title="interface in io.servicetalk.concurrent">TimeSource</a>,&#8203;java.time.Duration&gt;&nbsp;timeoutForRequest,
                                 boolean&nbsp;fullRequestResponse,
-                                <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;timeoutExecutor)</pre>
+                                <a href="../../concurrent/Executor.html" title="interface in io.servicetalk.concurrent">Executor</a>&nbsp;timeoutExecutor)</pre>
 <div class="block">Creates a new instance.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
@@ -435,7 +440,7 @@ public&nbsp;TimeoutHttpServiceFilter&#8203;(<a href="TimeoutFromRequest.html" ti
  other sources. If no timeout is to be applied then the function should return <code>null</code></dd>
 <dd><code>fullRequestResponse</code> - if <code>true</code> then timeout is for full request/response transaction otherwise only
  the response metadata must arrive before the timeout</dd>
-<dd><code>timeoutExecutor</code> - the <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> to use for managing the timer notifications</dd>
+<dd><code>timeoutExecutor</code> - the <a href="../../concurrent/Executor.html" title="interface in io.servicetalk.concurrent"><code>Executor</code></a> to use for managing the timer notifications</dd>
 </dl>
 </li>
 </ul>

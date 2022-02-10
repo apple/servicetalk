@@ -1371,6 +1371,73 @@ deserialization format and also adding a <code>content-type</code> header identi
 </div>
 </div>
 </div>
+<div class="sect1">
+<h2 id="expect-100-continue"><a class="anchor" href="#expect-100-continue"></a><a class="link" href="#expect-100-continue">Expect: 100-continue</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>HTTP protocol defines <a href="https://datatracker.ietf.org/doc/html/rfc7231#section-5.1.1">Expect</a> header with
+<code>100-continue</code> expectation. This feature allows users to defer sending a request payload body until after the server
+responds with <a href="https://datatracker.ietf.org/doc/html/rfc7231#section-6.2.1">100 Continue</a> status code signaling that
+it&#8217;s ready to receive and process the payload body.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<a href="programming-paradigms.html#client-blocking-and-aggregated" class="page">Aggregated</a>
+client will automatically de-optimize its flush strategy to flush on each element of the request to force flushing of
+the request meta-data and deffer flushing payload body until after a <code>100 Continue</code> response is received.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Server-side users should subscribe to the request payload body when they are ready to consume it. It will generate
+<a href="https://datatracker.ietf.org/doc/html/rfc7231#section-6.2.1">100 Continue</a> interim response. After the request is
+consumed, service should produce a final response with an appropriate status code. If service decides to reject a
+request before consuming a request payload body, an appropriate <code>4xx</code> status code, like
+<a href="https://datatracker.ietf.org/doc/html/rfc7231#section-6.5.14">417 Expectation Failed</a>, should be returned. Put
+meaningful tracing headers in the final response.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<a href="programming-paradigms.html#svc-blocking-and-aggregated" class="page">Aggregated</a>
+service will automatically subscribe to the request payload body before invoking the <code>handle</code> method, that will send
+<code>100 Continue</code> response back to the client. For manual control consider migrating to
+<a href="programming-paradigms.html#svc-blocking-and-streaming" class="page">streaming</a> API or
+implement a filter to accept or reject requests before processing their payload body.
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+The interim response is not propagated as a response
+returned by the client because the client has to wait for a final status code returned by the server. There are a couple
+of other ways how to get visibility into interim response: using wire-logging for HTTP/1.x or frame-logging for HTTP/2
+(see <a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/debugging/src/main/java/io/servicetalk/examples/http/debugging/DebuggingExampleClient.java">DebuggingExampleClient</a>
+as an example) or by monitoring when
+<a href="https://github.com/apple/servicetalk/blob/main/servicetalk-transport-api/src/main/java/io/servicetalk/transport/api/ConnectionObserver.java">WriteObserver</a>
+signals that more items are requested to write.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
 </article>
     </main>
 </div>

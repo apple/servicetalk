@@ -143,7 +143,7 @@ implements <a href="../api/StreamingHttpClientFilterFactory.html" title="interfa
  as part of a service response if needed, through <a href="RetryingHttpRequesterFilter.Builder.html#responseMapper(java.util.function.Function)"><code>RetryingHttpRequesterFilter.Builder.responseMapper(Function)</code></a>.
  <p>
  Retries can have different criteria and different backoff polices, as defined from the relevant Builder methods (i.e.
- <a href="RetryingHttpRequesterFilter.Builder.html#retryOther(java.util.function.BiFunction)"><code>RetryingHttpRequesterFilter.Builder.retryOther(BiFunction)</code></a>.
+ <a href="RetryingHttpRequesterFilter.Builder.html#retryOther(java.util.function.BiFunction)"><code>RetryingHttpRequesterFilter.Builder.retryOther(BiFunction)</code></a>).
  Similarly, max-retries for each flow can be set in the <a href="RetryingHttpRequesterFilter.BackOffPolicy.html" title="class in io.servicetalk.http.netty"><code>RetryingHttpRequesterFilter.BackOffPolicy</code></a>, as well
  as a total max-retries to be respected by both flows, as set in
  <a href="RetryingHttpRequesterFilter.Builder.html#maxTotalRetries(int)"><code>RetryingHttpRequesterFilter.Builder.maxTotalRetries(int)</code></a>.</div>

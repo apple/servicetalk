@@ -513,7 +513,12 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <li class="blockList">
 <h4>lifecycleObserver</h4>
 <pre class="methodSignature"><a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a>&nbsp;lifecycleObserver&#8203;(<a href="HttpLifecycleObserver.html" title="interface in io.servicetalk.http.api">HttpLifecycleObserver</a>&nbsp;lifecycleObserver)</pre>
-<div class="block">Sets a <a href="HttpLifecycleObserver.html" title="interface in io.servicetalk.http.api"><code>HttpLifecycleObserver</code></a> that provides visibility into HTTP lifecycle events.</div>
+<div class="block">Sets a <a href="HttpLifecycleObserver.html" title="interface in io.servicetalk.http.api"><code>HttpLifecycleObserver</code></a> that provides visibility into HTTP lifecycle events.
+ <p>
+ This method allows setting a <a href="HttpLifecycleObserver.html" title="interface in io.servicetalk.http.api"><code>HttpLifecycleObserver</code></a> in a position that captures entire state of the
+ execution chain, including all filters and internal post-processing. If it's necessary to observe an exchange
+ after other filters or apply it conditionally, consider using
+ <code>io.servicetalk.http.netty.HttpLifecycleObserverServiceFilter</code> instead.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>lifecycleObserver</code> - A <a href="HttpLifecycleObserver.html" title="interface in io.servicetalk.http.api"><code>HttpLifecycleObserver</code></a> that provides visibility into HTTP lifecycle events.</dd>

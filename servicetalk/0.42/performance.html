@@ -1246,7 +1246,7 @@ optimal strategy if you select the appropriate programming paradigm for the
 <a href="../../servicetalk-http-api/0.42/programming-paradigms.html#client-programming-paradigms" class="page">client</a> and
 <a href="../../servicetalk-http-api/0.42/programming-paradigms.html#service-programming-paradigms" class="page">service</a>. If you are willing to use an
 <strong><em>advanced, internal, experimental, subject to change at any time</em></strong> API there is also
-<a href="https://github.com/apple/servicetalk/blob/0.42.0/servicetalk-transport-netty-internal/src/main/java/io/servicetalk/transport/netty/internal/FlushStrategies.java">FlushStrategies</a>
+<a href="https://github.com/apple/servicetalk/blob/0.42.2/servicetalk-transport-netty-internal/src/main/java/io/servicetalk/transport/netty/internal/FlushStrategies.java">FlushStrategies</a>
 that provides control over flushing. Here is a quick summary of this internal API.</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
@@ -1362,10 +1362,10 @@ connection.releaseAsync().toFuture().get(); // this blocks, for brevity in this 
 <div class="sect3">
 <h4 id="ExecutionStrategy"><a class="anchor" href="#ExecutionStrategy"></a><a class="link" href="#ExecutionStrategy">ExecutionStrategy (offloading)</a></h4>
 <div class="paragraph">
-<p><a href="https://github.com/apple/servicetalk/blob/0.42.0/servicetalk-transport-api/src/main/java/io/servicetalk/transport/api/ExecutionStrategy.java">ExecutionStrategy</a>
+<p><a href="https://github.com/apple/servicetalk/blob/0.42.2/servicetalk-transport-api/src/main/java/io/servicetalk/transport/api/ExecutionStrategy.java">ExecutionStrategy</a>
 is the core abstraction ServiceTalk uses to drive offloading delivering signals and data from the IO EventLoop threads.
 For HTTP there is
-<a href="https://github.com/apple/servicetalk/blob/0.42.0/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpExecutionStrategy.java">HttpExecutionStrategy</a>
+<a href="https://github.com/apple/servicetalk/blob/0.42.2/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpExecutionStrategy.java">HttpExecutionStrategy</a>
 which adds protocol specific offload points to be used by the clients and services. See
 <a href="#safe-to-block">Safe to Block</a> for more context into offloading and
 threading models.</p>
@@ -1377,7 +1377,7 @@ paradigm for <a href="../../servicetalk-http-api/0.42/programming-paradigms.html
 protocol it is likely there are higher level constructs such as
 <a href="../../servicetalk-http-api/0.42/index.html#routers" class="page">routers</a> that provide a per-route API customization (e.g.
 <a href="../../servicetalk-http-router-jersey/0.42/evolve-to-async.html" class="page">JAX-RS via Jersey</a> and
-<a href="https://github.com/apple/servicetalk/blob/0.42.0/servicetalk-http-router-predicate">Predicate Router</a>).</p>
+<a href="https://github.com/apple/servicetalk/blob/0.42.2/servicetalk-http-router-predicate">Predicate Router</a>).</p>
 </div>
 <div class="paragraph">
 <p>If you are using the appropriate programming model,
@@ -1397,7 +1397,7 @@ allows you to override <code>ExecutionStrategy</code> at multiple levels:</p>
 </li>
 <li>
 <p>Filters implement
-<a href="https://github.com/apple/servicetalk/blob/0.42.0/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpExecutionStrategyInfluencer.java"><code>HttpExecutionStrategyInfluencer</code></a>
+<a href="https://github.com/apple/servicetalk/blob/0.42.2/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpExecutionStrategyInfluencer.java"><code>HttpExecutionStrategyInfluencer</code></a>
 (or similar for your protocol) APIs</p>
 </li>
 </ol>
@@ -1426,7 +1426,7 @@ also enable ServiceTalk to apply optimizations behind the scenes (e.g.
 <a href="#flushstrategy">flushing</a> and
 <a href="#ExecutionStrategy">offloading</a>). A paradigm is chosen when constructing
 the client or server, transforming a client on demand on a per-request basis (e.g.
-<a href="https://github.com/apple/servicetalk/blob/0.42.0/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpClient.java#L77-L79">HttpClient#asBlockingClient()</a>
+<a href="https://github.com/apple/servicetalk/blob/0.42.2/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpClient.java#L77-L79">HttpClient#asBlockingClient()</a>
 ), or leveraging a service <a href="../../servicetalk-http-api/0.42/index.html#routers" class="page">router&#8217;s</a> per-route ability to
 support the different paradigms. The following table is a summary of how the programming paradigm affects flushing and
 offloading. Please consider reading the detailed documentation on
@@ -1725,7 +1725,7 @@ HttpClients.forSingleAddress("localhost", 8080)
 <p>In traditional sequential programming where each request gets its own dedicated thread Java users may rely upon
 <code>ThreadLocal</code> to implicitly pass state across API boundaries. This is a convenient feature to take care of cross
 cutting concerns that do not have corresponding provisions throughout all layers of APIs (e.g.
-<a href="http://www.slf4j.org/manual.html#mdc">MDC</a>, auth, etc&#8230;&#8203;). However when moving to an asynchronous execution model
+<a href="https://www.slf4j.org/manual.html#mdc">MDC</a>, auth, etc&#8230;&#8203;). However when moving to an asynchronous execution model
 you are no longer guaranteed to be the sole occupant of a thread over the lifetime of your request/response processing,
 and therefore <code>ThreadLocal</code> is not directly usable in the same way. For this reason ServiceTalk offers
 <a href="../../servicetalk-concurrent-api/0.42/async-context.html" class="page"><code>AsyncContext</code></a> which provides a static API similar
@@ -1736,9 +1736,9 @@ to what <code>ThreadLocal</code> provides in one-request-per-thread execution mo
 flow (e.g. async operators) requires wrapping to <em>save</em> and <em>restore</em> the current context before/after the
 asynchronous control flow boundary. In order to provide a static API <code>ThreadLocal</code> is also required, although an
 optimization (e.g.
-<a href="https://github.com/apple/servicetalk/blob/0.42.0/servicetalk-context-api/src/main/java/io/servicetalk/context/api/ContextMapHolder.java">ContextMapHolder</a>
+<a href="https://github.com/apple/servicetalk/blob/0.42.2/servicetalk-context-api/src/main/java/io/servicetalk/context/api/ContextMapHolder.java">ContextMapHolder</a>
 ) is used to minimize this cost. This <code>ThreadLocal</code> optimization is enabled by default and can be enabled by using our
-<a href="https://github.com/apple/servicetalk/blob/0.42.0/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/DefaultThreadFactory.java">DefaultThreadFactory</a>
+<a href="https://github.com/apple/servicetalk/blob/0.42.2/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/DefaultThreadFactory.java">DefaultThreadFactory</a>
 if you use a custom <code>Executor</code>.</p>
 </div>
 <div class="paragraph">
@@ -1907,13 +1907,13 @@ ServiceTalk and is subject to change at any time.
 <p>When Java allocates memory it sets all values in the allocated region to 0, according to the
 <a href="https://docs.oracle.com/javase/specs/jls/se8/html/jls-4.html#jls-4.12.5">JLS, Initial Values of Variables</a>.
 This ensures you never have to worry about reading uninitialized memory, however in ServiceTalk the allocated memory
-is wrapped in a <a href="https://github.com/apple/servicetalk/blob/0.42.0/servicetalk-buffer-api/src/main/java/io/servicetalk/buffer/api/Buffer.java">Buffer</a>
+is wrapped in a <a href="https://github.com/apple/servicetalk/blob/0.42.2/servicetalk-buffer-api/src/main/java/io/servicetalk/buffer/api/Buffer.java">Buffer</a>
 that maintains read and write indices to prevent reading uninitialized memory. Therefore zeroing of `Buffer`s is not
 necessary and adds considerable overhead while allocating which affects throughput.</p>
 </div>
 <div class="paragraph">
 <p>ServiceTalk bypasses this zeroing for the default direct
-<a href="https://github.com/apple/servicetalk/blob/0.42.0/servicetalk-buffer-netty/src/main/java/io/servicetalk/buffer/netty/BufferAllocators.java">BufferAllocator</a>
+<a href="https://github.com/apple/servicetalk/blob/0.42.2/servicetalk-buffer-netty/src/main/java/io/servicetalk/buffer/netty/BufferAllocators.java">BufferAllocator</a>
 on JDK8. On JDK9+ due to the additional protections put in place, one needs to provide additional system properties to
 take advantage of this optimization.</p>
 </div>
@@ -1943,7 +1943,7 @@ take advantage of this optimization.</p>
 <td class="content">
 These flags do not bypass zeroing when memory is allocated directly through <code>new byte[]</code>,
 <code>ByteBuffer.allocate(int)</code>, or <code>ByteBuffer.allocateDirect(int)</code>, this only optimizes the buffers created with the ServiceTalk
-<a href="https://github.com/apple/servicetalk/blob/0.42.0/servicetalk-buffer-netty/src/main/java/io/servicetalk/buffer/netty/BufferAllocators.java">BufferAllocators</a>.
+<a href="https://github.com/apple/servicetalk/blob/0.42.2/servicetalk-buffer-netty/src/main/java/io/servicetalk/buffer/netty/BufferAllocators.java">BufferAllocators</a>.
 </td>
 </tr>
 </table>

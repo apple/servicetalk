@@ -123,7 +123,7 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <li class="blockList">
 <dl>
 <dt>All Superinterfaces:</dt>
-<dd><code><a href="../../../concurrent/api/AsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">AsyncCloseable</a></code>, <code><a href="../../api/IoExecutor.html" title="interface in io.servicetalk.transport.api">IoExecutor</a></code>, <code><a href="../../../concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a></code>, <code><a href="NettyIoExecutor.html" title="interface in io.servicetalk.transport.netty.internal">NettyIoExecutor</a></code></dd>
+<dd><code><a href="../../../concurrent/api/AsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">AsyncCloseable</a></code>, <code><a href="../../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a></code>, <code><a href="../../../concurrent/Executor.html" title="interface in io.servicetalk.concurrent">Executor</a></code>, <code><a href="../../api/IoExecutor.html" title="interface in io.servicetalk.transport.api">IoExecutor</a></code>, <code><a href="../../../concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a></code>, <code><a href="NettyIoExecutor.html" title="interface in io.servicetalk.transport.netty.internal">NettyIoExecutor</a></code>, <code><a href="../../../concurrent/TimeSource.html" title="interface in io.servicetalk.concurrent">TimeSource</a></code></dd>
 </dl>
 <hr>
 <pre>public interface <span class="typeNameLabel">EventLoopAwareNettyIoExecutor</span>
@@ -180,11 +180,25 @@ extends <a href="NettyIoExecutor.html" title="interface in io.servicetalk.transp
 <code><a href="../../../concurrent/api/AsyncCloseable.html#closeAsync()">closeAsync</a>, <a href="../../../concurrent/api/AsyncCloseable.html#closeAsyncGracefully()">closeAsyncGracefully</a></code></li>
 </ul>
 <ul class="blockList">
+<li class="blockList"><a id="methods.inherited.from.class.io.servicetalk.concurrent.api.Executor">
+<!--   -->
+</a>
+<h3>Methods inherited from interface&nbsp;io.servicetalk.concurrent.api.<a href="../../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a></h3>
+<code><a href="../../../concurrent/api/Executor.html#submit(java.lang.Runnable)">submit</a>, <a href="../../../concurrent/api/Executor.html#submit(java.util.concurrent.Callable)">submit</a>, <a href="../../../concurrent/api/Executor.html#submitCallable(java.util.function.Supplier)">submitCallable</a>, <a href="../../../concurrent/api/Executor.html#submitRunnable(java.util.function.Supplier)">submitRunnable</a>, <a href="../../../concurrent/api/Executor.html#timer(long,java.util.concurrent.TimeUnit)">timer</a>, <a href="../../../concurrent/api/Executor.html#timer(java.time.Duration)">timer</a></code></li>
+</ul>
+<ul class="blockList">
+<li class="blockList"><a id="methods.inherited.from.class.io.servicetalk.concurrent.Executor">
+<!--   -->
+</a>
+<h3>Methods inherited from interface&nbsp;io.servicetalk.concurrent.<a href="../../../concurrent/Executor.html" title="interface in io.servicetalk.concurrent">Executor</a></h3>
+<code><a href="../../../concurrent/Executor.html#currentTime(java.util.concurrent.TimeUnit)">currentTime</a>, <a href="../../../concurrent/Executor.html#schedule(java.lang.Runnable,java.time.Duration)">schedule</a></code></li>
+</ul>
+<ul class="blockList">
 <li class="blockList"><a id="methods.inherited.from.class.io.servicetalk.transport.api.IoExecutor">
 <!--   -->
 </a>
 <h3>Methods inherited from interface&nbsp;io.servicetalk.transport.api.<a href="../../api/IoExecutor.html" title="interface in io.servicetalk.transport.api">IoExecutor</a></h3>
-<code><a href="../../api/IoExecutor.html#isFileDescriptorSocketAddressSupported()">isFileDescriptorSocketAddressSupported</a>, <a href="../../api/IoExecutor.html#isIoThreadSupported()">isIoThreadSupported</a>, <a href="../../api/IoExecutor.html#isUnixDomainSocketSupported()">isUnixDomainSocketSupported</a>, <a href="../../api/IoExecutor.html#shouldOffloadSupplier()">shouldOffloadSupplier</a></code></li>
+<code><a href="../../api/IoExecutor.html#execute(java.lang.Runnable)">execute</a>, <a href="../../api/IoExecutor.html#isFileDescriptorSocketAddressSupported()">isFileDescriptorSocketAddressSupported</a>, <a href="../../api/IoExecutor.html#isIoThreadSupported()">isIoThreadSupported</a>, <a href="../../api/IoExecutor.html#isUnixDomainSocketSupported()">isUnixDomainSocketSupported</a>, <a href="../../api/IoExecutor.html#schedule(java.lang.Runnable,long,java.util.concurrent.TimeUnit)">schedule</a>, <a href="../../api/IoExecutor.html#shouldOffloadSupplier()">shouldOffloadSupplier</a></code></li>
 </ul>
 <ul class="blockList">
 <li class="blockList"><a id="methods.inherited.from.class.io.servicetalk.concurrent.api.ListenableAsyncCloseable">

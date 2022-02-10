@@ -419,6 +419,15 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <section role="region">
 <h2 title="Package">Package&nbsp;io.servicetalk.http.netty</h2>
 <ul class="blockList">
+<li class="blockList"><a id="io.servicetalk.http.netty.ExpectationFailedException">
+<!--   -->
+</a>
+<h3>Class <a href="io/servicetalk/http/netty/ExpectationFailedException.html" title="class in io.servicetalk.http.netty">io.servicetalk.http.netty.ExpectationFailedException</a> extends <a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.HttpResponseException.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.HttpResponseException</a> implements Serializable</h3>
+<dl class="nameValue">
+<dt>serialVersionUID:</dt>
+<dd>-5608030718662972886L</dd>
+</dl>
+</li>
 <li class="blockList"><a id="io.servicetalk.http.netty.ProxyResponseException">
 <!--   -->
 </a>
@@ -454,10 +463,18 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <li class="blockList">
 <h4>message</h4>
 <pre>java.lang.String message</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <code>Throwable.getMessage()</code>.</div>
+</div>
+<div class="block">Exception detail message.</div>
 </li>
 <li class="blockListLast">
 <h4>metaData</h4>
 <pre><a href="io/servicetalk/http/api/HttpResponseMetaData.html" title="interface in io.servicetalk.http.api">HttpResponseMetaData</a> metaData</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">Use <a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.HttpResponseException.html#metaData()"><code>RetryingHttpRequesterFilter.HttpResponseException.metaData()</code></a>.</div>
+</div>
+<div class="block"><a href="io/servicetalk/http/api/HttpResponseMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpResponseMetaData</code></a> of the response that caused this exception.</div>
 </li>
 </ul>
 </li>

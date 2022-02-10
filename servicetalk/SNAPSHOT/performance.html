@@ -1725,7 +1725,7 @@ HttpClients.forSingleAddress("localhost", 8080)
 <p>In traditional sequential programming where each request gets its own dedicated thread Java users may rely upon
 <code>ThreadLocal</code> to implicitly pass state across API boundaries. This is a convenient feature to take care of cross
 cutting concerns that do not have corresponding provisions throughout all layers of APIs (e.g.
-<a href="http://www.slf4j.org/manual.html#mdc">MDC</a>, auth, etc&#8230;&#8203;). However when moving to an asynchronous execution model
+<a href="https://www.slf4j.org/manual.html#mdc">MDC</a>, auth, etc&#8230;&#8203;). However when moving to an asynchronous execution model
 you are no longer guaranteed to be the sole occupant of a thread over the lifetime of your request/response processing,
 and therefore <code>ThreadLocal</code> is not directly usable in the same way. For this reason ServiceTalk offers
 <a href="../../servicetalk-concurrent-api/SNAPSHOT/async-context.html" class="page"><code>AsyncContext</code></a> which provides a static API similar

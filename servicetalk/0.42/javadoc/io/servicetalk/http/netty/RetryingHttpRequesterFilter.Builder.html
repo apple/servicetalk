@@ -26,7 +26,7 @@
     catch(err) {
     }
 //-->
-var data = {"i0":10,"i1":10,"i2":10,"i3":10,"i4":10,"i5":10,"i6":10,"i7":10,"i8":10,"i9":10};
+var data = {"i0":10,"i1":10,"i2":10,"i3":10,"i4":10,"i5":10,"i6":10,"i7":10,"i8":10,"i9":10,"i10":10};
 var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],8:["t4","Concrete Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
@@ -214,18 +214,25 @@ extends java.lang.Object</pre>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#retryDelayedRetries(java.util.function.BiFunction)">retryDelayedRetries</a></span>&#8203;(java.util.function.BiFunction&lt;<a href="../api/HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a>,&#8203;<a href="RetryingHttpRequesterFilter.DelayedRetry.html" title="interface in io.servicetalk.http.netty">RetryingHttpRequesterFilter.DelayedRetry</a>,&#8203;<a href="RetryingHttpRequesterFilter.BackOffPolicy.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.BackOffPolicy</a>&gt;&nbsp;mapper)</code></th>
 <td class="colLast">
 <div class="block">The retrying-filter will evaluate the <a href="RetryingHttpRequesterFilter.DelayedRetry.html" title="interface in io.servicetalk.http.netty"><code>RetryingHttpRequesterFilter.DelayedRetry</code></a> marker interface
- of an exception and use the provided <a href="RetryingHttpRequesterFilter.DelayedRetry.html#delay()"><code>delay</code></a> as a constant delay on-top ofthe
+ of an exception and use the provided <a href="RetryingHttpRequesterFilter.DelayedRetry.html#delay()"><code>delay</code></a> as a constant delay on-top of the
  retry period already defined.</div>
 </td>
 </tr>
 <tr id="i5" class="rowColor">
+<td class="colFirst"><code><a href="RetryingHttpRequesterFilter.Builder.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.Builder</a></code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#retryExpectationFailed(boolean)">retryExpectationFailed</a></span>&#8203;(boolean&nbsp;retryExpectationFailed)</code></th>
+<td class="colLast">
+<div class="block">Retries <a href="../api/HttpResponseStatus.html#EXPECTATION_FAILED"><code>HttpResponseStatus.EXPECTATION_FAILED</code></a> response without <a href="../api/HttpHeaderNames.html#EXPECT"><code>HttpHeaderNames.EXPECT</code></a> header.</div>
+</td>
+</tr>
+<tr id="i6" class="altColor">
 <td class="colFirst"><code><a href="RetryingHttpRequesterFilter.Builder.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.Builder</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#retryIdempotentRequests(java.util.function.BiFunction)">retryIdempotentRequests</a></span>&#8203;(java.util.function.BiFunction&lt;<a href="../api/HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a>,&#8203;java.io.IOException,&#8203;<a href="RetryingHttpRequesterFilter.BackOffPolicy.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.BackOffPolicy</a>&gt;&nbsp;mapper)</code></th>
 <td class="colLast">
 <div class="block">Retries <a href="https://tools.ietf.org/html/rfc7231#section-4.2.2">idempotent</a> requests when applicable.</div>
 </td>
 </tr>
-<tr id="i6" class="altColor">
+<tr id="i7" class="rowColor">
 <td class="colFirst"><code><a href="RetryingHttpRequesterFilter.Builder.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.Builder</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#retryOther(java.util.function.BiFunction)">retryOther</a></span>&#8203;(java.util.function.BiFunction&lt;<a href="../api/HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a>,&#8203;java.lang.Throwable,&#8203;<a href="RetryingHttpRequesterFilter.BackOffPolicy.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.BackOffPolicy</a>&gt;&nbsp;mapper)</code></th>
 <td class="colLast">
@@ -233,7 +240,7 @@ extends java.lang.Object</pre>
  retried.</div>
 </td>
 </tr>
-<tr id="i7" class="rowColor">
+<tr id="i8" class="altColor">
 <td class="colFirst"><code><a href="RetryingHttpRequesterFilter.Builder.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.Builder</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#retryResponses(java.util.function.BiFunction)">retryResponses</a></span>&#8203;(java.util.function.BiFunction&lt;<a href="../api/HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a>,&#8203;<a href="RetryingHttpRequesterFilter.HttpResponseException.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.HttpResponseException</a>,&#8203;<a href="RetryingHttpRequesterFilter.BackOffPolicy.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.BackOffPolicy</a>&gt;&nbsp;mapper)</code></th>
 <td class="colLast">
@@ -242,14 +249,14 @@ extends java.lang.Object</pre>
  <a href="../api/HttpRequestMetaData.html" title="interface in io.servicetalk.http.api"><code>request</code></a> and the <a href="../api/HttpResponseMetaData.html" title="interface in io.servicetalk.http.api"><code>response</code></a>.</div>
 </td>
 </tr>
-<tr id="i8" class="altColor">
+<tr id="i9" class="rowColor">
 <td class="colFirst"><code><a href="RetryingHttpRequesterFilter.Builder.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.Builder</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#retryRetryableExceptions(java.util.function.BiFunction)">retryRetryableExceptions</a></span>&#8203;(java.util.function.BiFunction&lt;<a href="../api/HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a>,&#8203;<a href="../../transport/api/RetryableException.html" title="interface in io.servicetalk.transport.api">RetryableException</a>,&#8203;<a href="RetryingHttpRequesterFilter.BackOffPolicy.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.BackOffPolicy</a>&gt;&nbsp;mapper)</code></th>
 <td class="colLast">
 <div class="block">The retrying-filter will evaluate for <a href="../../transport/api/RetryableException.html" title="interface in io.servicetalk.transport.api"><code>RetryableException</code></a>s in the request flow.</div>
 </td>
 </tr>
-<tr id="i9" class="rowColor">
+<tr id="i10" class="altColor">
 <td class="colFirst"><code><a href="RetryingHttpRequesterFilter.Builder.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.Builder</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#waitForLoadBalancer(boolean)">waitForLoadBalancer</a></span>&#8203;(boolean&nbsp;waitForLb)</code></th>
 <td class="colLast">
@@ -347,7 +354,8 @@ extends java.lang.Object</pre>
  <a href="#retryRetryableExceptions(java.util.function.BiFunction)"><code>retryRetryableExceptions(BiFunction)</code></a>, <a href="#retryResponses(java.util.function.BiFunction)"><code>retryResponses(BiFunction)</code></a>,
  <a href="#retryOther(java.util.function.BiFunction)"><code>retryOther(BiFunction)</code></a>).
 
- If not set, max total retries will be infinite.</div>
+ Maximum total retries guards the LB/SD readiness flow, making sure LB connection issues will also be
+ retried with a limit.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>maxRetries</code> - Maximum number of allowed retries before giving up</dd>
@@ -368,7 +376,7 @@ extends java.lang.Object</pre>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>mapper</code> - a <code>Function</code> that maps a <a href="../api/HttpResponseMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpResponseMetaData</code></a> to an
- <a href="RetryingHttpRequesterFilter.HttpResponseException.html" title="class in io.servicetalk.http.netty"><code>RetryingHttpRequesterFilter.HttpResponseException</code></a>.</dd>
+ <a href="RetryingHttpRequesterFilter.HttpResponseException.html" title="class in io.servicetalk.http.netty"><code>RetryingHttpRequesterFilter.HttpResponseException</code></a> or returns <code>null</code> if there is no mapping for response meta-data.</dd>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd><code>this</code></dd>
 </dl>
@@ -418,6 +426,26 @@ extends java.lang.Object</pre>
 </dl>
 </li>
 </ul>
+<a id="retryExpectationFailed(boolean)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>retryExpectationFailed</h4>
+<pre class="methodSignature">public&nbsp;<a href="RetryingHttpRequesterFilter.Builder.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.Builder</a>&nbsp;retryExpectationFailed&#8203;(boolean&nbsp;retryExpectationFailed)</pre>
+<div class="block">Retries <a href="../api/HttpResponseStatus.html#EXPECTATION_FAILED"><code>HttpResponseStatus.EXPECTATION_FAILED</code></a> response without <a href="../api/HttpHeaderNames.html#EXPECT"><code>HttpHeaderNames.EXPECT</code></a> header.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>retryExpectationFailed</code> - if <code>true</code>, filter will automatically map
+ <a href="../api/HttpResponseStatus.html#EXPECTATION_FAILED"><code>HttpResponseStatus.EXPECTATION_FAILED</code></a> into <a href="ExpectationFailedException.html" title="class in io.servicetalk.http.netty"><code>ExpectationFailedException</code></a> and retry a request
+ without <a href="../api/HttpHeaderNames.html#EXPECT"><code>HttpHeaderNames.EXPECT</code></a> header.</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd><code>this</code>.</dd>
+<dt><span class="seeLabel">See Also:</span></dt>
+<dd><a href="https://datatracker.ietf.org/doc/html/rfc7231#section-5.1.1">Expect</a></dd>
+</dl>
+</li>
+</ul>
 <a id="retryDelayedRetries(java.util.function.BiFunction)">
 <!--   -->
 </a>
@@ -426,7 +454,7 @@ extends java.lang.Object</pre>
 <h4>retryDelayedRetries</h4>
 <pre class="methodSignature">public&nbsp;<a href="RetryingHttpRequesterFilter.Builder.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.Builder</a>&nbsp;retryDelayedRetries&#8203;(java.util.function.BiFunction&lt;<a href="../api/HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a>,&#8203;<a href="RetryingHttpRequesterFilter.DelayedRetry.html" title="interface in io.servicetalk.http.netty">RetryingHttpRequesterFilter.DelayedRetry</a>,&#8203;<a href="RetryingHttpRequesterFilter.BackOffPolicy.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.BackOffPolicy</a>&gt;&nbsp;mapper)</pre>
 <div class="block">The retrying-filter will evaluate the <a href="RetryingHttpRequesterFilter.DelayedRetry.html" title="interface in io.servicetalk.http.netty"><code>RetryingHttpRequesterFilter.DelayedRetry</code></a> marker interface
- of an exception and use the provided <a href="RetryingHttpRequesterFilter.DelayedRetry.html#delay()"><code>delay</code></a> as a constant delay on-top ofthe
+ of an exception and use the provided <a href="RetryingHttpRequesterFilter.DelayedRetry.html#delay()"><code>delay</code></a> as a constant delay on-top of the
  retry period already defined.
  In case a max-delay was set in this builder, the <a href="RetryingHttpRequesterFilter.DelayedRetry.html#delay()"><code>constant-delay</code></a> overrides
  it and takes precedence.

@@ -1048,8 +1048,8 @@
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>ServiceTalk offers JAX-RS support via its Jersey HTTP router module.
-This module gives access to all JAX-RS features and also to a set of
+<p>ServiceTalk offers JAX-RS support via its Jersey HTTP Router module.
+This module gives access to all JAX-RS features as well as
 ServiceTalk specific extensions. This document details these features
 and also delves deeper into the implementation.</p>
 </div>
@@ -1099,9 +1099,9 @@ public class HelloWorldJaxRsResource {
 </div>
 </div>
 <div class="paragraph">
-<p>Any off-the-shelf entity provider can be used immediately. For example
-the following code works as expected if a JSON media type provider (like
-Jersey’s <code>jersey-media-json-jackson</code>) is on the classpath:</p>
+<p>Any standard JAX-RS entity provider can be used directly. For example
+the following code works as expected if a JSON media type provider (such as
+Jersey’s <code>jersey-media-json-jackson</code>) is included as a dependency:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -1146,27 +1146,25 @@ Server-Sent Events are also fully supported.
 <div class="sect2">
 <h3 id="servicetalk-aware-resources"><a class="anchor" href="#servicetalk-aware-resources"></a><a class="link" href="#servicetalk-aware-resources">ServiceTalk Aware Resources</a></h3>
 <div class="paragraph">
-<p>In addition to standard JAX-RS, the Jersey router
+<p>In addition to standard JAX-RS features, the Jersey router
 also allows users to take full advantage of ServiceTalk asynchronous primitives.</p>
 </div>
 <div class="paragraph">
-<p>Indeed, the router supports a few ServiceTalk-specific features whose
-usage is optional, but that can be interesting for users who want to use
-Reactive Streams concepts in their resources or want to deal with
+<p>The router supports a few ServiceTalk-specific optional features for users
+who want to use Reactive Streams concepts in their resources or want to use
 ServiceTalk types like <code>Buffer</code>.</p>
 </div>
 <div class="paragraph">
-<p>By default, Jersey supports <code>byte[]</code> request/response entities.
-ServiceTalk uses a higher level abstraction called <code>Buffer</code> and the
-router lets you use it in your resources. Doing so has the main
+<p>Standard Jersey supports <code>byte[]</code> request/response entities whereas
+ServiceTalk commonly uses a higher level abstraction called <code>Buffer</code>. The
+router lets you use <code>Buffer</code> in your resources. Doing so has the main
 advantage of completely bypassing the <a href="#io-adapt">Input/OutputStream Adaptation</a> layer used internally
 between ServiceTalk streams and the blocking <code>Input/OutputStream</code> that
 are used pervasively in Jersey.</p>
 </div>
 <div class="paragraph">
-<p>To be more specific, ServiceTalk allows
-consuming and producing the following entities (in addition to standard
-JAX-RS entities):</p>
+<p>To be more specific, ServiceTalk allows consuming and producing the
+following entities (in addition to standard JAX-RS entities):</p>
 </div>
 <div class="ulist">
 <ul>
@@ -1266,8 +1264,8 @@ the in-flight HTTP request.</p>
 <td class="content">
 The <code>@Context</code>-provided objects are only available to the same thread
 that has called the resource method. This is why the <code>allocator</code> is
-dereferenced and stored in a variable before behind used in the async
-execution chain in the above example.
+captured in a variable for later use in the async execution chain in
+the above example.
 </td>
 </tr>
 </table>
@@ -1279,7 +1277,7 @@ execution chain in the above example.
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-ServiceTalk does not yet have a compatibility layer for Servlet,
+ServiceTalk does not have a compatibility layer for Servlet,
 thus objects like <code>ServletConfig</code> or <code>HttpServletRequest</code> are not available
 via <code>@Context</code> injection.
 </td>
@@ -1314,7 +1312,7 @@ public Response hello(@DefaultValue("world") @QueryParam("who") final String who
 <code>GenericEntity</code> helpers can be used as with any vanilla JAX-RS resource.</p>
 </div>
 <div class="sect3">
-<h4 id="completionstage-alternative"><a class="anchor" href="#completionstage-alternative"></a><a class="link" href="#completionstage-alternative">CompletionStage Alternative</a></h4>
+<h4 id="completionstage-alternative"><a class="anchor" href="#completionstage-alternative"></a><a class="link" href="#completionstage-alternative"><code>CompletionStage</code> Alternative</a></h4>
 <div class="paragraph">
 <p>It is also possible to use ServiceTalk&#8217;s primitives in lieu of <code>CompletionStage</code>,
 allowing users to use consistent semantics and behavior across their async code.
@@ -1351,13 +1349,11 @@ public Single&lt;String&gt; hello(@DefaultValue("world") @QueryParam("who") fina
 <h3 id="servicetalk-json-provider"><a class="anchor" href="#servicetalk-json-provider"></a><a class="link" href="#servicetalk-json-provider">ServiceTalk JSON Provider</a></h3>
 <div class="paragraph">
 <p>ServiceTalk provides a JSON Provider (<code>servicetalk-data-jackson-jersey</code>)
-that can be used as a drop-in
-replacement for Jersey’s <code>jersey-media-json-jackson</code>. It is based on
-Jackson’s non-blocking JSON parser and completely bypasses the blocking
-<a href="#io-adapt">Input/OutputStream Adaptation</a> layer that’s otherwise used with
-standard JAX-RS media-type providers. This can yield performance
-benefits when dealing with large body entities and also enables fully
-non-blocking routes.</p>
+that can be used as a drop-in replacement for Jersey’s <code>jersey-media-json-jackson</code>.
+This provider is based on Jackson’s non-blocking JSON parser and completely bypasses
+the blocking <a href="#io-adapt">Input/OutputStream Adaptation</a> layer that’s otherwise used with standard JAX-RS media-type
+providers. This can yield performance benefits when dealing with large body entities
+and is necessary for providing fully non-blocking routes.</p>
 </div>
 <div class="paragraph">
 <p>The following example shows what this provider enables:</p>
@@ -1510,7 +1506,7 @@ error payloads, as shown here:</p>
 <div class="sect2">
 <h3 id="injection-management"><a class="anchor" href="#injection-management"></a><a class="link" href="#injection-management">Injection Management</a></h3>
 <div class="paragraph">
-<p>By default the Jersey router doesn’t transitively bring a particular
+<p>The Jersey router doesn’t transitively require a particular
 Jersey Injection Manager dependency, it is up to the user to pick one of
 the available implementations by adding the relevant dependency to the
 application classpath.</p>
@@ -1521,11 +1517,11 @@ application classpath.</p>
 <div class="ulist">
 <ul>
 <li>
-<p><code>jersey-hk2</code> — based on HK2, this is the most likely implementation
+<p><code>jersey-hk2</code> — based on <a href="https://javaee.github.io/hk2/">HK2</a>, this is the most likely implementation
 that will be used with ServiceTalk,</p>
 </li>
 <li>
-<p><code>jersey-inject-cdi2-se</code> - relying CDI, this is to be used when running
+<p><code>jersey-inject-cdi2-se</code> - relying upon CDI, this is to be used when running
 ServiceTalk in a Java EE application container.</p>
 </li>
 </ul>
@@ -1607,7 +1603,7 @@ the Jersey router, as demonstrated here:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">HttpServers.forPort(8080)
-    .executionStrategy(HttpExecutionStrategies.defaultStrategy(executor))
+    .executor(executor)
     .listenStreamingAndAwait(new HttpJerseyRouterBuilder().build(jaxrsApplication))
     .awaitShutdown();</code></pre>
 </div>
@@ -1678,7 +1674,7 @@ bootstrap code and followed by one JAX-RS resource method:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">HttpServers.forPort(8080)
-    .executionStrategy(HttpExecutionStrategies.noOffloadsStrategy())
+    .executionStrategy(HttpExecutionStrategies.offloadNever())
     .listenStreamingAndAwait(new HttpJerseyRouterBuilder().build(jaxrsApplication))
     .awaitShutdown();
 
@@ -1695,7 +1691,7 @@ public class HelloWorldJaxRsResource {
 </div>
 </div>
 <div class="paragraph">
-<p>Notice how <code>HttpExecutionStrategies.noOffloadsStrategy()</code> and
+<p>Notice how <code>HttpExecutionStrategies.offloadNever()</code> and
 <code>@NoOffloadsRouteExecutionStrategy</code> are used conjointly to ensure that
 offloading will be completely disabled and that the requests will be fully handled on I/O threads.</p>
 </div>
@@ -1723,7 +1719,7 @@ Be sure to thoroughly test the routes for which you intend to disable offloading
 It is currently not possible to disable offloading if any JAX-RS resource uses <code>@Suspended AsyncResponse</code>,
 <code>CompletionStage</code> responses or Server-Sent Events. A workaround for this consists in using the Predicate router
 to selectively offload such resources, as shown in this
-<a href="https://github.com/apple/servicetalk/blob/0.42.0/servicetalk-http-router-jersey/src/testFixtures/java/io/servicetalk/http/router/jersey/MixedModeResourceTest.java">test</a>.
+<a href="https://github.com/apple/servicetalk/blob/0.42.2/servicetalk-http-router-jersey/src/testFixtures/java/io/servicetalk/http/router/jersey/MixedModeResourceTest.java">test</a>.
 </td>
 </tr>
 </table>

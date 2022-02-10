@@ -449,12 +449,14 @@ extends java.lang.Object</pre>
 <li class="blockList">
 <h4>protocolPayloadEndOutbound</h4>
 <pre class="methodSignature">public abstract&nbsp;void&nbsp;protocolPayloadEndOutbound&#8203;(io.netty.channel.ChannelHandlerContext&nbsp;ctx,
+                                                @Nullable
                                                 io.netty.channel.ChannelPromise&nbsp;promise)</pre>
 <div class="block">Signal end of outbound payload, including the <code>ChannelPromise</code> associated with the last write. Must be
  called from the <code>EventLoop</code> for the <code>Channel</code>.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
-<dd><code>promise</code> - The <code>ChannelPromise</code> associated with the last write operation.</dd>
+<dd><code>promise</code> - The <code>ChannelPromise</code> associated with the last write operation or <code>null</code> if payload
+ ends without a write operation (aborted/cancelled).</dd>
 <dd><code>ctx</code> - <code>ChannelHandlerContext</code></dd>
 </dl>
 </li>

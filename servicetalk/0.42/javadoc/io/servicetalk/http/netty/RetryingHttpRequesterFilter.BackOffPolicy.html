@@ -26,7 +26,7 @@
     catch(err) {
     }
 //-->
-var data = {"i0":10,"i1":9,"i2":9,"i3":9,"i4":9,"i5":9,"i6":9,"i7":9,"i8":9,"i9":9,"i10":9};
+var data = {"i0":10,"i1":9,"i2":9,"i3":9,"i4":9,"i5":9,"i6":9,"i7":9,"i8":9,"i9":9,"i10":9,"i11":9};
 var tabs = {65535:["t0","All Methods"],1:["t1","Static Methods"],2:["t2","Instance Methods"],8:["t4","Concrete Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
@@ -161,7 +161,9 @@ extends java.lang.Object</pre>
 <td class="colFirst"><code>static <a href="RetryingHttpRequesterFilter.BackOffPolicy.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.BackOffPolicy</a></code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#NO_RETRIES">NO_RETRIES</a></span></code></th>
 <td class="colLast">
-<div class="block">Special <a href="RetryingHttpRequesterFilter.BackOffPolicy.html" title="class in io.servicetalk.http.netty"><code>RetryingHttpRequesterFilter.BackOffPolicy</code></a> to signal no retries.</div>
+<div class="block"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">This will be removed in a future release of ST.</div>
+</div>
 </td>
 </tr>
 </table>
@@ -285,6 +287,13 @@ extends java.lang.Object</pre>
 <div class="block">Creates a new <a href="RetryingHttpRequesterFilter.BackOffPolicy.html" title="class in io.servicetalk.http.netty"><code>RetryingHttpRequesterFilter.BackOffPolicy</code></a> that retries failures instantly up-to provided max retries.</div>
 </td>
 </tr>
+<tr id="i11" class="rowColor">
+<td class="colFirst"><code>static <a href="RetryingHttpRequesterFilter.BackOffPolicy.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.BackOffPolicy</a></code></td>
+<th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#ofNoRetries()">ofNoRetries</a></span>()</code></th>
+<td class="colLast">
+<div class="block">Special <a href="RetryingHttpRequesterFilter.BackOffPolicy.html" title="class in io.servicetalk.http.netty"><code>RetryingHttpRequesterFilter.BackOffPolicy</code></a> that signals that no retries will be attempted.</div>
+</td>
+</tr>
 </table>
 <ul class="blockList">
 <li class="blockList"><a id="methods.inherited.from.class.java.lang.Object">
@@ -315,7 +324,12 @@ extends java.lang.Object</pre>
 <ul class="blockListLast">
 <li class="blockList">
 <h4>NO_RETRIES</h4>
-<pre>public static final&nbsp;<a href="RetryingHttpRequesterFilter.BackOffPolicy.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.BackOffPolicy</a> NO_RETRIES</pre>
+<pre>@Deprecated
+public static final&nbsp;<a href="RetryingHttpRequesterFilter.BackOffPolicy.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.BackOffPolicy</a> NO_RETRIES</pre>
+<div class="deprecationBlock"><span class="deprecatedLabel">Deprecated.</span>
+<div class="deprecationComment">This will be removed in a future release of ST. Alternative offering here
+ <a href="#ofNoRetries()"><code>ofNoRetries()</code></a>.</div>
+</div>
 <div class="block">Special <a href="RetryingHttpRequesterFilter.BackOffPolicy.html" title="class in io.servicetalk.http.netty"><code>RetryingHttpRequesterFilter.BackOffPolicy</code></a> to signal no retries.</div>
 </li>
 </ul>
@@ -356,6 +370,20 @@ extends java.lang.Object</pre>
 <dd><code>maxRetries</code> - the number of retry attempts for this <a href="RetryingHttpRequesterFilter.BackOffPolicy.html" title="class in io.servicetalk.http.netty"><code>RetryingHttpRequesterFilter.BackOffPolicy</code></a>.</dd>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd>a new <a href="RetryingHttpRequesterFilter.BackOffPolicy.html" title="class in io.servicetalk.http.netty"><code>RetryingHttpRequesterFilter.BackOffPolicy</code></a> that retries failures instantly up-to provided max retries.</dd>
+</dl>
+</li>
+</ul>
+<a id="ofNoRetries()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>ofNoRetries</h4>
+<pre class="methodSignature">public static&nbsp;<a href="RetryingHttpRequesterFilter.BackOffPolicy.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.BackOffPolicy</a>&nbsp;ofNoRetries()</pre>
+<div class="block">Special <a href="RetryingHttpRequesterFilter.BackOffPolicy.html" title="class in io.servicetalk.http.netty"><code>RetryingHttpRequesterFilter.BackOffPolicy</code></a> that signals that no retries will be attempted.</div>
+<dl>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd>a special <a href="RetryingHttpRequesterFilter.BackOffPolicy.html" title="class in io.servicetalk.http.netty"><code>RetryingHttpRequesterFilter.BackOffPolicy</code></a> that signals that no retries will be attempted.</dd>
 </dl>
 </li>
 </ul>

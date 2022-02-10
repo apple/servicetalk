@@ -126,6 +126,10 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <dd><code><a href="AsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">AsyncCloseable</a></code>, <code><a href="../Executor.html" title="interface in io.servicetalk.concurrent">Executor</a></code>, <code><a href="ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a></code>, <code><a href="../TimeSource.html" title="interface in io.servicetalk.concurrent">TimeSource</a></code></dd>
 </dl>
 <dl>
+<dt>All Known Subinterfaces:</dt>
+<dd><code><a href="../../transport/netty/internal/EventLoopAwareNettyIoExecutor.html" title="interface in io.servicetalk.transport.netty.internal">EventLoopAwareNettyIoExecutor</a></code>, <code><a href="../../transport/api/IoExecutor.html" title="interface in io.servicetalk.transport.api">IoExecutor</a></code>, <code><a href="../../transport/netty/internal/NettyIoExecutor.html" title="interface in io.servicetalk.transport.netty.internal">NettyIoExecutor</a></code></dd>
+</dl>
+<dl>
 <dt>All Known Implementing Classes:</dt>
 <dd><code><a href="DelegatingExecutor.html" title="class in io.servicetalk.concurrent.api">DelegatingExecutor</a></code>, <code><a href="TestExecutor.html" title="class in io.servicetalk.concurrent.api">TestExecutor</a></code></dd>
 </dl>
@@ -135,7 +139,7 @@ extends <a href="../Executor.html" title="interface in io.servicetalk.concurrent
 <div class="block">A general abstraction to execute immediate and delayed tasks.
 
  <h2>Long running tasks</h2>
- <a href="Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> implementations are expected to run long running (blocking) tasks which may depend on other tasks
+ <a href="Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> implementations are expected to run long-running (blocking) tasks which may depend on other tasks
  submitted to the same <a href="Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> instance.
  In order to avoid deadlocks, it is generally a good idea to not allow task queuing in the <a href="Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a>.</div>
 </li>

@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Async context :: ServiceTalk Docs</title>
+    <title>AsyncContext :: ServiceTalk Docs</title>
     <meta name="generator" content="Antora 2.3.4">
     <link rel="stylesheet" href="../../_/css/site.css">
 <meta name="description" content="ServiceTalk is a JVM network application framework with APIs tailored to specific protocols (e.g. HTTP/1.x, HTTP/2.x, etc…​) and supports multiple programming paradigms.">
@@ -1044,13 +1044,13 @@
 </div>
 </div>
         <article class="doc">
-<h1>Async context</h1>
+<h1><code>AsyncContext</code></h1>
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
 <p>ServiceTalk is a fully asynchronous framework and therefore multiple requests may be multiplexed on the same thread.
 Also depending on the application&#8217;s threading model a single request may be processed on different threads. This means
-that libraries that rely upon ThreadLocal storage such as <a href="http://www.slf4j.org/manual.html#mdc"><code>MDC</code></a> would not work as
+that libraries that rely upon ThreadLocal storage such as <a href="https://www.slf4j.org/manual.html#mdc"><code>MDC</code></a> would not work as
 expected. To overcome this limitation, we provide an abstraction called <code>AsyncContext</code> which hooks into the internal
 async machinery to make sure thread local context data is propagated along with the request.</p>
 </div>
@@ -1073,7 +1073,7 @@ API has a few benefits:</p>
 asynchronous execution and also share threads for processing different requests. For example the
 <a href="https://github.com/opentracing/opentracing-java/blob/master/opentracing-api/src/main/java/io/opentracing/Tracer.java">OpenTracing APIs</a>
 and the
-<a href="http://www.slf4j.org/api/org/slf4j/MDC.html">MDC APIs</a> assume state is stored in some static structure.</p>
+<a href="https://www.slf4j.org/api/org/slf4j/MDC.html">MDC APIs</a> assume state is stored in some static structure.</p>
 </div>
 <div class="paragraph">
 <p><strong>API is decoupled from application data APIs</strong></p>

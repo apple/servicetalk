@@ -98,6 +98,7 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <li><a href="#interface">Interfaces</a></li>
 <li><a href="#class">Classes</a></li>
 <li><a href="#exception">Exceptions</a></li>
+<li><a href="#field">Fields</a></li>
 <li><a href="#method">Methods</a></li>
 <li><a href="#constructor">Constructors</a></li>
 </ul>
@@ -368,6 +369,41 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/serialization/api/SerializationException.html" title="class in io.servicetalk.serialization.api">io.servicetalk.serialization.api.SerializationException</a></th>
 <td class="colLast">
 <div class="deprecationComment">Use <a href="io/servicetalk/serializer/api/SerializationException.html" title="class in io.servicetalk.serializer.api"><code>SerializationException</code></a>.</div>
+</td>
+</tr>
+</tbody>
+</table>
+</li>
+</ul>
+<a id="field">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<table class="deprecatedSummary">
+<caption><span>Fields</span><span class="tabEnd">&nbsp;</span></caption>
+<tr>
+<th class="colFirst" scope="col">Field</th>
+<th class="colLast" scope="col">Description</th>
+</tr>
+<tbody>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.BackOffPolicy.html#NO_RETRIES">io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolicy.NO_RETRIES</a></th>
+<td class="colLast">
+<div class="deprecationComment">This will be removed in a future release of ST. Alternative offering here
+ <a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.BackOffPolicy.html#ofNoRetries()"><code>RetryingHttpRequesterFilter.BackOffPolicy.ofNoRetries()</code></a>.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.HttpResponseException.html#message">io.servicetalk.http.netty.RetryingHttpRequesterFilter.HttpResponseException.message</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <code>Throwable.getMessage()</code>.</div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.HttpResponseException.html#metaData">io.servicetalk.http.netty.RetryingHttpRequesterFilter.HttpResponseException.metaData</a></th>
+<td class="colLast">
+<div class="deprecationComment">Use <a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.HttpResponseException.html#metaData()"><code>RetryingHttpRequesterFilter.HttpResponseException.metaData()</code></a>.</div>
 </td>
 </tr>
 </tbody>
@@ -872,6 +908,12 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/transport/api/TransportObserver.html#onNewConnection()">io.servicetalk.transport.api.TransportObserver.onNewConnection()</a></th>
 <td class="colLast">
 <div class="deprecationComment">Use <a href="io/servicetalk/transport/api/TransportObserver.html#onNewConnection(java.lang.Object,java.lang.Object)"><code>TransportObserver.onNewConnection(Object, Object)</code></a></div>
+</td>
+</tr>
+<tr class="altColor">
+<th class="colDeprecatedItemName" scope="row"><a href="io/servicetalk/transport/netty/internal/NettyIoExecutor.html#asExecutor()">io.servicetalk.transport.netty.internal.NettyIoExecutor.asExecutor()</a></th>
+<td class="colLast">
+<div class="deprecationComment">IoExecutor now implements <a href="io/servicetalk/concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> so this method is redundant.</div>
 </td>
 </tr>
 </tbody>
