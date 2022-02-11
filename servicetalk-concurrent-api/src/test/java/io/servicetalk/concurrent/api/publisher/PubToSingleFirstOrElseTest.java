@@ -45,7 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PubToSingleFirstOrElseTest {
     @RegisterExtension
-    final ExecutorExtension<Executor> executorExtension = ExecutorExtension.withCachedExecutor();
+    static final ExecutorExtension<Executor> EXEC = ExecutorExtension.withCachedExecutor().setClassLevel(true);
     private final TestSingleSubscriber<String> listenerRule = new TestSingleSubscriber<>();
     private final TestPublisher<String> publisher = new TestPublisher<>();
     private final TestSubscription subscription = new TestSubscription();
@@ -128,7 +128,7 @@ class PubToSingleFirstOrElseTest {
                         currentThread()));
             }
             analyzed.countDown();
-        }).subscribeOn(executorExtension.executor()).firstOrElse(() -> {
+        }).subscribeOn(EXEC.executor()).firstOrElse(() -> {
             throw new NoSuchElementException();
         }).toFuture().get();
         analyzed.await();

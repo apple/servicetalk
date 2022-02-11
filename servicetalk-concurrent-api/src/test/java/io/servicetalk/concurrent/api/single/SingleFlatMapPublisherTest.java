@@ -49,7 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class SingleFlatMapPublisherTest {
     @RegisterExtension
-    final ExecutorExtension<Executor> executorExtension = ExecutorExtension.withCachedExecutor();
+    static final ExecutorExtension<Executor> EXEC = ExecutorExtension.withCachedExecutor().setClassLevel(true);
 
     private final TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
     private final TestPublisher<String> publisher = new TestPublisher.Builder<String>()
@@ -161,7 +161,7 @@ final class SingleFlatMapPublisherTest {
                     }
                     analyzed.countDown();
                 })
-                .subscribeOn(executorExtension.executor())
+                .subscribeOn(EXEC.executor())
                 .flatMapPublisher(t -> Publisher.never())
                 .forEach(__ -> { }).cancel();
         analyzed.await();

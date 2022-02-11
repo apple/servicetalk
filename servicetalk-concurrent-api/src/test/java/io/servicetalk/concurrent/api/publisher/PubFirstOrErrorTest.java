@@ -36,7 +36,7 @@ import static org.hamcrest.Matchers.nullValue;
 
 class PubFirstOrErrorTest {
     @RegisterExtension
-    final ExecutorExtension<Executor> executorExtension = ExecutorExtension.withCachedExecutor();
+    static final ExecutorExtension<Executor> EXEC = ExecutorExtension.withCachedExecutor().setClassLevel(true);
     private final TestSingleSubscriber<String> listenerRule = new TestSingleSubscriber<>();
     private final TestPublisher<String> publisher = new TestPublisher<>();
 
@@ -55,7 +55,7 @@ class PubFirstOrErrorTest {
     @Test
     void asyncSingleItemCompleted() throws Exception {
         toSource(publisher.firstOrError()).subscribe(listenerRule);
-        executorExtension.executor().submit(() -> {
+        EXEC.executor().submit(() -> {
             publisher.onNext("hello");
             publisher.onComplete();
         }).toFuture().get();
@@ -65,7 +65,7 @@ class PubFirstOrErrorTest {
     @Test
     void asyncMultipleItemCompleted() throws Exception {
         toSource(publisher.firstOrError()).subscribe(listenerRule);
-        executorExtension.executor().submit(() -> {
+        EXEC.executor().submit(() -> {
             publisher.onNext("foo", "bar");
             publisher.onComplete();
         }).toFuture().get();

@@ -41,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 
 class ReduceSingleTest {
     @RegisterExtension
-    final ExecutorExtension<Executor> executorExtension = ExecutorExtension.withCachedExecutor();
+    static final ExecutorExtension<Executor> EXEC = ExecutorExtension.withCachedExecutor().setClassLevel(true);
 
     private final TestSingleSubscriber<String> listenerRule = new TestSingleSubscriber<>();
     private final TestPublisher<String> publisher = new TestPublisher<>();
@@ -125,7 +125,7 @@ class ReduceSingleTest {
                                               currentThread()));
             }
             analyzed.countDown();
-        }).subscribeOn(executorExtension.executor()).collect(ArrayList::new, (objects, s) -> {
+        }).subscribeOn(EXEC.executor()).collect(ArrayList::new, (objects, s) -> {
             objects.add(s);
             return objects;
         }).toFuture().get();

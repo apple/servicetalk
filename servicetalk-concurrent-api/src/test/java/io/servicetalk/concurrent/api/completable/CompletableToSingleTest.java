@@ -34,7 +34,7 @@ import static org.hamcrest.Matchers.nullValue;
 
 class CompletableToSingleTest {
     @RegisterExtension
-    final ExecutorExtension<Executor> executorExtension = ExecutorExtension.withCachedExecutor();
+    static final ExecutorExtension<Executor> EXEC = ExecutorExtension.withCachedExecutor().setClassLevel(true);
 
     private TestSingleSubscriber<Void> subscriber = new TestSingleSubscriber<>();
 
@@ -55,7 +55,7 @@ class CompletableToSingleTest {
                         currentThread()));
             }
             analyzed.countDown();
-        }).subscribeOn(executorExtension.executor()).toSingle().subscribe(__ -> { }).cancel();
+        }).subscribeOn(EXEC.executor()).toSingle().subscribe(__ -> { }).cancel();
         analyzed.await();
         assertThat("Unexpected errors observed: " + errors, errors, hasSize(0));
     }

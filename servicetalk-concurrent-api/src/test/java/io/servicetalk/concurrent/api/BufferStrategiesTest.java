@@ -77,7 +77,7 @@ import static org.mockito.Mockito.when;
 class BufferStrategiesTest {
 
     @RegisterExtension
-    static final ExecutorExtension<Executor> EXECUTOR_EXTENSION = withCachedExecutor().setClassLevel(true);
+    static final ExecutorExtension<Executor> EXEC = withCachedExecutor().setClassLevel(true);
 
     @RegisterExtension
     final ExecutorExtension<TestExecutor> testExecutorExtension = withTestExecutor();
@@ -110,7 +110,7 @@ class BufferStrategiesTest {
                 .ignoreElements().subscribe();
         CyclicBarrier accumulateAndTimerStarted = new CyclicBarrier(2);
 
-        Future<Object> timersFuture = EXECUTOR_EXTENSION.executor().submit(() -> {
+        Future<Object> timersFuture = EXEC.executor().submit(() -> {
             accumulateAndTimerStarted.await();
             while (boundariesDone.getCount() > 0) {
                 timers.take().onComplete();
@@ -118,7 +118,7 @@ class BufferStrategiesTest {
             return null;
         }).toFuture();
 
-        Future<Object> accumulateFuture = EXECUTOR_EXTENSION.executor().submit(() -> {
+        Future<Object> accumulateFuture = EXEC.executor().submit(() -> {
             accumulateAndTimerStarted.await();
             int boundariesReceived = 0;
             Iterator<Integer> itemsToPopulate = items.iterator();

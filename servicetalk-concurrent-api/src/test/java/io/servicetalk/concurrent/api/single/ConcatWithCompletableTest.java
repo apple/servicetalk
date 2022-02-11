@@ -33,7 +33,7 @@ import static org.hamcrest.Matchers.nullValue;
 
 class ConcatWithCompletableTest {
     @RegisterExtension
-    final ExecutorExtension<Executor> executorExtension = ExecutorExtension.withCachedExecutor();
+    static final ExecutorExtension<Executor> EXEC = ExecutorExtension.withCachedExecutor().setClassLevel(true);
     private final TestSingleSubscriber<String> listener = new TestSingleSubscriber<>();
     private LegacyTestSingle<String> single = new LegacyTestSingle<>();
     private LegacyTestCompletable completable = new LegacyTestCompletable();

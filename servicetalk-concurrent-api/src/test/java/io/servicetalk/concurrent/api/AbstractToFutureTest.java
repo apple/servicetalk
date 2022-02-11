@@ -44,7 +44,8 @@ import static org.mockito.Mockito.verify;
 public abstract class AbstractToFutureTest<T> {
 
     @RegisterExtension
-    protected final ExecutorExtension<Executor> exec = ExecutorExtension.withCachedExecutor();
+    protected static final ExecutorExtension<Executor> EXEC = ExecutorExtension.withCachedExecutor()
+            .setClassLevel(true);
 
     protected final Cancellable mockCancellable = Mockito.mock(Cancellable.class);
 
@@ -81,7 +82,7 @@ public abstract class AbstractToFutureTest<T> {
     @Test
     void testSucceededAfterGet() throws Exception {
         Future<T> future = toFuture();
-        exec.executor().schedule(this::completeSource, 10, MILLISECONDS);
+        EXEC.executor().schedule(this::completeSource, 10, MILLISECONDS);
         assertThat(future.get(), is(expectedResult()));
         assertThat(future.isDone(), is(true));
         assertThat(future.isCancelled(), is(false));
@@ -91,7 +92,7 @@ public abstract class AbstractToFutureTest<T> {
     @Test
     void testSucceededAfterGetWithTimeout() throws Exception {
         Future<T> future = toFuture();
-        exec.executor().schedule(this::completeSource, 10, MILLISECONDS);
+        EXEC.executor().schedule(this::completeSource, 10, MILLISECONDS);
         assertThat(future.get(3, SECONDS), is(expectedResult()));
         assertThat(future.isDone(), is(true));
         assertThat(future.isCancelled(), is(false));
@@ -103,7 +104,7 @@ public abstract class AbstractToFutureTest<T> {
         Future<T> future = toFuture();
 
         CountDownLatch latch = new CountDownLatch(1);
-        exec.executor().execute(() -> {
+        EXEC.executor().execute(() -> {
             try {
                 latch.await();
                 completeSource();
@@ -158,7 +159,7 @@ public abstract class AbstractToFutureTest<T> {
     @Test
     void testFailedAfterGet() throws Exception {
         Future<T> future = toFuture();
-        exec.executor().schedule(() -> failSource(DELIBERATE_EXCEPTION), 10, MILLISECONDS);
+        EXEC.executor().schedule(() -> failSource(DELIBERATE_EXCEPTION), 10, MILLISECONDS);
         try {
             future.get();
             fail("Expected DeliberateException");
@@ -173,7 +174,7 @@ public abstract class AbstractToFutureTest<T> {
     @Test
     void testFailedAfterGetWithTimeout() throws Exception {
         Future<T> future = toFuture();
-        exec.executor().schedule(() -> failSource(DELIBERATE_EXCEPTION), 10, MILLISECONDS);
+        EXEC.executor().schedule(() -> failSource(DELIBERATE_EXCEPTION), 10, MILLISECONDS);
         try {
             future.get(3, SECONDS);
             fail("Expected DeliberateException");
@@ -197,7 +198,7 @@ public abstract class AbstractToFutureTest<T> {
         Future<T> future = toFuture();
 
         CountDownLatch latch = new CountDownLatch(3);
-        Completable task = exec.executor().submit(() -> {
+        Completable task = EXEC.executor().submit(() -> {
             try {
                 assertThat(future.get(), is(expectedResult()));
                 latch.countDown();
@@ -209,7 +210,7 @@ public abstract class AbstractToFutureTest<T> {
         task.subscribe();
         task.subscribe();
 
-        exec.executor().schedule(this::completeSource, 100, MILLISECONDS);
+        EXEC.executor().schedule(this::completeSource, 100, MILLISECONDS);
         latch.await();
         assertThat(future.isDone(), is(true));
     }

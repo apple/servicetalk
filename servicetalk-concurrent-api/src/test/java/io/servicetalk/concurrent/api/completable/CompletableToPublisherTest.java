@@ -40,7 +40,7 @@ import static org.hamcrest.Matchers.sameInstance;
 
 class CompletableToPublisherTest {
     @RegisterExtension
-    final ExecutorExtension<Executor> executorExtension = ExecutorExtension.withCachedExecutor();
+    static final ExecutorExtension<Executor> EXEC = ExecutorExtension.withCachedExecutor().setClassLevel(true);
 
     private TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
 
@@ -76,7 +76,7 @@ class CompletableToPublisherTest {
             }
         })
                 .afterCancel(analyzed::countDown)
-                .subscribeOn(executorExtension.executor())
+                .subscribeOn(EXEC.executor())
                 .<String>toPublisher())
                 .subscribe(subscriber);
         TestCancellable cancellable = new TestCancellable();
@@ -133,7 +133,7 @@ class CompletableToPublisherTest {
         final Thread testThread = currentThread();
         CountDownLatch analyzed = new CountDownLatch(1);
         CountDownLatch receivedOnSubscribe = new CountDownLatch(1);
-        toSource(completable.publishOn(executorExtension.executor())
+        toSource(completable.publishOn(EXEC.executor())
                 .beforeOnComplete(() -> {
                     if (currentThread() == testThread) {
                         errors.add(new AssertionError("Invalid thread invoked onComplete " +
