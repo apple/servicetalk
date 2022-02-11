@@ -107,6 +107,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
 
     static final Duration SD_RETRY_STRATEGY_INIT_DURATION = ofSeconds(10);
     static final Duration SD_RETRY_STRATEGY_JITTER = ofSeconds(5);
+
+    private final NewToDeprecatedFilter<R> newToDeprecatedFilter;
     @Nullable
     private final U address;
     @Nullable
@@ -136,27 +138,32 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     private RetryingHttpRequesterFilter retryingHttpRequesterFilter;
 
     DefaultSingleAddressHttpClientBuilder(
-            final U address, final ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer) {
+            final U address, final ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer,
+            final NewToDeprecatedFilter<R> newToDeprecatedFilter) {
         this.address = requireNonNull(address);
         config = new HttpClientConfig();
         executionContextBuilder = new HttpExecutionContextBuilder();
         influencerChainBuilder = new ClientStrategyInfluencerChainBuilder();
         this.loadBalancerFactory = DefaultHttpLoadBalancerFactory.Builder.<R>fromDefaults().build();
         this.serviceDiscoverer = requireNonNull(serviceDiscoverer);
+        this.newToDeprecatedFilter = requireNonNull(newToDeprecatedFilter);
     }
 
     DefaultSingleAddressHttpClientBuilder(
-            final ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer) {
+            final ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer,
+            final NewToDeprecatedFilter<R> newToDeprecatedFilter) {
         address = null; // Unknown address - template builder pending override via: copy(address)
         config = new HttpClientConfig();
         executionContextBuilder = new HttpExecutionContextBuilder();
         influencerChainBuilder = new ClientStrategyInfluencerChainBuilder();
         this.loadBalancerFactory = DefaultHttpLoadBalancerFactory.Builder.<R>fromDefaults().build();
         this.serviceDiscoverer = requireNonNull(serviceDiscoverer);
+        this.newToDeprecatedFilter = requireNonNull(newToDeprecatedFilter);
     }
 
     private DefaultSingleAddressHttpClientBuilder(@Nullable final U address,
-                                                  final DefaultSingleAddressHttpClientBuilder<U, R> from) {
+                                                  final DefaultSingleAddressHttpClientBuilder<U, R> from,
+                                                  final NewToDeprecatedFilter<R> newToDeprecatedFilter) {
         this.address = address;
         proxyAddress = from.proxyAddress;
         config = new HttpClientConfig(from.config);
@@ -173,6 +180,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         autoRetry = from.autoRetry;
         connectionFactoryFilter = from.connectionFactoryFilter;
         retryingHttpRequesterFilter = from.retryingHttpRequesterFilter;
+        this.newToDeprecatedFilter = requireNonNull(newToDeprecatedFilter);
     }
 
     //FIXME: 0.42 - to be removed when auto-retry is removed.
@@ -181,31 +189,34 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     }
 
     private DefaultSingleAddressHttpClientBuilder<U, R> copy() {
-        return new DefaultSingleAddressHttpClientBuilder<>(address, this);
+        return new DefaultSingleAddressHttpClientBuilder<>(address, this, new NewToDeprecatedFilter<>());
     }
 
     private DefaultSingleAddressHttpClientBuilder<U, R> copy(final U address) {
-        return new DefaultSingleAddressHttpClientBuilder<>(requireNonNull(address), this);
+        return new DefaultSingleAddressHttpClientBuilder<>(requireNonNull(address), this,
+                new NewToDeprecatedFilter<>());
     }
 
     static DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forHostAndPort(
             final HostAndPort address) {
-        return new DefaultSingleAddressHttpClientBuilder<>(address, globalDnsServiceDiscoverer());
+        return new DefaultSingleAddressHttpClientBuilder<>(address, globalDnsServiceDiscoverer(),
+                NEW_TO_DEPRECATED_FILTER);
     }
 
     static DefaultSingleAddressHttpClientBuilder<String, InetSocketAddress> forServiceAddress(
             final String serviceName) {
-        return new DefaultSingleAddressHttpClientBuilder<>(serviceName, globalSrvDnsServiceDiscoverer());
+        return new DefaultSingleAddressHttpClientBuilder<>(serviceName, globalSrvDnsServiceDiscoverer(),
+                NEW_TO_DEPRECATED_FILTER);
     }
 
     static <U, R extends SocketAddress> DefaultSingleAddressHttpClientBuilder<U, R> forResolvedAddress(
             final U u, final Function<U, R> toResolvedAddressMapper) {
         ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> sd = new NoopServiceDiscoverer<>(toResolvedAddressMapper);
-        return new DefaultSingleAddressHttpClientBuilder<>(u, sd);
+        return new DefaultSingleAddressHttpClientBuilder<>(u, sd, new NewToDeprecatedFilter<>());
     }
 
     static DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forUnknownHostAndPort() {
-        return new DefaultSingleAddressHttpClientBuilder<>(globalDnsServiceDiscoverer());
+        return new DefaultSingleAddressHttpClientBuilder<>(globalDnsServiceDiscoverer(), NEW_TO_DEPRECATED_FILTER);
     }
 
     static final class HttpClientBuildContext<U, R> {
@@ -250,7 +261,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         }
 
         StreamingHttpClient build() {
-            return buildStreaming(this);
+            return buildStreaming(this, builder.newToDeprecatedFilter);
         }
 
         ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer(
@@ -267,10 +278,11 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
 
     @Override
     public StreamingHttpClient buildStreaming() {
-        return buildStreaming(copyBuildCtx());
+        return buildStreaming(copyBuildCtx(), newToDeprecatedFilter);
     }
 
-    private static <U, R> StreamingHttpClient buildStreaming(final HttpClientBuildContext<U, R> ctx) {
+    private static <U, R> StreamingHttpClient buildStreaming(final HttpClientBuildContext<U, R> ctx,
+                                                             final NewToDeprecatedFilter<R> newToDeprecatedFilter) {
         final ReadOnlyHttpClientConfig roConfig = ctx.httpConfig().asReadOnly();
         if (roConfig.h2Config() != null && roConfig.hasProxy()) {
             throw new IllegalStateException("Proxying is not yet supported with HTTP/2");
@@ -334,11 +346,11 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
                 // If we're talking to a proxy over http (not https), rewrite the request-target to absolute-form, as
                 // specified by the RFC: https://tools.ietf.org/html/rfc7230#section-5.3.2
                 currClientFilterFactory = appendFilter(currClientFilterFactory,
-                        ctx.builder.proxyAbsoluteAddressFilterFactory());
+                        ctx.builder.proxyAbsoluteAddressFilterFactory(), newToDeprecatedFilter);
             }
             if (ctx.builder.addHostHeaderFallbackFilter) {
                 currClientFilterFactory = appendFilter(currClientFilterFactory, new HostHeaderHttpRequesterFilter(
-                        ctx.builder.hostToCharSequenceFunction.apply(ctx.builder.address)));
+                        ctx.builder.hostToCharSequenceFunction.apply(ctx.builder.address)), newToDeprecatedFilter);
             }
 
             FilterableStreamingHttpClient lbClient = closeOnException.prepend(
@@ -347,7 +359,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
                 lbClient = new AutoRetryFilter(lbClient,
                         ctx.builder.autoRetry.newStrategy(lb.eventStream(), ctx.sdStatus));
             } else if (ctx.builder.autoRetry == DEFAULT_AUTO_RETRY && ctx.builder.retryingHttpRequesterFilter == null) {
-                currClientFilterFactory = appendFilter(currClientFilterFactory, DEFAULT_RETRY_FILTER);
+                currClientFilterFactory = appendFilter(currClientFilterFactory, DEFAULT_RETRY_FILTER,
+                        newToDeprecatedFilter);
             }
             return new FilterableClientToClient(currClientFilterFactory != null ?
                     currClientFilterFactory.create(lbClient, lb.eventStream(), ctx.sdStatus) : lbClient,
@@ -394,11 +407,12 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
                 ctx.builder.address.toString() : ctx.builder.address + " (via " + ctx.proxyAddress + ")";
     }
 
-    private static ContextAwareStreamingHttpClientFilterFactory appendFilter(
+    private static <R> ContextAwareStreamingHttpClientFilterFactory appendFilter(
             @Nullable final ContextAwareStreamingHttpClientFilterFactory currClientFilterFactory,
-            final StreamingHttpClientFilterFactory appendClientFilterFactory) {
+            final StreamingHttpClientFilterFactory appendClientFilterFactory,
+            final NewToDeprecatedFilter<R> newToDeprecatedFilter) {
         return appendFilter0(appendFilter0(currClientFilterFactory, appendClientFilterFactory),
-                NEW_TO_DEPRECATED_FILTER);
+                newToDeprecatedFilter);
     }
 
     private static ContextAwareStreamingHttpClientFilterFactory appendFilter0(
@@ -532,7 +546,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
             final StreamingHttpConnectionFilterFactory factory) {
         requireNonNull(factory);
         connectionFilterFactory = appendConnectionFilter(appendConnectionFilter(connectionFilterFactory, factory),
-                NEW_TO_DEPRECATED_FILTER);
+                newToDeprecatedFilter);
         influencerChainBuilder.add(factory);
         return this;
     }
@@ -548,7 +562,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     public DefaultSingleAddressHttpClientBuilder<U, R> appendConnectionFactoryFilter(
             final ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> factory) {
         requireNonNull(factory);
-        connectionFactoryFilter = appendConnectionFactoryFilter(connectionFactoryFilter, factory);
+        connectionFactoryFilter = appendConnectionFactoryFilter(
+                appendConnectionFactoryFilter(connectionFactoryFilter, factory), newToDeprecatedFilter);
         influencerChainBuilder.add(factory);
         return this;
     }
@@ -632,7 +647,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
             }
             retryingHttpRequesterFilter = (RetryingHttpRequesterFilter) factory;
         }
-        clientFilterFactory = appendFilter(clientFilterFactory, factory);
+        clientFilterFactory = appendFilter(clientFilterFactory, factory, newToDeprecatedFilter);
         influencerChainBuilder.add(factory);
         return this;
     }

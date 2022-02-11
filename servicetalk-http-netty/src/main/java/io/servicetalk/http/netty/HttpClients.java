@@ -42,6 +42,7 @@ import java.util.function.Function;
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.forUnknownHostAndPort;
+import static io.servicetalk.http.netty.NewToDeprecatedFilter.NEW_TO_DEPRECATED_FILTER;
 import static java.util.function.Function.identity;
 
 /**
@@ -85,7 +86,7 @@ public final class HttpClients {
             final ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>>
                     serviceDiscoverer) {
         return new DefaultMultiAddressUrlHttpClientBuilder(
-                new DefaultSingleAddressHttpClientBuilder<>(serviceDiscoverer));
+                new DefaultSingleAddressHttpClientBuilder<>(serviceDiscoverer, NEW_TO_DEPRECATED_FILTER));
     }
 
     /**
@@ -301,7 +302,7 @@ public final class HttpClients {
     public static <U, R> SingleAddressHttpClientBuilder<U, R> forSingleAddress(
             final ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer,
             final U address) {
-        return new DefaultSingleAddressHttpClientBuilder<>(address, serviceDiscoverer);
+        return new DefaultSingleAddressHttpClientBuilder<>(address, serviceDiscoverer, new NewToDeprecatedFilter<>());
     }
 
     /**
@@ -348,6 +349,6 @@ public final class HttpClients {
                             public Completable closeAsyncGracefully() {
                                 return closeable.closeAsyncGracefully();
                             }
-                        }), serviceDiscoverer, partitionAttributesBuilderFactory);
+                        }, new NewToDeprecatedFilter<>()), serviceDiscoverer, partitionAttributesBuilderFactory);
     }
 }

@@ -15,6 +15,9 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.client.api.ConnectionFactory;
+import io.servicetalk.client.api.ConnectionFactoryFilter;
+import io.servicetalk.client.api.DelegatingConnectionFactory;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableReservedStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
@@ -30,6 +33,10 @@ import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.transport.api.TransportObserver;
+
+import java.net.InetSocketAddress;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
 
@@ -42,14 +49,11 @@ import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KE
  */
 // 0.41 branch requires two copies of this class: one in http-api, one in http-netty. Keep them identical.
 @Deprecated
-final class NewToDeprecatedFilter implements StreamingHttpClientFilterFactory, StreamingHttpConnectionFilterFactory,
-                                             HttpExecutionStrategyInfluencer {
+final class NewToDeprecatedFilter<R> implements StreamingHttpClientFilterFactory, StreamingHttpConnectionFilterFactory,
+                                                ConnectionFactoryFilter<R, FilterableStreamingHttpConnection>,
+                                                HttpExecutionStrategyInfluencer {
 
-    static final NewToDeprecatedFilter NEW_TO_DEPRECATED_FILTER = new NewToDeprecatedFilter();
-
-    private NewToDeprecatedFilter() {
-        // Singleton
-    }
+    static final NewToDeprecatedFilter<InetSocketAddress> NEW_TO_DEPRECATED_FILTER = new NewToDeprecatedFilter<>();
 
     @Override
     public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {
@@ -122,5 +126,17 @@ final class NewToDeprecatedFilter implements StreamingHttpClientFilterFactory, S
     static HttpExecutionStrategy requestStrategy(HttpRequestMetaData metaData, HttpExecutionStrategy fallback) {
         final HttpExecutionStrategy strategy = metaData.context().get(HTTP_EXECUTION_STRATEGY_KEY);
         return strategy != null ? strategy : fallback;
+    }
+
+    @Override
+    public ConnectionFactory<R, FilterableStreamingHttpConnection> create(
+            final ConnectionFactory<R, FilterableStreamingHttpConnection> cf) {
+        return new DelegatingConnectionFactory<R, FilterableStreamingHttpConnection>(cf) {
+            @Override
+            public Single<FilterableStreamingHttpConnection> newConnection(
+                    final R resolvedAddress, @Nullable final TransportObserver observer) {
+                return delegate().newConnection(resolvedAddress, observer).map(NewToDeprecatedFilter.this::create);
+            }
+        };
     }
 }
