@@ -1023,7 +1023,7 @@ public abstract class Single<T> {
      * @return A {@link Publisher} that emits all items from this {@link Single} and from all re-subscriptions whenever
      * the operation is repeated.
      *
-     * @see <a href="http://reactivex.io/documentation/operatoRepeatWhenSinglers/retry.html">ReactiveX retry operator.</a>
+     * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
      */
     public final Publisher<T> repeatWhen(BiIntFunction<? super T, ? extends Completable> repeatWhen) {
         return new RepeatWhenSingle<>(this, repeatWhen);
