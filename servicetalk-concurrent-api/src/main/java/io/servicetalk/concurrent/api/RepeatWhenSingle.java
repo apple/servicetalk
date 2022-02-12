@@ -46,16 +46,16 @@ final class RepeatWhenSingle<T> extends AbstractNoHandleSubscribePublisher<T> {
     void handleSubscribe(Subscriber<? super T> subscriber,
                          ContextMap contextMap, AsyncContextProvider contextProvider) {
         try {
-            subscriber.onSubscribe(new RedoSubscription<>(this, subscriber, contextMap, contextProvider));
+            subscriber.onSubscribe(new RepeatSubscription<>(this, subscriber, contextMap, contextProvider));
         } catch (Throwable cause) {
             handleExceptionFromOnSubscribe(subscriber, cause);
         }
     }
 
-    private static final class RedoSubscription<T> implements Subscription {
+    private static final class RepeatSubscription<T> implements Subscription {
         @SuppressWarnings("rawtypes")
-        private static final AtomicLongFieldUpdater<RedoSubscription> outstandingDemandUpdater =
-                AtomicLongFieldUpdater.newUpdater(RedoSubscription.class, "outstandingDemand");
+        private static final AtomicLongFieldUpdater<RepeatSubscription> outstandingDemandUpdater =
+                AtomicLongFieldUpdater.newUpdater(RepeatSubscription.class, "outstandingDemand");
         private static final long TERMINATED = Long.MIN_VALUE;
         private static final long CANCELLED = TERMINATED + 1;
         private static final long MIN_INVALID_N = CANCELLED + 1;
@@ -68,8 +68,8 @@ final class RepeatWhenSingle<T> extends AbstractNoHandleSubscribePublisher<T> {
         private volatile long outstandingDemand;
         private int redoCount;
 
-        private RedoSubscription(final RepeatWhenSingle<T> outer, final Subscriber<? super T> subscriber,
-                                 final ContextMap contextMap, final AsyncContextProvider contextProvider) {
+        private RepeatSubscription(final RepeatWhenSingle<T> outer, final Subscriber<? super T> subscriber,
+                                   final ContextMap contextMap, final AsyncContextProvider contextProvider) {
             this.outer = outer;
             this.subscriber = subscriber;
             this.contextMap = contextMap;
@@ -143,7 +143,7 @@ final class RepeatWhenSingle<T> extends AbstractNoHandleSubscribePublisher<T> {
                             // This thread owns the subscriber, no concurrency expected, no atomic necessary.
                             onErrorInternal(newExceptionForInvalidRequestN(prev));
                             break;
-                        } else if (outstandingDemandUpdater.compareAndSet(RedoSubscription.this, prev, prev - 1)) {
+                        } else if (outstandingDemandUpdater.compareAndSet(RepeatSubscription.this, prev, prev - 1)) {
                             if (prev > 1) {
                                 outer.original.delegateSubscribe(RepeatSubscriber.this, contextMap, contextProvider);
                             }

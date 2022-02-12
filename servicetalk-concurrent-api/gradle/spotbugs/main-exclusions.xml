@@ -31,7 +31,7 @@
     <Or>
       <Class name="io.servicetalk.concurrent.api.ContextPreservingCompletableFuture"/>
       <Class name="io.servicetalk.concurrent.api.CancelPropagatingCompletableFuture"/>
-      <Class name="io.servicetalk.concurrent.api.RepeatWhenSingle$RedoSubscription$RepeatSubscriber"/>
+      <Class name="io.servicetalk.concurrent.api.RepeatWhenSingle$RepeatSubscription$RepeatSubscriber"/>
     </Or>
     <Or>
       <Method name="getNow"/>
