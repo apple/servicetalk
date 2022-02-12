@@ -16,7 +16,6 @@
 package io.servicetalk.concurrent.reactivestreams.tck;
 
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.Single;
 
 import org.testng.annotations.Test;
 
@@ -24,15 +23,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.failed;
+import static io.servicetalk.concurrent.api.Single.defer;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 
 @Test
 public class SingleRepeatWhenTckTest extends AbstractPublisherTckTest<Integer> {
     @Override
     public Publisher<Integer> createServiceTalkPublisher(final long elements) {
-        AtomicInteger value = new AtomicInteger();
-        return Single.defer(() -> Single.succeeded(value.incrementAndGet()))
-                .repeatWhen((repeat, v) -> repeat < elements ? completed() : failed(DELIBERATE_EXCEPTION));
+        final AtomicInteger value = new AtomicInteger();
+        return defer(() -> succeeded(value.incrementAndGet()))
+                .repeatWhen((i, __) -> i < elements ? completed() : failed(DELIBERATE_EXCEPTION));
     }
 
     @Override

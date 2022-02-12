@@ -35,11 +35,11 @@ import static java.util.Objects.requireNonNull;
 final class RepeatWhenSingle<T> extends AbstractNoHandleSubscribePublisher<T> {
     static final Exception END_REPEAT_EXCEPTION = unknownStackTrace(new Exception(), RepeatWhenSingle.class, "<init>");
     private final Single<T> original;
-    private final BiIntFunction<? super T, ? extends Completable> shouldRedo;
+    private final BiIntFunction<? super T, ? extends Completable> repeater;
 
-    RepeatWhenSingle(final Single<T> original, final BiIntFunction<? super T, ? extends Completable> shouldRedo) {
+    RepeatWhenSingle(final Single<T> original, final BiIntFunction<? super T, ? extends Completable> repeater) {
         this.original = original;
-        this.shouldRedo = requireNonNull(shouldRedo);
+        this.repeater = requireNonNull(repeater);
     }
 
     @Override
@@ -64,6 +64,7 @@ final class RepeatWhenSingle<T> extends AbstractNoHandleSubscribePublisher<T> {
         private final Subscriber<? super T> subscriber;
         private final ContextMap contextMap;
         private final AsyncContextProvider contextProvider;
+        private final RepeatSubscriber repeatSubscriber = new RepeatSubscriber();
         private volatile long outstandingDemand;
         private int redoCount;
 
@@ -81,7 +82,7 @@ final class RepeatWhenSingle<T> extends AbstractNoHandleSubscribePublisher<T> {
                 final long prev = outstandingDemandUpdater.getAndAccumulate(this, n,
                         FlowControlUtils::addWithOverflowProtectionIfNotNegative);
                 if (prev == 0) {
-                    outer.original.delegateSubscribe(new RedoSubscriber(), contextMap, contextProvider);
+                    outer.original.delegateSubscribe(repeatSubscriber, contextMap, contextProvider);
                 }
             } else {
                 requestNInvalid(n);
@@ -124,7 +125,40 @@ final class RepeatWhenSingle<T> extends AbstractNoHandleSubscribePublisher<T> {
             sequentialCancellable.cancel();
         }
 
-        private final class RedoSubscriber implements SingleSource.Subscriber<T> {
+        private final class RepeatSubscriber implements SingleSource.Subscriber<T> {
+            private final CompletableSource.Subscriber completableSubscriber = new CompletableSource.Subscriber() {
+                @Override
+                public void onSubscribe(final Cancellable cancellable) {
+                    sequentialCancellable.nextCancellable(cancellable);
+                }
+
+                @Override
+                public void onComplete() {
+                    for (;;) {
+                        final long prev = outstandingDemand;
+                        assert prev != TERMINATED && prev != 0;
+                        if (prev == CANCELLED) {
+                            break;
+                        } else if (prev < 0) {
+                            // This thread owns the subscriber, no concurrency expected, no atomic necessary.
+                            onErrorInternal(newExceptionForInvalidRequestN(prev));
+                            break;
+                        } else if (outstandingDemandUpdater.compareAndSet(RedoSubscription.this, prev, prev - 1)) {
+                            if (prev > 1) {
+                                outer.original.delegateSubscribe(RepeatSubscriber.this, contextMap, contextProvider);
+                            }
+                            break;
+                        }
+                    }
+                }
+
+                @Override
+                public void onError(final Throwable t) {
+                    outstandingDemand = TERMINATED;
+                    subscriber.onComplete(); // repeat means an error just terminates normally.
+                }
+            };
+
             @Override
             public void onSubscribe(final Cancellable cancellable) {
                 sequentialCancellable.nextCancellable(cancellable);
@@ -132,49 +166,16 @@ final class RepeatWhenSingle<T> extends AbstractNoHandleSubscribePublisher<T> {
 
             @Override
             public void onSuccess(@Nullable final T result) {
-                final Completable redoDecider;
+                final Completable completable;
                 try {
                     subscriber.onNext(result);
-                    redoDecider = requireNonNull(outer.shouldRedo.apply(++redoCount, result));
+                    completable = requireNonNull(outer.repeater.apply(++redoCount, result));
                 } catch (Throwable cause) {
                     onErrorInternal(cause);
                     return;
                 }
 
-                redoDecider.subscribeInternal(new CompletableSource.Subscriber() {
-                    @Override
-                    public void onSubscribe(final Cancellable cancellable) {
-                        sequentialCancellable.nextCancellable(cancellable);
-                    }
-
-                    @Override
-                    public void onComplete() {
-                        for (;;) {
-                            final long prev = outstandingDemand;
-                            assert prev != TERMINATED && prev != 0;
-                            if (prev == CANCELLED) {
-                                break;
-                            } else if (prev < 0) {
-                                // This thread owns the subscriber, no concurrency expected, no atomic necessary.
-                                onErrorInternal(newExceptionForInvalidRequestN(prev));
-                                break;
-                            } else if (outstandingDemandUpdater.compareAndSet(RedoSubscription.this,
-                                    prev, prev - 1)) {
-                                if (prev > 1) {
-                                    outer.original.delegateSubscribe(RedoSubscriber.this, contextMap,
-                                            contextProvider);
-                                }
-                                break;
-                            }
-                        }
-                    }
-
-                    @Override
-                    public void onError(final Throwable t) {
-                        outstandingDemand = TERMINATED;
-                        subscriber.onComplete(); // repeat means an error just terminates normally.
-                    }
-                });
+                completable.subscribeInternal(completableSubscriber);
             }
 
             @Override
