@@ -16,8 +16,8 @@
 package io.servicetalk.http.utils;
 
 import io.servicetalk.concurrent.TimeSource;
-import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 
@@ -29,16 +29,17 @@ import javax.annotation.Nullable;
 /**
  * A function to determine the appropriate timeout to be used for a given {@link HttpRequestMetaData HTTP request}.
  * The result is a {@link Duration} which may be null if no timeout is to be applied. If the function blocks then
- * {@link #requiredOffloads()} } should alter the execution strategy as required.
+ * {@link #influenceStrategy(HttpExecutionStrategy)} should alter the execution strategy as required.
  * @deprecated In areas which require {@link TimeoutFromRequest} use variants that accept
  * {@link java.util.function.BiFunction}&lt;{@link HttpRequestMetaData}, {@link TimeSource}, {@link Duration}&gt;.
  * E.g.:
  * {@link TimeoutHttpRequesterFilter#TimeoutHttpRequesterFilter(BiFunction, boolean)},
  * {@link TimeoutHttpServiceFilter#TimeoutHttpServiceFilter(BiFunction, boolean)} for filters.
  */
-@Deprecated
-public interface TimeoutFromRequest extends
-            Function<HttpRequestMetaData, Duration>, ExecutionStrategyInfluencer<HttpExecutionStrategy> {
+@Deprecated // FIXME: 0.43 - remove deprecated interface
+public interface TimeoutFromRequest extends Function<HttpRequestMetaData, Duration>,
+                                            HttpExecutionStrategyInfluencer,
+                                            ExecutionStrategyInfluencer<HttpExecutionStrategy> {
 
     /**
      * Determine timeout duration, if present, from a request and/or apply default timeout durations.
@@ -56,9 +57,15 @@ public interface TimeoutFromRequest extends
      * <p>If it is known that apply() cannot block then override to return strategy as provided.
      */
     @Override
+    default HttpExecutionStrategy influenceStrategy(HttpExecutionStrategy strategy) {
+        // The effects of apply() are unknown so the default strategy should be used.
+        return HttpExecutionStrategyInfluencer.defaultStreamingInfluencer().influenceStrategy(strategy);
+    }
+
+    @Override
     default HttpExecutionStrategy requiredOffloads() {
         // The effects of apply() are unknown so the default "safe" strategy should be used.
-        return HttpExecutionStrategies.offloadAll();
+        return HttpExecutionStrategyInfluencer.super.requiredOffloads();
     }
 
     /**
@@ -68,7 +75,14 @@ public interface TimeoutFromRequest extends
      * @param requiredStrategy execution strategy required by the function.
      * @return {@link TimeoutFromRequest} instance which applies the provided function and requires the specified
      * strategy.
+     * @deprecated In areas which require {@link TimeoutFromRequest} use variants that accept
+     * {@link java.util.function.BiFunction}&lt;{@link HttpRequestMetaData}, {@link TimeSource}, {@link Duration}&gt;.
+     * E.g.:
+     * {@link TimeoutHttpRequesterFilter#TimeoutHttpRequesterFilter(BiFunction, boolean)},
+     * {@link TimeoutHttpServiceFilter#TimeoutHttpServiceFilter(BiFunction, boolean)} for filters.
+     * Note that passed {@link java.util.function.BiFunction} should never block.
      */
+    @Deprecated
     static TimeoutFromRequest toTimeoutFromRequest(final Function<HttpRequestMetaData, Duration> function,
                                                    final HttpExecutionStrategy requiredStrategy) {
         return new TimeoutFromRequest() {
