@@ -33,7 +33,9 @@ import static java.lang.Math.max;
 import static java.util.Objects.requireNonNull;
 
 final class RepeatWhenSingle<T> extends AbstractNoHandleSubscribePublisher<T> {
-    static final Exception END_REPEAT_EXCEPTION = unknownStackTrace(new Exception(), RepeatWhenSingle.class, "<init>");
+    private static final Exception END_REPEAT_EXCEPTION =
+            unknownStackTrace(new Exception(), RepeatWhenSingle.class, "<init>");
+    static final Completable END_REPEAT_COMPLETABLE = Completable.failed(END_REPEAT_EXCEPTION);
     private final Single<T> original;
     private final BiIntFunction<? super T, ? extends Completable> repeater;
 
@@ -66,7 +68,7 @@ final class RepeatWhenSingle<T> extends AbstractNoHandleSubscribePublisher<T> {
         private final AsyncContextProvider contextProvider;
         private final RepeatSubscriber repeatSubscriber = new RepeatSubscriber();
         private volatile long outstandingDemand;
-        private int redoCount;
+        private int repeatCount;
 
         private RepeatSubscription(final RepeatWhenSingle<T> outer, final Subscriber<? super T> subscriber,
                                    final ContextMap contextMap, final AsyncContextProvider contextProvider) {
@@ -169,7 +171,7 @@ final class RepeatWhenSingle<T> extends AbstractNoHandleSubscribePublisher<T> {
                 final Completable completable;
                 try {
                     subscriber.onNext(result);
-                    completable = requireNonNull(outer.repeater.apply(++redoCount, result));
+                    completable = requireNonNull(outer.repeater.apply(++repeatCount, result));
                 } catch (Throwable cause) {
                     onErrorInternal(cause);
                     return;

@@ -88,7 +88,7 @@ class RepeatWhenSingleTest {
     void invalidDemand() {
         AtomicInteger value = new AtomicInteger();
         toSource(Single.defer(() -> Single.succeeded(value.incrementAndGet()))
-                .repeatWhen((repeatCount, v) -> repeatCount == 1 ? completed() : failed(new DeliberateException())))
+                .repeatWhen((repeatCount, v) -> repeatCount == 1 ? completed() : failed(DELIBERATE_EXCEPTION)))
                 .subscribe(subscriber);
         subscriber.awaitSubscription().request(-1);
         assertThat(subscriber.awaitOnError(), instanceOf(IllegalArgumentException.class));
@@ -105,7 +105,7 @@ class RepeatWhenSingleTest {
                     } catch (Exception e) {
                         throw new AssertionError(e);
                     }
-                }) : failed(new DeliberateException())))
+                }) : failed(DELIBERATE_EXCEPTION)))
                 .subscribe(subscriber);
         Subscription s = subscriber.awaitSubscription();
         s.request(1);
@@ -120,7 +120,7 @@ class RepeatWhenSingleTest {
     void invalidDemandAfterFirst() {
         AtomicInteger value = new AtomicInteger();
         toSource(Single.defer(() -> Single.succeeded(value.incrementAndGet()))
-                .repeatWhen((repeatCount, v) -> repeatCount == 1 ? completed() : failed(new DeliberateException())))
+                .repeatWhen((repeatCount, v) -> repeatCount == 1 ? completed() : failed(DELIBERATE_EXCEPTION)))
                 .subscribe(subscriber);
         Subscription s = subscriber.awaitSubscription();
         s.request(1);
@@ -133,7 +133,7 @@ class RepeatWhenSingleTest {
     void singleRepeatAllDemandUpfront() {
         AtomicInteger value = new AtomicInteger();
         toSource(Single.defer(() -> Single.succeeded(value.incrementAndGet()))
-                .repeatWhen((repeatCount, v) -> repeatCount == 1 ? completed() : failed(new DeliberateException())))
+                .repeatWhen((repeatCount, v) -> repeatCount == 1 ? completed() : failed(DELIBERATE_EXCEPTION)))
                 .subscribe(subscriber);
         Subscription s = subscriber.awaitSubscription();
         s.request(2);
@@ -145,7 +145,7 @@ class RepeatWhenSingleTest {
     void manyRepeatAllDemandUpfront() {
         AtomicInteger value = new AtomicInteger();
         toSource(Single.defer(() -> Single.succeeded(value.incrementAndGet()))
-                .repeatWhen((repeatCount, v) -> repeatCount < 5 ? completed() : failed(new DeliberateException())))
+                .repeatWhen((repeatCount, v) -> repeatCount < 5 ? completed() : failed(DELIBERATE_EXCEPTION)))
                 .subscribe(subscriber);
         Subscription s = subscriber.awaitSubscription();
         s.request(5);
@@ -164,7 +164,7 @@ class RepeatWhenSingleTest {
                     } catch (InterruptedException e) {
                         throw new AssertionError(e);
                     }
-                }) : failed(new DeliberateException())))
+                }) : failed(DELIBERATE_EXCEPTION)))
                 .subscribe(subscriber);
         Subscription s = subscriber.awaitSubscription();
         s.request(2);
@@ -179,12 +179,20 @@ class RepeatWhenSingleTest {
     void singleDelayedRepeat() {
         AtomicInteger value = new AtomicInteger();
         toSource(Single.defer(() -> Single.succeeded(value.incrementAndGet()))
-                .repeatWhen((repeatCount, v) -> repeatCount == 1 ? completed() : failed(new DeliberateException())))
+                .repeatWhen((repeatCount, v) -> repeatCount == 1 ?
+                        executor.timer(1, MILLISECONDS) : failed(DELIBERATE_EXCEPTION)))
                 .subscribe(subscriber);
         Subscription s = subscriber.awaitSubscription();
-        s.request(2);
-        assertThat(subscriber.takeOnNext(2), contains(1, 2));
+        s.request(1);
+        assertThat(subscriber.takeOnNext(), equalTo(1));
+        s.request(1);
+        assertThat(subscriber.takeOnNext(), equalTo(2));
         subscriber.awaitOnComplete();
+
+        // interaction with the subscription after termination should be NOOP.
+        s.request(1);
+        s.request(-1);
+        s.cancel();
     }
 
     @Test
@@ -224,6 +232,38 @@ class RepeatWhenSingleTest {
     }
 
     @Test
+    void reentrantRequest() {
+        AtomicInteger value = new AtomicInteger();
+        toSource(Single.defer(() -> Single.succeeded(value.incrementAndGet()))
+                .repeatWhen((repeatCount, v) -> repeatCount == 1 ? completed() : failed(DELIBERATE_EXCEPTION)))
+                .subscribe(new PublisherSource.Subscriber<Integer>() {
+                    @Override
+                    public void onSubscribe(final Subscription subscription) {
+                        subscriber.onSubscribe(subscription);
+                        subscriber.awaitSubscription().request(1);
+                    }
+
+                    @Override
+                    public void onNext(@Nullable final Integer integer) {
+                        subscriber.onNext(integer);
+                        subscriber.awaitSubscription().request(1);
+                    }
+
+                    @Override
+                    public void onError(final Throwable t) {
+                        subscriber.onError(t);
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        subscriber.onComplete();
+                    }
+                });
+        assertThat(subscriber.takeOnNext(2), contains(1, 2));
+        subscriber.awaitOnComplete();
+    }
+
+    @Test
     void onNextThrows() {
         AtomicInteger value = new AtomicInteger();
         toSource(Single.defer(() -> Single.succeeded(value.incrementAndGet()))
@@ -257,7 +297,7 @@ class RepeatWhenSingleTest {
         toSource(Single.defer(() -> Single.succeeded(value.incrementAndGet()))
                 .whenCancel(cancelled::countDown)
                 .beforeOnSubscribe(cancellable -> onSubscribe.countDown())
-                .repeatWhen((repeatCount, v) -> repeatCount == 1 ? completed() : failed(new DeliberateException())))
+                .repeatWhen((repeatCount, v) -> repeatCount == 1 ? completed() : failed(DELIBERATE_EXCEPTION)))
                 .subscribe(subscriber);
         Subscription s = subscriber.awaitSubscription();
         s.cancel();
