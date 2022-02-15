@@ -46,6 +46,7 @@ import static io.servicetalk.concurrent.api.Executors.global;
 import static io.servicetalk.concurrent.api.NeverSingle.neverSingle;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
+import static io.servicetalk.concurrent.api.RepeatWhenSingle.END_REPEAT_COMPLETABLE;
 import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnErrorSupplier;
 import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnSubscribeSupplier;
 import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnSuccessSupplier;
@@ -925,15 +926,44 @@ public abstract class Single<T> {
      *     } while (shouldRepeat.test(++i));
      *     return results;
      * }</pre>
-     * @param shouldRepeat {@link IntPredicate} that given the repeat count determines if the operation should be
-     * repeated.
+     * @param shouldRepeat {@link IntPredicate} that given the repetition count returns {@code true} if the operation
+     * should be repeated.
      * @return A {@link Publisher} that emits all items from this {@link Single} and from all re-subscriptions whenever
      * the operation is repeated.
      *
      * @see <a href="http://reactivex.io/documentation/operators/repeat.html">ReactiveX repeat operator.</a>
      */
     public final Publisher<T> repeat(IntPredicate shouldRepeat) {
-        return toPublisher().repeat(shouldRepeat);
+        return repeatWhen((i, __) -> shouldRepeat.test(i) ? Completable.completed() : END_REPEAT_COMPLETABLE);
+    }
+
+    /**
+     * Re-subscribes to this {@link Single} when it completes and the passed {@link IntPredicate} returns {@code true}.
+     * <pre>
+     * This method may result in a {@link StackOverflowError} if too many consecutive calls are made. This can be
+     * avoided by trampolining the call stack onto an {@link Executor}. For example:
+     *   {@code repeatWhen(i -> i % 10 == 0 ? executor.submit(() -> { }) : Completable.completed())}
+     * </pre>
+     * This method provides a means to repeat an operation multiple times and in sequential programming is similar to:
+     * <pre>{@code
+     *     List<T> results = new ...;
+     *     int i = 0;
+     *     T result;
+     *     do {
+     *         result = resultOfThisSingle();
+     *         results.add(result);
+     *     } while (shouldRepeat.test(++i, result));
+     *     return results;
+     * }</pre>
+     * @param shouldRepeat {@link BiIntPredicate} that given the repetition count and value from the current iteration
+     * returns {@code true} if the operation should be repeated.
+     * @return A {@link Publisher} that emits all items from this {@link Single} and from all re-subscriptions whenever
+     * the operation is repeated.
+     *
+     * @see <a href="http://reactivex.io/documentation/operators/repeat.html">ReactiveX repeat operator.</a>
+     */
+    public final Publisher<T> repeat(BiIntPredicate<? super T> shouldRepeat) {
+        return repeatWhen((i, t) -> shouldRepeat.test(i, t) ? Completable.completed() : END_REPEAT_COMPLETABLE);
     }
 
     /**
@@ -960,7 +990,7 @@ public abstract class Single<T> {
      *     }
      *     return results;
      * }</pre>
-     * @param repeatWhen {@link IntFunction} that given the repeat count returns a {@link Completable}.
+     * @param repeatWhen {@link IntFunction} that given the repetition count returns a {@link Completable}.
      * If this {@link Completable} emits an error repeat is terminated, otherwise, original {@link Single} is
      * re-subscribed when this {@link Completable} completes.
      *
@@ -970,7 +1000,43 @@ public abstract class Single<T> {
      * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
      */
     public final Publisher<T> repeatWhen(IntFunction<? extends Completable> repeatWhen) {
-        return toPublisher().repeatWhen(repeatWhen);
+        return repeatWhen((i, __) -> repeatWhen.apply(i));
+    }
+
+    /**
+     * Re-subscribes to this {@link Single} when it completes and the {@link Completable} returned by the supplied
+     * {@link BiIntFunction} completes successfully.
+     * <pre>
+     * This method may result in a {@link StackOverflowError} if too many consecutive calls are made. This can be
+     * avoided by trampolining the call stack onto an {@link Executor}. For example:
+     *   {@code repeatWhen(i -> i % 10 == 0 ? executor.submit(() -> { }) : Completable.completed())}
+     * </pre>
+     * This method provides a means to repeat an operation multiple times when in an asynchronous fashion and in
+     * sequential programming is similar to:
+     * <pre>{@code
+     *     List<T> results = new ...;
+     *     int i = 0;
+     *     while (true) {
+     *         T result = resultOfThisSingle();
+     *         try {
+     *             repeatWhen.apply(++i, result); // Either throws or completes normally
+     *         } catch (Throwable cause) {
+     *             break;
+     *         }
+     *     }
+     *     return results;
+     * }</pre>
+     * @param repeatWhen {@link BiIntFunction} that given the repetition count and value from the current iteration
+     * returns a {@link Completable}. If this {@link Completable} emits an error repeat is terminated, otherwise,
+     * original {@link Single} is re-subscribed when this {@link Completable} completes.
+     *
+     * @return A {@link Publisher} that emits all items from this {@link Single} and from all re-subscriptions whenever
+     * the operation is repeated.
+     *
+     * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
+     */
+    public final Publisher<T> repeatWhen(BiIntFunction<? super T, ? extends Completable> repeatWhen) {
+        return new RepeatWhenSingle<>(this, repeatWhen);
     }
 
     /**
