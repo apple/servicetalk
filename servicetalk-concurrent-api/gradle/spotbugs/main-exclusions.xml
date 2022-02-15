@@ -31,10 +31,12 @@
     <Or>
       <Class name="io.servicetalk.concurrent.api.ContextPreservingCompletableFuture"/>
       <Class name="io.servicetalk.concurrent.api.CancelPropagatingCompletableFuture"/>
+      <Class name="io.servicetalk.concurrent.api.RepeatWhenSingle$RepeatSubscription$RepeatSubscriber"/>
     </Or>
     <Or>
       <Method name="getNow"/>
       <Method name="obtrudeValue"/>
+      <Method name="onSuccess"/>
     </Or>
     <Bug pattern="NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE"/>
   </Match>
