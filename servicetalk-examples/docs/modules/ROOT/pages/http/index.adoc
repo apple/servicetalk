@@ -83,7 +83,7 @@ receives a response greeting the posted name as a single content.
 == Debugging
 
 Extends the async "Hello World" example to demonstrate some useful features available
- for debugging ServiceTalk applications. You should read and understand the async "Hello World"
+ for debugging ServiceTalk applications. You should read and understand the async <<_hello_world,"Hello World">>
  example first to understand the additions this example adds. No separate example is needed
  for the other API variants as the usage of the debugging features are the same for all API
  styles.
@@ -207,9 +207,9 @@ Using the following classes:
 == Redirects
 
 Extends the async "Hello World" example to demonstrate different ways that users can support redirects in ServiceTalk
-applications. You should read and understand the async "Hello World" example first to understand the additions this
-example adds. No separate example is needed for the other API variants as the usage of the debugging features are the
-same for all API styles.
+applications. You should read and understand the <<_hello_world,"Hello World" example>> first to understand the
+additions this example adds. No separate example is needed for the other API variants as the usage of the redirect
+features are the same for all API styles.
 
 * link:{source-root}/servicetalk-examples/http/redirects/src/main/java/io/servicetalk/examples/http/redirects/RedirectingServer.java[RedirectingServer] -
 Starts two servers, one of them (HTTP) redirects to another (HTTPS).
@@ -220,6 +220,23 @@ Async `Hello World` example that demonstrates how redirects can be handled autom
 It demonstrates how users can preserve headers and payload body of the original request while redirecting to non-relative locations.
 * link:{source-root}/servicetalk-examples/http/redirects/src/main/java/io/servicetalk/examples/http/redirects/ManualRedirectClient.java[ManualRedirectClient.java] -
 Async `Hello World` example that demonstrates how redirects can be handled manually between multiple single-address clients.
+
+[#Retries]
+== Retries
+
+Extends the async "Hello World" example to demonstrate basic cliest request retry functionality. You should read and
+understand the async <<_hello_world,"Hello World" example>> first to understand the additions this example adds. No
+separate example is needed for the other API variants as the usage of the debugging features are the same for all API
+styles.
+
+* link:{source-root}/servicetalk-examples/http/retry/src/main/java/io/servicetalk/examples/http/retry/RetryServer.java[RetryServer] -
+A special "flaky" `Hello World` server that alternates "509" Gateway Timeout and "200" Success responses for client
+requests to demonstrate client retry.
+* link:{source-root}/servicetalk-examples/http/retry/src/main/java/io/servicetalk/examples/http/retry/RetryClient.java[RetryClient.java] -
+Async `Hello World` example that demonstrates how retry can be requested for a single-address client.
+* link:{source-root}/servicetalk-examples/http/retry/src/main/java/io/servicetalk/examples/http/retry/RetryUrlClient.java[RetryUrlClient.java] -
+Async `Hello World` example that demonstrates how retry can be requested for a multi-address client.
+
 
 [#HTTP2]
 == HTTP/2
