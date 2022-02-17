@@ -666,7 +666,7 @@ public final class RetryingHttpRequesterFilter
          *
          * @param mapper a {@link Function} that maps a {@link HttpResponseMetaData} to an
          * {@link HttpResponseException} or returns {@code null} if there is no mapping for response meta-data. The
-         * mapper should return null if no retry is needed or if it cannot be determined that a retry is needed.
+         * mapper should return {@code null} if no retry is needed or if it cannot be determined that a retry is needed.
          * @return {@code this}
          */
         public Builder responseMapper(final Function<HttpResponseMetaData, HttpResponseException> mapper) {

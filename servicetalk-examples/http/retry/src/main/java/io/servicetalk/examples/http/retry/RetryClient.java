@@ -16,29 +16,27 @@
 package io.servicetalk.examples.http.retry;
 
 import io.servicetalk.http.api.HttpClient;
-import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.http.netty.RetryingHttpRequesterFilter;
 
+import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SERVER_ERROR_5XX;
 import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 
 /**
- * Extends the Async "Hello World" client to immediately retry requests that get a 5XX response. Two attempts will be
- * made before failure.
+ * Extends the Async "Hello World" client to immediately retry requests that get a 5XX response. Up to three attempts
+ * total, one initial attempt and up to two retries, will be made before failure.
  */
 public final class RetryClient {
     public static void main(String[] args) throws Exception {
         try (HttpClient client = HttpClients.forSingleAddress("localhost", 8080)
                 .appendClientFilter(new RetryingHttpRequesterFilter.Builder()
-                        .responseMapper((httpResponseMetaData -> {
-                            // If the response status is 500-599 then request a retry
-                            HttpResponseStatus.StatusClass status = httpResponseMetaData.status().statusClass();
-                            return HttpResponseStatus.StatusClass.SERVER_ERROR_5XX == status ?
-                                    new RetryingHttpRequesterFilter.HttpResponseException(
-                                            "Retry 5XX", httpResponseMetaData)
-                                    // Not a 5XX response, someone else can deal with it.
-                                    : null;
-                        }))
+                        .responseMapper(httpResponseMetaData ->
+                                SERVER_ERROR_5XX.contains(httpResponseMetaData.status()) ?
+                                        // Response status is 500-599, we request a retry
+                                        new RetryingHttpRequesterFilter.HttpResponseException(
+                                                "Retry 5XX", httpResponseMetaData)
+                                        // Not a 5XX response, we do not know whether retry is required
+                                        : null)
                         .retryResponses((meta, error) -> RetryingHttpRequesterFilter.BackOffPolicy.ofImmediate(2))
                         .build())
                 .build()) {
