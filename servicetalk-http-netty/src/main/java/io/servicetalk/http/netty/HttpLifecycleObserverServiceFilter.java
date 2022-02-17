@@ -55,7 +55,7 @@ public final class HttpLifecycleObserverServiceFilter extends AbstractLifecycleO
      *
      * @param observer The {@link HttpLifecycleObserver observer} implementation that consumes HTTP lifecycle events.
      */
-    HttpLifecycleObserverServiceFilter(final HttpLifecycleObserver observer) {
+    public HttpLifecycleObserverServiceFilter(final HttpLifecycleObserver observer) {
         super(observer, false);
     }
 
