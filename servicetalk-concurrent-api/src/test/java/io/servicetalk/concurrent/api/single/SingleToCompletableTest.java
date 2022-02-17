@@ -30,7 +30,7 @@ import static java.lang.Thread.currentThread;
 
 class SingleToCompletableTest {
     @RegisterExtension
-    final ExecutorExtension<Executor> executorExtension = ExecutorExtension.withCachedExecutor();
+    static final ExecutorExtension<Executor> EXEC = ExecutorExtension.withCachedExecutor().setClassLevel(true);
 
     @Test
     void subscribeOnOriginalIsPreserved() throws InterruptedException {
@@ -43,7 +43,7 @@ class SingleToCompletableTest {
                         currentThread()));
             }
             analyzed.countDown();
-        }).subscribeOn(executorExtension.executor()).toCompletable().subscribe().cancel();
+        }).subscribeOn(EXEC.executor()).toCompletable().subscribe().cancel();
         analyzed.await();
         assertNoAsyncErrors("Unexpected errors observed: " + errors, errors);
     }

@@ -47,7 +47,7 @@ class PublisherBufferConcurrencyTest {
     private static final ContextMap.Key<Integer> CTX_KEY = newKey("foo", Integer.class);
 
     @RegisterExtension
-    final ExecutorExtension<Executor> executorExtension = withCachedExecutor(THREAD_NAME_PREFIX);
+    static final ExecutorExtension<Executor> EXEC = withCachedExecutor(THREAD_NAME_PREFIX).setClassLevel(true);
 
     @Test
     void largeRun() throws Exception {
@@ -56,7 +56,7 @@ class PublisherBufferConcurrencyTest {
 
     @Test
     void executorIsPreserved() throws Exception {
-        final Executor executor = executorExtension.executor();
+        final Executor executor = EXEC.executor();
         runTest(beforeBuffer -> beforeBuffer.publishOn(executor).beforeOnNext(__ ->
                         assertThat("Unexpected thread in onNext.", Thread.currentThread().getName(),
                                 startsWith(THREAD_NAME_PREFIX)))
@@ -124,8 +124,8 @@ class PublisherBufferConcurrencyTest {
         assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue()));
 
         CountDownLatch waitForOnNextReturn = new CountDownLatch(1);
-        executorExtension.executor().submit(() -> original.onNext(1))
-                .beforeFinally(waitForOnNextReturn::countDown).subscribe();
+        EXEC.executor().submit(() -> original.onNext(1))
+            .beforeFinally(waitForOnNextReturn::countDown).subscribe();
         waitForAdd.await();
         subscriber.awaitSubscription().request(1);
         boundaries.onNext(new SummingAccumulator());
@@ -146,7 +146,7 @@ class PublisherBufferConcurrencyTest {
                          final UnaryOperator<Publisher<Iterable<Integer>>> afterBuffer) throws Exception {
         final int maxRange = 1000;
         final int repeatMax = 100;
-        final Executor executor = executorExtension.executor();
+        final Executor executor = EXEC.executor();
         Publisher<Integer> original = Publisher.range(0, maxRange)
                 .repeatWhen(count -> count == repeatMax ? failed(DELIBERATE_EXCEPTION) :
                         executor.timer(ofMillis(1)));

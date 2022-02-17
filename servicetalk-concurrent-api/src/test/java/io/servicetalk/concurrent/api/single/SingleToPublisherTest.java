@@ -45,7 +45,7 @@ import static org.hamcrest.Matchers.sameInstance;
 class SingleToPublisherTest {
 
     @RegisterExtension
-    final ExecutorExtension<Executor> executorExtension = ExecutorExtension.withCachedExecutor();
+    static final ExecutorExtension<Executor> EXEC = ExecutorExtension.withCachedExecutor().setClassLevel(true);
 
     private final TestPublisherSubscriber<String> verifier = new TestPublisherSubscriber<>();
 
@@ -138,7 +138,7 @@ class SingleToPublisherTest {
                 errors.add(new AssertionError("Invalid thread invoked cancel. Thread: " +
                         currentThread()));
             }
-        }).afterCancel(analyzed::countDown).subscribeOn(executorExtension.executor()).toPublisher())
+        }).afterCancel(analyzed::countDown).subscribeOn(EXEC.executor()).toPublisher())
                 .subscribe(subscriber);
         TestCancellable cancellable = new TestCancellable();
         single.onSubscribe(cancellable); // waits till subscribed.
@@ -221,7 +221,7 @@ class SingleToPublisherTest {
         final Thread testThread = currentThread();
         CountDownLatch analyzed = new CountDownLatch(1);
         CountDownLatch receivedOnSubscribe = new CountDownLatch(1);
-        toSource(single.publishOn(executorExtension.executor())
+        toSource(single.publishOn(EXEC.executor())
                 .beforeOnSuccess(__ -> {
                     if (currentThread() == testThread) {
                         errors.add(new AssertionError("Invalid thread invoked onSuccess " +

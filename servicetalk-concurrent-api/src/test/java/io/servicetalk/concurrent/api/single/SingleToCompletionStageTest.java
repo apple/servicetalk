@@ -58,14 +58,15 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SingleToCompletionStageTest {
+    private static final String ST_THREAD_PREFIX_NAME = "st-exec-thread";
     @RegisterExtension
-    final ExecutorExtension<Executor> executorExtension = ExecutorExtension.withCachedExecutor(ST_THREAD_PREFIX_NAME);
+    static final ExecutorExtension<Executor> EXEC = ExecutorExtension.withCachedExecutor(ST_THREAD_PREFIX_NAME)
+            .setClassLevel(true);
 
     private LegacyTestSingle testSingle;
     private Single<String> source;
     private static ExecutorService jdkExecutor;
     private static final AtomicInteger threadCount = new AtomicInteger();
-    private static final String ST_THREAD_PREFIX_NAME = "st-exec-thread";
     private static final String JDK_THREAD_NAME_PREFIX = "jdk-thread";
     private static final String JDK_FORK_JOIN_THREAD_NAME_PREFIX = "ForkJoinPool";
     private static final String COMPLETABLE_FUTURE_THREAD_PER_TASK_NAME_PREFIX = "Thread-";
@@ -87,7 +88,7 @@ class SingleToCompletionStageTest {
     @BeforeEach
     void beforeTest() {
         testSingle = new LegacyTestSingle<>(true, true);
-        source = testSingle.publishOn(executorExtension.executor());
+        source = testSingle.publishOn(EXEC.executor());
     }
 
     @Test

@@ -45,9 +45,11 @@ class SingleAmbWithAsyncTest {
     private static final int BEFORE_ON_SUBSCRIBE_KEY_VAL_2 = 3;
 
     @RegisterExtension
-    final ExecutorExtension<Executor> firstExec = withCachedExecutor(FIRST_EXECUTOR_THREAD_NAME_PREFIX);
+    static final ExecutorExtension<Executor> FIRST_EXEC = withCachedExecutor(FIRST_EXECUTOR_THREAD_NAME_PREFIX)
+            .setClassLevel(true);
     @RegisterExtension
-    final ExecutorExtension<Executor> secondExec = withCachedExecutor(SECOND_EXECUTOR_THREAD_NAME_PREFIX);
+    static final ExecutorExtension<Executor> SECOND_EXEC = withCachedExecutor(SECOND_EXECUTOR_THREAD_NAME_PREFIX)
+            .setClassLevel(true);
 
     @Test
     void offloadSuccessFromFirst() throws Exception {
@@ -168,8 +170,8 @@ class SingleAmbWithAsyncTest {
 
     private int testOffloadSecond(String completeOn, final Single<Integer> first, final Single<Integer> second)
             throws Exception {
-        return first.publishOn(firstExec.executor())
-                .ambWith(second.publishOn(secondExec.executor()))
+        return first.publishOn(FIRST_EXEC.executor())
+                .ambWith(second.publishOn(SECOND_EXEC.executor()))
                 .beforeFinally(() ->
                         assertThat("Unexpected thread.", Thread.currentThread().getName(),
                                 startsWith(completeOn)))
@@ -177,8 +179,8 @@ class SingleAmbWithAsyncTest {
     }
 
     private int testContextFromSubscribe(final Single<Integer> first, final Single<Integer> second) throws Exception {
-        return first.publishOn(firstExec.executor())
-                .ambWith(second.publishOn(secondExec.executor()))
+        return first.publishOn(FIRST_EXEC.executor())
+                .ambWith(second.publishOn(SECOND_EXEC.executor()))
                 .beforeFinally(() ->
                         assertThat("Unexpected context value.", AsyncContext.get(BEFORE_SUBSCRIBE_KEY),
                                 is(BEFORE_SUBSCRIBE_KEY_VAL)))
@@ -191,8 +193,8 @@ class SingleAmbWithAsyncTest {
 
     private int testContextFromOnSubscribe(final Single<Integer> first, final Single<Integer> second) throws Exception {
         return first.beforeOnSubscribe(__ -> AsyncContext.put(BEFORE_ON_SUBSCRIBE_KEY, BEFORE_ON_SUBSCRIBE_KEY_VAL))
-                .publishOn(firstExec.executor())
-                .ambWith(second.publishOn(secondExec.executor()))
+                .publishOn(FIRST_EXEC.executor())
+                .ambWith(second.publishOn(SECOND_EXEC.executor()))
                 .beforeFinally(() ->
                         assertThat("Unexpected context value.",
                                 AsyncContext.get(BEFORE_ON_SUBSCRIBE_KEY),
@@ -202,8 +204,8 @@ class SingleAmbWithAsyncTest {
 
     private int testContextFromSecondSubscribe(final Single<Integer> first, final Single<Integer> second)
             throws Exception {
-        return first.publishOn(firstExec.executor())
-                .ambWith(second.publishOn(secondExec.executor())
+        return first.publishOn(FIRST_EXEC.executor())
+                .ambWith(second.publishOn(SECOND_EXEC.executor())
                         .liftSync(subscriber -> {
                             // Modify value for the same key, this update should not be visible back in the original
                             // chain
@@ -224,8 +226,8 @@ class SingleAmbWithAsyncTest {
     private int testContextFromSecondOnSubscribe(final Single<Integer> first, final Single<Integer> second)
             throws Exception {
         return first.beforeOnSubscribe(__ -> AsyncContext.put(BEFORE_ON_SUBSCRIBE_KEY, BEFORE_ON_SUBSCRIBE_KEY_VAL))
-                .publishOn(firstExec.executor())
-                .ambWith(second.publishOn(secondExec.executor())
+                .publishOn(FIRST_EXEC.executor())
+                .ambWith(second.publishOn(SECOND_EXEC.executor())
                         .beforeOnSubscribe(__ ->
                                 AsyncContext.put(BEFORE_ON_SUBSCRIBE_KEY, BEFORE_ON_SUBSCRIBE_KEY_VAL_2)))
                 .beforeFinally(() ->
