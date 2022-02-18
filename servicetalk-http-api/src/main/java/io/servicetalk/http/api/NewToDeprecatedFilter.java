@@ -17,7 +17,7 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Single;
 
-import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
+import static io.servicetalk.http.api.HttpApiConversions.requestStrategy;
 
 /**
  * Because users can have a mixed set of filters, we should always delegate from the new {@code request} method to the
@@ -103,10 +103,5 @@ final class NewToDeprecatedFilter implements StreamingHttpClientFilterFactory, S
     public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
         // No influence since we do not block.
         return strategy;
-    }
-
-    static HttpExecutionStrategy requestStrategy(HttpRequestMetaData metaData, HttpExecutionStrategy fallback) {
-        final HttpExecutionStrategy strategy = metaData.context().get(HTTP_EXECUTION_STRATEGY_KEY);
-        return strategy != null ? strategy : fallback;
     }
 }

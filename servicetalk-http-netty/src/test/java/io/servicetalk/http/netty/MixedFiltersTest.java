@@ -15,11 +15,15 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.client.api.ConnectionFactory;
+import io.servicetalk.client.api.ConnectionFactoryFilter;
+import io.servicetalk.client.api.DelegatingConnectionFactory;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.MultiAddressHttpClientBuilder;
 import io.servicetalk.http.api.ReservedBlockingHttpConnection;
@@ -33,6 +37,7 @@ import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.api.TransportObserver;
 
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -43,6 +48,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.UnaryOperator;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.buffer.api.Matchers.contentEqualTo;
@@ -55,6 +61,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 class MixedFiltersTest {
+
+    private enum FilterLevel {
+        client, connection, connectionFactory
+    }
 
     private static final CharSequence FILTERS_HEADER = newAsciiString("filters-header");
     private static final Collection<Boolean> TRUE_FALSE = asList(true, false);
@@ -77,14 +87,18 @@ class MixedFiltersTest {
                 asList(new DeprecatedFilter(1), new MigratedFilter(2, false), new DeprecatedFilter(3)));
         Collection<Arguments> arguments = new ArrayList<>();
         for (List<ConditionalFilterFactory> filters : combinations) {
-            for (Boolean forClient : TRUE_FALSE) {
+            for (FilterLevel level : FilterLevel.values()) {
                 for (Boolean reservedConnection : TRUE_FALSE) {
                     for (Boolean conditional : TRUE_FALSE) {
                         if (!conditional && filters.stream().anyMatch(f -> !f.apply())) {
                             // Skip a non-conditional cases when any of the FF can not be applied
                             continue;
                         }
-                        arguments.add(Arguments.of(filters, forClient, reservedConnection, conditional));
+                        if (conditional && level == FilterLevel.connectionFactory) {
+                            // ConnectionFactory can not be applied conditionally
+                            continue;
+                        }
+                        arguments.add(Arguments.of(filters, level, reservedConnection, conditional));
                     }
                 }
             }
@@ -92,10 +106,10 @@ class MixedFiltersTest {
         return arguments;
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] filters={0}, forClient={1}, reservedConnection={2}, " +
+    @ParameterizedTest(name = "{displayName} [{index}] filters={0}, filterLevel={1}, reservedConnection={2}, " +
             "conditional={3}")
     @MethodSource("arguments")
-    void testSingleClient(List<ConditionalFilterFactory> filters, boolean forClient, boolean reservedConnection,
+    void testSingleClient(List<ConditionalFilterFactory> filters, FilterLevel filterLevel, boolean reservedConnection,
                           boolean conditional) throws Exception {
 
         String expected = filters.stream()
@@ -104,25 +118,36 @@ class MixedFiltersTest {
                 .reduce((first, second) -> first + ',' + second)
                 .get();
         testSingleClient(builder -> {
-            if (forClient) {
-                if (conditional) {
-                    filters.forEach(cff -> builder.appendClientFilter(__ -> cff.apply(), cff));
-                } else {
-                    filters.forEach(builder::appendClientFilter);
-                }
-            } else if (conditional) {
-                filters.forEach(cff -> builder.appendConnectionFilter(__ -> cff.apply(), cff));
-            } else {
-                filters.forEach(builder::appendConnectionFilter);
+            switch (filterLevel) {
+                case client:
+                    if (conditional) {
+                        filters.forEach(cff -> builder.appendClientFilter(__ -> cff.apply(), cff));
+                    } else {
+                        filters.forEach(builder::appendClientFilter);
+                    }
+                    break;
+                case connection:
+                    if (conditional) {
+                        filters.forEach(cff -> builder.appendConnectionFilter(__ -> cff.apply(), cff));
+                    } else {
+                        filters.forEach(builder::appendConnectionFilter);
+                    }
+                    break;
+                case connectionFactory:
+                    assert !conditional;
+                    filters.forEach(builder::appendConnectionFactoryFilter);
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unknown FilterLevel: " + filterLevel);
             }
             return builder;
         }, reservedConnection, expected);
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] filters={0}, forClient={1}, reservedConnection={2}, " +
+    @ParameterizedTest(name = "{displayName} [{index}] filters={0}, filterLevel={1}, reservedConnection={2}, " +
             "conditional={3}")
     @MethodSource("arguments")
-    void testMultiClient(List<ConditionalFilterFactory> filters, boolean forClient, boolean reservedConnection,
+    void testMultiClient(List<ConditionalFilterFactory> filters, FilterLevel filterLevel, boolean reservedConnection,
                          boolean conditional) throws Exception {
 
         String expected = filters.stream()
@@ -131,16 +156,28 @@ class MixedFiltersTest {
                 .reduce((first, second) -> first + ',' + second)
                 .get();
         testMultiClient(builder -> {
-            if (forClient) {
-                if (conditional) {
-                    filters.forEach(cff -> builder.appendClientFilter(__ -> cff.apply(), cff));
-                } else {
-                    filters.forEach(builder::appendClientFilter);
-                }
-            } else if (conditional) {
-                filters.forEach(cff -> builder.appendConnectionFilter(__ -> cff.apply(), cff));
-            } else {
-                filters.forEach(builder::appendConnectionFilter);
+
+            switch (filterLevel) {
+                case client:
+                    if (conditional) {
+                        filters.forEach(cff -> builder.appendClientFilter(__ -> cff.apply(), cff));
+                    } else {
+                        filters.forEach(builder::appendClientFilter);
+                    }
+                    break;
+                case connection:
+                    if (conditional) {
+                        filters.forEach(cff -> builder.appendConnectionFilter(__ -> cff.apply(), cff));
+                    } else {
+                        filters.forEach(builder::appendConnectionFilter);
+                    }
+                    break;
+                case connectionFactory:
+                    assert !conditional;
+                    filters.forEach(builder::appendConnectionFactoryFilter);
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unknown FilterLevel: " + filterLevel);
             }
             return builder;
         }, reservedConnection, expected);
@@ -191,8 +228,10 @@ class MixedFiltersTest {
         }
     }
 
-    private abstract static class ConditionalFilterFactory implements StreamingHttpClientFilterFactory,
-                                                                      StreamingHttpConnectionFilterFactory {
+    private abstract static class ConditionalFilterFactory
+            implements StreamingHttpClientFilterFactory, StreamingHttpConnectionFilterFactory,
+                       ConnectionFactoryFilter<InetSocketAddress, FilterableStreamingHttpConnection>,
+                       HttpExecutionStrategyInfluencer {
 
         private final String name;
         private final boolean apply;
@@ -209,6 +248,24 @@ class MixedFiltersTest {
         @Override
         public final String toString() {
             return name;
+        }
+
+        @Override
+        public ConnectionFactory<InetSocketAddress, FilterableStreamingHttpConnection> create(
+                ConnectionFactory<InetSocketAddress, FilterableStreamingHttpConnection> cf) {
+            return new DelegatingConnectionFactory<InetSocketAddress, FilterableStreamingHttpConnection>(cf) {
+                @Override
+                public Single<FilterableStreamingHttpConnection> newConnection(
+                        InetSocketAddress address, @Nullable TransportObserver observer) {
+                    return delegate().newConnection(address, observer).map(connection -> create(connection));
+                }
+            };
+        }
+
+        @Override
+        public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+            // No influence since we do not block.
+            return strategy;
         }
     }
 

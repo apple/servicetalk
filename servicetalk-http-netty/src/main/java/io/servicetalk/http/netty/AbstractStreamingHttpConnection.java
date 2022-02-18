@@ -53,6 +53,7 @@ import static io.servicetalk.http.netty.HeaderUtils.canAddRequestContentLength;
 import static io.servicetalk.http.netty.HeaderUtils.emptyMessageBody;
 import static io.servicetalk.http.netty.HeaderUtils.flatEmptyMessage;
 import static io.servicetalk.http.netty.HeaderUtils.setRequestContentLength;
+import static io.servicetalk.http.netty.NewToDeprecatedFilter.requestStrategy;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.flushOnEnd;
 import static java.util.Objects.requireNonNull;
 
@@ -104,8 +105,14 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
     }
 
     @Override
-    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                 final StreamingHttpRequest request) {
+    public final Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+        return defer(() -> request(requestStrategy(request, executionContext().executionStrategy()), request)
+                .shareContextOnSubscribe());
+    }
+
+    @Override
+    public final Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                       final StreamingHttpRequest request) {
         return defer(() -> {
             final Publisher<Object> flatRequest;
             // See https://tools.ietf.org/html/rfc7230#section-3.3.3

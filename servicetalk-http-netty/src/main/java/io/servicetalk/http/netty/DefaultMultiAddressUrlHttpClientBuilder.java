@@ -494,7 +494,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     }
 
     @Nonnull
-    private MultiAddressHttpClientFilterFactory<HostAndPort> appendClientFilter0(
+    private static MultiAddressHttpClientFilterFactory<HostAndPort> appendClientFilter0(
             final @Nullable MultiAddressHttpClientFilterFactory<HostAndPort> current,
             final MultiAddressHttpClientFilterFactory<HostAndPort> next) {
         return current == null ? next : (group, client) -> current.create(group, next.create(group, client));
