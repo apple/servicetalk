@@ -16,6 +16,8 @@
 package io.servicetalk.client.api.internal;
 
 import io.servicetalk.client.api.ConsumableEvent;
+import io.servicetalk.client.api.RequestConcurrencyController;
+import io.servicetalk.client.api.ReservableRequestConcurrencyController;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 

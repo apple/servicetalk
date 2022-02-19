@@ -38,7 +38,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-import static io.servicetalk.client.api.internal.RequestConcurrencyController.Result.Accepted;
+import static io.servicetalk.client.api.RequestConcurrencyController.Result.Accepted;
 import static io.servicetalk.http.netty.AbstractLifecycleObserverHttpFilter.ON_CONNECTION_SELECTED_CONSUMER;
 import static io.servicetalk.http.netty.AbstractStreamingHttpConnection.requestExecutionStrategy;
 import static java.util.Objects.requireNonNull;

@@ -16,7 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.LoadBalancer;
-import io.servicetalk.client.api.internal.ReservableRequestConcurrencyController;
+import io.servicetalk.client.api.ReservableRequestConcurrencyController;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
@@ -44,8 +44,9 @@ import static java.util.Objects.requireNonNull;
 /**
  * Makes the wrapped {@link StreamingHttpConnection} aware of the {@link LoadBalancer}.
  */
-final class LoadBalancedStreamingHttpConnection implements FilterableStreamingHttpLoadBalancedConnection,
-                   ReservedStreamingHttpConnection, ReservableRequestConcurrencyController,
+public class LoadBalancedStreamingHttpConnection
+        implements FilterableStreamingHttpLoadBalancedConnection, ReservedStreamingHttpConnection,
+                   ReservableRequestConcurrencyController,
                    // Since we do not have filters for reserved connection, we rely on the original implementation to
                    // be an influencer hence we can try to correctly delegate when possible.
                    // Reserved connection given to the user will use the correct strategy and influencer chain since
@@ -55,7 +56,7 @@ final class LoadBalancedStreamingHttpConnection implements FilterableStreamingHt
     private final FilterableStreamingHttpLoadBalancedConnection filteredConnection;
     private final HttpExecutionStrategy connectStrategy;
 
-    LoadBalancedStreamingHttpConnection(FilterableStreamingHttpLoadBalancedConnection filteredConnection,
+    public LoadBalancedStreamingHttpConnection(FilterableStreamingHttpLoadBalancedConnection filteredConnection,
                                         ReservableRequestConcurrencyController limiter,
                                         HttpExecutionStrategy connectStrategy) {
         this.filteredConnection = filteredConnection;
@@ -146,6 +147,14 @@ final class LoadBalancedStreamingHttpConnection implements FilterableStreamingHt
     @Override
     public HttpExecutionStrategy requiredOffloads() {
         return connectStrategy;
+    }
+
+    public FilterableStreamingHttpLoadBalancedConnection unwrap() {
+        return filteredConnection;
+    }
+
+    public ReservableRequestConcurrencyController limiter() {
+        return limiter;
     }
 
     @Override
