@@ -16,32 +16,49 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.BlockingHttpClient;
+import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
 import io.servicetalk.transport.netty.internal.IoUringUtils;
 import io.servicetalk.transport.netty.internal.NettyIoExecutors;
 
+import io.netty.incubator.channel.uring.IOUring;
 import io.netty.incubator.channel.uring.IOUringEventLoopGroup;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnOs;
 
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
+import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_ECHO;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.condition.OS.LINUX;
+import static org.junit.jupiter.api.condition.OS.MAC;
 
 class IoUringTest {
 
     @Test
-    void test() throws Exception {
+    @EnabledOnOs(value = { MAC })
+    void ioUringIsNotAvailableOnMacOs() {
+        assertFalse(IOUring.isAvailable());
+        assertFalse(IoUringUtils.isAvailable());
+    }
+
+    @Test
+    @EnabledOnOs(value = { LINUX })
+    void ioUringIsAvailableOnLinux() throws Exception {
+        IOUring.ensureAvailability();
         EventLoopAwareNettyIoExecutor ioUringExecutor = null;
         try {
             IoUringUtils.tryIoUring(true);
-            assumeTrue(IoUringUtils.isAvailable());
+            assertTrue(IoUringUtils.isAvailable());
 
             ioUringExecutor = NettyIoExecutors.createIoExecutor(2, "io-uring");
             assertThat(ioUringExecutor.eventLoopGroup(), is(instanceOf(IOUringEventLoopGroup.class)));
@@ -52,13 +69,16 @@ class IoUringTest {
                  BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
                          .ioExecutor(ioUringExecutor)
                          .buildBlocking()) {
-                HttpResponse response = client.request(client.get(SVC_ECHO));
+                HttpRequest request = client.post(SVC_ECHO).payloadBody("bonjour!", textSerializerUtf8());
+                HttpResponse response = client.request(request);
                 assertThat(response.status(), is(OK));
+                assertThat(response.payloadBody().toString(UTF_8), is("bonjour!"));
             }
         } finally {
             IoUringUtils.tryIoUring(false);
             if (ioUringExecutor != null) {
                 ioUringExecutor.closeAsync().toFuture().get();
+                assertTrue(ioUringExecutor.eventLoopGroup().isShutdown());
             }
         }
     }

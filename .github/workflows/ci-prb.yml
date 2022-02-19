@@ -35,7 +35,8 @@ jobs:
         env:
           CI: true
           JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF-8
-        run: ./gradlew --parallel clean test
+        run: |
+            sudo env "PATH=$PATH" bash -c "ulimit -l 65536 && ulimit -a && ./gradlew --no-daemon --parallel clean test"
       - name: Upload Test Results
         if: always()
         uses: actions/upload-artifact@v2
