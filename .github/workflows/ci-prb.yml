@@ -9,12 +9,7 @@ jobs:
     strategy:
       matrix:
         java: [ 8, 11, 17 ]
-        os: [ ubuntu-latest, macos-latest ]
-        include:
-          - os: ubuntu-latest
-            gradle-command: sudo env "PATH=$PATH" bash -c "ulimit -l 65536 && ulimit -a && ./gradlew --no-daemon --parallel clean test"
-          - os: macos-latest
-            gradle-command: ./gradlew --no-daemon --parallel clean test
+        os: [ ubuntu-latest ]
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2.4.0
@@ -37,10 +32,16 @@ jobs:
           minimum-size: 8GB
           maximum-size: 16GB
       - name: Build and Test
+        shell: bash
         env:
           CI: true
           JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF-8
-        run: ${{ matrix.gradle-command }}
+        run: |
+          if [ "${{ matrix.os }}" = "Linux" ]; then
+            sudo env "PATH=$PATH" bash -c "ulimit -l 65536 && ulimit -a && ./gradlew --no-daemon --parallel clean test"
+          else
+            ./gradlew --no-daemon --parallel clean test
+          fi
       - name: Upload Test Results
         if: always()
         uses: actions/upload-artifact@v2
