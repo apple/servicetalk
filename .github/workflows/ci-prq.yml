@@ -4,10 +4,15 @@ on:
     branches: [ main, '0.41', '0.42' ]
 jobs:
   quality:
-    runs-on: ubuntu-latest
+    name: quality ${{ matrix.java }} ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         java: [ 8, 11, 17 ]
+        os: [ ubuntu-latest ]
+        include:
+          - os: ubuntu-latest
+            gradle-command: sudo env "PATH=$PATH" bash -c "ulimit -l 65536 && ulimit -a && ./gradlew --no-daemon --parallel clean quality"
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2.4.0
@@ -24,8 +29,7 @@ jobs:
       - name: Build with Gradle
         env:
           CI: true
-        run: |
-            sudo env "PATH=$PATH" bash -c "ulimit -l 65536 && ulimit -a && ./gradlew --no-daemon --parallel clean quality"
+        run: ${{ matrix.gradle-command }}
       - name: Upload CheckStyle Results
         if: always()
         uses: actions/upload-artifact@v2
