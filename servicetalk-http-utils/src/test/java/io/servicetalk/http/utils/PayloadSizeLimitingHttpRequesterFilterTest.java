@@ -54,8 +54,7 @@ class PayloadSizeLimitingHttpRequesterFilterTest {
     @Test
     void lessThanMaxAllowed() throws ExecutionException, InterruptedException {
         new PayloadSizeLimitingHttpRequesterFilter(100).create(mockTransport(99))
-                .request(REQ_RESP_FACTORY.get("/"))
-                .toFuture().get()
+                .request(REQ_RESP_FACTORY.get("/")).toFuture().get()
                 .payloadBody().toFuture().get();
     }
 
