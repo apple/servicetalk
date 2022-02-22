@@ -27,6 +27,7 @@ import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
+import static io.servicetalk.http.api.HttpResponseStatus.PAYLOAD_TOO_LARGE;
 import static io.servicetalk.http.api.HttpResponseStatus.SERVICE_UNAVAILABLE;
 import static io.servicetalk.http.api.HttpResponseStatus.UNSUPPORTED_MEDIA_TYPE;
 
@@ -82,6 +83,8 @@ public final class HttpExceptionMapperServiceFilter implements StreamingHttpServ
             status = UNSUPPORTED_MEDIA_TYPE;
             LOGGER.error("Failed to deserialize or serialize for connection={}, request='{} {} {}'. Returning: {}",
                     ctx, request.method(), request.requestTarget(), request.version(), status, cause);
+        } else if (cause instanceof PayloadTooLargeException) {
+            status = PAYLOAD_TOO_LARGE;
         } else {
             status = INTERNAL_SERVER_ERROR;
             LOGGER.error("Unexpected exception during service processing for connection={}, request='{} {} {}'. " +

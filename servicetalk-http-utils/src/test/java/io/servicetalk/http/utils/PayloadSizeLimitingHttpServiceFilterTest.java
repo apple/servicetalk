@@ -16,6 +16,7 @@
 package io.servicetalk.http.utils;
 
 import io.servicetalk.http.api.HttpServiceContext;
+import io.servicetalk.http.api.PayloadTooLargeException;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
