@@ -214,6 +214,11 @@ final class ProjectUtils {
     configFile.exists() ? configFile : project.file("$project.projectDir/$path")
   }
 
+  static void addArchUnitTask(Project project) {
+    def archUnitTask = project.tasks.register("archunit", ServiceTalkArchUnitTask).get()
+    archUnitTask.dependsOn(project.tasks.findByName("assemble"))
+  }
+
   static void addQualityTask(Project project) {
     project.configure(project) {
       project.task("quality") {

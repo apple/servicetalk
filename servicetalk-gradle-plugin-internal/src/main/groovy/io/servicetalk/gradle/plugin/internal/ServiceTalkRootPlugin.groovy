@@ -20,6 +20,7 @@ import org.gradle.api.Project
 import org.gradle.api.tasks.javadoc.Javadoc
 
 import static io.servicetalk.gradle.plugin.internal.ProjectUtils.addQualityTask
+import static io.servicetalk.gradle.plugin.internal.ProjectUtils.addArchUnitTask
 
 final class ServiceTalkRootPlugin extends ServiceTalkCorePlugin {
   void apply(Project project) {
@@ -27,6 +28,7 @@ final class ServiceTalkRootPlugin extends ServiceTalkCorePlugin {
 
     enforceCheckstyleRoot project
     addJavadocAllTask project
+    addArchUnitTask project
     addQualityTask project
   }
 

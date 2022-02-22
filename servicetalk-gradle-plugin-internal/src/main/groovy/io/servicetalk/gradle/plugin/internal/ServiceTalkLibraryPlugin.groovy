@@ -24,6 +24,7 @@ import org.gradle.api.publish.maven.tasks.AbstractPublishToMaven
 
 import static io.servicetalk.gradle.plugin.internal.ProjectUtils.addManifestAttributes
 import static io.servicetalk.gradle.plugin.internal.ProjectUtils.addQualityTask
+import static io.servicetalk.gradle.plugin.internal.ProjectUtils.addArchUnitTask
 import static io.servicetalk.gradle.plugin.internal.ProjectUtils.createJavadocJarTask
 import static io.servicetalk.gradle.plugin.internal.ProjectUtils.createSourcesJarTask
 import static io.servicetalk.gradle.plugin.internal.ProjectUtils.locateBuildLevelConfigFile
@@ -49,6 +50,7 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
     applyPitestPlugin project
     applyPmdPlugin project
     applySpotBugsPlugin project
+    addArchUnitTask project
     addQualityTask project
   }
 
