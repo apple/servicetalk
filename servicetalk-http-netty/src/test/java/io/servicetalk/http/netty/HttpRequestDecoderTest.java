@@ -120,14 +120,15 @@ class HttpRequestDecoderTest extends HttpObjectDecoderTest {
 
     @Test
     void invalidMethodName() {
-        assertDecoderExceptionWithCause("GeT / HTTP/1.1" + "\r\n",
-                "Invalid start-line: HTTP request method must contain only upper case letters");
+        assertDecoderExceptionWithCause("GeT? / HTTP/1.1" + "\r\n",
+                "Invalid start-line: HTTP request method must follow a valid token format",
+                IllegalArgumentException.class, channel());
     }
 
     @Test
     void invalidMethodNameNothingElse() {
-        assertDecoderExceptionWithCause("GeT ",
-                "Invalid start-line: HTTP request method must contain only upper case letters");
+        assertDecoderExceptionWithCause("GeT" + (char) 0x7F + ' ',
+                "Invalid start-line: must contain only visible characters");
     }
 
     @Test
@@ -176,9 +177,17 @@ class HttpRequestDecoderTest extends HttpObjectDecoderTest {
     }
 
     @Test
-    void validStartLineWithCustomMethod() {
+    void validStartLineWithCustomUppercaseMethod() {
         writeMsg("CUSTOM / HTTP/1.1" + "\r\n" + "\r\n");
         assertRequestLine(HttpRequestMethod.of("CUSTOM", NONE), "/", HTTP_1_1);
+        assertEmptyTrailers(channel);
+        assertFalse(channel.finishAndReleaseAll());
+    }
+
+    @Test
+    void validStartLineWithCustomMethodAsToken() {
+        writeMsg("CuS-T0M! / HTTP/1.1" + "\r\n" + "\r\n");
+        assertRequestLine(HttpRequestMethod.of("CuS-T0M!", NONE), "/", HTTP_1_1);
         assertEmptyTrailers(channel);
         assertFalse(channel.finishAndReleaseAll());
     }
@@ -277,7 +286,7 @@ class HttpRequestDecoderTest extends HttpObjectDecoderTest {
         assertStandardHeaders(metaData.headers());
         assertEmptyTrailers(channel);
         // Content is not expected for requests if no "content-length" nor "transfer-encoding: chunked" is present
-        assertThrows(DecoderException.class, () -> writeMsg("some_content"));
+        assertThrows(DecoderException.class, () -> writeMsg("garbage" + (char) 0x7F + "_content"));
         assertThat(channel.inboundMessages(), is(empty()));
     }
 

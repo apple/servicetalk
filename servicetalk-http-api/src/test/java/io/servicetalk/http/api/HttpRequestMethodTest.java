@@ -25,12 +25,14 @@ import static io.servicetalk.http.api.HttpRequestMethod.OPTIONS;
 import static io.servicetalk.http.api.HttpRequestMethod.PATCH;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static io.servicetalk.http.api.HttpRequestMethod.PUT;
+import static io.servicetalk.http.api.HttpRequestMethod.Properties.NONE;
 import static io.servicetalk.http.api.HttpRequestMethod.TRACE;
 import static io.servicetalk.http.api.HttpRequestMethod.of;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class HttpRequestMethodTest {
 
@@ -50,5 +52,11 @@ class HttpRequestMethodTest {
     @Test
     void testOfStringReturnsNullForUnknownMethod() {
         assertThat(of("UNKNOWN"), is(nullValue()));
+    }
+
+    @Test
+    void validatesName() {
+        assertThrows(IllegalArgumentException.class, () -> of("", NONE));
+        assertThrows(IllegalArgumentException.class, () -> of("<GET>", NONE));
     }
 }
