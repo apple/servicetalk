@@ -23,6 +23,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.FilterableReservedControlledStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpExecutionContext;
@@ -48,7 +49,7 @@ import static io.servicetalk.transport.api.TransportObservers.asSafeObserver;
 import static java.util.Objects.requireNonNull;
 
 abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
-        implements ConnectionFactory<ResolvedAddress, LoadBalancedStreamingHttpConnection> {
+        implements ConnectionFactory<ResolvedAddress, FilterableReservedControlledStreamingHttpLoadBalancedConnection> {
 
     @Nullable
     final StreamingHttpConnectionFilterFactory connectionFilterFunction;
@@ -113,7 +114,7 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
     }
 
     @Override
-    public final Single<LoadBalancedStreamingHttpConnection> newConnection(
+    public final Single<FilterableReservedControlledStreamingHttpLoadBalancedConnection> newConnection(
             final ResolvedAddress resolvedAddress, @Nullable final TransportObserver observer) {
         return filterableConnectionFactory.newConnection(resolvedAddress, observer)
                 .map(conn -> {

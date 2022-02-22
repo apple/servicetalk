@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TerminalSignalConsumer;
+import io.servicetalk.http.api.FilterableReservedControlledStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
@@ -47,19 +48,20 @@ import static java.util.function.Function.identity;
 
 final class LoadBalancedStreamingHttpClient implements FilterableStreamingHttpClient {
 
-    private static final Predicate<LoadBalancedStreamingHttpConnection>
+    private static final Predicate<FilterableReservedControlledStreamingHttpLoadBalancedConnection>
             SELECTOR_FOR_REQUEST = conn -> conn.tryRequest() == Accepted;
-    private static final Predicate<LoadBalancedStreamingHttpConnection>
-            SELECTOR_FOR_RESERVE = LoadBalancedStreamingHttpConnection::tryReserve;
+    private static final Predicate<FilterableReservedControlledStreamingHttpLoadBalancedConnection>
+            SELECTOR_FOR_RESERVE = FilterableReservedControlledStreamingHttpLoadBalancedConnection::tryReserve;
 
     // TODO Proto specific LB after upgrade and worry about SSL
     private final HttpExecutionContext executionContext;
-    private final LoadBalancer<LoadBalancedStreamingHttpConnection> loadBalancer;
+    private final LoadBalancer<FilterableReservedControlledStreamingHttpLoadBalancedConnection> loadBalancer;
     private final StreamingHttpRequestResponseFactory reqRespFactory;
 
-    LoadBalancedStreamingHttpClient(final HttpExecutionContext executionContext,
-                                    final LoadBalancer<LoadBalancedStreamingHttpConnection> loadBalancer,
-                                    final StreamingHttpRequestResponseFactory reqRespFactory) {
+    LoadBalancedStreamingHttpClient(
+            final HttpExecutionContext executionContext,
+            final LoadBalancer<FilterableReservedControlledStreamingHttpLoadBalancedConnection> loadBalancer,
+            final StreamingHttpRequestResponseFactory reqRespFactory) {
         this.executionContext = requireNonNull(executionContext);
         this.loadBalancer = requireNonNull(loadBalancer);
         this.reqRespFactory = requireNonNull(reqRespFactory);

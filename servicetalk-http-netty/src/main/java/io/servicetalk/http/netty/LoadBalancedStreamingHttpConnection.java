@@ -20,6 +20,7 @@ import io.servicetalk.client.api.ReservableRequestConcurrencyController;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.FilterableReservedControlledStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpConnectionContext;
 import io.servicetalk.http.api.HttpEventKey;
@@ -29,7 +30,6 @@ import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.ReservedBlockingHttpConnection;
 import io.servicetalk.http.api.ReservedBlockingStreamingHttpConnection;
 import io.servicetalk.http.api.ReservedHttpConnection;
-import io.servicetalk.http.api.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -44,9 +44,8 @@ import static java.util.Objects.requireNonNull;
 /**
  * Makes the wrapped {@link StreamingHttpConnection} aware of the {@link LoadBalancer}.
  */
-public class LoadBalancedStreamingHttpConnection
-        implements FilterableStreamingHttpLoadBalancedConnection, ReservedStreamingHttpConnection,
-                   ReservableRequestConcurrencyController,
+final class LoadBalancedStreamingHttpConnection
+        implements FilterableReservedControlledStreamingHttpLoadBalancedConnection,
                    // Since we do not have filters for reserved connection, we rely on the original implementation to
                    // be an influencer hence we can try to correctly delegate when possible.
                    // Reserved connection given to the user will use the correct strategy and influencer chain since
@@ -56,7 +55,7 @@ public class LoadBalancedStreamingHttpConnection
     private final FilterableStreamingHttpLoadBalancedConnection filteredConnection;
     private final HttpExecutionStrategy connectStrategy;
 
-    public LoadBalancedStreamingHttpConnection(FilterableStreamingHttpLoadBalancedConnection filteredConnection,
+    LoadBalancedStreamingHttpConnection(FilterableStreamingHttpLoadBalancedConnection filteredConnection,
                                         ReservableRequestConcurrencyController limiter,
                                         HttpExecutionStrategy connectStrategy) {
         this.filteredConnection = filteredConnection;
@@ -147,14 +146,6 @@ public class LoadBalancedStreamingHttpConnection
     @Override
     public HttpExecutionStrategy requiredOffloads() {
         return connectStrategy;
-    }
-
-    public FilterableStreamingHttpLoadBalancedConnection unwrap() {
-        return filteredConnection;
-    }
-
-    public ReservableRequestConcurrencyController limiter() {
-        return limiter;
     }
 
     @Override
