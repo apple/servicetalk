@@ -15,12 +15,12 @@
  */
 package io.servicetalk.http.utils;
 
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
@@ -30,16 +30,16 @@ import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 
 /**
- * Limits the response payload size for a request. The filter will throw an exception which may result in
- * stream/connection closure.
+ * Limits the response payload size. The filter will throw an exception which may result in stream/connection closure.
+ * A {@link PayloadTooLargeException} will be thrown when the maximum payload size is exceeded.
  */
 public final class PayloadSizeLimitingHttpRequesterFilter implements
-                        StreamingHttpClientFilterFactory, StreamingHttpConnectionFilterFactory,
-                        HttpExecutionStrategyInfluencer {
+                        StreamingHttpClientFilterFactory, StreamingHttpConnectionFilterFactory {
     private final int maxResponsePayloadSize;
 
     /**
@@ -48,7 +48,7 @@ public final class PayloadSizeLimitingHttpRequesterFilter implements
      */
     public PayloadSizeLimitingHttpRequesterFilter(int maxResponsePayloadSize) {
         if (maxResponsePayloadSize < 0) {
-            throw new IllegalArgumentException("maxResponsePayloadSize: " + maxResponsePayloadSize + " (expected >0)");
+            throw new IllegalArgumentException("maxResponsePayloadSize: " + maxResponsePayloadSize + " (expected >=0)");
         }
         this.maxResponsePayloadSize = maxResponsePayloadSize;
     }
@@ -81,29 +81,26 @@ public final class PayloadSizeLimitingHttpRequesterFilter implements
 
     private Single<StreamingHttpResponse> applyLimit(
             StreamingHttpRequest request, Function<StreamingHttpRequest, Single<StreamingHttpResponse>> delegator) {
-        return delegator.apply(request).map(response -> response.transformPayloadBody(publisher ->
-                Publisher.defer(() -> {
-                    final MutableInt responsePayloadSize = new MutableInt();
-                    return publisher.beforeOnNext(buff -> {
-                        if (maxResponsePayloadSize - responsePayloadSize.value < buff.readableBytes()) {
-                            throw new PayloadTooLongException("Maximum payload size=" + maxResponsePayloadSize +
-                                    " current payload size=" + responsePayloadSize.value +
-                                    " new buffer size=" + buff.readableBytes());
-                        }
-                        responsePayloadSize.value += buff.readableBytes();
-                    }).shareContextOnSubscribe();
-                })));
+        return delegator.apply(request).map(response ->
+                // We could use transformPayloadBody to convert into Buffers, but transformMessageBody has slightly
+                // less overhead. Since this implementation is internal to ServiceTalk we take the more advanced route.
+                response.transformMessageBody(newLimiter(maxResponsePayloadSize)));
     }
 
-    static final class PayloadTooLongException extends IllegalStateException {
-        private static final long serialVersionUID = 7332745010452084915L;
-
-        PayloadTooLongException(String message) {
-            super(message);
-        }
-    }
-
-    private static final class MutableInt {
-        int value;
+    static UnaryOperator<Publisher<?>> newLimiter(int maxPayloadSize) {
+        return publisher -> Publisher.defer(() -> {
+            final MutableInt responsePayloadSize = new MutableInt();
+            return publisher.beforeOnNext(obj -> {
+                if (obj instanceof Buffer) {
+                    final Buffer buff = (Buffer) obj;
+                    if (maxPayloadSize - responsePayloadSize.value < buff.readableBytes()) {
+                        throw new PayloadTooLargeException("Maximum payload size=" + maxPayloadSize +
+                                " current payload size=" + responsePayloadSize.value + " new buffer size=" +
+                                buff.readableBytes());
+                    }
+                    responsePayloadSize.value += buff.readableBytes();
+                }
+            }).shareContextOnSubscribe();
+        });
     }
 }

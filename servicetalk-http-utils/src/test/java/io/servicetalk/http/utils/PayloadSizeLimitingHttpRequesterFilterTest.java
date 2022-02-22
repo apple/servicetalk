@@ -16,6 +16,7 @@
 package io.servicetalk.http.utils;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
@@ -30,9 +31,10 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
-import io.servicetalk.http.utils.PayloadSizeLimitingHttpRequesterFilter.PayloadTooLongException;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.concurrent.ExecutionException;
 
@@ -47,13 +49,14 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 
 class PayloadSizeLimitingHttpRequesterFilterTest {
-    private static final StreamingHttpRequestResponseFactory REQ_RESP_FACTORY =
+    static final StreamingHttpRequestResponseFactory REQ_RESP_FACTORY =
             new DefaultStreamingHttpRequestResponseFactory(DEFAULT_ALLOCATOR, INSTANCE, HTTP_1_1);
     private static final HttpExecutionContext MOCK_EXECUTION_CTX = mock(HttpExecutionContext.class);
 
-    @Test
-    void lessThanMaxAllowed() throws ExecutionException, InterruptedException {
-        new PayloadSizeLimitingHttpRequesterFilter(100).create(mockTransport(99))
+    @ParameterizedTest
+    @ValueSource(ints = {99, 100})
+    void lessThanEqToMaxAllowed(int payloadLen) throws ExecutionException, InterruptedException {
+        new PayloadSizeLimitingHttpRequesterFilter(100).create(mockTransport(payloadLen))
                 .request(REQ_RESP_FACTORY.get("/")).toFuture().get()
                 .payloadBody().toFuture().get();
     }
@@ -64,7 +67,15 @@ class PayloadSizeLimitingHttpRequesterFilterTest {
                 () -> new PayloadSizeLimitingHttpRequesterFilter(100).create(mockTransport(101))
                         .request(REQ_RESP_FACTORY.get("/")).toFuture().get()
                         .payloadBody().toFuture().get());
-        assertThat(e.getCause(), instanceOf(PayloadTooLongException.class));
+        assertThat(e.getCause(), instanceOf(PayloadTooLargeException.class));
+    }
+
+    static Publisher<Buffer> newBufferPublisher(int sizeInBytes, BufferAllocator allocator) {
+        Buffer[] buffers = new Buffer[sizeInBytes];
+        for (int i = 0; i < sizeInBytes; ++i) {
+            buffers[i] = allocator.fromAscii("a");
+        }
+        return Publisher.from(buffers);
     }
 
     private static FilterableStreamingHttpClient mockTransport(int responsePayloadSize) {
@@ -79,14 +90,9 @@ class PayloadSizeLimitingHttpRequesterFilterTest {
             @Override
             public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
                 return Single.succeeded(REQ_RESP_FACTORY.ok().transformPayloadBody(pub ->
-                        Publisher.defer(() -> {
-                            Buffer[] buffers = new Buffer[responsePayloadSize];
-                            for (int i = 0; i < responsePayloadSize; ++i) {
-                                buffers[i] = DEFAULT_ALLOCATOR.fromAscii("a");
-                            }
-                            return pub.concat(Publisher.from(buffers))
-                                    .shareContextOnSubscribe();
-                        })));
+                        Publisher.defer(() ->
+                                pub.concat(newBufferPublisher(responsePayloadSize, DEFAULT_ALLOCATOR))
+                                .shareContextOnSubscribe())));
             }
 
             @Override
