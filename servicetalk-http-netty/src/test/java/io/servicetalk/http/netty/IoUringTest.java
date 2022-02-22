@@ -48,7 +48,14 @@ class IoUringTest {
     @EnabledOnOs(value = { MAC })
     void ioUringIsNotAvailableOnMacOs() {
         assertFalse(IOUring.isAvailable());
-        assertFalse(IoUringUtils.isAvailable());
+        try {
+            IoUringUtils.tryIoUring(false);
+            assertFalse(IoUringUtils.isAvailable());
+            IoUringUtils.tryIoUring(true);
+            assertFalse(IoUringUtils.isAvailable());
+        } finally {
+            IoUringUtils.tryIoUring(false);
+        }
     }
 
     @Test
