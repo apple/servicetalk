@@ -57,7 +57,7 @@ jobs:
           fi
 
           # Execute the gradlew command to publish the build
-          ./gradlew --parallel$FIRST_GRADLE_TARGETS && ./gradlew$SECOND_GRADLE_TARGETS
+          sudo env "PATH=$PATH" "FIRST_GRADLE_TARGETS=$FIRST_GRADLE_TARGETS" "SECOND_GRADLE_TARGETS=$SECOND_GRADLE_TARGETS" bash -c "ulimit -l 65536 && ulimit -a && ./gradlew --no-daemon --parallel$FIRST_GRADLE_TARGETS && ./gradlew --no-daemon$SECOND_GRADLE_TARGETS"
       - name: Publish Test Results
         if: always()
         uses: scacap/action-surefire-report@482f012643ed0560e23ef605a79e8e87ca081648
