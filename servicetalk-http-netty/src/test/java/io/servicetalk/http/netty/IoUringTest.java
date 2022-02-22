@@ -61,11 +61,11 @@ class IoUringTest {
     @Test
     @EnabledOnOs(value = { LINUX })
     void ioUringIsAvailableOnLinux() throws Exception {
-        IOUring.ensureAvailability();
         EventLoopAwareNettyIoExecutor ioUringExecutor = null;
         try {
             IoUringUtils.tryIoUring(true);
             assertTrue(IoUringUtils.isAvailable());
+            IOUring.ensureAvailability();
 
             ioUringExecutor = NettyIoExecutors.createIoExecutor(2, "io-uring");
             assertThat(ioUringExecutor.eventLoopGroup(), is(instanceOf(IOUringEventLoopGroup.class)));
@@ -79,7 +79,7 @@ class IoUringTest {
                 HttpRequest request = client.post(SVC_ECHO).payloadBody("bonjour!", textSerializerUtf8());
                 HttpResponse response = client.request(request);
                 assertThat(response.status(), is(OK));
-                assertThat(response.payloadBody().toString(UTF_8), is("bonjour!"));
+                assertThat(response.payloadBody(textSerializerUtf8()), is("bonjour!"));
             }
         } finally {
             IoUringUtils.tryIoUring(false);
