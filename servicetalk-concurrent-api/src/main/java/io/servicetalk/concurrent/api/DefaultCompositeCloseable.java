@@ -19,7 +19,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.function.Function;
@@ -175,13 +174,13 @@ final class DefaultCompositeCloseable implements CompositeCloseable {
 
     private void appendCloseableDelayError(final AsyncCloseable closeable) {
         final Operand operand = getOrAddConcatOperand(true);
-        operand.closables.add(closeable);
+        operand.closables.addLast(closeable);
         resetState();
     }
 
     private void prependCloseableDelayError(final AsyncCloseable closeable) {
         final Operand operand = getOrAddConcatOperand(false);
-        operand.closables.add(closeable);
+        operand.closables.addFirst(closeable);
         resetState();
     }
 
@@ -203,8 +202,8 @@ final class DefaultCompositeCloseable implements CompositeCloseable {
     }
 
     private static final class Operand {
-        private final List<AsyncCloseable> closables = new ArrayList<>(4);
-        private final boolean isMerge;
+        final Deque<AsyncCloseable> closables = new ArrayDeque<>(4);
+        final boolean isMerge;
 
         Operand(boolean isMerge) {
             this.isMerge = isMerge;
