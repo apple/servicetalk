@@ -154,6 +154,6 @@ public final class GlobalExecutionContext {
     private static void log(final Logger logger, final String name, final String methodName) {
         logger.info("Closure of \"{}\" was initiated using {} method. Closing the global instance before " +
                 "closing all resources that use it may result in unexpected behavior.", name, methodName,
-                new Exception("Stack trace"));
+                new Throwable("Stack trace"));
     }
 }
