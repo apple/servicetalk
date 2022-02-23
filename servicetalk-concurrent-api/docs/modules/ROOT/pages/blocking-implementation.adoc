@@ -8,9 +8,10 @@ endif::[]
 
 = Blocking safe by default (Implementation Details)
 
-As described xref:{page-version}@servicetalk-concurrent-api::blocking-safe-by-default.adoc[here], ServiceTalk, by
-default, allows users to write blocking code when interacting with ServiceTalk. This document describes the details of
-the implementation and is addressed to audiences who intend to know the internals of how this is achieved.
+As described in the section
+xref:{page-version}@servicetalk-concurrent-api::blocking-safe-by-default.adoc[Blocking Safe By Default],
+ServiceTalk, by default, allows users to write blocking code when interacting with ServiceTalk. This document describes
+the details of the implementation and is addressed to audiences who intend to know the internals of how this is achieved.
 
 NOTE: It is not required to read this document if you just want to use ServiceTalk.
 
@@ -30,19 +31,20 @@ An asynchronous source has two important decisions to make about thread usage:
 is to send an HTTP request and read the HTTP response.
 2. Which thread or executor will be used to interact with the `Subscriber` corresponding to its `Subscription`s.
 
-In sometimes a single specific thread will be used but in most cases a thread from an `Executor` pool will be used.
-
 Part 1. above is not governed by the
 link:https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#specification[ReactiveStreams specification]
 and hence sources are free to use any thread. ServiceTalk typically will use Netty's `EventLoop` to perform the actual
 task.
-Part 2. defines all the interactions using the ReactiveStreams specifications, i.e. all methods in `Publisher`,
-`Subscriber` and `Subscription`.
 
-ServiceTalk concurrency APIs defines which thread will be used by any asynchronous source for Part 2.
+Part 2. defines all the interactions using the ReactiveStreams specifications, i.e. all methods in `Publisher`,
+`Subscriber` and `Subscription`. The ReactiveStreams specification requires that signals are not delivered
+link:https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#1.3[concurrently],
+but doesn't have any restrictions about which threads are used. This means the same thread maybe used for all signal
+deliveries for a given Subscriber, but it is also valid to use any thread (as long as no concurrency is introduced).
+ServiceTalk concurrency APIs are used to define which executor will be used for an asynchronous source for Part 2.,
+which is typically an application `Executor`.
 
 == Task Offloading
-
 ServiceTalk uses Netty for network I/O and the Netty implementation uses a fixed number of I/O threads for executing
 network operations. To maximize throughput and minimize latency it is important to ensure that at least one I/O thread
 is always ready to respond immediately to network activity. One approach to ensure I/O thread availability is to
@@ -61,19 +63,8 @@ application performance by reducing latency and overhead. Requests to not offloa
 the other components in the same execution path have also opted out of offloading. As a last resort, tasks may also
 be queued to be performed as threads are available.
 
-ServiceTalk is designed to be fully asynchronous except where the API provides explicit blocking behaviour as a
-convenience. Offloading is the execution of program logic code using a thread (or equivalent) other than the application
-thread which originally initiated the operation. Offloading is used for two purposes within ServiceTalk; firstly for the
-execution needed for the handling of asynchronous events, aka Signals, and secondly when handling asynchronous events,
-protecting scarce resources from being monopolized by blocking, untrusted or expensive application code. Asynchronous
-execution requires offloading – the initiating application thread is not available. Protective offloading is a practical
-consideration, but just as necessary for reliable and predictable operation.
-
-Task based offloading uses an `Executor` in the traditional way to run the offloaded tasks. Often the Executor has a
-pool of threads, possibly unbounded, and tasks are run using whatever thread is available. In particular, different
-threads may be used for each task executed and code running in tasks cannot depend upon a consistent thread being used
-for invoking program logic. This approach is generally the most scalable because it makes the best utilization of
-threads.
+ServiceTalk is designed to be fully asynchronous except where the API provides explicit blocking behaviour xref:{page-version}@servicetalk::programming-paradigms.adoc[as a
+convenience].
 
 == Offloading and asynchronous sources
 
@@ -115,7 +106,7 @@ Collection<Integer> Publisher.range(1, 10) <2> <4>
 <1> `toFuture().get()` will do a `subscribe(Subscriber)`. This flows up the operator chain, `subscribeOn` (offload onto `subscribeExecutor` thread) -> `map` -> `publishOn` -> `map` -> `Range`.
 <2> `Range` will call `Subscriber.onSubscribe(Subscription)` on the `Subscriber`. This flows back down the operator chain, `Range` -> `map` -> `publishOn` (offloads to `publishExecutor` thread) -> `map` -> `subscribeOn` -> `toFuture`.
 <3> `toFuture()` will call `Subscription.request(Long.MAX_VALUE)`. This flows up the operator chain, `subscribeOn` (offloads onto `subscribeOn`  thread) -> `map` -> `publishOn` -> `map` -> `Range`.
-<4> `Range` will do `onNext(element)` for 1-10 items synchronously (on a thread from `subscribeExecutor`). Each `onNext` flows back down the operator chain, `Range` -> `map` -> `publishOn` (offloads to thread from `publishExecutor`) -> `map` -> `subscribeOn` -> `toFuture`.
+<4> `Range` will do `onNext(element)` for 1-9 items synchronously (on a thread from `subscribeExecutor`). Each `onNext` flows back down the operator chain, `Range` -> `map` -> `publishOn` (offloads to thread from `publishExecutor`) -> `map` -> `subscribeOn` -> `toFuture`.
 
 This example can be expanded to demonstrate the offloading behavior directly. The expanded example extends the NO-OP
 `map` implementations to reveal the active thread during their execution. To show the active thread at the other
