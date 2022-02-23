@@ -16,11 +16,13 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.utils.internal.IllegalCharacterException;
 
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.PREFER_HEAP_RO_ALLOCATOR;
 import static io.servicetalk.http.api.BufferUtils.writeReadOnlyBuffer;
+import static io.servicetalk.http.api.HeaderUtils.validateToken;
 import static io.servicetalk.http.api.HttpRequestMethod.Properties.CACHEABLE;
 import static io.servicetalk.http.api.HttpRequestMethod.Properties.IDEMPOTENT;
 import static io.servicetalk.http.api.HttpRequestMethod.Properties.NONE;
@@ -83,12 +85,21 @@ public final class HttpRequestMethod implements Comparable<HttpRequestMethod> {
     private final Buffer encodedAsBuffer;
 
     private HttpRequestMethod(final String name, final Properties properties) {
-        if (name.isEmpty()) {
-            throw new IllegalArgumentException("Method name cannot be empty");
-        }
-        this.name = name;
+        this.name = validateName(name);
         this.properties = requireNonNull(properties);
         encodedAsBuffer = PREFER_HEAP_RO_ALLOCATOR.fromAscii(name);
+    }
+
+    private static String validateName(final String name) {
+        if (name.isEmpty()) {
+            throw new IllegalArgumentException("Invalid HTTP request method name: cannot be empty");
+        }
+        try {
+            validateToken(name);
+            return name;
+        } catch (IllegalCharacterException e) {
+            throw new IllegalArgumentException("Invalid HTTP request method name: " + name, e);
+        }
     }
 
     /**
@@ -99,6 +110,8 @@ public final class HttpRequestMethod implements Comparable<HttpRequestMethod> {
      * @param name a <a href="https://tools.ietf.org/html/rfc7231#section-4.1">method name</a>
      * @param properties <a href="https://tools.ietf.org/html/rfc7231#section-4.2">Common HTTP Method Properties</a>
      * @return an {@link HttpRequestMethod}
+     * @throws IllegalArgumentException if {@code name} does not follow the valid
+     * <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1"> token format</a>
      */
     public static HttpRequestMethod of(final String name, final Properties properties) {
         return new HttpRequestMethod(name, properties);

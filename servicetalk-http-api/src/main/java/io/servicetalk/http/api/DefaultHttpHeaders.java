@@ -34,7 +34,7 @@ import static io.servicetalk.http.api.HeaderUtils.domainMatches;
 import static io.servicetalk.http.api.HeaderUtils.isSetCookieNameMatches;
 import static io.servicetalk.http.api.HeaderUtils.parseCookiePair;
 import static io.servicetalk.http.api.HeaderUtils.pathMatches;
-import static io.servicetalk.http.api.HeaderUtils.validateCookieTokenAndHeaderName;
+import static io.servicetalk.http.api.HeaderUtils.validateToken;
 import static io.servicetalk.http.api.HttpHeaderNames.COOKIE;
 import static io.servicetalk.http.api.HttpHeaderNames.SET_COOKIE;
 import static java.util.Collections.emptyIterator;
@@ -588,7 +588,7 @@ final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequence> impl
      * @param name The filed-name to validate.
      */
     private static void validateHeaderName(final CharSequence name) {
-        validateCookieTokenAndHeaderName(name);
+        validateToken(name);
     }
 
     /**

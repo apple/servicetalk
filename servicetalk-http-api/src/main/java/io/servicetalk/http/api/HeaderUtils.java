@@ -264,16 +264,19 @@ public final class HeaderUtils {
     }
 
     /**
-     * Validate {@code key} is valid <a href="https://tools.ietf.org/html/rfc6265#section-4.1.1">cookie-name</a>
-     * (aka <a href="https://tools.ietf.org/html/rfc2616#section-2.2">token</a>) and a
-     * valid <a href="https://tools.ietf.org/html/rfc7230#section-3.2.6">field-name</a> of a
-     * <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header-field</a>. Both of these
-     * formats have the same restrictions.
+     * Validate a <a href="https://tools.ietf.org/html/rfc7230#section-3.2.6">token</a> contains only allowed
+     * characters.
+     * <p>
+     * The <a href="https://tools.ietf.org/html/rfc2616#section-2.2">token</a> format is used for variety of HTTP
+     * components, like  <a href="https://tools.ietf.org/html/rfc6265#section-4.1.1">cookie-name</a>,
+     * <a href="https://tools.ietf.org/html/rfc7230#section-3.2.6">field-name</a> of a
+     * <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header-field</a>, or
+     * <a href="https://tools.ietf.org/html/rfc7231#section-4">request method</a>.
      *
-     * @param key the cookie name or header name to validate.
+     * @param token the token to validate.
      */
-    static void validateCookieTokenAndHeaderName(final CharSequence key) {
-        forEachByte(key, HeaderUtils::validateToken);
+    static void validateToken(final CharSequence token) {
+        forEachByte(token, HeaderUtils::validateTokenChar);
     }
 
     static void validateHeaderValue(final CharSequence value) {
@@ -762,18 +765,12 @@ public final class HeaderUtils {
         return HAS_CHARSET_PATTERN.matcher(contentTypeHeader).matches();
     }
 
-    private static void validateCookieTokenAndHeaderName0(final CharSequence key) {
-        for (int i = 0; i < key.length(); ++i) {
-            validateToken((byte) key.charAt(i));
-        }
-    }
-
     /**
      * Validate char is a valid <a href="https://tools.ietf.org/html/rfc7230#section-3.2.6">token</a> character.
      *
      * @param value the character to validate.
      */
-    private static boolean validateToken(final byte value) {
+    private static boolean validateTokenChar(final byte value) {
         // HEADER
         // header-field   = field-name ":" OWS field-value OWS
         //

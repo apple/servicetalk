@@ -27,7 +27,6 @@ import io.servicetalk.utils.internal.IllegalCharacterException;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.DecoderException;
 import io.netty.util.ByteProcessor;
 
 import java.util.Queue;
@@ -46,11 +45,7 @@ final class HttpRequestDecoder extends HttpObjectDecoder<HttpRequestMetaData> im
         if (isWS(value)) {
             return false;
         }
-        ensureUpperCase(value);
-        return true;
-    };
-    private static final ByteProcessor ENSURE_UPPER_CASE = value -> {
-        ensureUpperCase(value);
+        ensureVCHAR(value);
         return true;
     };
 
@@ -79,20 +74,16 @@ final class HttpRequestDecoder extends HttpObjectDecoder<HttpRequestMetaData> im
         try {
             buffer.forEachByte(FIND_WS_AFTER_METHOD_NAME);
         } catch (IllegalCharacterException cause) {
-            throw newInvalidMethodException(cause);
+            throw new StacklessDecoderException(
+                    "Invalid start-line: must contain only visible characters", cause);
         }
     }
 
-    private static DecoderException newInvalidMethodException(final IllegalCharacterException cause) {
-        return new StacklessDecoderException(
-                "Invalid start-line: HTTP request method must contain only upper case letters", cause);
-    }
-
-    private static void ensureUpperCase(final byte value) {
-        // As per the RFC, request method is case-sensitive, and all valid methods are uppercase.
-        // https://tools.ietf.org/html/rfc7231#section-4.1
-        if (value < 'A' || value > 'Z') {
-            throw new IllegalCharacterException(value, "A-Z (0x41-0x5a)");
+    private static void ensureVCHAR(final byte value) {
+        // As per the RFC, start-line begins with visible characters
+        // https://tools.ietf.org/html/rfc7230#section-3.1.1
+        if (!isVCHAR(value)) {
+            throw new IllegalCharacterException(value, "VCHAR (0x21-0x7e)");
         }
     }
 
@@ -114,11 +105,11 @@ final class HttpRequestDecoder extends HttpObjectDecoder<HttpRequestMetaData> im
             return method;
         }
         try {
-            buffer.forEachByte(start, length, ENSURE_UPPER_CASE);
-        } catch (IllegalCharacterException cause) {
-            throw newInvalidMethodException(cause);
+            return HttpRequestMethod.of(methodName, NONE);
+        } catch (IllegalArgumentException cause) {
+            throw new StacklessDecoderException(
+                    "Invalid start-line: HTTP request method must follow a valid token format", cause);
         }
-        return HttpRequestMethod.of(methodName, NONE);
     }
 
     @Override

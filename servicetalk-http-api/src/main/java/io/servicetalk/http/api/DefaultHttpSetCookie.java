@@ -26,7 +26,7 @@ import static io.servicetalk.buffer.api.CharSequences.equalsIgnoreCaseLower;
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.buffer.api.CharSequences.parseLong;
 import static io.servicetalk.http.api.HeaderUtils.validateCookieNameAndValue;
-import static io.servicetalk.http.api.HeaderUtils.validateCookieTokenAndHeaderName;
+import static io.servicetalk.http.api.HeaderUtils.validateToken;
 import static io.servicetalk.http.api.HttpSetCookie.SameSite.Lax;
 import static io.servicetalk.http.api.HttpSetCookie.SameSite.None;
 import static io.servicetalk.http.api.HttpSetCookie.SameSite.Strict;
@@ -172,7 +172,7 @@ public final class DefaultHttpSetCookie implements HttpSetCookie {
                         }
                         name = setCookieString.subSequence(begin, i);
                         if (validateContent) {
-                            validateCookieTokenAndHeaderName(name);
+                            validateToken(name);
                         }
                         parseState = ParseState.ParsingValue;
                     } else if (parseState == ParseState.Unknown) {
