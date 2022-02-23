@@ -34,7 +34,6 @@ jobs:
       - name: Build and Test (Linux)
         if: runner.os == 'Linux'
         env:
-          CUSTOM_NAME: false
           JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF-8
         run:  sudo -E env "PATH=$PATH" bash -c "env && ulimit -l 65536 && ulimit -a && ./gradlew --no-daemon --parallel clean test"
       - name: Build and Test (non-Linux)
