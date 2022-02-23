@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021-2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
-import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
+import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
+import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_ECHO;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
@@ -75,10 +76,10 @@ class IoUringTest {
                  BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
                          .ioExecutor(ioUringExecutor)
                          .buildBlocking()) {
-                HttpRequest request = client.post(SVC_ECHO).payloadBody("bonjour!", textSerializerUtf8());
+                HttpRequest request = client.post(SVC_ECHO).payloadBody("bonjour!", textSerializer());
                 HttpResponse response = client.request(request);
                 assertThat(response.status(), is(OK));
-                assertThat(response.payloadBody(textSerializerUtf8()), is("bonjour!"));
+                assertThat(response.payloadBody(textDeserializer()), is("bonjour!"));
             }
         } finally {
             IoUringUtils.tryIoUring(false);
