@@ -22,8 +22,6 @@ jobs:
       - name: Make gradlew Executable
         run: chmod +x gradlew
       - name: Build with Gradle
-        env:
-          CI: true
         run: ./gradlew --parallel clean quality
       - name: Upload CheckStyle Results
         if: always()
