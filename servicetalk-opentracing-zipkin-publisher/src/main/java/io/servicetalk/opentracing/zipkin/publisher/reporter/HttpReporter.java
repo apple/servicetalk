@@ -68,7 +68,7 @@ public final class HttpReporter extends Component implements Reporter<Span>, Asy
     static final String V1_PATH = "/api/v1/spans";
     static final String V2_PATH = "/api/v2/spans";
     static final CharSequence THRIFT_CONTENT_TYPE = newAsciiString("application/x-thrift");
-    static final CharSequence PROTO_CONTENT_TYPE = newAsciiString("application/protobuf");
+    static final CharSequence PROTO_CONTENT_TYPE = newAsciiString("application/x-protobuf");
 
     private final PublisherSource.Processor<Span, Span> buffer;
     private final CompositeCloseable closeable;
