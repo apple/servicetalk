@@ -202,7 +202,7 @@ final class DefaultCompositeCloseable implements CompositeCloseable {
     }
 
     private static final class Operand {
-        final Deque<AsyncCloseable> closables = new ArrayDeque<>(2);
+        final Deque<AsyncCloseable> closables = new ArrayDeque<>(4);
         final boolean isMerge;
 
         Operand(boolean isMerge) {
