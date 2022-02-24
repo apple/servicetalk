@@ -103,5 +103,5 @@ the strategy for a client/server, but it comes with additional responsibility fr
 
 === ServiceTalk developers
 
-Internals of ServiceTalk still discourages blocking code and hence should be avoided while contributing to ServiceTalk.
-Unless there is a valid reason to do it, ServiceTalk internals are always non-blocking.
+The internal implementation of ServiceTalk still discourages blocking code and hence should be avoided while
+contributing to ServiceTalk. Unless there is a valid reason to do it, ServiceTalk internals are always non-blocking.

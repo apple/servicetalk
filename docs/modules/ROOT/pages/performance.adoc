@@ -240,11 +240,12 @@ _`FlushStrategies` and related APIs are advanced, internal, and subject to chang
 ==== Offloading and `ExecutionStrategy`
 Offloading is the execution of program logic code using a thread (or equivalent) other than the application
 thread which originally initiated the operation. Offloading is used for two purposes within ServiceTalk; firstly for the
-execution needed for the handling of asynchronous events, aka Signals, and secondly when handling asynchronous events,
-protecting scarce resources from being monopolized by blocking, untrusted or expensive application code. Asynchronous
-execution requires offloading – the initiating application thread is not available. The use of protective offloading,
-where offloading is used for avoid resource monopolization, is a practical consideration, but just as necessary for
-reliable and predictable operation.
+execution needed for the handling of asynchronous events, aka
+link:https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#glossary[Signals],
+and secondly when handling asynchronous events, protecting scarce resources from being monopolized by blocking,
+untrusted or expensive application code. Asynchronous execution requires offloading – the initiating application thread
+is not available. The use of protective offloading, where offloading is used for avoid resource monopolization, is a
+practical consideration, but just as necessary for reliable and predictable operation.
 
 Task based offloading uses an `Executor` in the traditional way to run the offloaded tasks. Often the `Executor` has a
 pool of threads, possibly unbounded, and tasks are run using whatever thread is available. In particular, different
