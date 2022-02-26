@@ -422,6 +422,19 @@ class MulticastPublisherTest {
         threeSubscribersTerminate(onError);
     }
 
+    @Test
+    void cancelMinSubscriberRequestsMore() throws InterruptedException {
+        Publisher<Integer> publisher = source.multicast(1, false);
+        toSource(publisher).subscribe(subscriber1);
+        Subscription localSubscription1 = subscriber1.awaitSubscription();
+        toSource(publisher).subscribe(subscriber2);
+        Subscription localSubscription2 = subscriber2.awaitSubscription();
+        localSubscription1.request(1);
+        assertThat(subscription.requested(), is(0L));
+        localSubscription2.cancel();
+        subscription.awaitRequestN(1);
+    }
+
     @ParameterizedTest
     @MethodSource("trueFalseStream")
     void threeSubscribersOneLateAfterCancel(boolean cancelMax, boolean cancelUpstream) throws InterruptedException {
@@ -440,14 +453,17 @@ class MulticastPublisherTest {
 
         if (cancelMax) {
             localSubscription2.cancel();
+            assertThat(subscription.requested(), is(5L));
         } else {
             localSubscription1.cancel();
+            // The min subscriber cancelled, we should request the outstanding demand that was held back.
+            subscription.awaitRequestN(10);
+            assertThat(subscription.requested(), is(10L));
         }
 
         toSource(publisher).subscribe(subscriber3);
         Subscription localSubscription3 = subscriber3.awaitSubscription();
         localSubscription3.request(4);
-        assertThat(subscription.requested(), is(5L));
         source.onNext(2, 3, 4, 5);
         source.onComplete();
         if (cancelMax) {
