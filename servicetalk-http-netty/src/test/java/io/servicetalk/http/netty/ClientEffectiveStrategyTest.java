@@ -93,34 +93,28 @@ class ClientEffectiveStrategyTest {
             null, // unspecified
             offloadNever(),
             offloadNone(),
-            defaultStrategy(),
+            defaultStrategy(), // should be same as unspecified
             HttpExecutionStrategies.customStrategyBuilder().offloadSend().build(),
             offloadAll(),
     };
 
     private static final HttpExecutionStrategy[] FILTER_STRATEGIES = {
             null, // absent
-            offloadNever(), // treated as "offloadNoneStrategy"
             offloadNone(),
-            defaultStrategy(), // treated as "offloadNoneStrategy"
             HttpExecutionStrategies.customStrategyBuilder().offloadSend().build(),
             offloadAll(),
     };
 
     private static final HttpExecutionStrategy[] LB_STRATEGIES = {
             null, // absent
-            offloadNever(), // treated as "offloadNoneStrategy"
             offloadNone(),
-            defaultStrategy(), // treated as "offloadNoneStrategy"
             HttpExecutionStrategies.customStrategyBuilder().offloadSend().build(),
             offloadAll(),
     };
 
     private static final HttpExecutionStrategy[] CF_STRATEGIES = {
             null, // absent
-            offloadNever(), // treated as "offloadNoneStrategy"
             offloadNone(),
-            defaultStrategy(), // treated as "offloadNoneStrategy"
             HttpExecutionStrategies.customStrategyBuilder().offloadSend().build(),
             offloadAll(),
     };
@@ -234,33 +228,31 @@ class ClientEffectiveStrategyTest {
      * Computes the base execution strategy that the client will use based on the selected builder strategy, filter
      * strategy, load balancer strategy, connection factory filter strategy.
      *
-     * @param builderStrategy strategy specified for client builder or null to use builder default.
-     * @param filterStrategy strategy specified for client stream filter to be added to client builder or null if no
+     * @param builder strategy specified for client builder or null to use builder default.
+     * @param filter strategy specified for client stream filter to be added to client builder or null if no
      * filter will be added.
-     * @param lbStrategy strategy specified for load balancer factory to be added to client builder or null if no
+     * @param lb strategy specified for load balancer factory to be added to client builder or null if no
      * load balancer will be added.
-     * @param cfStrategy strategy specified for connection filter factory to be added to client builder or null if no
+     * @param cf strategy specified for connection filter factory to be added to client builder or null if no
      * connection filter will be added.
-     * @return The str
+     * @return The strategy as computed
      */
-    private HttpExecutionStrategy computeClientExecutionStrategy(@Nullable final HttpExecutionStrategy builderStrategy,
-                                                                 @Nullable final HttpExecutionStrategy filterStrategy,
-                                                                 @Nullable final HttpExecutionStrategy lbStrategy,
-                                                                 @Nullable final HttpExecutionStrategy cfStrategy) {
-        // null means assume default strategy which is, unsurprisingly, defaultStrategy()
-        HttpExecutionStrategy computed = null == builderStrategy ?
-                defaultStrategy() : builderStrategy;
-        // null means no filter, noOffloadsStrategy() is illegal and replaced.
-        computed = null == filterStrategy || offloadNone() == filterStrategy || offloadNever() == filterStrategy ?
-                computed : computed.merge(filterStrategy);
-        computed = null == lbStrategy || offloadNone() == lbStrategy ||
-                defaultStrategy() == lbStrategy || offloadNever() == lbStrategy ?
-                computed : computed.merge(lbStrategy);
-        computed = null == cfStrategy || offloadNone() == cfStrategy ||
-                defaultStrategy() == cfStrategy || offloadNever() == cfStrategy ?
-                computed : computed.merge(cfStrategy);
+    private HttpExecutionStrategy computeClientExecutionStrategy(@Nullable final HttpExecutionStrategy builder,
+                                                                 @Nullable final HttpExecutionStrategy filter,
+                                                                 @Nullable final HttpExecutionStrategy lb,
+                                                                 @Nullable final HttpExecutionStrategy cf) {
+        HttpExecutionStrategy chain = mergeStrategies(cf, mergeStrategies(lb, filter));
 
-        return computed;
+        return null == chain || !chain.hasOffloads() ?
+                null == builder ? defaultStrategy() : builder :
+                null == builder || defaultStrategy() == builder ? chain : builder.merge(chain);
+    }
+
+    private @Nullable HttpExecutionStrategy mergeStrategies(@Nullable HttpExecutionStrategy first,
+                                                            @Nullable HttpExecutionStrategy second) {
+        assert defaultStrategy() != first : "default strategy provided (first)";
+        assert defaultStrategy() != second : "default strategy provided (second)";
+        return null == first ? second : null == second ? first : first.merge(second);
     }
 
     private String getResponse(ClientType clientType, StreamingHttpClient client) throws Exception {

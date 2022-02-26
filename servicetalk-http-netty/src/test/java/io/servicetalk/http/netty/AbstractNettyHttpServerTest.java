@@ -170,7 +170,6 @@ abstract class AbstractNettyHttpServerTest {
         // differently.
         final HttpServerBuilder serverBuilder = HttpServers.forAddress(bindAddress)
                 .executor(serverExecutor)
-                .executionStrategy(defaultStrategy())
                 .socketOption(StandardSocketOptions.SO_SNDBUF, 100)
                 .protocols(protocol)
                 .transportObserver(serverTransportObserver)

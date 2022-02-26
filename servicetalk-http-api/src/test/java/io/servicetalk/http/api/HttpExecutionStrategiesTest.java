@@ -32,15 +32,6 @@ import static org.mockito.Mockito.when;
 class HttpExecutionStrategiesTest {
 
     @Test
-    void mergeDefaultStrategy() {
-        HttpExecutionStrategy strategy = customStrategyBuilder().offloadAll().build();
-        HttpExecutionStrategy merged = strategy.merge(defaultStrategy());
-        assertThat("merge returned defaultStrategy.", merged, sameInstance(strategy));
-        merged = defaultStrategy().merge(strategy);
-        assertThat("merge returned defaultStrategy.", merged, sameInstance(strategy));
-    }
-
-    @Test
     void defaultShouldOffloadAll() {
         HttpExecutionStrategy strategy = defaultStrategy();
         assertThat("send not offloaded by default.", strategy.isSendOffloaded(), is(true));

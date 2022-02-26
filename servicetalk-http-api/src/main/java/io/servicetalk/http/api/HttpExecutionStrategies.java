@@ -36,11 +36,10 @@ public final class HttpExecutionStrategies {
     }
 
     /**
-     * A special default {@link HttpExecutionStrategy} that offloads all actions unless merged with another strategy
-     * that requires less offloading. The intention of this strategy is to provide a safe default if no strategy is
-     * specified; it should not be returned by
-     * {@link HttpExecutionStrategyInfluencer#requiredOffloads()}, which should return {@link #offloadNone()} or
-     * {@link #offloadAll()} instead.
+     * A special default {@link HttpExecutionStrategy} that provides safe default offloading of actions; the offloading
+     * used is unspecified and dependent upon the usage situation. It may not be merged with other strategies because
+     * the resulting strategy would lose the defaulting behavior. As an additional safety measure all offload query
+     * methods will return true.
      *
      * @return Default {@link HttpExecutionStrategy}.
      */

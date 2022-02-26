@@ -20,7 +20,6 @@ import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 import java.lang.reflect.Method;
 
 import static io.servicetalk.http.api.DefaultStreamingStrategyInfluencer.DEFAULT_STREAMING_STRATEGY_INFLUENCER;
-import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadAll;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 
@@ -32,6 +31,9 @@ public interface HttpExecutionStrategyInfluencer extends ExecutionStrategyInflue
     /**
      * Optionally modify the passed {@link HttpExecutionStrategy} to a new {@link HttpExecutionStrategy} that suits
      * this {@link HttpExecutionStrategyInfluencer}.
+     *
+     * <p>Implementations should not return {@link HttpExecutionStrategies#defaultStrategy()} ()} unless it was also
+     * provided as input.</p>
      *
      * @param strategy {@link HttpExecutionStrategy} to influence.
      * @return {@link HttpExecutionStrategy} that suits this {@link HttpExecutionStrategyInfluencer}
@@ -56,13 +58,12 @@ public interface HttpExecutionStrategyInfluencer extends ExecutionStrategyInflue
      *
      * <p>The provided default implementation requests offloading of all operations. Implementations that require no
      * offloading should be careful to return {@link HttpExecutionStrategies#offloadNone()} rather than
-     * {@link HttpExecutionStrategies#offloadNever()}.
+     * {@link HttpExecutionStrategies#offloadNever()}. Implementations should avoid returning
+     * {@link HttpExecutionStrategies#defaultStrategy()}, instead returning the strategy they require.
      */
     @Override
     default HttpExecutionStrategy requiredOffloads() {
-        // safe default--implementations are expected to override
-        HttpExecutionStrategy result = influenceStrategy(defaultStrategy());
-        return defaultStrategy() == result ? offloadNone() : result;
+        return influenceStrategy(offloadNone());
     }
 
     /**

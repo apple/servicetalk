@@ -112,7 +112,7 @@ enum SpecialHttpExecutionStrategy implements HttpExecutionStrategy {
          */
         @Override
         public HttpExecutionStrategy merge(final HttpExecutionStrategy other) {
-            return other;
+            throw new UnsupportedOperationException("must not be merged");
         }
     }
 }

@@ -20,6 +20,8 @@ import io.servicetalk.transport.api.ExecutionStrategy;
 
 import java.util.Objects;
 
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
+
 /**
  * Combines a {@link ConnectExecutionStrategy} and an {@link HttpExecutionStrategy}.
  */
@@ -122,7 +124,8 @@ public final class ConnectAndHttpExecutionStrategy implements ConnectExecutionSt
 
     @Override
     public ConnectAndHttpExecutionStrategy merge(final HttpExecutionStrategy other) {
-        HttpExecutionStrategy merged = httpStrategy.merge(other);
+        HttpExecutionStrategy merged = defaultStrategy() == httpStrategy ?
+                other : defaultStrategy() == other ? httpStrategy : httpStrategy.merge(other);
         return merged == httpStrategy ? this : new ConnectAndHttpExecutionStrategy(connectStrategy, merged);
     }
 
@@ -164,7 +167,7 @@ public final class ConnectAndHttpExecutionStrategy implements ConnectExecutionSt
         return executionStrategy instanceof ConnectAndHttpExecutionStrategy ?
                 (ConnectAndHttpExecutionStrategy) executionStrategy :
                     new ConnectAndHttpExecutionStrategy(
-                            ConnectExecutionStrategy.offloadNone(), HttpExecutionStrategies.defaultStrategy())
+                            ConnectExecutionStrategy.offloadNone(), defaultStrategy())
                             .merge(executionStrategy);
     }
 }

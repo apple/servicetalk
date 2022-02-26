@@ -25,10 +25,20 @@ import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 public final class GrpcExecutionStrategies {
 
     private static final GrpcExecutionStrategy NEVER_OFFLOAD_STRATEGY =
-            new DefaultGrpcExecutionStrategy(HttpExecutionStrategies.offloadNever());
+            new DefaultGrpcExecutionStrategy(HttpExecutionStrategies.offloadNever()) {
+                @Override
+                public HttpExecutionStrategy merge(final HttpExecutionStrategy other) {
+                    return this;
+                }
+            };
 
     private static final GrpcExecutionStrategy DEFAULT_GRPC_EXECUTION_STRATEGY =
-            new DefaultGrpcExecutionStrategy(HttpExecutionStrategies.defaultStrategy());
+            new DefaultGrpcExecutionStrategy(HttpExecutionStrategies.defaultStrategy()) {
+                @Override
+                public HttpExecutionStrategy merge(final HttpExecutionStrategy other) {
+                    return other;
+                }
+            };
 
     private GrpcExecutionStrategies() {
         // No instances
@@ -37,9 +47,8 @@ public final class GrpcExecutionStrategies {
     /**
      * A special default {@link GrpcExecutionStrategy} that offloads all actions unless merged with another strategy
      * that requires less offloading. The intention of this strategy is to provide a safe default if no strategy is
-     * specified; it should not be returned by
-     * {@link HttpExecutionStrategyInfluencer#requiredOffloads()}, which should return
-     * {@link HttpExecutionStrategy#offloadNone()} or {@link HttpExecutionStrategy#offloadAll()} instead.
+     * specified; it should not be returned by {@link HttpExecutionStrategyInfluencer#requiredOffloads()} which should
+     * return the actual required offloads.
      *
      * @return Default {@link GrpcExecutionStrategy}.
      */

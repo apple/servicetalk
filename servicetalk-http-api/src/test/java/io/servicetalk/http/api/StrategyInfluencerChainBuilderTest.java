@@ -23,6 +23,7 @@ import org.mockito.InOrder;
 import javax.annotation.Nonnull;
 
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.mockito.ArgumentMatchers.any;
@@ -43,7 +44,7 @@ class StrategyInfluencerChainBuilderTest {
         HttpExecutionStrategyInfluencer influencer2 = newNoInfluenceInfluencer();
         chain2.append(influencer2);
 
-        defaultStrategy().merge(chain1.build().requiredOffloads());
+        offloadNone().merge(chain1.build().requiredOffloads());
 
         verifyNoInteractions(influencer2);
     }
@@ -84,7 +85,7 @@ class StrategyInfluencerChainBuilderTest {
             chain.append(influencer3);
         }
 
-        defaultStrategy().merge(chain.build().requiredOffloads());
+        offloadNone().merge(chain.build().requiredOffloads());
 
         InOrder inOrder = inOrder(influencer1, influencer2, influencer3);
         inOrder.verify(influencer1).requiredOffloads();

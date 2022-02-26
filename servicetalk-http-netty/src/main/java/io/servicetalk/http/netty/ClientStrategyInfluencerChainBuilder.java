@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadAll;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 
@@ -67,34 +68,50 @@ final class ClientStrategyInfluencerChainBuilder {
     }
 
     private void add(String purpose, ExecutionStrategyInfluencer<?> influencer, HttpExecutionStrategy strategy) {
+        assert offloadNever() != strategy && defaultStrategy() != strategy :
+                "illegal " + purpose + " required strategy (" + strategy + ") for " + influencer;
         if (offloadNever() == strategy) {
             LOGGER.warn("Ignoring illegal {} required strategy ({}) for {}", purpose, strategy, influencer);
             strategy = offloadNone();
         }
-        if (strategy.hasOffloads()) {
-            clientChain = null != clientChain ? clientChain.merge(strategy) : strategy;
+        if (defaultStrategy() == strategy) {
+            LOGGER.warn("Ignoring illegal {} required strategy ({}) for {}", purpose, strategy, influencer);
+            strategy = offloadAll();
         }
+        clientChain = null != clientChain ? clientChain.merge(strategy) : strategy;
     }
 
     void add(ConnectionFactoryFilter<?, FilterableStreamingHttpConnection> connectionFactoryFilter) {
         ExecutionStrategy filterOffloads = connectionFactoryFilter.requiredOffloads();
+        assert offloadNever() != filterOffloads && defaultStrategy() != filterOffloads :
+                "illegal connection factory required strategy (" + filterOffloads + ") for " + connectionFactoryFilter;
         if (offloadNever() == filterOffloads) {
             LOGGER.warn("Ignoring illegal connection factory required strategy ({}) for {}",
                     filterOffloads, connectionFactoryFilter);
             filterOffloads = offloadNone();
         }
-        if (filterOffloads.hasOffloads()) {
-            connFactoryChain = null != connFactoryChain ?
-                    connFactoryChain.merge(filterOffloads) : ConnectAndHttpExecutionStrategy.from(filterOffloads);
+        if (defaultStrategy() == filterOffloads) {
+            LOGGER.warn("Ignoring illegal connection factory required strategy ({}) for {}",
+                    filterOffloads, connectionFactoryFilter);
+            filterOffloads = offloadNone();
         }
+        connFactoryChain = null != connFactoryChain ?
+                 connFactoryChain.merge(filterOffloads) : ConnectAndHttpExecutionStrategy.from(filterOffloads);
     }
 
     void add(StreamingHttpConnectionFilterFactory connectionFilter) {
         HttpExecutionStrategy filterOffloads = connectionFilter.requiredOffloads();
+        assert offloadNever() != filterOffloads && defaultStrategy() != filterOffloads :
+            "illegal connection filter required strategy (" + filterOffloads + ") for " + connectionFilter;
         if (offloadNever() == filterOffloads) {
             LOGGER.warn("Ignoring illegal connection filter required strategy ({}) for {}",
                     filterOffloads, connectionFilter);
             filterOffloads = offloadNone();
+        }
+        if (defaultStrategy() == filterOffloads) {
+            LOGGER.warn("Ignoring illegal connection filter required strategy ({}) for {}",
+                    filterOffloads, connectionFilter);
+            filterOffloads = offloadAll();
         }
         if (filterOffloads.hasOffloads()) {
             connFilterChain = null != connFilterChain ? connFilterChain.merge(filterOffloads) : filterOffloads;
@@ -102,15 +119,19 @@ final class ClientStrategyInfluencerChainBuilder {
     }
 
     HttpExecutionStrategy buildForClient(HttpExecutionStrategy transportStrategy) {
-        HttpExecutionStrategy clientStrategy =
-                null != clientChain ? transportStrategy.merge(clientChain) : transportStrategy;
+        HttpExecutionStrategy chainStrategy = clientChain;
         if (null != connFilterChain) {
-            clientStrategy = clientStrategy.merge(connFilterChain);
+            chainStrategy = null != chainStrategy ? chainStrategy.merge(connFilterChain) : connFilterChain;
         }
         if (null != connFactoryChain) {
-            clientStrategy = clientStrategy.merge(HttpExecutionStrategy.from(buildForConnectionFactory()));
+            HttpExecutionStrategy connectionFactoryStrategy = HttpExecutionStrategy.from(buildForConnectionFactory());
+            chainStrategy = null != chainStrategy ?
+                    chainStrategy.merge(connectionFactoryStrategy) : connectionFactoryStrategy;
         }
-        return clientStrategy;
+
+        return (null == chainStrategy || !chainStrategy.hasOffloads()) ?
+                transportStrategy : defaultStrategy() == transportStrategy ?
+                    chainStrategy : chainStrategy.merge(transportStrategy);
     }
 
     ExecutionStrategy buildForConnectionFactory() {
