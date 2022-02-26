@@ -424,7 +424,7 @@ class MulticastPublisherTest {
 
     @Test
     void cancelMinSubscriberRequestsMore() throws InterruptedException {
-        Publisher<Integer> publisher = source.multicast(1, false);
+        Publisher<Integer> publisher = source.multicast(1);
         toSource(publisher).subscribe(subscriber1);
         Subscription localSubscription1 = subscriber1.awaitSubscription();
         toSource(publisher).subscribe(subscriber2);
@@ -433,6 +433,32 @@ class MulticastPublisherTest {
         assertThat(subscription.requested(), is(0L));
         localSubscription2.cancel();
         subscription.awaitRequestN(1);
+    }
+
+    @Test
+    void cancelMinSubscriberRespectsQueueLimit() throws InterruptedException {
+        final int queueLimit = 64;
+        Publisher<Integer> publisher = source.multicast(2, queueLimit);
+        toSource(publisher).subscribe(subscriber1);
+        Subscription localSubscription1 = subscriber1.awaitSubscription();
+        localSubscription1.request(10);
+        assertThat(subscription.requested(), is(0L));
+
+        toSource(publisher).subscribe(subscriber2);
+        Subscription localSubscription2 = subscriber2.awaitSubscription();
+        localSubscription2.request(Long.MAX_VALUE);
+        subscription.awaitRequestN(10);
+        assertThat(subscription.requested(), is(10L));
+
+        // Increase the min subscriber demand to allow queueLimit upstream demand.
+        localSubscription1.request(Long.MAX_VALUE - 1);
+        subscription.awaitRequestN(queueLimit);
+        assertThat(subscription.requested(), is((long) queueLimit));
+
+        localSubscription1.cancel(); // cancel the subscription that is expected to be min
+        // Even though we removed the min subscriber we already have queueLimit outstanding demand, so we shouldn't
+        // exceed queueLimit outstanding demand.
+        assertThat(subscription.requested(), is((long) queueLimit));
     }
 
     @ParameterizedTest
