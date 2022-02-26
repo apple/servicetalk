@@ -117,9 +117,9 @@ public final class NettyIoExecutors {
             IoThreadFactory<T> threadFactory) {
         validateIoThreads(ioThreads);
         final EventLoopGroup group = isIoUringAvailable() ? new IOUringEventLoopGroup(ioThreads, threadFactory) :
-                isEpollAvailable() ? new EpollEventLoopGroup(ioThreads, threadFactory) :
-                        isKQueueAvailable() ? new KQueueEventLoopGroup(ioThreads, threadFactory) :
-                                new NioEventLoopGroup(ioThreads, threadFactory);
+                isEpollAvailable() ? initGroup(new EpollEventLoopGroup(ioThreads, threadFactory)) :
+                        isKQueueAvailable() ? initGroup(new KQueueEventLoopGroup(ioThreads, threadFactory)) :
+                                initGroup(new NioEventLoopGroup(ioThreads, threadFactory));
         LOGGER.debug("Created {} for {} threads using {}.", group.getClass().getSimpleName(), ioThreads, threadFactory);
         return group;
     }
@@ -209,5 +209,20 @@ public final class NettyIoExecutors {
      */
     private static NettyIoThreadFactory newIoThreadFactory(String prefix) {
         return new NettyIoThreadFactory(prefix);
+    }
+
+    private static EpollEventLoopGroup initGroup(EpollEventLoopGroup group) {
+        group.setIoRatio(100);
+        return group;
+    }
+
+    private static KQueueEventLoopGroup initGroup(KQueueEventLoopGroup group) {
+        group.setIoRatio(100);
+        return group;
+    }
+
+    private static NioEventLoopGroup initGroup(NioEventLoopGroup group) {
+        group.setIoRatio(100);
+        return group;
     }
 }
