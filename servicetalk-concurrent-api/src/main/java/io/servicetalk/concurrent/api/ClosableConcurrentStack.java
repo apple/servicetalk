@@ -82,8 +82,8 @@ final class ClosableConcurrentStack<T> {
                     // Nodes maybe "resurrected" and if links are nulled the stack may lose references to Nodes after
                     // the removal point. Just let the GC reclaim the Node when it is ready because it is no longer
                     // referenced from top, or if "resurrected" the "relaxed" contract of this method allows it.
-                } else {
-                    topUpdater.compareAndSet(this, curr, curr.next);
+                } else if (!topUpdater.compareAndSet(this, curr, curr.next)) {
+                    removeNode(curr);
                 }
                 return true;
             } else {
@@ -92,6 +92,39 @@ final class ClosableConcurrentStack<T> {
             }
         } while (curr != null);
         return false;
+    }
+
+    private void removeNode(final Node<T> nodeToRemove) {
+        for (;;) {
+            final Object rawCurrTop = top;
+            if (rawCurrTop == null || !Node.class.equals(rawCurrTop.getClass())) {
+                break;
+            }
+            boolean failedTopRemoval = false;
+            @SuppressWarnings("unchecked")
+            Node<T> curr = (Node<T>) rawCurrTop;
+            Node<T> prev = null;
+            do {
+                if (curr == nodeToRemove) {
+                    if (prev == null) {
+                        failedTopRemoval = !topUpdater.compareAndSet(this, curr, curr.next);
+                        break;
+                    } else {
+                        prev.next = curr.next;
+                        return;
+                    }
+                }
+                prev = curr;
+                curr = curr.next;
+            } while (curr != null);
+
+            // If we attempted and failed to remove the top node, try again. Otherwise, if we removed the top node or if
+            // we didn't find the node in the stack then we are done and can break (another thread may have removed the
+            // same node concurrently).
+            if (!failedTopRemoval) {
+                break;
+            }
+        }
     }
 
     /**
