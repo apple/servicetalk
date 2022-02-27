@@ -25,6 +25,7 @@ class ServiceTalkArchUnitTask extends DefaultTask {
         if (classes.size() > 0) {
             def rules = setupRules()
             rules.each {
+                getLogger().debug("ArchUnit rule: {}", it.getDescription())
                 it.check(classes)
             }
         }
