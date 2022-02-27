@@ -37,6 +37,7 @@ import static org.hamcrest.Matchers.in;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -47,8 +48,8 @@ class ClosableConcurrentStackTest {
 
     @Test
     void singleThreadPushClose() {
-        ClosableConcurrentStack<Integer> stack = new ClosableConcurrentStack<>();
         final int itemCount = 1000;
+        ClosableConcurrentStack<Integer> stack = new ClosableConcurrentStack<>(itemCount);
         for (int i = 0; i < itemCount; ++i) {
             stack.push(i);
         }
@@ -64,8 +65,8 @@ class ClosableConcurrentStackTest {
 
     @Test
     void singleThreadPushRemove() {
-        ClosableConcurrentStack<Integer> stack = new ClosableConcurrentStack<>();
         final int itemCount = 1000;
+        ClosableConcurrentStack<Integer> stack = new ClosableConcurrentStack<>(itemCount);
         for (int i = 0; i < itemCount; ++i) {
             stack.push(i);
         }
@@ -77,9 +78,18 @@ class ClosableConcurrentStackTest {
     }
 
     @Test
+    void maxItemCountExceeded() {
+        ClosableConcurrentStack<Integer> stack = new ClosableConcurrentStack<>(1);
+        stack.push(1);
+        assertThrows(IllegalStateException.class, () -> stack.push(2));
+        assertTrue(stack.relaxedRemove(1));
+        closeAssertEmpty(stack);
+    }
+
+    @Test
     void concurrentPushClose() throws Exception {
-        ClosableConcurrentStack<Integer> stack = new ClosableConcurrentStack<>();
         final int itemCount = 1000;
+        ClosableConcurrentStack<Integer> stack = new ClosableConcurrentStack<>(itemCount);
         CyclicBarrier barrier = new CyclicBarrier(itemCount + 1);
         List<Completable> completableList = new ArrayList<>(itemCount);
         for (int i = 0; i < itemCount; ++i) {
@@ -107,8 +117,8 @@ class ClosableConcurrentStackTest {
 
     @Test
     void concurrentPushRemove() throws Exception {
-        ClosableConcurrentStack<Integer> stack = new ClosableConcurrentStack<>();
         final int itemCount = 1000;
+        ClosableConcurrentStack<Integer> stack = new ClosableConcurrentStack<>(itemCount);
         CyclicBarrier barrier = new CyclicBarrier(itemCount + 1);
         List<Completable> completableList = new ArrayList<>(itemCount);
         for (int i = 0; i < itemCount; ++i) {
@@ -132,8 +142,8 @@ class ClosableConcurrentStackTest {
 
     @Test
     void concurrentPushRemoveDifferentThread() throws Exception {
-        ClosableConcurrentStack<Integer> stack = new ClosableConcurrentStack<>();
         final int itemCount = 1000;
+        ClosableConcurrentStack<Integer> stack = new ClosableConcurrentStack<>(itemCount);
         CyclicBarrier barrier = new CyclicBarrier(itemCount + 1);
         List<Completable> completableList = new ArrayList<>(itemCount);
         for (int i = 0; i < itemCount; ++i) {
@@ -157,8 +167,8 @@ class ClosableConcurrentStackTest {
 
     @Test
     void concurrentClosePushRemove() throws Exception {
-        ClosableConcurrentStack<Cancellable> stack = new ClosableConcurrentStack<>();
         final int itemCount = 1000;
+        ClosableConcurrentStack<Cancellable> stack = new ClosableConcurrentStack<>(itemCount);
         CyclicBarrier barrier = new CyclicBarrier(itemCount + 1);
         List<Single<Cancellable>> completableList = new ArrayList<>(itemCount);
         for (int i = 0; i < itemCount; ++i) {

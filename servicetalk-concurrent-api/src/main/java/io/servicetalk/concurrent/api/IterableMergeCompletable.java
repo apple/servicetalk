@@ -37,7 +37,7 @@ final class IterableMergeCompletable extends AbstractMergeCompletableOperator<Co
 
     @Override
     void doMerge(final CompletableDynamicCountSubscriber subscriber) {
-        long count = 1;
+        int count = 1;
         for (Completable itr : others) {
             ++count;
             itr.subscribeInternal(subscriber);

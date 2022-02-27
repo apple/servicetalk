@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 import static java.util.function.Function.identity;
 
@@ -57,27 +58,19 @@ public final class AsyncCloseables {
      * @return A new {@link ListenableAsyncCloseable}.
      */
     public static ListenableAsyncCloseable emptyAsyncCloseable() {
-        return new ListenableAsyncCloseable() {
+        return new EmptyAsyncClosable(new CompletableProcessor());
+    }
 
-            private final CompletableProcessor onClose = new CompletableProcessor();
-            private final Completable closeAsync = new SubscribableCompletable() {
-                @Override
-                protected void handleSubscribe(final Subscriber subscriber) {
-                    onClose.onComplete();
-                    onClose.subscribeInternal(subscriber);
-                }
-            };
-
-            @Override
-            public Completable closeAsync() {
-                return closeAsync;
-            }
-
-            @Override
-            public Completable onClose() {
-                return onClose;
-            }
-        };
+    /**
+     * Creates an empty {@link ListenableAsyncCloseable} that does nothing when
+     * {@link ListenableAsyncCloseable#closeAsync()} apart from completing the
+     * {@link ListenableAsyncCloseable#onClose()}.
+     * @param maxSubscribers The maximum amount of {@link CompletableSource.Subscriber} that can be subscribed to
+     * {@link ListenableAsyncCloseable#onClose()} on the return value.
+     * @return A new {@link ListenableAsyncCloseable}.
+     */
+    public static ListenableAsyncCloseable emptyAsyncCloseable(int maxSubscribers) {
+        return new EmptyAsyncClosable(new CompletableProcessor(maxSubscribers));
     }
 
     /**
@@ -98,44 +91,47 @@ public final class AsyncCloseables {
      * the caller after this method returns.
      *
      * @param asyncCloseable {@link AsyncCloseable} to convert to {@link ListenableAsyncCloseable}.
+     * @param maxSubscribers The maximum amount of {@link CompletableSource.Subscriber} that can be subscribed to
+     * {@link ListenableAsyncCloseable#onClose()} on the return value.
+     * @return A new {@link ListenableAsyncCloseable}.
+     */
+    public static ListenableAsyncCloseable toListenableAsyncCloseable(AsyncCloseable asyncCloseable,
+                                                                      int maxSubscribers) {
+        return toListenableAsyncCloseable(asyncCloseable, identity(), maxSubscribers);
+    }
+
+    /**
+     * Wraps the passed {@link AsyncCloseable} and creates a new {@link ListenableAsyncCloseable}.
+     * This method owns the passed {@link AsyncCloseable} after this method returns and hence it should not be used by
+     * the caller after this method returns.
+     *
+     * @param asyncCloseable {@link AsyncCloseable} to convert to {@link ListenableAsyncCloseable}.
      * @param onCloseDecorator {@link Function} that can decorate the {@link Completable} returned from the returned
      * {@link ListenableAsyncCloseable#onClose()}.
      * @return A new {@link ListenableAsyncCloseable}.
      */
     public static ListenableAsyncCloseable toListenableAsyncCloseable(
             AsyncCloseable asyncCloseable, Function<Completable, Completable> onCloseDecorator) {
-        return new ListenableAsyncCloseable() {
+        CompletableProcessor processor = new CompletableProcessor();
+        return new ToListenableAsyncClosable(asyncCloseable, processor, onCloseDecorator.apply(processor));
+    }
 
-            private final CompletableProcessor onCloseProcessor = new CompletableProcessor();
-            private final Completable onClose = onCloseDecorator.apply(onCloseProcessor);
-
-            @Override
-            public Completable closeAsyncGracefully() {
-                return new SubscribableCompletable() {
-                    @Override
-                    protected void handleSubscribe(final Subscriber subscriber) {
-                        asyncCloseable.closeAsyncGracefully().subscribeInternal(onCloseProcessor);
-                        onClose.subscribeInternal(subscriber);
-                    }
-                };
-            }
-
-            @Override
-            public Completable onClose() {
-                return onClose;
-            }
-
-            @Override
-            public Completable closeAsync() {
-                return new SubscribableCompletable() {
-                    @Override
-                    protected void handleSubscribe(final Subscriber subscriber) {
-                        asyncCloseable.closeAsync().subscribeInternal(onCloseProcessor);
-                        onClose.subscribeInternal(subscriber);
-                    }
-                };
-            }
-        };
+    /**
+     * Wraps the passed {@link AsyncCloseable} and creates a new {@link ListenableAsyncCloseable}.
+     * This method owns the passed {@link AsyncCloseable} after this method returns and hence it should not be used by
+     * the caller after this method returns.
+     *
+     * @param asyncCloseable {@link AsyncCloseable} to convert to {@link ListenableAsyncCloseable}.
+     * @param onCloseDecorator {@link Function} that can decorate the {@link Completable} returned from the returned
+     * {@link ListenableAsyncCloseable#onClose()}.
+     * @param maxSubscribers The maximum amount of {@link CompletableSource.Subscriber} that can be subscribed to
+     * {@link ListenableAsyncCloseable#onClose()} on the return value.
+     * @return A new {@link ListenableAsyncCloseable}.
+     */
+    public static ListenableAsyncCloseable toListenableAsyncCloseable(
+            AsyncCloseable asyncCloseable, Function<Completable, Completable> onCloseDecorator, int maxSubscribers) {
+        CompletableProcessor processor = new CompletableProcessor(maxSubscribers);
+        return new ToListenableAsyncClosable(asyncCloseable, processor, onCloseDecorator.apply(processor));
     }
 
     /**
@@ -149,7 +145,23 @@ public final class AsyncCloseables {
      * @return A new {@link ListenableAsyncCloseable}.
      */
     public static ListenableAsyncCloseable toAsyncCloseable(CloseableResource closeableResource) {
-        return new DefaultAsyncCloseable(closeableResource);
+        return new DefaultAsyncCloseable(closeableResource, new CompletableProcessor());
+    }
+
+    /**
+     * Creates a new {@link ListenableAsyncCloseable} which uses the passed {@link Supplier} to get the implementation
+     * of close.
+     *
+     * @param closeableResource {@link CloseableResource} that is to be wrapped into a {@link ListenableAsyncCloseable}.
+     * {@link CloseableResource#doClose(boolean)} will be called when the returned {@link ListenableAsyncCloseable} is
+     * {@link ListenableAsyncCloseable#closeAsync() closed} or
+     * {@link ListenableAsyncCloseable#closeAsyncGracefully() gracefully closed} for the first time.
+     * @param maxSubscribers The maximum amount of {@link CompletableSource.Subscriber} that can be subscribed to
+     * {@link ListenableAsyncCloseable#onClose()} on the return value.
+     * @return A new {@link ListenableAsyncCloseable}.
+     */
+    public static ListenableAsyncCloseable toAsyncCloseable(CloseableResource closeableResource, int maxSubscribers) {
+        return new DefaultAsyncCloseable(closeableResource, new CompletableProcessor(maxSubscribers));
     }
 
     /**
@@ -176,21 +188,86 @@ public final class AsyncCloseables {
         Completable doClose(boolean graceful);
     }
 
-    private static final class DefaultAsyncCloseable implements ListenableAsyncCloseable {
+    private static final class EmptyAsyncClosable implements ListenableAsyncCloseable {
+        private final CompletableProcessor onClose;
+        private final Completable closeAsync;
 
+        EmptyAsyncClosable(CompletableProcessor onClose) {
+            this.onClose = requireNonNull(onClose);
+            closeAsync = new SubscribableCompletable() {
+                @Override
+                protected void handleSubscribe(final Subscriber subscriber) {
+                    onClose.onComplete();
+                    onClose.subscribeInternal(subscriber);
+                }
+            };
+        }
+
+        @Override
+        public Completable closeAsync() {
+            return closeAsync;
+        }
+
+        @Override
+        public Completable onClose() {
+            return onClose;
+        }
+    }
+
+    private static final class ToListenableAsyncClosable implements ListenableAsyncCloseable {
+        private final AsyncCloseable asyncCloseable;
+        private final CompletableProcessor onCloseProcessor;
+        private final Completable onClose;
+
+        ToListenableAsyncClosable(AsyncCloseable asyncCloseable, CompletableProcessor onCloseProcessor,
+                                  Completable onClose) {
+            this.asyncCloseable = requireNonNull(asyncCloseable);
+            this.onCloseProcessor = requireNonNull(onCloseProcessor);
+            this.onClose = requireNonNull(onClose);
+        }
+
+        @Override
+        public Completable closeAsyncGracefully() {
+            return new SubscribableCompletable() {
+                @Override
+                protected void handleSubscribe(final Subscriber subscriber) {
+                    asyncCloseable.closeAsyncGracefully().subscribeInternal(onCloseProcessor);
+                    onClose.subscribeInternal(subscriber);
+                }
+            };
+        }
+
+        @Override
+        public Completable onClose() {
+            return onClose;
+        }
+
+        @Override
+        public Completable closeAsync() {
+            return new SubscribableCompletable() {
+                @Override
+                protected void handleSubscribe(final Subscriber subscriber) {
+                    asyncCloseable.closeAsync().subscribeInternal(onCloseProcessor);
+                    onClose.subscribeInternal(subscriber);
+                }
+            };
+        }
+    }
+
+    private static final class DefaultAsyncCloseable implements ListenableAsyncCloseable {
         private static final int IDLE = 0;
         private static final int CLOSED_GRACEFULLY = 1;
         private static final int HARD_CLOSE = 2;
         private static final AtomicIntegerFieldUpdater<DefaultAsyncCloseable> closedUpdater =
                 newUpdater(DefaultAsyncCloseable.class, "closed");
         private final CloseableResource closeableResource;
-        private final CompletableProcessor onClose = new CompletableProcessor();
-
+        private final CompletableProcessor onClose;
         @SuppressWarnings("unused")
         private volatile int closed;
 
-        DefaultAsyncCloseable(final CloseableResource closeableResource) {
+        DefaultAsyncCloseable(final CloseableResource closeableResource, final CompletableProcessor onClose) {
             this.closeableResource = closeableResource;
+            this.onClose = requireNonNull(onClose);
         }
 
         @Override

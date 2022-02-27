@@ -27,7 +27,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 class CancellableSetTest extends AbstractCompositeCancellableTest<CancellableSet> {
     @Override
-    protected CancellableSet newCompositeCancellable() {
+    protected CancellableSet newCompositeCancellable(int maxCancellables) {
         return new CancellableSet();
     }
 
@@ -38,7 +38,7 @@ class CancellableSetTest extends AbstractCompositeCancellableTest<CancellableSet
 
     @Test
     void testAddAndRemove() {
-        CancellableSet c = newCompositeCancellable();
+        CancellableSet c = newCompositeCancellable(1);
         Cancellable cancellable = mock(Cancellable.class);
         add(c, cancellable);
         c.remove(cancellable);
@@ -48,7 +48,7 @@ class CancellableSetTest extends AbstractCompositeCancellableTest<CancellableSet
 
     @Test
     void duplicateAddDoesNotCancel() {
-        CancellableSet c = newCompositeCancellable();
+        CancellableSet c = newCompositeCancellable(2);
         Cancellable cancellable = mock(Cancellable.class);
         int addCount = 0;
         if (add(c, cancellable)) {

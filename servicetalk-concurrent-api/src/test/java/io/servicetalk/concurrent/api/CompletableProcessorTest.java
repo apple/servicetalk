@@ -35,6 +35,7 @@ import static io.servicetalk.concurrent.api.Single.collectUnordered;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -47,6 +48,17 @@ class CompletableProcessorTest {
     static final ExecutorExtension<Executor> EXECUTOR_RULE = ExecutorExtension.withCachedExecutor().setClassLevel(true);
     private final TestCompletableSubscriber rule = new TestCompletableSubscriber();
     private final TestCompletableSubscriber rule2 = new TestCompletableSubscriber();
+
+    @Test
+    void maxSubscriberCountExceeded() {
+        CompletableProcessor processor = new CompletableProcessor(1);
+        toSource(processor).subscribe(rule);
+        toSource(processor).subscribe(rule2);
+        assertThat(rule2.awaitOnError(), instanceOf(IllegalStateException.class));
+        assertThat(rule.pollTerminal(10, MILLISECONDS), is(nullValue()));
+        processor.onComplete();
+        rule.awaitOnComplete();
+    }
 
     @Test
     void testCompleteBeforeListen() {
@@ -158,7 +170,7 @@ class CompletableProcessorTest {
         final int subscriberCount = 1000;
         CyclicBarrier barrier = new CyclicBarrier(subscriberCount + 1);
         List<Single<Subscriber>> subscriberSingles = new ArrayList<>(subscriberCount);
-        CompletableProcessor processor = new CompletableProcessor();
+        CompletableProcessor processor = new CompletableProcessor(subscriberCount);
         for (int i = 0; i < subscriberCount; ++i) {
             subscriberSingles.add(EXECUTOR_RULE.executor().submit(() -> {
                 Subscriber subscriber = mock(Subscriber.class);

@@ -18,7 +18,15 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 
 final class CancellableStack implements Cancellable {
-    private final ClosableConcurrentStack<Cancellable> stack = new ClosableConcurrentStack<>();
+    private final ClosableConcurrentStack<Cancellable> stack;
+
+    /**
+     * Create a new instance.
+     * @param maxSizeHint Hint for the maximum size of this stack.
+     */
+    CancellableStack(int maxSizeHint) {
+        stack = new ClosableConcurrentStack<>(maxSizeHint);
+    }
 
     /**
      * {@inheritDoc}
@@ -36,8 +44,9 @@ final class CancellableStack implements Cancellable {
      * or be cancelled immediately if this object's {@link #cancel()} method has already been called.
      * @param toAdd The {@link Cancellable} to add.
      * @return {@code true} if the {@code toAdd} was added. If {@code false} {@link Cancellable#cancel()} is called.
+     * @throws IllegalStateException if the maximum size would be exceeded by inserting this element.
      */
-    boolean add(Cancellable toAdd) {
+    boolean add(Cancellable toAdd) throws IllegalStateException {
         return stack.push(toAdd);
     }
 }

@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
+import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -32,8 +33,11 @@ import java.util.concurrent.Future;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.collectUnordered;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
@@ -44,6 +48,21 @@ import static org.mockito.Mockito.verify;
 class SingleProcessorTest {
     @RegisterExtension
     static final ExecutorExtension<Executor> EXECUTOR_RULE = ExecutorExtension.withCachedExecutor().setClassLevel(true);
+
+    @Test
+    void maxSubscriberCountExceeded() {
+        TestSingleSubscriber<String> subscriber1 = new TestSingleSubscriber<>();
+        TestSingleSubscriber<String> subscriber2 = new TestSingleSubscriber<>();
+        SingleProcessor<String> processor = new SingleProcessor<>(1);
+        toSource(processor).subscribe(subscriber1);
+        toSource(processor).subscribe(subscriber2);
+        assertThat(subscriber2.awaitOnError(), instanceOf(IllegalStateException.class));
+        assertThat(subscriber1.pollTerminal(10, MILLISECONDS), is(CoreMatchers.nullValue()));
+        final String value = "done";
+        processor.onSuccess(value);
+        assertThat(subscriber1.awaitOnSuccess(), equalTo(value));
+    }
+
     @Test
     void testSuccessBeforeListen() {
         testSuccessBeforeListen("foo");
@@ -238,7 +257,7 @@ class SingleProcessorTest {
         final int subscriberCount = 1000;
         CyclicBarrier barrier = new CyclicBarrier(subscriberCount + 1);
         List<Single<Subscriber<String>>> subscriberSingles = new ArrayList<>(subscriberCount);
-        SingleProcessor<String> processor = new SingleProcessor<>();
+        SingleProcessor<String> processor = new SingleProcessor<>(subscriberCount);
         for (int i = 0; i < subscriberCount; ++i) {
             subscriberSingles.add(EXECUTOR_RULE.executor().submit(() -> {
                 @SuppressWarnings("unchecked")

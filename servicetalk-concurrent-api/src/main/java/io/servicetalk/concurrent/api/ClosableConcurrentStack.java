@@ -15,6 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
@@ -28,22 +29,57 @@ final class ClosableConcurrentStack<T> {
     @SuppressWarnings("rawtypes")
     private static final AtomicReferenceFieldUpdater<ClosableConcurrentStack, Object> topUpdater =
             newUpdater(ClosableConcurrentStack.class, Object.class, "top");
+    @SuppressWarnings("rawtypes")
+    private static final AtomicIntegerFieldUpdater<ClosableConcurrentStack> sizeUpdater =
+            AtomicIntegerFieldUpdater.newUpdater(ClosableConcurrentStack.class, "size");
     @Nullable
     private volatile Object top;
+    private volatile int size;
+    private final int maxSize;
+
+    /**
+     * Create a new instance.
+     */
+    ClosableConcurrentStack() {
+        this(128);
+    }
+
+    /**
+     * Create a new instance.
+     * @param maxSizeHint The maximum amount of elements allowed in this stack. It is a "hint" because the actual number
+     * of elements may exceed this value (see {@link #relaxedRemove(Object)}).
+     */
+    ClosableConcurrentStack(final int maxSizeHint) {
+        if (maxSizeHint <= 0) {
+            throw new IllegalArgumentException("maxSizeHint: " + maxSizeHint + "(expected>0)");
+        }
+        this.maxSize = maxSizeHint;
+    }
 
     /**
      * Push an item onto the stack.
      * @param item the item to push onto the stack.
      * @return {@code true} if the operation was successful. {@code false} if {@link #close(Consumer)} has been called
      * and {@code item} has been consumed via {@link Consumer#accept(Object)} of the {@link #close(Consumer)} argument.
+     * @throws IllegalStateException if the maximum size would be exceeded by inserting this element.
      */
     @SuppressWarnings("unchecked")
     @Nullable
-    boolean push(T item) {
+    boolean push(T item) throws IllegalStateException {
+        for (;;) {
+            final int prevSize = size;
+            if (prevSize == maxSize) {
+                return maxSizeExceeded(item);
+            } else if (sizeUpdater.compareAndSet(this, prevSize, prevSize + 1)) {
+                break;
+            }
+        }
+
         final Node<T> newTop = new Node<>(item);
         for (;;) {
             final Object rawOldTop = top;
             if (rawOldTop != null && !Node.class.equals(rawOldTop.getClass())) {
+                resetSize();
                 ((Consumer<T>) rawOldTop).accept(item);
                 return false;
             }
@@ -56,6 +92,9 @@ final class ClosableConcurrentStack<T> {
 
     /**
      * Best effort removal of {@code item} from this stack.
+     * <p>
+     * {@link #maxSize} may be exceeded if this method is called concurrently with the same item from multiple threads
+     * (without external synchronization).
      * @param item The item to remove.
      * @return {@code true} if the item was found in this stack and marked for removal. The "relaxed" nature of
      * this method means {@code true} might be returned in the following scenarios without external synchronization:
@@ -85,6 +124,10 @@ final class ClosableConcurrentStack<T> {
                 } else if (!topUpdater.compareAndSet(this, curr, curr.next)) {
                     removeNode(curr);
                 }
+                // Size may go negative if this method is called concurrently with the same object. This is acceptable
+                // for the current usages of this class and size is just meant to provide a rough upper bound for memory
+                // consumption.
+                sizeUpdater.decrementAndGet(this);
                 return true;
             } else {
                 prev = curr;
@@ -140,6 +183,7 @@ final class ClosableConcurrentStack<T> {
             rawOldTop = top;
             if (rawOldTop == null || Node.class.equals(rawOldTop.getClass())) {
                 if (topUpdater.compareAndSet(this, rawOldTop, closer)) {
+                    resetSize();
                     break;
                 }
             } else {
@@ -164,6 +208,24 @@ final class ClosableConcurrentStack<T> {
         if (delayedCause != null) {
             throwException(delayedCause);
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private boolean maxSizeExceeded(T item) {
+        final Object rawOldTop = top;
+        if (rawOldTop != null && !Node.class.equals(rawOldTop.getClass())) {
+            resetSize();
+            ((Consumer<T>) rawOldTop).accept(item);
+            return false;
+        }
+        throw new IllegalStateException("push of item " + item + " would exceed maxSize: " + maxSize);
+    }
+
+    private void resetSize() {
+        // Reset the size variable for debuggability. It is possible size may go negative if relaxedRemove is called
+        // concurrently with other methods however that shouldn't have any negative side effects because we have reached
+        // a terminal closed state.
+        size = 0;
     }
 
     private static final class Node<T> {

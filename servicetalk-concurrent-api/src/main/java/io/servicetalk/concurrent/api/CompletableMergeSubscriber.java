@@ -35,10 +35,10 @@ abstract class CompletableMergeSubscriber implements Subscriber {
     private final CancellableStack dynamicCancellable;
     private final boolean delayError;
 
-    CompletableMergeSubscriber(Subscriber subscriber, boolean delayError) {
+    CompletableMergeSubscriber(Subscriber subscriber, boolean delayError, int maxCancellables) {
         this.subscriber = subscriber;
         this.delayError = delayError;
-        dynamicCancellable = new CancellableStack();
+        dynamicCancellable = new CancellableStack(maxCancellables);
         subscriber.onSubscribe(dynamicCancellable);
     }
 

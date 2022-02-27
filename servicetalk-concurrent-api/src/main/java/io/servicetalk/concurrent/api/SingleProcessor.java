@@ -28,17 +28,39 @@ import javax.annotation.Nullable;
  * @param <T> The type of result of the {@link Single}.
  */
 final class SingleProcessor<T> extends Single<T> implements Processor<T, T> {
-    private final ClosableConcurrentStack<Subscriber<? super T>> stack = new ClosableConcurrentStack<>();
+    private final ClosableConcurrentStack<Subscriber<? super T>> stack;
+
+    /**
+     * Create a new instance.
+     */
+    SingleProcessor() {
+        stack = new ClosableConcurrentStack<>();
+    }
+
+    /**
+     * Create a new instance.
+     * @param maxSize Hint for the maximum size of this stack.
+     */
+    SingleProcessor(int maxSize) {
+        stack = new ClosableConcurrentStack<>(maxSize);
+    }
 
     @Override
     protected void handleSubscribe(final Subscriber<? super T> subscriber) {
-        // We must subscribe before adding subscriber the the queue. Otherwise it is possible that this
-        // Single has been terminated and the subscriber may be notified before onSubscribe is called.
-        // We used a DelayedCancellable to avoid the case where the Subscriber will synchronously cancel and then
-        // we would add the subscriber to the queue and possibly never (until termination) dereference the subscriber.
+        // We must subscribe before adding subscriber the queue. Otherwise, it is possible that this Completable has
+        // been terminated and the subscriber may be notified before onSubscribe is called. We used a DelayedCancellable
+        // to avoid the case where the Subscriber will synchronously cancel, and then we would add the subscriber to the
+        // queue and possibly never (until termination) dereference the subscriber.
         DelayedCancellable delayedCancellable = new DelayedCancellable();
         subscriber.onSubscribe(delayedCancellable);
-        if (stack.push(subscriber)) {
+        final boolean added;
+        try {
+            added = stack.push(subscriber);
+        } catch (Throwable cause) {
+            subscriber.onError(cause);
+            return;
+        }
+        if (added) {
             delayedCancellable.delayedCancellable(() -> {
                 // Cancel in this case will just cleanup references from the queue to ensure we don't prevent GC of
                 // these references.

@@ -27,17 +27,39 @@ import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
  * the {@link Subscriber} methods which is forwarded to all existing or subsequent {@link Subscriber}s.
  */
 final class CompletableProcessor extends Completable implements Processor {
-    private final ClosableConcurrentStack<Subscriber> stack = new ClosableConcurrentStack<>();
+    private final ClosableConcurrentStack<Subscriber> stack;
+
+    /**
+     * Create a new instance.
+     */
+    CompletableProcessor() {
+        stack = new ClosableConcurrentStack<>();
+    }
+
+    /**
+     * Create a new instance.
+     * @param maxSizeHint Hint for the maximum size of this stack.
+     */
+    CompletableProcessor(int maxSizeHint) {
+        stack = new ClosableConcurrentStack<>(maxSizeHint);
+    }
 
     @Override
     protected void handleSubscribe(Subscriber subscriber) {
-        // We must subscribe before adding subscriber the the queue. Otherwise it is possible that this
-        // Completable has been terminated and the subscriber may be notified before onSubscribe is called.
-        // We used a DelayedCancellable to avoid the case where the Subscriber will synchronously cancel and then
-        // we would add the subscriber to the queue and possibly never (until termination) dereference the subscriber.
+        // We must subscribe before adding subscriber the queue. Otherwise, it is possible that this Completable has
+        // been terminated and the subscriber may be notified before onSubscribe is called. We used a DelayedCancellable
+        // to avoid the case where the Subscriber will synchronously cancel, and then we would add the subscriber to the
+        // queue and possibly never (until termination) dereference the subscriber.
         DelayedCancellable delayedCancellable = new DelayedCancellable();
         subscriber.onSubscribe(delayedCancellable);
-        if (stack.push(subscriber)) {
+        final boolean added;
+        try {
+            added = stack.push(subscriber);
+        } catch (Throwable cause) {
+            subscriber.onError(cause);
+            return;
+        }
+        if (added) {
             delayedCancellable.delayedCancellable(() -> {
                 // Cancel in this case will just cleanup references from the queue to ensure we don't prevent GC of
                 // these references.

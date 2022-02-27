@@ -34,13 +34,13 @@ public abstract class AbstractCompositeCancellableTest<T extends Cancellable> {
     @RegisterExtension
     static final ExecutorExtension<Executor> EXECUTOR_RULE = ExecutorExtension.withCachedExecutor().setClassLevel(true);
 
-    protected abstract T newCompositeCancellable();
+    protected abstract T newCompositeCancellable(int maxCancellables);
 
     protected abstract boolean add(T composite, Cancellable c);
 
     @Test
     void testCancel() {
-        T c = newCompositeCancellable();
+        T c = newCompositeCancellable(1);
         Cancellable cancellable = mock(Cancellable.class);
         add(c, cancellable);
         c.cancel();
@@ -49,7 +49,7 @@ public abstract class AbstractCompositeCancellableTest<T extends Cancellable> {
 
     @Test
     void testAddPostCancel() {
-        T c = newCompositeCancellable();
+        T c = newCompositeCancellable(1);
         c.cancel();
         Cancellable cancellable = mock(Cancellable.class);
         add(c, cancellable);
@@ -61,7 +61,7 @@ public abstract class AbstractCompositeCancellableTest<T extends Cancellable> {
         final int addThreads = 1000;
         final CyclicBarrier barrier = new CyclicBarrier(addThreads + 1);
         final List<Single<Cancellable>> cancellableSingles = new ArrayList<>(addThreads);
-        T dynamicCancellable = newCompositeCancellable();
+        T dynamicCancellable = newCompositeCancellable(addThreads);
         for (int i = 0; i < addThreads; ++i) {
             cancellableSingles.add(EXECUTOR_RULE.executor().submit(() -> {
                 Cancellable c = mock(Cancellable.class);

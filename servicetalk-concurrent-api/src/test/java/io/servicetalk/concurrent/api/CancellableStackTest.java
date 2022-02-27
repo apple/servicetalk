@@ -17,14 +17,35 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+
 class CancellableStackTest extends AbstractCompositeCancellableTest<CancellableStack> {
     @Override
-    protected CancellableStack newCompositeCancellable() {
-        return new CancellableStack();
+    protected CancellableStack newCompositeCancellable(int maxCancellables) {
+        return new CancellableStack(maxCancellables);
     }
 
     @Override
     protected boolean add(final CancellableStack composite, final Cancellable c) {
         return composite.add(c);
+    }
+
+    @Test
+    void maxCancellableCountExceeded() {
+        CancellableStack stack = newCompositeCancellable(1);
+        Cancellable cancellable1 = mock(Cancellable.class);
+        Cancellable cancellable2 = mock(Cancellable.class);
+        stack.add(cancellable1);
+        assertThrows(IllegalStateException.class, () -> stack.add(cancellable2));
+        verify(cancellable1, never()).cancel();
+        verify(cancellable2, never()).cancel();
+        stack.cancel();
+        verify(cancellable1).cancel();
+        verify(cancellable2, never()).cancel();
     }
 }

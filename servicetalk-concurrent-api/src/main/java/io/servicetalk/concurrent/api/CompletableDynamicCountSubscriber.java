@@ -17,17 +17,17 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.CompletableSource.Subscriber;
 
-import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
-import static java.util.concurrent.atomic.AtomicLongFieldUpdater.newUpdater;
+import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
 final class CompletableDynamicCountSubscriber extends CompletableMergeSubscriber {
-    private static final AtomicLongFieldUpdater<CompletableDynamicCountSubscriber> completedCountUpdater =
+    private static final AtomicIntegerFieldUpdater<CompletableDynamicCountSubscriber> completedCountUpdater =
             newUpdater(CompletableDynamicCountSubscriber.class, "completedCount");
-    private volatile long completedCount;
+    private volatile int completedCount;
 
     CompletableDynamicCountSubscriber(Subscriber subscriber, boolean delayError) {
-        super(subscriber, delayError);
+        super(subscriber, delayError, Integer.MAX_VALUE);
     }
 
     @Override
@@ -36,7 +36,7 @@ final class CompletableDynamicCountSubscriber extends CompletableMergeSubscriber
         return completedCountUpdater.decrementAndGet(this) == 0;
     }
 
-    void setExpectedCount(final long count) {
+    void setExpectedCount(final int count) {
         // add the expected amount back, if we come to 0 that means all sources have completed.
         if (completedCountUpdater.addAndGet(this, count) == 0) {
             tryToCompleteSubscriber();

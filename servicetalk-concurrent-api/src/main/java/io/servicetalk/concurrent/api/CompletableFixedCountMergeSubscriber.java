@@ -28,7 +28,7 @@ final class CompletableFixedCountMergeSubscriber extends CompletableMergeSubscri
     private volatile int terminatedCount;
 
     CompletableFixedCountMergeSubscriber(Subscriber subscriber, int expectedCount, boolean delayError) {
-        super(subscriber, delayError);
+        super(subscriber, delayError, expectedCount);
         this.expectedCount = expectedCount;
     }
 

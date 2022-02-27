@@ -53,6 +53,22 @@ public final class Processors {
     }
 
     /**
+     * Create a new {@link CompletableSource.Processor} that allows for multiple
+     * {@link CompletableSource.Subscriber#subscribe(CompletableSource.Subscriber) subscribes}. The returned
+     * {@link CompletableSource.Processor} provides all the expected API guarantees when used as a
+     * {@link CompletableSource} but does not expect the same guarantees when used as a
+     * {@link CompletableSource.Subscriber}. As an example, users are not expected to call
+     * {@link CompletableSource.Subscriber#onSubscribe(Cancellable)} or they can call any of the
+     * {@link CompletableSource.Subscriber} methods concurrently and/or multiple times.
+     * @param maxSubscribers The maximum amount of {@link CompletableSource.Subscriber} that can be subscribed.
+     * @return a new {@link CompletableSource.Processor} that allows for multiple
+     * {@link CompletableSource.Subscriber#subscribe(CompletableSource.Subscriber) subscribes}.
+     */
+    public static CompletableSource.Processor newCompletableProcessor(int maxSubscribers) {
+        return new CompletableProcessor(maxSubscribers);
+    }
+
+    /**
      * Create a new {@link SingleSource.Processor} that allows for multiple
      * {@link SingleSource.Subscriber#subscribe(SingleSource.Subscriber) subscribes}. The returned
      * {@link SingleSource.Processor} provides all the expected API guarantees when used as a
@@ -68,6 +84,24 @@ public final class Processors {
      */
     public static <T> SingleSource.Processor<T, T> newSingleProcessor() {
         return new SingleProcessor<>();
+    }
+
+    /**
+     * Create a new {@link SingleSource.Processor} that allows for multiple
+     * {@link SingleSource.Subscriber#subscribe(SingleSource.Subscriber) subscribes}. The returned
+     * {@link SingleSource.Processor} provides all the expected API guarantees when used as a
+     * {@link SingleSource} but does not expect the same guarantees when used as a
+     * {@link SingleSource.Subscriber}. As an example, users are not expected to call
+     * {@link SingleSource.Subscriber#onSubscribe(Cancellable)} or they can call any of the
+     * {@link SingleSource.Subscriber} methods concurrently and/or multiple times.
+     * @param maxSubscribers The maximum amount of {@link CompletableSource.Subscriber} that can be subscribed.
+     * @param <T> The {@link SingleSource} type and {@link SingleSource.Subscriber} type of the
+     * {@link SingleSource.Processor}.
+     * @return a new {@link SingleSource.Processor} that allows for multiple
+     * {@link SingleSource.Subscriber#subscribe(SingleSource.Subscriber) subscribes}.
+     */
+    public static <T> SingleSource.Processor<T, T> newSingleProcessor(int maxSubscribers) {
+        return new SingleProcessor<>(maxSubscribers);
     }
 
     /**
