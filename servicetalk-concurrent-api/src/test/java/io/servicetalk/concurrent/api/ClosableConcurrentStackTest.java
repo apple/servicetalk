@@ -33,8 +33,8 @@ import static io.servicetalk.concurrent.api.Single.collectUnordered;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.in;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.isIn;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -101,7 +101,7 @@ class ClosableConcurrentStackTest {
         future.get();
         assertEquals(itemCount, overallValues.size());
         for (int i = 0; i < itemCount; ++i) {
-            assertThat(i, isIn(overallValues));
+            assertThat(i, is(in(overallValues)));
         }
     }
 
