@@ -70,15 +70,27 @@ final class ClosableConcurrentStack<T> {
             return false;
         }
         @SuppressWarnings("unchecked")
-        Node<T> currTop = (Node<T>) rawCurrTop;
-        while (currTop != null) {
-            if (item.equals(currTop.item)) {
-                currTop.item = null; // best effort null out the item. pop/close will discard the Node later.
+        Node<T> curr = (Node<T>) rawCurrTop;
+        Node<T> prev = null;
+        do {
+            if (item.equals(curr.item)) {
+                // Best effort Node removal. close will discard the Node if this attempt isn't visible to all threads.
+                curr.item = null;
+                if (prev != null) {
+                    prev.next = curr.next;
+                    // Don't set curr.next to null! If multiple threads are removing items at the same time removed
+                    // Nodes maybe "resurrected" and if links are nulled the stack may lose references to Nodes after
+                    // the removal point. Just let the GC reclaim the Node when it is ready because it is no longer
+                    // referenced from top, or if "resurrected" the "relaxed" contract of this method allows it.
+                } else {
+                    topUpdater.compareAndSet(this, curr, curr.next);
+                }
                 return true;
             } else {
-                currTop = currTop.next;
+                prev = curr;
+                curr = curr.next;
             }
-        }
+        } while (curr != null);
         return false;
     }
 
