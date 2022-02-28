@@ -80,8 +80,8 @@ final class LoadBalancerReadySubscriber extends DelayedCancellable implements Su
     public void onComplete() {
         Processor onHostsAvailable = this.onHostsAvailable;
         if (onHostsAvailable != null) {
-            // Let the load balancer or retry strategy fail any pending requests.
-            onHostsAvailable.onComplete();
+            onHostsAvailable.onError(new IllegalStateException("Subscriber listening for " +
+                    LoadBalancerReadyEvent.class.getSimpleName() + " events completed unexpectedly"));
         }
     }
 }

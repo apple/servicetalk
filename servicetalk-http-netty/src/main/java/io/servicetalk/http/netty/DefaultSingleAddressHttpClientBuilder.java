@@ -737,7 +737,13 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
 
         void nextError(final Throwable t) {
             seenError = true;
-            processor.onError(t);
+            // This state is reused across multiple subscribes, and we reset the processor to deliver the latest error
+            // to new subscribers.
+            final CompletableSource.Processor oldProcessor = processor;
+            oldProcessor.onError(t);
+            final CompletableSource.Processor newProcessor = newCompletableProcessor();
+            newProcessor.onError(t);
+            processor = newProcessor;
         }
 
         void resetError() {
