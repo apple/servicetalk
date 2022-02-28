@@ -46,12 +46,12 @@ which is typically an application `Executor`.
 
 == Offloading and asynchronous sources
 
-ServiceTalk uses the `link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/concurrent/api/Executor.java[Executor]`
+ServiceTalk uses the `link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Executor.java[Executor]`
 abstraction to specify the source of threads to be used for the delivery of signals from an asynchronous source. The
-default signal offloading, if any, used by an asynchronous source is determined by the source. For exampe, the HTTP
+default signal offloading, if any, used by an asynchronous source is determined by the source. For example, the HTTP
 sources, in addition to allowing for specification of an offloading executor, provide both direct control of the
 offloading via
-`xref:{page-version}@servicetalk-concurrent-api::blocking-safe-by-default.adoc##execution-strategy[ExecutionStrategy]`
+`xref:{page-version}@servicetalk-concurrent-api::blocking-safe-by-default.adoc#execution-strategy[ExecutionStrategy]`
 and may also influenced by the
 xref:{page-version}@servicetalk-concurrent-api::blocking-safe-by-default.adoc#influencing-offloading-decisions[computed execution strategy].
 
