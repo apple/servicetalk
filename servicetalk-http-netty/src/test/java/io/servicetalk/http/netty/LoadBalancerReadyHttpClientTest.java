@@ -160,8 +160,9 @@ class LoadBalancerReadyHttpClientTest {
         assertThat(verifyFailsAction0(action, errorConsumer, error), is(error));
     }
 
-    private Throwable verifyFailsAction0(Function<StreamingHttpClient, Single<?>> action, Consumer<Throwable> errorConsumer,
-                                   Throwable error) throws InterruptedException {
+    private Throwable verifyFailsAction0(Function<StreamingHttpClient, Single<?>> action,
+                                         Consumer<Throwable> errorConsumer, Throwable error)
+            throws InterruptedException {
         StreamingHttpClient client = TestStreamingHttpClient.from(reqRespFactory, mockExecutionCtx,
                 appendClientFilterFactory(newAutomaticRetryFilterFactory(loadBalancerPublisher, sdStatusCompletable),
                         testHandler));
