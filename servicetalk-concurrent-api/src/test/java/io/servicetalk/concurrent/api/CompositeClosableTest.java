@@ -18,21 +18,21 @@ package io.servicetalk.concurrent.api;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.InOrder;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 final class CompositeClosableTest {
-    @ParameterizedTest
+
+    @ParameterizedTest(name = "{displayName} [{index}] merge={0} gracefully={1}")
     @CsvSource(value = {"true,true", "true,false", "false,true", "false,false"})
     void sameOperationDoesNotSOE(boolean merge, boolean gracefully) throws Exception {
-        AsyncCloseable mockClosable = mock(AsyncCloseable.class);
-        when(mockClosable.closeAsync()).thenReturn(completed());
-        when(mockClosable.closeAsyncGracefully()).thenReturn(completed());
-
+        AsyncCloseable mockClosable = newMock("asyncCloseable");
         CompositeCloseable compositeCloseable = newCompositeCloseable();
         for (int i = 0; i < 10000; ++i) {
             if (merge) {
@@ -49,13 +49,10 @@ final class CompositeClosableTest {
         }
     }
 
-    @ParameterizedTest(name = "gracefully={0}")
+    @ParameterizedTest(name = "{displayName} [{index}] gracefully={0}")
     @ValueSource(booleans = {true, false})
     void alternatingOperationSOE(boolean gracefully) {
-        AsyncCloseable mockClosable = mock(AsyncCloseable.class);
-        when(mockClosable.closeAsync()).thenReturn(completed());
-        when(mockClosable.closeAsyncGracefully()).thenReturn(completed());
-
+        AsyncCloseable mockClosable = newMock("asyncCloseable");
         CompositeCloseable compositeCloseable = newCompositeCloseable();
         for (int i = 0; i < 10000; ++i) {
             if ((i & 1) == 0) {
@@ -74,5 +71,56 @@ final class CompositeClosableTest {
                 compositeCloseable.close();
             }
         });
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] gracefully={0}")
+    @ValueSource(booleans = {true, false})
+    void appendPrependOrder(boolean gracefully) throws Exception {
+        AsyncCloseable mock1 = newMock("mock1");
+        AsyncCloseable mock2 = newMock("mock2");
+        InOrder order = inOrder(mock1, mock2);
+
+        CompositeCloseable compositeCloseable = newCompositeCloseable();
+        compositeCloseable.append(mock2);
+        compositeCloseable.prepend(mock1);
+
+        if (gracefully) {
+            compositeCloseable.closeGracefully();
+            order.verify(mock1).closeAsyncGracefully();
+            order.verify(mock2).closeAsyncGracefully();
+        } else {
+            compositeCloseable.close();
+            order.verify(mock1).closeAsync();
+            order.verify(mock2).closeAsync();
+        }
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] gracefully={0}")
+    @ValueSource(booleans = {true, false})
+    void mergePrependOrder(boolean gracefully) throws Exception {
+        AsyncCloseable mock1 = newMock("mock1");
+        AsyncCloseable mock2 = newMock("mock2");
+        InOrder order = inOrder(mock1, mock2);
+
+        CompositeCloseable compositeCloseable = newCompositeCloseable();
+        compositeCloseable.merge(mock2);
+        compositeCloseable.prepend(mock1);
+
+        if (gracefully) {
+            compositeCloseable.closeGracefully();
+            order.verify(mock1).closeAsyncGracefully();
+            order.verify(mock2).closeAsyncGracefully();
+        } else {
+            compositeCloseable.close();
+            order.verify(mock1).closeAsync();
+            order.verify(mock2).closeAsync();
+        }
+    }
+
+    private static AsyncCloseable newMock(String name) {
+        AsyncCloseable mockClosable = mock(AsyncCloseable.class, name);
+        when(mockClosable.closeAsync()).thenReturn(completed());
+        when(mockClosable.closeAsyncGracefully()).thenReturn(completed());
+        return mockClosable;
     }
 }

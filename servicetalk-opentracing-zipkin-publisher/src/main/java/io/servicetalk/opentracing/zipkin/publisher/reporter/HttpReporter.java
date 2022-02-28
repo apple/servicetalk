@@ -38,6 +38,7 @@ import zipkin2.reporter.Reporter;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
@@ -68,7 +69,7 @@ public final class HttpReporter extends Component implements Reporter<Span>, Asy
     static final String V1_PATH = "/api/v1/spans";
     static final String V2_PATH = "/api/v2/spans";
     static final CharSequence THRIFT_CONTENT_TYPE = newAsciiString("application/x-thrift");
-    static final CharSequence PROTO_CONTENT_TYPE = newAsciiString("application/protobuf");
+    static final CharSequence PROTO_CONTENT_TYPE = newAsciiString("application/x-protobuf");
 
     private final PublisherSource.Processor<Span, Span> buffer;
     private final CompositeCloseable closeable;
@@ -125,7 +126,8 @@ public final class HttpReporter extends Component implements Reporter<Span>, Asy
         final Publisher<Buffer> spans;
         if (!builder.batchingEnabled) {
             buffer = newPublisherProcessorDropHeadOnOverflow(builder.maxConcurrentReports);
-            spans = fromSource(buffer).map(span -> allocator.wrap(spanEncoder.encode(span)));
+            spans = fromSource(buffer)
+                    .map(span -> allocator.wrap(spanEncoder.encodeList(Collections.singletonList(span))));
         } else {
             // As we send maxConcurrentReports number of parallel requests, each with roughly batchSizeHint number of
             // spans, we hold a maximum of that many Spans in-memory that we can send in parallel to the collector.

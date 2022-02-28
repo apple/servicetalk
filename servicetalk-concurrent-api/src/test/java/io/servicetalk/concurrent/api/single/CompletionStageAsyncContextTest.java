@@ -42,9 +42,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CompletionStageAsyncContextTest {
     private static final ContextMap.Key<Integer> K1 = newKey("k1", Integer.class);
-    @RegisterExtension
-    final ExecutorExtension<Executor> executorExtension = ExecutorExtension.withCachedExecutor(ST_THREAD_PREFIX_NAME);
     private static final String ST_THREAD_PREFIX_NAME = "st-exec-thread";
+    @RegisterExtension
+    static final ExecutorExtension<Executor> EXEC = ExecutorExtension.withCachedExecutor(ST_THREAD_PREFIX_NAME)
+            .setClassLevel(true);
     private static final String JDK_THREAD_NAME_PREFIX = "jdk-thread";
     private static final AtomicInteger threadCount = new AtomicInteger();
     private static ExecutorService jdkExecutor;
@@ -68,7 +69,7 @@ class CompletionStageAsyncContextTest {
     void beforeTest() {
         AsyncContext.clear();
         testSource = new LegacyTestSingle<>(true, true);
-        source = testSource.publishOn(executorExtension.executor());
+        source = testSource.publishOn(EXEC.executor());
     }
 
     @Test

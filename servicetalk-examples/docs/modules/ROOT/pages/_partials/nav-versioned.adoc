@@ -12,6 +12,7 @@
 ** xref:{page-version}@servicetalk-examples::http/index.adoc#Observer[Observer]
 ** xref:{page-version}@servicetalk-examples::http/index.adoc#OpenTracing[OpenTracing]
 ** xref:{page-version}@servicetalk-examples::http/index.adoc#Redirects[Redirects]
+** xref:{page-version}@servicetalk-examples::http/index.adoc#Retries[Retries]
 ** xref:{page-version}@servicetalk-examples::http/index.adoc#uds[Unix Domain Sockets]
 ** xref:{page-version}@servicetalk-examples::http/service-composition.adoc[Service Composition]
 * xref:{page-version}@servicetalk-examples::grpc/index.adoc[gRPC]

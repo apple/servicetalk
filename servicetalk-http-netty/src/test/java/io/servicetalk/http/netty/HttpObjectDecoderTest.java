@@ -49,9 +49,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.isEmptyString;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
@@ -154,10 +154,15 @@ abstract class HttpObjectDecoderTest {
 
     final void assertDecoderExceptionWithCause(String msg, String expectedExceptionMsg,
                                                EmbeddedChannel channel) {
+        assertDecoderExceptionWithCause(msg, expectedExceptionMsg, IllegalCharacterException.class, channel);
+    }
+
+    final <T extends Throwable> void assertDecoderExceptionWithCause(String msg, String expectedExceptionMsg,
+                                                                     Class<T> causeType, EmbeddedChannel channel) {
         DecoderException e = assertThrows(DecoderException.class, () -> writeMsg(msg, channel));
         assertThat(e.getMessage(), startsWith(expectedExceptionMsg));
-        assertThat(e.getCause(), is(instanceOf(IllegalCharacterException.class)));
-        assertThat(e.getCause().getMessage(), not(isEmptyString()));
+        assertThat(e.getCause(), is(instanceOf(causeType)));
+        assertThat(e.getCause().getMessage(), not(is(emptyString())));
         assertThat(channel().inboundMessages(), is(empty()));
     }
 
@@ -203,7 +208,7 @@ abstract class HttpObjectDecoderTest {
     }
 
     @Nullable
-    final HttpHeaders assertPayloadSize(int expectedPayloadSize, EmbeddedChannel channel) {
+    static HttpHeaders assertPayloadSize(int expectedPayloadSize, EmbeddedChannel channel) {
         int actualPayloadSize = 0;
         Object item;
         for (;;) {

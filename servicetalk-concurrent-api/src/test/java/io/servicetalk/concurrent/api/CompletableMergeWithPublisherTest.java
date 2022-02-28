@@ -52,7 +52,7 @@ import static org.mockito.Mockito.verify;
 
 class CompletableMergeWithPublisherTest {
     @RegisterExtension
-    final ExecutorExtension<Executor> executorExtension = withCachedExecutor();
+    static final ExecutorExtension<Executor> EXEC = withCachedExecutor().setClassLevel(true);
     private final TestSubscription subscription = new TestSubscription();
     private final TestPublisher<String> publisher = new TestPublisher.Builder<String>()
             .disableAutoOnSubscribe().build();
@@ -390,8 +390,8 @@ class CompletableMergeWithPublisherTest {
         TestCompletable completable = new TestCompletable.Builder().disableAutoOnSubscribe().build();
         TestCancellable testCancellable = new TestCancellable();
         CountDownLatch latch = new CountDownLatch(1);
-        toSource(applyMerge(completable.publishOn(executorExtension.executor()), delayError,
-                            publisher.publishOn(executorExtension.executor())).afterOnNext(item -> {
+        toSource(applyMerge(completable.publishOn(EXEC.executor()), delayError,
+                            publisher.publishOn(EXEC.executor())).afterOnNext(item -> {
             // The goal of this test is to have the Completable terminate, but have onNext signals from the Publisher be
             // delayed on the Executor. Even in this case the merge operator should correctly sequence the onComplete to
             // the downstream subscriber until after all the onNext events have completed.
@@ -436,7 +436,7 @@ class CompletableMergeWithPublisherTest {
         TestCompletable completable = new TestCompletable();
         toSource(applyMerge(completable, delayError)).subscribe(subscriber);
         publisher.onSubscribe(subscription);
-        Future<Void> f = executorExtension.executor().submit(() -> {
+        Future<Void> f = EXEC.executor().submit(() -> {
             try {
                 barrier.await();
             } catch (Exception e) {
@@ -480,7 +480,7 @@ class CompletableMergeWithPublisherTest {
         }).when(mockSubscriber).onNext(any());
         toSource(applyMerge(completable, delayError)).subscribe(mockSubscriber);
         publisher.onSubscribe(subscription);
-        Future<Void> f = executorExtension.executor().submit(() -> {
+        Future<Void> f = EXEC.executor().submit(() -> {
             try {
                 nextLatch2.await();
             } catch (Exception e) {
@@ -573,7 +573,7 @@ class CompletableMergeWithPublisherTest {
         }).when(mockSubscriber).onNext(any());
         toSource(applyMerge(completable, delayError)).subscribe(mockSubscriber);
         publisher.onSubscribe(subscription);
-        Future<Void> f = executorExtension.executor().submit(() -> {
+        Future<Void> f = EXEC.executor().submit(() -> {
             try {
                 nextLatch2.await();
             } catch (Exception e) {

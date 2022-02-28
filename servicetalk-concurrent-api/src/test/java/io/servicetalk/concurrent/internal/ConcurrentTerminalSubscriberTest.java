@@ -45,8 +45,7 @@ import static org.mockito.Mockito.verify;
 
 class ConcurrentTerminalSubscriberTest {
     @RegisterExtension
-    final ExecutorExtension<Executor> executorExtension = ExecutorExtension.withCachedExecutor();
-
+    static final ExecutorExtension<Executor> EXEC = ExecutorExtension.withCachedExecutor().setClassLevel(true);
     private final TestPublisher<Integer> publisher =
             new TestPublisher.Builder<Integer>().disableAutoOnSubscribe().build();
     private final TestSubscription subscription = new TestSubscription();
@@ -187,7 +186,7 @@ class ConcurrentTerminalSubscriberTest {
         ConcurrentTerminalSubscriber<Integer> subscriber = new ConcurrentTerminalSubscriber<>(mockSubscriber);
         publisher.subscribe(subscriber);
         publisher.onSubscribe(subscription);
-        executorExtension.executor().execute(() -> {
+        EXEC.executor().execute(() -> {
             if (firstOnComplete) {
                 publisher.onComplete();
             } else {
@@ -251,7 +250,7 @@ class ConcurrentTerminalSubscriberTest {
         publisher.subscribe(subscriber);
         publisher.onSubscribe(subscription);
         subscription.awaitRequestN(1);
-        executorExtension.executor().execute(() -> publisher.onNext(1));
+        EXEC.executor().execute(() -> publisher.onNext(1));
         onNextEnterBarrier.await();
         if (onComplete) {
             publisher.onComplete();
@@ -298,7 +297,7 @@ class ConcurrentTerminalSubscriberTest {
 
         ConcurrentTerminalSubscriber<Integer> subscriber = new ConcurrentTerminalSubscriber<>(mockSubscriber);
         publisher.subscribe(subscriber);
-        executorExtension.executor().execute(() -> publisher.onSubscribe(subscription));
+        EXEC.executor().execute(() -> publisher.onSubscribe(subscription));
         subscription.awaitRequestN(1);
         if (onNext) {
             publisher.onNext(1);

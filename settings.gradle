@@ -56,6 +56,7 @@ include "servicetalk-annotations",
         "servicetalk-examples:http:metadata",
         "servicetalk-examples:http:opentracing",
         "servicetalk-examples:http:observer",
+        "servicetalk-examples:http:retry",
         "servicetalk-examples:http:serialization",
         "servicetalk-examples:http:service-composition",
         "servicetalk-examples:http:uds",
@@ -119,6 +120,7 @@ project(":servicetalk-examples:http:jaxrs").name = "servicetalk-examples-http-ja
 project(":servicetalk-examples:http:metadata").name = "servicetalk-examples-http-metadata"
 project(":servicetalk-examples:http:opentracing").name = "servicetalk-examples-http-opentracing"
 project(":servicetalk-examples:http:observer").name = "servicetalk-examples-http-observer"
+project(":servicetalk-examples:http:retry").name = "servicetalk-examples-http-retry"
 project(":servicetalk-examples:http:serialization").name = "servicetalk-examples-http-serialization"
 project(":servicetalk-examples:http:service-composition").name = "servicetalk-examples-http-service-composition"
 project(":servicetalk-examples:http:uds").name = "servicetalk-examples-http-uds"

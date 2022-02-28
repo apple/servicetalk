@@ -54,7 +54,8 @@ final class GlobalExecutor extends DelegatingExecutor {
     }
 
     private static void log(final Logger logger, final String name, final String methodName) {
-        logger.debug("Closure of \"{}\" was initiated using {} method. Closing the global instance before " +
-                "closing all resources that use it may result in unexpected behavior.", name, methodName);
+        logger.info("Closure of \"{}\" was initiated using {} method. Closing the global instance before " +
+                "closing all resources that use it may result in unexpected behavior.", name, methodName,
+                new Throwable("Stack trace"));
     }
 }

@@ -40,7 +40,7 @@ import static org.hamcrest.Matchers.is;
 
 class PubToCompletableIgnoreTest {
     @RegisterExtension
-    final ExecutorExtension<Executor> executorExtension = ExecutorExtension.withCachedExecutor();
+    static final ExecutorExtension<Executor> EXEC = ExecutorExtension.withCachedExecutor().setClassLevel(true);
     private final TestCompletableSubscriber listenerRule = new TestCompletableSubscriber();
 
     @Test
@@ -95,7 +95,7 @@ class PubToCompletableIgnoreTest {
                         currentThread()));
             }
             analyzed.countDown();
-        }).subscribeOn(executorExtension.executor()).ignoreElements().toFuture().get();
+        }).subscribeOn(EXEC.executor()).ignoreElements().toFuture().get();
         analyzed.await();
         assertNoAsyncErrors(errors);
     }
