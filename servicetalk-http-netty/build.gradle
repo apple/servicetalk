@@ -54,7 +54,7 @@ dependencies {
   testImplementation project(":servicetalk-test-resources")
   testImplementation project(":servicetalk-utils-internal")
   testImplementation project(":servicetalk-oio-api-internal")
-  testImplementation "io.netty:netty-transport-native-unix-common"s
+  testImplementation "io.netty:netty-transport-native-unix-common"
   testImplementation "io.netty.incubator:netty-incubator-transport-native-io_uring:$nettyIoUringVersion"
   testImplementation "io.netty.incubator:netty-incubator-transport-native-io_uring:$nettyIoUringVersion:linux-x86_64"
   testImplementation "io.netty.incubator:netty-incubator-transport-native-io_uring:$nettyIoUringVersion:linux-aarch_64"
