@@ -40,7 +40,9 @@ import static io.servicetalk.logging.api.LogLevel.TRACE;
  * </ol>
  * <p>The wire and frame logging features require that you configure a logger with an appropriate log level. For this
  * example {@code log4j2.xml} is used by both the client and server and configures the
- * ({@code servicetalk-examples-wire-logger} logger at {@link io.servicetalk.logging.api.LogLevel#TRACE TRACE} level.
+ * {@code servicetalk-examples-wire-logger} and {@code servicetalk-examples-h2-frame-logger} loggers at
+ * {@link io.servicetalk.logging.api.LogLevel#TRACE TRACE} level. Wire logging is configured to include logging of all
+ * user data contained in the payload, see {@link #LOG_USER_DATA}.
  *
  * <p>When configured correctly the output should be similar to the following:
  * <pre>
@@ -141,6 +143,15 @@ public final class DebuggingExampleClient {
         // AsyncContext.disable();
     }
 
+    /**
+     * If {@link Boolean#TRUE} then all user data in the payload will be logged in addition to the protocol metadata.
+     * If {@link Boolean#FALSE} then protocol operations will be logged, but user data contents will be omitted.
+     *
+     * <p>This implementation uses a constant function to enable or disable logging of user data, your implementation
+     * could selectively choose to log user data based upon application state or context.</p>
+     */
+    static final BooleanSupplier LOG_USER_DATA = Boolean.TRUE::booleanValue;
+
     public static void main(String... args) throws Exception {
         try (HttpClient client = HttpClients.forSingleAddress("localhost", 8080)
                 /*
@@ -154,14 +165,14 @@ public final class DebuggingExampleClient {
                  * 3. Enables detailed logging of I/O and I/O states.
                  * Be sure to also enable the logger in your logging config file (log4j2.xml for this example).
                  */
-                .enableWireLogging("servicetalk-examples-wire-logger", TRACE, Boolean.TRUE::booleanValue)
+                .enableWireLogging("servicetalk-examples-wire-logger", TRACE, LOG_USER_DATA)
 
                 /*
                  * 4. Enables detailed logging of HTTP2 frames.
                  * Be sure to also enable the logger in your logging config file (log4j2.xml for this example).
                  */
                 .protocols(HttpProtocolConfigs.h2()
-                        .enableFrameLogging("servicetalk-examples-h2-frame-logger", TRACE, Boolean.TRUE::booleanValue)
+                        .enableFrameLogging("servicetalk-examples-h2-frame-logger", TRACE, LOG_USER_DATA)
                         .build())
                 .build()) {
             client.request(client.post("/sayHello").payloadBody("George", textSerializerUtf8()))
