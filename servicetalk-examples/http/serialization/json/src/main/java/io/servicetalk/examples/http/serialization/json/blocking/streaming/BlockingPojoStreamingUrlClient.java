@@ -15,6 +15,7 @@
  */
 package io.servicetalk.examples.http.serialization.json.blocking.streaming;
 
+import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.examples.http.serialization.json.CreatePojoRequest;
 import io.servicetalk.examples.http.serialization.json.PojoResponse;
 import io.servicetalk.http.api.BlockingStreamingHttpClient;
@@ -34,9 +35,13 @@ public final class BlockingPojoStreamingUrlClient {
                             new CreatePojoRequest("value2"),
                             new CreatePojoRequest("value3")),
                             REQ_STREAMING_SERIALIZER));
-            System.out.println(response);
-            for (PojoResponse pojo : response.payloadBody(RESP_STREAMING_SERIALIZER)) {
-                System.out.println(pojo);
+            System.out.println(response.toString((name, value) -> value));
+            // While it's also possible to use for-each, it's recommended to use try-with-resources to make sure that
+            // the full response payload body is drained in case of exceptions
+            try (BlockingIterator<PojoResponse> payload = response.payloadBody(RESP_STREAMING_SERIALIZER).iterator()) {
+                while (payload.hasNext()) {
+                    System.out.println(payload.next());
+                }
             }
         }
     }

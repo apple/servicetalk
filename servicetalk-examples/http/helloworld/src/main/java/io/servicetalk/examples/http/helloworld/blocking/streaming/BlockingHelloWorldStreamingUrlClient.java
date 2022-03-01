@@ -28,6 +28,8 @@ public final class BlockingHelloWorldStreamingUrlClient {
         try (BlockingStreamingHttpClient client = HttpClients.forMultiAddressUrl().buildBlockingStreaming()) {
             BlockingStreamingHttpResponse response = client.request(client.get("http://localhost:8080/sayHello"));
             System.out.println(response.toString((name, value) -> value));
+            // While it's also possible to use for-each, it's recommended to use try-with-resources to make sure that
+            // the full response payload body is drained in case of exceptions
             try (BlockingIterator<String> payload = response.payloadBody(appSerializerUtf8FixLen()).iterator()) {
                 while (payload.hasNext()) {
                     System.out.println(payload.next());
