@@ -42,6 +42,10 @@ dependencies {
   implementation "io.netty.incubator:netty-incubator-transport-native-io_uring:$nettyIoUringVersion"
   runtimeOnly "io.netty.incubator:netty-incubator-transport-native-io_uring:$nettyIoUringVersion:linux-x86_64"
   runtimeOnly "io.netty.incubator:netty-incubator-transport-native-io_uring:$nettyIoUringVersion:linux-aarch_64"
+  runtimeOnly( group:"io.netty", name:"netty-tcnative-boringssl-static", classifier:"linux-x86_64")
+  runtimeOnly( group:"io.netty", name:"netty-tcnative-boringssl-static", classifier:"linux-aarch_64")
+  runtimeOnly( group:"io.netty", name:"netty-tcnative-boringssl-static", classifier:"osx-x86_64")
+  runtimeOnly( group:"io.netty", name:"netty-tcnative-boringssl-static", classifier:"osx-aarch_64")
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
   testImplementation testFixtures(project(":servicetalk-concurrent-api"))
