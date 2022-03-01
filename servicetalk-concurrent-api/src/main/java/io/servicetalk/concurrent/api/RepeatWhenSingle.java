@@ -84,8 +84,8 @@ final class RepeatWhenSingle<T> extends AbstractNoHandleSubscribePublisher<T> {
                 final long prev = outstandingDemandUpdater.getAndAccumulate(this, n,
                         FlowControlUtils::addWithOverflowProtectionIfNotNegative);
                 if (prev == 0) {
-                    // Either we copy the map up front before subscribe, or we just re-use the same map and let the async
-                    // source at the top of the chain reset if necessary. We currently choose the second option.
+                    // Either we copy the map up front before subscribe, or we just re-use the same map and let the
+                    // async source at the top of the chain reset if necessary. We currently choose the second option.
                     outer.original.delegateSubscribe(repeatSubscriber, contextMap, contextProvider);
                 }
             } else {
