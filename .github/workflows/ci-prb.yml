@@ -4,7 +4,7 @@ on:
     branches: [ main, '0.41', '0.42' ]
 jobs:
   build:
-    name: Build JDK ${{ matrix.java }} ${{ matrix.os }}
+    name: JDK ${{ matrix.java }} ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:

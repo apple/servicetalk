@@ -4,6 +4,7 @@ on:
     branches: [ main, '0.41', '0.42' ]
 jobs:
   quality:
+    name: JDK ${{ matrix.java }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
