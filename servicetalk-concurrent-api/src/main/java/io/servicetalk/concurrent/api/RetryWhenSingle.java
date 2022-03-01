@@ -49,11 +49,28 @@ final class RetryWhenSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
     }
 
     private static final class RetrySubscriber<T> extends RetrySingle.AbstractRetrySubscriber<T> {
-
         private final SequentialCancellable retrySignalCancellable;
         private final RetryWhenSingle<T> retrySingle;
         private final ContextMap contextMap;
         private final AsyncContextProvider contextProvider;
+        private final CompletableSource.Subscriber completableSubscriber = new CompletableSource.Subscriber() {
+            @Override
+            public void onSubscribe(Cancellable completableCancellable) {
+                retrySignalCancellable.nextCancellable(completableCancellable);
+            }
+
+            @Override
+            public void onComplete() {
+                // Either we copy the map up front before subscribe, or we just re-use the same map and let the async
+                // source at the top of the chain reset if necessary. We currently choose the second option.
+                retrySingle.original.delegateSubscribe(RetrySubscriber.this, contextMap, contextProvider);
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                target.onError(t);
+            }
+        };
 
         RetrySubscriber(SequentialCancellable cancellable, int redoCount, Subscriber<? super T> subscriber,
                         ContextMap contextMap, AsyncContextProvider contextProvider,
@@ -85,34 +102,14 @@ final class RetryWhenSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
         public void onError(Throwable t) {
             final Completable retryDecider;
             try {
-                retryDecider = requireNonNull(retrySingle.shouldRetry.apply(retryCount + 1, t));
+                retryDecider = requireNonNull(retrySingle.shouldRetry.apply(++retryCount, t));
             } catch (Throwable cause) {
                 cause.addSuppressed(t);
                 target.onError(cause);
                 return;
             }
 
-            retryDecider.subscribeInternal(new CompletableSource.Subscriber() {
-                @Override
-                public void onSubscribe(Cancellable completableCancellable) {
-                    retrySignalCancellable.nextCancellable(completableCancellable);
-                }
-
-                @Override
-                public void onComplete() {
-                    // For the current subscribe operation we want to use contextMap directly, but in the event a
-                    // re-subscribe operation occurs we want to restore the original state of the AsyncContext map, so
-                    // we save a copy upfront.
-                    retrySingle.original.delegateSubscribe(new RetrySubscriber<>(sequentialCancellable,
-                            retryCount + 1, target, contextMap.copy(), contextProvider, retrySingle),
-                            contextMap, contextProvider);
-                }
-
-                @Override
-                public void onError(Throwable t) {
-                    target.onError(t);
-                }
-            });
+            retryDecider.subscribeInternal(completableSubscriber);
         }
     }
 }
