@@ -340,9 +340,9 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
          * </pre>
          * We assume that no listener for a write is added after that write is completed (a.k.a late listeners).
          * Most of the messages have 3 listeners (headers, one payload body chunk, trailers). Messages with large
-         * streaming payload body may have more listeners. However, the MIN_INITIAL_CAPACITY of ArrayDeque is 8.
+         * streaming payload body may have more listeners.
          */
-        private final Deque<GenericFutureListener<?>> listenersOnWriteBoundaries = new ArrayDeque<>(8);
+        private final Deque<GenericFutureListener<?>> listenersOnWriteBoundaries = new ArrayDeque<>(4);
         private final UnaryOperator<Throwable> enrichProtocolError;
 
         AllWritesPromise(final Channel channel, final UnaryOperator<Throwable> enrichProtocolError) {
