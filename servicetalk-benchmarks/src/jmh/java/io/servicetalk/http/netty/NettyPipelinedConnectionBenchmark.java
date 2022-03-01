@@ -79,7 +79,7 @@ public class NettyPipelinedConnectionBenchmark {
     @Setup(Level.Trial)
     public void setup() throws ExecutionException, InterruptedException {
         executorService = Executors.newCachedThreadPool();
-        pipelinedConnection = new NettyPipelinedConnection<>(newNettyConnection());
+        pipelinedConnection = new NettyPipelinedConnection<>(newNettyConnection(), 32);
         prewarmExecutorThreads(executorService, 5);
     }
 

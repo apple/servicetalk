@@ -44,6 +44,7 @@ import static io.servicetalk.concurrent.internal.ConcurrentUtils.releaseLock;
 import static io.servicetalk.concurrent.internal.ConcurrentUtils.tryAcquireLock;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static io.servicetalk.utils.internal.PlatformDependent.newUnboundedMpscQueue;
+import static java.lang.Math.min;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
@@ -62,6 +63,7 @@ final class NettyPipelinedConnection<Req, Resp> implements NettyConnectionContex
     @SuppressWarnings("rawtypes")
     private static final AtomicIntegerFieldUpdater<NettyPipelinedConnection> readQueueLockUpdater =
             newUpdater(NettyPipelinedConnection.class, "readQueueLock");
+    private static final int MAX_INIT_QUEUE_SIZE = 8;
     private final NettyConnection<Resp, Req> connection;
     private final Queue<WriteTask> writeQueue;
     private final Queue<Subscriber<? super Resp>> readQueue;
@@ -74,11 +76,13 @@ final class NettyPipelinedConnection<Req, Resp> implements NettyConnectionContex
      * New instance.
      *
      * @param connection {@link NettyConnection} requests to which are to be pipelined.
+     * @param maxPipelinedRequests The maximum number of pipelined requests.
      */
-    NettyPipelinedConnection(NettyConnection<Resp, Req> connection) {
+    NettyPipelinedConnection(NettyConnection<Resp, Req> connection,
+                             int maxPipelinedRequests) {
         this.connection = requireNonNull(connection);
-        writeQueue = newUnboundedMpscQueue();
-        readQueue = newUnboundedMpscQueue();
+        writeQueue = newUnboundedMpscQueue(min(maxPipelinedRequests, MAX_INIT_QUEUE_SIZE));
+        readQueue = newUnboundedMpscQueue(min(maxPipelinedRequests, MAX_INIT_QUEUE_SIZE));
     }
 
     /**
