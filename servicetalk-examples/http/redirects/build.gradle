@@ -29,9 +29,5 @@ dependencies {
   // Users have to use their own certificates instead.
   implementation project(":servicetalk-test-resources")
 
-  // This dependency enables OpenSSL provider that supports ALPN. It's recommended to use OpenSSL provider for the
-  // best SSL performance.
-  runtimeOnly "io.netty:netty-tcnative-boringssl-static"
-
   runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
 }
