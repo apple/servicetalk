@@ -55,10 +55,10 @@ offloading via
 and may also influenced by the
 xref:{page-version}@servicetalk-concurrent-api::blocking-safe-by-default.adoc#influencing-offloading-decisions[computed execution strategy].
 
-Applications with asynchronous, blocking or computationally expensive tasks can also offload those tasks to specific `Executor`.
-The `subscribeOn(Executor)` and `publishOn(Executor)` operators will cause offloading execution from the default signal
-delivery thread thread to a thread from the provided `Executor`. The below diagram illustrates the interaction between
-an asynchronous source, its `Subscriber`, its operators, and the `Executor`.
+Applications with asynchronous, blocking or computationally expensive tasks can also offload those tasks to specific
+`Executor`. The `subscribeOn(Executor)` and `publishOn(Executor)` operators will cause offloading execution from the
+default signal delivery thread to a thread from the provided `Executor`. The below diagram illustrates the interaction
+between an asynchronous source, its `Subscriber`, its operators, and the `Executor`.
 
 image::offloading.svg[Offloading]
 
@@ -71,20 +71,62 @@ offload at the `publishOn()` operator and transition execution from the event lo
 the publish signal is offloaded the event loop thread will be available again for executing other I/O tasks while the
 response is asynchronously processed on the `Executor` thread.
 
+=== `publishOn()` Example
+
+Using the `publishOn(executor)` operator allows processing of signals related to the source content on a different
+thread than is generating (or receiving) the content. It is the most common form of offloading used.
+
 [source, java]
 ----
-Collection<Integer> Publisher.range(1, 10) <2> <4>
+Collection<Integer> result = Publisher.range(1, 10) <2> <5>
         .map(element -> element)  // non-offloaded NO-OP
-        .publishOn(publishExecutor)
+        .publishOn(publishExecutor)  <4>
         .map(element -> element)  // offloaded NO-OP
+        .toFuture()  <3>
+        .get();  <1> <6>
+----
+
+<1> `toFuture().get` begins by calling `subscribe(Subscriber)`. Executing on the application thread, execution flows up
+the operator chain towards the source; `map` -> `publishOn` -> `map` -> `Publisher.range(1, 10)`.
+
+<2> Still executing on the application thread, `Range` will call `Subscriber.onSubscribe(Subscription)` on the
+`Subscriber`. This flows back down the operator chain, `Range` -> `map` -> `subscribeOn` -> `toFuture`.
+
+<3> When `subscribe()` is complete, `toFuture()` will call `Subscription.request(Long.MAX_VALUE)`. This will cause
+`Range` to publish synchronously via `onNext(element)` nine items, the integers "`1`" through "`9`".
+
+<4> Each `onNext` flows back down the operator chain, `Range` -> `map` -> `publishOn` (offloads on to `publishExecutor`
+thread) -> `map` -> `toFuture` where the element is collected for the result. For each offloaded item a thread of
+`publishExecutor` will be used for executing the second `map` operator and final collect operation.
+
+<5> The application thread will continue to publish all the elements from the source and will finally send the
+`onComplete()` signal. This signal will also be offloaded to the `publisherExecutor` and will complete the `Future` with
+the integer collection result.
+<6> The application thread will wait at `get()` for the `Future` result to be asynchronously completed.
+
+=== `subscribeOn()` Example
+
+Using the `subscribeOn(executor)` operator allows processing of the subscription and demand. Using the
+`subscribeOn(executor)` operator generally requires an understanding of the behavior of the source; using a different
+source may change the need for offloading.
+
+[source, java]
+----
+Collection<Integer> result = Publisher.range(1, 10) <2> <4>
+        .map(element -> element)  // NO-OP
         .subscribeOn(subscribeExecutor)
         .toFuture() <3>
         .get(); <1>
 ----
-<1> `toFuture().get()` will do a `subscribe(Subscriber)`. This flows up the operator chain, `subscribeOn` (offload onto `subscribeExecutor` thread) -> `map` -> `publishOn` -> `map` -> `Range`.
-<2> `Range` will call `Subscriber.onSubscribe(Subscription)` on the `Subscriber`. This flows back down the operator chain, `Range` -> `map` -> `publishOn` (offloads to `publishExecutor` thread) -> `map` -> `subscribeOn` -> `toFuture`.
-<3> `toFuture()` will call `Subscription.request(Long.MAX_VALUE)`. This flows up the operator chain, `subscribeOn` (offloads onto `subscribeOn`  thread) -> `map` -> `publishOn` -> `map` -> `Range`.
-<4> `Range` will do `onNext(element)` for 1-9 items synchronously (on a thread from `subscribeExecutor`). Each `onNext` flows back down the operator chain, `Range` -> `map` -> `publishOn` (offloads to thread from `publishExecutor`) -> `map` -> `subscribeOn` -> `toFuture`.
+<1> `toFuture().get()` will do a `subscribe(Subscriber)`. This flows up the operator chain toward the source;
+`subscribeOn` (offload onto `subscribeExecutor` thread) -> `map` -> `Range`.
+<2> `Range` will call `Subscriber.onSubscribe(Subscription)` on the `Subscriber`. This flows back down the operator
+chain, `Range` -> `map` -> `subscribeOn` -> `toFuture`.
+<3> `toFuture()` will call `Subscription.request(Long.MAX_VALUE)`. This flows up the operator chain, `subscribeOn`
+(offloads onto `subscribeExecutor`  thread) -> `map` -> `Range`.
+<4> Still on a thread from `subscribeExecutor`, `Range` ` will publish synchronously via `onNext(element)` nine items,
+the integers "`1`" through "`9`" (on a thread from ). Each `onNext` flows back down the operator chain, `Range` -> `map`
+-> `subscribeOn` -> `toFuture` when the element is collected for the result.
 
 This example can be expanded to demonstrate the offloading behavior directly. The expanded example extends the NO-OP
 `map` implementations to reveal the active thread during their execution. To show the active thread at the other
