@@ -130,7 +130,7 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
                 return new ContextPreservingSingleSubscriberAndCancellable<>(s.subscriber, context);
             }
         } else if (subscriber instanceof ContextPreservingSingleSubscriber &&
-                ((ContextPreservingSingleSubscriber) subscriber).saved == context) {
+                ((ContextPreservingSingleSubscriber<T>) subscriber).saved == context) {
             // no need to check for instanceof ContextPreservingSingleSubscriberAndCancellable, because
             // it extends from ContextPreservingSingleSubscriber.
             return subscriber;
@@ -166,7 +166,7 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
                         new ContextPreservingSubscriberAndSubscription<>(s.subscriber, context);
             }
         } else if (subscriber instanceof ContextPreservingSubscriptionSubscriber &&
-                ((ContextPreservingSubscriptionSubscriber) subscriber).saved == context) {
+                ((ContextPreservingSubscriptionSubscriber<T>) subscriber).saved == context) {
             // no need to check for instanceof ContextPreservingSubscriberAndSubscription, because
             // it extends from ContextPreservingSubscriptionSubscriber.
             return subscriber;
@@ -183,7 +183,7 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
                 return new ContextPreservingSubscriberAndSubscription<>(s.subscriber, context);
             }
         } else if (subscriber instanceof ContextPreservingSubscriber &&
-                ((ContextPreservingSubscriber) subscriber).saved == context) {
+                ((ContextPreservingSubscriber<T>) subscriber).saved == context) {
             // no need to check for instanceof ContextPreservingSubscriberAndSubscription, because
             // it extends from ContextPreservingSubscriptionSubscriber.
             return subscriber;
