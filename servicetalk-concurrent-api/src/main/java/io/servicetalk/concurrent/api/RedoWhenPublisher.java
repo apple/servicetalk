@@ -66,11 +66,31 @@ final class RedoWhenPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
     }
 
     private static final class RedoSubscriber<T> extends RedoPublisher.AbstractRedoSubscriber<T> {
-
         private final SequentialCancellable cancellable;
         private final RedoWhenPublisher<T> redoPublisher;
         private final ContextMap contextMap;
         private final AsyncContextProvider contextProvider;
+        private final CompletableSource.Subscriber completableSubscriber = new CompletableSource.Subscriber() {
+            @Override
+            public void onSubscribe(Cancellable completableCancellable) {
+                cancellable.nextCancellable(completableCancellable);
+            }
+
+            @Override
+            public void onComplete() {
+                redoPublisher.original.delegateSubscribe(RedoSubscriber.this, contextMap, contextProvider);
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                if (!redoPublisher.forRetry) {
+                    // repeat operator terminates repeat with error.
+                    subscriber.onComplete();
+                } else {
+                    subscriber.onError(t);
+                }
+            }
+        };
 
         RedoSubscriber(SequentialSubscription subscription, int redoCount, Subscriber<? super T> subscriber,
                        ContextMap contextMap, AsyncContextProvider contextProvider,
@@ -116,7 +136,7 @@ final class RedoWhenPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
         private void redoIfRequired(TerminalNotification terminalNotification) {
             final Completable redoDecider;
             try {
-                redoDecider = requireNonNull(redoPublisher.shouldRedo.apply(redoCount + 1, terminalNotification));
+                redoDecider = requireNonNull(redoPublisher.shouldRedo.apply(++redoCount, terminalNotification));
             } catch (Throwable cause) {
                 Throwable originalCause = terminalNotification.cause();
                 if (originalCause != null) {
@@ -126,33 +146,7 @@ final class RedoWhenPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
                 return;
             }
 
-            redoDecider.subscribeInternal(new CompletableSource.Subscriber() {
-                @Override
-                public void onSubscribe(Cancellable completableCancellable) {
-                    cancellable.nextCancellable(completableCancellable);
-                }
-
-                @Override
-                public void onComplete() {
-                    // For the current subscribe operation we want to use contextMap directly, but in the event a
-                    // re-subscribe operation occurs we want to restore the original state of the AsyncContext map, so
-                    // we save a copy upfront.
-                    redoPublisher.original.delegateSubscribe(
-                            new RedoSubscriber<>(subscription, redoCount + 1, subscriber, contextMap.copy(),
-                                    contextProvider, redoPublisher),
-                            contextMap, contextProvider);
-                }
-
-                @Override
-                public void onError(Throwable t) {
-                    if (!redoPublisher.forRetry) {
-                        // repeat operator terminates repeat with error.
-                        subscriber.onComplete();
-                    } else {
-                        subscriber.onError(t);
-                    }
-                }
-            });
+            redoDecider.subscribeInternal(completableSubscriber);
         }
     }
 }

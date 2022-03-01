@@ -47,10 +47,9 @@ final class RetrySingle<T> extends AbstractNoHandleSubscribeSingle<T> {
     }
 
     abstract static class AbstractRetrySubscriber<T> implements Subscriber<T> {
-
         final SequentialCancellable sequentialCancellable;
         final Subscriber<? super T> target;
-        final int retryCount;
+        int retryCount;
 
         AbstractRetrySubscriber(SequentialCancellable sequentialCancellable, Subscriber<? super T> target,
                                 int retryCount) {
@@ -74,7 +73,6 @@ final class RetrySingle<T> extends AbstractNoHandleSubscribeSingle<T> {
     }
 
     private static final class RetrySubscriber<T> extends AbstractRetrySubscriber<T> {
-
         private final RetrySingle<T> retrySingle;
         private final ContextMap contextMap;
         private final AsyncContextProvider contextProvider;
@@ -97,20 +95,14 @@ final class RetrySingle<T> extends AbstractNoHandleSubscribeSingle<T> {
         public void onError(Throwable t) {
             final boolean shouldRetry;
             try {
-                shouldRetry = retrySingle.shouldRetry.test(retryCount + 1, t);
+                shouldRetry = retrySingle.shouldRetry.test(++retryCount, t);
             } catch (Throwable cause) {
                 cause.addSuppressed(t);
                 target.onError(cause);
                 return;
             }
             if (shouldRetry) {
-                // For the current subscribe operation we want to use contextMap directly, but in the event a
-                // re-subscribe operation occurs we want to restore the original state of the AsyncContext map, so
-                // we save a copy upfront.
-                retrySingle.original.delegateSubscribe(
-                        new RetrySubscriber<>(sequentialCancellable, retrySingle, target, retryCount + 1,
-                                contextMap.copy(), contextProvider),
-                        contextMap, contextProvider);
+                retrySingle.original.delegateSubscribe(this, contextMap, contextProvider);
             } else {
                 target.onError(t);
             }

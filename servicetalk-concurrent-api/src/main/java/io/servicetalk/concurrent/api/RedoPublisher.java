@@ -49,10 +49,9 @@ final class RedoPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
     }
 
     abstract static class AbstractRedoSubscriber<T> implements Subscriber<T> {
-
         final SequentialSubscription subscription;
-        final int redoCount;
         final Subscriber<? super T> subscriber;
+        int redoCount;
 
         AbstractRedoSubscriber(SequentialSubscription subscription, int redoCount, Subscriber<? super T> subscriber) {
             this.subscription = subscription;
@@ -81,7 +80,6 @@ final class RedoPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
     }
 
     private static final class RedoSubscriber<T> extends AbstractRedoSubscriber<T> {
-
         private final RedoPublisher<T> redoPublisher;
         private final ContextMap contextMap;
         private final AsyncContextProvider contextProvider;
@@ -114,7 +112,7 @@ final class RedoPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
         private void tryRedo(TerminalNotification notification) {
             final boolean shouldRedo;
             try {
-                shouldRedo = redoPublisher.shouldRedo.test(redoCount + 1, notification);
+                shouldRedo = redoPublisher.shouldRedo.test(++redoCount, notification);
             } catch (Throwable cause) {
                 Throwable originalCause = notification.cause();
                 if (originalCause != null) {
@@ -125,13 +123,7 @@ final class RedoPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
             }
 
             if (shouldRedo) {
-                // For the current subscribe operation we want to use contextMap directly, but in the event a
-                // re-subscribe operation occurs we want to restore the original state of the AsyncContext map, so
-                // we save a copy upfront.
-                redoPublisher.original.delegateSubscribe(
-                        new RedoSubscriber<>(subscription, redoCount + 1,
-                        subscriber, contextMap.copy(), contextProvider, redoPublisher),
-                        contextMap, contextProvider);
+                redoPublisher.original.delegateSubscribe(this, contextMap, contextProvider);
             } else {
                 notification.terminate(subscriber);
             }
