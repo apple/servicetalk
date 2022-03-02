@@ -43,7 +43,9 @@ import static io.servicetalk.logging.api.LogLevel.TRACE;
  * </ol>
  * <p>The wire and frame logging features require that you configure a logger with an appropriate log level. For this
  * example {@code log4j2.xml} is used by both the client and server and configures the
- * ({@code servicetalk-examples-wire-logger} logger at {@link io.servicetalk.logging.api.LogLevel#TRACE TRACE} level.
+ * {@code servicetalk-examples-wire-logger} and {@code servicetalk-examples-h2-frame-logger} loggers at
+ * {@link io.servicetalk.logging.api.LogLevel#TRACE TRACE} level. Wire logging is configured to include logging of all
+ * user data contained in the payload, see {@link #LOG_USER_DATA}.
  *
  * <p>When configured correctly the output should be similar to the following:
  * <pre>
@@ -109,6 +111,20 @@ public final class DebuggingClient {
         // AsyncContext.disable();
     }
 
+    /**
+     * Logging of protocol user data is disabled to reduce output but can be enabled by using
+     * {@code Boolean.TRUE::booleanValue}. Logging user data may expose sensitive content contained in the headers or
+     * payload body. Care and consideration should be taken before enabling this feature on production systems.
+     *
+     * <p>If {@link Boolean#TRUE} then all user data in the headers and payload bodies will be logged in addition to
+     * network events.
+     * <p>If {@link Boolean#FALSE} then only network events will be logged, but user data contents will be omitted.
+     *
+     * <p>This implementation uses a constant function to enable or disable logging of user data, your implementation
+     * could selectively choose at runtime to log user data based upon application state or context.</p>
+     */
+    static final BooleanSupplier LOG_USER_DATA = Boolean.FALSE::booleanValue;
+
     public static void main(String[] args) throws Exception {
         try (BlockingGreeterClient client = GrpcClients.forAddress("localhost", 8080)
                 .initializeHttp(builder -> builder
@@ -126,18 +142,16 @@ public final class DebuggingClient {
                          * Dumping of protocol bodies is disabled to reduce output but can be enabled by using
                          * {@code Boolean.TRUE::booleanValue}.
                          */
-                        .enableWireLogging("servicetalk-examples-wire-logger", TRACE, Boolean.FALSE::booleanValue)
+                        .enableWireLogging("servicetalk-examples-wire-logger", TRACE, LOG_USER_DATA)
 
                         /*
                          * 4. Enables detailed logging of HTTP2 frames, but not frame contents.
                          * Be sure to also enable the logger in your logging config file,
                          * {@code log4j2.xml} for this example.
-                         * Dumping of protocol bodies is disabled to reduce output but can be enabled by using
-                         * {@code Boolean.TRUE::booleanValue}.
                          */
                         .protocols(HttpProtocolConfigs.h2()
                                 .enableFrameLogging(
-                                        "servicetalk-examples-h2-frame-logger", TRACE, Boolean.FALSE::booleanValue)
+                                        "servicetalk-examples-h2-frame-logger", TRACE, LOG_USER_DATA)
                                 .build()))
                 .buildBlocking(new ClientFactory())) {
             HelloReply reply = client.sayHello(HelloRequest.newBuilder().setName("World").build());
