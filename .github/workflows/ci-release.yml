@@ -12,7 +12,7 @@ jobs:
         java: [ 8, 11 ]
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v2.4.0
+        uses: actions/checkout@v3
       - name: Check NO SNAPSHOT version suffix
         run: if [[ $(cat gradle.properties | grep version= | sed 's/^version=//') =~ .*-SNAPSHOT ]]; then exit 1; else exit 0; fi
       - name: Set up JDK ${{ matrix.java }}
