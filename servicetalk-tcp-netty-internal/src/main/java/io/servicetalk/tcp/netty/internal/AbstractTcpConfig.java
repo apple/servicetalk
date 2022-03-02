@@ -123,12 +123,12 @@ abstract class AbstractTcpConfig<SslConfigType> {
     }
 
     /**
-     * Enable wire-logging for all connections. All wire events will be logged at trace level.
+     * Enable wire-logging for all connections.
      *
      * @param loggerName provides the logger to log data/events to/from the wire.
      * @param logLevel the level to log data/events to/from the wire.
      * @param logUserData {@code true} to include user data (e.g. data, headers, etc.). {@code false} to exclude user
-     * data and log only network events.
+     * data and log only network events. This method is invoked for each data object allowing for dynamic behavior.
      */
     public final void enableWireLogging(final String loggerName,
                                         final LogLevel logLevel,

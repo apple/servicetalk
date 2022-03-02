@@ -112,13 +112,18 @@ public final class DebuggingClient {
     }
 
     /**
-     * If {@link Boolean#TRUE} then all user data in the payload will be logged in addition to the protocol metadata.
-     * If {@link Boolean#FALSE} then protocol operations will be logged, but user data contents will be omitted.
+     * Logging of protocol user data is disabled to reduce output but can be enabled by using
+     * {@code Boolean.TRUE::booleanValue}. Logging user data may expose sensitive content contained in the headers or
+     * payload body. Care and consideration should be taken before enabling this feature on production systems.
+     *
+     * <p>If {@link Boolean#TRUE} then all user data in the headers and payload bodies will be logged in addition to
+     * network events.
+     * <p>If {@link Boolean#FALSE} then only network events will be logged, but user data contents will be omitted.
      *
      * <p>This implementation uses a constant function to enable or disable logging of user data, your implementation
-     * could selectively choose to log user data based upon application state or context.</p>
+     * could selectively choose at runtime to log user data based upon application state or context.</p>
      */
-    static final BooleanSupplier LOG_USER_DATA = Boolean.TRUE::booleanValue;
+    static final BooleanSupplier LOG_USER_DATA = Boolean.FALSE::booleanValue;
 
     public static void main(String[] args) throws Exception {
         try (BlockingGreeterClient client = GrpcClients.forAddress("localhost", 8080)
@@ -137,18 +142,16 @@ public final class DebuggingClient {
                          * Dumping of protocol bodies is disabled to reduce output but can be enabled by using
                          * {@code Boolean.TRUE::booleanValue}.
                          */
-                        .enableWireLogging("servicetalk-examples-wire-logger", TRACE, Boolean.FALSE::booleanValue)
+                        .enableWireLogging("servicetalk-examples-wire-logger", TRACE, LOG_USER_DATA)
 
                         /*
                          * 4. Enables detailed logging of HTTP2 frames, but not frame contents.
                          * Be sure to also enable the logger in your logging config file,
                          * {@code log4j2.xml} for this example.
-                         * Dumping of protocol bodies is disabled to reduce output but can be enabled by using
-                         * {@code Boolean.TRUE::booleanValue}.
                          */
                         .protocols(HttpProtocolConfigs.h2()
                                 .enableFrameLogging(
-                                        "servicetalk-examples-h2-frame-logger", TRACE, Boolean.FALSE::booleanValue)
+                                        "servicetalk-examples-h2-frame-logger", TRACE, LOG_USER_DATA)
                                 .build()))
                 .buildBlocking(new ClientFactory())) {
             HelloReply reply = client.sayHello(HelloRequest.newBuilder().setName("World").build());

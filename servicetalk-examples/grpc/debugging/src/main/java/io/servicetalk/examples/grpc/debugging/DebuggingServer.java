@@ -110,14 +110,16 @@ public final class DebuggingServer {
     }
 
     /**
-     * Dumping of protocol bodies is disabled to reduce output but can be enabled by using
-     * {@code Boolean.TRUE::booleanValue}.
+     * Logging of protocol user data is disabled to reduce output but can be enabled by using
+     * {@code Boolean.TRUE::booleanValue}. Logging user data may expose sensitive content contained in the headers or
+     * payload body. Care and consideration should be taken before enabling this feature on production systems.
      *
-     * <p>If {@link Boolean#TRUE} then all user data in the payload will be logged in addition to the protocol metadata.
-     * <p>If {@link Boolean#FALSE} then protocol operations will be logged, but user data contents will be omitted.
+     * <p>If {@link Boolean#TRUE} then all user data in the headers and payload bodies will be logged in addition to
+     * network events.
+     * <p>If {@link Boolean#FALSE} then only network events will be logged, but user data contents will be omitted.
      *
      * <p>This implementation uses a constant function to enable or disable logging of user data, your implementation
-     * could selectively choose to log user data based upon application state or context.</p>
+     * could selectively choose at runtime to log user data based upon application state or context.</p>
      */
     static final BooleanSupplier LOG_USER_DATA = Boolean.FALSE::booleanValue;
 

@@ -100,7 +100,7 @@ public interface HttpServerBuilder {
      * @param loggerName The name of the logger to log wire events.
      * @param logLevel The level to log at.
      * @param logUserData {@code true} to include user data (e.g. data, headers, etc.). {@code false} to exclude user
-     * data and log only network events.
+     * data and log only network events. This method is invoked for each data object allowing for dynamic behavior.
      * @return {@code this}.
      */
     HttpServerBuilder enableWireLogging(String loggerName, LogLevel logLevel, BooleanSupplier logUserData);

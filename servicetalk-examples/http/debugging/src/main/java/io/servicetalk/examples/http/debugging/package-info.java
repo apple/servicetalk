@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,13 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+@ElementsAreNonnullByDefault
+package io.servicetalk.examples.http.debugging;
 
-apply plugin: "java"
-apply from: "../../gradle/idea.gradle"
-
-dependencies {
-  implementation project(":servicetalk-annotations")
-  implementation project(":servicetalk-http-netty")
-
-  runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
-}
+import io.servicetalk.annotations.ElementsAreNonnullByDefault; /**
+ * Async "Hello World" example extended to demonstrate configuring of debugging features.
+ */
