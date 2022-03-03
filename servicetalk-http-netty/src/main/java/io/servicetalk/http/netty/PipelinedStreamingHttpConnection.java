@@ -32,7 +32,7 @@ final class PipelinedStreamingHttpConnection
                                      final HttpExecutionContext executionContext,
                                      final StreamingHttpRequestResponseFactory reqRespFactory,
                                      final boolean allowDropTrailersReadFromTransport) {
-        super(new NettyPipelinedConnection<>(connection),
+        super(new NettyPipelinedConnection<>(connection, config.maxPipelinedRequests()),
                 config.maxPipelinedRequests(), executionContext, reqRespFactory, config.headersFactory(),
                 allowDropTrailersReadFromTransport);
     }

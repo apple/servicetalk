@@ -64,7 +64,6 @@ dependencies {
   }
   testImplementation "io.grpc:grpc-protobuf"
   testImplementation "io.grpc:grpc-stub"
-  testImplementation "io.netty:netty-tcnative-boringssl-static"
   testImplementation "jakarta.annotation:jakarta.annotation-api:$javaxAnnotationsApiVersion"
   testImplementation "org.junit.jupiter:junit-jupiter-api"
   testImplementation "org.junit.jupiter:junit-jupiter-params"

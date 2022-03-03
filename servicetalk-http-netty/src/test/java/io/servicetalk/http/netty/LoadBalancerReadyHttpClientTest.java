@@ -59,6 +59,7 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
@@ -124,6 +125,11 @@ class LoadBalancerReadyHttpClientTest {
     }
 
     @Test
+    void lbCompleteFailedAlsoFailsReserve() throws InterruptedException {
+        verifyLbCompleteFailedFailsAction(filter -> filter.reserveConnection(filter.get("/noop")));
+    }
+
+    @Test
     void serviceDiscovererAlsoFailsRequest() throws InterruptedException {
         verifyOnServiceDiscovererErrorFailsAction(filter -> filter.request(filter.get("/noop")));
     }
@@ -143,8 +149,20 @@ class LoadBalancerReadyHttpClientTest {
         verifyFailsAction(action, sdStatusCompletable::onError, UNKNOWN_HOST_EXCEPTION);
     }
 
-    private void verifyFailsAction(Function<StreamingHttpClient, Single<?>> action,
-                                   Consumer<Throwable> errorConsumer, Throwable error) throws InterruptedException {
+    private void verifyLbCompleteFailedFailsAction(
+            Function<StreamingHttpClient, Single<?>> action) throws InterruptedException {
+        assertThat(verifyFailsAction0(action, ignored -> loadBalancerPublisher.onComplete(), DELIBERATE_EXCEPTION),
+                instanceOf(IllegalStateException.class));
+    }
+
+    private void verifyFailsAction(Function<StreamingHttpClient, Single<?>> action, Consumer<Throwable> errorConsumer,
+                                   Throwable error) throws InterruptedException {
+        assertThat(verifyFailsAction0(action, errorConsumer, error), is(error));
+    }
+
+    private Throwable verifyFailsAction0(Function<StreamingHttpClient, Single<?>> action,
+                                         Consumer<Throwable> errorConsumer, Throwable error)
+            throws InterruptedException {
         StreamingHttpClient client = TestStreamingHttpClient.from(reqRespFactory, mockExecutionCtx,
                 appendClientFilterFactory(newAutomaticRetryFilterFactory(loadBalancerPublisher, sdStatusCompletable),
                         testHandler));
@@ -164,7 +182,7 @@ class LoadBalancerReadyHttpClientTest {
         // When a failure occurs that should also fail the action!
         errorConsumer.accept(error);
         latch.await();
-        assertThat(causeRef.get(), is(error));
+        return causeRef.get();
     }
 
     private void verifyActionIsDelayedUntilAfterInitialized(Function<StreamingHttpClient, Single<?>> action)

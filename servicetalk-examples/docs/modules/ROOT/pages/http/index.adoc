@@ -102,18 +102,21 @@ Extends the async "Hello World" example to demonstrate the use of timeout filter
 * link:{source-root}/servicetalk-examples/http/timeout/src/main/java/io/servicetalk/examples/http/timeout/TimeoutServer.java[TimeoutServer] - the async `Hello World!` server client enhanced to use timeout capabilities.
 * link:{source-root}/servicetalk-examples/http/timeout/src/main/java/io/servicetalk/examples/http/timeout/TimeoutClient.java[TimeoutClient.java] - the async `Hello World!` client enhanced to use timeout capabilities.
 
-[#Serialization]
-== Serialization
+[#SerializationJson]
+== Serialization: JSON
 
 An example similar to "Hello World" examples, which demonstrates
-link:{source-root}/servicetalk-examples/http/serialization/src/main/java/io/servicetalk/examples/http/serialization/async[asynchronous-aggregated],
-link:{source-root}/servicetalk-examples/http/serialization/src/main/java/io/servicetalk/examples/http/serialization/async/streaming[asynchronous-streaming],
-link:{source-root}/servicetalk-examples/http/serialization/src/main/java/io/servicetalk/examples/http/serialization/blocking[blocking-aggregated], and
-link:{source-root}/servicetalk-examples/http/serialization/src/main/java/io/servicetalk/examples/http/serialization/blocking/streaming[blocking-streaming]
+link:{source-root}/servicetalk-examples/http/serialization/json/src/main/java/io/servicetalk/examples/http/serialization/json/async[asynchronous-aggregated],
+link:{source-root}/servicetalk-examples/http/serialization/json/src/main/java/io/servicetalk/examples/http/serialization/json/async/streaming[asynchronous-streaming],
+link:{source-root}/servicetalk-examples/http/serialization/json/src/main/java/io/servicetalk/examples/http/serialization/json/blocking[blocking-aggregated], and
+link:{source-root}/servicetalk-examples/http/serialization/json/src/main/java/io/servicetalk/examples/http/serialization/json/blocking/streaming[blocking-streaming]
 client and server with JSON serialization of simple pojo classes.
 
-Client sends a `POST` request with a JSON payload link:{source-root}/servicetalk-examples/http/serialization/src/main/java/io/servicetalk/examples/http/serialization/CreatePojoRequest.java[PojoRequest] and expects a response
-with `Content-Type: application/json` and link:{source-root}/servicetalk-examples/http/serialization/src/main/java/io/servicetalk/examples/http/serialization/PojoResponse.java[MyPojo] as a payload.
+Client sends a `POST` request with a JSON payload link:{source-root}/servicetalk-examples/http/serialization/json/src/main/java/io/servicetalk/examples/http/serialization/json/CreatePojoRequest.java[CreatePojoRequest] and expects a response
+with `Content-Type: application/json` and link:{source-root}/servicetalk-examples/http/serialization/json/src/main/java/io/servicetalk/examples/http/serialization/json/PojoResponse.java[PojoResponse] as a payload.
+
+All serializers and deserializers defined in
+link:{source-root}/servicetalk-examples/http/serialization/json/src/main/java/io/servicetalk/examples/http/serialization/json/SerializerUtils.java[SerializerUtils].
 
 [#JAXRS]
 == JAX-RS

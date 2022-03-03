@@ -4,7 +4,7 @@
 ** xref:{page-version}@servicetalk-examples::http/index.adoc#Compression[Compression]
 ** xref:{page-version}@servicetalk-examples::http/index.adoc#Debugging[Debugging]
 ** xref:{page-version}@servicetalk-examples::http/index.adoc#Timeout[Timeout]
-** xref:{page-version}@servicetalk-examples::http/index.adoc#Serialization[Serialization]
+** xref:{page-version}@servicetalk-examples::http/index.adoc#SerializationJson[Serialization: JSON]
 ** xref:{page-version}@servicetalk-examples::http/index.adoc#JAXRS[JAX-RS]
 ** xref:{page-version}@servicetalk-examples::http/index.adoc#MetaData[MetaData]
 ** xref:{page-version}@servicetalk-examples::http/index.adoc#HTTP2[HTTP/2]

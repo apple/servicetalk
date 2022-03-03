@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -737,6 +737,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
 
         void nextError(final Throwable t) {
             seenError = true;
+            // This state is reused across multiple subscribes, and we reset the processor to deliver the latest error
+            // to new subscribers.
             final CompletableSource.Processor oldProcessor = processor;
             oldProcessor.onError(t);
             final CompletableSource.Processor newProcessor = newCompletableProcessor();

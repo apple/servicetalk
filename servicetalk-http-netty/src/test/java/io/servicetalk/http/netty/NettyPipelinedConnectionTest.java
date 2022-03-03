@@ -84,8 +84,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class NettyPipelinedConnectionTest {
-
-
     private final TestPublisherSubscriber<Integer> readSubscriber = new TestPublisherSubscriber<>();
     private final TestPublisherSubscriber<Integer> readSubscriber2 = new TestPublisherSubscriber<>();
     private TestPublisher<Integer> writePublisher1;
@@ -113,7 +111,7 @@ class NettyPipelinedConnectionTest {
                     });
                 }, defaultStrategy(), mock(Protocol.class), NoopConnectionObserver.INSTANCE, true, __ -> false)
                         .toFuture().get();
-        requester = new NettyPipelinedConnection<>(connection);
+        requester = new NettyPipelinedConnection<>(connection, 8);
     }
 
     @Test
@@ -372,7 +370,7 @@ class NettyPipelinedConnectionTest {
             Publisher<Integer> writePub = invocation.getArgument(0);
             return writePub.ignoreElements();
         }).when(mockConnection).write(eq(writePublisher2), any(), any());
-        requester = new NettyPipelinedConnection<>(mockConnection);
+        requester = new NettyPipelinedConnection<>(mockConnection, 2);
         toSource(requester.write(writePublisher1)).subscribe(readSubscriber);
         toSource(requester.write(writePublisher2)).subscribe(readSubscriber2);
         Subscription readSubscription = readSubscriber.awaitSubscription();
@@ -406,7 +404,7 @@ class NettyPipelinedConnectionTest {
             Publisher<Integer> writePub = invocation.getArgument(0);
             return writePub.ignoreElements();
         }).when(mockConnection).write(any(), any(), any());
-        requester = new NettyPipelinedConnection<>(mockConnection);
+        requester = new NettyPipelinedConnection<>(mockConnection, 2);
         toSource(requester.write(writePublisher1)).subscribe(readSubscriber);
         toSource(requester.write(writePublisher2)).subscribe(readSubscriber2);
         Subscription readSubscription = readSubscriber.awaitSubscription();
@@ -441,7 +439,7 @@ class NettyPipelinedConnectionTest {
             return writePub.ignoreElements();
         }).when(mockConnection).write(eq(writePublisher2), any(), any());
         when(mockConnection.closeAsync()).thenReturn(completed());
-        requester = new NettyPipelinedConnection<>(mockConnection);
+        requester = new NettyPipelinedConnection<>(mockConnection, 2);
         toSource(requester.write(writePublisher1)).subscribe(readSubscriber);
         toSource(requester.write(writePublisher2)).subscribe(readSubscriber2);
         Subscription readSubscription = readSubscriber.awaitSubscription();
@@ -464,7 +462,7 @@ class NettyPipelinedConnectionTest {
             return writePub.ignoreElements();
         }).when(mockConnection).write(any(), any(), any());
         when(mockConnection.closeAsync()).thenReturn(completed());
-        requester = new NettyPipelinedConnection<>(mockConnection);
+        requester = new NettyPipelinedConnection<>(mockConnection, 2);
         toSource(requester.write(writePublisher1)).subscribe(readSubscriber);
         Subscription readSubscription = readSubscriber.awaitSubscription();
         readSubscription.request(1);
@@ -503,7 +501,8 @@ class NettyPipelinedConnectionTest {
                     .concat(Publisher.from(1))).when(connection).read();
 
             final int concurrentRequestCount = 300;
-            NettyPipelinedConnection<Integer, Integer> pipelinedConnection = new NettyPipelinedConnection<>(connection);
+            NettyPipelinedConnection<Integer, Integer> pipelinedConnection =
+                    new NettyPipelinedConnection<>(connection, concurrentRequestCount);
             CyclicBarrier requestStartBarrier = new CyclicBarrier(concurrentRequestCount);
             List<Future<Collection<Integer>>> futures = new ArrayList<>(concurrentRequestCount);
             ExecutorService executor = new ThreadPoolExecutor(0, concurrentRequestCount, 1, SECONDS,

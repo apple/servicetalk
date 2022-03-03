@@ -140,8 +140,21 @@ final class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> 
         }
 
         @Override
-        boolean processCancelEvent(MulticastFixedSubscriber<T> subscriber) {
-            return demandQueue.removeTyped(subscriber);
+        long processCancelEvent(MulticastFixedSubscriber<T> subscriber) {
+            MulticastFixedSubscriber<T> min = demandQueue.peek();
+            if (!demandQueue.removeTyped(subscriber)) {
+                return -1;
+            }
+            if (min == subscriber) {
+                // We just removed the subscriber with the minimum demand. If this subscriber was the reason why we
+                // have not yet requested upstream we need to re-asses otherwise we may live lock.
+                min = demandQueue.peek();
+                // processSubscribeEvent sets the initial value of new subscribers to the value of the current minimum.
+                // We need to subtract the initial value to request the delta between the old min.
+                return min == null ? 0 : min.priorityQueueValue - min.initPriorityQueueValue -
+                        subscriber.priorityQueueValue;
+            }
+            return 0;
         }
 
         @Override
@@ -150,7 +163,7 @@ final class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> 
             // outstanding demand bounded to maxQueueSize.
             final MulticastFixedSubscriber<T> currMin = demandQueue.peek();
             if (currMin != null) {
-                subscriber.priorityQueueValue = currMin.priorityQueueValue;
+                subscriber.priorityQueueValue = subscriber.initPriorityQueueValue = currMin.priorityQueueValue;
             }
             demandQueue.add(subscriber);
         }
@@ -292,11 +305,16 @@ final class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> 
          * <p>
          * Invocation while {@link #subscriptionLock} is held.
          * @param subscriber The subscriber that invoked cancel.
-         * @return {@code false} to prevent upstream cancellation as determined by
-         * {@link #removeSubscriber(MulticastLeafSubscriber)}. {@code true} to defer to
-         * {@link #removeSubscriber(MulticastLeafSubscriber)}'s return value for upstream cancellation.
+         * @return
+         * <ul>
+         *     <li>{@code >0} - the amount to request upstream.</li>
+         *     <li>{@code 0} - removed but nothing to request upstream. defer to
+         *     {@link #removeSubscriber(MulticastLeafSubscriber)}'s return value for upstream cancellation.</li>
+         *     <li>{@code <0} - failed to remove. prevent upstream cancellation as determined by
+         *     {@link #removeSubscriber(MulticastLeafSubscriber)}</li>
+         * </ul>
          */
-        abstract boolean processCancelEvent(T subscriber);
+        abstract long processCancelEvent(T subscriber);
 
         /**
          * Invoked after {@link #addSubscriber(MulticastLeafSubscriber)}.
@@ -409,8 +427,13 @@ final class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> 
         }
 
         private void processCancelEventInternal(T subscriber, boolean cancelUpstream) {
-            if (processCancelEvent(subscriber) && cancelUpstream) {
-                delayedSubscription.cancel();
+            final long result = processCancelEvent(subscriber);
+            if (result >= 0) {
+                if (cancelUpstream) {
+                    delayedSubscription.cancel();
+                } else if (result > 0) {
+                    requestUpstream(result);
+                }
             }
         }
 
@@ -467,6 +490,10 @@ final class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> 
         private final MulticastPublisher<T>.State root;
         private final Subscriber<? super T> subscriber;
         private final Subscriber<? super T> ctxSubscriber;
+        /**
+         * Protected by {@link MulticastRootSubscriber} lock.
+         */
+        private long initPriorityQueueValue;
         /**
          * Protected by {@link MulticastRootSubscriber} lock.
          */

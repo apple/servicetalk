@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,8 +40,7 @@ final class LoadBalancerReadySubscriber extends DelayedCancellable implements Su
      * Get {@link Completable} that will complete when a {@link LoadBalancerReadyEvent} returns {@code true}
      * from {@link LoadBalancerReadyEvent#isReady()}.
      * @return A {@link Completable} that will complete when a {@link LoadBalancerReadyEvent} returns {@code true}
-     * from {@link LoadBalancerReadyEvent#isReady()}, or {@code null} if this event has already been seen and a
-     * a {@link LoadBalancerReadyEvent} that returns {@code true} has not been seend.
+     * from {@link LoadBalancerReadyEvent#isReady()}.
      */
     public Completable onHostsAvailable() {
         Processor onHostsAvailable = this.onHostsAvailable;
@@ -58,33 +57,31 @@ final class LoadBalancerReadySubscriber extends DelayedCancellable implements Su
         if (o instanceof LoadBalancerReadyEvent) {
             LoadBalancerReadyEvent event = (LoadBalancerReadyEvent) o;
             if (event.isReady()) {
-                Processor onHostsAvailable = LoadBalancerReadySubscriber.this.onHostsAvailable;
+                Processor onHostsAvailable = this.onHostsAvailable;
                 if (onHostsAvailable != null) {
-                    LoadBalancerReadySubscriber.this.onHostsAvailable = null;
+                    this.onHostsAvailable = null;
                     onHostsAvailable.onComplete();
                 }
-            } else if (LoadBalancerReadySubscriber.this.onHostsAvailable == null) {
-                LoadBalancerReadySubscriber.this.onHostsAvailable = newCompletableProcessor();
+            } else if (onHostsAvailable == null) {
+                onHostsAvailable = newCompletableProcessor();
             }
         }
     }
 
     @Override
     public void onError(final Throwable t) {
-        Processor onHostsAvailable = LoadBalancerReadySubscriber.this.onHostsAvailable;
+        Processor onHostsAvailable = this.onHostsAvailable;
         if (onHostsAvailable != null) {
-            LoadBalancerReadySubscriber.this.onHostsAvailable = null;
             onHostsAvailable.onError(t);
         }
     }
 
     @Override
     public void onComplete() {
-        Processor onHostsAvailable = LoadBalancerReadySubscriber.this.onHostsAvailable;
+        Processor onHostsAvailable = this.onHostsAvailable;
         if (onHostsAvailable != null) {
-            LoadBalancerReadySubscriber.this.onHostsAvailable = null;
-            // Let the load balancer or retry strategy fail any pending requests.
-            onHostsAvailable.onComplete();
+            onHostsAvailable.onError(new IllegalStateException("Subscriber listening for " +
+                    LoadBalancerReadyEvent.class.getSimpleName() + " events completed unexpectedly"));
         }
     }
 }

@@ -46,10 +46,11 @@ import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolic
 import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.disableAutoRetries;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.core.IsNull.nullValue;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -164,11 +165,11 @@ class RetryingHttpRequesterFilterAutoRetryStrategiesTest {
             TestCompletableSubscriber subscriber = new TestCompletableSubscriber();
             toSource(retry).subscribe(subscriber);
             if (i < 5) {
-                subscriber.awaitOnComplete();
+                assertThat(subscriber.awaitOnError(), instanceOf(IllegalStateException.class));
             } else {
-                assertThrows(NoAvailableHostException.class, () -> {
-                    throw subscriber.awaitOnError();
-                });
+                // ambWith operator could return either error back.
+                assertThat(subscriber.awaitOnError(), anyOf(instanceOf(NoAvailableHostException.class),
+                        instanceOf(IllegalStateException.class)));
             }
         }
     }

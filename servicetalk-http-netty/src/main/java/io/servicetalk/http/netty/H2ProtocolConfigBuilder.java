@@ -80,7 +80,7 @@ public final class H2ProtocolConfigBuilder {
      * @param loggerName provides the logger to log HTTP/2 frames.
      * @param logLevel the level to log HTTP/2 frames.
      * @param logUserData {@code true} to include user data (e.g. data, headers, etc.). {@code false} to exclude user
-     * data and log only network events.
+     * data and log only network events. This method is invoked for each data object allowing for dynamic behavior.
      * @return {@code this}
      */
     public H2ProtocolConfigBuilder enableFrameLogging(final String loggerName,

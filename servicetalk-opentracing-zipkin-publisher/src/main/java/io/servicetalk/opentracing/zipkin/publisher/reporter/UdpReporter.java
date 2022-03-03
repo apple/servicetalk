@@ -154,7 +154,7 @@ public final class UdpReporter extends Component implements Reporter<Span>, Asyn
          * @param loggerName The name of the logger to log wire events.
          * @param logLevel The level to log at.
          * @param logUserData {@code true} to include user data. {@code false} to exclude user data and log only
-         * network events.
+         * network events. This method is invoked for each data object allowing for dynamic behavior.
          * @return {@code this}
          */
         public Builder enableWireLogging(String loggerName, LogLevel logLevel, BooleanSupplier logUserData) {
