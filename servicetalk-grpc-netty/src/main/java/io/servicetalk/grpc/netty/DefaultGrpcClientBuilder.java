@@ -94,6 +94,24 @@ final class DefaultGrpcClientBuilder<U, R> implements GrpcClientBuilder<U, R> {
         return clientFactory.newBlockingClientForCallFactory(newGrpcClientCallFactory());
     }
 
+    @Override
+    public MultiClientBuilder buildMulti() {
+        final GrpcClientCallFactory callFactory = newGrpcClientCallFactory();
+
+        return new MultiClientBuilder() {
+            @Override
+            public <Client extends GrpcClient<?>> Client build(final GrpcClientFactory<Client, ?> clientFactory) {
+                return clientFactory.newClientForCallFactory(callFactory);
+            }
+
+            @Override
+            public <BlockingClient extends BlockingGrpcClient<?>> BlockingClient buildBlocking(
+                    final GrpcClientFactory<?, BlockingClient> clientFactory) {
+                return clientFactory.newBlockingClientForCallFactory(callFactory);
+            }
+        };
+    }
+
     private GrpcClientCallFactory newGrpcClientCallFactory() {
         SingleAddressHttpClientBuilder<U, R> builder = httpClientBuilderSupplier.get().protocols(h2Default());
         builder.appendClientFilter(CatchAllHttpClientFilter.INSTANCE);
