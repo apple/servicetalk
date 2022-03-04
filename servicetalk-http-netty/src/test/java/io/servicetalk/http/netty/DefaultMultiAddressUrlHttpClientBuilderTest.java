@@ -68,7 +68,6 @@ class DefaultMultiAddressUrlHttpClientBuilderTest {
         StreamingHttpRequester newRequester = HttpClients.forMultiAddressUrl()
                 .ioExecutor(CTX.ioExecutor())
                 .executor(CTX.executor())
-                .executionStrategy(defaultStrategy())
                 .buildStreaming();
         assertNotNull(newRequester);
         newRequester.closeAsync().toFuture().get();
@@ -90,7 +89,6 @@ class DefaultMultiAddressUrlHttpClientBuilderTest {
         BlockingStreamingHttpRequester newBlockingRequester = HttpClients.forMultiAddressUrl()
                 .ioExecutor(CTX.ioExecutor())
                 .executor(CTX.executor())
-                .executionStrategy(defaultStrategy())
                 .buildBlockingStreaming();
         assertNotNull(newBlockingRequester);
         newBlockingRequester.close();
@@ -101,7 +99,6 @@ class DefaultMultiAddressUrlHttpClientBuilderTest {
         BlockingHttpRequester newBlockingAggregatedRequester = HttpClients.forMultiAddressUrl()
                 .ioExecutor(CTX.ioExecutor())
                 .executor(CTX.executor())
-                .executionStrategy(defaultStrategy())
                 .buildBlocking();
         assertNotNull(newBlockingAggregatedRequester);
         newBlockingAggregatedRequester.close();
@@ -114,7 +111,6 @@ class DefaultMultiAddressUrlHttpClientBuilderTest {
                 ServiceDiscovererEvent<InetSocketAddress>> mockedServiceDiscoverer = mock(ServiceDiscoverer.class);
         StreamingHttpRequester newRequester = HttpClients.forMultiAddressUrl(mockedServiceDiscoverer)
                 .ioExecutor(CTX.ioExecutor())
-                .executionStrategy(defaultStrategy())
                 .buildStreaming();
         newRequester.closeAsync().toFuture().get();
         verify(mockedServiceDiscoverer, never()).closeAsync();

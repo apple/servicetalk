@@ -113,7 +113,6 @@ class HttpExecutionStrategyTest {
 
         RequiredOnly requiredOnly = new RequiredOnly();
         assertThat(requiredOnly.requiredOffloads(), sameInstance(MAGIC_REQUIRED_STRATEGY));
-        assertThat(requiredOnly.influenceStrategy(defaultStrategy()), sameInstance(MAGIC_REQUIRED_STRATEGY));
     }
 
     private interface MyOwnDefaultRequiredOffloads extends HttpExecutionStrategyInfluencer {
@@ -129,7 +128,6 @@ class HttpExecutionStrategyTest {
 
         RequiredDefault requiredOnly = new RequiredDefault();
         assertThat(requiredOnly.requiredOffloads(), sameInstance(MAGIC_REQUIRED_STRATEGY));
-        assertThat(requiredOnly.influenceStrategy(defaultStrategy()), sameInstance(MAGIC_REQUIRED_STRATEGY));
     }
 
     @Test
@@ -173,7 +171,6 @@ class HttpExecutionStrategyTest {
         Influence influence = new Influence();
         assertThat(influence.requiredOffloads(), is(offloadSend));
         assertThat(influence.influenceStrategy(offloadNone()), is(offloadSend));
-        assertThat(influence.influenceStrategy(defaultStrategy()), is(offloadSend));
         assertThat(influence.influenceStrategy(offloadSend), is(offloadSend));
     }
 

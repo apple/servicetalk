@@ -32,8 +32,7 @@ final class StreamingHttpClientToHttpClient implements HttpClient {
     private final HttpRequestResponseFactory reqRespFactory;
 
     StreamingHttpClientToHttpClient(final StreamingHttpClient client, final HttpExecutionStrategy strategy) {
-        this.strategy = defaultStrategy() == strategy ?
-                DEFAULT_CONNECTION_STRATEGY : strategy;
+        this.strategy = defaultStrategy() == strategy ? DEFAULT_CONNECTION_STRATEGY : strategy;
         this.client = client;
         context = new DelegatingHttpExecutionContext(client.executionContext()) {
             @Override

@@ -32,8 +32,7 @@ final class StreamingHttpClientToBlockingStreamingHttpClient implements Blocking
 
     StreamingHttpClientToBlockingStreamingHttpClient(final StreamingHttpClient client,
                                                      final HttpExecutionStrategy strategy) {
-        this.strategy = defaultStrategy() == strategy ?
-                DEFAULT_BLOCKING_STREAMING_CONNECTION_STRATEGY : strategy;
+        this.strategy = defaultStrategy() == strategy ? DEFAULT_BLOCKING_STREAMING_CONNECTION_STRATEGY : strategy;
         this.client = client;
         context = new DelegatingHttpExecutionContext(client.executionContext()) {
             @Override

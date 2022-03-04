@@ -60,7 +60,6 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseabl
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.never;
 import static io.servicetalk.concurrent.api.Publisher.from;
-import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderValues.CLOSE;
@@ -132,7 +131,6 @@ final class ConnectionCloseHeaderHandlingTest {
                     HttpServers.forAddress(localAddress(0)))
                     .ioExecutor(serverCtx.ioExecutor())
                     .executor(serverCtx.executor())
-                    .executionStrategy(defaultStrategy())
                     .enableWireLogging("servicetalk-tests-wire-logger", TRACE, Boolean.TRUE::booleanValue)
                     .appendConnectionAcceptorFilter(original -> new DelegatingConnectionAcceptor(original) {
                         @Override
@@ -208,7 +206,6 @@ final class ConnectionCloseHeaderHandlingTest {
                     HttpClients.forResolvedAddress(serverContext.listenAddress()))
                     .executor(clientCtx.executor())
                     .ioExecutor(clientCtx.ioExecutor())
-                    .executionStrategy(defaultStrategy())
                     .enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> true)
                     .buildStreaming();
             connection = client.reserveConnection(client.get("/")).toFuture().get();
