@@ -69,11 +69,17 @@ final class ClientStrategyInfluencerChainBuilder {
 
     private void add(String purpose, ExecutionStrategyInfluencer<?> influencer, HttpExecutionStrategy strategy) {
         if (offloadNever() == strategy) {
-            LOGGER.warn("Ignoring illegal {} required strategy ({}) for {}", purpose, strategy, influencer);
+            LOGGER.warn("{}#requiredOffloads() returns offloadNever(), which is unexpected. " +
+                            "offloadNone() should be used instead. " +
+                            "Making automatic adjustment, consider updating the {}.",
+                    influencer, purpose);
             strategy = offloadNone();
         }
         if (defaultStrategy() == strategy) {
-            LOGGER.warn("Ignoring illegal {} required strategy ({}) for {}", purpose, strategy, influencer);
+            LOGGER.warn("{}#requiredOffloads() returns defaultStrategy(), which is unexpected. " +
+                            "offloadAll() (safe default) or more appropriate custom strategy should be used instead." +
+                            "Making automatic adjustment, consider updating the {}.",
+                    influencer, purpose);
             strategy = offloadAll();
         }
         clientChain = null != clientChain ? clientChain.merge(strategy) : strategy;
@@ -90,7 +96,7 @@ final class ClientStrategyInfluencerChainBuilder {
         }
         if (defaultStrategy() == filterOffloads) {
             LOGGER.warn("{}#requiredOffloads() returns defaultStrategy(), which is unexpected. " +
-                            "offloadAll() should be used instead. " +
+                            "offloadAll() (safe default) or more appropriate custom strategy should be used instead." +
                             "Making automatic adjustment, consider updating the filter.",
                     connectionFactoryFilter);
             filterOffloads = offloadAll();
@@ -110,7 +116,7 @@ final class ClientStrategyInfluencerChainBuilder {
         }
         if (defaultStrategy() == filterOffloads) {
             LOGGER.warn("{}#requiredOffloads() returns defaultStrategy(), which is unexpected. " +
-                            "offloadAll() should be used instead. " +
+                            "offloadAll() (safe default) or more appropriate custom strategy should be used instead." +
                             "Making automatic adjustment, consider updating the filter.",
                     connectionFilter);
             filterOffloads = offloadAll();
