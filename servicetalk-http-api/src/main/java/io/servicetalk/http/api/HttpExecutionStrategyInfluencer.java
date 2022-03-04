@@ -32,7 +32,7 @@ public interface HttpExecutionStrategyInfluencer extends ExecutionStrategyInflue
      * Optionally modify the passed {@link HttpExecutionStrategy} to a new {@link HttpExecutionStrategy} that suits
      * this {@link HttpExecutionStrategyInfluencer}.
      *
-     * <p>Implementations should not return {@link HttpExecutionStrategies#defaultStrategy()} ()} unless it was also
+     * <p>Implementations should not return {@link HttpExecutionStrategies#defaultStrategy()} unless it was also
      * provided as input.</p>
      *
      * @param strategy {@link HttpExecutionStrategy} to influence.
@@ -59,7 +59,8 @@ public interface HttpExecutionStrategyInfluencer extends ExecutionStrategyInflue
      * <p>The provided default implementation requests offloading of all operations. Implementations that require no
      * offloading should be careful to return {@link HttpExecutionStrategies#offloadNone()} rather than
      * {@link HttpExecutionStrategies#offloadNever()}. Implementations should avoid returning
-     * {@link HttpExecutionStrategies#defaultStrategy()}, instead returning the strategy they require.
+     * {@link HttpExecutionStrategies#defaultStrategy()}, instead returning the strategy they require or
+     * {@link HttpExecutionStrategies#offloadAll()} if offloading for all paths is required (safe default).
      */
     @Override
     default HttpExecutionStrategy requiredOffloads() {

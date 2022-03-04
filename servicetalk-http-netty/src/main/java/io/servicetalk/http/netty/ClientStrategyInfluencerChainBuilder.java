@@ -68,8 +68,6 @@ final class ClientStrategyInfluencerChainBuilder {
     }
 
     private void add(String purpose, ExecutionStrategyInfluencer<?> influencer, HttpExecutionStrategy strategy) {
-        assert offloadNever() != strategy && defaultStrategy() != strategy :
-                "illegal " + purpose + " required strategy (" + strategy + ") for " + influencer;
         if (offloadNever() == strategy) {
             LOGGER.warn("Ignoring illegal {} required strategy ({}) for {}", purpose, strategy, influencer);
             strategy = offloadNone();
@@ -83,17 +81,19 @@ final class ClientStrategyInfluencerChainBuilder {
 
     void add(ConnectionFactoryFilter<?, FilterableStreamingHttpConnection> connectionFactoryFilter) {
         ExecutionStrategy filterOffloads = connectionFactoryFilter.requiredOffloads();
-        assert offloadNever() != filterOffloads && defaultStrategy() != filterOffloads :
-                "illegal connection factory required strategy (" + filterOffloads + ") for " + connectionFactoryFilter;
         if (offloadNever() == filterOffloads) {
-            LOGGER.warn("Ignoring illegal connection factory required strategy ({}) for {}",
-                    filterOffloads, connectionFactoryFilter);
+            LOGGER.warn("{}#requiredOffloads() returns offloadNever(), which is unexpected. " +
+                            "offloadNone() should be used instead. " +
+                            "Making automatic adjustment, consider updating the filter.",
+                    connectionFactoryFilter);
             filterOffloads = offloadNone();
         }
         if (defaultStrategy() == filterOffloads) {
-            LOGGER.warn("Ignoring illegal connection factory required strategy ({}) for {}",
-                    filterOffloads, connectionFactoryFilter);
-            filterOffloads = offloadNone();
+            LOGGER.warn("{}#requiredOffloads() returns defaultStrategy(), which is unexpected. " +
+                            "offloadAll() should be used instead. " +
+                            "Making automatic adjustment, consider updating the filter.",
+                    connectionFactoryFilter);
+            filterOffloads = offloadAll();
         }
         connFactoryChain = null != connFactoryChain ?
                  connFactoryChain.merge(filterOffloads) : ConnectAndHttpExecutionStrategy.from(filterOffloads);
@@ -101,16 +101,18 @@ final class ClientStrategyInfluencerChainBuilder {
 
     void add(StreamingHttpConnectionFilterFactory connectionFilter) {
         HttpExecutionStrategy filterOffloads = connectionFilter.requiredOffloads();
-        assert offloadNever() != filterOffloads && defaultStrategy() != filterOffloads :
-            "illegal connection filter required strategy (" + filterOffloads + ") for " + connectionFilter;
         if (offloadNever() == filterOffloads) {
-            LOGGER.warn("Ignoring illegal connection filter required strategy ({}) for {}",
-                    filterOffloads, connectionFilter);
+            LOGGER.warn("{}#requiredOffloads() returns offloadNever(), which is unexpected. " +
+                            "offloadNone() should be used instead. " +
+                            "Making automatic adjustment, consider updating the filter.",
+                    connectionFilter);
             filterOffloads = offloadNone();
         }
         if (defaultStrategy() == filterOffloads) {
-            LOGGER.warn("Ignoring illegal connection filter required strategy ({}) for {}",
-                    filterOffloads, connectionFilter);
+            LOGGER.warn("{}#requiredOffloads() returns defaultStrategy(), which is unexpected. " +
+                            "offloadAll() should be used instead. " +
+                            "Making automatic adjustment, consider updating the filter.",
+                    connectionFilter);
             filterOffloads = offloadAll();
         }
         if (filterOffloads.hasOffloads()) {
@@ -130,8 +132,8 @@ final class ClientStrategyInfluencerChainBuilder {
         }
 
         return (null == chainStrategy || !chainStrategy.hasOffloads()) ?
-                transportStrategy : defaultStrategy() == transportStrategy ?
-                    chainStrategy : chainStrategy.merge(transportStrategy);
+                transportStrategy :
+                defaultStrategy() == transportStrategy ? chainStrategy : chainStrategy.merge(transportStrategy);
     }
 
     ExecutionStrategy buildForConnectionFactory() {

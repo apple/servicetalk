@@ -15,6 +15,9 @@
  */
 package io.servicetalk.http.api;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  *  Package private special purpose implementation for {@link HttpExecutionStrategy} to be used across programming model
  *  adapters, should not be made public. Provides a special execution strategy that overrides offloading behavior.
@@ -22,12 +25,10 @@ package io.servicetalk.http.api;
  * @see DefaultHttpExecutionStrategy
  */
 enum SpecialHttpExecutionStrategy implements HttpExecutionStrategy {
-
     /**
      * Enforces no offloading and maintains this even when merged.
      */
     OFFLOAD_NEVER_STRATEGY {
-
         @Override
         public boolean hasOffloads() {
             return false;
@@ -74,6 +75,8 @@ enum SpecialHttpExecutionStrategy implements HttpExecutionStrategy {
      */
     DEFAULT_HTTP_EXECUTION_STRATEGY {
 
+        private volatile boolean mergeWarning;
+
         @Override
         public boolean hasOffloads() {
             return true;
@@ -112,7 +115,14 @@ enum SpecialHttpExecutionStrategy implements HttpExecutionStrategy {
          */
         @Override
         public HttpExecutionStrategy merge(final HttpExecutionStrategy other) {
-            throw new UnsupportedOperationException("must not be merged");
+            assert false : "merging defaultStrategy() with other strategies is deprecated";
+            if (!mergeWarning) {
+                mergeWarning = true;
+                LOGGER.warn("merging defaultStrategy() with other strategies is deprecated");
+            }
+            return other;
         }
-    }
+    };
+
+    static final Logger LOGGER = LoggerFactory.getLogger(SpecialHttpExecutionStrategy.class);
 }

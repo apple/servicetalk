@@ -100,22 +100,28 @@ class ClientEffectiveStrategyTest {
 
     private static final HttpExecutionStrategy[] FILTER_STRATEGIES = {
             null, // absent
+            offloadNever(), // treated as "offloadNone"
             offloadNone(),
             HttpExecutionStrategies.customStrategyBuilder().offloadSend().build(),
+            defaultStrategy(), // treated as "offloadAll"
             offloadAll(),
     };
 
     private static final HttpExecutionStrategy[] LB_STRATEGIES = {
             null, // absent
+            offloadNever(), // treated as "offloadNone"
             offloadNone(),
             HttpExecutionStrategies.customStrategyBuilder().offloadSend().build(),
+            defaultStrategy(), // treated as "offloadAll"
             offloadAll(),
     };
 
     private static final HttpExecutionStrategy[] CF_STRATEGIES = {
             null, // absent
+            offloadNever(), // treated as "offloadNone"
             offloadNone(),
             HttpExecutionStrategies.customStrategyBuilder().offloadSend().build(),
+            defaultStrategy(), // treated as "offloadAll"
             offloadAll(),
     };
 
@@ -243,15 +249,18 @@ class ClientEffectiveStrategyTest {
                                                                  @Nullable final HttpExecutionStrategy cf) {
         HttpExecutionStrategy chain = mergeStrategies(cf, mergeStrategies(lb, filter));
 
-        return null == chain || !chain.hasOffloads() ?
+        HttpExecutionStrategy merged = null == chain || !chain.hasOffloads() ?
                 null == builder ? defaultStrategy() : builder :
-                null == builder || defaultStrategy() == builder ? chain : builder.merge(chain);
+                null == builder || defaultStrategy() == builder ? chain :
+                        offloadNever() != builder ? mergeStrategies(builder, chain) : offloadNone();
+
+        return merged;
     }
 
     private @Nullable HttpExecutionStrategy mergeStrategies(@Nullable HttpExecutionStrategy first,
                                                             @Nullable HttpExecutionStrategy second) {
-        assert defaultStrategy() != first : "default strategy provided (first)";
-        assert defaultStrategy() != second : "default strategy provided (second)";
+        first = offloadNever() != first ? defaultStrategy() != first ? first : offloadAll() : offloadNone();
+        second = offloadNever() != second ? defaultStrategy() != second ? second : offloadAll() : offloadNone();
         return null == first ? second : null == second ? first : first.merge(second);
     }
 
