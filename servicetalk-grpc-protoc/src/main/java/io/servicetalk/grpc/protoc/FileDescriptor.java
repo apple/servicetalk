@@ -66,6 +66,8 @@ final class FileDescriptor implements GenerationContext {
     private final String typeNameSuffix;
     private final List<TypeSpec.Builder> serviceClassBuilders;
     private final Set<String> reservedJavaTypeName = new HashSet<>();
+    private final Map<TypeSpec.Builder, ServiceDescriptorProto> protoForServiceBuilder;
+    static final String INSERTION_POINT_FORMAT = "// @@protoc_insertion_point(service_scope:%s)";
 
     /**
      * A single protoc file for which we will be generating classes
@@ -98,10 +100,16 @@ final class FileDescriptor implements GenerationContext {
         reservedJavaTypeName.add(outerClassName);
 
         serviceClassBuilders = new ArrayList<>(protoFile.getServiceCount());
+        protoForServiceBuilder = new HashMap<>(protoFile.getServiceCount());
     }
 
     String protoFileName() {
         return protoFile.getName();
+    }
+
+    @Nullable
+    String getProtoPackageName() {
+        return protoPackageName;
     }
 
     List<ServiceDescriptorProto> protoServices() {
@@ -170,6 +178,7 @@ final class FileDescriptor implements GenerationContext {
         }
 
         serviceClassBuilders.add(builder);
+        protoForServiceBuilder.put(builder, serviceProto);
         return builder;
     }
 
@@ -196,7 +205,11 @@ final class FileDescriptor implements GenerationContext {
 
             insertSingleFileContent("// " + GENERATED_BY_COMMENT, fileName, responseBuilder);
             for (final TypeSpec.Builder builder : serviceClassBuilders) {
-                insertSingleFileContent(builder.addModifiers(STATIC).build().toString(), fileName, responseBuilder);
+                String content = addInsertionPoint(
+                    builder.addModifiers(STATIC).build().toString(),
+                    protoForServiceBuilder.get(builder).getName()
+                );
+                insertSingleFileContent(content, fileName, responseBuilder);
             }
             return;
         }
@@ -205,6 +218,7 @@ final class FileDescriptor implements GenerationContext {
         final String packageName = javaPackageName();
         for (final TypeSpec.Builder builder : serviceClassBuilders) {
             final TypeSpec serviceType = builder.build();
+            ServiceDescriptorProto serviceDescriptorProto = protoForServiceBuilder.get(builder);
             final File.Builder fileBuilder = File.newBuilder();
             fileBuilder.setName(calculateFileName(packageName, serviceType.name));
 
@@ -213,9 +227,18 @@ final class FileDescriptor implements GenerationContext {
                     .addFileComment(GENERATED_BY_COMMENT)
                     .build();
 
-            fileBuilder.setContent(javaFile.toString());
+            fileBuilder.setContent(addInsertionPoint(javaFile.toString(), serviceDescriptorProto.getName()));
             responseBuilder.addFile(fileBuilder.build());
         }
+    }
+
+    private String addInsertionPoint(String content, String name) {
+        String fqn = protoPackageName != null ? protoPackageName + "." + name : name;
+        content = content.replaceAll(
+            "class __" + fqn + " \\{\n *}",
+            String.format(INSERTION_POINT_FORMAT, fqn)
+        );
+        return content;
     }
 
     private static void insertSingleFileContent(final String content, String fileName,

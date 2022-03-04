@@ -242,11 +242,12 @@ final class Generator {
     /**
      * Generate Service class for the provided proto service descriptor.
      *
+     *
      * @param serviceProto The service descriptor.
      * @param serviceIndex The index of the service within the current file (0 based).
      * @return The service class builder
      */
-    TypeSpec.Builder generate(final ServiceDescriptorProto serviceProto, final int serviceIndex) {
+    TypeSpec.Builder generate(FileDescriptor f, final ServiceDescriptorProto serviceProto, final int serviceIndex) {
         final String name = context.deconflictJavaTypeName(
                 sanitizeIdentifier(serviceProto.getName(), false) + Service);
         final State state = new State(serviceProto, name, serviceIndex);
@@ -265,8 +266,16 @@ final class Generator {
         addClientMetadata(state, serviceClassBuilder);
         addClientInterfaces(state, serviceClassBuilder);
         addClientFactory(state, serviceClassBuilder);
+        // this empty class is a placeholder and get replaced with insertion point comment
+        serviceClassBuilder.addType(TypeSpec.classBuilder("__" + serviceFQN(f, serviceProto)).build());
 
         return serviceClassBuilder;
+    }
+
+    private String serviceFQN(FileDescriptor f, ServiceDescriptorProto serviceDescriptorProto) {
+        return f.getProtoPackageName() != null ?
+            f.getProtoPackageName() + "." + serviceDescriptorProto.getName() :
+            serviceDescriptorProto.getName();
     }
 
     private TypeSpec.Builder addSerializationProviderInit(final State state,
