@@ -90,18 +90,19 @@ Collection<Integer> result = Publisher.range(1, 10) <2> <5>
 the operator chain towards the source; `map` -> `publishOn` -> `map` -> `Publisher.range(1, 10)`.
 
 <2> Still executing on the application thread, `Range` will call `Subscriber.onSubscribe(Subscription)` on the
-`Subscriber`. This flows back down the operator chain, `Range` -> `map` -> `subscribeOn` -> `toFuture`.
+`Subscriber`. This flows back down the operator chain, `Range` -> `map` -> `publishOn` -> `map` -> `toFuture`.
 
 <3> When `subscribe()` is complete, `toFuture()` will call `Subscription.request(Long.MAX_VALUE)`. This will cause
 `Range` to publish synchronously via `onNext(element)` nine items, the integers "`1`" through "`9`".
 
-<4> Each `onNext` flows back down the operator chain, `Range` -> `map` -> `publishOn` (offloads on to `publishExecutor`
+<4> Each `onNext` flows down the operator chain, `Range` -> `map` -> `publishOn` (offloads on to `publishExecutor`
 thread) -> `map` -> `toFuture` where the element is collected for the result. For each offloaded item a thread of
 `publishExecutor` will be used for executing the second `map` operator and final collect operation.
 
 <5> The application thread will continue to publish all the elements from the source and will finally send the
 `onComplete()` signal. This signal will also be offloaded to the `publisherExecutor` and will complete the `Future` with
 the integer collection result.
+
 <6> The application thread will wait at `get()` for the `Future` result to be asynchronously completed.
 
 === `subscribeOn()` Example
@@ -118,38 +119,42 @@ Collection<Integer> result = Publisher.range(1, 10) <2> <4>
         .toFuture() <3>
         .get(); <1>
 ----
+
 <1> `toFuture().get()` will do a `subscribe(Subscriber)`. This flows up the operator chain toward the source;
 `subscribeOn` (offload onto `subscribeExecutor` thread) -> `map` -> `Range`.
+
 <2> `Range` will call `Subscriber.onSubscribe(Subscription)` on the `Subscriber`. This flows back down the operator
 chain, `Range` -> `map` -> `subscribeOn` -> `toFuture`.
+
 <3> `toFuture()` will call `Subscription.request(Long.MAX_VALUE)`. This flows up the operator chain, `subscribeOn`
 (offloads onto `subscribeExecutor`  thread) -> `map` -> `Range`.
+
 <4> Still on a thread from `subscribeExecutor`, `Range` ` will publish synchronously via `onNext(element)` nine items,
 the integers "`1`" through "`9`" (on a thread from ). Each `onNext` flows back down the operator chain, `Range` -> `map`
 -> `subscribeOn` -> `toFuture` when the element is collected for the result.
 
-This example can be expanded to demonstrate the offloading behavior directly. The expanded example extends the NO-OP
+=== publishOn()/subscribeOn() Detailed Example
+
+These examples can be expanded to demonstrate the offloading behavior directly. The expanded example extends the NO-OP
 `map` implementations to reveal the active thread during their execution. To show the active thread at the other
-points described in the callouts the expanded example also adds `whenOnSubscribe`, `whenRequest` and `liftSync`
-operations in the operator chain.
+points described in the callouts the expanded example also adds `whenOnSubscribe`, `whenRequest`, `liftSync` and
+`whenFinally` operations in the operator chain. The output of the example shows the thread used for executing each of
+the operators, while the specialized operators provide examples of how you might use them to debug your own programs.
 
 [source, java]
 ----
-Publisher.range(1, 10)
-        .whenOnSubscribe(subscription -> {
-            System.out.println("\nonSubscribe starts on " + Thread.currentThread());
-        })
+Collection<?> result = Publisher.range(1, 3)
         .map(element -> {
             System.out.println("\nPublish starts on " + Thread.currentThread() + " Received : " + element);
             return element;
+        })
+        .whenOnSubscribe(subscription -> {
+            System.out.println("\nonSubscribe starts on " + Thread.currentThread());
         })
         .publishOn(publishExecutor)
         .map(element -> {
             System.out.println("\nPublish offloaded to " + Thread.currentThread() + " Received : " + element);
             return element;
-        })
-        .whenOnSubscribe(subscription -> {
-            System.out.println("\nonSubscribe offloaded to " + Thread.currentThread());
         })
         .whenRequest(request -> {
             System.out.println("\nrequest(" + request + ") offloaded to " + Thread.currentThread());
@@ -163,8 +168,27 @@ Publisher.range(1, 10)
             System.out.println("\nSubscribe begins on " + Thread.currentThread());
             return subscriber;
         })
+        .whenOnSubscribe(subscription -> {
+            System.out.println("\nonSubscribe offloaded to " + Thread.currentThread());
+        })
         .whenRequest(request -> {
             System.out.println("\nrequest(" + request + ") starts on " + Thread.currentThread());
+        })
+        .whenFinally(new TerminalSignalConsumer() {
+            @Override
+            public void onComplete() {
+                        System.out.println("\ncomplete on " + Thread.currentThread());
+                    }
+
+            @Override
+            public void onError(final Throwable throwable) {
+                System.out.println("\nerror (" + throwable + ") on " + Thread.currentThread());
+            }
+
+            @Override
+                public void cancel() {
+                        System.out.println("\ncancel on " + Thread.currentThread());
+                    }
         })
         .toFuture()
         .get();

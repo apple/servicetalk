@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.TerminalSignalConsumer;
 
 import java.util.Collection;
 
@@ -28,14 +29,14 @@ public final class BlockingHelloWorldClient {
     static final Executor subscribeExecutor = Executors.newCachedThreadExecutor(new DefaultThreadFactory("subscribe"));
 
     public static void main(String[] args) throws Exception {
-        Collection<Integer> simple = Publisher.range(1, 10)
+        Collection<Integer> simple = Publisher.range(1, 3)
                 .map(element -> element)
                 .publishOn(publishExecutor)
                 .map(element -> element)
                 .subscribeOn(subscribeExecutor)
                 .toFuture()
                 .get();
-        Collection<?> result = Publisher.range(1, 10)
+        Collection<?> result = Publisher.range(1, 3)
         .map(element -> {
             System.out.println("\nPublish starts on " + Thread.currentThread() + " Received : " + element);
             return element;
@@ -66,7 +67,25 @@ public final class BlockingHelloWorldClient {
         .whenRequest(request -> {
             System.out.println("\nrequest(" + request + ") starts on " + Thread.currentThread());
         })
+        .whenFinally(new TerminalSignalConsumer() {
+            @Override
+            public void onComplete() {
+                        System.out.println("\ncomplete on " + Thread.currentThread());
+                    }
+
+            @Override
+            public void onError(final Throwable throwable) {
+                System.out.println("\nerror (" + throwable + ") on " + Thread.currentThread());
+            }
+
+            @Override
+                public void cancel() {
+                        System.out.println("\ncancel on " + Thread.currentThread());
+                    }
+        })
         .toFuture()
         .get();
+
+        assert simple.equals(result);
     }
 }
