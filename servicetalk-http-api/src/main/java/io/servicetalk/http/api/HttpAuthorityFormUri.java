@@ -18,6 +18,13 @@ package io.servicetalk.http.api;
 import java.nio.charset.Charset;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.http.api.Uri3986.newDuplicateHost;
+import static io.servicetalk.http.api.Uri3986.newEmptyIPv6Literal;
+import static io.servicetalk.http.api.Uri3986.newInvalidPortNumberPosition;
+import static io.servicetalk.http.api.Uri3986.newMissingClosingBracket;
+import static io.servicetalk.http.api.Uri3986.newUnexpectedCloseBracket;
+import static io.servicetalk.http.api.Uri3986.newUnexpectedCloseBracketAfterIPv6;
+import static io.servicetalk.http.api.Uri3986.newUnexpectedOpenBracket;
 import static io.servicetalk.http.api.UriComponentType.HOST_NON_IP;
 import static io.servicetalk.http.api.UriUtils.decodeComponent;
 import static io.servicetalk.http.api.UriUtils.encodeComponent;
@@ -42,15 +49,19 @@ final class HttpAuthorityFormUri implements Uri {
             final char c = uri.charAt(i);
             if (c == '[') {
                 if (parsingIPv6 != 0 || parsedHost != null) {
-                    throw new IllegalArgumentException("unexpected [");
+                    throw newUnexpectedOpenBracket(i, begin, parsedHost, uri);
                 }
                 parsingIPv6 = 1;
                 begin = i++; // post increment, preserve the '[' for original uri for pathEndIndex.
             } else if (c == ']') {
                 if (parsingIPv6 == 0) {
-                    throw new IllegalArgumentException("unexpected ]");
-                } else if (i - 1 <= begin) {
-                    throw new IllegalArgumentException("empty ip literal");
+                    throw newUnexpectedCloseBracket(i, parsedHost, uri);
+                }
+                if (parsingIPv6 == 2) {
+                    throw newUnexpectedCloseBracketAfterIPv6(i, parsedHost, uri);
+                }
+                if (i - 1 <= begin) {
+                    throw newEmptyIPv6Literal(begin, uri);
                 }
                 // Copy the '[' and ']' characters. pathEndIndex depends upon retaining the uri contents.
                 parsedHost = uri.substring(begin, i + 1);
@@ -60,11 +71,11 @@ final class HttpAuthorityFormUri implements Uri {
             } else if (c == ':') {
                 if (parsingIPv6 == 0) {
                     if (parsedHost != null) {
-                        throw new IllegalArgumentException("duplicate/invalid host");
+                        throw newDuplicateHost(i, parsedHost, uri);
                     }
                     parsedHost = uri.substring(begin, i);
                 } else if (parsingIPv6 == 2 && begin != i) {
-                    throw new IllegalArgumentException("Port must be immediately after IPv6address");
+                    throw newInvalidPortNumberPosition(i, begin, parsedHost, uri);
                 }
                 ++i;
                 if (parsingIPv6 != 1) {
@@ -72,7 +83,10 @@ final class HttpAuthorityFormUri implements Uri {
                     foundColonForPort = true;
                 }
             } else if (c == '@' || c == '?' || c == '#' || c == '/') {
-                throw new IllegalArgumentException("authority-form URI doesn't allow userinfo, path, query, fragment");
+                throw new IllegalArgumentException("Invalid URI format: authority-form URI doesn't allow userinfo, " +
+                        "path, query, fragment, but found '" + c + "' character at index " + i +
+                        (parsedHost != null ? ". Parsed host: " + parsedHost : "") +
+                        ". Total URI length: " + uri.length());
             } else {
                 ++i;
             }
@@ -80,13 +94,15 @@ final class HttpAuthorityFormUri implements Uri {
 
         if (parsedHost == null) {
             if (parsingIPv6 == 1) {
-                throw new IllegalArgumentException("missing closing ] for IP-literal");
+                throw newMissingClosingBracket(i, begin, uri);
             }
             parsedHost = uri;
         } else if (foundColonForPort) {
             parsedPort = parsePort(uri, begin, uri.length());
         } else if (parsedHost.length() != uri.length()) {
-            throw new IllegalArgumentException("authority-form URI only supports the host component");
+            throw new IllegalArgumentException("Invalid URI format: Authority-form URI only supports the host " +
+                    "component but found more characters. Parsed host: " + parsedHost +
+                    ", total URI length to parse: " + uri.length());
         }
 
         host = parsedHost;
