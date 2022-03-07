@@ -118,6 +118,22 @@ with `Content-Type: application/json` and link:{source-root}/servicetalk-example
 All serializers and deserializers defined in
 link:{source-root}/servicetalk-examples/http/serialization/json/src/main/java/io/servicetalk/examples/http/serialization/json/SerializerUtils.java[SerializerUtils].
 
+[#SerializationProtobuf]
+== Serialization: Protobuf
+
+An example similar to "Hello World" examples, which demonstrates
+link:{source-root}/servicetalk-examples/http/serialization/protobuf/src/main/java/io/servicetalk/examples/http/serialization/protobuf/async[asynchronous-aggregated],
+link:{source-root}/servicetalk-examples/http/serialization/protobuf/src/main/java/io/servicetalk/examples/http/serialization/protobuf/async/streaming[asynchronous-streaming],
+link:{source-root}/servicetalk-examples/http/serialization/protobuf/src/main/java/io/servicetalk/examples/http/serialization/protobuf/blocking[blocking-aggregated], and
+link:{source-root}/servicetalk-examples/http/serialization/protobuf/src/main/java/io/servicetalk/examples/http/serialization/protobuf/blocking/streaming[blocking-streaming]
+client and server with Protobuf serialization of simple proto objects.
+
+Client sends a `POST` request with a Protobuf payload `RequestMessage` and expects a response with
+`Content-Type: application/protobuf` and `ResponseMessage` as a payload
+(link:{source-root}/servicetalk-examples/http/serialization/protobuf/src/main/proto/message.proto[message.proto]).
+All serializers and deserializers defined in
+link:{source-root}/servicetalk-examples/http/serialization/protobuf/src/main/java/io/servicetalk/examples/http/serialization/protobuf/SerializerUtils.java[SerializerUtils].
+
 [#JAXRS]
 == JAX-RS
 
