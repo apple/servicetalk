@@ -55,7 +55,9 @@ public final class HttpExecutionStrategies {
      *
      * @return {@link HttpExecutionStrategy} that disables all request-response path offloads.
      * @see #offloadNone()
+     * @deprecated Use {@link #offloadNone()} instead.
      */
+    @Deprecated
     public static HttpExecutionStrategy offloadNever() {
         return OFFLOAD_NEVER_STRATEGY;
     }
