@@ -44,7 +44,6 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadAll;
-import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.netty.InvokingThreadsRecorder.IO_EXECUTOR_NAME_PREFIX;
 import static io.servicetalk.http.netty.InvokingThreadsRecorder.noStrategy;
@@ -70,9 +69,9 @@ class ServerEffectiveStrategyTest {
         userStrategyWithFilter(serviceType ->
                 new Params(serviceType, true, defaultStrategy(), Offloads.ALL)),
         userStrategyNoOffloadsNoFilter(serviceType ->
-                new Params(serviceType, false, offloadNever(), Offloads.NONE)),
+                new Params(serviceType, false, offloadNone(), Offloads.NONE)),
         userStrategyNoOffloadsWithFilter(serviceType ->
-                new Params(serviceType, true, offloadNever(), Offloads.NONE)),
+                new Params(serviceType, true, offloadNone(), Offloads.NONE)),
         customUserStrategyNoFilter(serviceType ->
                 new Params(serviceType, false, customStrategyBuilder().offloadAll().build(), Offloads.ALL)),
         customUserStrategyWithFilter(serviceType ->

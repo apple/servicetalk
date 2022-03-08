@@ -359,7 +359,8 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
     private HttpExecutionStrategy computeServiceStrategy(Object service) {
         HttpExecutionStrategy serviceStrategy = requiredOffloads(service, defaultStrategy());
         HttpExecutionStrategy filterStrategy = computeRequiredStrategy(serviceFilters, serviceStrategy);
-        return defaultStrategy() == strategy ? filterStrategy : strategy.merge(filterStrategy);
+        return defaultStrategy() == strategy ? filterStrategy :
+                strategy.hasOffloads() ? strategy.merge(filterStrategy) : offloadNone();
     }
 
     private static StreamingHttpService applyInternalFilters(StreamingHttpService service,

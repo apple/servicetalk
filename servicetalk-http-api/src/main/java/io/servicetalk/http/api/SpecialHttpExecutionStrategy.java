@@ -70,7 +70,7 @@ enum SpecialHttpExecutionStrategy implements HttpExecutionStrategy {
          */
         @Override
         public HttpExecutionStrategy merge(final HttpExecutionStrategy other) {
-            // assert false : "merging offloadNever() with other strategies is deprecated";
+            assert false : "merging offloadNever() with other strategies is deprecated";
             if (!mergeWarning) {
                 mergeWarning = true;
                 LOGGER.warn("merging offloadNever() with other strategies is deprecated");
