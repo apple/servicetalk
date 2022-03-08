@@ -96,16 +96,17 @@ public interface GrpcClientBuilder<U, R> {
             GrpcClientFactory<?, BlockingClient> clientFactory);
 
     /**
-     * Returns a {@link MultiClientBuilder} to be used to create multiple clients sharing the same underlying transport
-     * instance.
+     * Returns a {@link MultiClientBuilder} to be used to create multiple clients that share the underlying transport.
+     * It is meant for a single backend that hosts different service APIs.
      *
-     * @return A blocking <a href="https://www.grpc.io">gRPC</a> client.
+     * @return A {@link MultiClientBuilder builder} that allows reusing underlying transport between
+     * <a href="https://www.grpc.io">gRPC</a> clients.
      */
     MultiClientBuilder buildMulti();
 
     /**
-     * An interface to create multiple <a href="https://www.grpc.io">gRPC</a> clients sharing the
-     * same underlying transport instance.
+     * An interface to create multiple <a href="https://www.grpc.io">gRPC</a> clients that share the underlying
+     * transport. It is meant for a single backend that hosts different service APIs.
      */
     interface MultiClientBuilder {
 
