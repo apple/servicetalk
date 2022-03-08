@@ -15,14 +15,20 @@
  */
 package io.servicetalk.client.api.partition;
 
+import io.servicetalk.client.api.ClientGroup;
 import io.servicetalk.client.api.partition.PartitionAttributes.Key;
 
 import static java.util.Objects.requireNonNull;
 
 /**
  * Indicates that a duplicate value was added while constructing a {@link PartitionAttributes}.
+ *
+ * @deprecated We are unaware of anyone using "partition" feature and plan to remove it in future releases.
+ * If you depend on it, consider using {@link ClientGroup} as an alternative or reach out to the maintainers describing
+ * the use-case.
  */
-public final class DuplicateAttributeException extends IllegalStateException {
+@Deprecated
+public final class DuplicateAttributeException extends IllegalStateException {  // FIXME: 0.43 - remove deprecated class
     private static final long serialVersionUID = 8374128121212690894L;
 
     private final Key key;

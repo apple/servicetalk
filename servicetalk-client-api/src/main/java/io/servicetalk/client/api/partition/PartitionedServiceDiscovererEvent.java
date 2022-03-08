@@ -15,13 +15,20 @@
  */
 package io.servicetalk.client.api.partition;
 
+import io.servicetalk.client.api.ClientGroup;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 
 /**
  * An {@link ServiceDiscovererEvent} which is associated with a partition.
+ *
  * @param <ResolvedAddress> The type of resolved address.
+ * @deprecated We are unaware of anyone using "partition" feature and plan to remove it in future releases.
+ * If you depend on it, consider using {@link ClientGroup} as an alternative or reach out to the maintainers describing
+ * the use-case.
  */
-public interface PartitionedServiceDiscovererEvent<ResolvedAddress> extends ServiceDiscovererEvent<ResolvedAddress> {
+@Deprecated
+public interface PartitionedServiceDiscovererEvent<ResolvedAddress> // FIXME: 0.43 - remove deprecated interface
+        extends ServiceDiscovererEvent<ResolvedAddress> {
     /**
      * Get the fully specified {@link PartitionAttributes} that uniquely identifies {@link #address()}.
      * @return the fully specified {@link PartitionAttributes} that uniquely identifies {@link #address()}.
