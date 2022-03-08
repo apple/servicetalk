@@ -94,4 +94,43 @@ public interface GrpcClientBuilder<U, R> {
      */
     <BlockingClient extends BlockingGrpcClient<?>> BlockingClient buildBlocking(
             GrpcClientFactory<?, BlockingClient> clientFactory);
+
+    /**
+     * Returns a {@link MultiClientBuilder} to be used to create multiple clients that share the underlying transport.
+     * It is meant for a single backend that hosts different service APIs.
+     *
+     * @return A {@link MultiClientBuilder builder} that allows reusing underlying transport between
+     * <a href="https://www.grpc.io">gRPC</a> clients.
+     */
+    MultiClientBuilder buildMulti();
+
+    /**
+     * An interface to create multiple <a href="https://www.grpc.io">gRPC</a> clients that share the underlying
+     * transport. It is meant for a single backend that hosts different service APIs.
+     */
+    interface MultiClientBuilder {
+
+        /**
+         * Builds a <a href="https://www.grpc.io">gRPC</a> client.
+         *
+         * @param clientFactory {@link GrpcClientFactory} to use.
+         * @param <Client> <a href="https://www.grpc.io">gRPC</a> service that any client built
+         * from this factory represents.
+         *
+         * @return A <a href="https://www.grpc.io">gRPC</a> client.
+         */
+        <Client extends GrpcClient<?>> Client build(GrpcClientFactory<Client, ?> clientFactory);
+
+        /**
+         * Builds a blocking <a href="https://www.grpc.io">gRPC</a> client.
+         *
+         * @param clientFactory {@link GrpcClientFactory} to use.
+         * @param <BlockingClient> Blocking <a href="https://www.grpc.io">gRPC</a> service that
+         * any client built from this builder represents.
+         *
+         * @return A blocking <a href="https://www.grpc.io">gRPC</a> client.
+         */
+        <BlockingClient extends BlockingGrpcClient<?>> BlockingClient buildBlocking(
+                GrpcClientFactory<?, BlockingClient> clientFactory);
+    }
 }
