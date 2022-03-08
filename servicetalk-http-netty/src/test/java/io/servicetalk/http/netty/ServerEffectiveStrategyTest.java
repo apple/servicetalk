@@ -18,7 +18,6 @@ package io.servicetalk.http.netty;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.BlockingHttpClient;
-import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpServerBuilder;
@@ -46,6 +45,7 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuil
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadAll;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.netty.InvokingThreadsRecorder.IO_EXECUTOR_NAME_PREFIX;
 import static io.servicetalk.http.netty.InvokingThreadsRecorder.noStrategy;
 import static io.servicetalk.http.netty.InvokingThreadsRecorder.userStrategy;
@@ -297,7 +297,7 @@ class ServerEffectiveStrategyTest {
         @Override
         public HttpExecutionStrategy requiredOffloads() {
             // No influence since we do not block.
-            return HttpExecutionStrategies.offloadNone();
+            return offloadNone();
         }
 
         @Override

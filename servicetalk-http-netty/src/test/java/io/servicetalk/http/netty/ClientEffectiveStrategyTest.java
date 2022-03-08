@@ -252,7 +252,7 @@ class ClientEffectiveStrategyTest {
         HttpExecutionStrategy merged = null == chain || !chain.hasOffloads() ?
                 null == builder ? defaultStrategy() : builder :
                 null == builder || defaultStrategy() == builder ? chain :
-                        offloadNever() != builder ? mergeStrategies(builder, chain) : offloadNone();
+                        builder.hasOffloads() ? mergeStrategies(builder, chain) : chain;
 
         return merged;
     }

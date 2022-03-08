@@ -315,7 +315,7 @@ class ProxyConnectConnectionFactoryFilterTest {
     void noOffloadingStrategy() {
         ChannelPipeline pipeline = configurePipeline(SslHandshakeCompletionEvent.SUCCESS);
         configureDeferSslHandler(pipeline);
-        configureConnectionContext(pipeline, HttpExecutionStrategies.offloadNever());
+        configureConnectionContext(pipeline, HttpExecutionStrategies.offloadNone());
         configureRequestSend();
         configureConnectRequest();
         Queue<Throwable> errors = new LinkedBlockingQueue<>();

@@ -95,7 +95,7 @@ final class ExecutionStrategyTest extends AbstractJerseyStreamingHttpServiceTest
     protected enum TestExecutorStrategy {
         DEFAULT {
             @Override
-            void configureRouterBuilder(final HttpServerBuilder builder, final Executor ignored) {
+            void configureRouterBuilder(final HttpServerBuilder builder, final Executor __) {
                 // noop
             }
         },
@@ -107,7 +107,7 @@ final class ExecutionStrategyTest extends AbstractJerseyStreamingHttpServiceTest
         },
         NO_OFFLOADS {
             @Override
-            void configureRouterBuilder(final HttpServerBuilder builder, final Executor ignored) {
+            void configureRouterBuilder(final HttpServerBuilder builder, final Executor __) {
                 builder.executionStrategy(offloadNever());
             }
         };

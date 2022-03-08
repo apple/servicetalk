@@ -273,7 +273,7 @@ final class NettyHttpServer {
             this.headersFactory = headersFactory;
             executionContext = new DefaultHttpExecutionContext(connection.executionContext().bufferAllocator(),
                     connection.executionContext().ioExecutor(), connection.executionContext().executor(),
-                    HttpExecutionStrategies.offloadNever());
+                    HttpExecutionStrategies.offloadNone());
             this.service = service;
             flushStrategy = new SplittingFlushStrategy(connection.defaultFlushStrategy(),
                     // h2 may return a single HttpResponseMetaData for an empty response in some scenarios,

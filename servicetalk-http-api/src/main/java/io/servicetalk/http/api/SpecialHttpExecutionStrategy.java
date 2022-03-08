@@ -29,6 +29,9 @@ enum SpecialHttpExecutionStrategy implements HttpExecutionStrategy {
      * Enforces no offloading and maintains this even when merged.
      */
     OFFLOAD_NEVER_STRATEGY {
+
+        private volatile boolean mergeWarning;
+
         @Override
         public boolean hasOffloads() {
             return false;
@@ -67,6 +70,11 @@ enum SpecialHttpExecutionStrategy implements HttpExecutionStrategy {
          */
         @Override
         public HttpExecutionStrategy merge(final HttpExecutionStrategy other) {
+            // assert false : "merging offloadNever() with other strategies is deprecated";
+            if (!mergeWarning) {
+                mergeWarning = true;
+                LOGGER.warn("merging offloadNever() with other strategies is deprecated");
+            }
             return this;
         }
     },

@@ -139,7 +139,8 @@ final class ClientStrategyInfluencerChainBuilder {
 
         return (null == chainStrategy || !chainStrategy.hasOffloads()) ?
                 transportStrategy :
-                defaultStrategy() == transportStrategy ? chainStrategy : chainStrategy.merge(transportStrategy);
+                defaultStrategy() == transportStrategy || !transportStrategy.hasOffloads() ?
+                        chainStrategy : chainStrategy.merge(transportStrategy);
     }
 
     ExecutionStrategy buildForConnectionFactory() {

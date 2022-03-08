@@ -58,7 +58,7 @@ import static io.netty.buffer.ByteBufUtil.writeAscii;
 import static io.netty.util.ReferenceCountUtil.release;
 import static io.servicetalk.buffer.api.Matchers.contentEqualTo;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
-import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
@@ -128,7 +128,7 @@ class MalformedDataAfterHttpMessageTest {
         Queue<ConnectionContext> contextQueue = new LinkedBlockingQueue<>();
         ServerSocketChannel server = nettyServer(RESPONSE_MSG);
         try (BlockingHttpClient client = stClientBuilder(server.localAddress())
-                .executionStrategy(doOffloading ? defaultStrategy() : offloadNever())
+                .executionStrategy(doOffloading ? defaultStrategy() : offloadNone())
                 // ClosedChannelException maybe observed on the second request if write is done before read of the
                 // garbage data, which won't be a RetryableException. We may also see an exception from flush if the
                 // read closed the connection and then attempt to write on the same connection.

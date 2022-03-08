@@ -43,7 +43,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
-import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.ExecutionContextExtension.cached;
 import static io.servicetalk.transport.netty.internal.ExecutionContextExtension.immediate;
@@ -134,7 +134,7 @@ class DefaultMultiAddressUrlHttpClientBuilderTest {
         assertThat(CTX.ioExecutor(), not(equalTo(INTERNAL_CLIENT_CTX.ioExecutor())));
 
         try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
-                .executionStrategy(offloadNever())
+                .executionStrategy(offloadNone())
                 .listenStreamingAndAwait((ctx, request, responseFactory) -> succeeded(responseFactory.ok()))) {
             AtomicReference<BufferAllocator> actualInternalBufferAllocator = new AtomicReference<>();
             AtomicReference<IoExecutor> actualInternalIoExecutor = new AtomicReference<>();
