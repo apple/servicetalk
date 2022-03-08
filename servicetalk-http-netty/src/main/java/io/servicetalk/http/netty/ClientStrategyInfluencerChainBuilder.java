@@ -71,14 +71,14 @@ final class ClientStrategyInfluencerChainBuilder {
         if (offloadNever() == strategy) {
             LOGGER.warn("{}#requiredOffloads() returns offloadNever(), which is unexpected. " +
                             "offloadNone() should be used instead. " +
-                            "Making automatic adjustment, consider updating the {}.",
+                            "Making automatic adjustment, update the {}.",
                     influencer, purpose);
             strategy = offloadNone();
         }
         if (defaultStrategy() == strategy) {
             LOGGER.warn("{}#requiredOffloads() returns defaultStrategy(), which is unexpected. " +
                             "offloadAll() (safe default) or more appropriate custom strategy should be used instead." +
-                            "Making automatic adjustment, consider updating the {}.",
+                            "Making automatic adjustment, update the {}.",
                     influencer, purpose);
             strategy = offloadAll();
         }
@@ -90,7 +90,7 @@ final class ClientStrategyInfluencerChainBuilder {
         if (offloadNever() == filterOffloads) {
             LOGGER.warn("{}#requiredOffloads() returns offloadNever(), which is unexpected. " +
                             "offloadNone() should be used instead. " +
-                            "Making automatic adjustment, consider updating the filter.",
+                            "Making automatic adjustment, update the filter.",
                     connectionFactoryFilter);
             filterOffloads = offloadNone();
         }
