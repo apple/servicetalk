@@ -34,7 +34,7 @@ import static java.util.Objects.requireNonNull;
  */
 public class DelegatingPartitionedHttpClientBuilder<U, R> implements PartitionedHttpClientBuilder<U, R> {
 
-    private final PartitionedHttpClientBuilder<U, R> delegate;
+    private PartitionedHttpClientBuilder<U, R> delegate;
 
     /**
      * Create a new instance.
@@ -61,57 +61,57 @@ public class DelegatingPartitionedHttpClientBuilder<U, R> implements Partitioned
 
     @Override
     public PartitionedHttpClientBuilder<U, R> ioExecutor(final IoExecutor ioExecutor) {
-        delegate.ioExecutor(ioExecutor);
+        delegate = delegate.ioExecutor(ioExecutor);
         return this;
     }
 
     @Override
     public PartitionedHttpClientBuilder<U, R> executor(final Executor executor) {
-        delegate.executor(executor);
+        delegate = delegate.executor(executor);
         return this;
     }
 
     @Override
     public PartitionedHttpClientBuilder<U, R> executionStrategy(final HttpExecutionStrategy strategy) {
-        delegate.executionStrategy(strategy);
+        delegate = delegate.executionStrategy(strategy);
         return this;
     }
 
     @Override
     public PartitionedHttpClientBuilder<U, R> bufferAllocator(final BufferAllocator allocator) {
-        delegate.bufferAllocator(allocator);
+        delegate = delegate.bufferAllocator(allocator);
         return this;
     }
 
     @Override
     public PartitionedHttpClientBuilder<U, R> serviceDiscoverer(
             final ServiceDiscoverer<U, R, PartitionedServiceDiscovererEvent<R>> serviceDiscoverer) {
-        delegate.serviceDiscoverer(serviceDiscoverer);
+        delegate = delegate.serviceDiscoverer(serviceDiscoverer);
         return this;
     }
 
     @Override
     public PartitionedHttpClientBuilder<U, R> retryServiceDiscoveryErrors(
             final BiIntFunction<Throwable, ? extends Completable> retryStrategy) {
-        delegate.retryServiceDiscoveryErrors(retryStrategy);
+        delegate = delegate.retryServiceDiscoveryErrors(retryStrategy);
         return this;
     }
 
     @Override
     public PartitionedHttpClientBuilder<U, R> serviceDiscoveryMaxQueueSize(final int serviceDiscoveryMaxQueueSize) {
-        delegate.serviceDiscoveryMaxQueueSize(serviceDiscoveryMaxQueueSize);
+        delegate = delegate.serviceDiscoveryMaxQueueSize(serviceDiscoveryMaxQueueSize);
         return this;
     }
 
     @Override
     public PartitionedHttpClientBuilder<U, R> partitionMapFactory(final PartitionMapFactory partitionMapFactory) {
-        delegate.partitionMapFactory(partitionMapFactory);
+        delegate = delegate.partitionMapFactory(partitionMapFactory);
         return this;
     }
 
     @Override
     public PartitionedHttpClientBuilder<U, R> initializer(final SingleAddressInitializer<U, R> initializer) {
-        delegate.initializer(initializer);
+        delegate = delegate.initializer(initializer);
         return this;
     }
 

@@ -36,7 +36,7 @@ import static java.util.Objects.requireNonNull;
  */
 public class DelegatingHttpServerBuilder implements HttpServerBuilder {
 
-    private final HttpServerBuilder delegate;
+    private HttpServerBuilder delegate;
 
     /**
      * Create a new instance.
@@ -63,118 +63,118 @@ public class DelegatingHttpServerBuilder implements HttpServerBuilder {
 
     @Override
     public HttpServerBuilder protocols(final HttpProtocolConfig... protocols) {
-        delegate.protocols(protocols);
+        delegate = delegate.protocols(protocols);
         return this;
     }
 
     @Override
     public HttpServerBuilder sslConfig(final ServerSslConfig config) {
-        delegate.sslConfig(config);
+        delegate = delegate.sslConfig(config);
         return this;
     }
 
     @Override
     public HttpServerBuilder sslConfig(final ServerSslConfig defaultConfig, final Map<String, ServerSslConfig> sniMap) {
-        delegate.sslConfig(defaultConfig, sniMap);
+        delegate = delegate.sslConfig(defaultConfig, sniMap);
         return this;
     }
 
     @Override
     public <T> HttpServerBuilder socketOption(final SocketOption<T> option, final T value) {
-        delegate.socketOption(option, value);
+        delegate = delegate.socketOption(option, value);
         return this;
     }
 
     @Override
     public <T> HttpServerBuilder listenSocketOption(final SocketOption<T> option, final T value) {
-        delegate.listenSocketOption(option, value);
+        delegate = delegate.listenSocketOption(option, value);
         return this;
     }
 
     @Override
     public HttpServerBuilder enableWireLogging(final String loggerName, final LogLevel logLevel,
                                                final BooleanSupplier logUserData) {
-        delegate.enableWireLogging(loggerName, logLevel, logUserData);
+        delegate = delegate.enableWireLogging(loggerName, logLevel, logUserData);
         return this;
     }
 
     @Override
     public HttpServerBuilder transportObserver(final TransportObserver transportObserver) {
-        delegate.transportObserver(transportObserver);
+        delegate = delegate.transportObserver(transportObserver);
         return this;
     }
 
     @Override
     public HttpServerBuilder lifecycleObserver(final HttpLifecycleObserver lifecycleObserver) {
-        delegate.lifecycleObserver(lifecycleObserver);
+        delegate = delegate.lifecycleObserver(lifecycleObserver);
         return this;
     }
 
     @Override
     public HttpServerBuilder drainRequestPayloadBody(final boolean enable) {
-        delegate.drainRequestPayloadBody(enable);
+        delegate = delegate.drainRequestPayloadBody(enable);
         return this;
     }
 
     @Override
     public HttpServerBuilder allowDropRequestTrailers(final boolean allowDrop) {
-        delegate.allowDropRequestTrailers(allowDrop);
+        delegate = delegate.allowDropRequestTrailers(allowDrop);
         return this;
     }
 
     @Override
     public HttpServerBuilder appendConnectionAcceptorFilter(final ConnectionAcceptorFactory factory) {
-        delegate.appendConnectionAcceptorFilter(factory);
+        delegate = delegate.appendConnectionAcceptorFilter(factory);
         return this;
     }
 
     @Override
     public HttpServerBuilder appendNonOffloadingServiceFilter(final StreamingHttpServiceFilterFactory factory) {
-        delegate.appendNonOffloadingServiceFilter(factory);
+        delegate = delegate.appendNonOffloadingServiceFilter(factory);
         return this;
     }
 
     @Override
     public HttpServerBuilder appendNonOffloadingServiceFilter(final Predicate<StreamingHttpRequest> predicate,
                                                               final StreamingHttpServiceFilterFactory factory) {
-        delegate.appendNonOffloadingServiceFilter(predicate, factory);
+        delegate = delegate.appendNonOffloadingServiceFilter(predicate, factory);
         return this;
     }
 
     @Override
     public HttpServerBuilder appendServiceFilter(final StreamingHttpServiceFilterFactory factory) {
-        delegate.appendServiceFilter(factory);
+        delegate = delegate.appendServiceFilter(factory);
         return this;
     }
 
     @Override
     public HttpServerBuilder appendServiceFilter(final Predicate<StreamingHttpRequest> predicate,
                                                  final StreamingHttpServiceFilterFactory factory) {
-        delegate.appendServiceFilter(predicate, factory);
+        delegate = delegate.appendServiceFilter(predicate, factory);
         return this;
     }
 
     @Override
     public HttpServerBuilder ioExecutor(final IoExecutor ioExecutor) {
-        delegate.ioExecutor(ioExecutor);
+        delegate = delegate.ioExecutor(ioExecutor);
         return this;
     }
 
     @Override
     public HttpServerBuilder executor(final Executor executor) {
-        delegate.executor(executor);
+        delegate = delegate.executor(executor);
         return this;
     }
 
     @Override
     public HttpServerBuilder bufferAllocator(final BufferAllocator allocator) {
-        delegate.bufferAllocator(allocator);
+        delegate = delegate.bufferAllocator(allocator);
         return this;
     }
 
     @Override
     public HttpServerBuilder executionStrategy(final HttpExecutionStrategy strategy) {
-        delegate.executionStrategy(strategy);
+        delegate = delegate.executionStrategy(strategy);
         return this;
     }
 

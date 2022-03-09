@@ -27,7 +27,7 @@ import static java.util.Objects.requireNonNull;
  */
 public class DelegatingGrpcClientBuilder<U, R> implements GrpcClientBuilder<U, R> {
 
-    private final GrpcClientBuilder<U, R> delegate;
+    private GrpcClientBuilder<U, R> delegate;
 
     public DelegatingGrpcClientBuilder(final GrpcClientBuilder<U, R> delegate) {
         this.delegate = requireNonNull(delegate);
@@ -49,13 +49,13 @@ public class DelegatingGrpcClientBuilder<U, R> implements GrpcClientBuilder<U, R
 
     @Override
     public GrpcClientBuilder<U, R> initializeHttp(final HttpInitializer<U, R> initializer) {
-        delegate.initializeHttp(initializer);
+        delegate = delegate.initializeHttp(initializer);
         return this;
     }
 
     @Override
     public GrpcClientBuilder<U, R> defaultTimeout(final Duration defaultTimeout) {
-        delegate.defaultTimeout(defaultTimeout);
+        delegate = delegate.defaultTimeout(defaultTimeout);
         return this;
     }
 

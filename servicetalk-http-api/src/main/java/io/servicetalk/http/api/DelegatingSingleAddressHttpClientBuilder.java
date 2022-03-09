@@ -42,7 +42,7 @@ import static java.util.Objects.requireNonNull;
  */
 public class DelegatingSingleAddressHttpClientBuilder<U, R> implements SingleAddressHttpClientBuilder<U, R> {
 
-    private final SingleAddressHttpClientBuilder<U, R> delegate;
+    private SingleAddressHttpClientBuilder<U, R> delegate;
 
     /**
      * Create a new instance.
@@ -69,148 +69,148 @@ public class DelegatingSingleAddressHttpClientBuilder<U, R> implements SingleAdd
 
     @Override
     public SingleAddressHttpClientBuilder<U, R> proxyAddress(final U proxyAddress) {
-        delegate.proxyAddress(proxyAddress);
+        delegate = delegate.proxyAddress(proxyAddress);
         return this;
     }
 
     @Override
     public <T> SingleAddressHttpClientBuilder<U, R> socketOption(final SocketOption<T> option, final T value) {
-        delegate.socketOption(option, value);
+        delegate = delegate.socketOption(option, value);
         return this;
     }
 
     @Override
     public SingleAddressHttpClientBuilder<U, R> enableWireLogging(final String loggerName, final LogLevel logLevel,
                                                                   final BooleanSupplier logUserData) {
-        delegate.enableWireLogging(loggerName, logLevel, logUserData);
+        delegate = delegate.enableWireLogging(loggerName, logLevel, logUserData);
         return this;
     }
 
     @Override
     public SingleAddressHttpClientBuilder<U, R> protocols(final HttpProtocolConfig... protocols) {
-        delegate.protocols(protocols);
+        delegate = delegate.protocols(protocols);
         return this;
     }
 
     @Override
     public SingleAddressHttpClientBuilder<U, R> hostHeaderFallback(final boolean enable) {
-        delegate.hostHeaderFallback(enable);
+        delegate = delegate.hostHeaderFallback(enable);
         return this;
     }
 
     @Override
     public SingleAddressHttpClientBuilder<U, R> allowDropResponseTrailers(final boolean allowDrop) {
-        delegate.allowDropResponseTrailers(allowDrop);
+        delegate = delegate.allowDropResponseTrailers(allowDrop);
         return this;
     }
 
     @Override
     public SingleAddressHttpClientBuilder<U, R> appendConnectionFilter(
             final StreamingHttpConnectionFilterFactory factory) {
-        delegate.appendConnectionFilter(factory);
+        delegate = delegate.appendConnectionFilter(factory);
         return this;
     }
 
     @Override
     public SingleAddressHttpClientBuilder<U, R> appendConnectionFilter(
             final Predicate<StreamingHttpRequest> predicate, final StreamingHttpConnectionFilterFactory factory) {
-        delegate.appendConnectionFilter(predicate, factory);
+        delegate = delegate.appendConnectionFilter(predicate, factory);
         return this;
     }
 
     @Override
     public SingleAddressHttpClientBuilder<U, R> ioExecutor(final IoExecutor ioExecutor) {
-        delegate.ioExecutor(ioExecutor);
+        delegate = delegate.ioExecutor(ioExecutor);
         return this;
     }
 
     @Override
     public SingleAddressHttpClientBuilder<U, R> executor(final Executor executor) {
-        delegate.executor(executor);
+        delegate = delegate.executor(executor);
         return this;
     }
 
     @Override
     public SingleAddressHttpClientBuilder<U, R> executionStrategy(final HttpExecutionStrategy strategy) {
-        delegate.executionStrategy(strategy);
+        delegate = delegate.executionStrategy(strategy);
         return this;
     }
 
     @Override
     public SingleAddressHttpClientBuilder<U, R> bufferAllocator(final BufferAllocator allocator) {
-        delegate.bufferAllocator(allocator);
+        delegate = delegate.bufferAllocator(allocator);
         return this;
     }
 
     @Override
     public SingleAddressHttpClientBuilder<U, R> appendConnectionFactoryFilter(
             final ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> factory) {
-        delegate.appendConnectionFactoryFilter(factory);
+        delegate = delegate.appendConnectionFactoryFilter(factory);
         return this;
     }
 
     @Override
     public SingleAddressHttpClientBuilder<U, R> appendClientFilter(final StreamingHttpClientFilterFactory factory) {
-        delegate.appendClientFilter(factory);
+        delegate = delegate.appendClientFilter(factory);
         return this;
     }
 
     @Override
     public SingleAddressHttpClientBuilder<U, R> appendClientFilter(final Predicate<StreamingHttpRequest> predicate,
                                                                    final StreamingHttpClientFilterFactory factory) {
-        delegate.appendClientFilter(predicate, factory);
+        delegate = delegate.appendClientFilter(predicate, factory);
         return this;
     }
 
     @Override
     public SingleAddressHttpClientBuilder<U, R> unresolvedAddressToHost(
             final Function<U, CharSequence> unresolvedAddressToHostFunction) {
-        delegate.unresolvedAddressToHost(unresolvedAddressToHostFunction);
+        delegate = delegate.unresolvedAddressToHost(unresolvedAddressToHostFunction);
         return this;
     }
 
     @Override
     public SingleAddressHttpClientBuilder<U, R> serviceDiscoverer(
             final ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer) {
-        delegate.serviceDiscoverer(serviceDiscoverer);
+        delegate = delegate.serviceDiscoverer(serviceDiscoverer);
         return this;
     }
 
     @Override
     public SingleAddressHttpClientBuilder<U, R> retryServiceDiscoveryErrors(
             final BiIntFunction<Throwable, ? extends Completable> retryStrategy) {
-        delegate.retryServiceDiscoveryErrors(retryStrategy);
+        delegate = delegate.retryServiceDiscoveryErrors(retryStrategy);
         return this;
     }
 
     @Override
     public SingleAddressHttpClientBuilder<U, R> loadBalancerFactory(
             final HttpLoadBalancerFactory<R> loadBalancerFactory) {
-        delegate.loadBalancerFactory(loadBalancerFactory);
+        delegate = delegate.loadBalancerFactory(loadBalancerFactory);
         return this;
     }
 
     @Override
     public SingleAddressHttpClientBuilder<U, R> sslConfig(final ClientSslConfig sslConfig) {
-        delegate.sslConfig(sslConfig);
+        delegate = delegate.sslConfig(sslConfig);
         return this;
     }
 
     @Override
     public SingleAddressHttpClientBuilder<U, R> inferPeerHost(final boolean shouldInfer) {
-        delegate.inferPeerHost(shouldInfer);
+        delegate = delegate.inferPeerHost(shouldInfer);
         return this;
     }
 
     @Override
     public SingleAddressHttpClientBuilder<U, R> inferPeerPort(final boolean shouldInfer) {
-        delegate.inferPeerPort(shouldInfer);
+        delegate = delegate.inferPeerPort(shouldInfer);
         return this;
     }
 
     @Override
     public SingleAddressHttpClientBuilder<U, R> inferSniHostname(final boolean shouldInfer) {
-        delegate.inferSniHostname(shouldInfer);
+        delegate = delegate.inferSniHostname(shouldInfer);
         return this;
     }
 

@@ -29,7 +29,7 @@ import static java.util.Objects.requireNonNull;
  */
 public class DelegatingMultiAddressHttpClientBuilder<U, R> implements MultiAddressHttpClientBuilder<U, R> {
 
-    private final MultiAddressHttpClientBuilder<U, R> delegate;
+    private MultiAddressHttpClientBuilder<U, R> delegate;
 
     /**
      * Create a new instance.
@@ -56,37 +56,37 @@ public class DelegatingMultiAddressHttpClientBuilder<U, R> implements MultiAddre
 
     @Override
     public MultiAddressHttpClientBuilder<U, R> ioExecutor(final IoExecutor ioExecutor) {
-        delegate.ioExecutor(ioExecutor);
+        delegate = delegate.ioExecutor(ioExecutor);
         return this;
     }
 
     @Override
     public MultiAddressHttpClientBuilder<U, R> executor(final Executor executor) {
-        delegate.executor(executor);
+        delegate = delegate.executor(executor);
         return this;
     }
 
     @Override
     public MultiAddressHttpClientBuilder<U, R> executionStrategy(final HttpExecutionStrategy strategy) {
-        delegate.executionStrategy(strategy);
+        delegate = delegate.executionStrategy(strategy);
         return this;
     }
 
     @Override
     public MultiAddressHttpClientBuilder<U, R> bufferAllocator(final BufferAllocator allocator) {
-        delegate.bufferAllocator(allocator);
+        delegate = delegate.bufferAllocator(allocator);
         return this;
     }
 
     @Override
     public MultiAddressHttpClientBuilder<U, R> initializer(final SingleAddressInitializer<U, R> initializer) {
-        delegate.initializer(initializer);
+        delegate = delegate.initializer(initializer);
         return this;
     }
 
     @Override
     public MultiAddressHttpClientBuilder<U, R> followRedirects(final RedirectConfig config) {
-        delegate.followRedirects(config);
+        delegate = delegate.followRedirects(config);
         return this;
     }
 
