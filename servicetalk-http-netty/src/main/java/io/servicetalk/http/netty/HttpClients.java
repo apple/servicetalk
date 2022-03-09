@@ -28,7 +28,6 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.HttpProviders.MultiAddressHttpClientBuilderProvider;
-import io.servicetalk.http.api.HttpProviders.PartitionedHttpClientBuilderProvider;
 import io.servicetalk.http.api.HttpProviders.SingleAddressHttpClientBuilderProvider;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.MultiAddressHttpClientBuilder;
@@ -65,13 +64,11 @@ public final class HttpClients {
 
     private static final List<SingleAddressHttpClientBuilderProvider> SINGLE_ADDRESS_PROVIDERS;
     private static final List<MultiAddressHttpClientBuilderProvider> MULTI_ADDRESS_PROVIDERS;
-    private static final List<PartitionedHttpClientBuilderProvider> PARTITIONED_PROVIDERS;
 
     static {
         final ClassLoader classLoader = HttpClients.class.getClassLoader();
         SINGLE_ADDRESS_PROVIDERS = loadProviders(SingleAddressHttpClientBuilderProvider.class, classLoader, LOGGER);
         MULTI_ADDRESS_PROVIDERS = loadProviders(MultiAddressHttpClientBuilderProvider.class, classLoader, LOGGER);
-        PARTITIONED_PROVIDERS = loadProviders(PartitionedHttpClientBuilderProvider.class, classLoader, LOGGER);
     }
 
     private HttpClients() {
@@ -89,14 +86,6 @@ public final class HttpClients {
     private static <U, R> MultiAddressHttpClientBuilder<U, R> applyProviders(
             MultiAddressHttpClientBuilder<U, R> builder) {
         for (MultiAddressHttpClientBuilderProvider provider : MULTI_ADDRESS_PROVIDERS) {
-            builder = provider.newBuilder(builder);
-        }
-        return builder;
-    }
-
-    private static <U, R> PartitionedHttpClientBuilder<U, R> applyProviders(
-            PartitionedHttpClientBuilder<U, R> builder) {
-        for (PartitionedHttpClientBuilderProvider provider : PARTITIONED_PROVIDERS) {
             builder = provider.newBuilder(builder);
         }
         return builder;
@@ -286,7 +275,7 @@ public final class HttpClients {
             final ServiceDiscoverer<U, R, PartitionedServiceDiscovererEvent<R>> serviceDiscoverer,
             final U address,
             final Function<HttpRequestMetaData, PartitionAttributesBuilder> partitionAttributesBuilderFactory) {
-        return applyProviders(new DefaultPartitionedHttpClientBuilder<>(address,
+        return new DefaultPartitionedHttpClientBuilder<>(address,
                 () -> forSingleAddress(
                         new ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>>() {
                             private final ListenableAsyncCloseable closeable = emptyAsyncCloseable();
@@ -310,6 +299,6 @@ public final class HttpClients {
                             public Completable closeAsyncGracefully() {
                                 return closeable.closeAsyncGracefully();
                             }
-                        }, address), serviceDiscoverer, partitionAttributesBuilderFactory));
+                        }, address), serviceDiscoverer, partitionAttributesBuilderFactory);
     }
 }

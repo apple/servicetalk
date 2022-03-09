@@ -68,25 +68,6 @@ public final class HttpProviders {
     }
 
     /**
-     * Provider for {@link PartitionedHttpClientBuilder}.
-     */
-    @FunctionalInterface
-    public interface PartitionedHttpClientBuilderProvider {
-
-        /**
-         * Returns a {@link PartitionedHttpClientBuilder} based on the pre-initialized
-         * {@link PartitionedHttpClientBuilder}.
-         *
-         * @param builder pre-initialized {@link PartitionedHttpClientBuilder}
-         * @param <U> the type of address before resolution (unresolved address)
-         * @param <R> the type of address after resolution (resolved address)
-         * @return a {@link PartitionedHttpClientBuilder} based on the pre-initialized
-         * {@link PartitionedHttpClientBuilder}.
-         */
-        <U, R> PartitionedHttpClientBuilder<U, R> newBuilder(PartitionedHttpClientBuilder<U, R> builder);
-    }
-
-    /**
      * Provider for {@link HttpServerBuilder}.
      */
     @FunctionalInterface

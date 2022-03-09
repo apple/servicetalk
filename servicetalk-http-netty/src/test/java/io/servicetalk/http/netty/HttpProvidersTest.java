@@ -15,28 +15,18 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.TransportObserverConnectionFactoryFilter;
-import io.servicetalk.client.api.internal.partition.DefaultPartitionAttributesBuilder;
-import io.servicetalk.client.api.partition.PartitionAttributes;
-import io.servicetalk.client.api.partition.PartitionAttributesBuilder;
-import io.servicetalk.client.api.partition.PartitionedServiceDiscovererEvent;
-import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.DelegatingHttpServerBuilder;
 import io.servicetalk.http.api.DelegatingMultiAddressHttpClientBuilder;
-import io.servicetalk.http.api.DelegatingPartitionedHttpClientBuilder;
 import io.servicetalk.http.api.DelegatingSingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.HttpProviders.HttpServerBuilderProvider;
 import io.servicetalk.http.api.HttpProviders.MultiAddressHttpClientBuilderProvider;
-import io.servicetalk.http.api.HttpProviders.PartitionedHttpClientBuilderProvider;
 import io.servicetalk.http.api.HttpProviders.SingleAddressHttpClientBuilderProvider;
-import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServerContext;
 import io.servicetalk.http.api.MultiAddressHttpClientBuilder;
-import io.servicetalk.http.api.PartitionedHttpClientBuilder;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpService;
@@ -50,37 +40,23 @@ import org.junit.jupiter.api.Test;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
 
-import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.AVAILABLE;
-import static io.servicetalk.client.api.partition.PartitionAttributes.Key.newKey;
-import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_ECHO;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
-import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 class HttpProvidersTest {
-
-    private static final PartitionAttributes.Key<String> PARTITION_ATTR_KEY = newKey("PARTITION_ATTR_KEY");
-    private static final String PARTITION_ATTR_VALUE = "PARTITION_ATTR_VALUE";
-    private static final PartitionAttributes PARTITION_ATTRIBUTES = new DefaultPartitionAttributesBuilder(1)
-            .add(PARTITION_ATTR_KEY, PARTITION_ATTR_VALUE).build();
 
     @BeforeEach
     void reset() {
         TestHttpServerBuilderProvider.reset();
         TestSingleAddressHttpClientBuilderProvider.reset();
         TestMultiAddressHttpClientBuilderProvider.reset();
-        TestPartitionedHttpClientBuilderProvider.reset();
     }
 
     @Test
@@ -153,49 +129,6 @@ class HttpProvidersTest {
             try (BlockingHttpClient client = HttpClients.forMultiAddressUrl().buildBlocking()) {
                 assertThat(TestMultiAddressHttpClientBuilderProvider.BUILD_COUNTER.get(), is(1));
                 HttpResponse response = client.request(client.get("http://" + serverAddress + SVC_ECHO));
-                assertThat(response.status(), is(OK));
-                assertThat(TestSingleAddressHttpClientBuilderProvider.BUILD_COUNTER.get(), is(1));
-                assertThat(TestSingleAddressHttpClientBuilderProvider.CONNECTION_COUNTER.get(), is(1));
-            }
-        }
-    }
-
-    @Test
-    void testPartitionedHttpClientBuilderProvider() throws Exception {
-        try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
-                .listenStreamingAndAwait(new TestServiceStreaming())) {
-            PartitionedServiceDiscovererEvent<InetSocketAddress> event =
-                    new PartitionedServiceDiscovererEvent<InetSocketAddress>() {
-                @Override
-                public PartitionAttributes partitionAddress() {
-                    return PARTITION_ATTRIBUTES;
-                }
-
-                @Override
-                public InetSocketAddress address() {
-                    return (InetSocketAddress) serverContext.listenAddress();
-                }
-
-                @Override
-                public Status status() {
-                    return AVAILABLE;
-                }
-            };
-            ServiceDiscoverer<String, InetSocketAddress, PartitionedServiceDiscovererEvent<InetSocketAddress>> psd =
-                    mock(ServiceDiscoverer.class);
-            Publisher<Collection<PartitionedServiceDiscovererEvent<InetSocketAddress>>> eventsStream =
-                    Publisher.<Collection<PartitionedServiceDiscovererEvent<InetSocketAddress>>>from(
-                            singletonList(event)).concat(never());
-            when(psd.discover("test-server")).thenReturn(eventsStream);
-            Function<HttpRequestMetaData, PartitionAttributesBuilder> selector =
-                    req -> new DefaultPartitionAttributesBuilder(1)
-                            .add(PARTITION_ATTR_KEY, PARTITION_ATTR_VALUE);
-            String serverAddress = "test-server";
-            TestSingleAddressHttpClientBuilderProvider.MODIFY_FOR_ADDRESS.set(serverAddress);
-            try (BlockingHttpClient client = HttpClients.forPartitionedAddress(psd, serverAddress, selector)
-                    .buildBlocking()) {
-                assertThat(TestPartitionedHttpClientBuilderProvider.BUILD_COUNTER.get(), is(1));
-                HttpResponse response = client.request(client.get(SVC_ECHO));
                 assertThat(response.status(), is(OK));
                 assertThat(TestSingleAddressHttpClientBuilderProvider.BUILD_COUNTER.get(), is(1));
                 assertThat(TestSingleAddressHttpClientBuilderProvider.CONNECTION_COUNTER.get(), is(1));
@@ -284,28 +217,6 @@ class HttpProvidersTest {
         @Override
         public <U, R> MultiAddressHttpClientBuilder<U, R> newBuilder(MultiAddressHttpClientBuilder<U, R> builder) {
             return new DelegatingMultiAddressHttpClientBuilder<U, R>(builder) {
-
-                @Override
-                public BlockingHttpClient buildBlocking() {
-                    BUILD_COUNTER.incrementAndGet();
-                    return delegate().buildBlocking();
-                }
-            };
-        }
-    }
-
-    public static final class TestPartitionedHttpClientBuilderProvider
-            implements PartitionedHttpClientBuilderProvider {
-
-        static final AtomicInteger BUILD_COUNTER = new AtomicInteger();
-
-        static void reset() {
-            BUILD_COUNTER.set(0);
-        }
-
-        @Override
-        public <U, R> PartitionedHttpClientBuilder<U, R> newBuilder(PartitionedHttpClientBuilder<U, R> builder) {
-            return new DelegatingPartitionedHttpClientBuilder<U, R>(builder) {
 
                 @Override
                 public BlockingHttpClient buildBlocking() {
