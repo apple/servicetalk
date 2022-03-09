@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021-2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,10 +24,13 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
+import io.servicetalk.http.api.DefaultHttpHeadersFactory;
+import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.FilterableReservedStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.MultiAddressHttpClientBuilder;
@@ -60,7 +63,7 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseabl
 import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverCompleteFromSource;
-import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.defaultReqRespFactory;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -85,6 +88,8 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     private final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate;
 
     @Nullable
+    private HttpHeadersFactory headersFactory;
+    @Nullable
     private RedirectConfig redirectConfig;
     @Nullable
     private SingleAddressInitializer<HostAndPort, InetSocketAddress> singleAddressInitializer;
@@ -102,12 +107,14 @@ final class DefaultMultiAddressUrlHttpClientBuilder
 
             final ClientFactory clientFactory = new ClientFactory(buildContext.builder, singleAddressInitializer);
 
-            HttpExecutionContext executionContext = buildContext.builder.executionContextBuilder.build();
+            final HttpExecutionContext executionContext = buildContext.builder.executionContextBuilder.build();
             final CachingKeyFactory keyFactory = closeables.prepend(new CachingKeyFactory());
+            final HttpHeadersFactory headersFactory = this.headersFactory;
             FilterableStreamingHttpClient urlClient = closeables.prepend(
                     new StreamingUrlHttpClient(executionContext, clientFactory, keyFactory,
-                            defaultReqRespFactory(buildContext.httpConfig().asReadOnly(),
-                                    executionContext.bufferAllocator())));
+                            new DefaultStreamingHttpRequestResponseFactory(executionContext.bufferAllocator(),
+                                    headersFactory != null ? headersFactory : DefaultHttpHeadersFactory.INSTANCE,
+                                    HTTP_1_1)));
 
             // Need to wrap the top level client (group) in order for non-relative redirects to work
             urlClient = redirectConfig == null ? urlClient :
@@ -344,6 +351,13 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> executionStrategy(
             final HttpExecutionStrategy strategy) {
         builderTemplate.executionStrategy(strategy);
+        return this;
+    }
+
+    @Override
+    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> headersFactory(
+            final HttpHeadersFactory headersFactory) {
+        this.headersFactory = requireNonNull(headersFactory);
         return this;
     }
 
