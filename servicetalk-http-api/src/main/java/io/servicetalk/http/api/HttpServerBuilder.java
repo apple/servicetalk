@@ -334,14 +334,14 @@ public interface HttpServerBuilder {
      * <p>
      * If the underlying protocol (e.g. TCP) supports it this will result in a socket bind/listen on {@code address}.
      *
-     * @param handler Service invoked for every request received by this server. The returned {@link HttpServerContext}
+     * @param service Service invoked for every request received by this server. The returned {@link HttpServerContext}
      * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link HttpServerContext} is closed.
      * @return A {@link HttpServerContext} by blocking the calling thread until the server is successfully started or
      * throws an {@link Exception} if the server could not be started.
      * @throws Exception if the server could not be started.
      */
-    default HttpServerContext listenStreamingAndAwait(StreamingHttpService handler) throws Exception {
-        return blockingInvocation(listenStreaming(handler));
+    default HttpServerContext listenStreamingAndAwait(StreamingHttpService service) throws Exception {
+        return blockingInvocation(listenStreaming(service));
     }
 
     /**
@@ -364,14 +364,14 @@ public interface HttpServerBuilder {
      * <p>
      * If the underlying protocol (e.g. TCP) supports it this will result in a socket bind/listen on {@code address}.
      *
-     * @param handler Service invoked for every request received by this server. The returned {@link HttpServerContext}
+     * @param service Service invoked for every request received by this server. The returned {@link HttpServerContext}
      * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link HttpServerContext} is closed.
      * @return A {@link HttpServerContext} by blocking the calling thread until the server is successfully started or
      * throws an {@link Exception} if the server could not be started.
      * @throws Exception if the server could not be started.
      */
-    default HttpServerContext listenBlockingStreamingAndAwait(BlockingStreamingHttpService handler) throws Exception {
-        return blockingInvocation(listenBlockingStreaming(handler));
+    default HttpServerContext listenBlockingStreamingAndAwait(BlockingStreamingHttpService service) throws Exception {
+        return blockingInvocation(listenBlockingStreaming(service));
     }
 
     /**

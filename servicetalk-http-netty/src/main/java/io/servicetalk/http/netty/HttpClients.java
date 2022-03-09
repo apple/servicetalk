@@ -27,6 +27,9 @@ import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpHeaderNames;
+import io.servicetalk.http.api.HttpProviders.MultiAddressHttpClientBuilderProvider;
+import io.servicetalk.http.api.HttpProviders.PartitionedHttpClientBuilderProvider;
+import io.servicetalk.http.api.HttpProviders.SingleAddressHttpClientBuilderProvider;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.MultiAddressHttpClientBuilder;
 import io.servicetalk.http.api.MultiAddressHttpClientBuilder.SingleAddressInitializer;
@@ -36,9 +39,13 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.netty.internal.BuilderUtils;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.Collection;
+import java.util.List;
 import java.util.function.Function;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
@@ -46,6 +53,7 @@ import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalDnsServiceDiscoverer;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalSrvDnsServiceDiscoverer;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.mappingServiceDiscoverer;
+import static io.servicetalk.utils.internal.ServiceLoaderUtils.loadProviders;
 import static java.util.function.Function.identity;
 
 /**
@@ -53,8 +61,45 @@ import static java.util.function.Function.identity;
  */
 public final class HttpClients {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(HttpClients.class);
+
+    private static final List<SingleAddressHttpClientBuilderProvider> SINGLE_ADDRESS_PROVIDERS;
+    private static final List<MultiAddressHttpClientBuilderProvider> MULTI_ADDRESS_PROVIDERS;
+    private static final List<PartitionedHttpClientBuilderProvider> PARTITIONED_PROVIDERS;
+
+    static {
+        final ClassLoader classLoader = HttpClients.class.getClassLoader();
+        SINGLE_ADDRESS_PROVIDERS = loadProviders(SingleAddressHttpClientBuilderProvider.class, classLoader, LOGGER);
+        MULTI_ADDRESS_PROVIDERS = loadProviders(MultiAddressHttpClientBuilderProvider.class, classLoader, LOGGER);
+        PARTITIONED_PROVIDERS = loadProviders(PartitionedHttpClientBuilderProvider.class, classLoader, LOGGER);
+    }
+
     private HttpClients() {
         // No instances
+    }
+
+    private static <U, R> SingleAddressHttpClientBuilder<U, R> applyProviders(
+            final U address, SingleAddressHttpClientBuilder<U, R> builder) {
+        for (SingleAddressHttpClientBuilderProvider provider : SINGLE_ADDRESS_PROVIDERS) {
+            builder = provider.newBuilder(address, builder);
+        }
+        return builder;
+    }
+
+    private static <U, R> MultiAddressHttpClientBuilder<U, R> applyProviders(
+            MultiAddressHttpClientBuilder<U, R> builder) {
+        for (MultiAddressHttpClientBuilderProvider provider : MULTI_ADDRESS_PROVIDERS) {
+            builder = provider.newBuilder(builder);
+        }
+        return builder;
+    }
+
+    private static <U, R> PartitionedHttpClientBuilder<U, R> applyProviders(
+            PartitionedHttpClientBuilder<U, R> builder) {
+        for (PartitionedHttpClientBuilderProvider provider : PARTITIONED_PROVIDERS) {
+            builder = provider.newBuilder(builder);
+        }
+        return builder;
     }
 
     /**
@@ -69,7 +114,7 @@ public final class HttpClients {
      * @return new builder with default configuration
      */
     public static MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forMultiAddressUrl() {
-        return new DefaultMultiAddressUrlHttpClientBuilder(HttpClients::forSingleAddress);
+        return applyProviders(new DefaultMultiAddressUrlHttpClientBuilder(HttpClients::forSingleAddress));
     }
 
     /**
@@ -93,7 +138,8 @@ public final class HttpClients {
     public static MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forMultiAddressUrl(
             final ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>>
                     serviceDiscoverer) {
-        return new DefaultMultiAddressUrlHttpClientBuilder(address -> forSingleAddress(serviceDiscoverer, address));
+        return applyProviders(
+                new DefaultMultiAddressUrlHttpClientBuilder(address -> forSingleAddress(serviceDiscoverer, address)));
     }
 
     /**
@@ -124,7 +170,8 @@ public final class HttpClients {
      */
     public static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forSingleAddress(
             final HostAndPort address) {
-        return new DefaultSingleAddressHttpClientBuilder<>(address, globalDnsServiceDiscoverer());
+        return applyProviders(address,
+                new DefaultSingleAddressHttpClientBuilder<>(address, globalDnsServiceDiscoverer()));
     }
 
     /**
@@ -137,7 +184,8 @@ public final class HttpClients {
      */
     public static SingleAddressHttpClientBuilder<String, InetSocketAddress> forServiceAddress(
             final String serviceName) {
-        return new DefaultSingleAddressHttpClientBuilder<>(serviceName, globalSrvDnsServiceDiscoverer());
+        return applyProviders(serviceName,
+                new DefaultSingleAddressHttpClientBuilder<>(serviceName, globalSrvDnsServiceDiscoverer()));
     }
 
     /**
@@ -174,8 +222,8 @@ public final class HttpClients {
      */
     public static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forResolvedAddress(
             final HostAndPort address) {
-        return new DefaultSingleAddressHttpClientBuilder<>(address,
-                mappingServiceDiscoverer(BuilderUtils::toResolvedInetSocketAddress));
+        return applyProviders(address, new DefaultSingleAddressHttpClientBuilder<>(address,
+                mappingServiceDiscoverer(BuilderUtils::toResolvedInetSocketAddress)));
     }
 
     /**
@@ -189,7 +237,8 @@ public final class HttpClients {
      * @return new builder for the address
      */
     public static <R extends SocketAddress> SingleAddressHttpClientBuilder<R, R> forResolvedAddress(final R address) {
-        return new DefaultSingleAddressHttpClientBuilder<>(address, mappingServiceDiscoverer(identity()));
+        return applyProviders(address,
+                new DefaultSingleAddressHttpClientBuilder<>(address, mappingServiceDiscoverer(identity())));
     }
 
     /**
@@ -209,7 +258,7 @@ public final class HttpClients {
     public static <U, R> SingleAddressHttpClientBuilder<U, R> forSingleAddress(
             final ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer,
             final U address) {
-        return new DefaultSingleAddressHttpClientBuilder<>(address, serviceDiscoverer);
+        return applyProviders(address, new DefaultSingleAddressHttpClientBuilder<>(address, serviceDiscoverer));
     }
 
     /**
@@ -237,7 +286,7 @@ public final class HttpClients {
             final ServiceDiscoverer<U, R, PartitionedServiceDiscovererEvent<R>> serviceDiscoverer,
             final U address,
             final Function<HttpRequestMetaData, PartitionAttributesBuilder> partitionAttributesBuilderFactory) {
-        return new DefaultPartitionedHttpClientBuilder<>(address,
+        return applyProviders(new DefaultPartitionedHttpClientBuilder<>(address,
                 () -> forSingleAddress(
                         new ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>>() {
                             private final ListenableAsyncCloseable closeable = emptyAsyncCloseable();
@@ -261,6 +310,6 @@ public final class HttpClients {
                             public Completable closeAsyncGracefully() {
                                 return closeable.closeAsyncGracefully();
                             }
-                        }, address), serviceDiscoverer, partitionAttributesBuilderFactory);
+                        }, address), serviceDiscoverer, partitionAttributesBuilderFactory));
     }
 }

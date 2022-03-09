@@ -84,6 +84,7 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
     private final HttpExecutionContextBuilder executionContextBuilder = new HttpExecutionContextBuilder();
     private final SocketAddress address;
 
+    // Do not use this ctor directly, HttpServers is the entry point for creating a new builder.
     DefaultHttpServerBuilder(SocketAddress address) {
         appendNonOffloadingServiceFilter(ClearAsyncContextHttpServiceFilter.CLEAR_ASYNC_CONTEXT_HTTP_SERVICE_FILTER);
         this.address = address;
