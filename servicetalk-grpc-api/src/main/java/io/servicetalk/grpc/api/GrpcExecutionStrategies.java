@@ -63,7 +63,9 @@ public final class GrpcExecutionStrategies {
      * When merged with another execution strategy the result is always this strategy.
      *
      * @return {@link GrpcExecutionStrategy} that disables all request-response path offloads.
+     * @deprecated Use a custom strategy with no offloads instead.
      */
+    @Deprecated
     public static GrpcExecutionStrategy offloadNever() {
         return NEVER_OFFLOAD_STRATEGY;
     }
