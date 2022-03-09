@@ -19,7 +19,6 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.buffer.api.CharSequences;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
-import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
@@ -29,7 +28,6 @@ import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
@@ -58,7 +56,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.net.SocketOption;
 import java.time.Duration;
 import java.util.Collection;
@@ -68,22 +65,16 @@ import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import static io.netty.util.NetUtil.toSocketAddressString;
-import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.AVAILABLE;
-import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
-import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoffDeltaJitter;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.netty.AlpnIds.HTTP_2;
-import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalDnsServiceDiscoverer;
-import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalSrvDnsServiceDiscoverer;
 import static io.servicetalk.http.netty.StrategyInfluencerAwareConversions.toConditionalClientFilterFactory;
 import static io.servicetalk.http.netty.StrategyInfluencerAwareConversions.toConditionalConnectionFilterFactory;
 import static java.lang.Integer.parseInt;
 import static java.time.Duration.ofSeconds;
-import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -129,19 +120,10 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     @Nullable
     private RetryingHttpRequesterFilter retryingHttpRequesterFilter;
 
+    // Do not use this ctor directly, HttpClients is the entry point for creating a new builder.
     DefaultSingleAddressHttpClientBuilder(
             final U address, final ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer) {
         this.address = requireNonNull(address);
-        config = new HttpClientConfig();
-        executionContextBuilder = new HttpExecutionContextBuilder();
-        strategyComputation = new ClientStrategyInfluencerChainBuilder();
-        this.loadBalancerFactory = DefaultHttpLoadBalancerFactory.Builder.<R>fromDefaults().build();
-        this.serviceDiscoverer = requireNonNull(serviceDiscoverer);
-    }
-
-    DefaultSingleAddressHttpClientBuilder(
-            final ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer) {
-        address = null; // Unknown address - template builder pending override via: copy(address)
         config = new HttpClientConfig();
         executionContextBuilder = new HttpExecutionContextBuilder();
         strategyComputation = new ClientStrategyInfluencerChainBuilder();
@@ -167,35 +149,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         retryingHttpRequesterFilter = from.retryingHttpRequesterFilter;
     }
 
-    private DefaultSingleAddressHttpClientBuilder<U, R> copy() {
-        return new DefaultSingleAddressHttpClientBuilder<>(address, this);
-    }
-
-    private DefaultSingleAddressHttpClientBuilder<U, R> copy(final U address) {
-        return new DefaultSingleAddressHttpClientBuilder<>(requireNonNull(address), this);
-    }
-
-    static DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forHostAndPort(
-            final HostAndPort address) {
-        return new DefaultSingleAddressHttpClientBuilder<>(address, globalDnsServiceDiscoverer());
-    }
-
-    static DefaultSingleAddressHttpClientBuilder<String, InetSocketAddress> forServiceAddress(
-            final String serviceName) {
-        return new DefaultSingleAddressHttpClientBuilder<>(serviceName, globalSrvDnsServiceDiscoverer());
-    }
-
-    static <U, R extends SocketAddress> DefaultSingleAddressHttpClientBuilder<U, R> forResolvedAddress(
-            final U u, final Function<U, R> toResolvedAddressMapper) {
-        ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> sd = new NoopServiceDiscoverer<>(toResolvedAddressMapper);
-        return new DefaultSingleAddressHttpClientBuilder<>(u, sd);
-    }
-
-    static DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forUnknownHostAndPort() {
-        return new DefaultSingleAddressHttpClientBuilder<>(globalDnsServiceDiscoverer());
-    }
-
-    static final class HttpClientBuildContext<U, R> {
+    private static final class HttpClientBuildContext<U, R> {
         final DefaultSingleAddressHttpClientBuilder<U, R> builder;
         private final ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> sd;
         private final SdStatusCompletable sdStatus;
@@ -226,10 +180,6 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
 
         HttpClientConfig httpConfig() {
             return builder.config;
-        }
-
-        StreamingHttpClient build() {
-            return buildStreaming(this);
         }
 
         ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer(
@@ -344,8 +294,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         }
     }
 
-    static StreamingHttpRequestResponseFactory defaultReqRespFactory(ReadOnlyHttpClientConfig roConfig,
-                                                                     BufferAllocator allocator) {
+    private static StreamingHttpRequestResponseFactory defaultReqRespFactory(ReadOnlyHttpClientConfig roConfig,
+                                                                             BufferAllocator allocator) {
         if (roConfig.isH2PriorKnowledge()) {
             H2ProtocolConfig h2Config = roConfig.h2Config();
             assert h2Config != null;
@@ -423,21 +373,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     /**
      * Creates a context before building the client, avoid concurrent changes at runtime.
      */
-    HttpClientBuildContext<U, R> copyBuildCtx() {
-        return buildContext0(null);
-    }
-
-    /**
-     * Creates a context before building the client with a provided address, avoid concurrent changes at runtime.
-     */
-    HttpClientBuildContext<U, R> copyBuildCtx(U address) {
-        assert this.address == null : "Not intended to change the address, only to supply lazily";
-        return buildContext0(address);
-    }
-
-    private HttpClientBuildContext<U, R> buildContext0(@Nullable U address) {
-        final DefaultSingleAddressHttpClientBuilder<U, R> clonedBuilder = address == null ? copy() : copy(address);
-        return new HttpClientBuildContext<>(clonedBuilder,
+    private HttpClientBuildContext<U, R> copyBuildCtx() {
+        return new HttpClientBuildContext<>(new DefaultSingleAddressHttpClientBuilder<>(address, this),
                 this.serviceDiscoverer, this.serviceDiscovererRetryStrategy, this.proxyAddress);
     }
 
@@ -624,16 +561,6 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         return this;
     }
 
-    /**
-     * returns the required strategy for the added client filters and factories.
-     *
-     * @param strategy the user execution strategy.
-     * @return the required strategy for the added client filters and factories.
-     */
-    HttpExecutionStrategy computeChainStrategy(HttpExecutionStrategy strategy) {
-        return strategyComputation.buildForClient(strategy);
-    }
-
     private static <U> CharSequence toAuthorityForm(final U address) {
         if (address instanceof CharSequence) {
             return (CharSequence) address;
@@ -686,43 +613,6 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                     config.fallbackPeerPort(parseInt(cs.subSequence(colon + 1, cs.length()).toString()));
                 }
             }
-        }
-    }
-
-    private static final class NoopServiceDiscoverer<UnresolvedAddress, ResolvedAddress>
-            implements ServiceDiscoverer<UnresolvedAddress, ResolvedAddress,
-            ServiceDiscovererEvent<ResolvedAddress>> {
-        private final ListenableAsyncCloseable closeable = emptyAsyncCloseable();
-
-        private final Function<UnresolvedAddress, ResolvedAddress> toResolvedAddressMapper;
-
-        private NoopServiceDiscoverer(final Function<UnresolvedAddress, ResolvedAddress> toResolvedAddressMapper) {
-            this.toResolvedAddressMapper = requireNonNull(toResolvedAddressMapper);
-        }
-
-        @Override
-        public Publisher<Collection<ServiceDiscovererEvent<ResolvedAddress>>> discover(
-                final UnresolvedAddress address) {
-            return Publisher.<Collection<ServiceDiscovererEvent<ResolvedAddress>>>from(
-                    singletonList(new DefaultServiceDiscovererEvent<>(
-                            requireNonNull(toResolvedAddressMapper.apply(address)), AVAILABLE)))
-                    // LoadBalancer will flag a termination of service discoverer Publisher as unexpected.
-                    .concat(never());
-        }
-
-        @Override
-        public Completable onClose() {
-            return closeable.onClose();
-        }
-
-        @Override
-        public Completable closeAsync() {
-            return closeable.closeAsync();
-        }
-
-        @Override
-        public Completable closeAsyncGracefully() {
-            return closeable.closeAsyncGracefully();
         }
     }
 

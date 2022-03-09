@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021-2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.http.api.DefaultHttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.netty.internal.ExecutionContextBuilder;
 
@@ -70,5 +71,13 @@ final class HttpExecutionContextBuilder extends ExecutionContextBuilder<HttpExec
                 ioExecutor == null ? defaultContextSupplier.get().ioExecutor() : ioExecutor,
                 executor == null ? defaultContextSupplier.get().executor() : executor,
                 strategy == null ? defaultStrategy() : strategy);
+    }
+
+    static <U, R> SingleAddressHttpClientBuilder<U, R> setExecutionContext(
+            final SingleAddressHttpClientBuilder<U, R> builder, final HttpExecutionContext context) {
+        return builder.ioExecutor(context.ioExecutor())
+                .executor(context.executor())
+                .bufferAllocator(context.bufferAllocator())
+                .executionStrategy(context.executionStrategy());
     }
 }

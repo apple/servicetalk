@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021-2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import java.net.InetSocketAddress;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
-import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.forResolvedAddress;
+import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.startsWith;
@@ -85,8 +85,9 @@ class DefaultSingleAddressHttpClientBuilderTest {
                         .build())
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok());
              BlockingHttpClient client =
-                     forResolvedAddress(hostNamePrefix + hostName + hostNameSuffix + (port == null ? "" : port),
-                             u -> serverCtx.listenAddress())
+                     forSingleAddress(
+                             GlobalDnsServiceDiscoverer.mappingServiceDiscoverer(u -> serverCtx.listenAddress()),
+                             hostNamePrefix + hostName + hostNameSuffix + (port == null ? "" : port))
                              .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                                      .hostnameVerificationAlgorithm("").build())
                              .buildBlocking()) {

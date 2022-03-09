@@ -42,21 +42,21 @@ import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
-import io.servicetalk.http.api.PartitionHttpClientBuilderConfigurator;
 import io.servicetalk.http.api.PartitionedHttpClientBuilder;
 import io.servicetalk.http.api.ReservedStreamingHttpConnection;
+import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
-import io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.HttpClientBuildContext;
 import io.servicetalk.transport.api.IoExecutor;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.function.Function;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
@@ -66,75 +66,73 @@ import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.SD_RETRY_STRATEGY_INIT_DURATION;
 import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.SD_RETRY_STRATEGY_JITTER;
+import static io.servicetalk.http.netty.HttpExecutionContextBuilder.setExecutionContext;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
 
 final class DefaultPartitionedHttpClientBuilder<U, R> implements PartitionedHttpClientBuilder<U, R> {
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultPartitionedHttpClientBuilder.class);
 
+    private final U address;
+    private final Function<HttpRequestMetaData, PartitionAttributesBuilder> partitionAttributesBuilderFactory;
+    private final Supplier<SingleAddressHttpClientBuilder<U, R>> builderFactory;
+    private final HttpExecutionContextBuilder executionContextBuilder = new HttpExecutionContextBuilder();
     private ServiceDiscoverer<U, R, PartitionedServiceDiscovererEvent<R>> serviceDiscoverer;
     @Nullable
     private BiIntFunction<Throwable, ? extends Completable> serviceDiscovererRetryStrategy;
-    private final Function<HttpRequestMetaData, PartitionAttributesBuilder> partitionAttributesBuilderFactory;
-    private final DefaultSingleAddressHttpClientBuilder<U, R> builderTemplate;
+    private int serviceDiscoveryMaxQueueSize = 32;
     @Nullable
     private HttpHeadersFactory headersFactory;
     @Nullable
     private SingleAddressInitializer<U, R> clientInitializer;
-    private PartitionHttpClientBuilderConfigurator<U, R> clientFilterFunction = (__, ___) -> { };
     private PartitionMapFactory partitionMapFactory = PowerSetPartitionMapFactory.INSTANCE;
-    private int serviceDiscoveryMaxQueueSize = 32;
 
     DefaultPartitionedHttpClientBuilder(
-            final DefaultSingleAddressHttpClientBuilder<U, R> builderTemplate,
+            final U address,
+            final Supplier<SingleAddressHttpClientBuilder<U, R>> builderFactory,
             final ServiceDiscoverer<U, R, PartitionedServiceDiscovererEvent<R>> serviceDiscoverer,
             final Function<HttpRequestMetaData, PartitionAttributesBuilder> partitionAttributesBuilderFactory) {
-        this.builderTemplate = requireNonNull(builderTemplate);
+        this.address = requireNonNull(address);
+        this.builderFactory = requireNonNull(builderFactory);
         this.serviceDiscoverer = requireNonNull(serviceDiscoverer);
         this.partitionAttributesBuilderFactory = requireNonNull(partitionAttributesBuilderFactory);
     }
 
     @Override
     public StreamingHttpClient buildStreaming() {
-        final HttpClientBuildContext<U, R> buildContext = builderTemplate.copyBuildCtx();
-        final HttpExecutionContext executionContext = buildContext.builder.build().executionContext();
+        final HttpExecutionContext executionContext = executionContextBuilder.build();
         BiIntFunction<Throwable, ? extends Completable> sdRetryStrategy = serviceDiscovererRetryStrategy;
         if (sdRetryStrategy == null) {
             sdRetryStrategy = retryWithConstantBackoffDeltaJitter(__ -> true, SD_RETRY_STRATEGY_INIT_DURATION,
                     SD_RETRY_STRATEGY_JITTER, executionContext.executor());
         }
-        ServiceDiscoverer<U, R, PartitionedServiceDiscovererEvent<R>> psd =
+        final ServiceDiscoverer<U, R, PartitionedServiceDiscovererEvent<R>> psd =
                 new DefaultSingleAddressHttpClientBuilder.RetryingServiceDiscoverer<>(serviceDiscoverer,
                         sdRetryStrategy);
 
         final PartitionedClientFactory<U, R, FilterableStreamingHttpClient> clientFactory = (pa, sd) -> {
             // build new context, user may have changed anything on the builder from the filter
-            DefaultSingleAddressHttpClientBuilder<U, R> builder = buildContext.builder.copyBuildCtx().builder;
+            final SingleAddressHttpClientBuilder<U, R> builder = builderFactory.get();
             builder.serviceDiscoverer(sd);
-            clientFilterFunction.configureForPartition(pa, builder);
+            setExecutionContext(builder, executionContext);
             if (clientInitializer != null) {
                 clientInitializer.initialize(pa, builder);
             }
             return builder.buildStreaming();
         };
 
-        final Publisher<PartitionedServiceDiscovererEvent<R>> psdEvents = psd.discover(buildContext.address())
+        final Publisher<PartitionedServiceDiscovererEvent<R>> psdEvents = psd.discover(address)
                 .flatMapConcatIterable(identity());
         final HttpHeadersFactory headersFactory = this.headersFactory;
-        DefaultPartitionedStreamingHttpClientFilter<U, R> partitionedClient =
+        final DefaultPartitionedStreamingHttpClientFilter<U, R> partitionedClient =
                 new DefaultPartitionedStreamingHttpClientFilter<>(psdEvents, serviceDiscoveryMaxQueueSize,
                         clientFactory, partitionAttributesBuilderFactory,
                         new DefaultStreamingHttpRequestResponseFactory(executionContext.bufferAllocator(),
                                 headersFactory != null ? headersFactory : DefaultHttpHeadersFactory.INSTANCE, HTTP_1_1),
                         executionContext, partitionMapFactory);
 
-        HttpExecutionStrategy computedStrategy =
-                buildContext.builder.computeChainStrategy(executionContext.executionStrategy());
-
-        LOGGER.debug("Client created with base strategy {} → computed strategy {}",
-                executionContext.executionStrategy(), computedStrategy);
-
-        return new FilterableClientToClient(partitionedClient, computedStrategy);
+        LOGGER.debug("Partitioned client created with base strategy {}", executionContext.executionStrategy());
+        return new FilterableClientToClient(partitionedClient, executionContext.executionStrategy());
     }
 
     private static final class DefaultPartitionedStreamingHttpClientFilter<U, R> implements
@@ -263,19 +261,19 @@ final class DefaultPartitionedHttpClientBuilder<U, R> implements PartitionedHttp
 
     @Override
     public PartitionedHttpClientBuilder<U, R> executor(final Executor executor) {
-        builderTemplate.executor(executor);
+        executionContextBuilder.executor(executor);
         return this;
     }
 
     @Override
     public PartitionedHttpClientBuilder<U, R> ioExecutor(final IoExecutor ioExecutor) {
-        builderTemplate.ioExecutor(ioExecutor);
+        executionContextBuilder.ioExecutor(ioExecutor);
         return this;
     }
 
     @Override
     public PartitionedHttpClientBuilder<U, R> bufferAllocator(final BufferAllocator allocator) {
-        builderTemplate.bufferAllocator(allocator);
+        executionContextBuilder.bufferAllocator(allocator);
         return this;
     }
 
@@ -313,7 +311,7 @@ final class DefaultPartitionedHttpClientBuilder<U, R> implements PartitionedHttp
 
     @Override
     public PartitionedHttpClientBuilder<U, R> executionStrategy(final HttpExecutionStrategy strategy) {
-        this.builderTemplate.executionStrategy(strategy);
+        this.executionContextBuilder.executionStrategy(strategy);
         return this;
     }
 
