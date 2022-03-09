@@ -28,7 +28,6 @@ import java.net.InetSocketAddress;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
-import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.startsWith;
@@ -85,9 +84,9 @@ class DefaultSingleAddressHttpClientBuilderTest {
                         .build())
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok());
              BlockingHttpClient client =
-                     forSingleAddress(
-                             GlobalDnsServiceDiscoverer.mappingServiceDiscoverer(u -> serverCtx.listenAddress()),
-                             hostNamePrefix + hostName + hostNameSuffix + (port == null ? "" : port))
+                     new DefaultSingleAddressHttpClientBuilder<>(
+                             hostNamePrefix + hostName + hostNameSuffix + (port == null ? "" : port),
+                             GlobalDnsServiceDiscoverer.mappingServiceDiscoverer(u -> serverCtx.listenAddress()))
                              .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                                      .hostnameVerificationAlgorithm("").build())
                              .buildBlocking()) {
