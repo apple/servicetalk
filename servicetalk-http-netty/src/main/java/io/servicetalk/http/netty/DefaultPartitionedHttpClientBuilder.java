@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,10 +33,13 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.DefaultHttpHeadersFactory;
+import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.FilterableReservedStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.PartitionHttpClientBuilderConfigurator;
@@ -60,20 +63,22 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoffDeltaJitter;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.failed;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.SD_RETRY_STRATEGY_INIT_DURATION;
 import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.SD_RETRY_STRATEGY_JITTER;
-import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.defaultReqRespFactory;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
 
 final class DefaultPartitionedHttpClientBuilder<U, R> implements PartitionedHttpClientBuilder<U, R> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultMultiAddressUrlHttpClientBuilder.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultPartitionedHttpClientBuilder.class);
 
     private ServiceDiscoverer<U, R, PartitionedServiceDiscovererEvent<R>> serviceDiscoverer;
     @Nullable
     private BiIntFunction<Throwable, ? extends Completable> serviceDiscovererRetryStrategy;
     private final Function<HttpRequestMetaData, PartitionAttributesBuilder> partitionAttributesBuilderFactory;
     private final DefaultSingleAddressHttpClientBuilder<U, R> builderTemplate;
+    @Nullable
+    private HttpHeadersFactory headersFactory;
     @Nullable
     private SingleAddressInitializer<U, R> clientInitializer;
     private PartitionHttpClientBuilderConfigurator<U, R> clientFilterFunction = (__, ___) -> { };
@@ -115,12 +120,12 @@ final class DefaultPartitionedHttpClientBuilder<U, R> implements PartitionedHttp
 
         final Publisher<PartitionedServiceDiscovererEvent<R>> psdEvents = psd.discover(buildContext.address())
                 .flatMapConcatIterable(identity());
-
+        final HttpHeadersFactory headersFactory = this.headersFactory;
         DefaultPartitionedStreamingHttpClientFilter<U, R> partitionedClient =
                 new DefaultPartitionedStreamingHttpClientFilter<>(psdEvents, serviceDiscoveryMaxQueueSize,
                         clientFactory, partitionAttributesBuilderFactory,
-                        defaultReqRespFactory(buildContext.httpConfig().asReadOnly(),
-                                executionContext.bufferAllocator()),
+                        new DefaultStreamingHttpRequestResponseFactory(executionContext.bufferAllocator(),
+                                headersFactory != null ? headersFactory : DefaultHttpHeadersFactory.INSTANCE, HTTP_1_1),
                         executionContext, partitionMapFactory);
 
         HttpExecutionStrategy computedStrategy =
@@ -309,6 +314,12 @@ final class DefaultPartitionedHttpClientBuilder<U, R> implements PartitionedHttp
     @Override
     public PartitionedHttpClientBuilder<U, R> executionStrategy(final HttpExecutionStrategy strategy) {
         this.builderTemplate.executionStrategy(strategy);
+        return this;
+    }
+
+    @Override
+    public PartitionedHttpClientBuilder<U, R> headersFactory(final HttpHeadersFactory headersFactory) {
+        this.headersFactory = requireNonNull(headersFactory);
         return this;
     }
 }

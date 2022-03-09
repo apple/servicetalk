@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -86,6 +86,18 @@ public interface PartitionedHttpClientBuilder<U, R> // FIXME: 0.43 - remove depr
 
     @Override
     PartitionedHttpClientBuilder<U, R> bufferAllocator(BufferAllocator allocator);
+
+    /**
+     * Sets the {@link HttpHeadersFactory} to be used for creating {@link HttpHeaders} for new requests.
+     *
+     * @param headersFactory {@link HttpHeadersFactory} to be used for creating {@link HttpHeaders} for new requests
+     * @return {@code this}
+     */
+    default PartitionedHttpClientBuilder<U, R> headersFactory(HttpHeadersFactory headersFactory) {
+        // FIXME: 0.43 - remove default implementation
+        throw new UnsupportedOperationException(
+                "PartitionedHttpClientBuilder#headersFactory(HttpHeadersFactory) is not supported by " + getClass());
+    }
 
     /**
      * Sets a {@link ServiceDiscoverer} to resolve addresses of remote servers to connect to.

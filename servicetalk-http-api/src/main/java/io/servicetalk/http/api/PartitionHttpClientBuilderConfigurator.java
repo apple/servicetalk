@@ -26,7 +26,7 @@ import io.servicetalk.client.api.partition.PartitionAttributes;
  */
 @Deprecated
 @FunctionalInterface
-public interface PartitionHttpClientBuilderConfigurator<U, R> {
+public interface PartitionHttpClientBuilderConfigurator<U, R> { // FIXME: 0.43 - remove deprecated interface
 
     /**
      * Configures the passed {@link SingleAddressHttpClientBuilder} for a given set of {@link PartitionAttributes}.

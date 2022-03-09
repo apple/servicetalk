@@ -20,11 +20,16 @@ import io.servicetalk.buffer.netty.BufferAllocators;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.BlockingHttpRequester;
 import io.servicetalk.http.api.BlockingStreamingHttpRequester;
+import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpHeaders;
+import io.servicetalk.http.api.HttpHeadersFactory;
+import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpRequester;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
@@ -41,6 +46,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import java.net.InetSocketAddress;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static io.servicetalk.buffer.api.Matchers.contentEqualTo;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
@@ -117,6 +123,21 @@ class DefaultMultiAddressUrlHttpClientBuilderTest {
     }
 
     @Test
+    void buildWithCustomHeadersFactory() throws Exception {
+        try (BlockingHttpClient client = HttpClients.forMultiAddressUrl()
+                .headersFactory(new DelegatingHttpHeadersFactory(DefaultHttpHeadersFactory.INSTANCE) {
+                    @Override
+                    public HttpHeaders newHeaders() {
+                        return super.newHeaders().add("custom-header", "custom-value");
+                    }
+                })
+                .buildBlocking()) {
+            HttpRequest request = client.get("/");
+            assertThat(request.headers().get("custom-header"), contentEqualTo("custom-value"));
+        }
+    }
+
+    @Test
     void internalClientsUseDifferentExecutionContextWhenConfigured() throws Exception {
         // Assert prerequisites first.
         // Use different strategies, as ExecutionContextExtension shares the same strategy.
@@ -183,6 +204,34 @@ class DefaultMultiAddressUrlHttpClientBuilderTest {
             assertThat(actualInternalExecutionStrategy.get(), equalTo(internalExecutionStrategy));
 
             streamingHttpClient.closeAsync().toFuture().get();
+        }
+    }
+
+    private static class DelegatingHttpHeadersFactory implements HttpHeadersFactory {
+        private final HttpHeadersFactory delegate;
+
+        DelegatingHttpHeadersFactory(final HttpHeadersFactory delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public HttpHeaders newHeaders() {
+            return delegate.newHeaders();
+        }
+
+        @Override
+        public HttpHeaders newTrailers() {
+            return delegate.newTrailers();
+        }
+
+        @Override
+        public boolean validateCookies() {
+            return delegate.validateCookies();
+        }
+
+        @Override
+        public boolean validateValues() {
+            return delegate.validateValues();
         }
     }
 }
