@@ -66,7 +66,7 @@ import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.SD_RETRY_STRATEGY_INIT_DURATION;
 import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.SD_RETRY_STRATEGY_JITTER;
-import static io.servicetalk.http.netty.HttpExecutionContextBuilder.setExecutionContext;
+import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.setExecutionContext;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
 
@@ -112,7 +112,7 @@ final class DefaultPartitionedHttpClientBuilder<U, R> implements PartitionedHttp
 
         final PartitionedClientFactory<U, R, FilterableStreamingHttpClient> clientFactory = (pa, sd) -> {
             // build new context, user may have changed anything on the builder from the filter
-            final SingleAddressHttpClientBuilder<U, R> builder = builderFactory.get();
+            final SingleAddressHttpClientBuilder<U, R> builder = requireNonNull(builderFactory.get());
             builder.serviceDiscoverer(sd);
             setExecutionContext(builder, executionContext);
             if (clientInitializer != null) {

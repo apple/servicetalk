@@ -52,9 +52,9 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAnd
 import static io.servicetalk.transport.netty.internal.ExecutionContextExtension.cached;
 import static io.servicetalk.transport.netty.internal.ExecutionContextExtension.immediate;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -223,10 +223,10 @@ class DefaultMultiAddressUrlHttpClientBuilderTest {
 
     private static void assertExecutionContext(HttpExecutionContext expected, HttpExecutionContext actual) {
         assertThat(actual, is(notNullValue()));
-        assertThat(actual.ioExecutor(), equalTo(expected.ioExecutor()));
-        assertThat(actual.executor(), equalTo(expected.executor()));
-        assertThat(actual.bufferAllocator(), equalTo(expected.bufferAllocator()));
-        assertThat(actual.executionStrategy(), equalTo(expected.executionStrategy()));
+        assertThat(actual.ioExecutor(), is(sameInstance(expected.ioExecutor())));
+        assertThat(actual.executor(), is(sameInstance(expected.executor())));
+        assertThat(actual.bufferAllocator(), is(sameInstance(expected.bufferAllocator())));
+        assertThat(actual.executionStrategy(), is(sameInstance(expected.executionStrategy())));
     }
 
     private static class DelegatingHttpHeadersFactory implements HttpHeadersFactory {

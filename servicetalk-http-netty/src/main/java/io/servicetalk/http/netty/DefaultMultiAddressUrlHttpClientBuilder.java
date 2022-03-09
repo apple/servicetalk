@@ -64,7 +64,7 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncClo
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverCompleteFromSource;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
-import static io.servicetalk.http.netty.HttpExecutionContextBuilder.setExecutionContext;
+import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.setExecutionContext;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -233,7 +233,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         @Override
         public StreamingHttpClient apply(final UrlKey urlKey) {
             final SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder =
-                    builderFactory.apply(urlKey.hostAndPort);
+                    requireNonNull(builderFactory.apply(urlKey.hostAndPort));
 
             setExecutionContext(builder, executionContext);
             if (HTTPS_SCHEME.equalsIgnoreCase(urlKey.scheme)) {

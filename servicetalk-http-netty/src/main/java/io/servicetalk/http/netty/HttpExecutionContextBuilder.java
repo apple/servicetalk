@@ -20,7 +20,6 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.http.api.DefaultHttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.netty.internal.ExecutionContextBuilder;
 
@@ -71,13 +70,5 @@ final class HttpExecutionContextBuilder extends ExecutionContextBuilder<HttpExec
                 ioExecutor == null ? defaultContextSupplier.get().ioExecutor() : ioExecutor,
                 executor == null ? defaultContextSupplier.get().executor() : executor,
                 strategy == null ? defaultStrategy() : strategy);
-    }
-
-    static <U, R> SingleAddressHttpClientBuilder<U, R> setExecutionContext(
-            final SingleAddressHttpClientBuilder<U, R> builder, final HttpExecutionContext context) {
-        return builder.ioExecutor(context.ioExecutor())
-                .executor(context.executor())
-                .bufferAllocator(context.bufferAllocator())
-                .executionStrategy(context.executionStrategy());
     }
 }

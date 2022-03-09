@@ -149,6 +149,14 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         retryingHttpRequesterFilter = from.retryingHttpRequesterFilter;
     }
 
+    static <U, R> SingleAddressHttpClientBuilder<U, R> setExecutionContext(
+            final SingleAddressHttpClientBuilder<U, R> builder, final HttpExecutionContext context) {
+        return builder.ioExecutor(context.ioExecutor())
+                .executor(context.executor())
+                .bufferAllocator(context.bufferAllocator())
+                .executionStrategy(context.executionStrategy());
+    }
+
     private static final class HttpClientBuildContext<U, R> {
         final DefaultSingleAddressHttpClientBuilder<U, R> builder;
         private final ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> sd;
@@ -384,7 +392,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     }
 
     @Override
-    public SingleAddressHttpClientBuilder<U, R> proxyAddress(final U proxyAddress) {
+    public DefaultSingleAddressHttpClientBuilder<U, R> proxyAddress(final U proxyAddress) {
         this.proxyAddress = requireNonNull(proxyAddress);
         config.connectAddress(hostToCharSequenceFunction.apply(address));
         return this;
@@ -403,7 +411,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     }
 
     @Override
-    public SingleAddressHttpClientBuilder<U, R> executionStrategy(final HttpExecutionStrategy strategy) {
+    public DefaultSingleAddressHttpClientBuilder<U, R> executionStrategy(final HttpExecutionStrategy strategy) {
         executionContextBuilder.executionStrategy(strategy);
         return this;
     }
@@ -421,7 +429,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     }
 
     @Override
-    public SingleAddressHttpClientBuilder<U, R> enableWireLogging(final String loggerName, final LogLevel logLevel,
+    public DefaultSingleAddressHttpClientBuilder<U, R> enableWireLogging(final String loggerName, final LogLevel logLevel,
                                                                   final BooleanSupplier logUserData) {
         config.tcpConfig().enableWireLogging(loggerName, logLevel, logUserData);
         return this;
@@ -443,7 +451,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     }
 
     @Override
-    public SingleAddressHttpClientBuilder<U, R> appendConnectionFilter(
+    public DefaultSingleAddressHttpClientBuilder<U, R> appendConnectionFilter(
             final Predicate<StreamingHttpRequest> predicate, final StreamingHttpConnectionFilterFactory factory) {
         return appendConnectionFilter(toConditionalConnectionFilterFactory(predicate, factory));
     }
@@ -470,14 +478,14 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     }
 
     @Override
-    public SingleAddressHttpClientBuilder<U, R> allowDropResponseTrailers(final boolean allowDrop) {
+    public DefaultSingleAddressHttpClientBuilder<U, R> allowDropResponseTrailers(final boolean allowDrop) {
         config.protocolConfigs().allowDropTrailersReadFromTransport(allowDrop);
         return this;
     }
 
     @Override
-    public SingleAddressHttpClientBuilder<U, R> appendClientFilter(final Predicate<StreamingHttpRequest> predicate,
-                                                                   final StreamingHttpClientFilterFactory factory) {
+    public DefaultSingleAddressHttpClientBuilder<U, R> appendClientFilter(
+            final Predicate<StreamingHttpRequest> predicate, final StreamingHttpClientFilterFactory factory) {
         if (factory instanceof RetryingHttpRequesterFilter) {
             ensureSingleRetryFilter();
             retryingHttpRequesterFilter = (RetryingHttpRequesterFilter) factory;
@@ -520,7 +528,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     }
 
     @Override
-    public SingleAddressHttpClientBuilder<U, R> retryServiceDiscoveryErrors(
+    public DefaultSingleAddressHttpClientBuilder<U, R> retryServiceDiscoveryErrors(
             final BiIntFunction<Throwable, ? extends Completable> retryStrategy) {
         this.serviceDiscovererRetryStrategy = requireNonNull(retryStrategy);
         return this;
@@ -544,19 +552,19 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     }
 
     @Override
-    public SingleAddressHttpClientBuilder<U, R> inferPeerHost(boolean shouldInfer) {
+    public DefaultSingleAddressHttpClientBuilder<U, R> inferPeerHost(boolean shouldInfer) {
         config.inferPeerHost(shouldInfer);
         return this;
     }
 
     @Override
-    public SingleAddressHttpClientBuilder<U, R> inferPeerPort(boolean shouldInfer) {
+    public DefaultSingleAddressHttpClientBuilder<U, R> inferPeerPort(boolean shouldInfer) {
         config.inferPeerPort(shouldInfer);
         return this;
     }
 
     @Override
-    public SingleAddressHttpClientBuilder<U, R> inferSniHostname(boolean shouldInfer) {
+    public DefaultSingleAddressHttpClientBuilder<U, R> inferSniHostname(boolean shouldInfer) {
         config.inferSniHostname(shouldInfer);
         return this;
     }
