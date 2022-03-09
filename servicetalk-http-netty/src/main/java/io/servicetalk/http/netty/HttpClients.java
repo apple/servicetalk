@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.client.api.ClientGroup;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
@@ -220,7 +221,11 @@ public final class HttpClients {
      * @param <U> the type of address before resolution (unresolved address)
      * @param <R> the type of address after resolution (resolved address)
      * @return new builder with provided configuration
+     * @deprecated We are unaware of anyone using "partition" feature and plan to remove it in future releases.
+     * If you depend on it, consider using {@link ClientGroup} as an alternative or reach out to the maintainers
+     * describing the use-case.
      */
+    @Deprecated // FIXME: 0.43 - remove deprecated method
     public static <U, R> PartitionedHttpClientBuilder<U, R> forPartitionedAddress(
             final ServiceDiscoverer<U, R, PartitionedServiceDiscovererEvent<R>> serviceDiscoverer,
             final U address,

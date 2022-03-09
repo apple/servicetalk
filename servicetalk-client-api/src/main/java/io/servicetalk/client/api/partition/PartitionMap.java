@@ -15,6 +15,7 @@
  */
 package io.servicetalk.client.api.partition;
 
+import io.servicetalk.client.api.ClientGroup;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
@@ -25,9 +26,15 @@ import javax.annotation.Nullable;
 /**
  * A map like interface which manages {@link PartitionAttributes} that are fully specified and returns the corresponding
  * partitions those {@link PartitionAttributes} belong to.
+ *
  * @param <T> The value object which represents the partition.
+ * @deprecated We are unaware of anyone using "partition" feature and plan to remove it in future releases.
+ * If you depend on it, consider using {@link ClientGroup} as an alternative or reach out to the maintainers describing
+ * the use-case.
  */
-public interface PartitionMap<T extends AsyncCloseable> extends ListenableAsyncCloseable {
+@Deprecated
+public interface PartitionMap<T extends AsyncCloseable> // FIXME: 0.43 - remove deprecated interface
+        extends ListenableAsyncCloseable {
     /**
      * Add a new {@link PartitionAttributes} that is absolutely specified. This may create new partitions.
      * <p>

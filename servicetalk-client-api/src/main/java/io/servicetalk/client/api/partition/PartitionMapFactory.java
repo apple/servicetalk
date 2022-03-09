@@ -15,14 +15,20 @@
  */
 package io.servicetalk.client.api.partition;
 
+import io.servicetalk.client.api.ClientGroup;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 
 import java.util.function.Function;
 
 /**
  * A generic factory for {@link PartitionMap} objects.
+ *
+ * @deprecated We are unaware of anyone using "partition" feature and plan to remove it in future releases.
+ * If you depend on it, consider using {@link ClientGroup} as an alternative or reach out to the maintainers describing
+ * the use-case.
  */
-public interface PartitionMapFactory {
+@Deprecated
+public interface PartitionMapFactory {  // FIXME: 0.43 - remove deprecated interface
     /**
      * Create a new {@link PartitionMap} object.
      * @param valueFactory The factory used to create new partitions.

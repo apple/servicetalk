@@ -16,6 +16,7 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.client.api.ClientGroup;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.client.api.partition.PartitionAttributes;
@@ -36,8 +37,13 @@ import io.servicetalk.transport.api.IoExecutor;
  * could be overridden to address specific use cases.
  * @param <U> the type of address before resolution (unresolved address)
  * @param <R> the type of address after resolution (resolved address)
+ * @deprecated We are unaware of anyone using "partition" feature and plan to remove it in future releases.
+ * If you depend on it, consider using {@link ClientGroup} as an alternative or reach out to the maintainers describing
+ * the use-case.
  */
-public interface PartitionedHttpClientBuilder<U, R> extends HttpClientBuilder<U, R, ServiceDiscovererEvent<R>> {
+@Deprecated
+public interface PartitionedHttpClientBuilder<U, R> // FIXME: 0.43 - remove deprecated interface
+        extends HttpClientBuilder<U, R, ServiceDiscovererEvent<R>> {
     /**
      * Initializes the {@link SingleAddressHttpClientBuilder} for each new client.
      * @param <U> the type of address before resolution (unresolved address)
