@@ -429,8 +429,9 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     }
 
     @Override
-    public DefaultSingleAddressHttpClientBuilder<U, R> enableWireLogging(final String loggerName, final LogLevel logLevel,
-                                                                  final BooleanSupplier logUserData) {
+    public DefaultSingleAddressHttpClientBuilder<U, R> enableWireLogging(final String loggerName,
+                                                                         final LogLevel logLevel,
+                                                                         final BooleanSupplier logUserData) {
         config.tcpConfig().enableWireLogging(loggerName, logLevel, logUserData);
         return this;
     }
