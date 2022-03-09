@@ -35,11 +35,13 @@ import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopConnectionObserver;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -57,6 +59,11 @@ class HttpProvidersTest {
         TestHttpServerBuilderProvider.reset();
         TestSingleAddressHttpClientBuilderProvider.reset();
         TestMultiAddressHttpClientBuilderProvider.reset();
+    }
+
+    @AfterEach
+    void deactivate() {
+        TestMultiAddressHttpClientBuilderProvider.ACTIVATED.set(false);
     }
 
     @Test
@@ -208,22 +215,25 @@ class HttpProvidersTest {
     public static final class TestMultiAddressHttpClientBuilderProvider
             implements MultiAddressHttpClientBuilderProvider {
 
+        // Used to prevent applying this provider for other test classes:
+        static final AtomicBoolean ACTIVATED = new AtomicBoolean();
         static final AtomicInteger BUILD_COUNTER = new AtomicInteger();
 
         static void reset() {
+            ACTIVATED.set(true);
             BUILD_COUNTER.set(0);
         }
 
         @Override
         public <U, R> MultiAddressHttpClientBuilder<U, R> newBuilder(MultiAddressHttpClientBuilder<U, R> builder) {
-            return new DelegatingMultiAddressHttpClientBuilder<U, R>(builder) {
+            return ACTIVATED.get() ? new DelegatingMultiAddressHttpClientBuilder<U, R>(builder) {
 
                 @Override
                 public BlockingHttpClient buildBlocking() {
                     BUILD_COUNTER.incrementAndGet();
                     return delegate().buildBlocking();
                 }
-            };
+            } : builder;
         }
     }
 

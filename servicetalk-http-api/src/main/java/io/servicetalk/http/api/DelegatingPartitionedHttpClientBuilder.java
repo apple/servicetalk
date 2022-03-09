@@ -84,6 +84,12 @@ public class DelegatingPartitionedHttpClientBuilder<U, R> implements Partitioned
     }
 
     @Override
+    public PartitionedHttpClientBuilder<U, R> headersFactory(final HttpHeadersFactory headersFactory) {
+        delegate = delegate.headersFactory(headersFactory);
+        return this;
+    }
+
+    @Override
     public PartitionedHttpClientBuilder<U, R> serviceDiscoverer(
             final ServiceDiscoverer<U, R, PartitionedServiceDiscovererEvent<R>> serviceDiscoverer) {
         delegate = delegate.serviceDiscoverer(serviceDiscoverer);

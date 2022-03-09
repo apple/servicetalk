@@ -79,6 +79,12 @@ public class DelegatingMultiAddressHttpClientBuilder<U, R> implements MultiAddre
     }
 
     @Override
+    public MultiAddressHttpClientBuilder<U, R> headersFactory(final HttpHeadersFactory headersFactory) {
+        delegate = delegate.headersFactory(headersFactory);
+        return this;
+    }
+
+    @Override
     public MultiAddressHttpClientBuilder<U, R> initializer(final SingleAddressInitializer<U, R> initializer) {
         delegate = delegate.initializer(initializer);
         return this;
