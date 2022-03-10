@@ -601,6 +601,11 @@ final class Generator {
         serviceBuilderSpecBuilder.addMethod(methodBuilder(addService)
                 .addModifiers(PUBLIC)
                 .addAnnotation(Deprecated.class)
+                .addJavadoc("Adds a {@link $T} implementation." + lineSeparator(), state.blockingServiceClass)
+                .addJavadoc(lineSeparator())
+                .addJavadoc(JAVADOC_PARAM + service + " the {@link $T} implementation to add." + lineSeparator(),
+                        state.blockingServiceClass)
+                .addJavadoc(JAVADOC_RETURN + "this." + lineSeparator())
                 .addJavadoc(JAVADOC_DEPRECATED + "Use {@link #$L($T)}." + lineSeparator(), addBlockingService,
                         state.blockingServiceClass)
                 .returns(builderClass)
@@ -873,14 +878,13 @@ final class Generator {
                             printJavaDocs, (methodName, b) -> {
                                 ClassName inClass = messageTypesMap.get(clientMetaData.methodProto.getInputType());
                                 b.addModifiers(ABSTRACT).addParameter(clientMetaData.className, metadata)
-                                .addAnnotation(Deprecated.class)
-                                .addJavadoc(JAVADOC_DEPRECATED + "Use {@link #$L($T,$T)}." + lineSeparator(),
-                                        methodName,
-                                        GrpcClientMetadata, clientMetaData.methodProto.getClientStreaming() ?
-                                                Publisher : inClass);
+                                .addAnnotation(Deprecated.class);
                                 if (printJavaDocs) {
                                     extractJavaDocComments(state, methodIndex, b);
-                                    b.addJavadoc(JAVADOC_PARAM + metadata +
+                                    b.addJavadoc(JAVADOC_DEPRECATED + "Use {@link #$L($T,$T)}." + lineSeparator(),
+                                            methodName, GrpcClientMetadata,
+                                            clientMetaData.methodProto.getClientStreaming() ? Publisher : inClass)
+                                    .addJavadoc(JAVADOC_PARAM + metadata +
                                             " the metadata associated with this client call." + lineSeparator());
                                 }
                                 return b;
@@ -910,13 +914,13 @@ final class Generator {
                             printJavaDocs, (methodName, b) -> {
                                 ClassName inClass = messageTypesMap.get(clientMetaData.methodProto.getInputType());
                                 b.addModifiers(ABSTRACT).addParameter(clientMetaData.className, metadata)
-                                .addAnnotation(Deprecated.class)
-                                .addJavadoc(JAVADOC_DEPRECATED + "Use {@link #$L($T,$T)}." + lineSeparator(),
-                                    methodName, GrpcClientMetadata, clientMetaData.methodProto.getClientStreaming() ?
-                                                Types.Iterable : inClass);
+                                .addAnnotation(Deprecated.class);
                                 if (printJavaDocs) {
                                     extractJavaDocComments(state, methodIndex, b);
-                                    b.addJavadoc(JAVADOC_PARAM + metadata +
+                                    b.addJavadoc(JAVADOC_DEPRECATED + "Use {@link #$L($T,$T)}." + lineSeparator(),
+                                            methodName, GrpcClientMetadata,
+                                            clientMetaData.methodProto.getClientStreaming() ? Types.Iterable : inClass)
+                                    .addJavadoc(JAVADOC_PARAM + metadata +
                                             " the metadata associated with this client call." + lineSeparator());
                                 }
                                 return b;
@@ -1041,8 +1045,7 @@ final class Generator {
         if (flags.contains(BLOCKING)) {
             if (clientSteaming) {
                 if (flags.contains(CLIENT)) {
-                    methodSpecBuilder.addParameter(ParameterizedTypeName.get(ClassName.get(Iterable.class),
-                            inClass), request, mods);
+                    methodSpecBuilder.addParameter(ParameterizedTypeName.get(Types.Iterable, inClass), request, mods);
                     if (printJavaDocs) {
                         methodSpecBuilder.addJavadoc(JAVADOC_PARAM + request +
                                 " used to send a stream of type {@link $T} to the server." + lineSeparator(), inClass);
