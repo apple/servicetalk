@@ -23,7 +23,7 @@ jobs:
       - name: Make gradlew Executable
         run: chmod +x gradlew
       - name: Build with Gradle
-        run: ./gradlew --parallel clean quality
+        run: ./gradlew --parallel --no-build-cache --warning-mode all --refresh-dependencies clean quality
       - name: Upload CheckStyle Results
         if: always()
         uses: actions/upload-artifact@v2
