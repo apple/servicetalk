@@ -111,17 +111,19 @@ clean {
 
 sourceSets {
   testJavaDocSourceSet {
-    java.srcDir file(protobuf.generatedFilesBaseDir)
-    sourceSets.test.allJava
+    java.srcDir protobuf.generatedFilesBaseDir
+    compileClasspath += sourceSets.test.compileClasspath
   }
 }
 
 task testJavadoc(type: Javadoc) {
   source = sourceSets.testJavaDocSourceSet.allJava
-  classpath = sourceSets.test.compileClasspath
+  classpath = sourceSets.testJavaDocSourceSet.compileClasspath
   destinationDir = file("$buildDir/tmp/testjavadoc")
-  options.addBooleanOption("Xwerror", true)
-  options.addBooleanOption("protected", true)
+  options.addBooleanOption("Xdoclint:syntax", true)
+  options.addBooleanOption("Xdoclint:html", true)
+  options.addBooleanOption("Xdoclint:accessibility", true)
+  // Don't use Xdoclint:missing for now because not all methods/types have javadocs.
 }
 
 test.finalizedBy(testJavadoc)
