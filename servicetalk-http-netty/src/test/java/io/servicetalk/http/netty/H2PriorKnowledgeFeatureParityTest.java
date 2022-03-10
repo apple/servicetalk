@@ -34,6 +34,7 @@ import io.servicetalk.http.api.HttpCookiePair;
 import io.servicetalk.http.api.HttpEventKey;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaders;
+import io.servicetalk.http.api.HttpMetaData;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponse;
@@ -53,6 +54,7 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import io.servicetalk.http.netty.NettyHttp2ExceptionUtils.H2StreamResetException;
+import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.DelegatingConnectionAcceptor;
 import io.servicetalk.transport.api.HostAndPort;
@@ -72,6 +74,7 @@ import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http2.DefaultHttp2DataFrame;
 import io.netty.handler.codec.http2.DefaultHttp2Headers;
 import io.netty.handler.codec.http2.DefaultHttp2HeadersFrame;
+import io.netty.handler.codec.http2.DefaultHttp2ResetFrame;
 import io.netty.handler.codec.http2.DefaultHttp2SettingsFrame;
 import io.netty.handler.codec.http2.Http2DataFrame;
 import io.netty.handler.codec.http2.Http2FrameCodecBuilder;
@@ -82,6 +85,7 @@ import io.netty.handler.codec.http2.Http2Settings;
 import io.netty.handler.codec.http2.Http2SettingsAckFrame;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -110,6 +114,7 @@ import javax.annotation.Nullable;
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_TYPE;
 import static io.netty.handler.codec.http.HttpHeaderNames.TRAILER;
 import static io.netty.handler.codec.http2.Http2CodecUtil.SMALLEST_MAX_CONCURRENT_STREAMS;
+import static io.netty.handler.codec.http2.Http2Error.PROTOCOL_ERROR;
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.buffer.api.Matchers.contentEqualTo;
 import static io.servicetalk.concurrent.api.Completable.completed;
@@ -120,18 +125,23 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static io.servicetalk.context.api.ContextMap.Key.newKey;
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
 import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
+import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.COOKIE;
 import static io.servicetalk.http.api.HttpHeaderNames.EXPECT;
 import static io.servicetalk.http.api.HttpHeaderNames.SET_COOKIE;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
+import static io.servicetalk.http.api.HttpHeaderNames.UPGRADE;
+import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpHeaderValues.CONTINUE;
+import static io.servicetalk.http.api.HttpHeaderValues.KEEP_ALIVE;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static io.servicetalk.http.api.HttpResponseStatus.EXPECTATION_FAILED;
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
+import static io.servicetalk.http.netty.H2ToStH1Utils.PROXY_CONNECTION;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
@@ -139,6 +149,7 @@ import static io.servicetalk.http.netty.HttpTestExecutionStrategy.DEFAULT;
 import static io.servicetalk.http.netty.HttpTestExecutionStrategy.NO_OFFLOAD;
 import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
+import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.serverChannel;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor;
 import static java.lang.String.valueOf;
@@ -164,6 +175,9 @@ import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 class H2PriorKnowledgeFeatureParityTest {
+
+    private static final CharSequence[] PROHIBITED_HEADERS = {CONNECTION, KEEP_ALIVE, TRANSFER_ENCODING, UPGRADE,
+            PROXY_CONNECTION};
     private static final String EXPECT_FAIL_HEADER = "please_fail_expect";
     private static final ContextMap.Key<String> K1 = newKey("k1", String.class);
     private static final ContextMap.Key<String> K2 = newKey("k2", String.class);
@@ -1265,6 +1279,57 @@ class H2PriorKnowledgeFeatureParityTest {
         assertEquals(request2ToWrite, next.toString(UTF_8));
     }
 
+    @Test
+    void h2LayerFiltersOutProhibitedH1HeadersOnClientSide() throws Exception {
+        setUp(DEFAULT, true);
+        serverAcceptorChannel = bindH2Server(serverEventLoopGroup, new ChannelInitializer<Channel>() {
+                    @Override
+                    protected void initChannel(final Channel ch) {
+                        ch.pipeline().addLast(new EchoHttp2Handler());
+                    }
+                }, __ -> { }, identity());
+        InetSocketAddress serverAddress = (InetSocketAddress) serverAcceptorChannel.localAddress();
+        try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
+                .protocols(HttpProtocol.HTTP_2.config)
+                .enableWireLogging("servicetalk-tests-wire-logger", LogLevel.TRACE, () -> true)
+                .executionStrategy(clientExecutionStrategy)
+                .buildBlocking()) {
+            HttpResponse response = client.request(addProhibitedHeaders(client.post("/"))
+                    .payloadBody(client.executionContext().bufferAllocator().fromAscii("content")));
+            assertThat(response.status(), is(OK));
+        }
+    }
+
+    @Test
+    void h2LayerFiltersOutProhibitedH1HeadersOnServerSide() throws Exception {
+        setUp(DEFAULT, true);
+        try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
+                .protocols(HttpProtocol.HTTP_2.config)
+                .enableWireLogging("servicetalk-tests-wire-logger", LogLevel.TRACE, () -> true)
+                .listenBlockingAndAwait((ctx, request, responseFactory) -> addProhibitedHeaders(responseFactory.ok()));
+             BlockingHttpClient client = forSingleAddress(serverHostAndPort(serverContext))
+                     .protocols(HttpProtocol.HTTP_2.config)
+                     .enableWireLogging("servicetalk-tests-wire-logger", LogLevel.TRACE, () -> true)
+                     .executionStrategy(clientExecutionStrategy)
+                     .buildBlocking()) {
+            HttpResponse response = client.request(client.get("/"));
+            assertThat(response.status(), is(OK));
+            for (CharSequence headerName : PROHIBITED_HEADERS) {
+                assertThat("Unexpected headerName: " + headerName,
+                        response.headers().contains(headerName), is(false));
+            }
+        }
+    }
+
+    private static <T extends HttpMetaData> T addProhibitedHeaders(T metaData) {
+        metaData.addHeader(CONNECTION, UPGRADE)
+                .addHeader(KEEP_ALIVE, "timeout=5")
+                .addHeader(TRANSFER_ENCODING, CHUNKED)
+                .addHeader(UPGRADE, "foo/2")
+                .addHeader(PROXY_CONNECTION, "close");
+        return metaData;
+    }
+
     @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
     @MethodSource("clientExecutors")
     void clientRespectsSettingsFrame(HttpTestExecutionStrategy strategy,
@@ -1738,6 +1803,11 @@ class H2PriorKnowledgeFeatureParityTest {
                     outHeaders.status(io.netty.handler.codec.http.HttpResponseStatus.OK.codeAsText());
                 }
 
+                if (!allHeadersSanitized(headers.headers())) {
+                    ctx.writeAndFlush(new DefaultHttp2ResetFrame(PROTOCOL_ERROR));
+                    return;
+                }
+
                 CharSequence contentType = headers.headers().get(CONTENT_TYPE);
                 if (contentType != null) {
                     outHeaders.add(CONTENT_TYPE, contentType);
@@ -1746,6 +1816,13 @@ class H2PriorKnowledgeFeatureParityTest {
                 ctx.write(new DefaultHttp2HeadersFrame(outHeaders, headers.isEndStream()));
                 sentHeaders = true;
             }
+        }
+
+        private static boolean allHeadersSanitized(Http2Headers headers) {
+            return !headers.contains(HttpHeaderNames.CONNECTION) && !headers.contains(HttpHeaderNames.KEEP_ALIVE)
+                    && !headers.contains(HttpHeaderNames.TRANSFER_ENCODING)
+                    && !headers.contains(HttpHeaderNames.UPGRADE)
+                    && !headers.contains(HttpHeaderNames.PROXY_CONNECTION);
         }
     }
 
