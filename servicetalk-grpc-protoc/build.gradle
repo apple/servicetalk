@@ -109,16 +109,11 @@ clean {
   delete protobuf.generatedFilesBaseDir
 }
 
-sourceSets {
-  testJavaDocSourceSet {
-    java.srcDir protobuf.generatedFilesBaseDir
-    compileClasspath += sourceSets.test.compileClasspath
-  }
-}
-
 task testJavadoc(type: Javadoc) {
-  source = sourceSets.testJavaDocSourceSet.allJava
-  classpath = sourceSets.testJavaDocSourceSet.compileClasspath
+  dependsOn tasks.compileTestJava
+
+  source = protobuf.generatedFilesBaseDir
+  classpath = sourceSets.test.compileClasspath
   destinationDir = file("$buildDir/tmp/testjavadoc")
   options.addBooleanOption("Xdoclint:syntax", true)
   options.addBooleanOption("Xdoclint:html", true)
