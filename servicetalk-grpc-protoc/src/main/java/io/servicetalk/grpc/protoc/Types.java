@@ -42,7 +42,9 @@ final class Types {
     static final ClassName Arrays = ClassName.get("java.util", "Arrays");
     private static final ClassName Collection = ClassName.get("java.util", "Collection");
 
-    private static final ClassName RouteExecutionStrategyFactory =
+    static final ClassName RouteExecutionStrategy =
+            bestGuess(routerApiPkg + ".RouteExecutionStrategy");
+    static final ClassName RouteExecutionStrategyFactory =
             bestGuess(routerApiPkg + ".RouteExecutionStrategyFactory");
 
     static final ClassName BlockingIterable = bestGuess(concurrentPkg + ".BlockingIterable");
