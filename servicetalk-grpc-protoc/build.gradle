@@ -108,3 +108,20 @@ afterEvaluate {
 clean {
   delete protobuf.generatedFilesBaseDir
 }
+
+sourceSets {
+  testJavaDocSourceSet {
+    java.srcDir file(protobuf.generatedFilesBaseDir)
+    sourceSets.test.allJava
+  }
+}
+
+task testJavadoc(type: Javadoc) {
+  source = sourceSets.testJavaDocSourceSet.allJava
+  classpath = sourceSets.test.compileClasspath
+  destinationDir = file("$buildDir/tmp/testjavadoc")
+  options.addBooleanOption("Xwerror", true)
+  options.addBooleanOption("protected", true)
+}
+
+test.finalizedBy(testJavadoc)

@@ -37,6 +37,7 @@ final class Types {
 
     private static final TypeName Wildcard = WildcardTypeName.subtypeOf(Object.class);
     static final ClassName List = ClassName.get("java.util", "List");
+    static final ClassName Iterable = ClassName.get("java.lang", "Iterable");
     static final ClassName Objects = ClassName.get("java.util", "Objects");
     static final ClassName Collections = ClassName.get("java.util", "Collections");
     static final ClassName Arrays = ClassName.get("java.util", "Arrays");

@@ -866,7 +866,7 @@ final class Generator {
                                 .addJavadoc(JAVADOC_DEPRECATED + "Use {@link #$L($T,$T)}." + lineSeparator(),
                                         methodName,
                                         GrpcClientMetadata, clientMetaData.methodProto.getClientStreaming() ?
-                                                ParameterizedTypeName.get(Publisher, inClass) : inClass);
+                                                Publisher : inClass);
                                 if (printJavaDocs) {
                                     extractJavaDocComments(state, methodIndex, b);
                                     b.addJavadoc(JAVADOC_PARAM + metadata +
@@ -902,7 +902,7 @@ final class Generator {
                                 .addAnnotation(Deprecated.class)
                                 .addJavadoc(JAVADOC_DEPRECATED + "Use {@link #$L($T,$T)}." + lineSeparator(),
                                     methodName, GrpcClientMetadata, clientMetaData.methodProto.getClientStreaming() ?
-                                    ParameterizedTypeName.get(ClassName.get(Iterable.class), inClass) : inClass);
+                                                Types.Iterable : inClass);
                                 if (printJavaDocs) {
                                     extractJavaDocComments(state, methodIndex, b);
                                     b.addJavadoc(JAVADOC_PARAM + metadata +
