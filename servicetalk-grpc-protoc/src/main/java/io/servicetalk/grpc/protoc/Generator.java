@@ -602,11 +602,12 @@ final class Generator {
                 .addModifiers(PUBLIC)
                 .addAnnotation(Deprecated.class)
                 .addJavadoc("Adds a {@link $T} implementation." + lineSeparator(), state.blockingServiceClass)
+                .addJavadoc(lineSeparator())
                 .addJavadoc(JAVADOC_PARAM + service + " the {@link $T} implementation to add." + lineSeparator(),
                         state.blockingServiceClass)
+                .addJavadoc(JAVADOC_RETURN + "this." + lineSeparator())
                 .addJavadoc(JAVADOC_DEPRECATED + "Use {@link #$L($T)}." + lineSeparator(), addBlockingService,
                         state.blockingServiceClass)
-                .addJavadoc(JAVADOC_RETURN + "this.")
                 .returns(builderClass)
                 .addParameter(state.blockingServiceClass, service, FINAL)
                 .addStatement("return $L($L)", addBlockingService, service)
