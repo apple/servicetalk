@@ -37,6 +37,7 @@ final class Words {
     static final String rpc = "rpc";
     static final String initSerializationProvider = "initSerializationProvider";
     static final String addService = "addService";
+    static final String addBlockingService = "addBlockingService";
     static final String registerRoutes = "registerRoutes";
     static final String service = "service";
     static final String strategy = "strategy";

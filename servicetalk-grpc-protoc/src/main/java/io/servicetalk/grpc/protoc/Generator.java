@@ -123,6 +123,7 @@ import static io.servicetalk.grpc.protoc.Words.RPC_PATH;
 import static io.servicetalk.grpc.protoc.Words.Rpc;
 import static io.servicetalk.grpc.protoc.Words.Service;
 import static io.servicetalk.grpc.protoc.Words.To;
+import static io.servicetalk.grpc.protoc.Words.addBlockingService;
 import static io.servicetalk.grpc.protoc.Words.addService;
 import static io.servicetalk.grpc.protoc.Words.bind;
 import static io.servicetalk.grpc.protoc.Words.bufferDecoderGroup;
@@ -597,7 +598,17 @@ final class Generator {
                 .addStatement("return this")
                 .build());
 
-        final MethodSpec.Builder addBlockingServiceMethodSpecBuilder = methodBuilder(addService)
+        serviceBuilderSpecBuilder.addMethod(methodBuilder(addService)
+                .addModifiers(PUBLIC)
+                .addAnnotation(Deprecated.class)
+                .addJavadoc(JAVADOC_DEPRECATED + "Use {@link #$L($T)}." + lineSeparator(), addBlockingService,
+                        state.blockingServiceClass)
+                .returns(builderClass)
+                .addParameter(state.blockingServiceClass, service, FINAL)
+                .addStatement("return $L($L)", addBlockingService, service)
+                .build());
+
+        final MethodSpec.Builder addBlockingServiceMethodSpecBuilder = methodBuilder(addBlockingService)
                 .addModifiers(PUBLIC)
                 .returns(builderClass)
                 .addParameter(state.blockingServiceClass, service, FINAL);
