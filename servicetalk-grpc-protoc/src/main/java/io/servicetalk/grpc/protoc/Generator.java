@@ -601,8 +601,12 @@ final class Generator {
         serviceBuilderSpecBuilder.addMethod(methodBuilder(addService)
                 .addModifiers(PUBLIC)
                 .addAnnotation(Deprecated.class)
-                .addJavadoc(JAVADOC_DEPRECATED + "Use {@link #$L($T)}." + lineSeparator(), addBlockingService,
+                .addJavadoc(JAVADOC_DEPRECATED + "Use {@link #$L($T)}.", addBlockingService,
                         state.blockingServiceClass)
+                .addJavadoc(lineSeparator())
+                .addJavadoc(JAVADOC_PARAM + service + " the service to add.")
+                .addJavadoc(lineSeparator())
+                .addJavadoc(JAVADOC_RETURN + "this.")
                 .returns(builderClass)
                 .addParameter(state.blockingServiceClass, service, FINAL)
                 .addStatement("return $L($L)", addBlockingService, service)
