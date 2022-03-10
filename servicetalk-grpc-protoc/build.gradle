@@ -121,10 +121,9 @@ task testJavadoc(type: Javadoc) {
   exclude "**/*.desc"
   classpath = sourceSets.test.compileClasspath
   destinationDir = file("$buildDir/tmp/testjavadoc")
-  options.addBooleanOption("Xdoclint:syntax", true)
-  options.addBooleanOption("Xdoclint:html", true)
-  options.addBooleanOption("Xdoclint:accessibility", true)
-  // Don't use Xdoclint:missing for now because not all methods/types have javadocs.
+  options.addBooleanOption("Xwerror", true)
+  options.addBooleanOption("Xdoclint:all,-missing", true)
+  options.addBooleanOption("protected", true)
 }
 
 test.finalizedBy(testJavadoc)
