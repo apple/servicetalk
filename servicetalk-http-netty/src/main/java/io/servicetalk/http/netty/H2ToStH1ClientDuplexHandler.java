@@ -17,6 +17,7 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.http.api.Http2Exception;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpRequestMetaData;
@@ -111,15 +112,16 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
     }
 
     @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) {
+    public void channelRead(final ChannelHandlerContext ctx, final Object msg) throws Http2Exception {
         if (msg instanceof Http2HeadersFrame) {
-            Http2HeadersFrame headersFrame = (Http2HeadersFrame) msg;
-            Http2Headers h2Headers = headersFrame.headers();
+            final Http2HeadersFrame headersFrame = (Http2HeadersFrame) msg;
+            final int streamId = headersFrame.stream().id();
+            final Http2Headers h2Headers = headersFrame.headers();
             final HttpResponseStatus httpStatus;
             if (!readHeaders) {
-                CharSequence status = h2Headers.getAndRemove(STATUS.value());
+                final CharSequence status = h2Headers.getAndRemove(STATUS.value());
                 if (status == null) {
-                    throw new IllegalArgumentException("a response must have " + STATUS + " header");
+                    throw noStatus(ctx, streamId);
                 }
                 httpStatus = HttpResponseStatus.of(status);
                 boolean realResponse = !isInterim(httpStatus);
@@ -164,16 +166,16 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
 
             if (headersFrame.isEndStream()) {
                 if (httpStatus != null) {
-                    fireFullResponse(ctx, h2Headers, httpStatus);
+                    fireFullResponse(ctx, h2Headers, httpStatus, streamId);
                 } else {
-                    ctx.fireChannelRead(h2HeadersToH1HeadersClient(h2Headers, null, false));
+                    ctx.fireChannelRead(h2HeadersToH1HeadersClient(ctx, h2Headers, null, false, streamId));
                 }
                 closeHandler.protocolPayloadEndInbound(ctx);
             } else if (httpStatus == null) {
-                throw new IllegalArgumentException("a response must have " + STATUS + " header");
+                throw noStatus(ctx, streamId);
             } else {
                 ctx.fireChannelRead(newResponseMetaData(HTTP_2_0, httpStatus,
-                        h2HeadersToH1HeadersClient(h2Headers, httpStatus, false)));
+                        h2HeadersToH1HeadersClient(ctx, h2Headers, httpStatus, false, streamId)));
             }
         } else if (msg instanceof Http2DataFrame) {
             readDataFrame(ctx, msg);
@@ -182,16 +184,23 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
         }
     }
 
-    private void fireFullResponse(ChannelHandlerContext ctx, final Http2Headers h2Headers,
-                                  HttpResponseStatus httpStatus) {
-        assert method != null;
-        ctx.fireChannelRead(newResponseMetaData(HTTP_2_0, httpStatus,
-                h2HeadersToH1HeadersClient(h2Headers, httpStatus, true)));
+    private static Http2Exception noStatus(final ChannelHandlerContext ctx, final int streamId) {
+        return protocolError(ctx, streamId, false,
+                "Incoming response must have '" + STATUS.value() + "' header");
     }
 
-    private NettyH2HeadersToHttpHeaders h2HeadersToH1HeadersClient(Http2Headers h2Headers,
-                                                                   @Nullable HttpResponseStatus httpStatus,
-                                                                   boolean fullResponse) {
+    private void fireFullResponse(final ChannelHandlerContext ctx, final Http2Headers h2Headers,
+                                  final HttpResponseStatus httpStatus, final int streamId) throws Http2Exception {
+        assert method != null;
+        ctx.fireChannelRead(newResponseMetaData(HTTP_2_0, httpStatus,
+                h2HeadersToH1HeadersClient(ctx, h2Headers, httpStatus, true, streamId)));
+    }
+
+    private NettyH2HeadersToHttpHeaders h2HeadersToH1HeadersClient(final ChannelHandlerContext ctx,
+                                                                   final Http2Headers h2Headers,
+                                                                   @Nullable final HttpResponseStatus httpStatus,
+                                                                   final boolean fullResponse,
+                                                                   final int streamId) throws Http2Exception {
         assert method != null;
         h2HeadersSanitizeForH1(h2Headers);
         if (httpStatus != null) {
@@ -205,7 +214,7 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
                     }
                 }
             } else if (!responseMayHaveContent(statusCode, method)) {
-                throw new IllegalArgumentException("content-length (" + h2Headers.get(CONTENT_LENGTH) +
+                throw protocolError(ctx, streamId, fullResponse, "content-length (" + h2Headers.get(CONTENT_LENGTH) +
                         ") header is not expected for status code " + statusCode + " in response to " + method.name() +
                         " request");
             }

@@ -17,6 +17,7 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.http.api.EmptyHttpHeaders;
+import io.servicetalk.http.api.Http2Exception;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpMetaData;
@@ -171,8 +172,8 @@ class AbstractH2DuplexHandlerTest {
         }
         headers.setInt(CONTENT_LENGTH, 1);
 
-        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
-                () -> channel.writeInbound(new DefaultHttp2HeadersFrame(headers, endStream)));
+        Http2Exception e = assertThrows(Http2Exception.class,
+                () -> channel.writeInbound(headersFrame(headers, endStream)));
         assertThat(e.getMessage(), startsWith("content-length (1) header is not expected"));
     }
 
@@ -205,7 +206,7 @@ class AbstractH2DuplexHandlerTest {
                 throw new Error();
         }
 
-        channel.writeInbound(new DefaultHttp2HeadersFrame(headers, endStream));
+        channel.writeInbound(headersFrame(headers, endStream));
         assertThat(channel.readInbound(), instanceOf(HttpMetaData.class));
     }
 
@@ -233,7 +234,7 @@ class AbstractH2DuplexHandlerTest {
         Http2Headers headers = new DefaultHttp2Headers();
         headers.status(OK.codeAsText());
         headers.setInt(CONTENT_LENGTH, contentLength);
-        channel.writeInbound(new DefaultHttp2HeadersFrame(headers, endStream));
+        channel.writeInbound(headersFrame(headers, endStream));
 
         HttpMetaData metaData = channel.readInbound();
         assertThat(metaData.headers().get(CONTENT_LENGTH), contentEqualTo(valueOf(contentLength)));
@@ -245,7 +246,7 @@ class AbstractH2DuplexHandlerTest {
         } else {
             // No more items at this moment:
             assertThat(channel.inboundMessages(), is(empty()));
-            channel.writeInbound(new DefaultHttp2HeadersFrame(new DefaultHttp2Headers(), true));
+            channel.writeInbound(headersFrame(new DefaultHttp2Headers(), true));
             HttpHeaders trailers = channel.readInbound();
             assertThat(trailers.isEmpty(), is(true));
         }
@@ -270,7 +271,7 @@ class AbstractH2DuplexHandlerTest {
         variant.writeOutbound(channel);
 
         Http2Headers headers = variant.setHeaders(new DefaultHttp2Headers());
-        channel.writeInbound(new DefaultHttp2HeadersFrame(headers, endStream));
+        channel.writeInbound(headersFrame(headers, endStream));
 
         HttpMetaData metaData = channel.readInbound();
         if (endStream) {
@@ -300,7 +301,7 @@ class AbstractH2DuplexHandlerTest {
 
         Http2Headers headers = variant.setHeaders(new DefaultHttp2Headers());
         headers.setInt(CONTENT_LENGTH, content.length());
-        channel.writeInbound(new DefaultHttp2HeadersFrame(headers));
+        channel.writeInbound(headersFrame(headers, false));
 
         HttpMetaData metaData = channel.readInbound();
         assertThat(metaData.headers().get(CONTENT_LENGTH), contentEqualTo(valueOf(content.length())));
@@ -311,7 +312,7 @@ class AbstractH2DuplexHandlerTest {
         assertThat(buffer, is(equalTo(DEFAULT_ALLOCATOR.fromAscii(content))));
 
         if (addTrailers) {
-            channel.writeInbound(new DefaultHttp2HeadersFrame(new DefaultHttp2Headers().set("trailer", "value"), true));
+            channel.writeInbound(headersFrame(new DefaultHttp2Headers().set("trailer", "value"), true));
         }
         HttpHeaders trailers = channel.readInbound();
         if (trailers != null) {
@@ -328,7 +329,7 @@ class AbstractH2DuplexHandlerTest {
 
         Http2Headers headers = variant.setHeaders(new DefaultHttp2Headers());
         headers.setInt(CONTENT_LENGTH, 0);
-        channel.writeInbound(new DefaultHttp2HeadersFrame(headers, true));
+        channel.writeInbound(headersFrame(headers, true));
 
         HttpMetaData metaData = channel.readInbound();
         assertThat(metaData.headers().get(CONTENT_LENGTH), contentEqualTo(valueOf(0)));
@@ -417,6 +418,14 @@ class AbstractH2DuplexHandlerTest {
         dataFrame.release();
     }
 
+    private static Http2HeadersFrame headersFrame(Http2Headers headers, boolean endStream) {
+        Http2FrameStream stream = mock(Http2FrameStream.class);
+        when(stream.id()).thenReturn(3);
+        Http2HeadersFrame frame = new DefaultHttp2HeadersFrame(headers, endStream);
+        frame.stream(stream);
+        return frame;
+    }
+
     private static final class EmbeddedHttp2StreamChannel extends EmbeddedChannel implements Http2StreamChannel {
 
         @Override
@@ -425,5 +434,6 @@ class AbstractH2DuplexHandlerTest {
             when(streamMock.id()).thenReturn(3);
             return streamMock;
         }
+
     }
 }
