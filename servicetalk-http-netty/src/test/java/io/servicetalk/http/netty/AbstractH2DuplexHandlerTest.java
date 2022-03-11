@@ -434,6 +434,5 @@ class AbstractH2DuplexHandlerTest {
             when(streamMock.id()).thenReturn(3);
             return streamMock;
         }
-
     }
 }
