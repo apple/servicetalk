@@ -16,6 +16,7 @@
 package io.servicetalk.grpc.health;
 
 import io.servicetalk.concurrent.BlockingIterator;
+import io.servicetalk.grpc.api.GrpcStatusCode;
 import io.servicetalk.grpc.api.GrpcStatusException;
 import io.servicetalk.grpc.netty.GrpcClients;
 import io.servicetalk.grpc.netty.GrpcServers;
@@ -29,8 +30,10 @@ import org.junit.jupiter.api.Test;
 
 import java.net.InetSocketAddress;
 
+import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.grpc.api.GrpcStatusCode.FAILED_PRECONDITION;
 import static io.servicetalk.grpc.api.GrpcStatusCode.NOT_FOUND;
+import static io.servicetalk.grpc.api.GrpcStatusCode.UNKNOWN;
 import static io.servicetalk.grpc.health.DefaultHealthService.OVERALL_SERVICE_NAME;
 import static io.servicetalk.health.v1.HealthCheckResponse.ServingStatus.NOT_SERVING;
 import static io.servicetalk.health.v1.HealthCheckResponse.ServingStatus.SERVICE_UNKNOWN;
@@ -135,14 +138,24 @@ final class DefaultHealthServiceTest {
     }
 
     @Test
-    void watchPredicateFails() throws Exception {
-        DefaultHealthService service = new DefaultHealthService(name -> false);
+    void watchPredicateFalse() throws Exception {
+        watchFailure(new DefaultHealthService(name -> false), FAILED_PRECONDITION);
+    }
+
+    @Test
+    void watchPredicateThrows() throws Exception {
+        watchFailure(new DefaultHealthService(name -> {
+            throw DELIBERATE_EXCEPTION;
+        }), UNKNOWN);
+    }
+
+    private static void watchFailure(DefaultHealthService service, GrpcStatusCode expectedCode) throws Exception {
         try (ServerContext serverCtx = GrpcServers.forAddress(localAddress(0)).listenAndAwait(service)) {
             try (Health.BlockingHealthClient client = GrpcClients.forResolvedAddress(
                     (InetSocketAddress) serverCtx.listenAddress()).buildBlocking(new Health.ClientFactory())) {
                 assertThat(assertThrows(GrpcStatusException.class,
                                 () -> client.watch(newRequest(UNKNOWN_SERVICE_NAME)).iterator().next()).status().code(),
-                        equalTo(FAILED_PRECONDITION));
+                        equalTo(expectedCode));
             }
         }
     }

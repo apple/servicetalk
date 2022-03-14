@@ -43,7 +43,9 @@ import static io.servicetalk.health.v1.HealthCheckResponse.newBuilder;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Implementation of {@link Health.HealthService} that provides accessors to set/clear status for arbitrary services.
+ * Implementation of {@link Health.HealthService} which targets
+ * <a href="https://github.com/grpc/grpc/blob/master/doc/health-checking.md">gRPC health checking</a> that provides
+ * accessors to set/clear status for arbitrary services.
  */
 public final class DefaultHealthService implements Health.HealthService {
     /**
