@@ -57,6 +57,7 @@ public final class HttpExecutionStrategies {
      * @see #offloadNone()
      * @deprecated Use {@link #offloadNone()} instead.
      */
+    // FIXME: 0.43 - remove deprecated method
     @Deprecated
     public static HttpExecutionStrategy offloadNever() {
         return OFFLOAD_NEVER_STRATEGY;

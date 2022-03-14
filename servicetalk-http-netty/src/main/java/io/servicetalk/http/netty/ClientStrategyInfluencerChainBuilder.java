@@ -71,14 +71,14 @@ final class ClientStrategyInfluencerChainBuilder {
         if (offloadNever() == strategy) {
             LOGGER.warn("{}#requiredOffloads() returns offloadNever(), which is unexpected. " +
                             "offloadNone() should be used instead. " +
-                            "Making automatic adjustment, update the {}.",
+                            "Making automatic adjustment, update the {} to avoid this warning.",
                     influencer, purpose);
             strategy = offloadNone();
         }
         if (defaultStrategy() == strategy) {
             LOGGER.warn("{}#requiredOffloads() returns defaultStrategy(), which is unexpected. " +
                             "offloadAll() (safe default) or more appropriate custom strategy should be used instead." +
-                            "Making automatic adjustment, update the {}.",
+                            "Making automatic adjustment, update the {} to avoid this warning.",
                     influencer, purpose);
             strategy = offloadAll();
         }
