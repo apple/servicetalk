@@ -70,7 +70,7 @@ task unzipGrpcProtos(type: Copy) {
 }
 
 javadoc {
-  options.addStringOption("exclude", generatedJavaPkg)
+  options.addBooleanOption("exclude $generatedJavaPkg", true)
 }
 
 sourceSets {
