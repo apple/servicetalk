@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.api.TestCompletable;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.HttpExecutionContext;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClient;
@@ -55,6 +56,7 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
 import static io.servicetalk.http.api.FilterFactoryUtils.appendClientFilterFactory;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadAll;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -102,6 +104,8 @@ class LoadBalancerReadyHttpClientTest {
             .when(mockReservedConnection).newRequest(any(), any());
         doAnswer((Answer<StreamingHttpResponseFactory>) invocation -> reqRespFactory)
                 .when(mockReservedConnection).httpResponseFactory();
+        doAnswer((Answer<HttpExecutionStrategy>) invocation -> offloadAll())
+                .when(mockExecutionCtx).executionStrategy();
     }
 
     @Test
