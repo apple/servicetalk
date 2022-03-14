@@ -128,10 +128,10 @@ This example demonstrates the following:
 link:{source-root}/servicetalk-grpc-health/src/main/java/io/servicetalk/grpc/health/DefaultHealthService.java[DefaultHealthService] in addition to a simple "hello world" service.
 
 Using the following classes:
-* link:{source-root}/servicetalk-examples/grpc/debugging/src/main/java/io/servicetalk/examples/grpc/health/HealthServerExample.java[HealthServerExample] a server
+* link:{source-root}/servicetalk-examples/grpc/health/src/main/java/io/servicetalk/examples/grpc/health/HealthServerExample.java[HealthServerExample] a server
 that installs link:{source-root}/servicetalk-grpc-health/src/main/java/io/servicetalk/grpc/health/DefaultHealthService.java[DefaultHealthService] in addition to
 a simple "hello world" service.
-* link:{source-root}/servicetalk-examples/grpc/debugging/src/main/java/io/servicetalk/examples/grpc/health/HealthClientExample.java[HealthClientExample] a client
+* link:{source-root}/servicetalk-examples/grpc/health/src/main/java/io/servicetalk/examples/grpc/health/HealthClientExample.java[HealthClientExample] a client
 that calls the server and prints results.
 
 [#errors]
