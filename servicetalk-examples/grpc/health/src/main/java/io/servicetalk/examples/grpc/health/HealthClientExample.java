@@ -32,10 +32,10 @@ import io.grpc.examples.health.Greeter;
 public final class HealthClientExample {
     public static void main(String... args) throws Exception {
         final String serviceName = "World";
-        try (Greeter.BlockingGreeterClient client = GrpcClients.forAddress("localhost", 8080)
+        try (BlockingGreeterClient client = GrpcClients.forAddress("localhost", 8080)
                 .buildBlocking(new Greeter.ClientFactory());
              BlockingHealthClient healthClient = GrpcClients.forAddress("localhost", 8080)
-                     .buildBlocking(new Health.ClientFactory())) {
+                 .buildBlocking(new Health.ClientFactory())) {
             // Check health before
             checkHealth(healthClient, serviceName);
 
