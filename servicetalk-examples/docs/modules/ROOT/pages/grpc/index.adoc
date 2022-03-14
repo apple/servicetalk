@@ -112,6 +112,8 @@ This example demonstrates the following:
 - Use of
 link:{source-root}/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcLifecycleObserver.java[GrpcLifecycleObserver] to log a summary of each request/response.
 
+Using the following classes:
+
 - link:{source-root}/servicetalk-examples/grpc/observer/src/main/java/io/servicetalk/examples/grpc/observer/LifecycleObserverServer.java[LifecycleObserverServer] - A server that installs a
 link:{source-root}/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcLifecycleObserver.java[GrpcLifecycleObserver]
 on the server builder.
@@ -124,8 +126,6 @@ on via a client filter on the client builder.
 This example demonstrates the following:
 - Use of
 link:{source-root}/servicetalk-grpc-health/src/main/java/io/servicetalk/grpc/health/DefaultHealthService.java[DefaultHealthService] in addition to a simple "hello world" service.
-
-Using the following classes:
 
 Using the following classes:
 * link:{source-root}/servicetalk-examples/grpc/debugging/src/main/java/io/servicetalk/examples/grpc/health/HealthServerExample.java[HealthServerExample] a server
