@@ -70,10 +70,6 @@ task unzipGrpcProtos(type: Copy) {
   }
 }
 
-javadoc {
-  options.addBooleanOption("exclude \'$generatedJavaPkg\'", true)
-}
-
 sourceSets {
   main {
     java {
@@ -83,6 +79,10 @@ sourceSets {
       srcDir "$extractedProtoDir/main"
     }
   }
+}
+
+javadoc {
+  options.addBooleanOption("exclude \'$generatedJavaPkg\'", true)
 }
 
 protobuf {

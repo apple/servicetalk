@@ -68,6 +68,7 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
         options.addBooleanOption("Xwerror", true)
         options.addBooleanOption("Xdoclint:all,-missing", true)
         options.addBooleanOption("protected", true)
+        options.addBooleanOption("exclude 'io.servicetalk.health.v1'", true)
       }
 
       def sourcesJar = createSourcesJarTask(project, sourceSets.main)
