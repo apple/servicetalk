@@ -79,7 +79,7 @@ public final class DefaultHealthService implements Health.HealthService {
     public Single<HealthCheckResponse> check(final GrpcServiceContext ctx, final HealthCheckRequest request) {
         HealthValue health = serviceToStatusMap.get(request.getService());
         if (health == null) {
-            return Single.failed(new GrpcStatus(NOT_FOUND, null, "unknown service " + request.getService())
+            return Single.failed(new GrpcStatus(NOT_FOUND, null, "unknown service: " + request.getService())
                     .asException());
         }
         return Single.succeeded(health.last);

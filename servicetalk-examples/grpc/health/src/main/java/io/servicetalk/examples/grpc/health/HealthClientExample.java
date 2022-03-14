@@ -1,0 +1,58 @@
+/*
+ * Copyright © 2022 Apple Inc. and the ServiceTalk project authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.servicetalk.examples.grpc.health;
+
+import io.servicetalk.grpc.api.GrpcStatusException;
+import io.servicetalk.grpc.netty.GrpcClients;
+import io.servicetalk.health.v1.Health;
+import io.servicetalk.health.v1.Health.BlockingHealthClient;
+import io.servicetalk.health.v1.HealthCheckRequest;
+
+import io.grpc.examples.health.Greeter;
+import io.grpc.examples.health.Greeter.BlockingGreeterClient;
+import io.grpc.examples.health.HelloRequest;
+import io.grpc.examples.health.Greeter;
+
+/**
+ * Extends the async "Hello World" example to demonstrate health service usage.
+ */
+public final class HealthClientExample {
+    public static void main(String... args) throws Exception {
+        final String serviceName = "World";
+        try (Greeter.BlockingGreeterClient client = GrpcClients.forAddress("localhost", 8080)
+                .buildBlocking(new Greeter.ClientFactory());
+             BlockingHealthClient healthClient = GrpcClients.forAddress("localhost", 8080)
+                     .buildBlocking(new Health.ClientFactory())) {
+            // Check health before
+            checkHealth(healthClient, serviceName);
+
+            System.out.println("Response=" + client.sayHello(HelloRequest.newBuilder().setName("World").build())
+                    .getMessage());
+
+            // Check the health after to observe it changed.
+            checkHealth(healthClient, serviceName);
+        }
+    }
+
+    private static void checkHealth(BlockingHealthClient healthClient, String serviceName) throws Exception {
+        try {
+            System.out.println("Service '" + serviceName + "' health=" +
+                    healthClient.check(HealthCheckRequest.newBuilder().setService(serviceName).build()).getStatus());
+        } catch (GrpcStatusException e) {
+            System.out.println("Service '" + serviceName + "' health exception=" + e);
+        }
+    }
+}

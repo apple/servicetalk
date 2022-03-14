@@ -20,68 +20,19 @@ buildscript {
   }
 }
 
-apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
+apply plugin: "java"
 apply plugin: "com.google.protobuf"
+apply from: "../../gradle/idea.gradle"
 
 dependencies {
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-grpc-netty")
   implementation project(":servicetalk-grpc-protoc")
   implementation project(":servicetalk-grpc-protobuf")
+  implementation project(":servicetalk-grpc-health")
 
-  testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
-  testImplementation project(":servicetalk-concurrent-api-test")
-  testImplementation testFixtures(project(":servicetalk-transport-netty-internal"))
-  testImplementation "org.junit.jupiter:junit-jupiter-api"
-  testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
-}
-
-// Instead of copy/pasting the .proto files into our repository, fetch them from maven central.
-// This will also more likely to raise any API changes earlier so we can adjust.
-configurations {
-  grpcProtos { transitive = false }
-}
-
-dependencies {
-  grpcProtos "io.grpc:grpc-services:$grpcVersion"
-}
-
-processResources {
-  duplicatesStrategy = 'include'
-}
-
-var extractedProtoDir = "$buildDir/extracted-protos/main"
-var generatedCodeDir = "$projectDir/src/generated"
-var generatedJavaPkg = "io.servicetalk.health.v1";
-
-task unzipGrpcProtos(type: Copy) {
-  dependsOn processResources
-  from zipTree(configurations.grpcProtos.singleFile).matching {
-    include '**/health.proto'
-  }
-  into extractedProtoDir
-  includeEmptyDirs = false
-  duplicatesStrategy = 'include'
-  // Rename the java package name to avoid potential classpath conflicts with grpc-java.
-  filter { line -> line.replace(
-      'option java_package = "io.grpc.health.v1";',
-      "option java_package = \"$generatedJavaPkg\";")
-  }
-}
-
-javadoc {
-  options.addStringOption("exclude", generatedJavaPkg)
-}
-
-sourceSets {
-  main {
-    java {
-      srcDir generatedCodeDir
-    }
-    proto {
-      srcDir "$extractedProtoDir/main"
-    }
-  }
+  implementation "org.slf4j:slf4j-api:$slf4jVersion"
+  runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
 }
 
 protobuf {
@@ -91,7 +42,7 @@ protobuf {
 
   //// REMOVE if outside of ServiceTalk gradle project
   def pluginJar = file("${project.rootProject.rootDir}/servicetalk-grpc-protoc/build" +
-      "/buildExecutable/servicetalk-grpc-protoc-${project.version}-all.jar")
+          "/buildExecutable/servicetalk-grpc-protoc-${project.version}-all.jar")
   //// REMOVE if outside of ServiceTalk gradle project
 
   plugins {
@@ -106,16 +57,15 @@ protobuf {
   }
   generateProtoTasks {
     all().each { task ->
-      task.dependsOn unzipGrpcProtos
       //// REMOVE if outside of ServiceTalk gradle project
       task.dependsOn(":servicetalk-grpc-protoc:buildExecutable") // use gradle project local grpc-protoc dependency
 
       // you may need to manually add the artifact name as an input
       task.inputs
-          .file(pluginJar)
-          .withNormalizer(ClasspathNormalizer)
-          .withPropertyName("servicetalkPluginJar")
-          .withPathSensitivity(PathSensitivity.RELATIVE)
+              .file(pluginJar)
+              .withNormalizer(ClasspathNormalizer)
+              .withPropertyName("servicetalkPluginJar")
+              .withPathSensitivity(PathSensitivity.RELATIVE)
       //// REMOVE if outside of ServiceTalk gradle project
 
       task.plugins {
@@ -127,5 +77,5 @@ protobuf {
       }
     }
   }
-  generatedFilesBaseDir = generatedCodeDir
+  generatedFilesBaseDir = "$buildDir/generated/sources/proto"
 }
