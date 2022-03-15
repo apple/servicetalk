@@ -82,7 +82,8 @@ other I/O tasks while the response is asynchronously processed on the `Executor`
 === `publishOn()` Example
 
 Using the `publishOn(executor)` operator allows processing of signals related to the source content on a different
-thread than is generating (or receiving) the content. It is the most common form of offloading used.
+thread than is generating (or receiving) the content. It is the most common form of offloading used as it relates to
+the data path, specifically the `Subscription` methods.
 
 [source, java]
 ----
@@ -117,7 +118,9 @@ the integer collection result.
 
 Using the `subscribeOn(executor)` operator allows processing of the subscription and demand on a specific thread. Using
 the `subscribeOn(executor)` operator generally requires an understanding of the behavior of the source; using a
-different source may change the need for offloading.
+different source may change the need for offloading. `subscribeOn(executor)` is used less frequently than
+`publishOn(executor)` but is useful when it is necessary to offload the control path; the `subscribe` method or
+`Subscription` methods.
 
 [source, java]
 ----
