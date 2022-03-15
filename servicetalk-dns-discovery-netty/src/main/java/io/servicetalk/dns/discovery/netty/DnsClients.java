@@ -68,6 +68,11 @@ final class DnsClients {
             public Publisher<Collection<ServiceDiscovererEvent<InetSocketAddress>>> discover(final String s) {
                 return dns.dnsSrvQuery(s);
             }
+
+            @Override
+            public String toString() {
+                return "DefaultDnsServiceDiscoverer{recordTypes=[SRV]}";
+            }
         };
     }
 
@@ -104,6 +109,11 @@ final class DnsClients {
                 return dns.dnsQuery(hostAndPort.hostName())
                         .map(events -> mapEventList(events,
                                 inetAddress -> new InetSocketAddress(inetAddress, hostAndPort.port())));
+            }
+
+            @Override
+            public String toString() {
+                return "DefaultDnsServiceDiscoverer{recordTypes=[A,AAAA]}";
             }
         };
     }
