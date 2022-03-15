@@ -15,7 +15,7 @@
  */
 package io.servicetalk.grpc.health;
 
-import io.servicetalk.concurrent.PublisherSource;
+import io.servicetalk.concurrent.PublisherSource.Processor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.grpc.api.GrpcServiceContext;
@@ -148,7 +148,7 @@ public final class DefaultHealthService implements Health.HealthService {
     public boolean clearStatus(String service) {
         final HealthValue healthValue = serviceToStatusMap.remove(service);
         if (healthValue != null) {
-            healthValue.complete(SERVICE_UNKNOWN);
+            healthValue.completeMultipleTerminalSafe(SERVICE_UNKNOWN);
             return true;
         }
         return false;
@@ -172,13 +172,13 @@ public final class DefaultHealthService implements Health.HealthService {
             lock.unlock();
         }
         for (final HealthValue healthValue : serviceToStatusMap.values()) {
-            healthValue.complete(NOT_SERVING);
+            healthValue.completeMultipleTerminalSafe(NOT_SERVING);
         }
         return true;
     }
 
     private static final class HealthValue {
-        private final PublisherSource.Processor<HealthCheckResponse, HealthCheckResponse> processor;
+        private final Processor<HealthCheckResponse, HealthCheckResponse> processor;
         private final Publisher<HealthCheckResponse> publisher;
         private volatile HealthCheckResponse last;
 
@@ -201,7 +201,12 @@ public final class DefaultHealthService implements Health.HealthService {
             processor.onNext(response);
         }
 
-        void complete(ServingStatus status) {
+        /**
+         * This method is safe to invoke multiple times. Safety is currently provided by default {@link Processor}
+         * implementations.
+         * @param status The last status to set.
+         */
+        void completeMultipleTerminalSafe(ServingStatus status) {
             next(newBuilder().setStatus(status).build());
             processor.onComplete();
         }

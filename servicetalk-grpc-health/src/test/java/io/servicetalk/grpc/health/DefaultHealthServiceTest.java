@@ -135,6 +135,8 @@ final class DefaultHealthServiceTest {
                 assertThat(client.check(newRequest(OVERALL_SERVICE_NAME)).getStatus(), equalTo(NOT_SERVING));
 
                 assertThat(service.setStatus(OVERALL_SERVICE_NAME, SERVING), equalTo(false));
+
+                // Clear after terminate verifies that multiple termination doesn't cause issues.
                 assertThat(service.clearStatus(OVERALL_SERVICE_NAME), equalTo(true));
                 assertThat(assertThrows(GrpcStatusException.class,
                                 () -> client.check(newRequest(OVERALL_SERVICE_NAME))).status().code(),
