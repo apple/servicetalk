@@ -35,7 +35,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
@@ -87,7 +87,7 @@ final class GrpcClientValidatesContentTypeTest {
                 });
 
         client = GrpcClients.forAddress(serverHostAndPort(serverContext))
-                .initializeHttp(builder -> builder.executionStrategy(offloadNever()))
+                .initializeHttp(builder -> builder.executionStrategy(offloadNone()))
                 .buildBlocking(new TesterProto.Tester.ClientFactory());
     }
 

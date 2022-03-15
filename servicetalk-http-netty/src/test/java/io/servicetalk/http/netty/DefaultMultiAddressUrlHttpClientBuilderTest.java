@@ -45,7 +45,7 @@ import static io.servicetalk.buffer.netty.BufferAllocators.PREFER_HEAP_ALLOCATOR
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadAll;
-import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
@@ -142,12 +142,12 @@ class DefaultMultiAddressUrlHttpClientBuilderTest {
                 .ioExecutor(CTX.ioExecutor())
                 .executor(CTX.executor())
                 .bufferAllocator(PREFER_DIRECT_ALLOCATOR)
-                .executionStrategy(offloadNever())
+                .executionStrategy(offloadNone())
                 .build();
         AtomicReference<HttpExecutionContext> actualInternalCtx = new AtomicReference<>();
 
         try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
-                .executionStrategy(offloadNever())
+                .executionStrategy(offloadNone())
                 .listenStreamingAndAwait((ctx, request, responseFactory) -> succeeded(responseFactory.ok()));
              BlockingHttpClient blockingHttpClient = HttpClients.forMultiAddressUrl()
                      .initializer((scheme, address, builder) ->
@@ -186,12 +186,12 @@ class DefaultMultiAddressUrlHttpClientBuilderTest {
                 .ioExecutor(INTERNAL_CLIENT_CTX.ioExecutor())
                 .executor(INTERNAL_CLIENT_CTX.executor())
                 .bufferAllocator(PREFER_DIRECT_ALLOCATOR)
-                .executionStrategy(offloadNever())
+                .executionStrategy(offloadNone())
                 .build();
 
         AtomicReference<HttpExecutionContext> actualInternalCtx = new AtomicReference<>();
         try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
-                .executionStrategy(offloadNever())
+                .executionStrategy(offloadNone())
                 .listenStreamingAndAwait((ctx, request, responseFactory) -> succeeded(responseFactory.ok()));
              BlockingHttpClient blockingHttpClient = HttpClients.forMultiAddressUrl()
                      .initializer((scheme, address, builder) ->

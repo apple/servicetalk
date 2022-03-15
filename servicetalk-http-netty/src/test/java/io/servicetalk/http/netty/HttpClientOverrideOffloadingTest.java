@@ -38,7 +38,7 @@ import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
-import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
@@ -78,9 +78,9 @@ class HttpClientOverrideOffloadingTest {
     }
 
     enum Params {
-        OVERRIDE_NO_OFFLOAD(th -> !isInClientEventLoop(th), offloadNever(), null),
+        OVERRIDE_NO_OFFLOAD(th -> !isInClientEventLoop(th), offloadNone(), null),
         DEFAULT_NO_OFFLOAD(HttpClientOverrideOffloadingTest::isInClientEventLoop, null,
-                offloadNever()),
+                offloadNone()),
         BOTH_OFFLOADS(HttpClientOverrideOffloadingTest::isInClientEventLoop, null, null);
 
         final Predicate<Thread> isInvalidThread;

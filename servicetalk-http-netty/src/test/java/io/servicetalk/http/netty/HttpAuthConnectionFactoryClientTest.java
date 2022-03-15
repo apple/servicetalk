@@ -36,7 +36,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
@@ -72,13 +72,13 @@ class HttpAuthConnectionFactoryClientTest {
     void simulateAuth() throws Exception {
         serverContext = forAddress(localAddress(0))
             .ioExecutor(CTX.ioExecutor())
-            .executionStrategy(offloadNever())
+            .executionStrategy(offloadNone())
             .listenStreamingAndAwait((ctx, request, factory) -> succeeded(newTestResponse(factory)));
 
         client = forSingleAddress(serverHostAndPort(serverContext))
             .appendConnectionFactoryFilter(TestHttpAuthConnectionFactory::new)
             .ioExecutor(CTX.ioExecutor())
-            .executionStrategy(offloadNever())
+            .executionStrategy(offloadNone())
             .buildStreaming();
 
         StreamingHttpResponse response = client.request(newTestRequest(client, "/foo")).toFuture().get();
