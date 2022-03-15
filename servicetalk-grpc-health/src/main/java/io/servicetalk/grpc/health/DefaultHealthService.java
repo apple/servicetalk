@@ -102,7 +102,7 @@ public final class DefaultHealthService implements Health.HealthService {
                     return Publisher.from(newBuilder().setStatus(NOT_SERVING).build());
                 }
                 healthValue = serviceToStatusMap.computeIfAbsent(request.getService(),
-                        service -> new HealthValue(SERVICE_UNKNOWN));
+                        __ -> new HealthValue(SERVICE_UNKNOWN));
             } finally {
                 lock.unlock();
             }
@@ -129,7 +129,7 @@ public final class DefaultHealthService implements Health.HealthService {
                 return false;
             }
             resp = newBuilder().setStatus(status).build();
-            healthValue = serviceToStatusMap.computeIfAbsent(service, service2 -> new HealthValue(resp));
+            healthValue = serviceToStatusMap.computeIfAbsent(service, __ -> new HealthValue(resp));
         } finally {
             lock.unlock();
         }

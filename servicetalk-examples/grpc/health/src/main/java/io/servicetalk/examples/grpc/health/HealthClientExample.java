@@ -16,6 +16,7 @@
 package io.servicetalk.examples.grpc.health;
 
 import io.servicetalk.grpc.api.GrpcStatusException;
+import io.servicetalk.grpc.health.DefaultHealthService;
 import io.servicetalk.grpc.netty.GrpcClients;
 import io.servicetalk.health.v1.Health;
 import io.servicetalk.health.v1.Health.BlockingHealthClient;
@@ -24,10 +25,9 @@ import io.servicetalk.health.v1.HealthCheckRequest;
 import io.grpc.examples.health.Greeter;
 import io.grpc.examples.health.Greeter.BlockingGreeterClient;
 import io.grpc.examples.health.HelloRequest;
-import io.grpc.examples.health.Greeter;
 
 /**
- * Extends the async "Hello World" example to demonstrate health service usage.
+ * Extends the async "Hello World" example to demonstrate {@link DefaultHealthService} usage.
  */
 public final class HealthClientExample {
     public static void main(String... args) throws Exception {

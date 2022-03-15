@@ -24,6 +24,7 @@ apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 apply plugin: "com.google.protobuf"
 
 dependencies {
+  api project(":servicetalk-grpc-api") // generated code is exposed
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-grpc-netty")
   implementation project(":servicetalk-grpc-protoc")
@@ -51,9 +52,9 @@ processResources {
   duplicatesStrategy = 'include'
 }
 
-var extractedProtoDir = "$buildDir/extracted-protos/main"
-var generatedCodeDir = "$projectDir/src/generated"
-var generatedJavaPkg = "io.servicetalk.health.v1";
+def extractedProtoDir = "$buildDir/extracted-protos/main"
+def generatedCodeDir = "$projectDir/src/generated"
+def generatedJavaPkg = "io.servicetalk.health.v1";
 
 task unzipGrpcProtos(type: Copy) {
   dependsOn processResources
@@ -82,7 +83,7 @@ sourceSets {
 }
 
 javadoc {
-  options.addBooleanOption("exclude \'$generatedJavaPkg\'", true)
+  exclude "**/${generatedJavaPkg.replace('.', '/')}/**"
 }
 
 protobuf {

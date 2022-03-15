@@ -122,10 +122,11 @@ link:{source-root}/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/Gr
 on via a client filter on the client builder.
 
 [#Health]
-== Health
+== Health Checking
 This example demonstrates the following:
 - Use of
-link:{source-root}/servicetalk-grpc-health/src/main/java/io/servicetalk/grpc/health/DefaultHealthService.java[DefaultHealthService] in addition to a simple "hello world" service.
+link:{source-root}/servicetalk-grpc-health/src/main/java/io/servicetalk/grpc/health/DefaultHealthService.java[DefaultHealthService]
+which implements link:https://github.com/grpc/grpc/blob/master/doc/health-checking.md[gRPC health checking] paired with a simple "hello world" service.
 
 Using the following classes:
 * link:{source-root}/servicetalk-examples/grpc/health/src/main/java/io/servicetalk/examples/grpc/health/HealthServerExample.java[HealthServerExample] a server
