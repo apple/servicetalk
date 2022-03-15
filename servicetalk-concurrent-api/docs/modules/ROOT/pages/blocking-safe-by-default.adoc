@@ -25,7 +25,7 @@ messages. Invocations in either direction may be executed on an event loop threa
 case new asynchronous sources are generated/received inside operators, they follow the same model and hence are removed
 for brevity.
 
-image::blocking-scenarios.png[Data and control flow in an execution chain]
+image::blocking-scenarios.svg[Data and control flow in an execution chain]
 
 As shown in the above picture, there are inherently two directions (data and control) of information flow for an
 execution chain and these

@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xl="http://www.w3.org/1999/xlink" xmlns:dc="http://purl.org/dc/elements/1.1/" viewBox="-311.5 -115.68835 1577.0271 1585.6883" width="1577.0271" height="1585.6883">
+  <title>Data and control flow in an execution chain</title>
+  <desc>Details the flow of data (Subscriber methods) and control (Publisher and Subscription methods).</desc>
+  <defs>
+    <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="FilledDiamond_Marker" stroke-linejoin="miter" stroke-miterlimit="10" viewBox="-1 -3 6 6" markerWidth="6" markerHeight="6" color="black">
+      <g>
+        <path d="M 3.7333333 0 L 1.8666667 -1.4 L 0 0 L 1.8666667 1.4 Z" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+      </g>
+    </marker>
+    <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="FilledDiamond_Marker_2" stroke-linejoin="miter" stroke-miterlimit="10" viewBox="-5 -3 6 6" markerWidth="6" markerHeight="6" color="black">
+      <g>
+        <path d="M -3.7333333 0 L -1.8666667 1.4 L 0 0 L -1.8666667 -1.4 Z" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+      </g>
+    </marker>
+    <filter id="Shadow" filterUnits="userSpaceOnUse" x="-469.2027" y="-274.25718">
+      <feGaussianBlur in="SourceAlpha" result="blur" stdDeviation="1.3030978"/>
+      <feOffset in="blur" result="offset" dx="0" dy="2"/>
+      <feFlood flood-color="black" flood-opacity=".2" result="flood"/>
+      <feComposite in="flood" in2="offset" operator="in" result="color"/>
+      <feMerge>
+        <feMergeNode in="color"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <linearGradient x1="0" x2="1" id="Gradient" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fffd78"/>
+      <stop offset=".45238096" stop-color="#ffe979"/>
+      <stop offset="1" stop-color="#ffd579"/>
+    </linearGradient>
+    <linearGradient id="Obj_Gradient" xl:href="#Gradient" gradientTransform="translate(543.875 -40.31335) scale(18.5)"/>
+    <linearGradient id="Obj_Gradient_2" xl:href="#Gradient" gradientTransform="translate(581.875 -40.31335) scale(18.5)"/>
+    <linearGradient id="Obj_Gradient_3" xl:href="#Gradient" gradientTransform="translate(657.875 -40.31335) scale(18.5)"/>
+    <linearGradient x1="0" x2="1" id="Gradient_2" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#9ddaff"/>
+      <stop offset=".45238096" stop-color="#7fc7f3"/>
+      <stop offset="1" stop-color="#5db3e6"/>
+    </linearGradient>
+    <linearGradient id="Obj_Gradient_4" xl:href="#Gradient_2" gradientTransform="translate(634.496 161.69986) rotate(180) scale(40)"/>
+    <linearGradient id="Obj_Gradient_5" xl:href="#Gradient" gradientTransform="translate(638.375 1171.5) rotate(180) scale(40)"/>
+    <linearGradient id="Obj_Gradient_6" xl:href="#Gradient" gradientTransform="translate(548.621 1318.875) scale(18.5)"/>
+    <linearGradient id="Obj_Gradient_7" xl:href="#Gradient" gradientTransform="translate(586.621 1318.875) scale(18.5)"/>
+    <linearGradient id="Obj_Gradient_8" xl:href="#Gradient" gradientTransform="translate(662.621 1318.875) scale(18.5)"/>
+    <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="FilledArrow_Marker" stroke-linejoin="miter" stroke-miterlimit="10" viewBox="-1 -4 10 8" markerWidth="10" markerHeight="8" color="black">
+      <g>
+        <path d="M 8 0 L 0 -3 L 0 3 Z" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+      </g>
+    </marker>
+  </defs>
+  <metadata> Produced by OmniGraffle 7.19.5\n2022-03-15 23:07:55 +0000</metadata>
+  <g id="Read_Write" stroke="none" stroke-dasharray="none" fill="none" fill-opacity="1" stroke-opacity="1">
+    <title>Read Write</title>
+    <g id="Read_Write_Layer_1">
+      <title>Layer 1</title>
+      <g id="Line_79">
+        <path d="M 22.947346 275.2721 L 150.26809 277.75594 L 1230.0772 275.03515" marker-end="url(#FilledDiamond_Marker)" marker-start="url(#FilledDiamond_Marker_2)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
+      </g>
+      <g id="Line_24">
+        <path d="M 22.947346 1042.9008 L 150.26809 1045.3847 L 1230.0772 1042.6639" marker-end="url(#FilledDiamond_Marker)" marker-start="url(#FilledDiamond_Marker_2)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
+      </g>
+      <g id="Graphic_2" filter="url(#Shadow)">
+        <rect x="43.22302" y="985.1631" width="390" height="120" fill="white"/>
+        <rect x="43.22302" y="985.1631" width="390" height="120" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        <text transform="translate(48.22302 1034.1631)" fill="black">
+          <tspan font-family="Helvetica" font-size="18" fill="black" x="134.99805" y="18">Subscription</tspan>
+        </text>
+      </g>
+      <g id="Graphic_3" filter="url(#Shadow)">
+        <rect x="408.85695" y="216.61303" width="390" height="120" fill="white"/>
+        <rect x="408.85695" y="216.61303" width="390" height="120" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        <text transform="translate(413.85695 265.61303)" fill="black">
+          <tspan font-family="Helvetica" font-size="18" fill="black" x="148.99023" y="18">Publisher</tspan>
+        </text>
+      </g>
+      <g id="Group_75">
+        <g id="Graphic_5" filter="url(#Shadow)">
+          <path d="M 447 44.81165 L 528.375 3.311652 L 691.125 3.311652 L 772.5 44.81165 L 691.125 86.31165 L 528.375 86.31165 Z" fill="white"/>
+          <path d="M 447 44.81165 L 528.375 3.311652 L 691.125 3.311652 L 772.5 44.81165 L 691.125 86.31165 L 528.375 86.31165 Z" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+          <text transform="translate(452 33.31165)" fill="black">
+            <tspan font-family="Helvetica" font-size="19" fill="black" x="74.35132" y="19">Netty Event Loops</tspan>
+          </text>
+        </g>
+        <g id="Group_71">
+          <g id="Graphic_6">
+            <rect x="543.875" y="-95.18835" width="18.5" height="109.75" fill="url(#Obj_Gradient)"/>
+            <rect x="543.875" y="-95.18835" width="18.5" height="109.75" stroke="#ef8e00" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+            <text transform="translate(546.125 -4.157098) rotate(-90)" fill="black">
+              <tspan font-family="Helvetica" font-size="12" fill="black" x="9.469727" y="11">Eventloop</tspan>
+            </text>
+          </g>
+          <g id="Graphic_7">
+            <rect x="581.875" y="-95.18835" width="18.5" height="109.75" fill="url(#Obj_Gradient_2)"/>
+            <rect x="581.875" y="-95.18835" width="18.5" height="109.75" stroke="#ef8e00" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+            <text transform="translate(584.125 -4.157098) rotate(-90)" fill="black">
+              <tspan font-family="Helvetica" font-size="12" fill="black" x="9.469727" y="11">Eventloop</tspan>
+            </text>
+          </g>
+          <g id="Graphic_9">
+            <rect x="657.875" y="-95.18835" width="18.5" height="109.75" fill="url(#Obj_Gradient_3)"/>
+            <rect x="657.875" y="-95.18835" width="18.5" height="109.75" stroke="#ef8e00" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+            <text transform="translate(660.125 -4.157098) rotate(-90)" fill="black">
+              <tspan font-family="Helvetica" font-size="12" fill="black" x="9.469727" y="11">Eventloop</tspan>
+            </text>
+          </g>
+          <g id="Graphic_25">
+            <text transform="translate(621.125 -49.53735)" fill="black">
+              <tspan font-family="Helvetica Neue" font-size="16" fill="black" x="0" y="15">…</tspan>
+            </text>
+          </g>
+        </g>
+      </g>
+      <g id="Group_93">
+        <g id="Line_37">
+          <line x1="618.07105" y1="469.86876" x2="618.67895" y2="874.1312" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2.0,8.0" stroke-width="2"/>
+        </g>
+        <g id="Graphic_31">
+          <path d="M 481.5 375.36876 L 754.5 375.36876 C 786.792 375.36876 813 396.53676 813 422.61876 C 813 448.70076 786.792 469.86876 754.5 469.86876 L 481.5 469.86876 C 449.208 469.86876 423 448.70076 423 422.61876 C 423 396.53676 449.208 375.36876 481.5 375.36876 Z" fill="white"/>
+          <path d="M 481.5 375.36876 L 754.5 375.36876 C 786.792 375.36876 813 396.53676 813 422.61876 C 813 448.70076 786.792 469.86876 754.5 469.86876 L 481.5 469.86876 C 449.208 469.86876 423 448.70076 423 422.61876 C 423 396.53676 449.208 375.36876 481.5 375.36876 Z" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+          <text transform="translate(467 413.39476)" fill="black">
+            <tspan font-family="Helvetica Neue" font-size="16" fill="black" x="119.144" y="15">Operator</tspan>
+          </text>
+        </g>
+        <g id="Graphic_33">
+          <path d="M 482.25 874.1312 L 755.25 874.1312 C 787.542 874.1312 813.75 895.2992 813.75 921.3812 C 813.75 947.4632 787.542 968.6312 755.25 968.6312 L 482.25 968.6312 C 449.958 968.6312 423.75 947.4632 423.75 921.3812 C 423.75 895.2992 449.958 874.1312 482.25 874.1312 Z" fill="white"/>
+          <path d="M 482.25 874.1312 L 755.25 874.1312 C 787.542 874.1312 813.75 895.2992 813.75 921.3812 C 813.75 947.4632 787.542 968.6312 755.25 968.6312 L 482.25 968.6312 C 449.958 968.6312 423.75 947.4632 423.75 921.3812 C 423.75 895.2992 449.958 874.1312 482.25 874.1312 Z" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+          <text transform="translate(467.75 912.1572)" fill="black">
+            <tspan font-family="Helvetica Neue" font-size="16" fill="black" x="112.472" y="15">Operator n</tspan>
+          </text>
+        </g>
+      </g>
+      <g id="Graphic_56">
+        <path d="M 604.496 123.39972 L 624.496 123.39972 L 624.496 180 L 634.496 180 L 614.496 200 L 594.496 180 L 604.496 180 Z" fill="url(#Obj_Gradient_4)"/>
+        <path d="M 604.496 123.39972 L 624.496 123.39972 L 624.496 180 L 634.496 180 L 614.496 200 L 594.496 180 L 604.496 180 Z" stroke="#008ad5" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+      </g>
+      <g id="Graphic_72">
+        <path d="M 608.375 1103 L 628.375 1103 L 628.375 1220 L 638.375 1220 L 618.375 1240 L 598.375 1220 L 608.375 1220 Z" fill="url(#Obj_Gradient_5)"/>
+        <path d="M 608.375 1103 L 628.375 1103 L 628.375 1220 L 638.375 1220 L 618.375 1240 L 598.375 1220 L 608.375 1220 Z" stroke="#ef8e00" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+      </g>
+      <g id="Graphic_78" filter="url(#Shadow)">
+        <rect x="820.4632" y="983.2047" width="390" height="120" fill="white"/>
+        <rect x="820.4632" y="983.2047" width="390" height="120" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        <text transform="translate(825.4632 1032.2047)" fill="black">
+          <tspan font-family="Helvetica" font-size="18" fill="black" x="142.98291" y="18">Subscriber</tspan>
+        </text>
+      </g>
+      <g id="Graphic_80">
+        <text transform="translate(277 614.328)" fill="black">
+          <tspan font-family="Helvetica Neue" font-size="16" fill="black" x="1.752" y="15">Any source created within</tspan>
+          <tspan font-family="Helvetica Neue" font-size="16" fill="black" x="8526513e-20" y="33.448">these operators follow this</tspan>
+          <tspan font-family="Helvetica Neue" font-size="16" fill="black" x="48.136" y="51.895996">same model.</tspan>
+        </text>
+      </g>
+      <g id="Graphic_81">
+        <text transform="translate(-92 612.36365)" fill="black">
+          <tspan font-family="Courier New" font-size="16" fill="black" x="8.687219" y="13">onSubscribe(), onNext(), </tspan>
+          <tspan font-family="Courier New" font-size="16" fill="black" x="0" y="33">onError() </tspan>
+          <tspan font-family="Helvetica Neue" font-size="16" fill="black" y="33">and</tspan>
+          <tspan font-family="Courier New" font-size="16" fill="black" y="33"> onComplete()</tspan>
+        </text>
+      </g>
+      <g id="Graphic_82">
+        <text transform="translate(964 623)" fill="black">
+          <tspan font-family="Courier New" font-size="16" fill="black" x="4.800781" y="13">subscribe(), request(n) </tspan>
+          <tspan font-family="Helvetica Neue" font-size="16" fill="black" x="58.52372" y="33">and</tspan>
+          <tspan font-family="Courier New" font-size="16" fill="black" y="33"> cancel()</tspan>
+        </text>
+      </g>
+      <g id="Group_83">
+        <g id="Graphic_89" filter="url(#Shadow)">
+          <path d="M 451.746 1404 L 533.121 1362.5 L 695.871 1362.5 L 777.246 1404 L 695.871 1445.5 L 533.121 1445.5 Z" fill="white"/>
+          <path d="M 451.746 1404 L 533.121 1362.5 L 695.871 1362.5 L 777.246 1404 L 695.871 1445.5 L 533.121 1445.5 Z" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+          <text transform="translate(456.746 1392.5)" fill="black">
+            <tspan font-family="Helvetica" font-size="19" fill="black" x="74.35132" y="19">Netty Event Loops</tspan>
+          </text>
+        </g>
+        <g id="Group_84">
+          <g id="Graphic_88">
+            <rect x="548.621" y="1264" width="18.5" height="109.75" fill="url(#Obj_Gradient_6)"/>
+            <rect x="548.621" y="1264" width="18.5" height="109.75" stroke="#ef8e00" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+            <text transform="translate(550.871 1355.0312) rotate(-90)" fill="black">
+              <tspan font-family="Helvetica" font-size="12" fill="black" x="9.469727" y="11">Eventloop</tspan>
+            </text>
+          </g>
+          <g id="Graphic_87">
+            <rect x="586.621" y="1264" width="18.5" height="109.75" fill="url(#Obj_Gradient_7)"/>
+            <rect x="586.621" y="1264" width="18.5" height="109.75" stroke="#ef8e00" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+            <text transform="translate(588.871 1355.0312) rotate(-90)" fill="black">
+              <tspan font-family="Helvetica" font-size="12" fill="black" x="9.469727" y="11">Eventloop</tspan>
+            </text>
+          </g>
+          <g id="Graphic_86">
+            <rect x="662.621" y="1264" width="18.5" height="109.75" fill="url(#Obj_Gradient_8)"/>
+            <rect x="662.621" y="1264" width="18.5" height="109.75" stroke="#ef8e00" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+            <text transform="translate(664.871 1355.0313) rotate(-90)" fill="black">
+              <tspan font-family="Helvetica" font-size="12" fill="black" x="9.469727" y="11">Eventloop</tspan>
+            </text>
+          </g>
+          <g id="Graphic_85">
+            <text transform="translate(625.871 1309.651)" fill="black">
+              <tspan font-family="Helvetica Neue" font-size="16" fill="black" x="0" y="15">…</tspan>
+            </text>
+          </g>
+        </g>
+      </g>
+      <g id="Graphic_91">
+        <text transform="translate(713.736 1149.078)" fill="black">
+          <tspan font-family="Helvetica Neue" font-size="16" fill="black" x="0" y="15">Writes using Netty event-loops</tspan>
+        </text>
+      </g>
+      <g id="Graphic_92">
+        <text transform="translate(734.164 142.23834)" fill="black">
+          <tspan font-family="Helvetica Neue" font-size="16" fill="black" x="4405365e-19" y="15">Reads from Netty event-loops</tspan>
+        </text>
+      </g>
+      <g id="Graphic_99">
+        <text transform="translate(-286.5 173.5)" fill="black">
+          <tspan font-family="Helvetica Neue" font-size="28" fill="black" x="35527137e-20" y="27">ServiceTalk</tspan>
+          <tspan font-family="Helvetica Neue" font-size="28" fill="black" x="33.194" y="60.812195">(Read)</tspan>
+        </text>
+      </g>
+      <g id="Line_106">
+        <line x1="901.5" y1="965.4461" x2="901.5" y2="313.63645" marker-end="url(#FilledArrow_Marker)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+      </g>
+      <g id="Line_107">
+        <line x1="201" y1="289" x2="201" y2="958.7312" marker-end="url(#FilledArrow_Marker)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+      </g>
+      <g id="Graphic_109">
+        <text transform="translate(-286.5 1205)" fill="black">
+          <tspan font-family="Helvetica Neue" font-size="28" fill="black" x="35527137e-20" y="27">ServiceTalk</tspan>
+          <tspan font-family="Helvetica Neue" font-size="28" fill="black" x="32.942" y="60.812195">(Write)</tspan>
+        </text>
+      </g>
+      <g id="Graphic_110">
+        <text transform="translate(-286.5 600.7791)" fill="black">
+          <tspan font-family="Helvetica Neue" font-size="28" fill="black" x="35527137e-20" y="27">ServiceTalk</tspan>
+          <tspan font-family="Helvetica Neue" font-size="28" fill="black" x="33.194" y="60.812195">(Read)</tspan>
+        </text>
+      </g>
+    </g>
+  </g>
+</svg>

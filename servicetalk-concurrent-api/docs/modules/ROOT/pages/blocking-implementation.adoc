@@ -60,16 +60,24 @@ Applications with asynchronous, blocking or computationally expensive tasks can 
 default signal delivery thread to a thread from the provided `Executor`. The below diagram illustrates the interaction
 between an asynchronous source, its `Subscriber`, its operators, and the `Executor`.
 
+During publish and terminal signals, the `Executor` active at the source is inherited by all operators unless there is a
+reason to switch to a different `Executor`. The switch to another executor, offloading, is done for a couple of reasons;
+unless configured to not offload ServiceTalk will offload from the Netty Event Loop `IoExecutor` as necessary in order
+to allow user code to block and will use a global executor, or user code can offload to a specific `Executor` using the
+`publishOn` operator. Consumers of the source who are certain that they will never block and can execute quickly on the
+`IoExecutor` Event Loop thread may also be able to opt-out from the ServiceTalk offloading.
+
 image::offloading.svg[Offloading]
 
 During `subscribe()` the execution will offload at the `subscribeOn()` operator and transition execution from the
-application thread to an `Exeuctor` thread. The application thread will be able to continue while the subscribe
+subscribing thread to an `Exeuctor` thread. The subscribing thread will be able to continue while the subscribe
 operation asynchronously continues on an `Executor` thread.
 
-When a result is available at the source it will begin publication using the receiving event loop thread but will
-offload at the `publishOn()` operator and transition execution from the event loop thread to an `Executor` thread. Once
-the publish signal is offloaded the event loop thread will be available again for executing other I/O tasks while the
-response is asynchronously processed on the `Executor` thread.
+The diagram shows a typical case, when a result is available at the source it will begin publication on the receiving
+event loop thread, which is owned by a Netty `IOExecutor`. Assuming that the default ServiceTalk offloading has been
+disabled, it will only offload at the `publishOn()` operator and transition execution from the event loop thread to an
+`Executor` thread. Once the publish signal is offloaded the event loop thread will be available again for executing
+other I/O tasks while the response is asynchronously processed on the `Executor` thread.
 
 === `publishOn()` Example
 
