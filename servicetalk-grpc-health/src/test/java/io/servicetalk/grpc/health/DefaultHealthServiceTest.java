@@ -124,12 +124,18 @@ final class DefaultHealthServiceTest {
         try (ServerContext serverCtx = GrpcServers.forAddress(localAddress(0)).listenAndAwait(service)) {
             try (Health.BlockingHealthClient client = GrpcClients.forResolvedAddress(
                     (InetSocketAddress) serverCtx.listenAddress()).buildBlocking(new Health.ClientFactory())) {
-                assertThat(service.terminate(), equalTo(true));
                 BlockingIterator<HealthCheckResponse> itr = client.watch(newRequest(OVERALL_SERVICE_NAME)).iterator();
+                assertThat(itr.next().getStatus(), equalTo(SERVING));
+                assertThat(client.check(newRequest(OVERALL_SERVICE_NAME)).getStatus(), equalTo(SERVING));
+
+                assertThat(service.terminate(), equalTo(true));
+
                 assertThat(itr.next().getStatus(), equalTo(NOT_SERVING));
+                assertThat(itr.hasNext(), equalTo(false));
+                assertThat(client.check(newRequest(OVERALL_SERVICE_NAME)).getStatus(), equalTo(NOT_SERVING));
 
                 assertThat(service.setStatus(OVERALL_SERVICE_NAME, SERVING), equalTo(false));
-                assertThat(service.clearStatus(OVERALL_SERVICE_NAME), equalTo(false));
+                assertThat(service.clearStatus(OVERALL_SERVICE_NAME), equalTo(true));
                 assertThat(assertThrows(GrpcStatusException.class,
                                 () -> client.check(newRequest(OVERALL_SERVICE_NAME))).status().code(),
                         equalTo(NOT_FOUND));

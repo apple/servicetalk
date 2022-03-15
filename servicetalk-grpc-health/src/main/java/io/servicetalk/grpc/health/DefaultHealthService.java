@@ -174,7 +174,6 @@ public final class DefaultHealthService implements Health.HealthService {
         for (final HealthValue healthValue : serviceToStatusMap.values()) {
             healthValue.complete(NOT_SERVING);
         }
-        serviceToStatusMap.clear();
         return true;
     }
 
