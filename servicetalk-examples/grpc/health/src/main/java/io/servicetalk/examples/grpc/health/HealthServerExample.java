@@ -30,12 +30,13 @@ import static io.servicetalk.health.v1.HealthCheckResponse.ServingStatus.SERVING
 public final class HealthServerExample {
     public static void main(String... args) throws Exception {
         DefaultHealthService healthService = new DefaultHealthService();
+        GreeterService greeterService = (ctx, request) -> {
+            // For demonstration purposes, just use the name as a service and mark it as SERVING.
+            healthService.setStatus(request.getName(), SERVING);
+            return succeeded(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build());
+        };
         GrpcServers.forPort(8080)
-                .listenAndAwait(healthService, (GreeterService) (ctx, request) -> {
-                    // For demonstration purposes, just use the name as a service and mark it as SERVING.
-                    healthService.setStatus(request.getName(), SERVING);
-                    return succeeded(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build());
-                })
+                .listenAndAwait(healthService, greeterService)
                 .awaitShutdown();
     }
 }

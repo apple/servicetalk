@@ -21,9 +21,11 @@ import io.servicetalk.grpc.netty.GrpcClients;
 import io.servicetalk.health.v1.Health;
 import io.servicetalk.health.v1.Health.BlockingHealthClient;
 import io.servicetalk.health.v1.HealthCheckRequest;
+import io.servicetalk.health.v1.HealthCheckResponse;
 
 import io.grpc.examples.health.Greeter;
 import io.grpc.examples.health.Greeter.BlockingGreeterClient;
+import io.grpc.examples.health.HelloReply;
 import io.grpc.examples.health.HelloRequest;
 
 /**
@@ -39,8 +41,8 @@ public final class HealthClientExample {
             // Check health before
             checkHealth(healthClient, serviceName);
 
-            System.out.println("Response=" + client.sayHello(HelloRequest.newBuilder().setName("World").build())
-                    .getMessage());
+            HelloReply reply = client.sayHello(HelloRequest.newBuilder().setName("World").build());
+            System.out.println("HelloReply=" + reply.getMessage());
 
             // Check the health after to observe it changed.
             checkHealth(healthClient, serviceName);
@@ -49,8 +51,9 @@ public final class HealthClientExample {
 
     private static void checkHealth(BlockingHealthClient healthClient, String serviceName) throws Exception {
         try {
-            System.out.println("Service '" + serviceName + "' health=" +
-                    healthClient.check(HealthCheckRequest.newBuilder().setService(serviceName).build()).getStatus());
+            HealthCheckResponse response = healthClient.check(
+                    HealthCheckRequest.newBuilder().setService(serviceName).build());
+            System.out.println("Service '" + serviceName + "' health=" + response.getStatus());
         } catch (GrpcStatusException e) {
             System.out.println("Service '" + serviceName + "' health exception=" + e);
         }
