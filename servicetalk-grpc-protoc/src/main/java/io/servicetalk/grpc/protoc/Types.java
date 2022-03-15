@@ -37,12 +37,15 @@ final class Types {
 
     private static final TypeName Wildcard = WildcardTypeName.subtypeOf(Object.class);
     static final ClassName List = ClassName.get("java.util", "List");
+    static final ClassName Iterable = ClassName.get("java.lang", "Iterable");
     static final ClassName Objects = ClassName.get("java.util", "Objects");
     static final ClassName Collections = ClassName.get("java.util", "Collections");
     static final ClassName Arrays = ClassName.get("java.util", "Arrays");
     private static final ClassName Collection = ClassName.get("java.util", "Collection");
 
-    private static final ClassName RouteExecutionStrategyFactory =
+    static final ClassName RouteExecutionStrategy =
+            bestGuess(routerApiPkg + ".RouteExecutionStrategy");
+    static final ClassName RouteExecutionStrategyFactory =
             bestGuess(routerApiPkg + ".RouteExecutionStrategyFactory");
 
     static final ClassName BlockingIterable = bestGuess(concurrentPkg + ".BlockingIterable");

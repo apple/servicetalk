@@ -22,7 +22,6 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 import io.servicetalk.transport.netty.internal.NettyIoExecutor;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -56,12 +55,12 @@ class DefaultHttpExecutionStrategyTest {
     private boolean offloadReceiveData;
     private boolean offloadSend;
     private HttpExecutionStrategy strategy;
-    private final Executor executor = newCachedThreadExecutor();
+    private static final Executor EXECUTOR = newCachedThreadExecutor();
     @RegisterExtension
-    final ExecutionContextExtension contextRule =
+    static final ExecutionContextExtension contextRule =
             new ExecutionContextExtension(() -> DEFAULT_ALLOCATOR,
                     () -> createIoExecutor("st-ioexecutor"),
-                    () -> executor);
+                    () -> EXECUTOR).setClassLevel(true);
 
     private void setUp(final Params params) {
         this.offloadReceiveMeta = params.offloadReceiveMeta;
@@ -101,18 +100,13 @@ class DefaultHttpExecutionStrategyTest {
         }
     }
 
-    @AfterEach
-    void tearDown() throws Exception {
-        executor.closeAsync().toFuture().get();
-    }
-
     @ParameterizedTest
     @EnumSource(Params.class)
     void wrapServiceThatWasAlreadyOffloaded(final Params params) throws Exception {
         setUp(params);
         ThreadAnalyzer analyzer = new ThreadAnalyzer();
         StreamingHttpService svc = StreamingHttpServiceToOffloadedStreamingHttpService.offloadService(
-                strategy, executor, Boolean.TRUE::booleanValue, (ctx, request, responseFactory) -> {
+                strategy, EXECUTOR, Boolean.TRUE::booleanValue, (ctx, request, responseFactory) -> {
             analyzer.checkContext(ctx);
             analyzer.checkServiceInvocationNotOffloaded();
             return succeeded(
@@ -127,8 +121,7 @@ class DefaultHttpExecutionStrategyTest {
                 new TestHttpServiceContext(INSTANCE, respFactory,
                         // Use the same strategy for the ctx to indicate that server already did all required offloads.
                         // So, the difference function inside #offloadService will return null.
-                        new ExecutionContextToHttpExecutionContext(contextRule,
-                                strategy));
+                        new ExecutionContextToHttpExecutionContext(contextRule, strategy));
         analyzer.instrumentedResponseForServerNotOffloaded(svc.handle(ctx, req, ctx.streamingResponseFactory()))
                 .flatMapPublisher(StreamingHttpResponse::payloadBody)
                 .toFuture().get();
@@ -141,7 +134,7 @@ class DefaultHttpExecutionStrategyTest {
         setUp(params);
         ThreadAnalyzer analyzer = new ThreadAnalyzer();
         StreamingHttpService svc = StreamingHttpServiceToOffloadedStreamingHttpService.offloadService(
-                strategy, executor, Boolean.TRUE::booleanValue, (ctx, request, responseFactory) -> {
+                strategy, EXECUTOR, Boolean.TRUE::booleanValue, (ctx, request, responseFactory) -> {
             analyzer.checkContext(ctx);
             analyzer.checkServiceInvocation();
             return succeeded(analyzer.createNewResponse()
@@ -175,7 +168,7 @@ class DefaultHttpExecutionStrategyTest {
         setUp(params);
         ThreadAnalyzer analyzer = new ThreadAnalyzer();
         analyzer.instrumentSend(strategy.isSendOffloaded() ?
-                never().subscribeOn(executor) : never()).subscribe(__ -> {
+                never().subscribeOn(EXECUTOR) : never()).subscribe(__ -> {
         }).cancel();
         analyzer.awaitCancel.await();
         analyzer.verifySend();
@@ -186,7 +179,7 @@ class DefaultHttpExecutionStrategyTest {
     void offloadSendPublisher(final Params params) throws Exception {
         setUp(params);
         ThreadAnalyzer analyzer = new ThreadAnalyzer();
-        analyzer.instrumentSend(strategy.isSendOffloaded() ? from(1).subscribeOn(executor) : from(1)).toFuture().get();
+        analyzer.instrumentSend(strategy.isSendOffloaded() ? from(1).subscribeOn(EXECUTOR) : from(1)).toFuture().get();
         analyzer.verifySend();
     }
 
@@ -196,7 +189,7 @@ class DefaultHttpExecutionStrategyTest {
         setUp(params);
         ThreadAnalyzer analyzer = new ThreadAnalyzer();
         analyzer.instrumentReceive(strategy.isMetadataReceiveOffloaded() || strategy.isDataReceiveOffloaded() ?
-                succeeded(1).publishOn(executor) : succeeded(1)).toFuture().get();
+                succeeded(1).publishOn(EXECUTOR) : succeeded(1)).toFuture().get();
         analyzer.verifyReceive();
     }
 
@@ -206,7 +199,7 @@ class DefaultHttpExecutionStrategyTest {
         setUp(params);
         ThreadAnalyzer analyzer = new ThreadAnalyzer();
         analyzer.instrumentReceive(strategy.isMetadataReceiveOffloaded() || strategy.isDataReceiveOffloaded() ?
-                from(1).publishOn(executor) : from(1)).toFuture().get();
+                from(1).publishOn(EXECUTOR) : from(1)).toFuture().get();
         analyzer.verifyReceive();
     }
 
@@ -300,8 +293,8 @@ class DefaultHttpExecutionStrategyTest {
                     errors.add(new AssertionError("Unexpected executor in context. Expected: " +
                             expectedExecutor + ", actual: " + context.executionContext().executor()));
                 }
-            } else if (context.executionContext().executor() != executor) {
-                errors.add(new AssertionError("Unexpected executor in context. Expected: " + executor +
+            } else if (context.executionContext().executor() != EXECUTOR) {
+                errors.add(new AssertionError("Unexpected executor in context. Expected: " + EXECUTOR +
                                               ", actual: " + context.executionContext().executor()));
             }
         }

@@ -133,7 +133,8 @@ public final class RetryingHttpRequesterFilter
          */
         private ContextAwareRetryingHttpClientFilter(final FilterableStreamingHttpClient delegate) {
             super(delegate);
-            this.executor = delegate.executionContext().executor();
+            this.executor = delegate.executionContext().executionStrategy().hasOffloads() ?
+                    delegate.executionContext().executor() : delegate.executionContext().ioExecutor();
         }
 
         void inject(@Nullable final Publisher<Object> lbEventStream,

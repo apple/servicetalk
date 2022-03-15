@@ -15,11 +15,18 @@
  */
 package io.servicetalk.client.api.partition;
 
+import io.servicetalk.client.api.ClientGroup;
+
 /**
  * A builder for {@link PartitionAttributes} objects. Duplicates are not necessarily detected/enforced via the
  * {@link #add(PartitionAttributes.Key, Object)} method.
+ *
+ * @deprecated We are unaware of anyone using "partition" feature and plan to remove it in future releases.
+ * If you depend on it, consider using {@link ClientGroup} as an alternative or reach out to the maintainers describing
+ * the use-case.
  */
-public interface PartitionAttributesBuilder {
+@Deprecated
+public interface PartitionAttributesBuilder {   // FIXME: 0.43 - remove deprecated interface
     /**
      * Add a key/value pair to this builder.
      * <p>

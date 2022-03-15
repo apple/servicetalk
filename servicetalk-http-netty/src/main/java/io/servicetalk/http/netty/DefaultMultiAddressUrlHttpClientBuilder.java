@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021-2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,20 +24,23 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
+import io.servicetalk.http.api.DefaultHttpHeadersFactory;
+import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.FilterableReservedStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.MultiAddressHttpClientBuilder;
 import io.servicetalk.http.api.RedirectConfig;
+import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
-import io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.HttpClientBuildContext;
 import io.servicetalk.http.utils.RedirectingHttpRequesterFilter;
 import io.servicetalk.transport.api.ClientSslConfig;
 import io.servicetalk.transport.api.ClientSslConfigBuilder;
@@ -60,7 +63,8 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseabl
 import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverCompleteFromSource;
-import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.defaultReqRespFactory;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
+import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.setExecutionContext;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -82,44 +86,42 @@ final class DefaultMultiAddressUrlHttpClientBuilder
 
     private static final String HTTPS_SCHEME = HTTPS.toString();
 
-    private final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate;
+    private final Function<HostAndPort, SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>> builderFactory;
+    private final HttpExecutionContextBuilder executionContextBuilder = new HttpExecutionContextBuilder();
 
+    @Nullable
+    private HttpHeadersFactory headersFactory;
     @Nullable
     private RedirectConfig redirectConfig;
     @Nullable
     private SingleAddressInitializer<HostAndPort, InetSocketAddress> singleAddressInitializer;
 
     DefaultMultiAddressUrlHttpClientBuilder(
-            final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate) {
-        this.builderTemplate = requireNonNull(builderTemplate);
+            final Function<HostAndPort, SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>> bFactory) {
+        this.builderFactory = requireNonNull(bFactory);
     }
 
     @Override
     public StreamingHttpClient buildStreaming() {
         final CompositeCloseable closeables = newCompositeCloseable();
         try {
-            final HttpClientBuildContext<HostAndPort, InetSocketAddress> buildContext = builderTemplate.copyBuildCtx();
-
-            final ClientFactory clientFactory = new ClientFactory(buildContext.builder, singleAddressInitializer);
-
-            HttpExecutionContext executionContext = buildContext.builder.executionContextBuilder.build();
+            final HttpExecutionContext executionContext = executionContextBuilder.build();
+            final ClientFactory clientFactory = new ClientFactory(builderFactory, executionContext,
+                    singleAddressInitializer);
             final CachingKeyFactory keyFactory = closeables.prepend(new CachingKeyFactory());
+            final HttpHeadersFactory headersFactory = this.headersFactory;
             FilterableStreamingHttpClient urlClient = closeables.prepend(
                     new StreamingUrlHttpClient(executionContext, clientFactory, keyFactory,
-                            defaultReqRespFactory(buildContext.httpConfig().asReadOnly(),
-                                    executionContext.bufferAllocator())));
+                            new DefaultStreamingHttpRequestResponseFactory(executionContext.bufferAllocator(),
+                                    headersFactory != null ? headersFactory : DefaultHttpHeadersFactory.INSTANCE,
+                                    HTTP_1_1)));
 
             // Need to wrap the top level client (group) in order for non-relative redirects to work
             urlClient = redirectConfig == null ? urlClient :
                     new RedirectingHttpRequesterFilter(redirectConfig).create(urlClient);
 
-            HttpExecutionStrategy computedStrategy =
-                    buildContext.builder.computeChainStrategy(executionContext.executionStrategy());
-
-            LOGGER.debug("Client created with base strategy {} → computed strategy {}",
-                    executionContext.executionStrategy(), computedStrategy);
-
-            return new FilterableClientToClient(urlClient, computedStrategy);
+            LOGGER.debug("Multi-address client created with base strategy {}", executionContext.executionStrategy());
+            return new FilterableClientToClient(urlClient, executionContext.executionStrategy());
         } catch (final Throwable t) {
             closeables.closeAsync().subscribe();
             throw t;
@@ -213,32 +215,36 @@ final class DefaultMultiAddressUrlHttpClientBuilder
 
     private static final class ClientFactory implements Function<UrlKey, FilterableStreamingHttpClient> {
         private static final ClientSslConfig DEFAULT_CLIENT_SSL_CONFIG = new ClientSslConfigBuilder().build();
-        private final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate;
+        private final Function<HostAndPort, SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>>
+                builderFactory;
+        private final HttpExecutionContext executionContext;
         @Nullable
         private final SingleAddressInitializer<HostAndPort, InetSocketAddress> singleAddressInitializer;
 
-        ClientFactory(
-                final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate,
+        ClientFactory(final Function<HostAndPort, SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>>
+                        builderFactory,
+                final HttpExecutionContext executionContext,
                 @Nullable final SingleAddressInitializer<HostAndPort, InetSocketAddress> singleAddressInitializer) {
-            this.builderTemplate = builderTemplate;
+            this.builderFactory = builderFactory;
+            this.executionContext = executionContext;
             this.singleAddressInitializer = singleAddressInitializer;
         }
 
         @Override
         public StreamingHttpClient apply(final UrlKey urlKey) {
-            // Copy existing builder to prevent changes at runtime when concurrently creating clients for new addresses
-            final HttpClientBuildContext<HostAndPort, InetSocketAddress> buildContext =
-                    builderTemplate.copyBuildCtx(urlKey.hostAndPort);
+            final SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder =
+                    requireNonNull(builderFactory.apply(urlKey.hostAndPort));
 
+            setExecutionContext(builder, executionContext);
             if (HTTPS_SCHEME.equalsIgnoreCase(urlKey.scheme)) {
-                buildContext.builder.sslConfig(DEFAULT_CLIENT_SSL_CONFIG);
+                builder.sslConfig(DEFAULT_CLIENT_SSL_CONFIG);
             }
 
             if (singleAddressInitializer != null) {
-                singleAddressInitializer.initialize(urlKey.scheme, urlKey.hostAndPort, buildContext.builder);
+                singleAddressInitializer.initialize(urlKey.scheme, urlKey.hostAndPort, builder);
             }
 
-            return buildContext.build();
+            return builder.buildStreaming();
         }
     }
 
@@ -323,27 +329,34 @@ final class DefaultMultiAddressUrlHttpClientBuilder
 
     @Override
     public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> ioExecutor(final IoExecutor ioExecutor) {
-        builderTemplate.ioExecutor(ioExecutor);
+        executionContextBuilder.ioExecutor(ioExecutor);
         return this;
     }
 
     @Override
     public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> executor(final Executor executor) {
-        builderTemplate.executor(executor);
+        executionContextBuilder.executor(executor);
         return this;
     }
 
     @Override
     public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> bufferAllocator(
             final BufferAllocator allocator) {
-        builderTemplate.bufferAllocator(allocator);
+        executionContextBuilder.bufferAllocator(allocator);
         return this;
     }
 
     @Override
     public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> executionStrategy(
             final HttpExecutionStrategy strategy) {
-        builderTemplate.executionStrategy(strategy);
+        executionContextBuilder.executionStrategy(strategy);
+        return this;
+    }
+
+    @Override
+    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> headersFactory(
+            final HttpHeadersFactory headersFactory) {
+        this.headersFactory = requireNonNull(headersFactory);
         return this;
     }
 

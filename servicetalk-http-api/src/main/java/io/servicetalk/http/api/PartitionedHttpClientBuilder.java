@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.client.api.ClientGroup;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.client.api.partition.PartitionAttributes;
@@ -36,8 +37,13 @@ import io.servicetalk.transport.api.IoExecutor;
  * could be overridden to address specific use cases.
  * @param <U> the type of address before resolution (unresolved address)
  * @param <R> the type of address after resolution (resolved address)
+ * @deprecated We are unaware of anyone using "partition" feature and plan to remove it in future releases.
+ * If you depend on it, consider using {@link ClientGroup} as an alternative or reach out to the maintainers describing
+ * the use-case.
  */
-public interface PartitionedHttpClientBuilder<U, R> extends HttpClientBuilder<U, R, ServiceDiscovererEvent<R>> {
+@Deprecated
+public interface PartitionedHttpClientBuilder<U, R> // FIXME: 0.43 - remove deprecated interface
+        extends HttpClientBuilder<U, R, ServiceDiscovererEvent<R>> {
     /**
      * Initializes the {@link SingleAddressHttpClientBuilder} for each new client.
      * @param <U> the type of address before resolution (unresolved address)
@@ -80,6 +86,18 @@ public interface PartitionedHttpClientBuilder<U, R> extends HttpClientBuilder<U,
 
     @Override
     PartitionedHttpClientBuilder<U, R> bufferAllocator(BufferAllocator allocator);
+
+    /**
+     * Sets the {@link HttpHeadersFactory} to be used for creating {@link HttpHeaders} for new requests.
+     *
+     * @param headersFactory {@link HttpHeadersFactory} to be used for creating {@link HttpHeaders} for new requests
+     * @return {@code this}
+     */
+    default PartitionedHttpClientBuilder<U, R> headersFactory(HttpHeadersFactory headersFactory) {
+        // FIXME: 0.43 - remove default implementation
+        throw new UnsupportedOperationException(
+                "PartitionedHttpClientBuilder#headersFactory(HttpHeadersFactory) is not supported by " + getClass());
+    }
 
     /**
      * Sets a {@link ServiceDiscoverer} to resolve addresses of remote servers to connect to.
