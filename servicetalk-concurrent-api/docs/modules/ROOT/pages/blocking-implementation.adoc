@@ -115,9 +115,9 @@ the integer collection result.
 
 === `subscribeOn()` Example
 
-Using the `subscribeOn(executor)` operator allows processing of the subscription and demand. Using the
-`subscribeOn(executor)` operator generally requires an understanding of the behavior of the source; using a different
-source may change the need for offloading.
+Using the `subscribeOn(executor)` operator allows processing of the subscription and demand on a specific thread. Using
+the `subscribeOn(executor)` operator generally requires an understanding of the behavior of the source; using a
+different source may change the need for offloading.
 
 [source, java]
 ----
