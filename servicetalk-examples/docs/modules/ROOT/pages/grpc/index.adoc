@@ -106,7 +106,6 @@ Extends the blocking "Hello World" example to demonstrate configuration of debug
 * link:{source-root}/servicetalk-examples/grpc/debugging/src/main/java/io/servicetalk/examples/grpc/debugging/DebuggingClient.java[DebuggingClient]
 – Sends hello requests to the server and receives a greeting response.
 
-
 [#Observer]
 == Observer
 This example demonstrates the following:
@@ -121,6 +120,20 @@ on the server builder.
 - link:{source-root}/servicetalk-examples/grpc/observer/src/main/java/io/servicetalk/examples/grpc/observer/LifecycleObserverClient.java[LifecycleObserverClient] - A client that installs a
 link:{source-root}/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcLifecycleObserver.java[GrpcLifecycleObserver]
 on via a client filter on the client builder.
+
+[#Health]
+== Health Checking
+This example demonstrates the following:
+- Use of
+link:{source-root}/servicetalk-grpc-health/src/main/java/io/servicetalk/grpc/health/DefaultHealthService.java[DefaultHealthService]
+which implements link:https://github.com/grpc/grpc/blob/master/doc/health-checking.md[gRPC health checking] paired with a simple "hello world" service.
+
+Using the following classes:
+* link:{source-root}/servicetalk-examples/grpc/health/src/main/java/io/servicetalk/examples/grpc/health/HealthServerExample.java[HealthServerExample] a server
+that installs link:{source-root}/servicetalk-grpc-health/src/main/java/io/servicetalk/grpc/health/DefaultHealthService.java[DefaultHealthService] in addition to
+a simple "hello world" service.
+* link:{source-root}/servicetalk-examples/grpc/health/src/main/java/io/servicetalk/examples/grpc/health/HealthClientExample.java[HealthClientExample] a client
+that calls the "hello world" server, the "health check" server, and prints results.
 
 [#errors]
 == Application Errors

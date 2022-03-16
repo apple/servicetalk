@@ -29,7 +29,7 @@ import javax.annotation.Nullable;
 /**
  * A function to determine the appropriate timeout to be used for a given {@link HttpRequestMetaData HTTP request}.
  * The result is a {@link Duration} which may be null if no timeout is to be applied. If the function blocks then
- * {@link #influenceStrategy(HttpExecutionStrategy)} should alter the execution strategy as required.
+ * {@link #requiredOffloads()} should specify the execution strategy as required.
  * @deprecated In areas which require {@link TimeoutFromRequest} use variants that accept
  * {@link java.util.function.BiFunction}&lt;{@link HttpRequestMetaData}, {@link TimeSource}, {@link Duration}&gt;.
  * E.g.:

@@ -140,7 +140,6 @@ enum DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
         }
 
         // merge the offload flags
-
         byte otherOffloads = generateOffloadsFlag(other);
 
         return offloads == (offloads | otherOffloads) ?

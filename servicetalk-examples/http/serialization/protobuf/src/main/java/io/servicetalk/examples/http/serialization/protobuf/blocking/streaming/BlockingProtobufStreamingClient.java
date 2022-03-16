@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,32 +13,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.examples.http.serialization.json.blocking.streaming;
+package io.servicetalk.examples.http.serialization.protobuf.blocking.streaming;
 
 import io.servicetalk.concurrent.BlockingIterator;
-import io.servicetalk.examples.http.serialization.json.CreatePojoRequest;
-import io.servicetalk.examples.http.serialization.json.PojoResponse;
+import io.servicetalk.examples.http.serialization.protobuf.ExampleProtos.RequestMessage;
+import io.servicetalk.examples.http.serialization.protobuf.ExampleProtos.ResponseMessage;
 import io.servicetalk.http.api.BlockingStreamingHttpClient;
 import io.servicetalk.http.api.BlockingStreamingHttpResponse;
 import io.servicetalk.http.netty.HttpClients;
 
-import static io.servicetalk.examples.http.serialization.json.SerializerUtils.REQ_STREAMING_SERIALIZER;
-import static io.servicetalk.examples.http.serialization.json.SerializerUtils.RESP_STREAMING_SERIALIZER;
+import static io.servicetalk.examples.http.serialization.protobuf.SerializerUtils.REQ_STREAMING_SERIALIZER;
+import static io.servicetalk.examples.http.serialization.protobuf.SerializerUtils.RESP_STREAMING_SERIALIZER;
 import static java.util.Arrays.asList;
 
-public final class BlockingPojoStreamingUrlClient {
+public final class BlockingProtobufStreamingClient {
     public static void main(String[] args) throws Exception {
-        try (BlockingStreamingHttpClient client = HttpClients.forMultiAddressUrl().buildBlockingStreaming()) {
-            BlockingStreamingHttpResponse response = client.request(client.post("http://localhost:8080/pojos")
+        try (BlockingStreamingHttpClient client =
+                     HttpClients.forSingleAddress("localhost", 8080).buildBlockingStreaming()) {
+            BlockingStreamingHttpResponse response = client.request(client.post("/protobuf")
                     .payloadBody(asList(
-                            new CreatePojoRequest("value1"),
-                            new CreatePojoRequest("value2"),
-                            new CreatePojoRequest("value3")),
+                            RequestMessage.newBuilder().setMessage("value1").build(),
+                            RequestMessage.newBuilder().setMessage("value22").build(),
+                            RequestMessage.newBuilder().setMessage("value333").build()),
                             REQ_STREAMING_SERIALIZER));
             System.out.println(response.toString((name, value) -> value));
             // While it's also possible to use for-each, it's recommended to use try-with-resources to make sure that
             // the full response payload body is drained in case of exceptions
-            try (BlockingIterator<PojoResponse> payload = response.payloadBody(RESP_STREAMING_SERIALIZER).iterator()) {
+            try (BlockingIterator<ResponseMessage> payload =
+                         response.payloadBody(RESP_STREAMING_SERIALIZER).iterator()) {
                 while (payload.hasNext()) {
                     System.out.println(payload.next());
                 }

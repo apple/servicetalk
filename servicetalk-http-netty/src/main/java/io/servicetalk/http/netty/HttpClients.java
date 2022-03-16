@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.client.api.ClientGroup;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
@@ -28,6 +29,7 @@ import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.MultiAddressHttpClientBuilder;
+import io.servicetalk.http.api.MultiAddressHttpClientBuilder.SingleAddressInitializer;
 import io.servicetalk.http.api.PartitionedHttpClientBuilder;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -41,7 +43,9 @@ import java.util.function.Function;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.Publisher.failed;
-import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.forUnknownHostAndPort;
+import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalDnsServiceDiscoverer;
+import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalSrvDnsServiceDiscoverer;
+import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.mappingServiceDiscoverer;
 import static java.util.function.Function.identity;
 
 /**
@@ -65,7 +69,7 @@ public final class HttpClients {
      * @return new builder with default configuration
      */
     public static MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forMultiAddressUrl() {
-        return new DefaultMultiAddressUrlHttpClientBuilder(forUnknownHostAndPort());
+        return new DefaultMultiAddressUrlHttpClientBuilder(HttpClients::forSingleAddress);
     }
 
     /**
@@ -80,12 +84,16 @@ public final class HttpClients {
      * @param serviceDiscoverer The {@link ServiceDiscoverer} to resolve addresses of remote servers to connect to.
      * The lifecycle of the provided {@link ServiceDiscoverer} should be managed by the caller.
      * @return new builder with default configuration
+     * @deprecated Use {@link #forMultiAddressUrl()} to create {@link MultiAddressHttpClientBuilder}, then use
+     * {@link MultiAddressHttpClientBuilder#initializer(SingleAddressInitializer)} to override {@link ServiceDiscoverer}
+     * using {@link SingleAddressHttpClientBuilder#serviceDiscoverer(ServiceDiscoverer)} for all or some of the internal
+     * clients.
      */
+    @Deprecated // FIXME: 0.43 - remove deprecated method
     public static MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forMultiAddressUrl(
             final ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>>
                     serviceDiscoverer) {
-        return new DefaultMultiAddressUrlHttpClientBuilder(
-                new DefaultSingleAddressHttpClientBuilder<>(serviceDiscoverer));
+        return new DefaultMultiAddressUrlHttpClientBuilder(address -> forSingleAddress(serviceDiscoverer, address));
     }
 
     /**
@@ -116,7 +124,7 @@ public final class HttpClients {
      */
     public static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forSingleAddress(
             final HostAndPort address) {
-        return DefaultSingleAddressHttpClientBuilder.forHostAndPort(address);
+        return new DefaultSingleAddressHttpClientBuilder<>(address, globalDnsServiceDiscoverer());
     }
 
     /**
@@ -129,7 +137,7 @@ public final class HttpClients {
      */
     public static SingleAddressHttpClientBuilder<String, InetSocketAddress> forServiceAddress(
             final String serviceName) {
-        return DefaultSingleAddressHttpClientBuilder.forServiceAddress(serviceName);
+        return new DefaultSingleAddressHttpClientBuilder<>(serviceName, globalSrvDnsServiceDiscoverer());
     }
 
     /**
@@ -166,8 +174,8 @@ public final class HttpClients {
      */
     public static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forResolvedAddress(
             final HostAndPort address) {
-        return DefaultSingleAddressHttpClientBuilder.forResolvedAddress(address,
-                BuilderUtils::toResolvedInetSocketAddress);
+        return new DefaultSingleAddressHttpClientBuilder<>(address,
+                mappingServiceDiscoverer(BuilderUtils::toResolvedInetSocketAddress));
     }
 
     /**
@@ -177,11 +185,11 @@ public final class HttpClients {
      * {@link HttpHeaderNames#HOST}. Use {@link SingleAddressHttpClientBuilder#unresolvedAddressToHost(Function)}
      * if you want to override that value or {@link SingleAddressHttpClientBuilder#hostHeaderFallback(boolean)} if you
      * want to disable this behavior.
-     * @param <T> The type of {@link SocketAddress}.
+     * @param <R> The type of resolved {@link SocketAddress}.
      * @return new builder for the address
      */
-    public static <T extends SocketAddress> SingleAddressHttpClientBuilder<T, T> forResolvedAddress(final T address) {
-        return DefaultSingleAddressHttpClientBuilder.forResolvedAddress(address, identity());
+    public static <R extends SocketAddress> SingleAddressHttpClientBuilder<R, R> forResolvedAddress(final R address) {
+        return new DefaultSingleAddressHttpClientBuilder<>(address, mappingServiceDiscoverer(identity()));
     }
 
     /**
@@ -220,13 +228,17 @@ public final class HttpClients {
      * @param <U> the type of address before resolution (unresolved address)
      * @param <R> the type of address after resolution (resolved address)
      * @return new builder with provided configuration
+     * @deprecated We are unaware of anyone using "partition" feature and plan to remove it in future releases.
+     * If you depend on it, consider using {@link ClientGroup} as an alternative or reach out to the maintainers
+     * describing the use-case.
      */
+    @Deprecated // FIXME: 0.43 - remove deprecated method
     public static <U, R> PartitionedHttpClientBuilder<U, R> forPartitionedAddress(
             final ServiceDiscoverer<U, R, PartitionedServiceDiscovererEvent<R>> serviceDiscoverer,
             final U address,
             final Function<HttpRequestMetaData, PartitionAttributesBuilder> partitionAttributesBuilderFactory) {
-        return new DefaultPartitionedHttpClientBuilder<>(
-                new DefaultSingleAddressHttpClientBuilder<>(address,
+        return new DefaultPartitionedHttpClientBuilder<>(address,
+                () -> forSingleAddress(
                         new ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>>() {
                             private final ListenableAsyncCloseable closeable = emptyAsyncCloseable();
 
@@ -249,6 +261,6 @@ public final class HttpClients {
                             public Completable closeAsyncGracefully() {
                                 return closeable.closeAsyncGracefully();
                             }
-                        }), serviceDiscoverer, partitionAttributesBuilderFactory);
+                        }, address), serviceDiscoverer, partitionAttributesBuilderFactory);
     }
 }

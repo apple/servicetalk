@@ -16,6 +16,7 @@
 package io.servicetalk.grpc.netty;
 
 import io.servicetalk.concurrent.BlockingIterator;
+import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
@@ -58,9 +59,11 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
@@ -418,9 +421,8 @@ class ErrorHandlingTest {
     }
 
     static Collection<Arguments> data() {
-        GrpcExecutionStrategy noopStrategy = offloadNever();
         GrpcExecutionStrategy[] strategies =
-                new GrpcExecutionStrategy[]{noopStrategy, defaultStrategy()};
+                new GrpcExecutionStrategy[]{offloadNever(), defaultStrategy()};
         List<Arguments> data = new ArrayList<>(strategies.length * 2 * TestMode.values().length);
         for (GrpcExecutionStrategy serverStrategy : strategies) {
             for (GrpcExecutionStrategy clientStrategy : strategies) {
@@ -437,9 +439,14 @@ class ErrorHandlingTest {
     @AfterEach
     void tearDown() throws Exception {
         try {
-            blockingClient.close();
+            if (null != blockingClient) {
+                blockingClient.close();
+            }
         } finally {
-            newCompositeCloseable().appendAll(client, serverContext).close();
+            newCompositeCloseable().appendAll(Stream.of(client, serverContext)
+                    .filter(Objects::nonNull)
+                    .toArray(AsyncCloseable[]::new)
+            ).close();
         }
     }
 

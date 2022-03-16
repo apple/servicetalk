@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021-2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,6 +66,7 @@ public interface MultiAddressHttpClientBuilder<U, R> extends HttpClientBuilder<U
     @Override
     MultiAddressHttpClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
 
+    @Override
     MultiAddressHttpClientBuilder<U, R> executor(Executor executor);
 
     @Override
@@ -73,6 +74,18 @@ public interface MultiAddressHttpClientBuilder<U, R> extends HttpClientBuilder<U
 
     @Override
     MultiAddressHttpClientBuilder<U, R> bufferAllocator(BufferAllocator allocator);
+
+    /**
+     * Sets the {@link HttpHeadersFactory} to be used for creating {@link HttpHeaders} for new requests.
+     *
+     * @param headersFactory {@link HttpHeadersFactory} to be used for creating {@link HttpHeaders} for new requests
+     * @return {@code this}
+     */
+    default MultiAddressHttpClientBuilder<U, R> headersFactory(HttpHeadersFactory headersFactory) {
+        // FIXME: 0.43 - remove default implementation
+        throw new UnsupportedOperationException(
+                "MultiAddressHttpClientBuilder#headersFactory(HttpHeadersFactory) is not supported by " + getClass());
+    }
 
     /**
      * Set a function which can customize options for each {@link StreamingHttpClient} that is built.

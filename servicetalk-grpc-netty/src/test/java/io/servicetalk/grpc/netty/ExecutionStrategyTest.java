@@ -269,7 +269,7 @@ class ExecutionStrategyTest {
         ServiceFactory serviceFactory = routeStrategy.getServiceFactory();
         serverContext = builder.listenAndAwait(serviceFactory);
         client = GrpcClients.forAddress(serverHostAndPort(serverContext))
-                .initializeHttp(b -> b.executionStrategy(HttpExecutionStrategies.offloadNever()))
+                .initializeHttp(b -> b.executionStrategy(HttpExecutionStrategies.offloadNone()))
                 .buildBlocking(new ClientFactory());
     }
 

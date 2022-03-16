@@ -19,7 +19,7 @@ import io.servicetalk.http.api.HttpExecutionStrategy;
 
 import static java.util.Objects.requireNonNull;
 
-final class DefaultGrpcExecutionStrategy implements GrpcExecutionStrategy {
+class DefaultGrpcExecutionStrategy implements GrpcExecutionStrategy {
 
     private final HttpExecutionStrategy delegate;
 

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,21 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.examples.http.serialization.json.async.streaming;
+package io.servicetalk.examples.http.serialization.protobuf.async.streaming;
 
-import io.servicetalk.examples.http.serialization.json.CreatePojoRequest;
+import io.servicetalk.examples.http.serialization.protobuf.ExampleProtos.RequestMessage;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.netty.HttpClients;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
-import static io.servicetalk.examples.http.serialization.json.SerializerUtils.REQ_STREAMING_SERIALIZER;
-import static io.servicetalk.examples.http.serialization.json.SerializerUtils.RESP_STREAMING_SERIALIZER;
+import static io.servicetalk.examples.http.serialization.protobuf.SerializerUtils.REQ_STREAMING_SERIALIZER;
+import static io.servicetalk.examples.http.serialization.protobuf.SerializerUtils.RESP_STREAMING_SERIALIZER;
 
-public final class PojoStreamingUrlClient {
+public final class ProtobufStreamingClient {
     public static void main(String[] args) throws Exception {
-        try (StreamingHttpClient client = HttpClients.forMultiAddressUrl().buildStreaming()) {
-            client.request(client.post("http://localhost:8080/pojos")
-                    .payloadBody(from("value1", "value2", "value3").map(CreatePojoRequest::new),
+        try (StreamingHttpClient client = HttpClients.forSingleAddress("localhost", 8080).buildStreaming()) {
+            client.request(client.post("/protobuf")
+                    .payloadBody(from("value1", "value22", "value333")
+                                    .map(message -> RequestMessage.newBuilder().setMessage(message).build()),
                             REQ_STREAMING_SERIALIZER))
                     .beforeOnSuccess(response -> System.out.println(response.toString((name, value) -> value)))
                     .flatMapPublisher(resp -> resp.payloadBody(RESP_STREAMING_SERIALIZER))

@@ -15,6 +15,8 @@
  */
 package io.servicetalk.client.api.partition;
 
+import io.servicetalk.client.api.ClientGroup;
+
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import javax.annotation.Nullable;
@@ -30,8 +32,13 @@ import static java.util.Objects.requireNonNull;
  * { [Key(shard) = "shard X"], [Key(data center) = "data center X"], [Key(is main) = "false/true"] }
  * </pre>
  * This construct allows for the attributes to partially specify a partition and preform "wild card" type matching.
+ *
+ * @deprecated We are unaware of anyone using "partition" feature and plan to remove it in future releases.
+ * If you depend on it, consider using {@link ClientGroup} as an alternative or reach out to the maintainers describing
+ * the use-case.
  */
-public interface PartitionAttributes {
+@Deprecated
+public interface PartitionAttributes {  // FIXME: 0.43 - remove deprecated interface
     /**
      * A key identifies a specific object in a {@link PartitionAttributes}.
      * @param <T> The type of value associated with a {@link PartitionAttributes.Key}.

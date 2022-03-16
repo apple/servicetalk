@@ -24,10 +24,14 @@ import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.HttpExecutionContext;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.netty.RetryingHttpRequesterFilter.ContextAwareRetryingHttpClientFilter;
 
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.stubbing.Answer;
 
 import java.net.UnknownHostException;
@@ -39,6 +43,8 @@ import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadAll;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
@@ -54,6 +60,7 @@ import static org.hamcrest.core.IsNull.nullValue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+@Execution(ExecutionMode.CONCURRENT)
 class RetryingHttpRequesterFilterAutoRetryStrategiesTest {
     private static final HttpRequestMetaData REQUEST_META_DATA =
             newRequest(GET, "/", HTTP_1_1, INSTANCE.newHeaders(), DEFAULT_ALLOCATOR, INSTANCE);
@@ -74,32 +81,35 @@ class RetryingHttpRequesterFilterAutoRetryStrategiesTest {
         retrySubscriber = new TestCompletableSubscriber();
     }
 
-    @Test
-    void disableWaitForLb() {
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void disableWaitForLb(boolean offloading) {
         final ContextAwareRetryingHttpClientFilter filter =
-                newFilter(new RetryingHttpRequesterFilter.Builder().waitForLoadBalancer(false));
+                newFilter(new RetryingHttpRequesterFilter.Builder().waitForLoadBalancer(false), offloading);
 
         Completable retry = applyRetry(filter, 1, NO_AVAILABLE_HOST);
         toSource(retry).subscribe(retrySubscriber);
         verifyRetryResultCompleted();
     }
 
-    @Test
-    void disableRetryAllRetryableExWithRetryable() {
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void disableRetryAllRetryableExWithRetryable(boolean offloading) {
         final ContextAwareRetryingHttpClientFilter filter =
                 newFilter(new RetryingHttpRequesterFilter.Builder()
-                        .retryRetryableExceptions((__, ___) -> ofNoRetries()));
+                        .retryRetryableExceptions((__, ___) -> ofNoRetries()), offloading);
 
         Completable retry = applyRetry(filter, 1, RETRYABLE_EXCEPTION);
         toSource(retry).subscribe(retrySubscriber);
         verifyRetryResultError(RETRYABLE_EXCEPTION);
     }
 
-    @Test
-    void disableRetryAllRetryableExWithNoAvailableHost() {
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void disableRetryAllRetryableExWithNoAvailableHost(boolean offloading) {
         final ContextAwareRetryingHttpClientFilter filter =
                 newFilter(new RetryingHttpRequesterFilter.Builder()
-                        .retryRetryableExceptions((__, ___) -> ofNoRetries()));
+                        .retryRetryableExceptions((__, ___) -> ofNoRetries()), offloading);
 
         Completable retry = applyRetry(filter, 1, NO_AVAILABLE_HOST);
         toSource(retry).subscribe(retrySubscriber);
@@ -108,11 +118,12 @@ class RetryingHttpRequesterFilterAutoRetryStrategiesTest {
         verifyRetryResultCompleted();
     }
 
-    @Test
-    void disableRetryAllRetryableExWithNoAvailableHostAndUnknownHostException() {
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void disableRetryAllRetryableExWithNoAvailableHostAndUnknownHostException(boolean offloading) {
         final ContextAwareRetryingHttpClientFilter filter =
                 newFilter(new RetryingHttpRequesterFilter.Builder()
-                        .retryRetryableExceptions((__, ___) -> ofNoRetries()));
+                        .retryRetryableExceptions((__, ___) -> ofNoRetries()), offloading);
 
         Completable retry = applyRetry(filter, 1, NO_AVAILABLE_HOST);
         toSource(retry).subscribe(retrySubscriber);
@@ -121,33 +132,40 @@ class RetryingHttpRequesterFilterAutoRetryStrategiesTest {
         verifyRetryResultError(UNKNOWN_HOST_EXCEPTION);
     }
 
-    @Test
-    void disableAll() {
-        final ContextAwareRetryingHttpClientFilter filter = newFilter(disableAutoRetries());
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void disableAll(boolean offloading) {
+        final ContextAwareRetryingHttpClientFilter filter = newFilter(disableAutoRetries(), offloading);
         Completable retry = applyRetry(filter, 1, RETRYABLE_EXCEPTION);
         toSource(retry).subscribe(retrySubscriber);
         verifyRetryResultError(RETRYABLE_EXCEPTION);
     }
 
-    @Test
-    void defaultForNonRetryableEx() {
-        final ContextAwareRetryingHttpClientFilter filter = newFilter(new RetryingHttpRequesterFilter.Builder());
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void defaultForNonRetryableEx(boolean offloading) {
+        final ContextAwareRetryingHttpClientFilter filter =
+                newFilter(new RetryingHttpRequesterFilter.Builder(), offloading);
         Completable retry = applyRetry(filter, 1, DELIBERATE_EXCEPTION);
         toSource(retry).subscribe(retrySubscriber);
         verifyRetryResultError(DELIBERATE_EXCEPTION);
     }
 
-    @Test
-    void defaultForRetryableEx() {
-        final ContextAwareRetryingHttpClientFilter filter = newFilter(new RetryingHttpRequesterFilter.Builder());
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void defaultForRetryableEx(boolean offloading) {
+        final ContextAwareRetryingHttpClientFilter filter =
+                newFilter(new RetryingHttpRequesterFilter.Builder(), offloading);
         Completable retry = applyRetry(filter, 1, RETRYABLE_EXCEPTION);
         toSource(retry).subscribe(retrySubscriber);
         verifyRetryResultCompleted();
     }
 
-    @Test
-    void defaultForNoAvailableHost() {
-        final ContextAwareRetryingHttpClientFilter filter = newFilter(new RetryingHttpRequesterFilter.Builder());
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void defaultForNoAvailableHost(boolean offloading) {
+        final ContextAwareRetryingHttpClientFilter filter =
+                newFilter(new RetryingHttpRequesterFilter.Builder(), offloading);
         Completable retry = applyRetry(filter, 1, NO_AVAILABLE_HOST);
         toSource(retry).subscribe(retrySubscriber);
         assertThat(retrySubscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
@@ -155,10 +173,11 @@ class RetryingHttpRequesterFilterAutoRetryStrategiesTest {
         verifyRetryResultCompleted();
     }
 
-    @Test
-    void defaultForNoAvailableHostMaxRetries() {
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void defaultForNoAvailableHostMaxRetries(boolean offloading) {
         final ContextAwareRetryingHttpClientFilter filter =
-                newFilter(new RetryingHttpRequesterFilter.Builder().ignoreServiceDiscovererErrors(true));
+                newFilter(new RetryingHttpRequesterFilter.Builder().ignoreServiceDiscovererErrors(true), offloading);
         lbEvents.onComplete();
         for (int i = 1; i <= 5; i++) {
             Completable retry = applyRetry(filter, i, NO_AVAILABLE_HOST);
@@ -174,9 +193,11 @@ class RetryingHttpRequesterFilterAutoRetryStrategiesTest {
         }
     }
 
-    @Test
-    void defaultForNoAvailableHostOnUnknownHostException() {
-        final ContextAwareRetryingHttpClientFilter filter = newFilter(new RetryingHttpRequesterFilter.Builder());
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void defaultForNoAvailableHostOnUnknownHostException(boolean offloading) {
+        final ContextAwareRetryingHttpClientFilter filter =
+                newFilter(new RetryingHttpRequesterFilter.Builder(), offloading);
         Completable retry = applyRetry(filter, 1, NO_AVAILABLE_HOST);
         toSource(retry).subscribe(retrySubscriber);
         assertThat(retrySubscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
@@ -184,9 +205,11 @@ class RetryingHttpRequesterFilterAutoRetryStrategiesTest {
         verifyRetryResultError(UNKNOWN_HOST_EXCEPTION);
     }
 
-    @Test
-    void defaultForNoAvailableHostOnServiceDiscovererError() {
-        final ContextAwareRetryingHttpClientFilter filter = newFilter(new RetryingHttpRequesterFilter.Builder());
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void defaultForNoAvailableHostOnServiceDiscovererError(boolean offloading) {
+        final ContextAwareRetryingHttpClientFilter filter =
+                newFilter(new RetryingHttpRequesterFilter.Builder(), offloading);
         Completable retry = applyRetry(filter, 1, NO_AVAILABLE_HOST);
         toSource(retry).subscribe(retrySubscriber);
         assertThat(retrySubscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
@@ -194,10 +217,11 @@ class RetryingHttpRequesterFilterAutoRetryStrategiesTest {
         verifyRetryResultError(DELIBERATE_EXCEPTION);
     }
 
-    @Test
-    void ignoreSdErrorsForNoAvailableHost() {
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void ignoreSdErrorsForNoAvailableHost(boolean offloading) {
         final ContextAwareRetryingHttpClientFilter filter = newFilter(new RetryingHttpRequesterFilter.Builder()
-                .ignoreServiceDiscovererErrors(true));
+                .ignoreServiceDiscovererErrors(true), offloading);
         Completable retry = applyRetry(filter, 1, NO_AVAILABLE_HOST);
         toSource(retry).subscribe(retrySubscriber);
         assertThat("Unexpected subscribe for SD errors.", sdStatus.isSubscribed(), is(false));
@@ -206,9 +230,11 @@ class RetryingHttpRequesterFilterAutoRetryStrategiesTest {
         verifyRetryResultCompleted();
     }
 
-    @Test
-    void defaultForNoAvailableHostWhenServiceDiscovererTerminated() {
-        final ContextAwareRetryingHttpClientFilter filter = newFilter(new RetryingHttpRequesterFilter.Builder());
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void defaultForNoAvailableHostWhenServiceDiscovererTerminated(boolean offloading) {
+        final ContextAwareRetryingHttpClientFilter filter =
+                newFilter(new RetryingHttpRequesterFilter.Builder(), offloading);
         Completable retry = applyRetry(filter, 1, NO_AVAILABLE_HOST);
         toSource(retry).subscribe(retrySubscriber);
         assertThat(retrySubscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
@@ -216,10 +242,11 @@ class RetryingHttpRequesterFilterAutoRetryStrategiesTest {
         verifyRetryResultCompleted();
     }
 
-    @Test
-    void maxRetriesAreHonored() {
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void maxRetriesAreHonored(boolean offloading) {
         final ContextAwareRetryingHttpClientFilter filter =
-                newFilter(new RetryingHttpRequesterFilter.Builder().maxTotalRetries(1));
+                newFilter(new RetryingHttpRequesterFilter.Builder().maxTotalRetries(1), offloading);
         Completable retry = applyRetry(filter, 2, RETRYABLE_EXCEPTION);
         toSource(retry).subscribe(retrySubscriber);
         verifyRetryResultError(RETRYABLE_EXCEPTION);
@@ -233,13 +260,21 @@ class RetryingHttpRequesterFilterAutoRetryStrategiesTest {
         assertThat(retrySubscriber.awaitOnError(), is(sameInstance(expected)));
     }
 
-    private ContextAwareRetryingHttpClientFilter newFilter(final RetryingHttpRequesterFilter.Builder builder) {
-        return newFilter(builder.build());
+    private ContextAwareRetryingHttpClientFilter newFilter(final RetryingHttpRequesterFilter.Builder builder,
+                                                           final boolean offloading) {
+        return newFilter(builder.build(), offloading);
     }
 
-    private ContextAwareRetryingHttpClientFilter newFilter(final RetryingHttpRequesterFilter filter) {
+    private ContextAwareRetryingHttpClientFilter newFilter(final RetryingHttpRequesterFilter filter,
+                                                           final boolean offloading) {
+        return newFilter(filter, offloading ? offloadAll() : offloadNone());
+    }
+
+    private ContextAwareRetryingHttpClientFilter newFilter(final RetryingHttpRequesterFilter filter,
+                                                           final HttpExecutionStrategy strategy) {
         final FilterableStreamingHttpClient client = mock(FilterableStreamingHttpClient.class);
         final HttpExecutionContext executionContext = mock(HttpExecutionContext.class);
+        when(executionContext.executionStrategy()).thenReturn(strategy);
         when(executionContext.executor()).then((Answer<Executor>) invocation -> immediate());
         when(client.executionContext()).then(__ -> executionContext);
         final ContextAwareRetryingHttpClientFilter f =

@@ -23,6 +23,7 @@ import org.junit.jupiter.api.extension.Extension;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
@@ -135,7 +136,7 @@ public final class ExecutorExtension<E extends Executor> implements AfterEachCal
     }
 
     private void createExecutor() {
-        executor = eSupplier.get();
+        executor = Objects.requireNonNull(eSupplier.get());
     }
 
     private void closeExecutor() throws ExecutionException, InterruptedException {

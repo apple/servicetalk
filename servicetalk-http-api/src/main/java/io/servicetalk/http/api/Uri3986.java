@@ -88,7 +88,7 @@ final class Uri3986 implements Uri {
                         final char c2 = uri.charAt(i);
                         if (c2 == '@') {
                             if (parsedUserInfo != null) {
-                                throw new IllegalArgumentException("duplicate userinfo");
+                                throw newDuplicateUserInfo(i, uri);
                             }
                             // Userinfo has `:` as valid. If we previously parsed the host throw it away.
                             parsedUserInfo = uri.substring(authorityBegin, i);
@@ -96,15 +96,19 @@ final class Uri3986 implements Uri {
                             begin = ++i;
                         } else if (c2 == '[') {
                             if (parsingIPv6 != 0 || parsedHost != null) {
-                                throw new IllegalArgumentException("unexpected [");
+                                throw newUnexpectedOpenBracket(i, begin, parsedHost, uri);
                             }
                             parsingIPv6 = 1;
                             begin = i++; // post increment, preserve the '[' for original uri for pathEndIndex.
                         } else if (c2 == ']') {
                             if (parsingIPv6 == 0) {
-                                throw new IllegalArgumentException("unexpected ]");
-                            } else if (i - 1 <= begin) {
-                                throw new IllegalArgumentException("empty ip literal");
+                                throw newUnexpectedCloseBracket(i, parsedHost, uri);
+                            }
+                            if (parsingIPv6 == 2) {
+                                throw newUnexpectedCloseBracketAfterIPv6(i, parsedHost, uri);
+                            }
+                            if (i - 1 <= begin) {
+                                throw newEmptyIPv6Literal(begin, uri);
                             }
                             // Copy the '[' and ']' characters. pathEndIndex depends upon retaining the uri contents.
                             parsedHost = uri.substring(begin, i + 1);
@@ -114,11 +118,11 @@ final class Uri3986 implements Uri {
                         } else if (c2 == ':') {
                             if (parsingIPv6 == 0) {
                                 if (parsedHost != null) {
-                                    throw new IllegalArgumentException("duplicate/invalid host");
+                                    throw newDuplicateHost(i, parsedHost, uri);
                                 }
                                 parsedHost = uri.substring(begin, i);
                             } else if (parsingIPv6 == 2 && begin != i) {
-                                throw new IllegalArgumentException("Port must be immediately after IPv6address");
+                                throw newInvalidPortNumberPosition(i, begin, parsedHost, uri);
                             }
                             ++i;
                             if (parsingIPv6 != 1) {
@@ -128,7 +132,7 @@ final class Uri3986 implements Uri {
                         } else if (c2 == '?' || c2 == '#' || c2 == '/') {
                             if (parsedHost == null) {
                                 if (parsingIPv6 == 1) {
-                                    throw new IllegalArgumentException("missing closing ] for IP-literal");
+                                    throw newNoClosingBracket(i, begin, c2, uri);
                                 }
                                 parsedHost = uri.substring(begin, i);
                             } else if (foundColonForPort) {
@@ -149,7 +153,7 @@ final class Uri3986 implements Uri {
                     if (i == uri.length()) {
                         if (parsedHost == null) {
                             if (parsingIPv6 == 1) {
-                                throw new IllegalArgumentException("missing closing ] for IP-literal");
+                                throw newMissingClosingBracket(i, begin, uri);
                             }
                             parsedHost = uri.substring(begin);
                         } else if (foundColonForPort) {
@@ -163,7 +167,7 @@ final class Uri3986 implements Uri {
                 }
             } else if (c == ':' && begin == 0 && parsedScheme == null && eligibleToParseScheme) {
                 if (i == 0) {
-                    throw new IllegalArgumentException("empty scheme");
+                    throw new IllegalArgumentException("Invalid URI format: no scheme before colon (':')");
                 }
                 parsedScheme = uri.substring(0, i);
                 begin = ++i;
@@ -433,6 +437,66 @@ final class Uri3986 implements Uri {
         } else if (port <= 65535) {
             return 5;
         }
-        throw new IllegalArgumentException("port out of bounds: " + port);
+        throw new IllegalArgumentException("Invalid URI format: port number out of bounds: " + port +
+                ", expected [0-65535]");
+    }
+
+    private static IllegalArgumentException newDuplicateUserInfo(final int index, final String uri) {
+        return new IllegalArgumentException("Invalid URI format: duplicate or invalid userinfo. "
+                + "Already parsed userinfo, but found another '@' character at index " + index +
+                ". Total URI length: " + uri.length());
+    }
+
+    private static IllegalArgumentException newNoClosingBracket(final int index, final int begin, final char c,
+                                                                final String uri) {
+        return new IllegalArgumentException("Invalid URI format: expected closing ']' for IPv6-literal: " +
+                uri.substring(begin, index) + ", but found '" + c + "' character at index " + index +
+                ". Total URI length: " + uri.length());
+    }
+
+    static IllegalArgumentException newUnexpectedOpenBracket(final int index, final int ipv6Index,
+                                                             @Nullable final String parsedHost,
+                                                             final String uri) {
+        return new IllegalArgumentException("Invalid URI format: unexpected '[' character at index " + index +
+                " after " + (parsedHost != null ? "parsed host: " + parsedHost :
+                ("started parsing IPv6-literal from index " + ipv6Index)) +
+                ". Total URI length: " + uri.length());
+    }
+
+    static IllegalArgumentException newUnexpectedCloseBracket(final int index, @Nullable final String parsedHost,
+                                                              final String uri) {
+        return new IllegalArgumentException("Invalid URI format: unexpected ']' character at index " + index +
+                (parsedHost != null ? ". Parsed host: " + parsedHost : "") +
+                ". Total URI length: " + uri.length());
+    }
+
+    static IllegalArgumentException newUnexpectedCloseBracketAfterIPv6(final int index, final String parsedHost,
+                                                                       final String uri) {
+        return new IllegalArgumentException("Invalid URI format: unexpected ']' character at index " + index +
+                " after IPv6-address is already parsed: " + parsedHost + ". Total URI length: " + uri.length());
+    }
+
+    static IllegalArgumentException newEmptyIPv6Literal(final int index, final String uri) {
+        return new IllegalArgumentException("Invalid URI format: empty IPv6-literal [] at index " + index +
+                ". Total URI length: " + uri.length());
+    }
+
+    static IllegalArgumentException newDuplicateHost(final int index, final String parsedHost, final String uri) {
+        return new IllegalArgumentException("Invalid URI format: duplicate or invalid host. "
+                + "Already parsed host: " + parsedHost + ", but found ':' character at index " + index +
+                ". Total URI length: " + uri.length());
+    }
+
+    static IllegalArgumentException newInvalidPortNumberPosition(final int index, final int colonIndex,
+                                                                 final String parsedHost, final String uri) {
+        return new IllegalArgumentException("Invalid URI format: port number must be " +
+                "immediately after IPv6-address: " + parsedHost + ", but found " +
+                (index - colonIndex) + " more characters before colon (':') at index " + index +
+                ". Total URI length: " + uri.length());
+    }
+
+    static IllegalArgumentException newMissingClosingBracket(final int index, final int begin, final String uri) {
+        return new IllegalArgumentException("Invalid URI format: missing closing ']' for IPv6-literal: " +
+                uri.substring(begin, index));
     }
 }

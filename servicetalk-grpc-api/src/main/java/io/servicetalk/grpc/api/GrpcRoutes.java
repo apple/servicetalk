@@ -56,7 +56,7 @@ import static io.servicetalk.utils.internal.ReflectionUtils.retrieveMethod;
  */
 public abstract class GrpcRoutes<Service extends GrpcService> {
     private static final GrpcExecutionStrategy NULL = new DefaultGrpcExecutionStrategy(
-            HttpExecutionStrategies.offloadNever());
+            HttpExecutionStrategies.offloadNone());
 
     private final GrpcRouter.Builder routeBuilder;
     private final Set<String> errors;

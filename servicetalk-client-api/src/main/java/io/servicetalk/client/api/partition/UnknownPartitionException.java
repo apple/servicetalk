@@ -15,12 +15,19 @@
  */
 package io.servicetalk.client.api.partition;
 
+import io.servicetalk.client.api.ClientGroup;
+
 import static java.util.Objects.requireNonNull;
 
 /**
  * Thrown when a request is issued but there is no associated partition to send the request to.
+ *
+ * @deprecated We are unaware of anyone using "partition" feature and plan to remove it in future releases.
+ * If you depend on it, consider using {@link ClientGroup} as an alternative or reach out to the maintainers describing
+ * the use-case.
  */
-public final class UnknownPartitionException extends IllegalStateException {
+@Deprecated
+public final class UnknownPartitionException extends IllegalStateException {    // FIXME: 0.43 - remove deprecated class
     private static final long serialVersionUID = 2870933612596267788L;
 
     private final PartitionAttributes partitionSelector;

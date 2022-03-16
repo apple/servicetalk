@@ -48,6 +48,7 @@ include "servicetalk-annotations",
         "servicetalk-examples:grpc:debugging",
         "servicetalk-examples:grpc:execution-strategy",
         "servicetalk-examples:grpc:observer",
+        "servicetalk-examples:grpc:health",
         "servicetalk-examples:http:helloworld",
         "servicetalk-examples:http:mutual-tls",
         "servicetalk-examples:http:redirects",
@@ -58,6 +59,7 @@ include "servicetalk-annotations",
         "servicetalk-examples:http:observer",
         "servicetalk-examples:http:retry",
         "servicetalk-examples:http:serialization:json",
+        "servicetalk-examples:http:serialization:protobuf",
         "servicetalk-examples:http:service-composition",
         "servicetalk-examples:http:uds",
         "servicetalk-examples:http:compression",
@@ -65,6 +67,7 @@ include "servicetalk-annotations",
         "servicetalk-examples:http:timeout",
         "servicetalk-gradle-plugin-internal",
         "servicetalk-grpc-api",
+        "servicetalk-grpc-health",
         "servicetalk-grpc-internal",
         "servicetalk-grpc-netty",
         "servicetalk-grpc-protobuf",
@@ -112,6 +115,7 @@ project(":servicetalk-examples:grpc:debugging").name = "servicetalk-examples-grp
 project(":servicetalk-examples:grpc:errors").name = "servicetalk-examples-grpc-errors"
 project(":servicetalk-examples:grpc:execution-strategy").name = "servicetalk-examples-grpc-execution-strategy"
 project(":servicetalk-examples:grpc:observer").name = "servicetalk-examples-grpc-observer"
+project(":servicetalk-examples:grpc:health").name = "servicetalk-examples-grpc-health"
 project(":servicetalk-examples:http:http2").name = "servicetalk-examples-http-http2"
 project(":servicetalk-examples:http:helloworld").name = "servicetalk-examples-http-helloworld"
 project(":servicetalk-examples:http:debugging").name = "servicetalk-examples-http-debugging"
@@ -122,6 +126,7 @@ project(":servicetalk-examples:http:opentracing").name = "servicetalk-examples-h
 project(":servicetalk-examples:http:observer").name = "servicetalk-examples-http-observer"
 project(":servicetalk-examples:http:retry").name = "servicetalk-examples-http-retry"
 project(":servicetalk-examples:http:serialization:json").name = "servicetalk-examples-http-serialization-json"
+project(":servicetalk-examples:http:serialization:protobuf").name = "servicetalk-examples-http-serialization-protobuf"
 project(":servicetalk-examples:http:service-composition").name = "servicetalk-examples-http-service-composition"
 project(":servicetalk-examples:http:uds").name = "servicetalk-examples-http-uds"
 project(":servicetalk-examples:http:mutual-tls").name = "servicetalk-examples-http-mutual-tls"

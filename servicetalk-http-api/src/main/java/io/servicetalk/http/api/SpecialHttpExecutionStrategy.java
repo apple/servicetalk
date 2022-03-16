@@ -15,6 +15,9 @@
  */
 package io.servicetalk.http.api;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  *  Package private special purpose implementation for {@link HttpExecutionStrategy} to be used across programming model
  *  adapters, should not be made public. Provides a special execution strategy that overrides offloading behavior.
@@ -22,11 +25,15 @@ package io.servicetalk.http.api;
  * @see DefaultHttpExecutionStrategy
  */
 enum SpecialHttpExecutionStrategy implements HttpExecutionStrategy {
-
     /**
      * Enforces no offloading and maintains this even when merged.
+     * @deprecated Use {@link #offloadNone()} instead in most cases.
      */
+    // FIXME: 0.43 - remove deprecated method
+    @Deprecated
     OFFLOAD_NEVER_STRATEGY {
+
+        private volatile boolean mergeWarning;
 
         @Override
         public boolean hasOffloads() {
@@ -66,6 +73,11 @@ enum SpecialHttpExecutionStrategy implements HttpExecutionStrategy {
          */
         @Override
         public HttpExecutionStrategy merge(final HttpExecutionStrategy other) {
+            // assert false : "merging offloadNever() with other strategies is deprecated";
+            if (!mergeWarning) {
+                mergeWarning = true;
+                LOGGER.warn("merging offloadNever() with other strategies is deprecated, consider using offloadNone()");
+            }
             return this;
         }
     },
@@ -73,6 +85,8 @@ enum SpecialHttpExecutionStrategy implements HttpExecutionStrategy {
      * "default safe" execution strategy that offloads everything and defers to other execution strategies when merged.
      */
     DEFAULT_HTTP_EXECUTION_STRATEGY {
+
+        private volatile boolean mergeWarning;
 
         @Override
         public boolean hasOffloads() {
@@ -112,7 +126,14 @@ enum SpecialHttpExecutionStrategy implements HttpExecutionStrategy {
          */
         @Override
         public HttpExecutionStrategy merge(final HttpExecutionStrategy other) {
+            // assert false : "merging defaultStrategy() with other strategies is deprecated";
+            if (!mergeWarning) {
+                mergeWarning = true;
+                LOGGER.warn("merging defaultStrategy() with other strategies is deprecated");
+            }
             return other;
         }
-    }
+    };
+
+    static final Logger LOGGER = LoggerFactory.getLogger(SpecialHttpExecutionStrategy.class);
 }

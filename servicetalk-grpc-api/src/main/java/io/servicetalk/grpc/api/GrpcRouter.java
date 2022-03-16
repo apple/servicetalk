@@ -92,6 +92,7 @@ import static io.servicetalk.grpc.api.GrpcUtils.setStatus;
 import static io.servicetalk.grpc.api.GrpcUtils.setStatusOk;
 import static io.servicetalk.grpc.api.GrpcUtils.validateContentType;
 import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.unmodifiableMap;
@@ -175,7 +176,7 @@ final class GrpcRouter {
             final StreamingHttpService route = closeable.append(adapterHolder.adaptor());
             final GrpcExecutionStrategy routeStrategy = executionStrategies.getOrDefault(path, null);
             final HttpExecutionStrategy missing = null == routeStrategy ?
-                    HttpExecutionStrategies.offloadNever() :
+                    HttpExecutionStrategies.offloadNone() :
                     executionContext.executionStrategy().missing(routeStrategy);
             verifyNoOverrides(allRoutes.put(path,
                     null != routeStrategy && missing.isRequestResponseOffloaded() ?
@@ -384,7 +385,7 @@ final class GrpcRouter {
                         public Completable closeAsyncGracefully() {
                             return route.closeAsyncGracefully();
                         }
-                    }, executionStrategy == null ? HttpExecutionStrategies.defaultStrategy() : executionStrategy),
+                    }, executionStrategy == null ? defaultStrategy() : executionStrategy),
                     () -> toStreaming(route), () -> toRequestStreamingRoute(route),
                     () -> toResponseStreamingRoute(route), () -> route, route)),
                     // We only assume duplication across blocking and async variant of the same API and not between
@@ -458,9 +459,7 @@ final class GrpcRouter {
 
                             @Override
                             public HttpExecutionStrategy serviceInvocationStrategy() {
-                                return executionStrategy == null ?
-                                        HttpExecutionStrategies.defaultStrategy() :
-                                        executionStrategy;
+                                return executionStrategy == null ? defaultStrategy() : executionStrategy;
                             }
                         };
                     }, () -> route, () -> toRequestStreamingRoute(route), () -> toResponseStreamingRoute(route),
@@ -592,7 +591,7 @@ final class GrpcRouter {
                         public void closeGracefully() throws Exception {
                             route.closeGracefully();
                         }
-                    }, executionStrategy == null ? HttpExecutionStrategies.defaultStrategy() : executionStrategy),
+                    }, executionStrategy == null ? defaultStrategy() : executionStrategy),
                     () -> toStreaming(route), () -> toRequestStreamingRoute(route),
                     () -> toResponseStreamingRoute(route), () -> toRoute(route), route)),
                     // We only assume duplication across blocking and async variant of the same API and not between
@@ -662,7 +661,7 @@ final class GrpcRouter {
                         public void closeGracefully() throws Exception {
                             route.closeGracefully();
                         }
-                    }, executionStrategy == null ? HttpExecutionStrategies.defaultStrategy() : executionStrategy),
+                    }, executionStrategy == null ? defaultStrategy() : executionStrategy),
                     () -> toStreaming(route), () -> toRequestStreamingRoute(route),
                     () -> toResponseStreamingRoute(route), () -> toRoute(route), route)),
                     // We only assume duplication across blocking and async variant of the same API and not between

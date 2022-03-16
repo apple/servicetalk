@@ -96,6 +96,8 @@ import static io.servicetalk.grpc.protoc.Types.RequestStreamingRoute;
 import static io.servicetalk.grpc.protoc.Types.ResponseStreamingClientCall;
 import static io.servicetalk.grpc.protoc.Types.ResponseStreamingRoute;
 import static io.servicetalk.grpc.protoc.Types.Route;
+import static io.servicetalk.grpc.protoc.Types.RouteExecutionStrategy;
+import static io.servicetalk.grpc.protoc.Types.RouteExecutionStrategyFactory;
 import static io.servicetalk.grpc.protoc.Types.Single;
 import static io.servicetalk.grpc.protoc.Types.StreamingClientCall;
 import static io.servicetalk.grpc.protoc.Types.StreamingRoute;
@@ -109,6 +111,7 @@ import static io.servicetalk.grpc.protoc.Words.Call;
 import static io.servicetalk.grpc.protoc.Words.Default;
 import static io.servicetalk.grpc.protoc.Words.Factory;
 import static io.servicetalk.grpc.protoc.Words.INSTANCE;
+import static io.servicetalk.grpc.protoc.Words.JAVADOC_CONSTRUCTOR_DEFAULT_STATEMENT;
 import static io.servicetalk.grpc.protoc.Words.JAVADOC_DEPRECATED;
 import static io.servicetalk.grpc.protoc.Words.JAVADOC_PARAM;
 import static io.servicetalk.grpc.protoc.Words.JAVADOC_RETURN;
@@ -120,6 +123,7 @@ import static io.servicetalk.grpc.protoc.Words.RPC_PATH;
 import static io.servicetalk.grpc.protoc.Words.Rpc;
 import static io.servicetalk.grpc.protoc.Words.Service;
 import static io.servicetalk.grpc.protoc.Words.To;
+import static io.servicetalk.grpc.protoc.Words.addBlockingService;
 import static io.servicetalk.grpc.protoc.Words.addService;
 import static io.servicetalk.grpc.protoc.Words.bind;
 import static io.servicetalk.grpc.protoc.Words.bufferDecoderGroup;
@@ -343,7 +347,7 @@ final class Generator {
                 methodDescriptorType, methodDescFieldName, isAsync));
 
         final FieldSpec.Builder pathSpecBuilder = FieldSpec.builder(String.class, RPC_PATH)
-                .addJavadoc(JAVADOC_DEPRECATED + " Use {@link #$L}." + lineSeparator(), methodDescriptor)
+                .addJavadoc(JAVADOC_DEPRECATED + "Use {@link #$L}." + lineSeparator(), methodDescriptor)
                 .addAnnotation(Deprecated.class)
                 .addModifiers(PUBLIC, STATIC, FINAL) // redundant, default for interface field
                 .initializer("$S", context.methodPath(state.serviceProto, methodProto));
@@ -466,27 +470,44 @@ final class Generator {
                 .addType(newServiceFromRoutesClassSpec(serviceFromRoutesClass, state.serviceRpcInterfaces,
                         state.serviceClass))
                 .addMethod(constructorBuilder()
+                        .addJavadoc(JAVADOC_CONSTRUCTOR_DEFAULT_STATEMENT)
                         .addModifiers(PUBLIC)
                         .addStatement("this($T.emptyList())", Collections)
                         .build())
                 .addMethod(constructorBuilder()
-                        .addJavadoc(JAVADOC_DEPRECATED + " Use {@link #$L($T)} and {@link #$L($T)}." + lineSeparator(),
-                                bufferDecoderGroup, BufferDecoderGroup, bufferEncoders, BufferEncoderList)
+                        .addJavadoc(JAVADOC_CONSTRUCTOR_DEFAULT_STATEMENT)
+                        .addJavadoc(lineSeparator())
+                        .addJavadoc(JAVADOC_PARAM + supportedMessageCodings + " the set of allowed encodings" +
+                                lineSeparator())
+                        .addJavadoc(JAVADOC_DEPRECATED + "Use {@link #$L($T)} and {@link #$L($T)}." + lineSeparator(),
+                                bufferDecoderGroup, BufferDecoderGroup, bufferEncoders, Types.List)
                         .addAnnotation(Deprecated.class)
                         .addModifiers(PUBLIC)
                         .addParameter(GrpcSupportedCodings, supportedMessageCodings, FINAL)
                         .addStatement("this.$L = $L", supportedMessageCodings, supportedMessageCodings)
                         .build())
                 .addMethod(constructorBuilder()
+                        .addJavadoc(JAVADOC_CONSTRUCTOR_DEFAULT_STATEMENT)
+                        .addJavadoc(lineSeparator())
+                        .addJavadoc(JAVADOC_PARAM + strategyFactory +
+                                " a factory that creates an execution strategy for different {@link $L#id() id}s" +
+                                lineSeparator(), RouteExecutionStrategy)
                         .addModifiers(PUBLIC)
                         .addParameter(GrpcRouteExecutionStrategyFactory, strategyFactory, FINAL)
                         .addStatement("this($L, $T.emptyList())", strategyFactory, Collections)
                         .build())
                 .addMethod(constructorBuilder()
+                        .addJavadoc(JAVADOC_CONSTRUCTOR_DEFAULT_STATEMENT)
+                        .addJavadoc(lineSeparator())
+                        .addJavadoc(JAVADOC_PARAM + strategyFactory +
+                                " a factory that creates an execution strategy for different {@link $L#id() id}s" +
+                                        lineSeparator(), RouteExecutionStrategy)
+                        .addJavadoc(JAVADOC_PARAM + supportedMessageCodings + " the set of allowed encodings" +
+                                lineSeparator())
                         .addJavadoc(JAVADOC_DEPRECATED +
-                                    " Use {@link #$L($T)}, {@link #$L($T)}, and {@link #$L($T)}." + lineSeparator(),
-                                Builder, GrpcRouteExecutionStrategyFactory, bufferDecoderGroup, BufferDecoderGroup,
-                                bufferEncoders, BufferEncoderList)
+                                    "Use {@link #$L($T)}, {@link #$L($T)}, and {@link #$L($T)}." + lineSeparator(),
+                                Builder, RouteExecutionStrategyFactory, bufferDecoderGroup, BufferDecoderGroup,
+                                bufferEncoders, Types.List)
                         .addAnnotation(Deprecated.class)
                         .addModifiers(PUBLIC)
                         .addParameter(GrpcRouteExecutionStrategyFactory, strategyFactory, FINAL)
@@ -577,7 +598,22 @@ final class Generator {
                 .addStatement("return this")
                 .build());
 
-        final MethodSpec.Builder addBlockingServiceMethodSpecBuilder = methodBuilder(addService)
+        serviceBuilderSpecBuilder.addMethod(methodBuilder(addService)
+                .addModifiers(PUBLIC)
+                .addAnnotation(Deprecated.class)
+                .addJavadoc("Adds a {@link $T} implementation." + lineSeparator(), state.blockingServiceClass)
+                .addJavadoc(lineSeparator())
+                .addJavadoc(JAVADOC_PARAM + service + " the {@link $T} implementation to add." + lineSeparator(),
+                        state.blockingServiceClass)
+                .addJavadoc(JAVADOC_RETURN + "this." + lineSeparator())
+                .addJavadoc(JAVADOC_DEPRECATED + "Use {@link #$L($T)}." + lineSeparator(), addBlockingService,
+                        state.blockingServiceClass)
+                .returns(builderClass)
+                .addParameter(state.blockingServiceClass, service, FINAL)
+                .addStatement("return $L($L)", addBlockingService, service)
+                .build());
+
+        final MethodSpec.Builder addBlockingServiceMethodSpecBuilder = methodBuilder(addBlockingService)
                 .addModifiers(PUBLIC)
                 .returns(builderClass)
                 .addParameter(state.blockingServiceClass, service, FINAL);
@@ -606,16 +642,26 @@ final class Generator {
                 // Add ServiceFactory constructors for blocking and async services with and without content codings and
                 // execution strategy
                 .addMethod(constructorBuilder()
+                        .addJavadoc(JAVADOC_CONSTRUCTOR_DEFAULT_STATEMENT)
+                        .addJavadoc(lineSeparator())
+                        .addJavadoc(JAVADOC_PARAM + service + " a service to handle incoming requests" +
+                                lineSeparator())
                         .addModifiers(PUBLIC)
                         .addParameter(state.serviceClass, service, FINAL)
                         .addStatement("this(new $T().$L)", builderClass,
                                 serviceFactoryBuilderInitChain(state.serviceProto, false))
                         .build())
                 .addMethod(constructorBuilder()
+                        .addJavadoc(JAVADOC_CONSTRUCTOR_DEFAULT_STATEMENT)
+                        .addJavadoc(lineSeparator())
+                        .addJavadoc(JAVADOC_PARAM + service + " a service to handle incoming requests" +
+                                lineSeparator())
+                        .addJavadoc(JAVADOC_PARAM + supportedMessageCodings + " the set of allowed encodings" +
+                                lineSeparator())
                         .addJavadoc(JAVADOC_DEPRECATED +
-                                    " Use {@link $L#$L()}, {@link $L#$L($T)}, and {@link $L#$L($T)}." + lineSeparator(),
+                                    "Use {@link $L#$L()}, {@link $L#$L($T)}, and {@link $L#$L($T)}." + lineSeparator(),
                                 Builder, Builder, Builder, bufferDecoderGroup, BufferDecoderGroup,
-                                Builder, bufferEncoders, BufferEncoderList)
+                                Builder, bufferEncoders, Types.List)
                         .addAnnotation(Deprecated.class)
                         .addModifiers(PUBLIC)
                         .addParameter(state.serviceClass, service, FINAL)
@@ -624,6 +670,13 @@ final class Generator {
                                 serviceFactoryBuilderInitChain(state.serviceProto, false))
                         .build())
                 .addMethod(constructorBuilder()
+                        .addJavadoc(JAVADOC_CONSTRUCTOR_DEFAULT_STATEMENT)
+                        .addJavadoc(lineSeparator())
+                        .addJavadoc(JAVADOC_PARAM + service + " a service to handle incoming requests" +
+                                lineSeparator())
+                        .addJavadoc(JAVADOC_PARAM + strategyFactory +
+                                " a factory that creates an execution strategy for different {@link $L#id() id}s" +
+                                lineSeparator(), RouteExecutionStrategy)
                         .addModifiers(PUBLIC)
                         .addParameter(state.serviceClass, service, FINAL)
                         .addParameter(GrpcRouteExecutionStrategyFactory, strategyFactory, FINAL)
@@ -631,10 +684,19 @@ final class Generator {
                                 serviceFactoryBuilderInitChain(state.serviceProto, false))
                         .build())
                 .addMethod(constructorBuilder()
+                        .addJavadoc(JAVADOC_CONSTRUCTOR_DEFAULT_STATEMENT)
+                        .addJavadoc(lineSeparator())
+                        .addJavadoc(JAVADOC_PARAM + service + " a service to handle incoming requests" +
+                                lineSeparator())
+                        .addJavadoc(JAVADOC_PARAM + strategyFactory +
+                                " a factory that creates an execution strategy for different {@link $L#id() id}s" +
+                                lineSeparator(), RouteExecutionStrategy)
+                        .addJavadoc(JAVADOC_PARAM + supportedMessageCodings + " the set of allowed encodings" +
+                                lineSeparator())
                         .addJavadoc(JAVADOC_DEPRECATED +
-                                " Use {@link $L#$L($T)}, {@link $L#$L($T)}, and {@link $L#$L($T)}." + lineSeparator(),
-                                Builder, Builder, GrpcRouteExecutionStrategyFactory, Builder, bufferDecoderGroup,
-                                BufferDecoderGroup, Builder, bufferEncoders, BufferEncoderList)
+                                "Use {@link $L#$L($T)}, {@link $L#$L($T)}, and {@link $L#$L($T)}." + lineSeparator(),
+                                Builder, Builder, RouteExecutionStrategyFactory, Builder, bufferDecoderGroup,
+                                BufferDecoderGroup, Builder, bufferEncoders, Types.List)
                         .addAnnotation(Deprecated.class)
                         .addModifiers(PUBLIC)
                         .addParameter(state.serviceClass, service, FINAL)
@@ -644,16 +706,26 @@ final class Generator {
                                 supportedMessageCodings, serviceFactoryBuilderInitChain(state.serviceProto, false))
                         .build())
                 .addMethod(constructorBuilder()
+                        .addJavadoc(JAVADOC_CONSTRUCTOR_DEFAULT_STATEMENT)
+                        .addJavadoc(lineSeparator())
+                        .addJavadoc(JAVADOC_PARAM + service + " a service to handle incoming requests" +
+                                lineSeparator())
                         .addModifiers(PUBLIC)
                         .addParameter(state.blockingServiceClass, service, FINAL)
                         .addStatement("this(new $T().$L)", builderClass,
                                 serviceFactoryBuilderInitChain(state.serviceProto, true))
                         .build())
                 .addMethod(constructorBuilder()
+                        .addJavadoc(JAVADOC_CONSTRUCTOR_DEFAULT_STATEMENT)
+                        .addJavadoc(lineSeparator())
+                        .addJavadoc(JAVADOC_PARAM + service + " a service to handle incoming requests" +
+                                lineSeparator())
+                        .addJavadoc(JAVADOC_PARAM + supportedMessageCodings + " the set of allowed encodings" +
+                                lineSeparator())
                         .addJavadoc(JAVADOC_DEPRECATED +
-                                " Use {@link $L#$L()}, {@link $L#$L($T)}, and {@link $L#$L($T)}." + lineSeparator(),
+                                "Use {@link $L#$L()}, {@link $L#$L($T)}, and {@link $L#$L($T)}." + lineSeparator(),
                                 Builder, Builder, Builder, bufferDecoderGroup, BufferDecoderGroup,
-                                Builder, bufferEncoders, BufferEncoderList)
+                                Builder, bufferEncoders, Types.List)
                         .addAnnotation(Deprecated.class)
                         .addModifiers(PUBLIC)
                         .addParameter(state.blockingServiceClass, service, FINAL)
@@ -662,6 +734,13 @@ final class Generator {
                                 serviceFactoryBuilderInitChain(state.serviceProto, true))
                         .build())
                 .addMethod(constructorBuilder()
+                        .addJavadoc(JAVADOC_CONSTRUCTOR_DEFAULT_STATEMENT)
+                        .addJavadoc(lineSeparator())
+                        .addJavadoc(JAVADOC_PARAM + service + " a service to handle incoming requests" +
+                                lineSeparator())
+                        .addJavadoc(JAVADOC_PARAM + strategyFactory +
+                                " a factory that creates an execution strategy for different {@link $L#id() id}s" +
+                                lineSeparator(), RouteExecutionStrategy)
                         .addModifiers(PUBLIC)
                         .addParameter(state.blockingServiceClass, service, FINAL)
                         .addParameter(GrpcRouteExecutionStrategyFactory, strategyFactory, FINAL)
@@ -669,10 +748,19 @@ final class Generator {
                                 serviceFactoryBuilderInitChain(state.serviceProto, true))
                         .build())
                 .addMethod(constructorBuilder()
+                        .addJavadoc(JAVADOC_CONSTRUCTOR_DEFAULT_STATEMENT)
+                        .addJavadoc(lineSeparator())
+                        .addJavadoc(JAVADOC_PARAM + service + " a service to handle incoming requests" +
+                                lineSeparator())
+                        .addJavadoc(JAVADOC_PARAM + strategyFactory +
+                                " a factory that creates an execution strategy for different {@link $L#id() id}s" +
+                                lineSeparator(), RouteExecutionStrategy)
+                        .addJavadoc(JAVADOC_PARAM + supportedMessageCodings + " the set of allowed encodings" +
+                                lineSeparator())
                         .addJavadoc(JAVADOC_DEPRECATED +
-                                " Use {@link $L#$L($T)}, {@link $L#$L($T)}, and {@link $L#$L($T)}." + lineSeparator(),
-                                Builder, Builder, GrpcRouteExecutionStrategyFactory, Builder, bufferDecoderGroup,
-                                BufferDecoderGroup, Builder, bufferEncoders, BufferEncoderList)
+                                "Use {@link $L#$L($T)}, {@link $L#$L($T)}, and {@link $L#$L($T)}." + lineSeparator(),
+                                Builder, Builder, RouteExecutionStrategyFactory, Builder, bufferDecoderGroup,
+                                BufferDecoderGroup, Builder, bufferEncoders, Types.List)
                         .addAnnotation(Deprecated.class)
                         .addModifiers(PUBLIC)
                         .addParameter(state.blockingServiceClass, service, FINAL)
@@ -702,7 +790,7 @@ final class Generator {
 
             final ClassName metaDataClassName = ClassName.bestGuess(name);
             final TypeSpec classSpec = classBuilder(name)
-                    .addJavadoc(JAVADOC_DEPRECATED + " This class will be removed in the future in favor of direct " +
+                    .addJavadoc(JAVADOC_DEPRECATED + "This class will be removed in the future in favor of direct " +
                             "usage of {@link $T}. Deprecation of {@link $T#path()} renders this type unnecessary."
                                     + lineSeparator(), GrpcClientMetadata, GrpcClientMetadata)
                     .addAnnotation(Deprecated.class)
@@ -710,7 +798,7 @@ final class Generator {
                     .superclass(DefaultGrpcClientMetadata)
                     .addField(FieldSpec.builder(metaDataClassName, INSTANCE)
                             .addJavadoc(JAVADOC_DEPRECATED +
-                                    " This class will be removed in the future in favor of direct usage of {@link $T}."
+                                    "This class will be removed in the future in favor of direct usage of {@link $T}."
                                             + lineSeparator(), GrpcClientMetadata)
                             .addAnnotation(Deprecated.class)
                             .addModifiers(PUBLIC, STATIC, FINAL) // redundant, default for interface field
@@ -790,14 +878,13 @@ final class Generator {
                             printJavaDocs, (methodName, b) -> {
                                 ClassName inClass = messageTypesMap.get(clientMetaData.methodProto.getInputType());
                                 b.addModifiers(ABSTRACT).addParameter(clientMetaData.className, metadata)
-                                .addAnnotation(Deprecated.class)
-                                .addJavadoc(JAVADOC_DEPRECATED + " Use {@link #$L($T,$T)}." + lineSeparator(),
-                                        methodName,
-                                        GrpcClientMetadata, clientMetaData.methodProto.getClientStreaming() ?
-                                                ParameterizedTypeName.get(Publisher, inClass) : inClass);
+                                .addAnnotation(Deprecated.class);
                                 if (printJavaDocs) {
                                     extractJavaDocComments(state, methodIndex, b);
-                                    b.addJavadoc(JAVADOC_PARAM + metadata +
+                                    b.addJavadoc(JAVADOC_DEPRECATED + "Use {@link #$L($T,$T)}." + lineSeparator(),
+                                            methodName, GrpcClientMetadata,
+                                            clientMetaData.methodProto.getClientStreaming() ? Publisher : inClass)
+                                    .addJavadoc(JAVADOC_PARAM + metadata +
                                             " the metadata associated with this client call." + lineSeparator());
                                 }
                                 return b;
@@ -827,13 +914,13 @@ final class Generator {
                             printJavaDocs, (methodName, b) -> {
                                 ClassName inClass = messageTypesMap.get(clientMetaData.methodProto.getInputType());
                                 b.addModifiers(ABSTRACT).addParameter(clientMetaData.className, metadata)
-                                .addAnnotation(Deprecated.class)
-                                .addJavadoc(JAVADOC_DEPRECATED + " Use {@link #$L($T,$T)}." + lineSeparator(),
-                                    methodName, GrpcClientMetadata, clientMetaData.methodProto.getClientStreaming() ?
-                                    ParameterizedTypeName.get(ClassName.get(Iterable.class), inClass) : inClass);
+                                .addAnnotation(Deprecated.class);
                                 if (printJavaDocs) {
                                     extractJavaDocComments(state, methodIndex, b);
-                                    b.addJavadoc(JAVADOC_PARAM + metadata +
+                                    b.addJavadoc(JAVADOC_DEPRECATED + "Use {@link #$L($T,$T)}." + lineSeparator(),
+                                            methodName, GrpcClientMetadata,
+                                            clientMetaData.methodProto.getClientStreaming() ? Types.Iterable : inClass)
+                                    .addJavadoc(JAVADOC_PARAM + metadata +
                                             " the metadata associated with this client call." + lineSeparator());
                                 }
                                 return b;
@@ -958,8 +1045,7 @@ final class Generator {
         if (flags.contains(BLOCKING)) {
             if (clientSteaming) {
                 if (flags.contains(CLIENT)) {
-                    methodSpecBuilder.addParameter(ParameterizedTypeName.get(ClassName.get(Iterable.class),
-                            inClass), request, mods);
+                    methodSpecBuilder.addParameter(ParameterizedTypeName.get(Types.Iterable, inClass), request, mods);
                     if (printJavaDocs) {
                         methodSpecBuilder.addJavadoc(JAVADOC_PARAM + request +
                                 " used to send a stream of type {@link $T} to the server." + lineSeparator(), inClass);

@@ -51,7 +51,7 @@ import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
-import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
@@ -82,7 +82,7 @@ class FlushStrategyOnServerTest {
     private BlockingHttpClient client;
 
     private enum Param {
-        NO_OFFLOAD(offloadNever()),
+        NO_OFFLOAD(offloadNone()),
         DEFAULT(defaultStrategy()),
         OFFLOAD_ALL(customStrategyBuilder().offloadAll().build());
         private final HttpExecutionStrategy executionStrategy;

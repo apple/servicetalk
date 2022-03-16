@@ -51,7 +51,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadAll;
-import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.router.utils.internal.RouteExecutionStrategyUtils.getRouteExecutionStrategyAnnotation;
 import static java.util.Collections.emptyMap;
 import static org.glassfish.jersey.model.Parameter.Source.ENTITY;
@@ -171,7 +171,7 @@ final class JerseyRouteExecutionStrategyUtils {
         }
 
         if (annotation instanceof NoOffloadsRouteExecutionStrategy) {
-            return offloadNever();
+            return offloadNone();
         }
 
         // This can never be null because we have pre-validated that all route strategy IDs exist at startup
