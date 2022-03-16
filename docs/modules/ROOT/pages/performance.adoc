@@ -115,8 +115,7 @@ Because ServiceTalk is asynchronous and non-blocking at the core it needs to def
 that potentially blocks IO EventLoop threads. Read the chapter on
 xref:{page-version}@servicetalk::blocking-safe-by-default.adoc[blocking code safe by default] for more details.
 
-Depending upon the use case, performance costs of offloading maybe relatively high but we have the following
-compensatory strategies in place:
+Offloading is expected to add some overhead which can be mitigated as follows:
 
 * Choosing the appropriate xref:{page-version}@servicetalk::performance.adoc#offloading-and-flushing[programming model]
 for your use case allows ServiceTalk to be more optimal and reduce offloading
@@ -238,21 +237,6 @@ _`FlushStrategies` and related APIs are advanced, internal, and subject to chang
 
 [#ExecutionStrategy]
 ==== Offloading and `ExecutionStrategy`
-Offloading is the execution of program logic code using a thread (or equivalent) other than the application
-thread which originally initiated the operation. Offloading is used for two purposes within ServiceTalk; firstly for the
-execution needed for the handling of asynchronous events, aka
-link:https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#glossary[Signals],
-and secondly when handling asynchronous events, protecting scarce resources from being monopolized by blocking,
-untrusted or expensive application code. Asynchronous execution requires offloading – the initiating application thread
-is not available. The use of protective offloading, where offloading is used for avoid resource monopolization, is a
-practical consideration, but just as necessary for reliable and predictable operation.
-
-Task based offloading uses an `Executor` in the traditional way to run the offloaded tasks. Often the `Executor` has a
-pool of threads, possibly unbounded, and tasks are run using whatever thread is available. In particular, different
-threads may be used for each task executed and code running in tasks cannot depend upon a consistent thread being used
-for invoking program logic. This approach is generally the most scalable because it makes the best utilization of
-threads.
-
 link:{source-root}/servicetalk-transport-api/src/main/java/io/servicetalk/transport/api/ExecutionStrategy.java[ExecutionStrategy]
 is the core abstraction ServiceTalk uses to drive offloading delivering signals and data from the IO EventLoop threads.
 For HTTP there is

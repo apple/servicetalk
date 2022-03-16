@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xl="http://www.w3.org/1999/xlink" xmlns:dc="http://purl.org/dc/elements/1.1/" viewBox="-311.5 -115.68835 1577.0271 1585.6883" width="1577.0271" height="1585.6883">
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xl="http://www.w3.org/1999/xlink" viewBox="-311.5 -115.68835 1577.0271 1585.6883" width="1577.0271" height="1585.6883">
   <title>Data and control flow in an execution chain</title>
   <desc>Details the flow of data (Subscriber methods) and control (Publisher and Subscription methods).</desc>
   <defs>
@@ -32,24 +32,19 @@
     <linearGradient id="Obj_Gradient" xl:href="#Gradient" gradientTransform="translate(543.875 -40.31335) scale(18.5)"/>
     <linearGradient id="Obj_Gradient_2" xl:href="#Gradient" gradientTransform="translate(581.875 -40.31335) scale(18.5)"/>
     <linearGradient id="Obj_Gradient_3" xl:href="#Gradient" gradientTransform="translate(657.875 -40.31335) scale(18.5)"/>
-    <linearGradient x1="0" x2="1" id="Gradient_2" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#9ddaff"/>
-      <stop offset=".45238096" stop-color="#7fc7f3"/>
-      <stop offset="1" stop-color="#5db3e6"/>
-    </linearGradient>
-    <linearGradient id="Obj_Gradient_4" xl:href="#Gradient_2" gradientTransform="translate(634.496 161.69986) rotate(180) scale(40)"/>
-    <linearGradient id="Obj_Gradient_5" xl:href="#Gradient" gradientTransform="translate(638.375 1171.5) rotate(180) scale(40)"/>
-    <linearGradient id="Obj_Gradient_6" xl:href="#Gradient" gradientTransform="translate(548.621 1318.875) scale(18.5)"/>
-    <linearGradient id="Obj_Gradient_7" xl:href="#Gradient" gradientTransform="translate(586.621 1318.875) scale(18.5)"/>
-    <linearGradient id="Obj_Gradient_8" xl:href="#Gradient" gradientTransform="translate(662.621 1318.875) scale(18.5)"/>
+    <linearGradient id="Obj_Gradient_4" xl:href="#Gradient" gradientTransform="translate(638.375 1171.5) rotate(180) scale(40)"/>
+    <linearGradient id="Obj_Gradient_5" xl:href="#Gradient" gradientTransform="translate(548.621 1318.875) scale(18.5)"/>
+    <linearGradient id="Obj_Gradient_6" xl:href="#Gradient" gradientTransform="translate(586.621 1318.875) scale(18.5)"/>
+    <linearGradient id="Obj_Gradient_7" xl:href="#Gradient" gradientTransform="translate(662.621 1318.875) scale(18.5)"/>
     <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="FilledArrow_Marker" stroke-linejoin="miter" stroke-miterlimit="10" viewBox="-1 -4 10 8" markerWidth="10" markerHeight="8" color="black">
       <g>
         <path d="M 8 0 L 0 -3 L 0 3 Z" fill="currentColor" stroke="currentColor" stroke-width="1"/>
       </g>
     </marker>
+    <linearGradient id="Obj_Gradient_8" xl:href="#Gradient" gradientTransform="translate(629.75 151.25) rotate(180) scale(40)"/>
   </defs>
-  <metadata> Produced by OmniGraffle 7.19.5\n2022-03-15 23:07:55 +0000</metadata>
-  <g id="Read_Write" stroke="none" stroke-dasharray="none" fill="none" fill-opacity="1" stroke-opacity="1">
+  <metadata> Produced by OmniGraffle 7.19.5\n2022-03-16 16:56:07 +0000</metadata>
+  <g id="Read_Write" stroke-opacity="1" stroke="none" stroke-dasharray="none" fill="none" fill-opacity="1">
     <title>Read Write</title>
     <g id="Read_Write_Layer_1">
       <title>Layer 1</title>
@@ -129,12 +124,8 @@
           </text>
         </g>
       </g>
-      <g id="Graphic_56">
-        <path d="M 604.496 123.39972 L 624.496 123.39972 L 624.496 180 L 634.496 180 L 614.496 200 L 594.496 180 L 604.496 180 Z" fill="url(#Obj_Gradient_4)"/>
-        <path d="M 604.496 123.39972 L 624.496 123.39972 L 624.496 180 L 634.496 180 L 614.496 200 L 594.496 180 L 604.496 180 Z" stroke="#008ad5" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
-      </g>
       <g id="Graphic_72">
-        <path d="M 608.375 1103 L 628.375 1103 L 628.375 1220 L 638.375 1220 L 618.375 1240 L 598.375 1220 L 608.375 1220 Z" fill="url(#Obj_Gradient_5)"/>
+        <path d="M 608.375 1103 L 628.375 1103 L 628.375 1220 L 638.375 1220 L 618.375 1240 L 598.375 1220 L 608.375 1220 Z" fill="url(#Obj_Gradient_4)"/>
         <path d="M 608.375 1103 L 628.375 1103 L 628.375 1220 L 638.375 1220 L 618.375 1240 L 598.375 1220 L 608.375 1220 Z" stroke="#ef8e00" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
       </g>
       <g id="Graphic_78" filter="url(#Shadow)">
@@ -176,21 +167,21 @@
         </g>
         <g id="Group_84">
           <g id="Graphic_88">
-            <rect x="548.621" y="1264" width="18.5" height="109.75" fill="url(#Obj_Gradient_6)"/>
+            <rect x="548.621" y="1264" width="18.5" height="109.75" fill="url(#Obj_Gradient_5)"/>
             <rect x="548.621" y="1264" width="18.5" height="109.75" stroke="#ef8e00" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
             <text transform="translate(550.871 1355.0312) rotate(-90)" fill="black">
               <tspan font-family="Helvetica" font-size="12" fill="black" x="9.469727" y="11">Eventloop</tspan>
             </text>
           </g>
           <g id="Graphic_87">
-            <rect x="586.621" y="1264" width="18.5" height="109.75" fill="url(#Obj_Gradient_7)"/>
+            <rect x="586.621" y="1264" width="18.5" height="109.75" fill="url(#Obj_Gradient_6)"/>
             <rect x="586.621" y="1264" width="18.5" height="109.75" stroke="#ef8e00" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
             <text transform="translate(588.871 1355.0312) rotate(-90)" fill="black">
               <tspan font-family="Helvetica" font-size="12" fill="black" x="9.469727" y="11">Eventloop</tspan>
             </text>
           </g>
           <g id="Graphic_86">
-            <rect x="662.621" y="1264" width="18.5" height="109.75" fill="url(#Obj_Gradient_8)"/>
+            <rect x="662.621" y="1264" width="18.5" height="109.75" fill="url(#Obj_Gradient_7)"/>
             <rect x="662.621" y="1264" width="18.5" height="109.75" stroke="#ef8e00" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
             <text transform="translate(664.871 1355.0313) rotate(-90)" fill="black">
               <tspan font-family="Helvetica" font-size="12" fill="black" x="9.469727" y="11">Eventloop</tspan>
@@ -236,6 +227,10 @@
           <tspan font-family="Helvetica Neue" font-size="28" fill="black" x="35527137e-20" y="27">ServiceTalk</tspan>
           <tspan font-family="Helvetica Neue" font-size="28" fill="black" x="33.194" y="60.812195">(Read)</tspan>
         </text>
+      </g>
+      <g id="Graphic_111">
+        <path d="M 599.75 97.5 L 619.75 97.5 L 619.75 185 L 629.75 185 L 609.75 205 L 589.75 185 L 599.75 185 Z" fill="url(#Obj_Gradient_8)"/>
+        <path d="M 599.75 97.5 L 619.75 97.5 L 619.75 185 L 629.75 185 L 609.75 205 L 589.75 185 L 599.75 185 Z" stroke="#ef8e00" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
       </g>
     </g>
   </g>

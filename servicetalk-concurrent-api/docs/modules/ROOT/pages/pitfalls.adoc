@@ -35,10 +35,10 @@ request being received and user code making sure that the request is not sent be
 
 In order to avoid such scenarios, it is handy to follow certain best practices while writing blocking code in operators:
 
-- Avoid co-ordination between two operators on the same source.
-- If such co-ordination is required, try limiting such coordination in either data or control path but not
+- Avoid coordination between two operators on the same source.
+- If such coordination is required, try limiting such coordination in either data or control path but not
 inter-dependent on each other.
-- If co-ordination is required between data and control path, be aware of ReactiveStreams semantics and how the two
+- If coordination is required between data and control path, be aware of ReactiveStreams semantics and how the two
 paths interact with each other.
 
 If these rules are followed the above example can be modified to:
