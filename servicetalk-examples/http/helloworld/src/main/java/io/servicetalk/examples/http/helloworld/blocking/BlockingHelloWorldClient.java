@@ -15,77 +15,19 @@
  */
 package io.servicetalk.examples.http.helloworld.blocking;
 
-import io.servicetalk.concurrent.api.DefaultThreadFactory;
-import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.api.Executors;
-import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.TerminalSignalConsumer;
+import io.servicetalk.http.api.BlockingHttpClient;
+import io.servicetalk.http.api.HttpResponse;
+import io.servicetalk.http.netty.HttpClients;
 
-import java.util.Collection;
+import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 
 public final class BlockingHelloWorldClient {
 
-    static final Executor publishExecutor = Executors.newCachedThreadExecutor(new DefaultThreadFactory("publish"));
-    static final Executor subscribeExecutor = Executors.newCachedThreadExecutor(new DefaultThreadFactory("subscribe"));
-
     public static void main(String[] args) throws Exception {
-        Collection<Integer> simple = Publisher.range(1, 3)
-                .map(element -> element)
-                .publishOn(publishExecutor)
-                .map(element -> element)
-                .subscribeOn(subscribeExecutor)
-                .toFuture()
-                .get();
-        Collection<?> result = Publisher.range(1, 3)
-        .map(element -> {
-            System.out.println("\nPublish starts on " + Thread.currentThread() + " Received : " + element);
-            return element;
-        })
-        .whenOnSubscribe(subscription -> {
-            System.out.println("\nonSubscribe starts on " + Thread.currentThread());
-        })
-        .publishOn(publishExecutor)
-        .map(element -> {
-            System.out.println("\nPublish offloaded to " + Thread.currentThread() + " Received : " + element);
-            return element;
-        })
-        .whenRequest(request -> {
-            System.out.println("\nrequest(" + request + ") offloaded to " + Thread.currentThread());
-        })
-        .liftSync(subscriber -> {
-            System.out.println("\nSubscribe offloaded to " + Thread.currentThread());
-            return subscriber;
-        })
-        .subscribeOn(subscribeExecutor)
-        .liftSync(subscriber -> {
-            System.out.println("\nSubscribe begins on " + Thread.currentThread());
-            return subscriber;
-        })
-        .whenOnSubscribe(subscription -> {
-            System.out.println("\nonSubscribe offloaded to " + Thread.currentThread());
-        })
-        .whenRequest(request -> {
-            System.out.println("\nrequest(" + request + ") starts on " + Thread.currentThread());
-        })
-        .whenFinally(new TerminalSignalConsumer() {
-            @Override
-            public void onComplete() {
-                        System.out.println("\ncomplete on " + Thread.currentThread());
-                    }
-
-            @Override
-            public void onError(final Throwable throwable) {
-                System.out.println("\nerror (" + throwable + ") on " + Thread.currentThread());
-            }
-
-            @Override
-                public void cancel() {
-                        System.out.println("\ncancel on " + Thread.currentThread());
-                    }
-        })
-        .toFuture()
-        .get();
-
-        assert simple.equals(result);
+        try (BlockingHttpClient client = HttpClients.forSingleAddress("localhost", 8080).buildBlocking()) {
+            HttpResponse response = client.request(client.get("/sayHello"));
+            System.out.println(response.toString((name, value) -> value));
+            System.out.println(response.payloadBody(textSerializerUtf8()));
+        }
     }
 }
