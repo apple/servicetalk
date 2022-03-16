@@ -38,6 +38,7 @@ import io.servicetalk.serializer.api.StreamingDeserializer;
 import io.servicetalk.serializer.api.StreamingSerializer;
 import io.servicetalk.serializer.utils.FramedDeserializerOperator;
 import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.transport.api.SslConfig;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -163,6 +164,12 @@ final class Utils {
         @Override
         public SocketAddress remoteAddress() {
             return InMemorySocketAddress.INSTANCE;
+        }
+
+        @Nullable
+        @Override
+        public SslConfig sslConfig() {
+            return null;
         }
 
         @Nullable

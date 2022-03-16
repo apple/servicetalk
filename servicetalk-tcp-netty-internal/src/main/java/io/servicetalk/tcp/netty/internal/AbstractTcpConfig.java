@@ -18,7 +18,6 @@ package io.servicetalk.tcp.netty.internal;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.logging.api.UserDataLoggerConfig;
 import io.servicetalk.logging.slf4j.internal.DefaultUserDataLoggerConfig;
-import io.servicetalk.transport.api.ServerSslConfig;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
@@ -85,6 +84,11 @@ abstract class AbstractTcpConfig<SslConfigType> {
         return wireLoggerConfig;
     }
 
+    /**
+     * Get the {@link SslConfigType}.
+     *
+     * @return the {@link SslConfigType}, or {@code null} if SSL/TLS is not configured.
+     */
     @Nullable
     public final SslConfigType sslConfig() {
         return sslConfig;
@@ -139,7 +143,7 @@ abstract class AbstractTcpConfig<SslConfigType> {
     /**
      * Add SSL/TLS related config.
      *
-     * @param sslConfig the {@link ServerSslConfig}.
+     * @param sslConfig the {@link SslConfigType}.
      */
     public final void sslConfig(final SslConfigType sslConfig) {
         this.sslConfig = requireNonNull(sslConfig);
