@@ -77,7 +77,7 @@ offloaded tasks. Often the `Executor` has a pool of threads, possibly unbounded,
 is available. In particular, different threads may be used for each task executed and code running in tasks cannot
 depend upon a consistent thread being used for invoking program logic. This approach is generally the most scalable
 because it makes the best utilization of threads. If it is necessary to share state between tasks then
-`link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/ContextMap.java[ContextMap]`s
+`link:{source-root}/servicetalk-context-api/src/main/java/io/servicetalk/context/api/ContextMap.java[ContextMap]`s
 can be used.
 
 If the default ServiceTalk offloading has been disabled then user code may still wish to offload execution to a
