@@ -1508,6 +1508,22 @@ public abstract class Single<T> {
      * @param executor {@link Executor} to use.
      * @return A new {@link Single} that will use the passed {@link Executor} to invoke all methods on the
      * {@link Subscriber}.
+     * @deprecated This method is provided for 0.42 compatibility
+     */
+    @Deprecated
+    public final Single<T> publishOn(io.servicetalk.concurrent.Executor executor) {
+        return PublishAndSubscribeOnSingles.publishOn(this, (Executor) executor);
+    }
+
+    /**
+     * Creates a new {@link Single} that will use the passed {@link Executor} to invoke all {@link Subscriber} methods.
+     * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
+     * {@link Single}. Only subsequent operations, if any, added in this execution chain will use this
+     * {@link Executor}. If such an override is required, {@link #publishOnOverride(Executor)} can be used.
+     *
+     * @param executor {@link Executor} to use.
+     * @return A new {@link Single} that will use the passed {@link Executor} to invoke all methods on the
+     * {@link Subscriber}.
      */
     public final Single<T> publishOn(Executor executor) {
         return PublishAndSubscribeOnSingles.publishOn(this, executor);
@@ -1529,6 +1545,26 @@ public abstract class Single<T> {
     @Deprecated
     public final Single<T> publishOnOverride(Executor executor) {
         return PublishAndSubscribeOnSingles.publishOnOverride(this, executor);
+    }
+
+    /**
+     * Creates a new {@link Single} that will use the passed {@link Executor} to invoke the following methods:
+     * <ul>
+     *     <li>All {@link Cancellable} methods.</li>
+     *     <li>The {@link #handleSubscribe(SingleSource.Subscriber)} method.</li>
+     * </ul>
+     * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
+     * {@link Single}. Only subsequent operations, if any, added in this execution chain will use this
+     * {@link Executor}. If such an override is required, {@link #subscribeOnOverride(Executor)} can be used.
+     *
+     * @param executor {@link Executor} to use.
+     * @return A new {@link Single} that will use the passed {@link Executor} to invoke all methods of
+     * {@link Cancellable} and {@link #handleSubscribe(SingleSource.Subscriber)}.
+     * @deprecated This method is provided for 0.42 compatibility
+     */
+    @Deprecated
+    public final Single<T> subscribeOn(io.servicetalk.concurrent.Executor executor) {
+        return PublishAndSubscribeOnSingles.subscribeOn(this, (Executor) executor);
     }
 
     /**

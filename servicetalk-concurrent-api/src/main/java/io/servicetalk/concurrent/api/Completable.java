@@ -1544,6 +1544,23 @@ public abstract class Completable {
     /**
      * Creates a new {@link Completable} that will use the passed {@link Executor} to invoke all {@link Subscriber}
      * methods.
+     * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
+     * {@link Completable}. Only subsequent operations, if any, added in this execution chain will use this
+     * {@link Executor}. If such an override is required, {@link #publishOnOverride(Executor)} can be used.
+     *
+     * @param executor {@link Executor} to use.
+     * @return A new {@link Completable} that will use the passed {@link Executor} to invoke all methods on the
+     * {@link Subscriber}.
+     * @deprecated This method is provided for 0.42 compatibility
+     */
+    @Deprecated
+    public final Completable publishOn(io.servicetalk.concurrent.Executor executor) {
+        return PublishAndSubscribeOnCompletables.publishOn(this, (Executor) executor);
+    }
+
+    /**
+     * Creates a new {@link Completable} that will use the passed {@link Executor} to invoke all {@link Subscriber}
+     * methods.
      * This method overrides preceding {@link Executor}s, if any, specified for {@code this} {@link Completable}.
      * That is to say preceding and subsequent operations for this execution chain will use this {@link Executor}.
      * If such an override is not required, {@link #publishOn(Executor)} can be used.
@@ -1557,6 +1574,26 @@ public abstract class Completable {
     @Deprecated
     public final Completable publishOnOverride(Executor executor) {
         return PublishAndSubscribeOnCompletables.publishOnOverride(this, executor);
+    }
+
+    /**
+     * Creates a new {@link Completable} that will use the passed {@link Executor} to invoke the following methods:
+     * <ul>
+     *     <li>All {@link Cancellable} methods.</li>
+     *     <li>The {@link #handleSubscribe(CompletableSource.Subscriber)} method.</li>
+     * </ul>
+     * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
+     * {@link Completable}. Only subsequent operations, if any, added in this execution chain will use this
+     * {@link Executor}. If such an override is required, {@link #subscribeOnOverride(Executor)} can be used.
+     *
+     * @param executor {@link Executor} to use.
+     * @return A new {@link Completable} that will use the passed {@link Executor} to invoke all methods of
+     * {@link Cancellable} and {@link #handleSubscribe(CompletableSource.Subscriber)}.
+     * @deprecated This method is provided for 0.42 compatibility
+     */
+    @Deprecated
+    public final Completable subscribeOn(io.servicetalk.concurrent.Executor executor) {
+        return PublishAndSubscribeOnCompletables.subscribeOn(this, (Executor) executor);
     }
 
     /**
