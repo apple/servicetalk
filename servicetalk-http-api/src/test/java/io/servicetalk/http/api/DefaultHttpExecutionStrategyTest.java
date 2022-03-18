@@ -23,9 +23,8 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 import io.servicetalk.transport.netty.internal.NettyIoExecutor;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.junit.jupiter.api.parallel.Execution;
-import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
@@ -53,7 +52,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 
-@Execution(ExecutionMode.CONCURRENT)
 class DefaultHttpExecutionStrategyTest {
 
     @RegisterExtension
@@ -113,7 +111,7 @@ class DefaultHttpExecutionStrategyTest {
                 analyzer.instrumentedResponseForServer(svc.handle(ctx, req, ctx.streamingResponseFactory()))
                     .flatMapPublisher(StreamingHttpResponse::payloadBody)
                     .toFuture().get();
-        if (strategy.isSendOffloaded() || strategy.isMetadataReceiveOffloaded() || strategy.isDataReceiveOffloaded()) {
+        if (strategy.isRequestResponseOffloaded()) {
             NettyIoExecutor ioExecutor = (NettyIoExecutor) contextRule.ioExecutor();
             ioExecutor.submit(runHandle).toFuture().get();
         } else {
@@ -132,6 +130,7 @@ class DefaultHttpExecutionStrategyTest {
         assertThat("Unexpected result", result, is(1));
     }
 
+    @Disabled("https://github.com/apple/servicetalk/issues/1716")
     @ParameterizedTest
     @EnumSource(DefaultHttpExecutionStrategy.class)
     void offloadSendSingleCancel(final HttpExecutionStrategy strategy) throws Exception {
@@ -151,6 +150,19 @@ class DefaultHttpExecutionStrategyTest {
                         from(1).subscribeOn(contextRule.executor()) : from(1))
                 .toFuture().get();
         assertThat("Unexpected Result", result, contains(1));
+        analyzer.verifySend();
+    }
+
+    @Disabled("https://github.com/apple/servicetalk/issues/1716")
+    @ParameterizedTest
+    @EnumSource(DefaultHttpExecutionStrategy.class)
+    void offloadSendPublisherCancel(final HttpExecutionStrategy strategy) throws Exception {
+        ThreadAnalyzer analyzer = new ThreadAnalyzer(strategy);
+        analyzer.instrumentSendCancel(
+                strategy.isSendOffloaded() ? Publisher.never().subscribeOn(contextRule.executor()) : Publisher.never())
+                .toFuture()
+                .cancel(false);
+        analyzer.awaitCancel.await();
         analyzer.verifySend();
     }
 
@@ -253,6 +265,14 @@ class DefaultHttpExecutionStrategyTest {
             });
         }
 
+        <T> Publisher<T> instrumentSendCancel(Publisher<T> original) {
+            return original.beforeCancel(() -> {
+                analyzed.set(SEND_ANALYZED_INDEX, true);
+                verifyThread(strategy.isSendOffloaded(), "Unexpected thread requested from cancel.");
+                awaitCancel.countDown();
+            });
+        }
+
         <T> Single<T> instrumentReceive(Single<T> original) {
             return original.beforeOnSuccess(__ -> {
                 analyzed.set(RECEIVE_DATA_ANALYZED_INDEX, true);
@@ -318,10 +338,8 @@ class DefaultHttpExecutionStrategyTest {
         }
 
         void verifyThread(final boolean offloadedPath, final String errMsg) {
-            if (!strategy.hasOffloads() && testThread != currentThread()) {
-                addError(errMsg);
-            } else if (offloadedPath && testThread == currentThread()) {
-                addError(errMsg);
+            if (offloadedPath && testThread == currentThread()) {
+                addError(errMsg + " expected: " + testThread );
             }
         }
 
