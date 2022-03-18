@@ -2867,8 +2867,8 @@ public abstract class Publisher<T> {
      * @return A new {@link Publisher} that will use the passed {@link Executor} to invoke all methods of
      * {@link Subscriber}.
      */
-    public final Publisher<T> publishOn(Executor executor) {
-        return PublishAndSubscribeOnPublishers.publishOn(this, executor);
+    public final Publisher<T> publishOn(io.servicetalk.concurrent.Executor executor) {
+        return publishOn((Executor) executor);
     }
 
     /**
@@ -2881,11 +2881,13 @@ public abstract class Publisher<T> {
      * @param executor {@link Executor} to use.
      * @return A new {@link Publisher} that will use the passed {@link Executor} to invoke all methods of
      * {@link Subscriber}.
-     * @deprecated This method is provided for 0.42 compatibility
+     * @deprecated For compatibility with 0.42 convert to using {@link #publishOn(io.servicetalk.concurrent.Executor)}
+     * instead. You will need to cast to {@link io.servicetalk.concurrent.Executor} to ensure that the correct method is
+     * selected. The cast will no longer be required with 0.42 where this method is removed.
      */
     @Deprecated
-    public final Publisher<T> publishOn(io.servicetalk.concurrent.Executor executor) {
-        return PublishAndSubscribeOnPublishers.publishOn(this, (Executor) executor);
+    public final Publisher<T> publishOn(Executor executor) {
+        return PublishAndSubscribeOnPublishers.publishOn(this, executor);
     }
 
     /**
@@ -2919,8 +2921,8 @@ public abstract class Publisher<T> {
      * @return A new {@link Publisher} that will use the passed {@link Executor} to invoke all methods of
      * {@link Subscription} and {@link #handleSubscribe(PublisherSource.Subscriber)}.
      */
-    public final Publisher<T> subscribeOn(Executor executor) {
-        return PublishAndSubscribeOnPublishers.subscribeOn(this, executor);
+    public final Publisher<T> subscribeOn(io.servicetalk.concurrent.Executor executor) {
+        return subscribeOn((Executor) executor);
     }
 
     /**
@@ -2936,11 +2938,13 @@ public abstract class Publisher<T> {
      * @param executor {@link Executor} to use.
      * @return A new {@link Publisher} that will use the passed {@link Executor} to invoke all methods of
      * {@link Subscription} and {@link #handleSubscribe(PublisherSource.Subscriber)}.
-     * @deprecated This method is provided for 0.42 compatibility
+     * @deprecated For compatibility with 0.42 convert to using {@link #publishOn(io.servicetalk.concurrent.Executor)}
+     * instead. You will need to cast to {@link io.servicetalk.concurrent.Executor} to ensure that the correct method is
+     * selected. The cast will no longer be required with 0.42 where this method is removed.
      */
     @Deprecated
-    public final Publisher<T> subscribeOn(io.servicetalk.concurrent.Executor executor) {
-        return PublishAndSubscribeOnPublishers.subscribeOn(this, (Executor) executor);
+    public final Publisher<T> subscribeOn(Executor executor) {
+        return PublishAndSubscribeOnPublishers.subscribeOn(this, executor);
     }
 
     /**

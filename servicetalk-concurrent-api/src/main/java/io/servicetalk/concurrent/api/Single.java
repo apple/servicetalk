@@ -1508,11 +1508,9 @@ public abstract class Single<T> {
      * @param executor {@link Executor} to use.
      * @return A new {@link Single} that will use the passed {@link Executor} to invoke all methods on the
      * {@link Subscriber}.
-     * @deprecated This method is provided for 0.42 compatibility
      */
-    @Deprecated
     public final Single<T> publishOn(io.servicetalk.concurrent.Executor executor) {
-        return PublishAndSubscribeOnSingles.publishOn(this, (Executor) executor);
+        return publishOn((Executor) executor);
     }
 
     /**
@@ -1524,7 +1522,11 @@ public abstract class Single<T> {
      * @param executor {@link Executor} to use.
      * @return A new {@link Single} that will use the passed {@link Executor} to invoke all methods on the
      * {@link Subscriber}.
+     * @deprecated For compatibility with 0.42 convert to using {@link #publishOn(io.servicetalk.concurrent.Executor)}
+     * instead. You will need to cast to {@link io.servicetalk.concurrent.Executor} to ensure that the correct method is
+     * selected. The cast will no longer be required with 0.42 where this method is removed.
      */
+    @Deprecated
     public final Single<T> publishOn(Executor executor) {
         return PublishAndSubscribeOnSingles.publishOn(this, executor);
     }
@@ -1560,11 +1562,9 @@ public abstract class Single<T> {
      * @param executor {@link Executor} to use.
      * @return A new {@link Single} that will use the passed {@link Executor} to invoke all methods of
      * {@link Cancellable} and {@link #handleSubscribe(SingleSource.Subscriber)}.
-     * @deprecated This method is provided for 0.42 compatibility
      */
-    @Deprecated
     public final Single<T> subscribeOn(io.servicetalk.concurrent.Executor executor) {
-        return PublishAndSubscribeOnSingles.subscribeOn(this, (Executor) executor);
+        return subscribeOn((Executor) executor);
     }
 
     /**
@@ -1580,7 +1580,11 @@ public abstract class Single<T> {
      * @param executor {@link Executor} to use.
      * @return A new {@link Single} that will use the passed {@link Executor} to invoke all methods of
      * {@link Cancellable} and {@link #handleSubscribe(SingleSource.Subscriber)}.
+     * @deprecated For compatibility with 0.42 convert to using {@link #publishOn(io.servicetalk.concurrent.Executor)}
+     * instead. You will need to cast to {@link io.servicetalk.concurrent.Executor} to ensure that the correct method is
+     * selected. The cast will no longer be required with 0.42 where this method is removed.
      */
+    @Deprecated
     public final Single<T> subscribeOn(Executor executor) {
         return PublishAndSubscribeOnSingles.subscribeOn(this, executor);
     }

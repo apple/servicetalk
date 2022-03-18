@@ -17,7 +17,6 @@ package io.servicetalk.concurrent.api.publisher;
 
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ExecutorRule;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.PublisherWithExecutor;
@@ -51,9 +50,9 @@ public abstract class AbstractPublishAndSubscribeOnTest {
     public final ExecutorRule originalSourceExecutorRule = ExecutorRule.withExecutor(
             () -> new OffloaderAwareExecutor(newCachedThreadExecutor(), defaultOffloaderFactory()));
 
-    protected AtomicReferenceArray<Thread> setupAndSubscribe(
-            BiFunction<Publisher<String>, Executor, Publisher<String>> offloadingFunction, Executor executor)
-            throws InterruptedException {
+    protected <E extends io.servicetalk.concurrent.Executor> AtomicReferenceArray<Thread> setupAndSubscribe(
+            BiFunction<Publisher<String>, E, Publisher<String>> offloadingFunction,
+            E executor) throws InterruptedException {
         CountDownLatch allDone = new CountDownLatch(1);
         AtomicReferenceArray<Thread> capturedThreads = new AtomicReferenceArray<>(4);
 

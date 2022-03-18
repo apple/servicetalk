@@ -1537,8 +1537,8 @@ public abstract class Completable {
      * @return A new {@link Completable} that will use the passed {@link Executor} to invoke all methods on the
      * {@link Subscriber}.
      */
-    public final Completable publishOn(Executor executor) {
-        return PublishAndSubscribeOnCompletables.publishOn(this, executor);
+    public final Completable publishOn(io.servicetalk.concurrent.Executor executor) {
+        return publishOn((Executor) executor);
     }
 
     /**
@@ -1551,11 +1551,13 @@ public abstract class Completable {
      * @param executor {@link Executor} to use.
      * @return A new {@link Completable} that will use the passed {@link Executor} to invoke all methods on the
      * {@link Subscriber}.
-     * @deprecated This method is provided for 0.42 compatibility
+     * @deprecated For compatibility with 0.42 convert to using {@link #publishOn(io.servicetalk.concurrent.Executor)}
+     * instead. You will need to cast to {@link io.servicetalk.concurrent.Executor} to ensure that the correct method is
+     * selected. The cast will no longer be required with 0.42 where this method is removed.
      */
     @Deprecated
-    public final Completable publishOn(io.servicetalk.concurrent.Executor executor) {
-        return PublishAndSubscribeOnCompletables.publishOn(this, (Executor) executor);
+    public final Completable publishOn(Executor executor) {
+        return PublishAndSubscribeOnCompletables.publishOn(this, executor);
     }
 
     /**
@@ -1589,11 +1591,9 @@ public abstract class Completable {
      * @param executor {@link Executor} to use.
      * @return A new {@link Completable} that will use the passed {@link Executor} to invoke all methods of
      * {@link Cancellable} and {@link #handleSubscribe(CompletableSource.Subscriber)}.
-     * @deprecated This method is provided for 0.42 compatibility
      */
-    @Deprecated
     public final Completable subscribeOn(io.servicetalk.concurrent.Executor executor) {
-        return PublishAndSubscribeOnCompletables.subscribeOn(this, (Executor) executor);
+        return subscribeOn((Executor) executor);
     }
 
     /**
@@ -1609,7 +1609,11 @@ public abstract class Completable {
      * @param executor {@link Executor} to use.
      * @return A new {@link Completable} that will use the passed {@link Executor} to invoke all methods of
      * {@link Cancellable} and {@link #handleSubscribe(CompletableSource.Subscriber)}.
+     * @deprecated For compatibility with 0.42 convert to using {@link #publishOn(io.servicetalk.concurrent.Executor)}
+     * instead. You will need to cast to {@link io.servicetalk.concurrent.Executor} to ensure that the correct method is
+     * selected. The cast will no longer be required with 0.42 where this method is removed.
      */
+    @Deprecated
     public final Completable subscribeOn(Executor executor) {
         return PublishAndSubscribeOnCompletables.subscribeOn(this, executor);
     }
