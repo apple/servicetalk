@@ -41,7 +41,7 @@ public class PublishAndSubscribeOnTest extends AbstractPublishAndSubscribeOnTest
     @Test
     public void testPublishOnNoOverride() throws InterruptedException {
         AtomicReferenceArray<Thread> capturedThreads =
-                setupAndSubscribe(Publisher::publishOn, executorRule.executor());
+                setupAndSubscribe(Publisher::publishOn, (io.servicetalk.concurrent.Executor) executorRule.executor());
 
         assertThat("Unexpected threads for subscription and subscriber for original source.",
                 capturedThreads.get(ORIGINAL_SUBSCRIBER_THREAD),
@@ -73,7 +73,7 @@ public class PublishAndSubscribeOnTest extends AbstractPublishAndSubscribeOnTest
     @Test
     public void testSubscribeOnNoOverride() throws InterruptedException {
         AtomicReferenceArray<Thread> capturedThreads =
-                setupAndSubscribe(Publisher::subscribeOn, executorRule.executor());
+                setupAndSubscribe(Publisher::subscribeOn, (io.servicetalk.concurrent.Executor) executorRule.executor());
 
         assertThat("Unexpected threads for subscription and subscriber for original source.",
                 capturedThreads.get(ORIGINAL_SUBSCRIBER_THREAD),

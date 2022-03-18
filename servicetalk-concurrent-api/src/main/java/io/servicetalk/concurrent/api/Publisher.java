@@ -2867,6 +2867,24 @@ public abstract class Publisher<T> {
      * @return A new {@link Publisher} that will use the passed {@link Executor} to invoke all methods of
      * {@link Subscriber}.
      */
+    public final Publisher<T> publishOn(io.servicetalk.concurrent.Executor executor) {
+        return publishOn((Executor) executor);
+    }
+
+    /**
+     * Creates a new {@link Publisher} that will use the passed {@link Executor} to invoke all {@link Subscriber}
+     * methods.
+     * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
+     * {@link Publisher}. Only subsequent operations, if any, added in this execution chain will use this
+     * {@link Executor}. If such an override is required, {@link #publishOnOverride(Executor)} can be used.
+     *
+     * @param executor {@link Executor} to use.
+     * @return A new {@link Publisher} that will use the passed {@link Executor} to invoke all methods of
+     * {@link Subscriber}.
+     * @deprecated Replaced with {@link #publishOn(io.servicetalk.concurrent.Executor)} in 0.42. You will need to cast
+     * to {@link io.servicetalk.concurrent.Executor} to ensure that the replacement method is selected.
+     */
+    @Deprecated
     public final Publisher<T> publishOn(Executor executor) {
         return PublishAndSubscribeOnPublishers.publishOn(this, executor);
     }
@@ -2902,6 +2920,27 @@ public abstract class Publisher<T> {
      * @return A new {@link Publisher} that will use the passed {@link Executor} to invoke all methods of
      * {@link Subscription} and {@link #handleSubscribe(PublisherSource.Subscriber)}.
      */
+    public final Publisher<T> subscribeOn(io.servicetalk.concurrent.Executor executor) {
+        return subscribeOn((Executor) executor);
+    }
+
+    /**
+     * Creates a new {@link Publisher} that will use the passed {@link Executor} to invoke the following methods:
+     * <ul>
+     *     <li>All {@link Subscription} methods.</li>
+     *     <li>The {@link #handleSubscribe(PublisherSource.Subscriber)} method.</li>
+     * </ul>
+     * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
+     * {@link Publisher}. Only subsequent operations, if any, added in this execution chain will use this
+     * {@link Executor}. If such an override is required, {@link #subscribeOnOverride(Executor)} can be used.
+     *
+     * @param executor {@link Executor} to use.
+     * @return A new {@link Publisher} that will use the passed {@link Executor} to invoke all methods of
+     * {@link Subscription} and {@link #handleSubscribe(PublisherSource.Subscriber)}.
+     * @deprecated Replaced with {@link #subscribeOn(io.servicetalk.concurrent.Executor)} in 0.42. You will need to cast
+     * to {@link io.servicetalk.concurrent.Executor} to ensure that the replacement method is selected.
+     */
+    @Deprecated
     public final Publisher<T> subscribeOn(Executor executor) {
         return PublishAndSubscribeOnPublishers.subscribeOn(this, executor);
     }

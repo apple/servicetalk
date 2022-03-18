@@ -33,7 +33,8 @@ public class PublishAndSubscribeOnTest extends AbstractPublishAndSubscribeOnTest
 
     @Test
     public void testPublishOnNoOverride() throws InterruptedException {
-        AtomicReferenceArray<Thread> capturedThreads = setupAndSubscribe(s -> s.publishOn(executorRule.executor()));
+        AtomicReferenceArray<Thread> capturedThreads =
+                setupAndSubscribe(s -> s.publishOn((io.servicetalk.concurrent.Executor) executorRule.executor()));
         assertThat("Unexpected threads for original and offloaded source.",
                 capturedThreads.get(ORIGINAL_SUBSCRIBER_THREAD), not(capturedThreads.get(OFFLOADED_SUBSCRIBER_THREAD)));
     }
@@ -49,7 +50,7 @@ public class PublishAndSubscribeOnTest extends AbstractPublishAndSubscribeOnTest
     @Test
     public void testSubscribeOnNoOverride() throws InterruptedException {
         AtomicReferenceArray<Thread> capturedThreads = setupForCancelAndSubscribe(
-                s -> s.subscribeOn(executorRule.executor()));
+                s -> s.subscribeOn((io.servicetalk.concurrent.Executor) executorRule.executor()));
         assertThat("Unexpected threads for original and offloaded source.",
                 capturedThreads.get(ORIGINAL_SUBSCRIBER_THREAD), not(capturedThreads.get(OFFLOADED_SUBSCRIBER_THREAD)));
     }
