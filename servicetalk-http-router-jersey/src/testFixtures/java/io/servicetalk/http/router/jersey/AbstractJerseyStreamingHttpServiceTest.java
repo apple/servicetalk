@@ -74,8 +74,10 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.glassfish.jersey.CommonProperties.getValue;
 import static org.glassfish.jersey.internal.InternalProperties.JSON_FEATURE;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 public abstract class AbstractJerseyStreamingHttpServiceTest {
 
@@ -203,6 +205,11 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
         return payloadRequest(POST, path, payload, contentType);
     }
 
+    protected StreamingHttpRequest post(final String path, final byte[] payload,
+                                        final CharSequence contentType) {
+        return payloadRequest(POST, path, payload, contentType);
+    }
+
     StreamingHttpRequest put(final String path, final CharSequence payload,
                              final CharSequence contentType) {
         return payloadRequest(PUT, path, payload, contentType);
@@ -218,7 +225,20 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
                                                 final String path,
                                                 final CharSequence payload,
                                                 final CharSequence contentType) {
-        final Buffer content = DEFAULT_ALLOCATOR.fromUtf8(payload);
+        return payloadRequest(method, path, DEFAULT_ALLOCATOR.fromUtf8(payload), contentType);
+    }
+
+    private StreamingHttpRequest payloadRequest(final HttpRequestMethod method,
+                                                final String path,
+                                                final byte[] payload,
+                                                final CharSequence contentType) {
+        return payloadRequest(method, path, DEFAULT_ALLOCATOR.wrap(payload), contentType);
+    }
+
+    private StreamingHttpRequest payloadRequest(final HttpRequestMethod method,
+                                                final String path,
+                                                final Buffer content,
+                                                final CharSequence contentType) {
         final StreamingHttpRequest req = httpClient.newRequest(method, testUri(path)).payloadBody(from(content));
         req.headers().set(HOST, host());
         req.headers().set(CONTENT_TYPE, contentType);
@@ -310,7 +330,9 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
                 sendAndAssertStatus(req, expectedHttpVersion, expectedStatus, timeout, unit);
 
         if (expectedContentType != null) {
-            assertThat(res.headers().get(CONTENT_TYPE), is(expectedContentType));
+            CharSequence contentType = res.headers().get(CONTENT_TYPE);
+            assertThat(contentType, notNullValue());
+            assertThat(contentType.toString(), equalTo(expectedContentType.toString()));
         } else {
             assertThat(res.headers().contains(CONTENT_TYPE), is(false));
         }

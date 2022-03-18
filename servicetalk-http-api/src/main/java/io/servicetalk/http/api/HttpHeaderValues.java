@@ -38,6 +38,15 @@ public final class HttpHeaderValues {
     public static final CharSequence APPLICATION_X_WWW_FORM_URLENCODED_UTF_8 =
             newAsciiString(APPLICATION_X_WWW_FORM_URLENCODED + "; charset=UTF-8");
     /**
+     * {@code "application/x-protobuf"}
+     */
+    public static final CharSequence APPLICATION_PROTOBUF = newAsciiString("application/x-protobuf");
+    /**
+     * {@code "application/x-protobuf-var-int"}
+     * <a href="https://developers.google.com/protocol-buffers/docs/encoding">base 128 VarInt protobuf encoding</a>.
+     */
+    public static final CharSequence APPLICATION_PROTOBUF_VAR_INT = newAsciiString("application/x-protobuf-var-int");
+    /**
      * {@code "base64"}
      */
     public static final CharSequence BASE64 = newAsciiString("base64");

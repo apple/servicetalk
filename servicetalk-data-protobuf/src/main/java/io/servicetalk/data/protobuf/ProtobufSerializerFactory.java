@@ -22,6 +22,9 @@ import io.servicetalk.serializer.utils.VarIntLengthStreamingSerializer;
 import com.google.protobuf.MessageLite;
 import com.google.protobuf.Parser;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -35,6 +38,9 @@ public final class ProtobufSerializerFactory {
      * serializers.
      */
     public static final ProtobufSerializerFactory PROTOBUF = new ProtobufSerializerFactory();
+    private static final MethodType PARSER_METHOD_TYPE = MethodType.methodType(Parser.class);
+    private static final String PARSER_METHOD_NAME = "parser";
+    private final Map<Class<?>, Parser<?>> parserMap = new ConcurrentHashMap<>();
     @SuppressWarnings("rawtypes")
     private final Map<Parser<?>, SerializerDeserializer> serializerMap = new ConcurrentHashMap<>();
     @SuppressWarnings("rawtypes")
@@ -55,6 +61,18 @@ public final class ProtobufSerializerFactory {
     }
 
     /**
+     * Get a {@link SerializerDeserializer}.
+     * @param clazz Used to obtain a {@link Parser} which is used to serialize and deserialize.
+     * @param <T> The type to serialize and deserialize.
+     * @return a {@link SerializerDeserializer}.
+     */
+    public <T extends MessageLite> SerializerDeserializer<T> serializerDeserializer(Class<T> clazz) {
+        @SuppressWarnings("unchecked")
+        final Parser<T> parser = (Parser<T>) parserMap.get(clazz);
+        return parser == null ? serializerDeserializer(newParser(clazz)) : serializerDeserializer(parser);
+    }
+
+    /**
      * Get a {@link StreamingSerializerDeserializer} which supports &lt;VarInt length, value&gt; encoding as described
      * in <a href="https://developers.google.com/protocol-buffers/docs/techniques">Protobuf Streaming</a>.
      * @param parser The {@link Parser} used to serialize and deserialize.
@@ -69,5 +87,39 @@ public final class ProtobufSerializerFactory {
         return streamingSerializerMap.computeIfAbsent(parser,
                 parser2 -> new VarIntLengthStreamingSerializer<>(serializerDeserializer((Parser<T>) parser2),
                         MessageLite::getSerializedSize));
+    }
+
+    /**
+     * Get a {@link StreamingSerializerDeserializer} which supports &lt;VarInt length, value&gt; encoding as described
+     * in <a href="https://developers.google.com/protocol-buffers/docs/techniques">Protobuf Streaming</a>.
+     * @param clazz Used to obtain a {@link Parser} which is used to serialize and deserialize.
+     * @param <T> The type to serialize and deserialize.
+     * @return a {@link StreamingSerializerDeserializer} which supports &lt;VarInt length, value&gt; encoding as
+     * described in <a href="https://developers.google.com/protocol-buffers/docs/techniques">Protobuf Streaming</a>.
+     * @see VarIntLengthStreamingSerializer
+     */
+    public <T extends MessageLite> StreamingSerializerDeserializer<T> streamingSerializerDeserializer(Class<T> clazz) {
+        @SuppressWarnings("unchecked")
+        final Parser<T> parser = (Parser<T>) parserMap.get(clazz);
+        return parser == null ? streamingSerializerDeserializer(newParser(clazz)) :
+                streamingSerializerDeserializer(parser);
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T extends MessageLite> Parser<T> newParser(Class<T> clazz) {
+        final MethodHandle mh;
+        try {
+            mh = MethodHandles.publicLookup().findStatic(clazz, PARSER_METHOD_NAME, PARSER_METHOD_TYPE);
+        } catch (IllegalAccessException | NoSuchMethodException e) {
+            throw new IllegalArgumentException("Unable to find " + clazz + "." + PARSER_METHOD_NAME, e);
+        }
+        final Parser<T> parser;
+        try {
+            parser = (Parser<T>) mh.invokeExact();
+        } catch (Throwable e) {
+            throw new IllegalArgumentException(clazz + "." + PARSER_METHOD_NAME + " threw when invoked", e);
+        }
+        parserMap.put(clazz, parser);
+        return parser;
     }
 }

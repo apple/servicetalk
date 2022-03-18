@@ -1,0 +1,8 @@
+= ServiceTalk Data Protobuf Jersey
+
+This module provides Protobuf serialization and deserialization for ServiceTalk Jersey router. This module
+allows skipping `InputStream` conversions and also serializes `Single<MessageLite>` and `Publisher<MessageLite>`
+from resource methods. Note that `Publisher<MessageLite>` will use
+link:https://developers.google.com/protocol-buffers/docs/encoding[Base 128 VarInt Encoding]
+
+See the link:https://docs.servicetalk.io/[ServiceTalk docs] for more information.
