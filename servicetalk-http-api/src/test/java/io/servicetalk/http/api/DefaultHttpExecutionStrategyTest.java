@@ -339,7 +339,7 @@ class DefaultHttpExecutionStrategyTest {
 
         void verifyThread(final boolean offloadedPath, final String errMsg) {
             if (offloadedPath && testThread == currentThread()) {
-                addError(errMsg + " expected: " + testThread );
+                addError(errMsg + " expected: " + testThread);
             }
         }
 
