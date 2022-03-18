@@ -16,16 +16,19 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 import io.servicetalk.transport.netty.internal.NettyIoExecutor;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
+import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
@@ -37,7 +40,6 @@ import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.never;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
-import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
@@ -47,66 +49,24 @@ import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor;
 import static java.lang.Thread.currentThread;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 
 class DefaultHttpExecutionStrategyTest {
 
-    private boolean offloadReceiveMeta;
-    private boolean offloadReceiveData;
-    private boolean offloadSend;
-    private HttpExecutionStrategy strategy;
-    private static final Executor EXECUTOR = newCachedThreadExecutor();
     @RegisterExtension
     static final ExecutionContextExtension contextRule =
             new ExecutionContextExtension(() -> DEFAULT_ALLOCATOR,
                     () -> createIoExecutor("st-ioexecutor"),
-                    () -> EXECUTOR).setClassLevel(true);
-
-    private void setUp(final Params params) {
-        this.offloadReceiveMeta = params.offloadReceiveMeta;
-        this.offloadReceiveData = params.offloadReceiveData;
-        this.offloadSend = params.offloadSend;
-        HttpExecutionStrategies.Builder builder = customStrategyBuilder();
-        if (offloadReceiveMeta) {
-            builder.offloadReceiveMetadata();
-        }
-        if (offloadReceiveData) {
-            builder.offloadReceiveData();
-        }
-        if (offloadSend) {
-            builder.offloadSend();
-        }
-        strategy = builder.build();
-    }
-
-    enum Params {
-        EXEC_OFFLOAD_NONE(false, false, false),
-        EXEC_OFFLOAD_ALL(true, true, true),
-        EXEC_OFFLOAD_RECV_META(true, false, false),
-        EXEC_OFFLOAD_RECV_DATA(false, true, false),
-        EXEC_OFFLOAD_RECV_ALL(true, true, false),
-        EXEC_OFFLOAD_SEND(false, false, true);
-
-        final boolean offloadReceiveMeta;
-        final boolean offloadReceiveData;
-        final boolean offloadSend;
-
-        Params(final boolean offloadReceiveMeta, final boolean offloadReceiveData,
-               final boolean offloadSend) {
-
-            this.offloadReceiveMeta = offloadReceiveMeta;
-            this.offloadReceiveData = offloadReceiveData;
-            this.offloadSend = offloadSend;
-        }
-    }
+                    () -> newCachedThreadExecutor(new DefaultThreadFactory("st-executor")))
+            .setClassLevel(true);
 
     @ParameterizedTest
-    @EnumSource(Params.class)
-    void wrapServiceThatWasAlreadyOffloaded(final Params params) throws Exception {
-        setUp(params);
-        ThreadAnalyzer analyzer = new ThreadAnalyzer();
+    @EnumSource(DefaultHttpExecutionStrategy.class)
+    void wrapServiceThatWasAlreadyOffloaded(final HttpExecutionStrategy strategy) throws Exception {
+        ThreadAnalyzer analyzer = new ThreadAnalyzer(strategy);
         StreamingHttpService svc = StreamingHttpServiceToOffloadedStreamingHttpService.offloadService(
-                strategy, EXECUTOR, Boolean.TRUE::booleanValue, (ctx, request, responseFactory) -> {
+                strategy, contextRule.executor(), Boolean.TRUE::booleanValue, (ctx, request, responseFactory) -> {
             analyzer.checkContext(ctx);
             analyzer.checkServiceInvocationNotOffloaded();
             return succeeded(
@@ -129,12 +89,11 @@ class DefaultHttpExecutionStrategyTest {
     }
 
     @ParameterizedTest
-    @EnumSource(Params.class)
-    void wrapServiceThatWasNotOffloaded(final Params params) throws Exception {
-        setUp(params);
-        ThreadAnalyzer analyzer = new ThreadAnalyzer();
+    @EnumSource(DefaultHttpExecutionStrategy.class)
+    void wrapServiceThatWasNotOffloaded(final HttpExecutionStrategy strategy) throws Exception {
+        ThreadAnalyzer analyzer = new ThreadAnalyzer(strategy);
         StreamingHttpService svc = StreamingHttpServiceToOffloadedStreamingHttpService.offloadService(
-                strategy, EXECUTOR, Boolean.TRUE::booleanValue, (ctx, request, responseFactory) -> {
+                strategy, contextRule.executor(), Boolean.TRUE::booleanValue, (ctx, request, responseFactory) -> {
             analyzer.checkContext(ctx);
             analyzer.checkServiceInvocation();
             return succeeded(analyzer.createNewResponse()
@@ -148,12 +107,11 @@ class DefaultHttpExecutionStrategyTest {
                         // Use offloadNone() for the ctx to indicate that there was no offloading before.
                         // So, the difference function inside #offloadService will return the tested strategy.
                         new ExecutionContextToHttpExecutionContext(contextRule, offloadNone()));
-        Callable<?> runHandle = () -> {
-                return analyzer.instrumentedResponseForServer(svc.handle(ctx, req, ctx.streamingResponseFactory()))
-                        .flatMapPublisher(StreamingHttpResponse::payloadBody)
+        Callable<?> runHandle = () ->
+                analyzer.instrumentedResponseForServer(svc.handle(ctx, req, ctx.streamingResponseFactory()))
+                    .flatMapPublisher(StreamingHttpResponse::payloadBody)
                     .toFuture().get();
-        };
-        if (params.offloadSend || params.offloadReceiveMeta || params.offloadReceiveData) {
+        if (strategy.isRequestResponseOffloaded()) {
             NettyIoExecutor ioExecutor = (NettyIoExecutor) contextRule.ioExecutor();
             ioExecutor.submit(runHandle).toFuture().get();
         } else {
@@ -163,47 +121,70 @@ class DefaultHttpExecutionStrategyTest {
     }
 
     @ParameterizedTest
-    @EnumSource(Params.class)
-    void offloadSendSingle(final Params params) throws Exception {
-        setUp(params);
-        ThreadAnalyzer analyzer = new ThreadAnalyzer();
-        analyzer.instrumentSend(strategy.isSendOffloaded() ?
-                never().subscribeOn(EXECUTOR) : never()).subscribe(__ -> {
+    @EnumSource(DefaultHttpExecutionStrategy.class)
+    void offloadSendSingle(final HttpExecutionStrategy strategy) throws Exception {
+        ThreadAnalyzer analyzer = new ThreadAnalyzer(strategy);
+        int result = analyzer.instrumentSend(strategy.isSendOffloaded() ?
+                succeeded(1).subscribeOn(contextRule.executor()) : succeeded(1)).toFuture().get();
+        analyzer.verifySend();
+        assertThat("Unexpected result", result, is(1));
+    }
+
+    @Disabled("https://github.com/apple/servicetalk/issues/1716")
+    @ParameterizedTest
+    @EnumSource(DefaultHttpExecutionStrategy.class)
+    void offloadSendSingleCancel(final HttpExecutionStrategy strategy) throws Exception {
+        ThreadAnalyzer analyzer = new ThreadAnalyzer(strategy);
+        analyzer.instrumentSendCancel(strategy.isSendOffloaded() ?
+                never().subscribeOn(contextRule.executor()) : never()).subscribe(__ -> {
         }).cancel();
         analyzer.awaitCancel.await();
         analyzer.verifySend();
     }
 
     @ParameterizedTest
-    @EnumSource(Params.class)
-    void offloadSendPublisher(final Params params) throws Exception {
-        setUp(params);
-        ThreadAnalyzer analyzer = new ThreadAnalyzer();
-        analyzer.instrumentSend(strategy.isSendOffloaded() ? from(1).subscribeOn(EXECUTOR) : from(1)).toFuture().get();
+    @EnumSource(DefaultHttpExecutionStrategy.class)
+    void offloadSendPublisher(final HttpExecutionStrategy strategy) throws Exception {
+        ThreadAnalyzer analyzer = new ThreadAnalyzer(strategy);
+        Collection<Integer> result = analyzer.instrumentSend(strategy.isSendOffloaded() ?
+                        from(1).subscribeOn(contextRule.executor()) : from(1))
+                .toFuture().get();
+        assertThat("Unexpected Result", result, contains(1));
+        analyzer.verifySend();
+    }
+
+    @Disabled("https://github.com/apple/servicetalk/issues/1716")
+    @ParameterizedTest
+    @EnumSource(DefaultHttpExecutionStrategy.class)
+    void offloadSendPublisherCancel(final HttpExecutionStrategy strategy) throws Exception {
+        ThreadAnalyzer analyzer = new ThreadAnalyzer(strategy);
+        analyzer.instrumentSendCancel(
+                strategy.isSendOffloaded() ? Publisher.never().subscribeOn(contextRule.executor()) : Publisher.never())
+                .toFuture()
+                .cancel(false);
+        analyzer.awaitCancel.await();
         analyzer.verifySend();
     }
 
     @ParameterizedTest
-    @EnumSource(Params.class)
-    void offloadReceiveSingle(final Params params) throws Exception {
-        setUp(params);
-        ThreadAnalyzer analyzer = new ThreadAnalyzer();
+    @EnumSource(DefaultHttpExecutionStrategy.class)
+    void offloadReceiveSingle(final HttpExecutionStrategy strategy) throws Exception {
+        ThreadAnalyzer analyzer = new ThreadAnalyzer(strategy);
         analyzer.instrumentReceive(strategy.isMetadataReceiveOffloaded() || strategy.isDataReceiveOffloaded() ?
-                succeeded(1).publishOn(EXECUTOR) : succeeded(1)).toFuture().get();
+                succeeded(1).publishOn(contextRule.executor()) : succeeded(1)).toFuture().get();
         analyzer.verifyReceive();
     }
 
     @ParameterizedTest
-    @EnumSource(Params.class)
-    void offloadReceivePublisher(final Params params) throws Exception {
-        setUp(params);
-        ThreadAnalyzer analyzer = new ThreadAnalyzer();
+    @EnumSource(DefaultHttpExecutionStrategy.class)
+    void offloadReceivePublisher(final HttpExecutionStrategy strategy) throws Exception {
+        ThreadAnalyzer analyzer = new ThreadAnalyzer(strategy);
         analyzer.instrumentReceive(strategy.isMetadataReceiveOffloaded() || strategy.isDataReceiveOffloaded() ?
-                from(1).publishOn(EXECUTOR) : from(1)).toFuture().get();
+                from(1).publishOn(contextRule.executor()) : from(1)).toFuture().get();
         analyzer.verifyReceive();
     }
 
-    private final class ThreadAnalyzer {
+    private static final class ThreadAnalyzer {
 
         private static final int SEND_ANALYZED_INDEX = 0;
         private static final int RECEIVE_META_ANALYZED_INDEX = 1;
@@ -212,6 +193,11 @@ class DefaultHttpExecutionStrategyTest {
         private final Thread testThread = currentThread();
         private final AtomicReferenceArray<Boolean> analyzed = new AtomicReferenceArray<>(3);
         private final CountDownLatch awaitCancel = new CountDownLatch(1);
+        private final HttpExecutionStrategy strategy;
+
+        ThreadAnalyzer(HttpExecutionStrategy strategy) {
+            this.strategy = strategy;
+        }
 
         StreamingHttpRequest createNewRequest() {
             return newRequest(GET, "/", HTTP_1_1, INSTANCE.newHeaders(), DEFAULT_ALLOCATOR, INSTANCE)
@@ -227,17 +213,17 @@ class DefaultHttpExecutionStrategyTest {
         Single<StreamingHttpResponse> instrumentedResponseForClient(Single<StreamingHttpResponse> resp) {
             return resp.map(response -> response.transformPayloadBody(p -> p.beforeOnNext(__ -> {
                 analyzed.set(RECEIVE_DATA_ANALYZED_INDEX, true);
-                verifyThread(offloadReceiveData, "Unexpected thread for response payload onNext.");
+                verifyThread(strategy.isMetadataReceiveOffloaded(), "Unexpected thread for response payload onNext.");
             }))).beforeOnSuccess(__ -> {
                 analyzed.set(RECEIVE_META_ANALYZED_INDEX, true);
-                verifyThread(offloadReceiveMeta, "Unexpected thread for response single.");
+                verifyThread(strategy.isMetadataReceiveOffloaded(), "Unexpected thread for response single.");
             });
         }
 
         Single<StreamingHttpResponse> instrumentedResponseForServer(Single<StreamingHttpResponse> resp) {
             return resp.map(response -> response.transformPayloadBody(p -> p.beforeRequest(__ -> {
                 analyzed.set(SEND_ANALYZED_INDEX, true);
-                verifyThread(offloadSend, "Unexpected thread requested from request.");
+                verifyThread(strategy.isSendOffloaded(), "Unexpected thread requested from request.");
             })));
         }
 
@@ -253,14 +239,21 @@ class DefaultHttpExecutionStrategyTest {
         Publisher<Object> instrumentedFlatRequestForClient(Publisher<Object> req) {
             return req.beforeRequest(__ -> {
                 analyzed.set(SEND_ANALYZED_INDEX, true);
-                verifyThread(offloadSend, "Unexpected thread requested from request.");
+                verifyThread(strategy.isSendOffloaded(), "Unexpected thread requested from request.");
             });
         }
 
         <T> Single<T> instrumentSend(Single<T> original) {
+            return original.beforeOnSuccess((T t) -> {
+                analyzed.set(SEND_ANALYZED_INDEX, true);
+                verifyThread(strategy.isSendOffloaded(), "Unexpected thread requested from success.");
+            });
+        }
+
+        <T> Single<T> instrumentSendCancel(Single<T> original) {
             return original.beforeCancel(() -> {
                 analyzed.set(SEND_ANALYZED_INDEX, true);
-                verifyThread(offloadSend, "Unexpected thread requested from cancel.");
+                verifyThread(strategy.isSendOffloaded(), "Unexpected thread requested from cancel.");
                 awaitCancel.countDown();
             });
         }
@@ -268,44 +261,50 @@ class DefaultHttpExecutionStrategyTest {
         <T> Publisher<T> instrumentSend(Publisher<T> original) {
             return original.beforeRequest(__ -> {
                 analyzed.set(SEND_ANALYZED_INDEX, true);
-                verifyThread(offloadSend, "Unexpected thread requested from request.");
+                verifyThread(strategy.isSendOffloaded(), "Unexpected thread requested from request.");
+            });
+        }
+
+        <T> Publisher<T> instrumentSendCancel(Publisher<T> original) {
+            return original.beforeCancel(() -> {
+                analyzed.set(SEND_ANALYZED_INDEX, true);
+                verifyThread(strategy.isSendOffloaded(), "Unexpected thread requested from cancel.");
+                awaitCancel.countDown();
             });
         }
 
         <T> Single<T> instrumentReceive(Single<T> original) {
             return original.beforeOnSuccess(__ -> {
                 analyzed.set(RECEIVE_DATA_ANALYZED_INDEX, true);
-                verifyThread(offloadReceiveData, "Unexpected thread requested from success.");
+                verifyThread(strategy.isDataReceiveOffloaded(), "Unexpected thread requested from success.");
             });
         }
 
         <T> Publisher<T> instrumentReceive(Publisher<T> original) {
             return original.beforeOnNext(__ -> {
                 analyzed.set(RECEIVE_DATA_ANALYZED_INDEX, true);
-                verifyThread(offloadReceiveData, "Unexpected thread requested from next.");
+                verifyThread(strategy.isDataReceiveOffloaded(), "Unexpected thread requested from next.");
             });
         }
 
         void checkContext(HttpServiceContext context) {
-            if (noOffloads()) {
+            if (strategy.hasOffloads()) {
+                if (context.executionContext().executor() != contextRule.executor()) {
+                    errors.add(new AssertionError("Unexpected executor in context. Expected: " +
+                            contextRule.executor() + ", actual: " + context.executionContext().executor()));
+                }
+            } else {
                 Executor expectedExecutor = contextRule.executor();
                 if (expectedExecutor != context.executionContext().executor()) {
                     errors.add(new AssertionError("Unexpected executor in context. Expected: " +
                             expectedExecutor + ", actual: " + context.executionContext().executor()));
                 }
-            } else if (context.executionContext().executor() != EXECUTOR) {
-                errors.add(new AssertionError("Unexpected executor in context. Expected: " + EXECUTOR +
-                                              ", actual: " + context.executionContext().executor()));
             }
-        }
-
-        private boolean noOffloads() {
-            return !offloadReceiveData && !offloadReceiveMeta && !offloadSend;
         }
 
         void checkServiceInvocation() {
             analyzed.set(RECEIVE_META_ANALYZED_INDEX, true);
-            verifyThread(offloadReceiveMeta, "Unexpected thread invoked service.");
+            verifyThread(strategy.isMetadataReceiveOffloaded(), "Unexpected thread invoked service.");
         }
 
         void checkServiceInvocationNotOffloaded() {
@@ -318,7 +317,7 @@ class DefaultHttpExecutionStrategyTest {
         Publisher<Buffer> instrumentedRequestPayloadForServer(Publisher<Buffer> req) {
             return req.beforeOnNext(__ -> {
                 analyzed.set(RECEIVE_DATA_ANALYZED_INDEX, true);
-                verifyThread(offloadReceiveData, "Unexpected thread for request payload onNext.");
+                verifyThread(strategy.isDataReceiveOffloaded(), "Unexpected thread for request payload onNext.");
             });
         }
 
@@ -334,41 +333,35 @@ class DefaultHttpExecutionStrategyTest {
         Publisher<Object> instrumentedResponseForServer(Publisher<Object> resp) {
             return resp.beforeRequest(__ -> {
                 analyzed.set(SEND_ANALYZED_INDEX, true);
-                verifyThread(offloadSend, "Unexpected thread requested from response.");
+                verifyThread(strategy.isSendOffloaded(), "Unexpected thread requested from response.");
             });
         }
 
         void verifyThread(final boolean offloadedPath, final String errMsg) {
-            if (!strategy.hasOffloads() && testThread != currentThread()) {
-                addError(errMsg);
-            } else if (offloadedPath && testThread == currentThread()) {
-                addError(errMsg);
+            if (offloadedPath && testThread == currentThread()) {
+                addError(errMsg + " expected: " + testThread);
             }
+        }
+
+        private void addError(final String msg) {
+            errors.add(new AssertionError(msg + " Thread: " + currentThread()));
         }
 
         void verifySend() {
             assertThat("Send path not analyzed.", analyzed.get(SEND_ANALYZED_INDEX), is(true));
-            verifyNoErrors();
+            assertNoAsyncErrors(errors);
         }
 
         void verifyReceive() {
             assertThat("Receive data path not analyzed.", analyzed.get(RECEIVE_DATA_ANALYZED_INDEX), is(true));
-            verifyNoErrors();
+            assertNoAsyncErrors(errors);
         }
 
         void verify() {
             assertThat("Send path not analyzed.", analyzed.get(SEND_ANALYZED_INDEX), is(true));
             assertThat("Receive metadata path not analyzed.", analyzed.get(RECEIVE_META_ANALYZED_INDEX), is(true));
             assertThat("Receive data path not analyzed.", analyzed.get(RECEIVE_DATA_ANALYZED_INDEX), is(true));
-            verifyNoErrors();
-        }
-
-        void verifyNoErrors() {
             assertNoAsyncErrors(errors);
-        }
-
-        private void addError(final String msg) {
-            errors.add(new AssertionError(msg + " Thread: " + currentThread()));
         }
     }
 }
