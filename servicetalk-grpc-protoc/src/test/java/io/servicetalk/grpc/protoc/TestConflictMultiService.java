@@ -16,7 +16,7 @@
 package io.servicetalk.grpc.protoc;
 
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.grpc.protoc.test.conflict.multi.service.TestConflictMultiService0.TestConflictMultiServiceService;
+import io.servicetalk.grpc.protoc.test.conflict.multi.service.TestConflictMultiService.TestConflictMultiServiceService;
 import io.servicetalk.grpc.protoc.test.conflict.multi.service.TestReply;
 
 import org.junit.jupiter.api.Test;
