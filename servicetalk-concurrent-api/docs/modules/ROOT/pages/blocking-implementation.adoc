@@ -8,9 +8,10 @@ endif::[]
 
 = Blocking safe by default (Implementation Details)
 
-As described xref:{page-version}@servicetalk-concurrent-api::blocking-safe-by-default.adoc[here], ServiceTalk by default
-allows users to write blocking code when interacting with ServiceTalk. This document describes the details of the
-implementation and is addressed to audiences who intend to know the internals of how this is achieved.
+As described in the section
+xref:{page-version}@servicetalk-concurrent-api::blocking-safe-by-default.adoc[Blocking Safe By Default],
+ServiceTalk, by default, allows users to write blocking code when interacting with ServiceTalk. This document describes
+the details of the implementation and is addressed to audiences who intend to know the internals of how this is achieved.
 
 NOTE: It is not required to read this document if you just want to use ServiceTalk.
 
@@ -19,78 +20,59 @@ NOTE: It is not required to read this document if you just want to use ServiceTa
 Everything inside ServiceTalk is somehow connected to one of the three asynchronous sources, viz., `Publisher`, `Single`
 and `Completable`. Since these sources are the building blocks for program control flow if they provide safety
 guarantees for blocking code execution these guarantees apply outside the scope of preventing blocking code from
-executing on event loop thread. This approach is designed to make the task of ensuring we don't block the event loop
-threads less error prone, and also allows for certain optimizations around thread context propagation and re-use.
+executing on an EventLoop thread. This approach is designed to make the task of ensuring we don't block the EventLoop
+threads less error-prone, and also allows for certain optimizations around thread context propagation and re-use.
 
 == Threads and asynchronous sources
 
-An asynchronous source has to decide at two points about which thread will be used:
+An asynchronous source has two important decisions to make about thread usage:
 
-1. Thread which is used to do the actual work related to a source. eg: for an HTTP client, the work is to send an HTTP
-request and read the HTTP response.
-2. Thread which is used to interact with the `Subscriber` corresponding to its `Subscription`s.
+1. Which thread or executor will be used to do the actual task related to a source. eg: for an HTTP client, the task
+is to send an HTTP request and read the HTTP response.
+2. Which thread or executor will be used to interact with the `Subscriber` corresponding to its `Subscription`s.
 
 Part 1. above is not governed by the
 link:https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#specification[ReactiveStreams specification]
-and hence sources are free to use any thread. ServiceTalk typically will use Netty's `EventLoop` to do the actual work.
+and hence sources are free to use any thread. ServiceTalk typically will use Netty's `EventLoop` to perform the actual
+task.
+
 Part 2. defines all the interactions using the ReactiveStreams specifications, i.e. all methods in `Publisher`,
-`Subscriber` and `Subscription`.
+`Subscriber` and `Subscription`. The ReactiveStreams specification requires that signals are not delivered
+link:https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#1.3[concurrently],
+but doesn't have any restrictions about which threads are used. This means the same thread maybe used for all signal
+deliveries for a given `Subscriber`, but it is also valid to use any thread (as long as no concurrency is introduced).
+ServiceTalk concurrency APIs are used to define which executor will be used for an asynchronous source for Part 2,
+which is typically an application `Executor`.
 
-ServiceTalk concurrency APIs defines which thread will be used by any asynchronous source for Part 2.
+== Offloading and asynchronous sources
 
-== Executor and asynchronous sources
+ServiceTalk uses the `link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Executor.java[Executor]`
+abstraction to specify the source of threads to be used for the delivery of signals from an asynchronous source. The
+default signal offloading, if any, used by an asynchronous source is determined by the source. For example, the HTTP
+sources, in addition to allowing for specification of an offloading executor, provide both direct control of the
+offloading via
+`xref:{page-version}@servicetalk::blocking-safe-by-default.adoc#execution-strategy[ExecutionStrategy]`
+and may also influenced by the
+xref:{page-version}@servicetalk::blocking-safe-by-default.adoc#influencing-offloading-decisions[computed execution strategy].
 
-ServiceTalk enforces that each asynchronous source **MUST** be associated with an `Executor` which is used to interact
-with its `Subscriber`. The below diagram illustrates the interaction between an asynchronous source, its `Subscriber`,
-its operators, and the `Executor`.
+Applications with asynchronous, blocking, or computationally expensive tasks can also offload those tasks to specific
+`Executor`. The `subscribeOn(Executor)` and `publishOn(Executor)` operators will cause offloading execution from the
+default signal delivery thread to a thread from the provided `Executor`. The below diagram illustrates the interaction
+between an asynchronous source, its `Subscriber`, its operators, and the `Executor`.
 
-image::executor-thread-selection.png[Executor inference]
+During `Subscriber` method execution, the result publication and termination signals, the `Executor` active at the
+source is inherited by all operators unless there is a reason to switch to a different `Executor`. The switch to another
+executor, offloading, is done for a couple of reasons; unless configured to not offload ServiceTalk will offload from
+the Netty `EventLoop` thread as necessary in order to allow user code to block.
 
-The above interaction provides all operators and the source an opportunity to piggy-back on the same `Executor` for all
-interactions with the `Subscriber`. Any operator in a chain has two options while accepting a `Subscriber`:
+image::offloading.svg[Offloading]
 
-- Wrap the `Subscriber` such that all `Subscriber` and `Subscription` method calls are offloaded to a chosen
-`Executor`. This mode is for operators that process signals from the original `Publisher` asynchronously.
-- Do not wrap the `Subscriber` and forward all `Subscriber` and `Subscription` methods directly on the calling thread to
-avoid the overhead of wrapping each and every `Subscriber` and `Subscription` in a chain. This mode is for operators
-that process signals from the original `Publisher` synchronously.
+During `subscribe()` the execution will offload at the `subscribeOn()` operator and transition execution from the
+subscribing thread to an `Exeuctor` thread. The subscribing thread will be able to continue while the subscribe
+operation asynchronously continues on an `Executor` thread.
 
-Taking the same example from xref:{page-version}@servicetalk-concurrent-api::blocking-safe-by-default.adoc[here]
-
-[source, java]
-----
- client.request() # <1>
-       .map(resp -> {
-            return resp.toString(); # <2>
-       })
-       .flatMap(stringResp -> { # <3>
-            return client2.request(stringResp);
-       })
-       .filter(stringResp -> {
-            stringResp.equals("Hello World");  # <4>
-       });
-----
-<1> A hypothetical client which provides a `request()` method that returns a `Single<Response>`.
-<2> Converting the response to a `String`.
-<3> Call another `client2` that provides a new `Single` which is returned from `flatMap`.
-<4> Only allow "Hello World" messages to be emitted.
-
-In the above example the operators `map` and `filter` will not wrap `Subscriber` and `Subscription` since they do not do
-any asynchronous work. However, `flatmap` will wrap `Subscriber` and `Subscription` to offload the calls to the chosen
-`Executor`.
-
-== Why should we wrap `Subscriber` and `Subscription`?
-
-There are two places we would wrap `Subscriber` and `Subscription`:
-
-1. Original asynchronous sources.
-2. Asynchronous operators. eg: `flatMap`
-
-Since every asynchronous source is associated with an `Executor`, it is required to use the `Executor` for interacting
-with `Subscriber` and `Subscription`.
-
-If we do not wrap for asynchronous operators then in the above example, operator `filter` (4) will be invoked in the
-`Executor` defined by `client2` inside the `flatmap`. This may lead to inadvertent and not initially obvious
-blocking of an event loop thread. Consider a scenario where `client2` executes user code on an event loop thread, but
-the original `client` executes user code on an application thread (which allows blocking). In this scenario it may look
-like blocking code is OK at point (4) above, but that will actually result in blocking `client2`'s event loop thread.
+The diagram shows a typical case, when a result is available at the source it will begin publication on the receiving
+Netty EventLoop thread. Assuming that the default ServiceTalk offloading has been disabled, then offloading will only
+happen at the `publishOn()` operator during `Subscriber` signals and will transition execution from the EventLoop thread
+to an `Executor` thread. Once the `Subscriber` signal is offloaded the EventLoop thread will be available again for
+executing other I/O tasks while the response is asynchronously processed on the `Executor` thread.

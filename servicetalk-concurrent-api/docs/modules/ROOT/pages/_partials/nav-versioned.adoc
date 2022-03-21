@@ -2,3 +2,4 @@
 * xref:{page-version}@servicetalk-concurrent-api::blocking-safe-by-default.adoc[Blocking safe by default]
 ** xref:{page-version}@servicetalk-concurrent-api::blocking-implementation.adoc[Implementation details]
 * xref:{page-version}@servicetalk-concurrent-api::async-context.adoc[Async Context]
+* xref:{page-version}@servicetalk-concurrent-api::pitfalls.adoc[Concurrency Pitfalls]
