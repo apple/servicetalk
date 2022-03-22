@@ -885,14 +885,15 @@ public abstract class Publisher<T> {
     }
 
     /**
-     * Map each element of this {@link Publisher} into a {@link Single}&lt;{@link R}&gt; and flatten all signals
-     * emitted from each mapped {@link Single}&lt;{@link R}&gt; into the returned {@link Publisher}&lt;{@link R}&gt;.
+     * This method is similar to {@link #map(Function)} but the result is asynchronous and results are unordered. More
+     * specifically, map each element of this {@link Publisher} into a {@link Single}&lt;{@link R}&gt; and flatten all
+     * signals emitted from each mapped {@link Single}&lt;{@link R}&gt; into the returned
+     * {@link Publisher}&lt;{@link R}&gt;.
      * <p>
      * To control the amount of concurrent processing done by this operator see
      * {@link #flatMapMergeSingle(Function, int)}.
      * <p>
-     * This method is similar to {@link #map(Function)} but the result is asynchronous, unordered, and provides a data
-     * transformation in sequential programming similar to:
+     * Provides a data transformation in sequential programming similar to:
      * <pre>{@code
      *     ExecutorService e = ...;
      *     List<Future<R>> futures = ...; // assume this is thread safe
@@ -917,17 +918,19 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
      * @see #flatMapMergeSingle(Function, int)
+     * @see #flatMapConcatSingle(Function)
      */
     public final <R> Publisher<R> flatMapMergeSingle(Function<? super T, ? extends Single<? extends R>> mapper) {
         return new PublisherFlatMapSingle<>(this, mapper, false);
     }
 
     /**
-     * Map each element of this {@link Publisher} into a {@link Single}&lt;{@link R}&gt; and flatten all signals
-     * emitted from each mapped {@link Single}&lt;{@link R}&gt; into the returned {@link Publisher}&lt;{@link R}&gt;.
+     * This method is similar to {@link #map(Function)} but the result is asynchronous and results are unordered. More
+     * specifically, map each element of this {@link Publisher} into a {@link Single}&lt;{@link R}&gt; and flatten all
+     * signals emitted from each mapped {@link Single}&lt;{@link R}&gt; into the returned
+     * {@link Publisher}&lt;{@link R}&gt;.
      * <p>
-     * This method is similar to {@link #map(Function)} but the result is asynchronous, unordered, and provides a data
-     * transformation in sequential programming similar to:
+     * Provides a data transformation in sequential programming similar to:
      * <pre>{@code
      *     ExecutorService e = ...;
      *     List<Future<R>> futures = ...; // assume this is thread safe
@@ -954,6 +957,7 @@ public abstract class Publisher<T> {
      * @return A new {@link Publisher} that emits all items emitted by each single produced by {@code mapper}.
      *
      * @see <a href="http://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
+     * @see #flatMapConcatSingle(Function, int)
      */
     public final <R> Publisher<R> flatMapMergeSingle(Function<? super T, ? extends Single<? extends R>> mapper,
                                                      int maxConcurrency) {
@@ -1002,6 +1006,7 @@ public abstract class Publisher<T> {
      *
      * @see <a href="https://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
      * @see #flatMapMergeSingleDelayError(Function, int)
+     * @see #flatMapConcatSingleDelayError(Function)
      */
     public final <R> Publisher<R> flatMapMergeSingleDelayError(
             Function<? super T, ? extends Single<? extends R>> mapper) {
@@ -1009,8 +1014,9 @@ public abstract class Publisher<T> {
     }
 
     /**
-     * Map each element of this {@link Publisher} into a {@link Single}&lt;{@link R}&gt; and flatten all signals
-     * emitted from each mapped {@link Single}&lt;{@link R}&gt; into the returned
+     * This method is similar to {@link #map(Function)} but the result is asynchronous and results are unordered. More
+     * specifically, map each element of this {@link Publisher} into a {@link Single}&lt;{@link R}&gt; and flatten all
+     * signals emitted from each mapped {@link Single}&lt;{@link R}&gt; into the returned
      * {@link Publisher}&lt;{@link R}&gt;.
      * <p>
      * The behavior is the same as {@link #flatMapMergeSingle(Function, int)} with the exception that if any
@@ -1019,8 +1025,7 @@ public abstract class Publisher<T> {
      * then terminate the returned {@link Publisher} with all errors emitted by the {@link Single}s produced by the
      * {@code mapper}.
      * <p>
-     * This method is similar to {@link #map(Function)} but the result is asynchronous, unordered, and provides a data
-     * transformation in sequential programming similar to:
+     * Provides a data transformation in sequential programming similar to:
      * <pre>{@code
      *     ExecutorService e = ...;
      *     List<Future<R>> futures = ...; // assume this is thread safe
@@ -1050,6 +1055,7 @@ public abstract class Publisher<T> {
      * @return A new {@link Publisher} that emits all items emitted by each single produced by {@code mapper}.
      *
      * @see <a href="https://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
+     * @see #flatMapConcatSingleDelayError(Function, int)
      */
     public final <R> Publisher<R> flatMapMergeSingleDelayError(
             Function<? super T, ? extends Single<? extends R>> mapper, int maxConcurrency) {
@@ -1057,8 +1063,10 @@ public abstract class Publisher<T> {
     }
 
     /**
-     * Map each element of this {@link Publisher} into a {@link Single}&lt;{@link R}&gt; and flatten all signals
-     * emitted from each mapped {@link Single}&lt;{@link R}&gt; into the returned {@link Publisher}&lt;{@link R}&gt;.
+     * This method is similar to {@link #map(Function)} but the result is asynchronous and results are unordered. More
+     * specifically, map each element of this {@link Publisher} into a {@link Single}&lt;{@link R}&gt; and flatten all
+     * signals emitted from each mapped {@link Single}&lt;{@link R}&gt; into the returned
+     * {@link Publisher}&lt;{@link R}&gt;.
      * <p>
      * The behavior is the same as {@link #flatMapMergeSingle(Function, int)} with the exception that if any
      * {@link Single} returned by {@code mapper}, terminates with an error, the returned {@link Publisher} will not
@@ -1066,8 +1074,7 @@ public abstract class Publisher<T> {
      * then terminate the returned {@link Publisher} with errors emitted by the {@link Single}s produced by the
      * {@code mapper}.
      * <p>
-     * This method is similar to {@link #map(Function)} but the result is asynchronous, unordered, and provides a data
-     * transformation in sequential programming similar to:
+     * Provides a data transformation in sequential programming similar to:
      * <pre>{@code
      *     ExecutorService e = ...;
      *     List<Future<R>> futures = ...; // assume this is thread safe
@@ -1098,6 +1105,7 @@ public abstract class Publisher<T> {
      * @return A new {@link Publisher} that emits all items emitted by each single produced by {@code mapper}.
      *
      * @see <a href="https://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
+     * @see #flatMapConcatSingleDelayError(Function, int)
      */
     public final <R> Publisher<R> flatMapMergeSingleDelayError(
             Function<? super T, ? extends Single<? extends R>> mapper, int maxConcurrency, int maxDelayedErrorsHint) {
@@ -1322,16 +1330,16 @@ public abstract class Publisher<T> {
     }
 
     /**
-     * Map each element of this {@link Publisher} into a {@link Single}&lt;{@link R}&gt; and flatten all signals
-     * emitted from each mapped {@link Single}&lt;{@link R}&gt; into the returned {@link Publisher}&lt;{@link R}&gt;.
-     * Each mapped {@link Single}&lt;{@link R}&gt; maybe subscribed to concurrently but the results are emitted in
-     * the same order as this {@link Publisher}.
+     * This method is similar to {@link #map(Function)} but the result is asynchronous. More specifically, map each
+     * element of this {@link Publisher} into a {@link Single}&lt;{@link R}&gt; and flatten all signals emitted from
+     * each mapped {@link Single}&lt;{@link R}&gt; into the returned {@link Publisher}&lt;{@link R}&gt;. Each mapped
+     * {@link Single}&lt;{@link R}&gt; maybe subscribed to concurrently but the results are emitted in the same order as
+     * this {@link Publisher}.
      * <p>
      * To control the amount of concurrent processing done by this operator see
      * {@link #flatMapConcatSingle(Function, int)}.
      * <p>
-     * This method is similar to {@link #map(Function)} but the result is asynchronous, and provides a data
-     * transformation in sequential programming similar to:
+     * Provides a data transformation in sequential programming similar to:
      * <pre>{@code
      *     ExecutorService e = ...;
      *     List<Future<R>> futures = ...; // assume this is thread safe
@@ -1352,19 +1360,20 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
      * @see #flatMapConcatSingle(Function, int)
+     * @see #flatMapMergeSingle(Function)
      */
     public final <R> Publisher<R> flatMapConcatSingle(Function<? super T, ? extends Single<? extends R>> mapper) {
         return PublisherFlatMapConcatUtils.flatMapConcatSingle(this, mapper);
     }
 
     /**
-     * Map each element of this {@link Publisher} into a {@link Single}&lt;{@link R}&gt; and flatten all signals
-     * emitted from each mapped {@link Single}&lt;{@link R}&gt; into the returned {@link Publisher}&lt;{@link R}&gt;.
-     * Each mapped {@link Single}&lt;{@link R}&gt; maybe subscribed to concurrently but the results are emitted in
-     * the same order as this {@link Publisher}.
+     * This method is similar to {@link #map(Function)} but the result is asynchronous. More specifically, map each
+     * element of this {@link Publisher} into a {@link Single}&lt;{@link R}&gt; and flatten all signals emitted from
+     * each mapped {@link Single}&lt;{@link R}&gt; into the returned {@link Publisher}&lt;{@link R}&gt;. Each mapped
+     * {@link Single}&lt;{@link R}&gt; maybe subscribed to concurrently but the results are emitted in the same order as
+     * this {@link Publisher}.
      * <p>
-     * This method is similar to {@link #map(Function)} but the result is asynchronous, and provides a data
-     * transformation in sequential programming similar to:
+     * Provides a data transformation in sequential programming similar to:
      * <pre>{@code
      *     ExecutorService e = ...;
      *     List<Future<R>> futures = ...; // assume this is thread safe
@@ -1386,6 +1395,7 @@ public abstract class Publisher<T> {
      * @return A new {@link Publisher} that emits all items emitted by each single produced by {@code mapper}.
      *
      * @see <a href="http://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
+     * @see #flatMapMergeSingle(Function, int) 
      */
     public final <R> Publisher<R> flatMapConcatSingle(Function<? super T, ? extends Single<? extends R>> mapper,
                                                       int maxConcurrency) {
@@ -1393,17 +1403,17 @@ public abstract class Publisher<T> {
     }
 
     /**
-     * Map each element of this {@link Publisher} into a {@link Single}&lt;{@link R}&gt; and flatten all signals
-     * emitted from each mapped {@link Single}&lt;{@link R}&gt; into the returned {@link Publisher}&lt;{@link R}&gt;.
-     * Each mapped {@link Single}&lt;{@link R}&gt; maybe subscribed to concurrently but the results are emitted in
-     * the same order as this {@link Publisher}.
+     * This method is similar to {@link #map(Function)} but the result is asynchronous. More specifically, map each
+     * element of this {@link Publisher} into a {@link Single}&lt;{@link R}&gt; and flatten all signals emitted from
+     * each mapped {@link Single}&lt;{@link R}&gt; into the returned {@link Publisher}&lt;{@link R}&gt;. Each mapped
+     * {@link Single}&lt;{@link R}&gt; maybe subscribed to concurrently but the results are emitted in the same order as
+     * this {@link Publisher}.
      * <p>
      * The behavior is the same as {@link #flatMapConcatSingle(Function)} with the exception that if any
      * {@link Single} returned by {@code mapper}, terminates with an error, the returned {@link Publisher} will not
      * terminate until this {@link Publisher} and all {@link Single}s to terminate.
      * <p>
-     * This method is similar to {@link #map(Function)} but the result is asynchronous, and provides a data
-     * transformation in sequential programming similar to:
+     * Provides a data transformation in sequential programming similar to:
      * <pre>{@code
      *     ExecutorService e = ...;
      *     List<Future<R>> futures = ...; // assume this is thread safe
@@ -1430,6 +1440,7 @@ public abstract class Publisher<T> {
      *
      * @see <a href="https://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
      * @see #flatMapConcatSingleDelayError(Function, int)
+     * @see #flatMapMergeSingleDelayError(Function)
      */
     public final <R> Publisher<R> flatMapConcatSingleDelayError(
             Function<? super T, ? extends Single<? extends R>> mapper) {
@@ -1437,17 +1448,17 @@ public abstract class Publisher<T> {
     }
 
     /**
-     * Map each element of this {@link Publisher} into a {@link Single}&lt;{@link R}&gt; and flatten all signals
-     * emitted from each mapped {@link Single}&lt;{@link R}&gt; into the returned {@link Publisher}&lt;{@link R}&gt;.
-     * Each mapped {@link Single}&lt;{@link R}&gt; maybe subscribed to concurrently but the results are emitted in
-     * the same order as this {@link Publisher}.
+     * This method is similar to {@link #map(Function)} but the result is asynchronous. More specifically, map each
+     * element of this {@link Publisher} into a {@link Single}&lt;{@link R}&gt; and flatten all signals emitted from
+     * each mapped {@link Single}&lt;{@link R}&gt; into the returned {@link Publisher}&lt;{@link R}&gt;. Each mapped
+     * {@link Single}&lt;{@link R}&gt; maybe subscribed to concurrently but the results are emitted in the same order as
+     * this {@link Publisher}.
      * <p>
      * The behavior is the same as {@link #flatMapConcatSingle(Function)} with the exception that if any
      * {@link Single} returned by {@code mapper}, terminates with an error, the returned {@link Publisher} will not
      * terminate until this {@link Publisher} and all {@link Single}s to terminate.
      * <p>
-     * This method is similar to {@link #map(Function)} but the result is asynchronous, and provides a data
-     * transformation in sequential programming similar to:
+     * Provides a data transformation in sequential programming similar to:
      * <pre>{@code
      *     ExecutorService e = ...;
      *     List<Future<R>> futures = ...; // assume this is thread safe
@@ -1475,6 +1486,7 @@ public abstract class Publisher<T> {
      * @return A new {@link Publisher} that emits all items emitted by each single produced by {@code mapper}.
      *
      * @see <a href="https://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
+     * @see #flatMapMergeSingleDelayError(Function, int)
      */
     public final <R> Publisher<R> flatMapConcatSingleDelayError(
             Function<? super T, ? extends Single<? extends R>> mapper, int maxConcurrency) {

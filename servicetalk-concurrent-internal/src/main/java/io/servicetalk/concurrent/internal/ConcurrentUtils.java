@@ -17,7 +17,6 @@ package io.servicetalk.concurrent.internal;
 
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
@@ -77,36 +76,6 @@ public final class ConcurrentUtils {
      */
     public static <T> boolean releaseLock(AtomicIntegerFieldUpdater<T> lockUpdater, T owner) {
         return lockUpdater.getAndSet(owner, CONCURRENT_IDLE) == CONCURRENT_EMITTING;
-    }
-
-    /**
-     * Acquire a lock that is exclusively held with no re-entry, but attempts to acquire the lock while it is
-     * held can be detected by {@link #releaseLock(AtomicInteger)}.
-     * @param lock The {@link AtomicInteger} used to control the lock state.
-     * @return {@code true} if the lock was acquired, {@code false} otherwise.
-     */
-    public static boolean tryAcquireLock(AtomicInteger lock) {
-        for (;;) {
-            final int prevEmitting = lock.get();
-            if (prevEmitting == CONCURRENT_IDLE) {
-                if (lock.compareAndSet(CONCURRENT_IDLE, CONCURRENT_EMITTING)) {
-                    return true;
-                }
-            } else if (lock.compareAndSet(prevEmitting, CONCURRENT_PENDING)) {
-                return false;
-            }
-        }
-    }
-
-    /**
-     * Release a lock that was previously acquired via {@link #tryAcquireLock(AtomicInteger)}.
-     * @param lock The {@link AtomicInteger} used to control the lock state.
-     * @return {@code true} if the lock was released, and no other attempts were made to acquire the lock while it
-     * was held. {@code false} if the lock was released but another attempt was made to acquire the lock before it was
-     * released.
-     */
-    public static boolean releaseLock(AtomicInteger lock) {
-        return lock.getAndSet(CONCURRENT_IDLE) == CONCURRENT_EMITTING;
     }
 
     /**

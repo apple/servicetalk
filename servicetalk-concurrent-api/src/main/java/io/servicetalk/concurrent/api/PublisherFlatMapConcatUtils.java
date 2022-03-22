@@ -19,7 +19,7 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource;
 
 import java.util.Queue;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
@@ -36,50 +36,51 @@ final class PublisherFlatMapConcatUtils {
 
     static <T, R> Publisher<R> flatMapConcatSingle(final Publisher<T> publisher,
                                                    final Function<? super T, ? extends Single<? extends R>> mapper) {
-        return defer(() -> {
-            final Queue<Item<R>> results = newUnboundedSpscQueue(4);
-            final AtomicInteger consumerLock = new AtomicInteger();
-            return publisher.flatMapMergeSingle(orderedMapper(mapper, results, consumerLock))
-                    .shareContextOnSubscribe();
-        });
+        return defer(() -> publisher.flatMapMergeSingle(new OrderedMapper<>(mapper, newUnboundedSpscQueue(4)))
+                .shareContextOnSubscribe());
     }
 
     static <T, R> Publisher<R> flatMapConcatSingleDelayError(
             final Publisher<T> publisher, final Function<? super T, ? extends Single<? extends R>> mapper) {
-        return defer(() -> {
-            final Queue<Item<R>> results = newUnboundedSpscQueue(4);
-            final AtomicInteger consumerLock = new AtomicInteger();
-            return publisher.flatMapMergeSingleDelayError(orderedMapper(mapper, results, consumerLock))
-                    .shareContextOnSubscribe();
-        });
+        return defer(() -> publisher.flatMapMergeSingleDelayError(new OrderedMapper<>(mapper, newUnboundedSpscQueue(4)))
+                .shareContextOnSubscribe());
     }
 
     static <T, R> Publisher<R> flatMapConcatSingle(final Publisher<T> publisher,
                                                    final Function<? super T, ? extends Single<? extends R>> mapper,
                                                    final int maxConcurrency) {
-        return defer(() -> {
-            final Queue<Item<R>> results = newUnboundedSpscQueue(min(8, maxConcurrency));
-            final AtomicInteger consumerLock = new AtomicInteger();
-            return publisher.flatMapMergeSingle(orderedMapper(mapper, results, consumerLock), maxConcurrency)
-                    .shareContextOnSubscribe();
-        });
+        return defer(() ->
+                publisher.flatMapMergeSingle(new OrderedMapper<>(mapper,
+                                newUnboundedSpscQueue(min(8, maxConcurrency))), maxConcurrency)
+                        .shareContextOnSubscribe());
     }
 
     static <T, R> Publisher<R> flatMapConcatSingleDelayError(
             final Publisher<T> publisher, final Function<? super T, ? extends Single<? extends R>> mapper,
             final int maxConcurrency) {
-        return defer(() -> {
-            final Queue<Item<R>> results = newUnboundedSpscQueue(min(8, maxConcurrency));
-            final AtomicInteger consumerLock = new AtomicInteger();
-            return publisher.flatMapMergeSingleDelayError(orderedMapper(mapper, results, consumerLock), maxConcurrency)
-                    .shareContextOnSubscribe();
-        });
+        return defer(() ->
+                publisher.flatMapMergeSingleDelayError(new OrderedMapper<>(mapper,
+                                newUnboundedSpscQueue(min(8, maxConcurrency))), maxConcurrency)
+                        .shareContextOnSubscribe());
     }
 
-    private static <T, R> Function<? super T, Single<? extends R>> orderedMapper(
-            final Function<? super T, ? extends Single<? extends R>> mapper,
-            final Queue<Item<R>> results, final AtomicInteger consumerLock) {
-        return t -> {
+    private static final class OrderedMapper<T, R> implements Function<T, Single<R>> {
+        @SuppressWarnings("rawtypes")
+        private static final AtomicIntegerFieldUpdater<OrderedMapper> consumerLockUpdater =
+                AtomicIntegerFieldUpdater.newUpdater(OrderedMapper.class, "consumerLock");
+        private final Function<? super T, ? extends Single<? extends R>> mapper;
+        private final Queue<Item<R>> results;
+        @SuppressWarnings("unused")
+        private volatile int consumerLock;
+
+        private OrderedMapper(final Function<? super T, ? extends Single<? extends R>> mapper,
+                              final Queue<Item<R>> results) {
+            this.mapper = mapper;
+            this.results = results;
+        }
+
+        @Override
+        public Single<R> apply(final T t) {
             final Single<? extends R> single = mapper.apply(t);
             final Item<R> item = new Item<>();
             results.add(item);
@@ -96,35 +97,27 @@ final class PublisherFlatMapConcatUtils {
 
                         @Override
                         public void onSuccess(@Nullable final R result) {
-                            item.result = result;
-                            item.terminated = true;
+                            item.onSuccess(result);
                             tryPollQueue();
                         }
 
                         @Override
                         public void onError(final Throwable t) {
-                            item.cause = t;
-                            item.terminated = true;
+                            item.onError(t);
                             tryPollQueue();
                         }
 
                         private void tryPollQueue() {
                             boolean tryAcquire = true;
-                            while (tryAcquire && tryAcquireLock(consumerLock)) {
+                            while (tryAcquire && tryAcquireLock(consumerLockUpdater, OrderedMapper.this)) {
                                 try {
                                     Item<R> i;
-                                    while ((i = results.peek()) != null && i.terminated) {
+                                    while ((i = results.peek()) != null && i.tryTerminate()) {
                                         results.poll();
-                                        assert i.subscriber != null; // if terminated, must have a subscriber
-                                        if (i.cause != null) {
-                                            i.subscriber.onError(i.cause);
-                                        } else {
-                                            i.subscriber.onSuccess(i.result);
-                                        }
                                     }
                                     // flatMapMergeSingle takes care of exception propagation / cleanup
                                 } finally {
-                                    tryAcquire = !releaseLock(consumerLock);
+                                    tryAcquire = !releaseLock(consumerLockUpdater, OrderedMapper.this);
                                 }
                             }
                         }
@@ -133,16 +126,40 @@ final class PublisherFlatMapConcatUtils {
             }
             // The inner Single will determine if a copy is justified when we subscribe to it.
             .shareContextOnSubscribe();
-        };
+        }
     }
+
 
     private static final class Item<R> {
         @Nullable
         SingleSource.Subscriber<? super R> subscriber;
         @Nullable
-        R result;
-        @Nullable
-        Throwable cause;
-        boolean terminated;
+        private Object result;
+        // 0 = not terminated, 1 = success, 2 = error
+        private byte terminalState;
+
+        void onError(Throwable cause) {
+            terminalState = 2;
+            result = cause;
+        }
+
+        void onSuccess(@Nullable R r) {
+            terminalState = 1;
+            result = r;
+        }
+
+        @SuppressWarnings("unchecked")
+        boolean tryTerminate() {
+            assert subscriber != null; // if terminated, must have a subscriber
+            if (terminalState == 1) {
+                subscriber.onSuccess((R) result);
+                return true;
+            } else if (terminalState == 2) {
+                assert result != null;
+                subscriber.onError((Throwable) result);
+                return true;
+            }
+            return false;
+        }
     }
 }
