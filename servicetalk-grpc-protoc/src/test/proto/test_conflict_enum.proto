@@ -24,7 +24,7 @@ option java_package = "io.servicetalk.grpc.protoc.test.conflict.enums";
 
 service TestConflictEnumService {
   rpc DoNothing (TestConflictEnumReq) returns (TestConflictEnumResp);
-  // This name will conflict with conflict with internal generated interface.
+  // This name will conflict with internal generated interface.
   rpc DoNothingRpc (TestConflictEnumReq) returns (TestConflictEnumResp);
 }
 
@@ -32,7 +32,7 @@ enum TestConflictEnum { // This name conflicts with the file name!
   A = 0;
 }
 
-message DoNothingRpc {} // This name will conflict with conflict with internal generated interface.
+message DoNothingRpc {} // This name will conflict with internal generated interface.
 
 message TestConflictEnumReq {
     TestConflictEnum enum = 1;

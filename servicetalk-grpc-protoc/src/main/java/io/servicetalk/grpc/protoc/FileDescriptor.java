@@ -52,7 +52,7 @@ final class FileDescriptor implements GenerationContext {
     /**
      * Inferred behavior from protobuf-java is that if no suffix is explicitly provided the root file name will have
      * this suffix. See
-     * <a href="https://github.com/protocolbuffers/protobuf/blob/master/src/google/protobuf/compiler/java/java_name_resolver.cc#L49">java_name_resolver.cc</a>
+     * <a href="https://github.com/protocolbuffers/protobuf/blob/v3.19.4/src/google/protobuf/compiler/java/java_name_resolver.cc#L49">java_name_resolver.cc</a>
      */
     private static final String OUTER_CLASS_SUFFIX = "OuterClass";
     private final FileDescriptorProto protoFile;
@@ -65,7 +65,7 @@ final class FileDescriptor implements GenerationContext {
     @Nullable
     private final String typeNameSuffix;
     private final List<TypeSpec.Builder> serviceClassBuilders;
-    private final Set<String> reservedJavaTypeName;
+    private final Set<String> reservedJavaTypeName = new HashSet<>();
 
     /**
      * A single protoc file for which we will be generating classes
@@ -79,7 +79,6 @@ final class FileDescriptor implements GenerationContext {
         final String sanitizedProtoFileName = sanitizeFileName(protoFile.getName());
         protoPackageName = protoFile.hasPackage() ? protoFile.getPackage() : null;
         this.typeNameSuffix = typeNameSuffix;
-        reservedJavaTypeName = new HashSet<>();
 
         if (protoFile.hasOptions()) {
             final FileOptions fileOptions = protoFile.getOptions();
@@ -243,7 +242,7 @@ final class FileDescriptor implements GenerationContext {
     }
 
     /**
-     * See <a href="https://github.com/protocolbuffers/protobuf/blob/master/src/google/protobuf/compiler/java/java_name_resolver.cc#L192-L214">java_name_resolver.cc</a>.
+     * See <a href="https://github.com/protocolbuffers/protobuf/blob/v3.19.4/src/google/protobuf/compiler/java/java_name_resolver.cc#L192-L214">java_name_resolver.cc</a>.
      * @param sanitizedClassName The sanitized classname to check for conflicts.
      * @param protoFile The {@link FileDescriptorProto} to search for conflicting names in.
      * @return {@code true} if there is a name conflict, {@code false} otherwise.
