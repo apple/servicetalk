@@ -1395,7 +1395,7 @@ public abstract class Publisher<T> {
      * @return A new {@link Publisher} that emits all items emitted by each single produced by {@code mapper}.
      *
      * @see <a href="http://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
-     * @see #flatMapMergeSingle(Function, int) 
+     * @see #flatMapMergeSingle(Function, int)
      */
     public final <R> Publisher<R> flatMapConcatSingle(Function<? super T, ? extends Single<? extends R>> mapper,
                                                       int maxConcurrency) {

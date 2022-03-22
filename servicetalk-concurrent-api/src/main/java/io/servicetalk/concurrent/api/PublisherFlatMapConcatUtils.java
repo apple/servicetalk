@@ -129,7 +129,6 @@ final class PublisherFlatMapConcatUtils {
         }
     }
 
-
     private static final class Item<R> {
         @Nullable
         SingleSource.Subscriber<? super R> subscriber;
