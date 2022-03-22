@@ -26,7 +26,6 @@ apply plugin: "com.google.protobuf"
 dependencies {
   implementation platform("org.glassfish.jersey:jersey-bom:$jerseyVersion")
   testImplementation enforcedPlatform("org.glassfish.jersey:jersey-bom:$jerseyVersion")
-
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
 
   implementation project(":servicetalk-annotations")

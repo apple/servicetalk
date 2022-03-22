@@ -1,1 +1,1 @@
-* xref:{page-version}@servicetalk-data-jackson-jersey::index.adoc[JSON (Jackson)]
+* xref:{page-version}@servicetalk-data-protobuf-jersey::index.adoc[Protobuf]

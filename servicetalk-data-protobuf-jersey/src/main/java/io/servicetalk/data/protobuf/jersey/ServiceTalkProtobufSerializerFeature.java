@@ -15,17 +15,13 @@
  */
 package io.servicetalk.data.protobuf.jersey;
 
-import io.servicetalk.data.protobuf.ProtobufSerializerFactory;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.core.Configuration;
 import javax.ws.rs.core.Feature;
 import javax.ws.rs.core.FeatureContext;
-import javax.ws.rs.ext.ContextResolver;
 
-import static io.servicetalk.data.protobuf.ProtobufSerializerFactory.PROTOBUF;
 import static org.glassfish.jersey.CommonProperties.getValue;
 import static org.glassfish.jersey.internal.util.PropertiesHelper.getPropertyNameForRuntime;
 
@@ -54,23 +50,15 @@ public final class ServiceTalkProtobufSerializerFeature implements Feature {
             return false;
         }
 
-        // Prevent other not yet registered JSON features to register themselves
+        // Prevent other not yet registered Protobuf features to register themselves
         context.property(getPropertyNameForRuntime(PROTOBUF_FEATURE, config.getRuntimeType()),
                 ST_PROTOBUF_FEATURE);
 
         if (!config.isRegistered(ProtobufSerializerMessageBodyReaderWriter.class)) {
-            context.register(SerializationExceptionMapper.class);
+            context.register(ProtobufSerializationExceptionMapper.class);
             context.register(ProtobufSerializerMessageBodyReaderWriter.class);
         }
 
         return true;
-    }
-
-    /**
-     * Create a new {@link ContextResolver} for {@link ProtobufSerializerFactory} used by this feature.
-     * @return a {@link ContextResolver}.
-     */
-    public static ContextResolver<ProtobufSerializerFactory> newContextResolver() {
-        return new ProtobufSerializerFactoryContextResolver(PROTOBUF);
     }
 }

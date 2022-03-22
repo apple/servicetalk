@@ -27,7 +27,7 @@ import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 import static javax.ws.rs.core.Response.Status.UNSUPPORTED_MEDIA_TYPE;
 import static javax.ws.rs.core.Response.status;
 
-final class SerializationExceptionMapper implements ExceptionMapper<SerializationException> {
+final class JacksonSerializationExceptionMapper implements ExceptionMapper<SerializationException> {
     @Override
     public Response toResponse(final SerializationException e) {
         return status(isDueToBadUserData(e) ? UNSUPPORTED_MEDIA_TYPE : INTERNAL_SERVER_ERROR).build();

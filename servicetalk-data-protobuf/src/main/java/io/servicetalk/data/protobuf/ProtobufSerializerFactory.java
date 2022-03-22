@@ -66,10 +66,10 @@ public final class ProtobufSerializerFactory {
      * @param <T> The type to serialize and deserialize.
      * @return a {@link SerializerDeserializer}.
      */
+    @SuppressWarnings("unchecked")
     public <T extends MessageLite> SerializerDeserializer<T> serializerDeserializer(Class<T> clazz) {
-        @SuppressWarnings("unchecked")
-        final Parser<T> parser = (Parser<T>) parserMap.get(clazz);
-        return parser == null ? serializerDeserializer(newParser(clazz)) : serializerDeserializer(parser);
+        return serializerDeserializer(
+                (Parser<T>) parserMap.computeIfAbsent(clazz, clazz2 -> newParser((Class<T>) clazz2)));
     }
 
     /**
@@ -98,11 +98,10 @@ public final class ProtobufSerializerFactory {
      * described in <a href="https://developers.google.com/protocol-buffers/docs/techniques">Protobuf Streaming</a>.
      * @see VarIntLengthStreamingSerializer
      */
+    @SuppressWarnings("unchecked")
     public <T extends MessageLite> StreamingSerializerDeserializer<T> streamingSerializerDeserializer(Class<T> clazz) {
-        @SuppressWarnings("unchecked")
-        final Parser<T> parser = (Parser<T>) parserMap.get(clazz);
-        return parser == null ? streamingSerializerDeserializer(newParser(clazz)) :
-                streamingSerializerDeserializer(parser);
+        return streamingSerializerDeserializer(
+                (Parser<T>) parserMap.computeIfAbsent(clazz, clazz2 -> newParser((Class<T>) clazz2)));
     }
 
     @SuppressWarnings("unchecked")
@@ -113,13 +112,10 @@ public final class ProtobufSerializerFactory {
         } catch (IllegalAccessException | NoSuchMethodException e) {
             throw new IllegalArgumentException("Unable to find " + clazz + "." + PARSER_METHOD_NAME, e);
         }
-        final Parser<T> parser;
         try {
-            parser = (Parser<T>) mh.invokeExact();
+            return (Parser<T>) mh.invokeExact();
         } catch (Throwable e) {
             throw new IllegalArgumentException(clazz + "." + PARSER_METHOD_NAME + " threw when invoked", e);
         }
-        parserMap.put(clazz, parser);
-        return parser;
     }
 }

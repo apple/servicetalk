@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 /**
- * Configuration for bindings of ServiceTalk's jackson serialization while using the Jersey router.
+ * Configuration for bindings of ServiceTalk's protobuf serialization while using the Jersey router.
  */
 @ElementsAreNonnullByDefault
 package io.servicetalk.data.protobuf.jersey.config;

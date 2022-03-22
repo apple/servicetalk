@@ -365,7 +365,7 @@ been disabled, users must manually register
 `io.servicetalk.http.router.jersey.ServiceTalkFeature` with the JAX-RS
 `FeatureContext`. Note that if the ServiceTalk JSON provider is used,
 its feature would have to be registered too:
-`io.servicetalk.data.jackson.jersey.ServiceTalkProtobufSerializerFeature`
+`io.servicetalk.data.jackson.jersey.ServiceTalkJacksonSerializerFeature`
 
 == Advanced Features
 
