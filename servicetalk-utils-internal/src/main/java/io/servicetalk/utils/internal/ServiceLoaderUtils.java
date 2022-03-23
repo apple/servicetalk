@@ -37,7 +37,7 @@ public final class ServiceLoaderUtils {
      * Loads provider classes via {@link ServiceLoader}.
      *
      * @param clazz interface of abstract class which implementations should be loaded
-     * @param classLoader {@link ClassLoader} to use
+     * @param classLoader {@link ClassLoader} to be searched for provider instances
      * @param logger {@link Logger} to use
      * @param <T> type of the provider
      * @return a list of loaded providers for the specified class

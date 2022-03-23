@@ -36,6 +36,9 @@ public final class HttpProviders {
         /**
          * Returns a {@link SingleAddressHttpClientBuilder} based on the address and pre-initialized
          * {@link SingleAddressHttpClientBuilder}.
+         * <p>
+         * This method may return the pre-initialized {@code builder} as-is, or apply custom builder settings before
+         * returning it, or wrap it ({@link DelegatingSingleAddressHttpClientBuilder} may be helpful).
          *
          * @param address a remote address used to create a {@link SingleAddressHttpClientBuilder}, it can be resolved
          * or unresolved based on the factory used
@@ -44,6 +47,7 @@ public final class HttpProviders {
          * @param <R> the type of address after resolution (resolved address)
          * @return a {@link SingleAddressHttpClientBuilder} based on the address and pre-initialized
          * {@link SingleAddressHttpClientBuilder}.
+         * @see DelegatingSingleAddressHttpClientBuilder
          */
         <U, R> SingleAddressHttpClientBuilder<U, R> newBuilder(U address, SingleAddressHttpClientBuilder<U, R> builder);
     }
@@ -57,12 +61,16 @@ public final class HttpProviders {
         /**
          * Returns a {@link MultiAddressHttpClientBuilder} based on the pre-initialized
          * {@link MultiAddressHttpClientBuilder}.
+         * <p>
+         * This method may return the pre-initialized {@code builder} as-is, or apply custom builder settings before
+         * returning it, or wrap it ({@link DelegatingMultiAddressHttpClientBuilder} may be helpful).
          *
          * @param builder pre-initialized {@link MultiAddressHttpClientBuilder}
          * @param <U> the type of address before resolution (unresolved address)
          * @param <R> the type of address after resolution (resolved address)
          * @return a {@link MultiAddressHttpClientBuilder} based on the pre-initialized
          * {@link MultiAddressHttpClientBuilder}.
+         * @see DelegatingMultiAddressHttpClientBuilder
          */
         <U, R> MultiAddressHttpClientBuilder<U, R> newBuilder(MultiAddressHttpClientBuilder<U, R> builder);
     }
@@ -75,10 +83,14 @@ public final class HttpProviders {
 
         /**
          * Returns a {@link HttpServerBuilder} based on the address and pre-initialized {@link HttpServerBuilder}.
+         * <p>
+         * This method may return the pre-initialized {@code builder} as-is, or apply custom builder settings before
+         * returning it, or wrap it ({@link DelegatingHttpServerBuilder} may be helpful).
          *
          * @param address a server address used to create a {@link HttpServerBuilder}
          * @param builder pre-initialized {@link HttpServerBuilder}
          * @return a {@link HttpServerBuilder} based on the address and pre-initialized{@link HttpServerBuilder}.
+         * @see DelegatingHttpServerBuilder
          */
         HttpServerBuilder newBuilder(SocketAddress address, HttpServerBuilder builder);
     }

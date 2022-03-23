@@ -63,10 +63,13 @@ public final class GrpcClients {
     /**
      * Creates a {@link GrpcClientBuilder} for an address with default {@link LoadBalancer} and DNS
      * {@link ServiceDiscoverer}.
+     * <p>
+     * The returned builder can be customized using {@link GrpcClientBuilderProvider}.
      *
      * @param host host to connect to, resolved by default using a DNS {@link ServiceDiscoverer}.
      * @param port port to connect to
      * @return new builder for the address
+     * @see GrpcClientBuilderProvider
      */
     public static GrpcClientBuilder<HostAndPort, InetSocketAddress> forAddress(final String host, final int port) {
         return forAddress(HostAndPort.of(host, port));
@@ -75,10 +78,13 @@ public final class GrpcClients {
     /**
      * Creates a {@link GrpcClientBuilder} for an address with default {@link LoadBalancer} and DNS
      * {@link ServiceDiscoverer}.
+     * <p>
+     * The returned builder can be customized using {@link GrpcClientBuilderProvider}.
      *
      * @param address the {@code UnresolvedAddress} to connect to, resolved by default using a DNS
      * {@link ServiceDiscoverer}.
      * @return new builder for the address
+     * @see GrpcClientBuilderProvider
      */
     public static GrpcClientBuilder<HostAndPort, InetSocketAddress> forAddress(final HostAndPort address) {
         return applyProviders(address, new DefaultGrpcClientBuilder<>(() -> HttpClients.forSingleAddress(address)));
@@ -87,9 +93,12 @@ public final class GrpcClients {
     /**
      * Creates a {@link GrpcClientBuilder} for the passed {@code serviceName} with default {@link LoadBalancer} and a
      * DNS {@link ServiceDiscoverer} using <a href="https://tools.ietf.org/html/rfc2782">SRV record</a> lookups.
+     * <p>
+     * The returned builder can be customized using {@link GrpcClientBuilderProvider}.
      *
      * @param serviceName the service name to query via <a href="https://tools.ietf.org/html/rfc2782">SRV DNS</a>.
      * @return new builder for the address
+     * @see GrpcClientBuilderProvider
      */
     public static GrpcClientBuilder<String, InetSocketAddress> forServiceAddress(final String serviceName) {
         return applyProviders(serviceName,
@@ -98,10 +107,13 @@ public final class GrpcClients {
 
     /**
      * Creates a {@link GrpcClientBuilder} for a resolved address with default {@link LoadBalancer}.
+     * <p>
+     * The returned builder can be customized using {@link GrpcClientBuilderProvider}.
      *
      * @param host resolved host address to connect to.
      * @param port port to connect to
      * @return new builder for the address
+     * @see GrpcClientBuilderProvider
      */
     public static GrpcClientBuilder<HostAndPort, InetSocketAddress> forResolvedAddress(final String host,
                                                                                        final int port) {
@@ -110,9 +122,12 @@ public final class GrpcClients {
 
     /**
      * Creates a {@link GrpcClientBuilder} for an address with default {@link LoadBalancer}.
+     * <p>
+     * The returned builder can be customized using {@link GrpcClientBuilderProvider}.
      *
      * @param address the {@code ResolvedAddress} to connect to.
      * @return new builder for the address
+     * @see GrpcClientBuilderProvider
      */
     public static GrpcClientBuilder<HostAndPort, InetSocketAddress> forResolvedAddress(final HostAndPort address) {
         return applyProviders(address, new DefaultGrpcClientBuilder<>(() -> HttpClients.forResolvedAddress(address)));
@@ -120,9 +135,12 @@ public final class GrpcClients {
 
     /**
      * Creates a {@link GrpcClientBuilder} for an address with default {@link LoadBalancer}.
+     * <p>
+     * The returned builder can be customized using {@link GrpcClientBuilderProvider}.
      *
      * @param address the {@code InetSocketAddress} to connect to.
      * @return new builder for the address
+     * @see GrpcClientBuilderProvider
      */
     public static GrpcClientBuilder<InetSocketAddress, InetSocketAddress> forResolvedAddress(
             final InetSocketAddress address) {
@@ -131,6 +149,8 @@ public final class GrpcClients {
 
     /**
      * Creates a {@link GrpcClientBuilder} for an address with default {@link LoadBalancer}.
+     * <p>
+     * The returned builder can be customized using {@link GrpcClientBuilderProvider}.
      *
      * @param address the {@code ResolvedAddress} to connect. This address will also be used for the
      * {@link HttpHeaderNames#HOST}.
@@ -141,6 +161,7 @@ public final class GrpcClients {
      * if you want to disable this behavior.
      * @param <T> The type of {@link SocketAddress}.
      * @return new builder for the address
+     * @see GrpcClientBuilderProvider
      */
     public static <T extends SocketAddress> GrpcClientBuilder<T, T> forResolvedAddress(final T address) {
         return applyProviders(address, new DefaultGrpcClientBuilder<>(() -> HttpClients.forResolvedAddress(address)));
@@ -149,6 +170,8 @@ public final class GrpcClients {
     /**
      * Creates a {@link GrpcClientBuilder} for a custom address type with default {@link LoadBalancer} and user
      * provided {@link ServiceDiscoverer}.
+     * <p>
+     * The returned builder can be customized using {@link GrpcClientBuilderProvider}.
      *
      * @param serviceDiscoverer The {@link ServiceDiscoverer} to resolve addresses of remote servers to connect to.
      * The lifecycle of the provided {@link ServiceDiscoverer} should be managed by the caller.
@@ -156,6 +179,7 @@ public final class GrpcClients {
      * @param <U> the type of address before resolution (unresolved address)
      * @param <R> the type of address after resolution (resolved address)
      * @return new builder with provided configuration
+     * @see GrpcClientBuilderProvider
      */
     public static <U, R>
     GrpcClientBuilder<U, R> forAddress(final ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer,

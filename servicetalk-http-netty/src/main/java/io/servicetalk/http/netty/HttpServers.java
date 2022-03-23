@@ -17,7 +17,7 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.HttpProviders.HttpServerBuilderProvider;
 import io.servicetalk.http.api.HttpServerBuilder;
-import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.http.api.HttpServerContext;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +29,7 @@ import java.util.List;
 import static io.servicetalk.utils.internal.ServiceLoaderUtils.loadProviders;
 
 /**
- * Factory methods for building HTTP Servers backed by {@link ServerContext}.
+ * A factory to create {@link HttpServerContext HTTP servers}.
  */
 public final class HttpServers {
 
@@ -55,9 +55,12 @@ public final class HttpServers {
 
     /**
      * New {@link HttpServerBuilder} instance.
+     * <p>
+     * The returned builder can be customized using {@link HttpServerBuilderProvider}.
      *
-     * @param port The listen port for the server.
-     * @return a new builder.
+     * @param port The listen port for the server
+     * @return a new builder
+     * @see HttpServerBuilderProvider
      */
     public static HttpServerBuilder forPort(final int port) {
         final InetSocketAddress address = new InetSocketAddress(port);
@@ -66,9 +69,12 @@ public final class HttpServers {
 
     /**
      * New {@link HttpServerBuilder} instance.
+     * <p>
+     * The returned builder can be customized using {@link HttpServerBuilderProvider}.
      *
-     * @param address The listen {@link SocketAddress} for the server.
-     * @return a new builder.
+     * @param address The listen {@link SocketAddress} for the server
+     * @return a new builder
+     * @see HttpServerBuilderProvider
      */
     public static HttpServerBuilder forAddress(final SocketAddress address) {
         return applyProviders(address, new DefaultHttpServerBuilder(address));

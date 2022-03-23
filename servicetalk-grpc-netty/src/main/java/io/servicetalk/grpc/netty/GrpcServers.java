@@ -55,9 +55,12 @@ public final class GrpcServers {
 
     /**
      * New {@link GrpcServerBuilder} instance.
+     * <p>
+     * The returned builder can be customized using {@link GrpcServerBuilderProvider}.
      *
-     * @param port the listen port for the server.
-     * @return a new builder.
+     * @param port the listen port for the server
+     * @return a new builder
+     * @see GrpcServerBuilderProvider
      */
     public static GrpcServerBuilder forPort(final int port) {
         final InetSocketAddress address = new InetSocketAddress(port);
@@ -66,9 +69,12 @@ public final class GrpcServers {
 
     /**
      * New {@link GrpcServerBuilder} instance.
+     * <p>
+     * The returned builder can be customized using {@link GrpcServerBuilderProvider}.
      *
-     * @param address the listen {@link SocketAddress} for the server.
-     * @return a new builder.
+     * @param address the listen {@link SocketAddress} for the server
+     * @return a new builder
+     * @see GrpcServerBuilderProvider
      */
     public static GrpcServerBuilder forAddress(final SocketAddress address) {
         return applyProviders(address, new DefaultGrpcServerBuilder(() -> HttpServers.forAddress(address)));
