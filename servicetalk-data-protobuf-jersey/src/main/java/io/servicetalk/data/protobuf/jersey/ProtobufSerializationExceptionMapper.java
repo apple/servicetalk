@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,12 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.data.jackson.jersey;
+package io.servicetalk.data.protobuf.jersey;
 
 import io.servicetalk.serializer.api.SerializationException;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
+import com.google.protobuf.InvalidProtocolBufferException;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
@@ -27,13 +26,13 @@ import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 import static javax.ws.rs.core.Response.Status.UNSUPPORTED_MEDIA_TYPE;
 import static javax.ws.rs.core.Response.status;
 
-final class SerializationExceptionMapper implements ExceptionMapper<SerializationException> {
+final class ProtobufSerializationExceptionMapper implements ExceptionMapper<SerializationException> {
     @Override
     public Response toResponse(final SerializationException e) {
         return status(isDueToBadUserData(e) ? UNSUPPORTED_MEDIA_TYPE : INTERNAL_SERVER_ERROR).build();
     }
 
     private static boolean isDueToBadUserData(final SerializationException e) {
-        return e.getCause() instanceof JsonMappingException || e.getCause() instanceof JsonParseException;
+        return e.getCause() instanceof InvalidProtocolBufferException;
     }
 }
