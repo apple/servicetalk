@@ -58,11 +58,10 @@ import javax.ws.rs.ext.Providers;
 
 import static io.servicetalk.concurrent.api.Publisher.fromInputStream;
 import static io.servicetalk.concurrent.internal.FutureUtils.awaitResult;
-import static io.servicetalk.data.protobuf.jersey.ProtobufMediaTypes.APPLICATION_PROTOBUF;
-import static io.servicetalk.data.protobuf.jersey.ProtobufMediaTypes.APPLICATION_PROTOBUF_TYPE;
-import static io.servicetalk.data.protobuf.jersey.ProtobufMediaTypes.APPLICATION_PROTOBUF_VAR_INT;
-import static io.servicetalk.data.protobuf.jersey.ProtobufMediaTypes.APPLICATION_PROTOBUF_VAR_INT_TYPE;
-import static io.servicetalk.data.protobuf.jersey.ProtobufSerializerMessageBodyReaderWriter.PRODUCES_CONSUMES_STR;
+import static io.servicetalk.data.protobuf.jersey.ProtobufMediaTypes.APPLICATION_X_PROTOBUF;
+import static io.servicetalk.data.protobuf.jersey.ProtobufMediaTypes.APPLICATION_X_PROTOBUF_TYPE;
+import static io.servicetalk.data.protobuf.jersey.ProtobufMediaTypes.APPLICATION_X_PROTOBUF_VAR_INT;
+import static io.servicetalk.data.protobuf.jersey.ProtobufMediaTypes.APPLICATION_X_PROTOBUF_VAR_INT_TYPE;
 import static io.servicetalk.http.router.jersey.internal.BufferPublisherInputStream.handleEntityStream;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.setResponseBufferPublisher;
 import static javax.ws.rs.Priorities.ENTITY_CODER;
@@ -70,11 +69,10 @@ import static javax.ws.rs.Priorities.ENTITY_CODER;
 // Less priority than the *MessageBodyReaderWriters provided by the Jersey Router itself to avoid attempting
 // Protobuf (de)serialization of core types like Buffer.
 @Priority(ENTITY_CODER + 100)
-@Consumes(PRODUCES_CONSUMES_STR)
-@Produces(PRODUCES_CONSUMES_STR)
+@Consumes({APPLICATION_X_PROTOBUF, APPLICATION_X_PROTOBUF_VAR_INT})
+@Produces({APPLICATION_X_PROTOBUF, APPLICATION_X_PROTOBUF_VAR_INT})
 final class ProtobufSerializerMessageBodyReaderWriter implements MessageBodyReader<Object>,
                                                                  MessageBodyWriter<Object> {
-    static final String PRODUCES_CONSUMES_STR = APPLICATION_PROTOBUF + "," + APPLICATION_PROTOBUF_VAR_INT;
     // We can not use `@Context ConnectionContext` directly because we would not see the latest version
     // in case it has been rebound as part of offloading.
     @Context
@@ -209,12 +207,12 @@ final class ProtobufSerializerMessageBodyReaderWriter implements MessageBodyRead
 
     private static boolean isSupportedMediaType(final Class<?> type, final MediaType mediaType) {
         return (!Publisher.class.equals(type) &&
-                (mediaType.getType().equalsIgnoreCase(APPLICATION_PROTOBUF_TYPE.getType()) &&
-                    (mediaType.getSubtype().equalsIgnoreCase(APPLICATION_PROTOBUF_TYPE.getSubtype()) ||
-                    mediaType.getSubtype().toLowerCase().endsWith('+' + APPLICATION_PROTOBUF_TYPE.getSubtype())))) ||
+                (mediaType.getType().equalsIgnoreCase(APPLICATION_X_PROTOBUF_TYPE.getType()) &&
+                    (mediaType.getSubtype().equalsIgnoreCase(APPLICATION_X_PROTOBUF_TYPE.getSubtype()) ||
+                    mediaType.getSubtype().toLowerCase().endsWith('+' + APPLICATION_X_PROTOBUF_TYPE.getSubtype())))) ||
                 (Publisher.class.equals(type) &&
-                        mediaType.getType().equalsIgnoreCase(APPLICATION_PROTOBUF_VAR_INT_TYPE.getType()) &&
-                        mediaType.getSubtype().equalsIgnoreCase(APPLICATION_PROTOBUF_VAR_INT_TYPE.getSubtype()));
+                        mediaType.getType().equalsIgnoreCase(APPLICATION_X_PROTOBUF_VAR_INT_TYPE.getType()) &&
+                        mediaType.getSubtype().equalsIgnoreCase(APPLICATION_X_PROTOBUF_VAR_INT_TYPE.getSubtype()));
     }
 
     @SuppressWarnings("unchecked")

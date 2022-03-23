@@ -5,7 +5,10 @@ thee `InputStream` adaptation that kicks in with out-of-the-box body readers and
 
 CAUTION: This serializer can not currently be used with Server-Sent Events (SSE).
 
-== VarInt encoding
+== Single Item Encoding
+`Single` and Plain-Old-Protobufs are currently associated with the `application/x-protobuf` content encoding.
+
+== VarInt Encoding
 `Publisher` encoding currently uses
 link:https://developers.google.com/protocol-buffers/docs/encoding[base 128 VarInt protobuf encoding] and is currently
 associated with `application/x-protobuf-var-int` content encoding.

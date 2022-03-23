@@ -32,8 +32,8 @@ import java.util.Map;
 import java.util.Set;
 import javax.ws.rs.core.Application;
 
-import static io.servicetalk.data.protobuf.jersey.ProtobufMediaTypes.APPLICATION_PROTOBUF;
-import static io.servicetalk.data.protobuf.jersey.ProtobufMediaTypes.APPLICATION_PROTOBUF_VAR_INT;
+import static io.servicetalk.data.protobuf.jersey.ProtobufMediaTypes.APPLICATION_X_PROTOBUF;
+import static io.servicetalk.data.protobuf.jersey.ProtobufMediaTypes.APPLICATION_X_PROTOBUF_VAR_INT;
 import static io.servicetalk.data.protobuf.jersey.ServiceTalkProtobufSerializerFeature.PROTOBUF_FEATURE;
 import static io.servicetalk.data.protobuf.jersey.ServiceTalkProtobufSerializerFeature.ST_PROTOBUF_FEATURE;
 import static io.servicetalk.data.protobuf.jersey.resources.PublisherProtobufResources.PATH;
@@ -85,8 +85,8 @@ class PublisherProtobufResourcesTest extends AbstractJerseyStreamingHttpServiceT
             HelloRequest.newBuilder().setName("world2").build().writeDelimitedTo(reqStream);
             HelloReply.newBuilder().setMessage("hello world1").build().writeDelimitedTo(respStream);
             HelloReply.newBuilder().setMessage("hello world2").build().writeDelimitedTo(respStream);
-            sendAndAssertResponse(post(path, reqStream.toByteArray(), APPLICATION_PROTOBUF_VAR_INT), expectedStatus,
-                    APPLICATION_PROTOBUF_VAR_INT,
+            sendAndAssertResponse(post(path, reqStream.toByteArray(), APPLICATION_X_PROTOBUF_VAR_INT), expectedStatus,
+                    APPLICATION_X_PROTOBUF_VAR_INT,
                     equalTo(new String(respStream.toByteArray(), UTF_8)), __ -> null);
         } catch (IOException e) {
             throw new AssertionError(e);
@@ -107,12 +107,12 @@ class PublisherProtobufResourcesTest extends AbstractJerseyStreamingHttpServiceT
             HelloRequest.newBuilder().setName("world2").build().writeDelimitedTo(reqStream);
             if (expectInternalServerError) {
                 sendAndAssertNoResponse(post(path + "?fail=true", reqStream.toByteArray(),
-                                APPLICATION_PROTOBUF_VAR_INT), INTERNAL_SERVER_ERROR);
+                        APPLICATION_X_PROTOBUF_VAR_INT), INTERNAL_SERVER_ERROR);
             } else {
                 ContentReadException e = assertThrows(ContentReadException.class, () -> sendAndAssertResponse(
-                        post(path + "?fail=true", reqStream.toByteArray(), APPLICATION_PROTOBUF_VAR_INT),
+                        post(path + "?fail=true", reqStream.toByteArray(), APPLICATION_X_PROTOBUF_VAR_INT),
                         // For streaming the headers are sent before the exception is thrown, so OK is expected.
-                        OK, APPLICATION_PROTOBUF_VAR_INT, ""));
+                        OK, APPLICATION_X_PROTOBUF_VAR_INT, ""));
                 // We expect that the response parsing failed because the channel was closed after resp headers sent.
                 assertThat(getRootCause(e), instanceOf(IOException.class));
             }
@@ -139,8 +139,8 @@ class PublisherProtobufResourcesTest extends AbstractJerseyStreamingHttpServiceT
         try (ByteArrayOutputStream reqStream = new ByteArrayOutputStream()) {
             HelloRequest.newBuilder().setName("world1").build().writeDelimitedTo(reqStream);
             HelloRequest.newBuilder().setName("world2").build().writeDelimitedTo(reqStream);
-            sendAndAssertResponse(post(path, reqStream.toByteArray(), APPLICATION_PROTOBUF_VAR_INT), expectedStatus,
-                    APPLICATION_PROTOBUF,
+            sendAndAssertResponse(post(path, reqStream.toByteArray(), APPLICATION_X_PROTOBUF_VAR_INT), expectedStatus,
+                    APPLICATION_X_PROTOBUF,
                     equalTo(new String(HelloReply.newBuilder().setMessage("hello world1world2")
                             .build().toByteArray(), UTF_8)), __ -> null);
         } catch (IOException e) {
@@ -167,7 +167,7 @@ class PublisherProtobufResourcesTest extends AbstractJerseyStreamingHttpServiceT
             HelloRequest.newBuilder().setName("world1").build().writeDelimitedTo(reqStream);
             HelloRequest.newBuilder().setName("world2").build().writeDelimitedTo(reqStream);
             sendAndAssertNoResponse(post(path + "?fail=true", reqStream.toByteArray(),
-                    APPLICATION_PROTOBUF_VAR_INT), INTERNAL_SERVER_ERROR);
+                    APPLICATION_X_PROTOBUF_VAR_INT), INTERNAL_SERVER_ERROR);
         } catch (Throwable e) {
             // The connection may close before the response comes in due to race in error handling.
             assertThat(getRootCause(e), instanceOf(IOException.class));

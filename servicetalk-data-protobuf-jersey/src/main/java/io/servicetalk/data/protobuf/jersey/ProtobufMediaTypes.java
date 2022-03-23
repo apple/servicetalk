@@ -26,30 +26,30 @@ import javax.ws.rs.core.MediaType;
 public final class ProtobufMediaTypes {
     /**
      * {@code "application/x-protobuf"}.
-     * @see #APPLICATION_PROTOBUF_TYPE
-     * @see HttpHeaderValues#APPLICATION_PROTOBUF
+     * @see #APPLICATION_X_PROTOBUF_TYPE
+     * @see HttpHeaderValues#APPLICATION_X_PROTOBUF
      */
-    public static final String APPLICATION_PROTOBUF = "application/x-protobuf";
+    public static final String APPLICATION_X_PROTOBUF = "application/x-protobuf";
     /**
      * {@code "application/x-protobuf-var-int"}
      * <a href="https://developers.google.com/protocol-buffers/docs/encoding">base 128 VarInt protobuf encoding</a>.
      * Should be used with {@link Publisher} to stream data.
-     * @see #APPLICATION_PROTOBUF_VAR_INT_TYPE
-     * @see HttpHeaderValues#APPLICATION_PROTOBUF_VAR_INT
+     * @see #APPLICATION_X_PROTOBUF_VAR_INT_TYPE
+     * @see HttpHeaderValues#APPLICATION_X_PROTOBUF_VAR_INT
      */
-    public static final String APPLICATION_PROTOBUF_VAR_INT = "application/x-protobuf-var-int";
+    public static final String APPLICATION_X_PROTOBUF_VAR_INT = "application/x-protobuf-var-int";
     /**
      * {@code "application/x-protobuf"}.
-     * @see #APPLICATION_PROTOBUF
+     * @see #APPLICATION_X_PROTOBUF
      */
-    public static final MediaType APPLICATION_PROTOBUF_TYPE = new MediaType("application", "x-protobuf");
+    public static final MediaType APPLICATION_X_PROTOBUF_TYPE = new MediaType("application", "x-protobuf");
     /**
      * {@code "application/x-protobuf-var-int"}
      * <a href="https://developers.google.com/protocol-buffers/docs/encoding">base 128 VarInt protobuf encoding</a>.
      * Should be used with {@link Publisher} to stream data.
-     * @see #APPLICATION_PROTOBUF_VAR_INT
+     * @see #APPLICATION_X_PROTOBUF_VAR_INT
      */
-    public static final MediaType APPLICATION_PROTOBUF_VAR_INT_TYPE =
+    public static final MediaType APPLICATION_X_PROTOBUF_VAR_INT_TYPE =
             new MediaType("application", "x-protobuf-var-int");
 
     private ProtobufMediaTypes() {

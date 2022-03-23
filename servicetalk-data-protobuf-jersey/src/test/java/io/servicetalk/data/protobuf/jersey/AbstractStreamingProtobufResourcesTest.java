@@ -33,7 +33,7 @@ import javax.ws.rs.core.Application;
 
 import static io.servicetalk.data.protobuf.jersey.ServiceTalkProtobufSerializerFeature.PROTOBUF_FEATURE;
 import static io.servicetalk.data.protobuf.jersey.ServiceTalkProtobufSerializerFeature.ST_PROTOBUF_FEATURE;
-import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_PROTOBUF;
+import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_X_PROTOBUF;
 import static io.servicetalk.http.api.HttpResponseStatus.ACCEPTED;
 import static io.servicetalk.http.api.HttpResponseStatus.BAD_REQUEST;
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
@@ -79,7 +79,7 @@ abstract class AbstractStreamingProtobufResourcesTest extends AbstractJerseyStre
 
     private void testPostMap(final String path, final HttpResponseStatus expectedStatus) {
         sendAndAssertResponse(post(path, HelloRequest.newBuilder().setName("world").build().toByteArray(),
-                        APPLICATION_PROTOBUF), expectedStatus, APPLICATION_PROTOBUF,
+                        APPLICATION_X_PROTOBUF), expectedStatus, APPLICATION_X_PROTOBUF,
                 equalTo(new String(
                         HelloReply.newBuilder().setMessage("hello world").build().toByteArray(), UTF_8)), __ -> null);
     }
@@ -100,7 +100,7 @@ abstract class AbstractStreamingProtobufResourcesTest extends AbstractJerseyStre
 
     private void testMapFailure(final String path) {
         sendAndAssertNoResponse(post(path + "?fail=true",
-                        HelloRequest.newBuilder().setName("world").build().toByteArray(), APPLICATION_PROTOBUF),
+                        HelloRequest.newBuilder().setName("world").build().toByteArray(), APPLICATION_X_PROTOBUF),
                 INTERNAL_SERVER_ERROR);
     }
 
@@ -120,6 +120,6 @@ abstract class AbstractStreamingProtobufResourcesTest extends AbstractJerseyStre
 
     private void testPostBrokenMap(final String path) {
         byte[] req = HelloRequest.newBuilder().setName("world").build().toByteArray();
-        sendAndAssertStatusOnly(post(path, copyOfRange(req, 0, req.length - 1), APPLICATION_PROTOBUF), BAD_REQUEST);
+        sendAndAssertStatusOnly(post(path, copyOfRange(req, 0, req.length - 1), APPLICATION_X_PROTOBUF), BAD_REQUEST);
     }
 }

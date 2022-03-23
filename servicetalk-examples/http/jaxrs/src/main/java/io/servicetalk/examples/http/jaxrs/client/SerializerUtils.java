@@ -27,8 +27,8 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import static io.servicetalk.data.protobuf.ProtobufSerializerFactory.PROTOBUF;
-import static io.servicetalk.data.protobuf.jersey.ProtobufMediaTypes.APPLICATION_PROTOBUF;
-import static io.servicetalk.data.protobuf.jersey.ProtobufMediaTypes.APPLICATION_PROTOBUF_VAR_INT;
+import static io.servicetalk.data.protobuf.jersey.ProtobufMediaTypes.APPLICATION_X_PROTOBUF;
+import static io.servicetalk.data.protobuf.jersey.ProtobufMediaTypes.APPLICATION_X_PROTOBUF_VAR_INT;
 import static io.servicetalk.http.api.HeaderUtils.hasContentType;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpSerializers.serializer;
@@ -42,13 +42,13 @@ import static io.servicetalk.http.api.HttpSerializers.streamingSerializer;
  */
 public final class SerializerUtils {
     private static final Consumer<HttpHeaders> CONTENT_TYPE_SETTER =
-            headers -> headers.set(CONTENT_TYPE, APPLICATION_PROTOBUF);
+            headers -> headers.set(CONTENT_TYPE, APPLICATION_X_PROTOBUF);
     private static final Predicate<HttpHeaders> CONTENT_TYPE_VALIDATOR =
-            headers -> hasContentType(headers, APPLICATION_PROTOBUF, null);
+            headers -> hasContentType(headers, APPLICATION_X_PROTOBUF, null);
     private static final Consumer<HttpHeaders> VAR_INT_CONTENT_TYPE_SETTER =
-            headers -> headers.set(CONTENT_TYPE, APPLICATION_PROTOBUF_VAR_INT);
+            headers -> headers.set(CONTENT_TYPE, APPLICATION_X_PROTOBUF_VAR_INT);
     private static final Predicate<HttpHeaders> VAR_INT_CONTENT_TYPE_VALIDATOR =
-            headers -> hasContentType(headers, APPLICATION_PROTOBUF_VAR_INT, null);
+            headers -> hasContentType(headers, APPLICATION_X_PROTOBUF_VAR_INT, null);
 
     public static final HttpSerializerDeserializer<HelloRequest> REQ_SERIALIZER =
             serializer(PROTOBUF.serializerDeserializer(HelloRequest.parser()),

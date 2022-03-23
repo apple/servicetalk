@@ -44,8 +44,8 @@ import javax.ws.rs.core.Response;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.fromInputStream;
-import static io.servicetalk.data.protobuf.jersey.ProtobufMediaTypes.APPLICATION_PROTOBUF;
-import static io.servicetalk.data.protobuf.jersey.ProtobufMediaTypes.APPLICATION_PROTOBUF_VAR_INT;
+import static io.servicetalk.data.protobuf.jersey.ProtobufMediaTypes.APPLICATION_X_PROTOBUF;
+import static io.servicetalk.data.protobuf.jersey.ProtobufMediaTypes.APPLICATION_X_PROTOBUF_VAR_INT;
 import static java.lang.Math.random;
 import static java.util.Collections.singletonMap;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -111,8 +111,8 @@ public class HelloWorldJaxRsResource {
      */
     @POST
     @Path("hello")
-    @Consumes(APPLICATION_PROTOBUF)
-    @Produces(APPLICATION_PROTOBUF)
+    @Consumes(APPLICATION_X_PROTOBUF)
+    @Produces(APPLICATION_X_PROTOBUF)
     public HelloReply hello(final HelloRequest request) {
         return HelloReply.newBuilder().setMessage("hello " + request.getName()).build();
     }
@@ -270,8 +270,8 @@ public class HelloWorldJaxRsResource {
      */
     @POST
     @Path("single-hello")
-    @Consumes(APPLICATION_PROTOBUF)
-    @Produces(APPLICATION_PROTOBUF)
+    @Consumes(APPLICATION_X_PROTOBUF)
+    @Produces(APPLICATION_X_PROTOBUF)
     public Single<HelloReply> hello(final Single<HelloRequest> single) {
         return single.map(request -> HelloReply.newBuilder().setMessage("hello " + request.getName()).build());
     }
@@ -287,8 +287,8 @@ public class HelloWorldJaxRsResource {
      */
     @POST
     @Path("publisher-hello")
-    @Consumes(APPLICATION_PROTOBUF_VAR_INT)
-    @Produces(APPLICATION_PROTOBUF_VAR_INT)
+    @Consumes(APPLICATION_X_PROTOBUF_VAR_INT)
+    @Produces(APPLICATION_X_PROTOBUF_VAR_INT)
     public Publisher<HelloReply> hello(final Publisher<HelloRequest> publisher) {
         return publisher.map(request -> HelloReply.newBuilder().setMessage("hello " + request.getName()).build());
     }

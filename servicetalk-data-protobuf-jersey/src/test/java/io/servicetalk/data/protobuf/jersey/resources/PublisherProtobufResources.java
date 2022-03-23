@@ -28,8 +28,8 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Response;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.data.protobuf.jersey.ProtobufMediaTypes.APPLICATION_PROTOBUF;
-import static io.servicetalk.data.protobuf.jersey.ProtobufMediaTypes.APPLICATION_PROTOBUF_VAR_INT;
+import static io.servicetalk.data.protobuf.jersey.ProtobufMediaTypes.APPLICATION_X_PROTOBUF;
+import static io.servicetalk.data.protobuf.jersey.ProtobufMediaTypes.APPLICATION_X_PROTOBUF_VAR_INT;
 import static io.servicetalk.data.protobuf.jersey.resources.PublisherProtobufResources.PATH;
 import static javax.ws.rs.core.Response.accepted;
 
@@ -39,8 +39,8 @@ public class PublisherProtobufResources {
 
     @POST
     @Path("map")
-    @Consumes(APPLICATION_PROTOBUF_VAR_INT)
-    @Produces(APPLICATION_PROTOBUF_VAR_INT)
+    @Consumes(APPLICATION_X_PROTOBUF_VAR_INT)
+    @Produces(APPLICATION_X_PROTOBUF_VAR_INT)
     public Publisher<HelloReply> postMap(@QueryParam("fail") final boolean fail,
                                          final Publisher<HelloRequest> publisher) {
         return publisher.map(request -> {
@@ -53,8 +53,8 @@ public class PublisherProtobufResources {
 
     @POST
     @Path("map-single")
-    @Consumes(APPLICATION_PROTOBUF_VAR_INT)
-    @Produces(APPLICATION_PROTOBUF)
+    @Consumes(APPLICATION_X_PROTOBUF_VAR_INT)
+    @Produces(APPLICATION_X_PROTOBUF)
     public Single<HelloReply> postMapSingle(@QueryParam("fail") final boolean fail,
                                             final Publisher<HelloRequest> publisher) {
         return publisher.collect(StringBuilder::new, (sb, request) -> {
@@ -68,8 +68,8 @@ public class PublisherProtobufResources {
 
     @POST
     @Path("map-single-response")
-    @Consumes(APPLICATION_PROTOBUF_VAR_INT)
-    @Produces(APPLICATION_PROTOBUF)
+    @Consumes(APPLICATION_X_PROTOBUF_VAR_INT)
+    @Produces(APPLICATION_X_PROTOBUF)
     public Single<Response> postPublisherSingleResponse(@QueryParam("fail") final boolean fail,
                                                         final Publisher<HelloRequest> publisher) {
         return postMapSingle(fail, publisher).map(m -> accepted(m).build());

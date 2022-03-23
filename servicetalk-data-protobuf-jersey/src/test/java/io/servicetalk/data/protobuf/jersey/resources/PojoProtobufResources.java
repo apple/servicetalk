@@ -26,7 +26,7 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Response;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.data.protobuf.jersey.ProtobufMediaTypes.APPLICATION_PROTOBUF;
+import static io.servicetalk.data.protobuf.jersey.ProtobufMediaTypes.APPLICATION_X_PROTOBUF;
 import static io.servicetalk.data.protobuf.jersey.resources.PojoProtobufResources.PATH;
 import static javax.ws.rs.core.Response.accepted;
 
@@ -36,8 +36,8 @@ public class PojoProtobufResources {
 
     @POST
     @Path("map")
-    @Consumes(APPLICATION_PROTOBUF)
-    @Produces(APPLICATION_PROTOBUF)
+    @Consumes(APPLICATION_X_PROTOBUF)
+    @Produces(APPLICATION_X_PROTOBUF)
     public HelloReply postPojo(@QueryParam("fail") final boolean fail, final HelloRequest request) {
         if (fail) {
             throw DELIBERATE_EXCEPTION;
@@ -47,8 +47,8 @@ public class PojoProtobufResources {
 
     @POST
     @Path("map-response")
-    @Consumes(APPLICATION_PROTOBUF)
-    @Produces(APPLICATION_PROTOBUF)
+    @Consumes(APPLICATION_X_PROTOBUF)
+    @Produces(APPLICATION_X_PROTOBUF)
     public Response postPojoResponse(@QueryParam("fail") final boolean fail, final HelloRequest request) {
         HelloReply reply = postPojo(fail, request);
         return accepted(reply).build();

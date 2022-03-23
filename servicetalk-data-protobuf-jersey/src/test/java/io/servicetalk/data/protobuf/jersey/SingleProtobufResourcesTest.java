@@ -26,10 +26,10 @@ import org.junit.jupiter.params.provider.EnumSource;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
-import static io.servicetalk.data.protobuf.jersey.ProtobufMediaTypes.APPLICATION_PROTOBUF_VAR_INT;
+import static io.servicetalk.data.protobuf.jersey.ProtobufMediaTypes.APPLICATION_X_PROTOBUF_VAR_INT;
 import static io.servicetalk.data.protobuf.jersey.PublisherProtobufResourcesTest.getRootCause;
 import static io.servicetalk.data.protobuf.jersey.resources.SingleProtobufResources.PATH;
-import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_PROTOBUF;
+import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_X_PROTOBUF;
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -55,7 +55,7 @@ class SingleProtobufResourcesTest extends AbstractStreamingProtobufResourcesTest
         try (ByteArrayOutputStream boas = new ByteArrayOutputStream()) {
             HelloReply.newBuilder().setMessage("hello world").build().writeDelimitedTo(boas);
             sendAndAssertResponse(post(path, HelloRequest.newBuilder().setName("world").build().toByteArray(),
-                            APPLICATION_PROTOBUF), expectedStatus, APPLICATION_PROTOBUF_VAR_INT,
+                            APPLICATION_X_PROTOBUF), expectedStatus, APPLICATION_X_PROTOBUF_VAR_INT,
                     equalTo(new String(boas.toByteArray(), UTF_8)), __ -> null);
         } catch (IOException e) {
             throw new AssertionError(e);
@@ -74,12 +74,12 @@ class SingleProtobufResourcesTest extends AbstractStreamingProtobufResourcesTest
         byte[] request = HelloRequest.newBuilder().setName("world1").build().toByteArray();
         if (expectInternalServerError) {
             sendAndAssertNoResponse(post(path + "?fail=true", request,
-                    APPLICATION_PROTOBUF), INTERNAL_SERVER_ERROR);
+                    APPLICATION_X_PROTOBUF), INTERNAL_SERVER_ERROR);
         } else {
             ContentReadException e = assertThrows(ContentReadException.class, () -> sendAndAssertResponse(
-                    post(path + "?fail=true", request, APPLICATION_PROTOBUF),
+                    post(path + "?fail=true", request, APPLICATION_X_PROTOBUF),
                     // For streaming the headers are sent before the exception is thrown, so OK is expected.
-                    OK, APPLICATION_PROTOBUF_VAR_INT, ""));
+                    OK, APPLICATION_X_PROTOBUF_VAR_INT, ""));
             // We expect that the response parsing failed because the channel was closed after resp headers sent.
             assertThat(getRootCause(e), instanceOf(IOException.class));
         }

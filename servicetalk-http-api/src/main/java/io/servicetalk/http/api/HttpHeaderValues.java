@@ -40,12 +40,12 @@ public final class HttpHeaderValues {
     /**
      * {@code "application/x-protobuf"}
      */
-    public static final CharSequence APPLICATION_PROTOBUF = newAsciiString("application/x-protobuf");
+    public static final CharSequence APPLICATION_X_PROTOBUF = newAsciiString("application/x-protobuf");
     /**
      * {@code "application/x-protobuf-var-int"}
      * <a href="https://developers.google.com/protocol-buffers/docs/encoding">base 128 VarInt protobuf encoding</a>.
      */
-    public static final CharSequence APPLICATION_PROTOBUF_VAR_INT = newAsciiString("application/x-protobuf-var-int");
+    public static final CharSequence APPLICATION_X_PROTOBUF_VAR_INT = newAsciiString("application/x-protobuf-var-int");
     /**
      * {@code "base64"}
      */
