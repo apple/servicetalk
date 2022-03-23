@@ -19,6 +19,8 @@
     "https://checkstyle.org/dtds/suppressions_1_2.dtd">
 
 <suppressions>
+  <suppress checks="LineLength"
+    files="docs[\\/]modules[\\/]ROOT[\\/]assets[\\/]images[\\/].+\.svg"/>
   <!-- mapOnError supports re-throwing a Throwable from onError(Throwable) -->
   <suppress checks="IllegalThrowsCheck" files="io[\\/]servicetalk[\\/]concurrent[\\/]api[\\/]ScanWithMapper.java"/>
 </suppressions>

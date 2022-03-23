@@ -20,18 +20,18 @@ called an execution chain.
 === Data and control flow in an execution chain
 
 The image below details the flow of data (`Subscriber` methods) and control (`Publisher` and `Subscription` methods)
-messages. Invocations in either direction may be executed on an event loop thread and hence needs to be protected. In
+messages. Invocations in either direction may be executed on an EventLoop thread and hence needs to be protected. In
 case new asynchronous sources are generated/received inside operators, they follow the same model and hence are removed
 for brevity.
 
-image::blocking-scenarios.png[Data and control flow in an execution chain]
+image::blocking-scenarios.svg[Data and control flow in an execution chain]
 
 As shown in the above picture, there are inherently two directions (data and control) of information flow for an
 execution chain and these
 link:https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#glossary[signals] can be triggered
 in parallel.
 
-**By default, in ServiceTalk, signals are not executed on an event loop thread, but instead executed using an
+**By default, in ServiceTalk, signals are not executed on an EventLoop thread, but instead executed using an
 link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Executor.java[Executor]
 provided by the application in the order they are received.**
 
@@ -42,121 +42,327 @@ The implication of the above approach is the following:
 **Users can execute blocking code inside an execution chain, provided they are not waiting for another data or control
 message in the same execution chain.**
 
-Look at <<Pitfalls>> section for examples elaborating this implication.
+== Task Offloading
+ServiceTalk uses Netty for network I/O and Netty uses a fixed number of EventLoop threads for executing I/O operations.
+The number of EventLoop threads correlates to the number of CPU cores and *not* to the number of requests. This is
+because in many cases threads typically sit idle while waiting for I/O to complete. Sharing threads helps minimize
+resource consumption and improves scalability. However, sharing threads for different requests means all control flow
+for a single request will impact all other requests that share the same thread. If the control flow blocks the current
+thread for a longer time period (aka "blocks the thread") (e.g. external I/O) this may negatively impact latency and
+throughput. One approach to ensure I/O thread availability is to carefully limit the scope of work done by I/O threads
+and, whenever practical, delegate all other necessary tasks that are not related to I/O to some other thread. Moving
+tasks from I/O threads to other threads is called “offloading” and is a core technique used by ServiceTalk.
 
-[#executor-affinity]
-=== Executor Affinity
+Offloading is used for two purposes within ServiceTalk; firstly for the
+execution needed for the handling of asynchronous events, aka
+link:https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#glossary[Signals],
+and secondly when handling asynchronous events, protecting scarce resources from being monopolized by blocking,
+untrusted or expensive application code. Asynchronous execution requires offloading – the initiating calling thread
+is not available. The use of protective offloading, where offloading is used for avoid resource monopolization, is a
+practical consideration, but just as necessary for reliable and predictable operation.
 
-In ServiceTalk different protocols will provide request processing by means of an asynchronous source, eg: `Single`.
-In such cases, this processing will be expressed as a chain of operators on the asynchronous source. Configuring limits
-on resources such as a thread pool can be challenging if **each** operator in the chain may run on different threads.
-This would mean applying limits to such a thread pool would be sensitive to program's execution flow and may change over
-time. In order to make thread pool configuration easier, ServiceTalk provides executor affinity for all asynchronous
-sources.
+ServiceTalk will, by default, execute most application code on threads other than the Netty I/O threads.
+For most invocations of application code, if the application developer knows that their code cannot block and always
+executes quickly in near constant time they can request that ServiceTalk not offload their code. This will improve
+application performance by reducing latency and overhead. Requests to not offload will be honored by ServiceTalk if all
+the other components in the same execution path have also opted out of offloading. See
+xref:{page-version}@servicetalk::blocking-safe-by-default.adoc#execution-strategy[Execution Strategy]
+for more information on how components may specify their offloading requirements. As a last resort, tasks may also be
+queued to be performed as threads are available.
 
-==== Affinity for an asynchronous source
+ServiceTalk is designed to be fully asynchronous except where the API provides explicit blocking behavior xref:{page-version}@servicetalk::programming-paradigms.adoc[as a convenience].
 
-Let us assume that following expresses request processing:
+ServiceTalk uses a task based approach for offloading, using `Executor` in the standard "fire-and-forget" way to run the
+offloaded tasks. Often the `Executor` has a pool of threads, possibly unbounded, and tasks are run using whatever thread
+is available. In particular, different threads may be used for each task executed and code running in tasks cannot
+depend upon a consistent thread being used for invoking program logic. This approach is generally the most scalable
+because it makes the best utilization of threads. If it is necessary to share state between tasks then
+`link:{source-root}/servicetalk-context-api/src/main/java/io/servicetalk/context/api/ContextMap.java[ContextMap]`s
+can be used.
 
-[source, java]
-----
- client.request() # <1>
-       .map(resp -> {
-            return doSomeBlockingWorkAndConvertToString(resp); # <2>
-       })
-       .filter(stringResp -> {
-            doMoreBlockingWorkToFilterString(stringResp); # <3>
-       });
-----
-<1> A hypothetical client which provides a `request()` method that returns a `Single<Response>`.
-<2> Some blocking work done inside `map()` operator by this function, which provides a String as a response.
-<3> Some more blocking work inside `filter()` operator.
+If the default ServiceTalk offloading has been disabled then user code may still wish to offload execution to a
+different `Executor` in specific cases. ServiceTalk provides reactive operators for explicitly offloading both
+`subscribe` and `Subscriber` via the `subscribeOn(executor)` operator as well as the `Subscription` methods via the
+`publishOn(executor)` operator. These operators will unconditionally offload to the specified `Executor`. Additional,
+conditional offloading operators; `subscribeOn(executor, predicate)` and `publishOn(executor, predicate)` are also
+available.
 
-In the above example user provided functions inside both `map()` and `filter()` will be invoked using the specified
-`Executor`.
+=== `publishOn()` Example
 
-==== Affinity across asynchronous sources
-
-`Executor` affinity across asynchronous sources is not guaranteed **even if they are part of the same processing chain**.
-
-Let us assume that following expresses request processing:
-
-[source, java]
-----
- client.request() # <1>
-       .map(resp -> {
-            return doSomeBlockingWorkAndConvertToString(resp); # <2>
-       })
-       .flatMap(stringResp -> {
-            return client2.request(stringResp) # <3>
-                          .map(resp -> {
-                            doSomeBlockingWorkAgain(); # <4>
-                          });
-       })
-       .filter(stringResp -> {
-            doMoreBlockingWorkToFilterString(stringResp); # <5>
-       });
-----
-<1> A hypothetical client which provides a `request()` method that returns a `Single<Response>`.
-<2> Some blocking work done inside `map()` operator by this function, which provides a String as a response.
-<3> Call another `client2` that provides a new `Single` which is returned from `flatmap`.
-<4> Do some blocking work inside `map()` operator for the nested `Single` returned by Step (3).
-<5> Some more blocking work inside `filter()` operator.
-
-In the above example (2), (3) and (5) will run on one `Executor` whereas (4) will run on a different `Executor`.
-
-== Pitfalls
-
-As defined in <<Execution chain>>, ServiceTalk sequences events in data and control path of processing as if they were
-done on the same thread. Since, data and control events may happen in parallel, there is always a chance for user code
-to deadlock if they are executed in sequence.
+Using the `publishOn(executor)` operator allows processing of signals related to the source content on a different
+thread than is generating the content. It is the most common form of offloading used as it relates to the data path,
+specifically the `Subscription` methods.
 
 [source, java]
 ----
-    CountDownLatch latch = new CountDownLatch(1); # <1>
-    Publisher.from(1, 2, 3, 4)
-            .afterOnNext(integer -> {
-                latch.countDown();  # <2>
-            })
-            .beforeRequest(requestN -> {
-                latch.await(); # <3>
-            });
+Collection<Integer> result = Publisher.range(1, 10) <2> <5>
+        .map(element -> element)  // non-offloaded NO-OP
+        .publishOn(publishExecutor)  <4>
+        .map(element -> element)  // offloaded NO-OP
+        .toFuture()  <3>
+        .get();  <1> <6>
 ----
-<1> Hypothetical synchronization point. In real life it may be due to the code waiting for an event to happen externally.
-<2> Trigger the external event (hypothetical synchronization point of `CountDownLatch`) **after** receiving the item.
-<3> Wait for the external event to happen (hypothetical synchronization point of `CountDownLatch`) **before** sending
-`requestN` to the `Publisher`.
 
-As per ReactiveStreams link:https://github.com/reactive-streams/reactive-streams-jvm#1.1[rule 1.1], request for items
-**MUST** happen before the items are delivered. In the above code, we are waiting for an item to be emitted before
-sending a request to the `Publisher`. This results in a deadlock as an item can not be emitted by the source without a
-request being received and user code making sure that the request is not sent before an item is emitted.
+<1> `toFuture()` begins by calling `subscribe(Subscriber)`. Executing on the calling thread, execution flows up
+the operator chain towards the source; `map` -> `publishOn` -> `map` -> `Publisher.range(1, 10)`.
 
-In order to avoid such scenarios, it is handy to follow certain best practices while writing blocking code in operators:
+<2> Still executing on the calling thread, `Range` will call `Subscriber.onSubscribe(Subscription)` on the
+`Subscriber`. This flows back down the operator chain, `Range` -> `map` -> `publishOn` (offloads on to `publishExecutor`
+thread) -> `map` -> `toFuture`.
 
-- Avoid co-ordination between two operators on the same source.
-- If such co-ordination is required, try limiting such coordination in either data or control path but not
-inter-dependent on each other.
-- If co-ordination is required between data and control path, be aware of ReactiveStreams semantics and how the two
-paths interact with each other.
+<3> The `onSubscribe(Subscription)` method of `toFuture()`&#xfeff;'s `Subscriber` will call
+`Subscription.request(Long.MAX_VALUE)`. Execution flows up the operator chain towards the source;
+`map` -> `publishOn` -> `map` -> `Range`. `Range` will publish synchronously via `onNext(element)` nine items, the
+integers "`1`" through "`9`".
 
-If these rules are followed the above example can be modified to:
+<4> Each `onNext` flows down the operator chain, `Range` -> `map` -> `publishOn` (offloads on to `publishExecutor`
+thread) -> `map` -> `toFuture` where the element is collected for the result. For each offloaded item a thread of
+`publishExecutor` will be used for executing the second `map` operator and final collect operation.
+
+<5> After all items, `Range` sends the terminal `onComplete()` signal synchronously which flows down the operator chain,
+`Range` -> `map -> `publishOn` (offloads on to `publishExecutor` thread) -> `map` -> `toFuture` and will complete the
+`Future` with the integer collection result.
+
+<6> The calling thread will wait at `get()` for the `Future` result to be asynchronously completed.
+
+=== `subscribeOn()` Example
+
+Using the `subscribeOn(executor)` operator allows processing of the subscription and demand on a specific thread. Using
+the `subscribeOn(executor)` operator is necessary if the thread doing the `subscribe` or interacting with the
+`Subscription` is sensitive to blocking, for example, an EventLoop thread.
 
 [source, java]
 ----
-    CountDownLatch latch = new CountDownLatch(1);
-    Publisher.from(1, 2, 3, 4)
-            .afterOnNext(integer -> {
-                latch.countDown();
-            })
-            .afterRequest(requestN -> { # <1>
-                latch.await();
-            });
+Collection<Integer> result = Publisher.range(1, 10) <2> <4>
+        .map(element -> element)  // NO-OP
+        .subscribeOn(subscribeExecutor)
+        .toFuture() <1> <3> <5>
+        .get(); <6>
 ----
-<1> Use `afterRequest` which happens **after** `requestN` is delivered to the source.
 
-In this modified example, since we now use `afterRequest`, instead of `beforeRequest`, we do not block `requestN` to
-go to the source and this code is safe.
+<1> `toFuture()` will do a `subscribe(Subscriber)`. This flows up the operator chain toward the source;
+`subscribeOn` (offload onto `subscribeExecutor` thread) -> `map` -> `Range`.
+
+<2> Still on a thread from `subscribeExecutor` `Range` will call `Subscriber.onSubscribe(Subscription)` on the
+`Subscriber`. This flows back down the operator chain, `Range` -> `map` -> `subscribeOn` -> `toFuture`.
+
+<3> Still on the`subscribeExecutor` thread, `toFuture()`'s `onSubscribe(Subscription)` call
+`Subscription.request(Long.MAX_VALUE)`. This flows up the operator chain, `subscribeOn` (offloads again onto another
+`subscribeExecutor` thread) -> `map` -> `Range`.
+
+<4> Still on thread from the second offload to `subscribeExecutor`, `Range` ` will publish synchronously via
+`onNext(element)` nine items, the integers "`1`" through "`9`". Each `onNext` flows back down the operator chain,
+`Range` -> `map` -> `subscribeOn` -> `toFuture` where the element is collected for the result.
+
+<5> Still on thread from the second offload to `subscribeExecutor`, after all items, `Range` will call `onComplete`.
+When the `toFuture()` `Subscriber` receives the `onComplete()` signal it will complete the `Future` with the integer
+collection result.
+
+<6> The calling thread will wait at `get()` for the `Future` result to be asynchronously completed.
+
+=== publishOn()/subscribeOn() Detailed Example
+
+These examples can be expanded to demonstrate the offloading behavior directly. The expanded example extends the NO-OP
+`map` implementations to reveal the active thread during their execution. To show the active thread at the other
+points described in the callouts the expanded example also adds `whenOnSubscribe`, `whenRequest`, `liftSync` and
+`whenFinally` operations in the operator chain. The output of the example shows the thread used for executing each of
+the operators, while the specialized operators provide examples of how you might use them to debug your own programs.
+
+[source, java]
+----
+Collection<?> result = Publisher.range(1, 3)
+        .map(element -> {
+            System.out.println("\nPublish starts on " + Thread.currentThread() + " Received : " + element);
+            return element;
+        })
+        .whenOnSubscribe(subscription -> {
+            System.out.println("\nonSubscribe starts on " + Thread.currentThread());
+        })
+        .publishOn(publishExecutor)
+        .map(element -> {
+            System.out.println("\nPublish offloaded to " + Thread.currentThread() + " Received : " + element);
+            return element;
+        })
+        .whenRequest(request -> {
+            System.out.println("\nrequest(" + request + ") offloaded to " + Thread.currentThread());
+        })
+        .liftSync(subscriber -> {
+            System.out.println("\nSubscribe offloaded to " + Thread.currentThread());
+            return subscriber;
+        })
+        .subscribeOn(subscribeExecutor)
+        .liftSync(subscriber -> {
+            System.out.println("\nSubscribe begins on " + Thread.currentThread());
+            return subscriber;
+        })
+        .whenOnSubscribe(subscription -> {
+            System.out.println("\nonSubscribe offloaded to " + Thread.currentThread());
+        })
+        .whenRequest(request -> {
+            System.out.println("\nrequest(" + request + ") starts on " + Thread.currentThread());
+        })
+        .whenFinally(new TerminalSignalConsumer() {
+            @Override
+            public void onComplete() {
+                System.out.println("\ncomplete on " + Thread.currentThread());
+            }
+
+            @Override
+            public void onError(final Throwable throwable) {
+                System.out.println("\nerror (" + throwable + ") on " + Thread.currentThread());
+            }
+
+            @Override
+            public void cancel() {
+                System.out.println("\ncancel on " + Thread.currentThread());
+            }
+        })
+        .toFuture()
+        .get();
+----
+
+If the default ServiceTalk offloading has been disabled then user code may still wish to offload execution to a
+different `Executor` in specific cases. ServiceTalk provides reactive operators for explicitly offloading both
+`subscribe` and `Subscriber` via the `subscribeOn(executor)` operator as well as the `Subscription` methods via the
+`publishOn(executor)` operator. These operators will unconditionally offload to the specified `Executor`. Additional,
+conditional offloading operators; `subscribeOn(executor, predicate)` and `publishOn(executor, predicate)` are also
+available.
+
+=== `publishOn()` Example
+
+Using the `publishOn(executor)` operator allows processing of signals related to the source content on a different
+thread than is generating the content. It is the most common form of offloading used as it relates to the data path,
+specifically the `Subscription` methods.
+
+[source, java]
+----
+Collection<Integer> result = Publisher.range(1, 10) <2> <5>
+        .map(element -> element)  // non-offloaded NO-OP
+        .publishOn(publishExecutor)  <4>
+        .map(element -> element)  // offloaded NO-OP
+        .toFuture()  <3>
+        .get();  <1> <6>
+----
+
+<1> `toFuture()` begins by calling `subscribe(Subscriber)`. Executing on the calling thread, execution flows up
+the operator chain towards the source; `map` -> `publishOn` -> `map` -> `Publisher.range(1, 10)`.
+
+<2> Still executing on the calling thread, `Range` will call `Subscriber.onSubscribe(Subscription)` on the
+`Subscriber`. This flows back down the operator chain, `Range` -> `map` -> `publishOn` (offloads on to `publishExecutor`
+thread) -> `map` -> `toFuture`.
+
+<3> The `onSubscribe(Subscription)` method of `toFuture()`&#xfeff;'s `Subscriber` will call
+`Subscription.request(Long.MAX_VALUE)`. Execution flows up the operator chain towards the source;
+`map` -> `publishOn` -> `map` -> `Range`. `Range` will publish synchronously via `onNext(element)` nine items, the
+integers "`1`" through "`9`".
+
+<4> Each `onNext` flows down the operator chain, `Range` -> `map` -> `publishOn` (offloads on to `publishExecutor`
+thread) -> `map` -> `toFuture` where the element is collected for the result. For each offloaded item a thread of
+`publishExecutor` will be used for executing the second `map` operator and final collect operation.
+
+<5> After all items, `Range` sends the terminal `onComplete()` signal synchronously which flows down the operator chain,
+`Range` -> `map -> `publishOn` (offloads on to `publishExecutor` thread) -> `map` -> `toFuture` and will complete the
+`Future` with the integer collection result.
+
+<6> The calling thread will wait at `get()` for the `Future` result to be asynchronously completed.
+
+=== `subscribeOn()` Example
+
+Using the `subscribeOn(executor)` operator allows processing of the subscription and demand on a specific thread. Using
+the `subscribeOn(executor)` operator generally requires an understanding of the behavior of the source; using a
+different source may change the need for offloading. `subscribeOn(executor)` is used less frequently than
+`publishOn(executor)` but is useful when it is necessary to offload the control path; the `subscribe` method or
+`Subscription` methods.
+
+[source, java]
+----
+Collection<Integer> result = Publisher.range(1, 10) <2> <4>
+        .map(element -> element)  // NO-OP
+        .subscribeOn(subscribeExecutor)
+        .toFuture() <1> <3> <5>
+        .get(); <6>
+----
+
+<1> `toFuture()` will do a `subscribe(Subscriber)`. This flows up the operator chain toward the source;
+`subscribeOn` (offload onto `subscribeExecutor` thread) -> `map` -> `Range`.
+
+<2> Still on a thread from `subscribeExecutor` `Range` will call `Subscriber.onSubscribe(Subscription)` on the
+`Subscriber`. This flows back down the operator chain, `Range` -> `map` -> `subscribeOn` -> `toFuture`.
+
+<3> Still on the`subscribeExecutor` thread, `toFuture()`'s `onSubscribe(Subscription)` call
+`Subscription.request(Long.MAX_VALUE)`. This flows up the operator chain, `subscribeOn` (offloads again onto another
+`subscribeExecutor` thread) -> `map` -> `Range`.
+
+<4> Still on thread from the second offload to `subscribeExecutor`, `Range` ` will publish synchronously via
+`onNext(element)` nine items, the integers "`1`" through "`9`". Each `onNext` flows back down the operator chain,
+`Range` -> `map` -> `subscribeOn` -> `toFuture` where the element is collected for the result.
+
+<5> Still on thread from the second offload to `subscribeExecutor`, after all items, `Range` will call `onComplete`.
+When the `toFuture()` `Subscriber` receives the `onComplete()` signal it will complete the `Future` with the integer
+collection result.
+
+<6> The calling thread will wait at `get()` for the `Future` result to be asynchronously completed.
+
+=== publishOn()/subscribeOn() Detailed Example
+
+These examples can be expanded to demonstrate the offloading behavior directly. The expanded example extends the NO-OP
+`map` implementations to reveal the active thread during their execution. To show the active thread at the other
+points described in the callouts the expanded example also adds `whenOnSubscribe`, `whenRequest`, `liftSync` and
+`whenFinally` operations in the operator chain. The output of the example shows the thread used for executing each of
+the operators, while the specialized operators provide examples of how you might use them to debug your own programs.
+
+[source, java]
+----
+Collection<?> result = Publisher.range(1, 3)
+        .map(element -> {
+            System.out.println("\nPublish starts on " + Thread.currentThread() + " Received : " + element);
+            return element;
+        })
+        .whenOnSubscribe(subscription -> {
+            System.out.println("\nonSubscribe starts on " + Thread.currentThread());
+        })
+        .publishOn(publishExecutor)
+        .map(element -> {
+            System.out.println("\nPublish offloaded to " + Thread.currentThread() + " Received : " + element);
+            return element;
+        })
+        .whenRequest(request -> {
+            System.out.println("\nrequest(" + request + ") offloaded to " + Thread.currentThread());
+        })
+        .liftSync(subscriber -> {
+            System.out.println("\nSubscribe offloaded to " + Thread.currentThread());
+            return subscriber;
+        })
+        .subscribeOn(subscribeExecutor)
+        .liftSync(subscriber -> {
+            System.out.println("\nSubscribe begins on " + Thread.currentThread());
+            return subscriber;
+        })
+        .whenOnSubscribe(subscription -> {
+            System.out.println("\nonSubscribe offloaded to " + Thread.currentThread());
+        })
+        .whenRequest(request -> {
+            System.out.println("\nrequest(" + request + ") starts on " + Thread.currentThread());
+        })
+        .whenFinally(new TerminalSignalConsumer() {
+            @Override
+            public void onComplete() {
+                System.out.println("\ncomplete on " + Thread.currentThread());
+            }
+
+            @Override
+            public void onError(final Throwable throwable) {
+                System.out.println("\nerror (" + throwable + ") on " + Thread.currentThread());
+            }
+
+            @Override
+            public void cancel() {
+                System.out.println("\ncancel on " + Thread.currentThread());
+            }
+        })
+        .toFuture()
+        .get();
+----
 
 == Implementation
 

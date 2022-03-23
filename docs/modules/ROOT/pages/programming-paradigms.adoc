@@ -16,6 +16,7 @@ complexity of asynchronous control flow in these cases. This can dramatically lo
 compared with most non-blocking I/O frameworks and avoid "application re-write" if scaling/data size characteristics
 change over time.
 
+[#blocking-vs-synchronous]
 == Blocking vs Synchronous
 ServiceTalk APIs may use the term "blocking" in areas where the APIs may be identified as "synchronous". "blocking" in
 this context is meant to declare that the API "may block" the calling thread. This is done because there is no general

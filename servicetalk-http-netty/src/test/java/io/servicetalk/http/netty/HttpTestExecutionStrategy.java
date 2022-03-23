@@ -21,7 +21,7 @@ import io.servicetalk.http.api.HttpExecutionStrategy;
 import java.util.function.Supplier;
 
 public enum HttpTestExecutionStrategy {
-    NO_OFFLOAD(HttpExecutionStrategies::offloadNever),
+    NO_OFFLOAD(HttpExecutionStrategies::offloadNone),
     DEFAULT(HttpExecutionStrategies::defaultStrategy);
 
     final Supplier<HttpExecutionStrategy> executorSupplier;

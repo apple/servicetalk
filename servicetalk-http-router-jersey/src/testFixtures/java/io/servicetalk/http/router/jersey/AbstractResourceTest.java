@@ -42,7 +42,7 @@ import javax.ws.rs.core.Application;
 import javax.ws.rs.ext.Provider;
 
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
-import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_JSON;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
@@ -134,7 +134,7 @@ public abstract class AbstractResourceTest extends AbstractJerseyStreamingHttpSe
                            final HttpJerseyRouterBuilder jerseyRouterBuilder) {
         super.configureBuilders(serverBuilder, jerseyRouterBuilder);
         if (serverNoOffloads) {
-            serverBuilder.executionStrategy(offloadNever());
+            serverBuilder.executionStrategy(offloadNone());
         }
     }
 

@@ -16,6 +16,7 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.transport.api.SslConfig;
 
 import java.net.SocketAddress;
 import java.net.SocketOption;
@@ -62,6 +63,12 @@ public class DelegatingHttpServiceContext extends HttpServiceContext {
     @Override
     public SocketAddress remoteAddress() {
         return delegate.remoteAddress();
+    }
+
+    @Nullable
+    @Override
+    public SslConfig sslConfig() {
+        return delegate.sslConfig();
     }
 
     @Override

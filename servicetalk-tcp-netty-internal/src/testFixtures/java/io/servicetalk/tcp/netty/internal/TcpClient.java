@@ -95,6 +95,7 @@ final class TcpClient {
                 (channel, connectionObserver) -> initChannel(channel,
                         executionContext.bufferAllocator(), executionContext.executor(), executionContext.ioExecutor(),
                         UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, config.flushStrategy(), config.idleTimeoutMs(),
+                        config.sslConfig(),
                         new TcpClientChannelInitializer(config, connectionObserver).andThen(
                                 channel2 -> channel2.pipeline().addLast(BufferHandler.INSTANCE)),
                         executionContext.executionStrategy(), TCP, connectionObserver, true, __ -> false),

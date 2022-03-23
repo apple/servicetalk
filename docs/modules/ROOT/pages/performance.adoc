@@ -115,22 +115,16 @@ Because ServiceTalk is asynchronous and non-blocking at the core it needs to def
 that potentially blocks IO EventLoop threads. Read the chapter on
 xref:{page-version}@servicetalk::blocking-safe-by-default.adoc[blocking code safe by default] for more details.
 
-`ServiceTalk` has
-xref:{page-version}@servicetalk-concurrent-api::blocking-safe-by-default.adoc#executor-affinity[Executor Affinity] which
-ensures that the same `Executor` is used for each `Subscriber` chain on asynchronous operator boundaries. By default
-when using the streaming APIs this requires wrapping on the asynchronous operator boundaries and may result in
-additional thread hops between ``Executor``s (and even if ``Executor`` happens to be the same). Depending upon the use
-case, performance costs maybe relatively high but we have the following compensatory strategies in place:
+Offloading is expected to add some overhead which can be mitigated as follows:
 
-* ServiceTalk team is investigating ways to reduce the cost of offloading for streaming APIs
-* choosing the appropriate xref:{page-version}@servicetalk::performance.adoc#offloading-and-flushing[programming model]
-for your use case allows us to be more optimal and reduce offloading
-* you can opt-out of (some or all) offloading via
+* Choosing the appropriate xref:{page-version}@servicetalk::performance.adoc#offloading-and-flushing[programming model]
+for your use case allows ServiceTalk to be more optimal and reduce offloading
+* Opting-out of some or all offloading through use of
 xref:{page-version}@servicetalk::performance.adoc#ExecutionStrategy[ExecutionStrategy]
 
 == Tuning options and recommendations
 
-Below sections will offer suggestions that may improve performance depending on your use-case.
+The following sections will offer suggestions that may improve performance depending on your use-case.
 
 [#offloading-and-flushing]
 === Programming model (offloading & flushing)
@@ -242,7 +236,7 @@ HttpServers.forPort(8080)
 _`FlushStrategies` and related APIs are advanced, internal, and subject to change._
 
 [#ExecutionStrategy]
-==== ExecutionStrategy (offloading)
+==== Offloading and `ExecutionStrategy`
 link:{source-root}/servicetalk-transport-api/src/main/java/io/servicetalk/transport/api/ExecutionStrategy.java[ExecutionStrategy]
 is the core abstraction ServiceTalk uses to drive offloading delivering signals and data from the IO EventLoop threads.
 For HTTP there is

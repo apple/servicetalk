@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,9 +21,9 @@ import io.servicetalk.concurrent.api.Single;
 import org.testng.annotations.Test;
 
 @Test
-public class PublisherFlatMapSingleDelayErrorTckTest extends AbstractPublisherOperatorTckTest<Integer> {
+public class PublisherFlatMapConcatSingleDelayErrorTckTest extends AbstractPublisherOperatorTckTest<Integer> {
     @Override
     protected Publisher<Integer> composePublisher(Publisher<Integer> publisher, int elements) {
-        return publisher.flatMapMergeSingleDelayError(Single::succeeded, 10);
+        return publisher.flatMapConcatSingleDelayError(Single::succeeded);
     }
 }

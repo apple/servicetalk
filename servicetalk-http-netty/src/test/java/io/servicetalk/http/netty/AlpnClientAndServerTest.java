@@ -182,6 +182,7 @@ class AlpnClientAndServerTest {
 
         try (ReservedBlockingHttpConnection connection = client.reserveConnection(client.get("/"))) {
             assertThat(connection.connectionContext().protocol(), is(expectedProtocol));
+            assertThat(connection.connectionContext().sslConfig(), is(notNullValue()));
             assertThat(connection.connectionContext().sslSession(), is(notNullValue()));
 
             assertResponseAndServiceContext(connection.request(client.get("/")));
@@ -211,6 +212,7 @@ class AlpnClientAndServerTest {
 
         HttpServiceContext serviceCtx = serviceContext.take();
         assertThat(serviceCtx.protocol(), is(expectedProtocol));
+        assertThat(serviceCtx.sslSession(), is(notNullValue()));
         assertThat(serviceCtx.sslSession(), is(notNullValue()));
         assertThat(requestVersion.take(), is(expectedProtocol));
 

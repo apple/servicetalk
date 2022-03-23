@@ -15,19 +15,19 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.internal.TerminalNotification;
-
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.ProcessorBufferUtils.consumeIfTerminal;
+import static io.servicetalk.concurrent.api.ProcessorBufferUtils.consumeNextItem;
 import static io.servicetalk.concurrent.api.SubscriberApiUtils.wrapNull;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.concurrent.internal.TerminalNotification.error;
 
-final class DefaultBlockingProcessorSignalsHolder<T> extends AbstractProcessorBuffer
+final class DefaultBlockingProcessorSignalsHolder<T>
         implements BlockingProcessorSignalsHolder<T> {
     private final BlockingQueue<Object> signals;
 
@@ -42,18 +42,12 @@ final class DefaultBlockingProcessorSignalsHolder<T> extends AbstractProcessorBu
 
     @Override
     public void terminate() throws InterruptedException {
-        TerminalNotification terminal = complete();
-        if (tryTerminate(terminal)) {
-            signals.put(terminal);
-        }
+        signals.put(complete());
     }
 
     @Override
     public void terminate(final Throwable cause) throws InterruptedException {
-        TerminalNotification terminal = error(cause);
-        if (tryTerminate(terminal)) {
-            signals.put(terminal);
-        }
+        signals.put(error(cause));
     }
 
     @Override

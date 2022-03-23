@@ -93,7 +93,8 @@ final class AlpnLBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpC
                     assert h2Config != null;
                     return H2ClientParentConnectionContext.initChannel(channel, executionContext,
                             h2Config, reqRespFactoryFunc.apply(HttpProtocolVersion.HTTP_2_0), tcpConfig.flushStrategy(),
-                            tcpConfig.idleTimeoutMs(), new H2ClientParentChannelInitializer(h2Config),
+                            tcpConfig.idleTimeoutMs(), tcpConfig.sslConfig(),
+                            new H2ClientParentChannelInitializer(h2Config),
                             connectionObserver, config.allowDropTrailersReadFromTransport());
                 default:
                     return failed(new IllegalStateException("Unknown ALPN protocol negotiated: " + protocol));

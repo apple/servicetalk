@@ -15,6 +15,8 @@
  */
 package io.servicetalk.grpc.protoc;
 
+import static java.lang.System.lineSeparator;
+
 final class Words {
     static final String bind = "bind";
     static final String builder = "builder";
@@ -35,6 +37,7 @@ final class Words {
     static final String rpc = "rpc";
     static final String initSerializationProvider = "initSerializationProvider";
     static final String addService = "addService";
+    static final String addBlockingService = "addBlockingService";
     static final String registerRoutes = "registerRoutes";
     static final String service = "service";
     static final String strategy = "strategy";
@@ -63,10 +66,11 @@ final class Words {
     static final String RPC_PATH = "PATH";
     static final String COMMENT_PRE_TAG = "<pre>";
     static final String COMMENT_POST_TAG = "</pre>";
+    static final String JAVADOC_CONSTRUCTOR_DEFAULT_STATEMENT = "Create a new instance." + lineSeparator();
     static final String JAVADOC_PARAM = "@param ";
     static final String JAVADOC_RETURN = "@return ";
     static final String JAVADOC_THROWS = "@throws ";
-    static final String JAVADOC_DEPRECATED = "@deprecated";
+    static final String JAVADOC_DEPRECATED = "@deprecated ";
     static final String ASYNC_METHOD_DESCRIPTORS = "ASYNC_METHOD_DESCRIPTORS";
     static final String BLOCKING_METHOD_DESCRIPTORS = "BLOCKING_METHOD_DESCRIPTORS";
 

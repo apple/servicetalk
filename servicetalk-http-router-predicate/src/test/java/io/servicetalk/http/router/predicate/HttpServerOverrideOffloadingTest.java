@@ -51,7 +51,7 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
-import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
 import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
@@ -64,10 +64,10 @@ class HttpServerOverrideOffloadingTest {
     private static final String IO_EXECUTOR_THREAD_NAME_PREFIX = "http-server-io-executor";
     private static final String EXECUTOR_THREAD_NAME_PREFIX = "http-server-executor";
     private static final HttpExecutionStrategy[] SERVER_STRATEGIES = new HttpExecutionStrategy[] {
-            defaultStrategy(), offloadNever() };
+            defaultStrategy(), offloadNone() };
 
     private static final HttpExecutionStrategy[] ROUTE_STRATEGIES = new HttpExecutionStrategy[] {
-            null, defaultStrategy(), offloadNever(), customStrategyBuilder().offloadSend().build() };
+            null, defaultStrategy(), offloadNone(), customStrategyBuilder().offloadSend().build() };
 
     @RegisterExtension
     private static final ExecutionContextExtension EXECUTION_CONTEXT =
@@ -135,7 +135,7 @@ class HttpServerOverrideOffloadingTest {
         @Override
         public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx, final StreamingHttpRequest request,
                                                     final StreamingHttpResponseFactory responseFactory) {
-            boolean offloading = ctx.executionContext().executionStrategy() != offloadNever() ||
+            boolean offloading = ctx.executionContext().executionStrategy().hasOffloads() ||
                     defaultStrategy() != usingStrategy;
             boolean expectReadMetaOffload = offloading &&
                     (ctx.executionContext().executionStrategy().isMetadataReceiveOffloaded() ||

@@ -253,8 +253,6 @@ A special "flaky" `Hello World` server that alternates "509" Gateway Timeout and
 requests to demonstrate client retry.
 * link:{source-root}/servicetalk-examples/http/retry/src/main/java/io/servicetalk/examples/http/retry/RetryClient.java[RetryClient.java] -
 Async `Hello World` example that demonstrates how retry can be requested for a single-address client.
-* link:{source-root}/servicetalk-examples/http/retry/src/main/java/io/servicetalk/examples/http/retry/RetryUrlClient.java[RetryUrlClient.java] -
-Async `Hello World` example that demonstrates how retry can be requested for a multi-address client.
 
 
 [#HTTP2]

@@ -121,17 +121,7 @@ public final class ReflectionUtils {
 
     static boolean getBoolean(final String name, final boolean def) {
         final String value = System.getProperty(name);
-        if (value == null || value.isEmpty()) {
-            return def;
-        }
-
-        boolean result = false;
-        try {
-            result = parseBoolean(value);
-        } catch (IllegalArgumentException | NullPointerException e) {
-            // ignore
-        }
-        return result;
+        return value == null || value.isEmpty() ? def : parseBoolean(value);
     }
 
     private static int javaVersion0() {

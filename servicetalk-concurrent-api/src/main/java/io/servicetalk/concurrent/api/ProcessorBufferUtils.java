@@ -17,22 +17,12 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SubscriberApiUtils.unwrapNullUnchecked;
-import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
-abstract class AbstractProcessorBuffer {
-    private static final AtomicReferenceFieldUpdater<AbstractProcessorBuffer,
-            TerminalNotification> terminalUpdater = newUpdater(AbstractProcessorBuffer.class,
-            TerminalNotification.class, "terminal");
-
-    @Nullable
-    private volatile TerminalNotification terminal;
-
-    final boolean tryTerminate(final TerminalNotification notification) {
-        return terminalUpdater.compareAndSet(this, null, notification);
+final class ProcessorBufferUtils {
+    private ProcessorBufferUtils() {
     }
 
     /**

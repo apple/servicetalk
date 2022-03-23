@@ -28,6 +28,7 @@ import java.util.Map;
 
 import static io.netty.handler.codec.http.HttpHeaderNames.TE;
 import static io.netty.handler.codec.http.HttpHeaderValues.TRAILERS;
+import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderNames.COOKIE;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
@@ -36,6 +37,9 @@ import static io.servicetalk.http.api.HttpHeaderValues.KEEP_ALIVE;
 import static io.servicetalk.http.netty.HeaderUtils.indexOf;
 
 final class H2ToStH1Utils {
+
+    static final CharSequence PROXY_CONNECTION = newAsciiString("proxy-connection");
+
     private H2ToStH1Utils() {
         // no instances.
     }
@@ -140,6 +144,7 @@ final class H2ToStH1Utils {
         h1Headers.remove(KEEP_ALIVE);
         h1Headers.remove(TRANSFER_ENCODING);
         h1Headers.remove(UPGRADE);
+        h1Headers.remove(PROXY_CONNECTION);
 
         // TE header is treated specially https://tools.ietf.org/html/rfc7540#section-8.1.2.2
         // (only value of "trailers" is allowed).

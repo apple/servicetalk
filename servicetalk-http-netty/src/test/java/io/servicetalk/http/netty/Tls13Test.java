@@ -22,6 +22,7 @@ import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServerSslConfigBuilder;
+import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.api.SslProvider;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
@@ -48,6 +49,7 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -98,6 +100,9 @@ class Tls13Test {
             .sslConfig(serverSslBuilder.build())
             .listenBlockingAndAwait((ctx, request, responseFactory) -> {
                 assertThat(request.payloadBody(textSerializerUtf8()), equalTo("request-payload-body"));
+                SslConfig sslConfig = ctx.sslConfig();
+                assertThat(sslConfig, is(notNullValue()));
+                assertThat(sslConfig.sslProtocols(), contains(TLS1_3));
                 SSLSession sslSession = ctx.sslSession();
                 assertThat(sslSession, is(notNullValue()));
                 return responseFactory.ok().payloadBody(sslSession.getProtocol(), textSerializerUtf8());
@@ -117,6 +122,9 @@ class Tls13Test {
                     .sslConfig(clientSslBuilder.build()).buildBlocking();
                  BlockingHttpConnection connection = client.reserveConnection(client.get("/"))) {
 
+                SslConfig sslConfig = connection.connectionContext().sslConfig();
+                assertThat(sslConfig, is(notNullValue()));
+                assertThat(sslConfig.sslProtocols(), contains(TLS1_3));
                 SSLSession sslSession = connection.connectionContext().sslSession();
                 assertThat(sslSession, is(notNullValue()));
                 assertThat(sslSession.getProtocol(), equalTo(TLS1_3));
