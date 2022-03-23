@@ -1058,6 +1058,109 @@ public abstract class Single<T> {
     }
 
     /**
+     * Create a {@link Single} that subscribes a single time upstream but allows for multiple downstream
+     * {@link Subscriber}s. The terminal signal will be cached and delivered to each downstream {@link Subscriber}.
+     * <p>
+     * In sequential programming this is similar to the following:
+     * <pre>{@code
+     *     T result = resultOfThisSingle();
+     *     List<T> multiResults = ...; // simulating multiple Subscribers
+     *     for (int i = 0; i < expectedSubscribers; ++i) {
+     *         multiResults.add(result);
+     *     }
+     *     return multiResults;
+     * }</pre>
+     * @return a {@link Single} that subscribes a single time upstream but allows for multiple downstream
+     * {@link Subscriber}s. Signals from upstream will be multicast to each downstream {@link Subscriber}.
+     * @see <a href="https://reactivex.io/documentation/operators/replay.html">ReactiveX cache operator</a>
+     * @see #cache(int)
+     */
+    public final Single<T> cache() {
+        return cache(1);
+    }
+
+    /**
+     * Create a {@link Single} that subscribes a single time upstream but allows for multiple downstream
+     * {@link Subscriber}s. The terminal signal will be cached and delivered to each downstream {@link Subscriber}.
+     * <p>
+     * In sequential programming this is similar to the following:
+     * <pre>{@code
+     *     T result = resultOfThisSingle();
+     *     List<T> multiResults = ...; // simulating multiple Subscribers
+     *     for (int i = 0; i < expectedSubscribers; ++i) {
+     *         multiResults.add(result);
+     *     }
+     *     return multiResults;
+     * }</pre>
+     * @param minSubscribers The upstream subscribe operation will not happen until after this many {@link Subscriber}
+     * subscribe to the return value.
+     * @return a {@link Single} that subscribes a single time upstream but allows for multiple downstream
+     * {@link Subscriber}s. Signals from upstream will be multicast to each downstream {@link Subscriber}.
+     * @see <a href="https://reactivex.io/documentation/operators/replay.html">ReactiveX cache operator</a>
+     * @see #cache(int, boolean)
+     */
+    public final Single<T> cache(int minSubscribers) {
+        return cache(minSubscribers, true);
+    }
+
+    /**
+     * Create a {@link Single} that subscribes a single time upstream but allows for multiple downstream
+     * {@link Subscriber}s. The terminal signal will be cached and delivered to each downstream {@link Subscriber}.
+     * <p>
+     * In sequential programming this is similar to the following:
+     * <pre>{@code
+     *     T result = resultOfThisSingle();
+     *     List<T> multiResults = ...; // simulating multiple Subscribers
+     *     for (int i = 0; i < expectedSubscribers; ++i) {
+     *         multiResults.add(result);
+     *     }
+     *     return multiResults;
+     * }</pre>
+     * @param minSubscribers The upstream subscribe operation will not happen until after this many {@link Subscriber}
+     * subscribe to the return value.
+     * @param cancelUpstream {@code true} if upstream should be {@link Cancellable#cancel() cancelled} when all
+     * downstream {@link Subscriber}s cancel. {@code false} means that cancel will not be propagated upstream even if
+     * all downstream {@link Subscriber}s cancel, and the upstream Subscription will stay valid until termination.
+     * @return a {@link Single} that subscribes a single time upstream but allows for multiple downstream
+     * {@link Subscriber}s. Signals from upstream will be multicast to each downstream {@link Subscriber}.
+     * @see <a href="https://reactivex.io/documentation/operators/replay.html">ReactiveX cache operator</a>
+     * @see #cache(int, boolean, BiFunction)
+     */
+    public final Single<T> cache(int minSubscribers, boolean cancelUpstream) {
+        return cache(minSubscribers, cancelUpstream, (v, t) -> Completable.never());
+    }
+
+    /**
+     * Create a {@link Single} that subscribes a single time upstream but allows for multiple downstream
+     * {@link Subscriber}s. The terminal signal will be cached and delivered to each downstream {@link Subscriber}.
+     * <p>
+     * In sequential programming this is similar to the following:
+     * <pre>{@code
+     *     T result = resultOfThisSingle();
+     *     List<T> multiResults = ...; // simulating multiple Subscribers
+     *     for (int i = 0; i < expectedSubscribers; ++i) {
+     *         multiResults.add(result);
+     *     }
+     *     return multiResults;
+     * }</pre>
+     * @param minSubscribers The upstream subscribe operation will not happen until after this many {@link Subscriber}
+     * subscribe to the return value.
+     * @param cancelUpstream {@code true} if upstream should be {@link Cancellable#cancel() cancelled} when all
+     * downstream {@link Subscriber}s cancel. {@code false} means that cancel will not be propagated upstream even if
+     * all downstream {@link Subscriber}s cancel, and the upstream Subscription will stay valid until termination.
+     * @param terminalResubscribe A {@link BiFunction} that is invoked when a terminal signal arrives from upstream, and
+     * returns a {@link Completable} whose termination resets the state of the returned {@link Single} and allows
+     * for downstream resubscribing.
+     * @return a {@link Single} that subscribes a single time upstream but allows for multiple downstream
+     * {@link Subscriber}s. Signals from upstream will be multicast to each downstream {@link Subscriber}.
+     * @see <a href="https://reactivex.io/documentation/operators/replay.html">ReactiveX cache operator</a>
+     */
+    public final Single<T> cache(int minSubscribers, boolean cancelUpstream,
+                                 BiFunction<T, Throwable, Completable> terminalResubscribe) {
+        return new CacheSingle<>(this, minSubscribers, cancelUpstream, terminalResubscribe);
+    }
+
+    /**
      * Invokes the {@code onSubscribe} {@link Consumer} argument <strong>before</strong>
      * {@link Subscriber#onSubscribe(Cancellable)} is called for {@link Subscriber}s of the returned {@link Single}.
      *

@@ -79,9 +79,9 @@ public final class SubscriberUtils {
 
     /**
      * Deliver a terminal complete to a {@link Subscriber} that has not yet had
-     * {@link Subscriber#onSubscribe(PublisherSource.Subscription)} called.
-     * @param subscriber The {@link Subscriber} to terminate.
-     * @param <T> The type of {@link Subscriber}.
+     * {@link PublisherSource.Subscriber#onSubscribe(PublisherSource.Subscription)} called.
+     * @param subscriber The {@link PublisherSource.Subscriber} to terminate.
+     * @param <T> The type of {@link PublisherSource.Subscriber}.
      */
     public static <T> void deliverCompleteFromSource(Subscriber<T> subscriber) {
         try {
@@ -127,10 +127,10 @@ public final class SubscriberUtils {
 
     /**
      * Deliver a terminal error to a {@link Subscriber} that has not yet had
-     * {@link Subscriber#onSubscribe(PublisherSource.Subscription)} called.
-     * @param subscriber The {@link Subscriber} to terminate.
+     * {@link PublisherSource.Subscriber#onSubscribe(PublisherSource.Subscription)} called.
+     * @param subscriber The {@link PublisherSource.Subscriber} to terminate.
      * @param cause The terminal event.
-     * @param <T> The type of {@link Subscriber}.
+     * @param <T> The type of {@link PublisherSource.Subscriber}.
      */
     public static <T> void deliverErrorFromSource(Subscriber<T> subscriber, Throwable cause) {
         try {
@@ -176,9 +176,10 @@ public final class SubscriberUtils {
     }
 
     /**
-     * Handle the case when a call to {@link Subscriber#onSubscribe(PublisherSource.Subscription)} throws from a source.
+     * Handle the case when a call to {@link PublisherSource.Subscriber#onSubscribe(PublisherSource.Subscription)}
+     * throws from a source.
      * @param subscriber The {@link Subscriber} that threw an exception from
-     * {@link Subscriber#onSubscribe(PublisherSource.Subscription)}.
+     * {@link PublisherSource.Subscriber#onSubscribe(PublisherSource.Subscription)}.
      * @param cause The exception thrown by {@code subscriber}.
      * @param <T> The type of {@link Subscriber}.
      */
@@ -328,5 +329,34 @@ public final class SubscriberUtils {
         } catch (Throwable t) {
             LOGGER.info("Ignoring exception from cancel {}.", cancellable, t);
         }
+    }
+
+    /**
+     * Log if the ReactiveStreams specification has been violated related to out of order
+     * {@link PublisherSource.Subscriber#onSubscribe(PublisherSource.Subscription)} or duplicate terminal signals.
+     * @param subscriber The {@link PublisherSource.Subscriber}.
+     * @param <T> The type of {@link PublisherSource.Subscriber}.
+     */
+    public static <T> void logDuplicateTerminal(PublisherSource.Subscriber<T> subscriber) {
+        logDuplicateTerminal0(subscriber);
+    }
+
+    /**
+     * Log if the ReactiveStreams specification has been violated related to out of order
+     * {@link SingleSource.Subscriber#onSubscribe(Cancellable)} or duplicate terminal signals.
+     * @param subscriber The {@link SingleSource.Subscriber}.
+     * @param <T> The type of {@link SingleSource.Subscriber}.
+     */
+    public static <T> void logDuplicateTerminal(SingleSource.Subscriber<T> subscriber) {
+        logDuplicateTerminal0(subscriber);
+    }
+
+    private static void logDuplicateTerminal0(Object subscriber) {
+        LOGGER.warn("onSubscribe not called before terminal or duplicate terminal on Subscriber {}", subscriber,
+                new IllegalStateException(
+                        "onSubscribe not called before terminal or duplicate terminal on Subscriber " + subscriber +
+                        " forbidden see: " +
+                        "https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#1.9" +
+                        "https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#1.7"));
     }
 }
