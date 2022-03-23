@@ -100,11 +100,12 @@ final class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> 
         boolean removeSubscriber(final MulticastFixedSubscriber<T> subscriber) {
             for (;;) {
                 final Subscriber<? super T>[] currSubs = subscribers;
-                if (currSubs.length == 0 || currSubs.length == 1 && currSubs[0] instanceof TerminalSubscriber) {
+                final int i;
+                if (currSubs.length == 0 || currSubs.length == 1 && currSubs[0] instanceof TerminalSubscriber ||
+                        (i = ArrayUtils.indexOf(subscriber, currSubs)) < 0) {
                     // terminated, demandQueue is not thread safe and isn't cleaned up on the Subscriber thread.
                     return false;
                 }
-                final int i = ArrayUtils.indexOf(subscriber, currSubs);
                 @SuppressWarnings("unchecked")
                 Subscriber<? super T>[] newSubs = (Subscriber<? super T>[])
                         Array.newInstance(Subscriber.class, currSubs.length - 1);
