@@ -28,6 +28,9 @@ dependencies {
   testImplementation enforcedPlatform("org.glassfish.jersey:jersey-bom:$jerseyVersion")
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
 
+  api "jakarta.ws.rs:jakarta.ws.rs-api:$jaxRsVersion" // MediaType, Feature
+  api "org.glassfish.jersey.core:jersey-common" // AutoDiscoverable
+
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-buffer-netty")
   implementation project(":servicetalk-concurrent-api-internal")
