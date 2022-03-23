@@ -24,6 +24,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.transport.api.ExecutionContext;
+import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.netty.internal.FlushStrategies;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.GlobalExecutionContext;
@@ -230,6 +231,12 @@ public class NettyPipelinedConnectionBenchmark {
             @Override
             public SocketAddress remoteAddress() {
                 return new InetSocketAddress(0);
+            }
+
+            @Nullable
+            @Override
+            public SslConfig sslConfig() {
+                return null;
             }
 
             @Nullable

@@ -26,6 +26,7 @@ import io.servicetalk.http.api.HttpConnectionContext;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.transport.api.ConnectionObserver;
+import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.FlushStrategyHolder;
 import io.servicetalk.transport.netty.internal.NettyChannelListenableAsyncCloseable;
@@ -69,18 +70,22 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
     private final Processor onClosing = newCompletableProcessor();
     private final KeepAliveManager keepAliveManager;
     @Nullable
+    private final SslConfig sslConfig;
+    @Nullable
     final Long idleTimeoutMs;
     @Nullable
     private SSLSession sslSession;
 
     H2ParentConnectionContext(final Channel channel, final HttpExecutionContext executionContext,
                               final FlushStrategy flushStrategy, @Nullable final Long idleTimeoutMs,
+                              @Nullable final SslConfig sslConfig,
                               final KeepAliveManager keepAliveManager) {
         super(channel, executionContext.executor());
         this.executionContext = new DefaultHttpExecutionContext(executionContext.bufferAllocator(),
                 fromNettyEventLoop(channel.eventLoop(), executionContext.ioExecutor().isIoThreadSupported()),
                 executionContext.executor(), executionContext.executionStrategy());
         this.flushStrategyHolder = new FlushStrategyHolder(flushStrategy);
+        this.sslConfig = sslConfig;
         this.idleTimeoutMs = idleTimeoutMs;
         this.keepAliveManager = keepAliveManager;
         // Just in case the channel abruptly closes, we should complete the onClosing Completable.
@@ -115,6 +120,12 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
     @Override
     public final SocketAddress remoteAddress() {
         return channel().remoteAddress();
+    }
+
+    @Nullable
+    @Override
+    public SslConfig sslConfig() {
+        return sslConfig;
     }
 
     @Nullable

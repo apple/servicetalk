@@ -40,6 +40,8 @@ public final class ReadOnlyTcpServerConfig extends AbstractReadOnlyTcpConfig<Ser
     private final Map<ChannelOption, Object> listenOptions;
     private final TransportObserver transportObserver;
     @Nullable
+    private final ServerSslConfig sslConfig;
+    @Nullable
     private final SslContext sslContext;
     @Nullable
     private final Mapping<String, SslContext> sniMapping;
@@ -51,7 +53,7 @@ public final class ReadOnlyTcpServerConfig extends AbstractReadOnlyTcpConfig<Ser
         final TransportObserver transportObserver = from.transportObserver();
         this.transportObserver = transportObserver == NoopTransportObserver.INSTANCE ? transportObserver :
                 asSafeObserver(transportObserver);
-        final ServerSslConfig sslConfig = from.sslConfig();
+        this.sslConfig = from.sslConfig();
         final Map<String, ServerSslConfig> sniMap = from.sniConfig();
         if (sniMap != null) {
             if (sslConfig == null) {
@@ -98,6 +100,21 @@ public final class ReadOnlyTcpServerConfig extends AbstractReadOnlyTcpConfig<Ser
         return transportObserver;
     }
 
+    /**
+     * Get the {@link ServerSslConfig}.
+     *
+     * @return the {@link ServerSslConfig}, or {@code null} if SSL/TLS is not configured.
+     */
+    @Nullable
+    public ServerSslConfig sslConfig() {
+        return sslConfig;
+    }
+
+    /**
+     * Returns the {@link SslContext}.
+     *
+     * @return {@link SslContext}, {@code null} if none specified
+     */
     @Nullable
     @Override
     public SslContext sslContext() {

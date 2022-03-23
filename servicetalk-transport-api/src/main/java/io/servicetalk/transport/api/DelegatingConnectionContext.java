@@ -62,6 +62,12 @@ public class DelegatingConnectionContext implements ConnectionContext {
 
     @Nullable
     @Override
+    public SslConfig sslConfig() {
+        return delegate.sslConfig();
+    }
+
+    @Nullable
+    @Override
     public SSLSession sslSession() {
         return delegate.sslSession();
     }

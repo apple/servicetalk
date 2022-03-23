@@ -44,6 +44,7 @@ import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ConnectionObserver.MultiplexedObserver;
 import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
 import io.servicetalk.transport.api.IoThreadFactory;
+import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
@@ -93,8 +94,9 @@ import static java.util.Objects.requireNonNull;
 final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
     private H2ClientParentConnectionContext(Channel channel, HttpExecutionContext executionContext,
                                             FlushStrategy flushStrategy, @Nullable Long idleTimeoutMs,
+                                            @Nullable final SslConfig sslConfig,
                                             final KeepAliveManager keepAliveManager) {
-        super(channel, executionContext, flushStrategy, idleTimeoutMs, keepAliveManager);
+        super(channel, executionContext, flushStrategy, idleTimeoutMs, sslConfig, keepAliveManager);
     }
 
     interface H2ClientParentConnection extends FilterableStreamingHttpConnection, NettyConnectionContext {
@@ -105,6 +107,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                                                         StreamingHttpRequestResponseFactory reqRespFactory,
                                                         FlushStrategy parentFlushStrategy,
                                                         @Nullable Long idleTimeoutMs,
+                                                        @Nullable SslConfig sslConfig,
                                                         ChannelInitializer initializer,
                                                         ConnectionObserver observer,
                                                         boolean allowDropTrailersReadFromTransport) {
@@ -118,7 +121,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                     delayedCancellable = new DelayedCancellable();
                     KeepAliveManager keepAliveManager = new KeepAliveManager(channel, config.keepAlivePolicy());
                     H2ClientParentConnectionContext connection = new H2ClientParentConnectionContext(channel,
-                            executionContext, parentFlushStrategy, idleTimeoutMs,
+                            executionContext, parentFlushStrategy, idleTimeoutMs, sslConfig,
                             keepAliveManager);
                     channel.attr(CHANNEL_CLOSEABLE_KEY).set(connection);
                     // We need the NettyToStChannelInboundHandler to be last in the pipeline. We accomplish that by
@@ -354,6 +357,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                                     parentContext.flushStrategyHolder.currentStrategy(),
                                     parentContext.idleTimeoutMs,
                                     HTTP_2_0,
+                                    parentContext.sslConfig(),
                                     parentContext.sslSession(),
                                     parentContext.nettyChannel().config(),
                                     streamObserver,
@@ -410,6 +414,12 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
         @Override
         public SocketAddress remoteAddress() {
             return parentContext.remoteAddress();
+        }
+
+        @Nullable
+        @Override
+        public SslConfig sslConfig() {
+            return parentContext.sslConfig();
         }
 
         @Nullable

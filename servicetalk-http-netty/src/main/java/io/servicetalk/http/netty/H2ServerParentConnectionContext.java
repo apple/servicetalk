@@ -30,6 +30,7 @@ import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ConnectionObserver.MultiplexedObserver;
 import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.netty.internal.ChannelCloseUtils;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.CloseHandler;
@@ -64,9 +65,10 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
     private H2ServerParentConnectionContext(final Channel channel, final HttpExecutionContext executionContext,
                                             final FlushStrategy flushStrategy,
                                             @Nullable final Long idleTimeoutMs,
+                                            @Nullable final SslConfig sslConfig,
                                             final SocketAddress listenAddress,
                                             final KeepAliveManager keepAliveManager) {
-        super(channel, executionContext, flushStrategy, idleTimeoutMs, keepAliveManager);
+        super(channel, executionContext, flushStrategy, idleTimeoutMs, sslConfig, keepAliveManager);
         this.listenAddress = requireNonNull(listenAddress);
     }
 
@@ -129,7 +131,7 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                     final FlushStrategy parentFlushStrategy = config.tcpConfig().flushStrategy();
                     H2ServerParentConnectionContext connection = new H2ServerParentConnectionContext(channel,
                             httpExecutionContext, parentFlushStrategy, config.tcpConfig().idleTimeoutMs(),
-                            listenAddress, keepAliveManager);
+                            config.tcpConfig().sslConfig(), listenAddress, keepAliveManager);
                     channel.attr(CHANNEL_CLOSEABLE_KEY).set(connection);
                     // We need the NettyToStChannelInboundHandler to be last in the pipeline. We accomplish that by
                     // calling the ChannelInitializer before we do addLast for the NettyToStChannelInboundHandler.
@@ -171,6 +173,7 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                                                 connection.flushStrategyHolder.currentStrategy(),
                                                 connection.idleTimeoutMs,
                                                 HTTP_2_0,
+                                                connection.sslConfig(),
                                                 connection.sslSession(),
                                                 channel.config(),
                                                 streamObserver,

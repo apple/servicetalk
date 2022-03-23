@@ -86,6 +86,7 @@ public class TcpServer {
                 (channel, connectionObserver) -> DefaultNettyConnection.<Buffer, Buffer>initChannel(channel,
                         executionContext.bufferAllocator(), executionContext.executor(), executionContext.ioExecutor(),
                         UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, config.flushStrategy(), config.idleTimeoutMs(),
+                        config.sslConfig(),
                         new TcpServerChannelInitializer(config, connectionObserver)
                                 .andThen(getChannelInitializer(service, executionContext)), executionStrategy, TCP,
                         connectionObserver, false, __ -> false),

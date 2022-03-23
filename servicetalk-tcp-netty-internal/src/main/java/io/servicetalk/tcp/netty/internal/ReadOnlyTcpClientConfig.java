@@ -51,6 +51,11 @@ public final class ReadOnlyTcpClientConfig extends AbstractReadOnlyTcpConfig<Cli
         sslContext = config.sslContext;
     }
 
+    /**
+     * Returns the {@link SslContext}.
+     *
+     * @return {@link SslContext}, {@code null} if none specified
+     */
     @Nullable
     @Override
     public SslContext sslContext() {

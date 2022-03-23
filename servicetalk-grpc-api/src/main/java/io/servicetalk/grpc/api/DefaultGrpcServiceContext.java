@@ -20,6 +20,7 @@ import io.servicetalk.encoding.api.ContentCodec;
 import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.SslConfig;
 
 import java.net.SocketAddress;
 import java.net.SocketOption;
@@ -54,6 +55,12 @@ final class DefaultGrpcServiceContext extends DefaultGrpcMetadata implements Grp
     @Override
     public SocketAddress remoteAddress() {
         return connectionContext.remoteAddress();
+    }
+
+    @Nullable
+    @Override
+    public SslConfig sslConfig() {
+        return connectionContext.sslConfig();
     }
 
     @Override

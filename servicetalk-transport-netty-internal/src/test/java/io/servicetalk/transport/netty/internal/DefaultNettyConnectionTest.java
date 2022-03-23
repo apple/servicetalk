@@ -113,7 +113,8 @@ class DefaultNettyConnectionTest {
         when(demandEstimator.estimateRequestN(anyLong())).then(invocation1 -> (long) requestNext);
         CloseHandler closeHandler = closeHandlerFactory.apply(channel);
         conn = DefaultNettyConnection.<Buffer, Buffer>initChannel(channel, allocator, executor,
-                null, closeHandler, defaultFlushStrategy(), null, trailerProtocolEndEventEmitter(closeHandler),
+                null, closeHandler, defaultFlushStrategy(), null, null,
+                trailerProtocolEndEventEmitter(closeHandler),
                 offloadAll(), mock(Protocol.class), NoopConnectionObserver.INSTANCE, true, __ -> false)
                 .toFuture().get();
         publisher = new TestPublisher<>();
