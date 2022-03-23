@@ -123,11 +123,11 @@ public final class HttpClients {
      * @param serviceDiscoverer The {@link ServiceDiscoverer} to resolve addresses of remote servers to connect to.
      * The lifecycle of the provided {@link ServiceDiscoverer} should be managed by the caller.
      * @return new builder with default configuration
+     * @see MultiAddressHttpClientBuilderProvider
      * @deprecated Use {@link #forMultiAddressUrl()} to create {@link MultiAddressHttpClientBuilder}, then use
      * {@link MultiAddressHttpClientBuilder#initializer(SingleAddressInitializer)} to override {@link ServiceDiscoverer}
      * using {@link SingleAddressHttpClientBuilder#serviceDiscoverer(ServiceDiscoverer)} for all or some of the internal
      * clients.
-     * @see MultiAddressHttpClientBuilderProvider
      */
     @Deprecated // FIXME: 0.43 - remove deprecated method
     public static MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forMultiAddressUrl(
