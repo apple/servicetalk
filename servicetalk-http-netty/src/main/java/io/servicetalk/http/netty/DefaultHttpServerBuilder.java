@@ -62,6 +62,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadAll;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.netty.StrategyInfluencerAwareConversions.toConditionalServiceFilterFactory;
 import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
@@ -261,7 +262,11 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
 
     @Override
     public Single<HttpServerContext> listenStreaming(final StreamingHttpService service) {
-        return listenForService(service, strategy);
+        HttpExecutionStrategy serviceStrategy = requiredOffloads(service, defaultStrategy());
+        HttpExecutionStrategy filterStrategy = computeRequiredStrategy(serviceFilters, serviceStrategy);
+        HttpExecutionStrategy useStrategy = defaultStrategy() == strategy ? offloadAll() :
+                strategy.hasOffloads() ? strategy.merge(filterStrategy) : offloadNone();
+        return listenForService(service, useStrategy);
     }
 
     @Override
