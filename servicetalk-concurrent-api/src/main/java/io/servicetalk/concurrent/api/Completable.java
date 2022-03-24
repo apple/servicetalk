@@ -1033,6 +1033,114 @@ public abstract class Completable {
     }
 
     /**
+     * Create a {@link Completable} that subscribes a single time upstream but allows for multiple downstream
+     * {@link Subscriber}s. The terminal signal will be cached and delivered to each downstream {@link Subscriber}.
+     * <p>
+     * In sequential programming this is similar to the following:
+     * <pre>{@code
+     *     Void result = resultOfThisCompletable();
+     *     List<Void> multiResults = ...; // simulating multiple Subscribers
+     *     for (int i = 0; i < expectedSubscribers; ++i) {
+     *         multiResults.add(result);
+     *     }
+     *     return multiResults;
+     * }</pre>
+     * @return a {@link Completable} that subscribes a single time upstream but allows for multiple downstream
+     * {@link Subscriber}s. The terminal signal will be cached and delivered to each downstream {@link Subscriber}.
+     * @see <a href="https://reactivex.io/documentation/operators/replay.html">ReactiveX cache operator</a>
+     * @see #cache(int)
+     */
+    public final Completable cache() {
+        return toSingle().cache().toCompletable();
+    }
+
+    /**
+     * Create a {@link Completable} that subscribes a single time upstream but allows for multiple downstream
+     * {@link Subscriber}s. The terminal signal will be cached and delivered to each downstream {@link Subscriber}.
+     * <p>
+     * In sequential programming this is similar to the following:
+     * <pre>{@code
+     *     Void result = resultOfThisCompletable();
+     *     List<Void> multiResults = ...; // simulating multiple Subscribers
+     *     for (int i = 0; i < expectedSubscribers; ++i) {
+     *         multiResults.add(result);
+     *     }
+     *     return multiResults;
+     * }</pre>
+     * @param minSubscribers The upstream subscribe operation will not happen until after this many {@link Subscriber}
+     * subscribe to the return value.
+     * @return a {@link Completable} that subscribes a single time upstream but allows for multiple downstream
+     * {@link Subscriber}s. The terminal signal will be cached and delivered to each downstream {@link Subscriber}.
+     * @see <a href="https://reactivex.io/documentation/operators/replay.html">ReactiveX cache operator</a>
+     * @see #cache(int, boolean)
+     */
+    public final Completable cache(int minSubscribers) {
+        return toSingle().cache(minSubscribers).toCompletable();
+    }
+
+    /**
+     * Create a {@link Completable} that subscribes a single time upstream but allows for multiple downstream
+     * {@link Subscriber}s. The terminal signal will be cached and delivered to each downstream {@link Subscriber}.
+     * <p>
+     * In sequential programming this is similar to the following:
+     * <pre>{@code
+     *     Void result = resultOfThisCompletable();
+     *     List<Void> multiResults = ...; // simulating multiple Subscribers
+     *     for (int i = 0; i < expectedSubscribers; ++i) {
+     *         multiResults.add(result);
+     *     }
+     *     return multiResults;
+     * }</pre>
+     * @param minSubscribers The upstream subscribe operation will not happen until after this many {@link Subscriber}
+     * subscribe to the return value.
+     * @param cancelUpstream {@code true} if upstream should be {@link Cancellable#cancel() cancelled} when all
+     * downstream {@link Subscriber}s cancel. {@code false} means that cancel will not be propagated upstream even if
+     * all downstream {@link Subscriber}s cancel, and the upstream Subscription will stay valid until termination.
+     * @return a {@link Completable} that subscribes a single time upstream but allows for multiple downstream
+     * {@link Subscriber}s. The terminal signal will be cached and delivered to each downstream {@link Subscriber}.
+     * @see <a href="https://reactivex.io/documentation/operators/replay.html">ReactiveX cache operator</a>
+     * @see #cache(int, boolean, Function)
+     */
+    public final Completable cache(int minSubscribers, boolean cancelUpstream) {
+        return toSingle().cache(minSubscribers, cancelUpstream).toCompletable();
+    }
+
+    /**
+     * Create a {@link Completable} that subscribes a single time upstream but allows for multiple downstream
+     * {@link Subscriber}s. The terminal signal will be cached and delivered to each downstream {@link Subscriber}.
+     * <p>
+     * In sequential programming this is similar to the following:
+     * <pre>{@code
+     *     Void result = resultOfThisCompletable();
+     *     List<Void> multiResults = ...; // simulating multiple Subscribers
+     *     for (int i = 0; i < expectedSubscribers; ++i) {
+     *         multiResults.add(result);
+     *     }
+     *     return multiResults;
+     * }</pre>
+     * @param minSubscribers The upstream subscribe operation will not happen until after this many {@link Subscriber}
+     * subscribe to the return value.
+     * @param cancelUpstream {@code true} if upstream should be {@link Cancellable#cancel() cancelled} when all
+     * downstream {@link Subscriber}s cancel. {@code false} means that cancel will not be propagated upstream even if
+     * all downstream {@link Subscriber}s cancel, and the upstream Subscription will stay valid until termination.
+     * @param terminalResubscribe A {@link Function} that is invoked when a terminal signal arrives from upstream, and
+     * returns a {@link Completable} whose termination resets the state of the returned {@link Completable} and allows
+     * for downstream resubscribing. The argument to this function is as follows:
+     * <ul>
+     *     <li>{@code null} if upstream terminates with {@link Subscriber#onComplete()}</li>
+     *     <li>otherwise the {@link Throwable} from {@link Subscriber#onError(Throwable)}</li>
+     * </ul>
+     * @return a {@link Completable} that subscribes a single time upstream but allows for multiple downstream
+     * {@link Subscriber}s. The terminal signal will be cached and delivered to each downstream {@link Subscriber}.
+     * @see <a href="https://reactivex.io/documentation/operators/replay.html">ReactiveX cache operator</a>
+     */
+    public final Completable cache(int minSubscribers, boolean cancelUpstream,
+                                   Function<Throwable, Completable> terminalResubscribe) {
+        return toSingle().cache(minSubscribers, cancelUpstream, (__, t) -> terminalResubscribe.apply(t))
+                .toCompletable();
+    }
+
+    /**
      * Invokes the {@code onSubscribe} {@link Consumer} argument <strong>before</strong>
      * {@link Subscriber#onSubscribe(Cancellable)} is called for {@link Subscriber}s of the returned
      * {@link Completable}.

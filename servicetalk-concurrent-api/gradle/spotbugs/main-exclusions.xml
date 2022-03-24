@@ -46,6 +46,11 @@
     <Field name="subscribers"/>
     <Bug pattern="VO_VOLATILE_REFERENCE_TO_ARRAY"/>
   </Match>
+  <Match>
+    <Class name="io.servicetalk.concurrent.api.CacheSingle$State"/>
+    <Field name="subscribers"/>
+    <Bug pattern="VO_VOLATILE_REFERENCE_TO_ARRAY"/>
+  </Match>
 
   <!-- In method io.servicetalk.concurrent.api.AsyncContext.<static initializer for AsyncContext>() -->
   <Match>

@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.concurrent.internal.DelayedSubscription;
 import io.servicetalk.concurrent.internal.FlowControlUtils;
 import io.servicetalk.concurrent.internal.QueueFullException;
+import io.servicetalk.concurrent.internal.SubscriberUtils;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
 import org.slf4j.Logger;
@@ -608,18 +609,12 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
             public void onComplete() {
                 final int unusedDemand = pendingDemandUpdater.getAndSet(this, -1);
                 if (unusedDemand < 0) {
-                    logDuplicateTerminal();
+                    SubscriberUtils.logDuplicateTerminal(this);
                 } else if (parent.removeSubscriber(this, unusedDemand)) {
                     parent.enqueueAndDrain(complete());
                 } else {
                     parent.tryEmitItem(MAPPED_SOURCE_COMPLETE, this);
                 }
-            }
-
-            private void logDuplicateTerminal() {
-                LOGGER.warn("Duplicate terminal on Subscriber {}", this,
-                        new IllegalStateException("Duplicate terminal on Subscriber " + this + " forbidden see: " +
-                                "https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#1.7"));
             }
         }
     }
