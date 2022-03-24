@@ -1046,7 +1046,7 @@ public abstract class Completable {
      *     return multiResults;
      * }</pre>
      * @return a {@link Completable} that subscribes a single time upstream but allows for multiple downstream
-     * {@link Subscriber}s. Signals from upstream will be multicast to each downstream {@link Subscriber}.
+     * {@link Subscriber}s. The terminal signal will be cached and delivered to each downstream {@link Subscriber}.
      * @see <a href="https://reactivex.io/documentation/operators/replay.html">ReactiveX cache operator</a>
      * @see #cache(int)
      */
@@ -1070,7 +1070,7 @@ public abstract class Completable {
      * @param minSubscribers The upstream subscribe operation will not happen until after this many {@link Subscriber}
      * subscribe to the return value.
      * @return a {@link Completable} that subscribes a single time upstream but allows for multiple downstream
-     * {@link Subscriber}s. Signals from upstream will be multicast to each downstream {@link Subscriber}.
+     * {@link Subscriber}s. The terminal signal will be cached and delivered to each downstream {@link Subscriber}.
      * @see <a href="https://reactivex.io/documentation/operators/replay.html">ReactiveX cache operator</a>
      * @see #cache(int, boolean)
      */
@@ -1097,7 +1097,7 @@ public abstract class Completable {
      * downstream {@link Subscriber}s cancel. {@code false} means that cancel will not be propagated upstream even if
      * all downstream {@link Subscriber}s cancel, and the upstream Subscription will stay valid until termination.
      * @return a {@link Completable} that subscribes a single time upstream but allows for multiple downstream
-     * {@link Subscriber}s. Signals from upstream will be multicast to each downstream {@link Subscriber}.
+     * {@link Subscriber}s. The terminal signal will be cached and delivered to each downstream {@link Subscriber}.
      * @see <a href="https://reactivex.io/documentation/operators/replay.html">ReactiveX cache operator</a>
      * @see #cache(int, boolean, Function)
      */
@@ -1131,7 +1131,7 @@ public abstract class Completable {
      *     <li>otherwise the {@link Throwable} from {@link Subscriber#onError(Throwable)}</li>
      * </ul>
      * @return a {@link Completable} that subscribes a single time upstream but allows for multiple downstream
-     * {@link Subscriber}s. Signals from upstream will be multicast to each downstream {@link Subscriber}.
+     * {@link Subscriber}s. The terminal signal will be cached and delivered to each downstream {@link Subscriber}.
      * @see <a href="https://reactivex.io/documentation/operators/replay.html">ReactiveX cache operator</a>
      */
     public final Completable cache(int minSubscribers, boolean cancelUpstream,
