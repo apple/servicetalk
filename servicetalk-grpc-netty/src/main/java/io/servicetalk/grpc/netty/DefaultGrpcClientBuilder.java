@@ -67,6 +67,7 @@ final class DefaultGrpcClientBuilder<U, R> implements GrpcClientBuilder<U, R> {
 
     private final Supplier<SingleAddressHttpClientBuilder<U, R>> httpClientBuilderSupplier;
 
+    // Do not use this ctor directly, GrpcClients is the entry point for creating a new builder.
     DefaultGrpcClientBuilder(final Supplier<SingleAddressHttpClientBuilder<U, R>> httpClientBuilderSupplier) {
         this.httpClientBuilderSupplier = httpClientBuilderSupplier;
     }
