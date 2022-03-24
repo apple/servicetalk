@@ -69,12 +69,12 @@ to help you by explicitly using the template. To do that, `cd` to the root of ou
 git config commit.template .git.commit.template
 ```
 
-=== Documentation Requirements
-For consistency and clarity reasons we use the following standards in all ServiceTalk documentation:
+=== Project Communication Requirements
+For consistency and clarity reasons we use the following standards in all ServiceTalk communications:
 
-- ServiceTalk documentation has an international audience; strive for simplicity and clarity in your writing with
+- Remember that you are communicating with an international audience; strive for simplicity and clarity in your writing with
 minimal jargon.
-- Modern American English spellings, grammar, and idioms should be used for all documentation and commit messages.
+- Modern American English spellings, grammar, and idioms should be used for all documentation, commit messages, and release notes.
 - Prefer only link:https://www.iso.org/iso-8601-date-and-time-format.html[ISO 8601] /
 link:https://datatracker.ietf.org/doc/html/rfc3339[IETF RFC 3339] date and time formats.
 - Where necessary, prefer Metric (SI) units.
