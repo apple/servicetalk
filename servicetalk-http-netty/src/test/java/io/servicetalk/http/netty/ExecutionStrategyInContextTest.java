@@ -54,7 +54,6 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
-import static io.servicetalk.http.api.HttpExecutionStrategies.offloadAll;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
@@ -106,7 +105,7 @@ class ExecutionStrategyInContextTest {
             assert expectedClientStrategy == null;
             expectedClientStrategy = defaultStrategy();
             assert expectedServerStrategy == null;
-            expectedServerStrategy = offloadAll();
+            expectedServerStrategy = offloadNone();
         }
         HttpExecutionStrategy clientStrat = client.executionContext().executionStrategy();
         assertThat("Unexpected client strategy.", clientStrat, equalStrategies(expectedClientStrategy));
