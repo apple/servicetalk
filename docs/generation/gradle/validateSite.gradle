@@ -67,14 +67,8 @@ for (location in ["local", "remote"]) {
     dependsOn validateHtmlFilesTask, validateHtmlLinksTask
   }
 
-  task(configureValidateHtmlFilesTask) {
-    doLast {
-      tasks[validateHtmlFilesTask].args htmlFiles
-    }
-  }
-
   task(validateHtmlFilesTask, type: JavaExec) {
-    dependsOn(configureValidateHtmlFilesTask, buildSiteTask)
+    dependsOn(buildSiteTask)
 
     def outputFile = file("$buildDir/report/validateHtmlFiles/result.txt")
 
@@ -90,6 +84,8 @@ for (location in ["local", "remote"]) {
 
     // for debugging
     // args "--verbose"
+
+    args htmlFiles
 
     // write a basic result file s.t. gradle can consider task up-to-date
     // writing a result file in case validation fails is not easily possible with JavaExec,
