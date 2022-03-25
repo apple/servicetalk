@@ -43,36 +43,35 @@ dependencies {
   }
 }
 
+def getHtmlFiles(def location) {
+  if (location == "local") {
+    return fileTree("$buildDir/$location").matching {
+      include "**/*.html"
+    }
+  } else {
+    // only check the currently generated docs, ignore legacy docs
+    return fileTree("$buildDir/$location").matching {
+      include "**/SNAPSHOT/*.html"
+    }
+  }
+}
+
 for (location in ["local", "remote"]) {
   def capitalizedLocation = location.capitalize()
-  def buildSiteTask = "build${capitalizedLocation}Site"
-  def validateSiteTask = "validate${capitalizedLocation}Site"
-  def validateHtmlFilesTask = "validate${capitalizedLocation}HtmlFiles"
-  def configureValidateHtmlFilesTask = "configureValidate${capitalizedLocation}HtmlFiles"
-  def validateHtmlLinksTask = "validate${capitalizedLocation}HtmlLinks"
+  def buildSiteTask = tasks.getByPath("build${capitalizedLocation}Site")
 
-  def htmlFiles
-  if (location == "local") {
-        htmlFiles = fileTree("$buildDir/$location").matching {
-        include "**/*.html"
-        }
-  } else {
-        // only check the currently generated docs, ignore legacy docs
-        htmlFiles = fileTree("$buildDir/$location").matching {
-        include "**/SNAPSHOT/*.html"
-        }
+  def filterSiteHtmlFilesTask = tasks.create(name: "filter${capitalizedLocation}Site") {
+    dependsOn buildSiteTask
+    inputs.dir buildSiteTask.outputs.files.files.first()
+    outputs.files location == "local" ?
+        inputs.files.asFileTree.matching { include "**/*.html" } :
+        inputs.files.asFileTree.matching { include "**/SNAPSHOT/*.html" }
   }
 
-  task(validateSiteTask) {
-    dependsOn validateHtmlFilesTask, validateHtmlLinksTask
-  }
-
-  task(validateHtmlFilesTask, type: JavaExec) {
-    dependsOn(buildSiteTask)
-
-    def outputFile = file("$buildDir/report/validateHtmlFiles/result.txt")
-
-    inputs.files htmlFiles
+  def validateHtmlFilesTask = tasks.create(name: "validate${capitalizedLocation}HtmlFiles", type: JavaExec) {
+    def outputFile = file("$buildDir/$location/report/validateHtmlFiles/result.txt")
+    dependsOn filterSiteHtmlFilesTask
+    // inputs.files contains jar files because of task type JavaExec, don't add filterSiteHtmlFilesTask.outputs.
     outputs.file outputFile
 
     classpath = configurations.nuValidator
@@ -85,7 +84,11 @@ for (location in ["local", "remote"]) {
     // for debugging
     // args "--verbose"
 
-    args htmlFiles
+    // Before execution we need to add the arguments that specify the files to check. Do this in a doFirst block
+    // so filterSiteHtmlFilesTask.outputs has been resolved, otherwise we may race and not have any value.
+    doFirst {
+      args filterSiteHtmlFilesTask.outputs.files.stream().map(f -> f.getAbsolutePath()).toList()
+    }
 
     // write a basic result file s.t. gradle can consider task up-to-date
     // writing a result file in case validation fails is not easily possible with JavaExec,
@@ -94,12 +97,10 @@ for (location in ["local", "remote"]) {
     doLast { outputFile.text = "Success." }
   }
 
-  task(validateHtmlLinksTask) {
-    dependsOn(buildSiteTask)
-
-    def outputDir = file("$buildDir/report/validateHtmlLinks")
-
-    inputs.files htmlFiles
+  def validateHtmlLinksTask = tasks.create(name: "validate${capitalizedLocation}HtmlLinks") {
+    def outputDir = file("$buildDir/$location/report/validateHtmlLinks")
+    dependsOn filterSiteHtmlFilesTask
+    inputs.files filterSiteHtmlFilesTask.outputs.files
     outputs.dir outputDir
 
     doLast {
@@ -109,7 +110,7 @@ for (location in ["local", "remote"]) {
 
       try {
         // only validate links of latest version because we can't fix links of older versions
-        for (htmlFile in htmlFiles) {
+        for (htmlFile in inputs.files) {
           if (htmlFile.toString().endsWith("404.html")) {
             continue;
           }
@@ -232,5 +233,9 @@ for (location in ["local", "remote"]) {
         outputDir.mkdirs()
       }
     }
+  }
+
+  tasks.create(name: "validate${capitalizedLocation}Site") {
+    dependsOn validateHtmlFilesTask, validateHtmlLinksTask
   }
 }
