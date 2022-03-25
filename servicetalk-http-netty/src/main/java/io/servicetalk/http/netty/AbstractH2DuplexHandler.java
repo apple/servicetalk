@@ -17,6 +17,7 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.http.api.Http2Exception;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpMetaData;
@@ -29,7 +30,9 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.http2.DefaultHttp2DataFrame;
 import io.netty.handler.codec.http2.DefaultHttp2HeadersFrame;
+import io.netty.handler.codec.http2.DefaultHttp2ResetFrame;
 import io.netty.handler.codec.http2.Http2DataFrame;
+import io.netty.handler.codec.http2.Http2Error;
 import io.netty.handler.codec.http2.Http2Headers;
 import io.netty.handler.codec.http2.Http2ResetFrame;
 import io.netty.util.ReferenceCountUtil;
@@ -37,6 +40,7 @@ import io.netty.util.ReferenceCountUtil;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.netty.BufferUtils.toByteBuf;
+import static io.servicetalk.http.api.Http2ErrorCode.PROTOCOL_ERROR;
 import static io.servicetalk.http.netty.H2ToStH1Utils.h1HeadersToH2Headers;
 import static io.servicetalk.http.netty.HeaderUtils.emptyMessageBody;
 import static io.servicetalk.http.netty.HttpObjectEncoder.encodeAndRetain;
@@ -150,5 +154,15 @@ abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
             observer.streamClosed(t);
         }
         ctx.fireChannelInactive();
+    }
+
+    static Http2Exception protocolError(final ChannelHandlerContext ctx, final int streamId,
+                                        final boolean endStream, final String message) {
+        if (!endStream) {
+            // RST_FRAME will communicate an error to the remote peer if we haven't received END_STREAM flag yet.
+            ctx.writeAndFlush(new DefaultHttp2ResetFrame(Http2Error.PROTOCOL_ERROR));
+        }
+        // Thrown exception provides visibility for the local pipeline:
+        return new Http2Exception(streamId, PROTOCOL_ERROR, message);
     }
 }
