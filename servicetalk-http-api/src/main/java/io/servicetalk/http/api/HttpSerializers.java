@@ -197,7 +197,7 @@ public final class HttpSerializers {
      * {@link StandardCharsets#UTF_8} encoding using variable {@code int} length delimited framing. The framing is
      * required so the same {@link String} objects can be deserialized by the peer, otherwise the boundaries aren't
      * known. If the desire is to serialize raw data contained in the {@link String}, see
-     * {@link #stringStreamingSerializer(Charset, Consumer)}.The {@link HttpHeaderNames#CONTENT_TYPE} value prefix is
+     * {@link #stringStreamingSerializer(Charset, Consumer)}. The {@link HttpHeaderNames#CONTENT_TYPE} value prefix is
      * {@value #APPLICATION_TEXT_VARINT_STR}.
      *
      * @return a {@link HttpStreamingSerializerDeserializer} that serializes {@link String}s with
@@ -296,9 +296,24 @@ public final class HttpSerializers {
 
     /**
      * Create a {@link HttpStreamingSerializer} that serializes {@link String}. This method is useful if the payload
-     * body is provided in {@link String} and the {@link HttpHeaderNames#CONTENT_TYPE} is known a-prior
+     * body is provided in {@link String} and the {@link HttpHeaderNames#CONTENT_TYPE} is known a-priori
      * (e.g. streaming raw json data from a stream of {@link String}s). Deserialization should be done using
-     * the a-prior knowledge to use a compatible {@link HttpStreamingDeserializer}.
+     * the a-priori knowledge to use a compatible {@link HttpStreamingDeserializer}. To elaborate why a-priori knowledge
+     * of how content is consumed/deserialized is required consider the following caveats of this method:
+     * <ul>
+     *     <li>Lack of framing - There is no guarantee deserialization will be able to recover the same {@link String}
+     *     objects. For example, if {@code ("foo", "bar")} is serialized the deserialization may not
+     *     be able to reliably return {@code "foo"} and {@code "bar"}. If the result of the serialization is sent as a
+     *     stream of bytes (e.g. TCP over a network) the deserialization will produce {@link String}s as read from the
+     *     stream. For example, if the deserialization is done in a streaming fashion this is a valid result:
+     *     ({@code "f", "o", "oba", "r"}). If the receiver always aggregates data before deserialization they will
+     *     reliably get {@code "foobar"}.</li>
+     *     <li>Broken encoding - If your {@link String} encoding represents a single character with multiple bytes
+     *     (e.g. {@link StandardCharsets#UTF_8}) the deserialization may encounter errors if the results are processed
+     *     as a stream of bytes (see description above).</li>
+     * </ul>
+     * Note {@link #appSerializerFixLen(Charset)} and {@link #appSerializerVarLen(Charset)} introduce a framing and
+     * therefore are not subject to the above caveats.
      * @param charset The character encoding to use for serialization.
      * @param headersSerializeConsumer Sets the headers to indicate the appropriate encoding and content type.
      * @return a {@link HttpStreamingSerializer} that uses a {@link Serializer} for serialization.
@@ -312,9 +327,9 @@ public final class HttpSerializers {
 
     /**
      * Create a {@link HttpStreamingSerializer} that serializes {@code byte[]}. This method is useful if the payload
-     * body is provided in {@code byte[]} and the {@link HttpHeaderNames#CONTENT_TYPE} is known a-prior
+     * body is provided in {@code byte[]} and the {@link HttpHeaderNames#CONTENT_TYPE} is known a-priori
      * (e.g. streaming raw json data from a stream of {@code byte[]}s). Deserialization should be done using
-     * the a-prior knowledge to use a compatible {@link HttpStreamingDeserializer}.
+     * the a-priori knowledge to use a compatible {@link HttpStreamingDeserializer}.
      * @param headersSerializeConsumer Sets the headers to indicate the appropriate encoding and content type.
      * @return a {@link HttpStreamingSerializer} that uses a {@link Serializer} for serialization.
      */
@@ -390,8 +405,8 @@ public final class HttpSerializers {
     /**
      * Create a {@link HttpStreamingSerializer} that uses a {@link Serializer} for serialization. This method is useful
      * if the payload body is provided in non-{@link Buffer} type and the {@link HttpHeaderNames#CONTENT_TYPE} is known
-     * a-prior (e.g. streaming raw json data from a stream of {@link String}s). Deserialization should be done using
-     * the a-prior knowledge to use a compatible {@link HttpStreamingDeserializer}.
+     * a-priori (e.g. streaming raw json data from a stream of {@link String}s). Deserialization should be done using
+     * the a-priori knowledge to use a compatible {@link HttpStreamingDeserializer}.
      * @param serializer Used to serialize each {@link T} chunk.
      * @param bytesEstimator Provides an estimate of how many bytes to allocate for each {@link Buffer} to serialize to.
      * @param headersSerializeConsumer Sets the headers to indicate the appropriate encoding and content type.
