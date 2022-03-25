@@ -31,7 +31,6 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.utils.auth.BasicAuthHttpServiceFilter;
 import io.servicetalk.http.utils.auth.BasicAuthHttpServiceFilter.CredentialsVerifier;
-import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
@@ -129,6 +128,7 @@ class BasicAuthStrategyInfluencerTest {
         when(credentialsVerifier.apply(anyString(), anyString())).thenReturn(succeeded("success"));
         when(credentialsVerifier.closeAsync()).thenReturn(completed());
         when(credentialsVerifier.closeAsyncGracefully()).thenReturn(completed());
+        when(credentialsVerifier.requiredOffloads()).thenCallRealMethod();
         CredentialsVerifier<String> verifier = credentialsVerifier;
         if (noOffloadsInfluence) {
             verifier = new InfluencingVerifier(verifier, offloadNone());
@@ -146,8 +146,7 @@ class BasicAuthStrategyInfluencerTest {
         return this.client;
     }
 
-    private static final class OffloadCheckingService implements StreamingHttpService,
-                                                                 ExecutionStrategyInfluencer<HttpExecutionStrategy> {
+    private static final class OffloadCheckingService implements StreamingHttpService {
 
         private enum OffloadPoint {
             ServiceHandle,

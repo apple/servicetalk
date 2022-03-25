@@ -262,7 +262,7 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
 
     @Override
     public Single<HttpServerContext> listenStreaming(final StreamingHttpService service) {
-        return listenForService(service, strategy);
+        return listenForService(service, computeServiceStrategy(service));
     }
 
     @Override
@@ -361,7 +361,7 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
         HttpExecutionStrategy serviceStrategy = requiredOffloads(service, defaultStrategy());
         HttpExecutionStrategy filterStrategy = computeRequiredStrategy(serviceFilters, serviceStrategy);
         return defaultStrategy() == strategy ? filterStrategy :
-                strategy.hasOffloads() ? strategy.merge(filterStrategy) : offloadNone();
+                strategy.hasOffloads() ? strategy.merge(filterStrategy) : strategy;
     }
 
     private static StreamingHttpService applyInternalFilters(StreamingHttpService service,

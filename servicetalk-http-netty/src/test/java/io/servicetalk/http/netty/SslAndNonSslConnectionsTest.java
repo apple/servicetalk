@@ -90,6 +90,7 @@ class SslAndNonSslConnectionsTest {
                 });
         when(STREAMING_HTTP_SERVICE.closeAsync()).thenReturn(completed());
         when(STREAMING_HTTP_SERVICE.closeAsyncGracefully()).thenReturn(completed());
+        when(STREAMING_HTTP_SERVICE.requiredOffloads()).thenCallRealMethod();
         serverCtx = HttpServers.forAddress(localAddress(0))
                 .executionStrategy(offloadNone())
                 .listenStreamingAndAwait(STREAMING_HTTP_SERVICE);
@@ -106,6 +107,7 @@ class SslAndNonSslConnectionsTest {
                 });
         when(SECURE_STREAMING_HTTP_SERVICE.closeAsync()).thenReturn(completed());
         when(SECURE_STREAMING_HTTP_SERVICE.closeAsyncGracefully()).thenReturn(completed());
+        when(SECURE_STREAMING_HTTP_SERVICE.requiredOffloads()).thenCallRealMethod();
         secureServerCtx = HttpServers.forAddress(localAddress(0))
                 .sslConfig(new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
                         DefaultTestCerts::loadServerKey).build())
