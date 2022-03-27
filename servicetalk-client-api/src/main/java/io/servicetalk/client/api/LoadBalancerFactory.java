@@ -43,8 +43,7 @@ public interface LoadBalancerFactory<ResolvedAddress, C extends LoadBalancedConn
      * and hence will call {@link ConnectionFactory#closeAsync()} when {@link LoadBalancer#closeAsync()} is called.
      * @param <T> Type of connections created by the passed {@link ConnectionFactory}.
      * @return a new {@link LoadBalancer}.
-     * @deprecated In the future only {@link #newLoadBalancer(String, Publisher, ConnectionFactory)} will remain,
-     * please use that method instead.
+     * @deprecated Use {@link #newLoadBalancerTyped(String, Publisher, ConnectionFactory)}.
      */
     @Deprecated // FIXME: 0.43 - remove deprecated method
     default <T extends C> LoadBalancer<T> newLoadBalancer(
@@ -69,11 +68,35 @@ public interface LoadBalancerFactory<ResolvedAddress, C extends LoadBalancedConn
      * and hence will call {@link ConnectionFactory#closeAsync()} when {@link LoadBalancer#closeAsync()} is called.
      * @param <T> Type of connections created by the passed {@link ConnectionFactory}.
      * @return a new {@link LoadBalancer}.
+     * @deprecated Use {@link #newLoadBalancerTyped(String, Publisher, ConnectionFactory)}.
      */
+    @Deprecated // FIXME: 0.43 - remove deprecated method
     <T extends C> LoadBalancer<T> newLoadBalancer(
             String targetResource,
             Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
             ConnectionFactory<ResolvedAddress, T> connectionFactory);
+
+    /**
+     * Create a new {@link LoadBalancer}.
+     *
+     * @param targetResource A {@link String} representation of the target resource for which the created instance
+     * will perform load balancing. Bear in mind, load balancing is performed over the a collection of hosts provided
+     * via the {@code eventPublisher} which may not correspond directly to a single unresolved address, but potentially
+     * a merged collection.
+     * @param eventPublisher A stream of {@link Collection}&lt;{@link ServiceDiscovererEvent}&gt;
+     * which the {@link LoadBalancer} can use to connect to physical hosts. Typically generated
+     * from {@link ServiceDiscoverer#discover(Object) ServiceDiscoverer}.
+     * @param connectionFactory {@link ConnectionFactory} that the returned {@link LoadBalancer} will use to generate
+     * new connections. Returned {@link LoadBalancer} will own the responsibility for this {@link ConnectionFactory}
+     * and hence will call {@link ConnectionFactory#closeAsync()} when {@link LoadBalancer#closeAsync()} is called.
+     * @return a new {@link LoadBalancer}.
+     */
+    default LoadBalancer<C> newLoadBalancerTyped(
+            String targetResource,
+            Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
+            ConnectionFactory<ResolvedAddress, C> connectionFactory) {
+        return newLoadBalancer(targetResource, eventPublisher, connectionFactory);
+    }
 
     @Override
     default ExecutionStrategy requiredOffloads() {

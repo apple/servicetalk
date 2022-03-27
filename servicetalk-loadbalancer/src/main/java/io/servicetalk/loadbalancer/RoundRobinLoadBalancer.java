@@ -416,12 +416,13 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
                     // Invoke the selector before adding the connection to the pool, otherwise, connection can be
                     // used concurrently and hence a new connection can be rejected by the selector.
                     if (!selector.test(newCnx)) {
-                        // Failure in selection could be temporary, hence add it to the queue and be consistent
-                        // with the fact that select failure does not close a connection.
-                        return newCnx.closeAsync().concat(failed(StacklessConnectionRejectedException.newInstance(
+                        // Failure in selection could be the result of connection factory returning queued connection,
+                        // and not having visibility into max-concurrent-requests. Propagate the exception and rely upon
+                        // retry strategy.
+                        return failed(StacklessConnectionRejectedException.newInstance(
                                 "Newly created connection " + newCnx + " for " + targetResource
                                         + " was rejected by the selection filter.",
-                                RoundRobinLoadBalancer.class, "selectConnection0(...)")));
+                                RoundRobinLoadBalancer.class, "selectConnection0(...)"));
                     }
                     if (host.addConnection(newCnx)) {
                         return succeeded(newCnx);

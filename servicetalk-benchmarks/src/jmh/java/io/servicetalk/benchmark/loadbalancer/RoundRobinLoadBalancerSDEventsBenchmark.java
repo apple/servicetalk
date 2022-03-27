@@ -81,14 +81,14 @@ public class RoundRobinLoadBalancerSDEventsBenchmark {
     public LoadBalancer<LoadBalancedConnection> mixed() {
         // RR load balancer synchronously subscribes and will consume all events during construction.
         return new RoundRobinLoadBalancerFactory.Builder<InetSocketAddress, LoadBalancedConnection>().build()
-                .newLoadBalancer("benchmark", from(mixedEvents), ConnFactory.INSTANCE);
+                .newLoadBalancerTyped("benchmark", from(mixedEvents), ConnFactory.INSTANCE);
     }
 
     @Benchmark
     public LoadBalancer<LoadBalancedConnection> available() {
         // RR load balancer synchronously subscribes and will consume all events during construction.
         return new RoundRobinLoadBalancerFactory.Builder<InetSocketAddress, LoadBalancedConnection>().build()
-                        .newLoadBalancer("benchmark", from(availableEvents), ConnFactory.INSTANCE);
+                        .newLoadBalancerTyped("benchmark", from(availableEvents), ConnFactory.INSTANCE);
     }
 
     private static final class ConnFactory implements ConnectionFactory<InetSocketAddress, LoadBalancedConnection> {

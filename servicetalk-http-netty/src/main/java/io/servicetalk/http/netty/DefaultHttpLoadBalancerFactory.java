@@ -57,12 +57,21 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
         this.strategy = strategy;
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     public <T extends FilterableStreamingHttpLoadBalancedConnection> LoadBalancer<T> newLoadBalancer(
             final String targetResource,
             final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
             final ConnectionFactory<ResolvedAddress, T> connectionFactory) {
         return rawFactory.newLoadBalancer(targetResource, eventPublisher, connectionFactory);
+    }
+
+    @Override
+    public LoadBalancer<FilterableStreamingHttpLoadBalancedConnection> newLoadBalancerTyped(
+            final String targetResource,
+            final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
+            final ConnectionFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> connectionFactory) {
+        return rawFactory.newLoadBalancerTyped(targetResource, eventPublisher, connectionFactory);
     }
 
     @Override   // FIXME: 0.43 - remove deprecated method
@@ -201,7 +210,7 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
 
         @Override
         public String toString() {
-            return delegate.toString();
+            return getClass().getSimpleName() + '(' + delegate + ')';
         }
     }
 }

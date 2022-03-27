@@ -164,6 +164,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
         private final StreamingHttpRequestResponseFactory reqRespFactory;
         private final Processor<ConsumableEvent<Integer>, ConsumableEvent<Integer>> maxConcurrencyProcessor =
                 newPublisherProcessorDropHeadOnOverflow(16);
+        private final Publisher<ConsumableEvent<Integer>> maxConcurrencyPublisher;
         private final boolean allowDropTrailersReadFromTransport;
         @Nullable
         private Subscriber<? super H2ClientParentConnection> subscriber;
@@ -185,6 +186,11 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
             // Set maxConcurrency to the initial value recommended by the HTTP/2 spec
             maxConcurrencyProcessor.onNext(DEFAULT_H2_MAX_CONCURRENCY_EVENT);
             bs = new Http2StreamChannelBootstrap(connection.channel());
+            maxConcurrencyPublisher = fromSource(maxConcurrencyProcessor)
+                    .publishOn(connection.executionContext().executionStrategy().isEventOffloaded() ?
+                                    connection.executionContext().executor() : immediate(),
+                            IoThreadFactory.IoThread::currentThreadIsIoThread)
+                    .multicast(1); // Allows multiple Subscribers to consume the event stream.
         }
 
         @Override
@@ -229,14 +235,11 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
             return parentContext;
         }
 
+        @SuppressWarnings("unchecked")
         @Override
         public <T> Publisher<? extends T> transportEventStream(final HttpEventKey<T> eventKey) {
-            @SuppressWarnings("unchecked")
-            Publisher<T> maxConcurrencyStream = (Publisher<T>) fromSource(maxConcurrencyProcessor)
-                    .publishOn(parentContext.executionContext().executionStrategy().isEventOffloaded() ?
-                            parentContext.executionContext().executor() : immediate(),
-                            IoThreadFactory.IoThread::currentThreadIsIoThread);
-            return eventKey == MAX_CONCURRENCY ? maxConcurrencyStream :
+            return eventKey == MAX_CONCURRENCY ?
+                    (Publisher<T>) maxConcurrencyPublisher :
                     failed(new IllegalArgumentException("Unknown key: " + eventKey));
         }
 

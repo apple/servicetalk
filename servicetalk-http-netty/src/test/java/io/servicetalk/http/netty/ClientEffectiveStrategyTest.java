@@ -569,7 +569,7 @@ class ClientEffectiveStrategyTest {
 
     private static class LoadBalancerFactoryImpl
             implements LoadBalancerFactory<InetSocketAddress, FilterableStreamingHttpLoadBalancedConnection> {
-
+        @SuppressWarnings("deprecation")
         @Override
         public <T extends FilterableStreamingHttpLoadBalancedConnection> LoadBalancer<T> newLoadBalancer(
                 final String targetResource,
@@ -579,6 +579,18 @@ class ClientEffectiveStrategyTest {
             return new RoundRobinLoadBalancerFactory
                     .Builder<InetSocketAddress, FilterableStreamingHttpLoadBalancedConnection>().build()
                     .newLoadBalancer(targetResource, eventPublisher, connectionFactory);
+        }
+
+        @Override
+        public LoadBalancer<FilterableStreamingHttpLoadBalancedConnection> newLoadBalancerTyped(
+                final String targetResource,
+                final Publisher<? extends Collection<? extends ServiceDiscovererEvent<InetSocketAddress>>>
+                        eventPublisher,
+                final ConnectionFactory<InetSocketAddress, FilterableStreamingHttpLoadBalancedConnection>
+                        connectionFactory) {
+            return new RoundRobinLoadBalancerFactory
+                    .Builder<InetSocketAddress, FilterableStreamingHttpLoadBalancedConnection>().build()
+                    .newLoadBalancerTyped(targetResource, eventPublisher, connectionFactory);
         }
 
         @Override
