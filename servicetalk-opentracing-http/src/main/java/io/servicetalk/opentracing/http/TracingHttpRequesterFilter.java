@@ -34,7 +34,6 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.opentracing.Scope;
 import io.opentracing.Span;
 import io.opentracing.Tracer;
-import io.opentracing.Tracer.SpanBuilder;
 import io.opentracing.propagation.Format;
 import io.opentracing.propagation.TextMap;
 
@@ -143,15 +142,13 @@ public class TracingHttpRequesterFilter extends AbstractTracingHttpFilter
     }
 
     private ScopeTracker newTracker(final HttpRequestMetaData request) {
-        SpanBuilder spanBuilder = tracer.buildSpan(componentName)
+        final Span activeSpan = tracer.activeSpan();
+        Span span = tracer.buildSpan(componentName)
+                .asChildOf(activeSpan)
                 .withTag(SPAN_KIND.getKey(), SPAN_KIND_CLIENT)
                 .withTag(HTTP_METHOD.getKey(), request.method().name())
-                .withTag(HTTP_URL.getKey(), request.path());
-        final Span activeSpan = tracer.activeSpan();
-        if (activeSpan != null) {
-            spanBuilder = spanBuilder.asChildOf(activeSpan);
-        }
-        Span span = spanBuilder.start();
+                .withTag(HTTP_URL.getKey(), request.path())
+                .start();
         Scope scope = tracer.activateSpan(span);
         try {
             injector.accept(span.context(), request.headers());
