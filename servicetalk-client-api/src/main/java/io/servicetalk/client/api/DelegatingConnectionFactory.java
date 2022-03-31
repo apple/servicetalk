@@ -15,13 +15,16 @@
  */
 package io.servicetalk.client.api;
 
+import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.transport.api.TransportObserver;
 
 import javax.annotation.Nullable;
 
+import static io.servicetalk.client.api.DeprecatedToNewConnectionFactoryFilter.CONNECTION_FACTORY_CONTEXT_MAP_KEY;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -43,9 +46,21 @@ public class DelegatingConnectionFactory<ResolvedAddress, C extends ListenableAs
         this.delegate = requireNonNull(delegate);
     }
 
+    @Deprecated
     @Override
     public Single<C> newConnection(final ResolvedAddress resolvedAddress, @Nullable final TransportObserver observer) {
         return delegate.newConnection(resolvedAddress, observer);
+    }
+
+    @Override
+    public Single<C> newConnection(final ResolvedAddress resolvedAddress, @Nullable final ContextMap context,
+                                   @Nullable final TransportObserver observer) {
+        return Single.defer(() -> {
+            if (context != null) {
+                AsyncContext.put(CONNECTION_FACTORY_CONTEXT_MAP_KEY, context);
+            }
+            return newConnection(resolvedAddress, observer).shareContextOnSubscribe();
+        });
     }
 
     @Override

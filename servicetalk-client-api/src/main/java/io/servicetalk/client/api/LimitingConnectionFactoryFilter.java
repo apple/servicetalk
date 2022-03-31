@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableSingle;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.TransportObserver;
 
@@ -149,12 +150,13 @@ public final class LimitingConnectionFactoryFilter<ResolvedAddress, C extends Li
 
         @Override
         public Single<C> newConnection(final ResolvedAddress resolvedAddress,
+                                       @Nullable final ContextMap context,
                                        @Nullable final TransportObserver observer) {
             return new SubscribableSingle<C>() {
                 @Override
                 protected void handleSubscribe(final Subscriber<? super C> subscriber) {
                     if (limiter.isConnectAllowed(resolvedAddress)) {
-                        toSource(delegate().newConnection(resolvedAddress, observer))
+                        toSource(delegate().newConnection(resolvedAddress, context, observer))
                                 .subscribe(new CountingSubscriber<>(subscriber, limiter, resolvedAddress));
                     } else {
                         deliverErrorFromSource(subscriber, limiter.newConnectionRefusedException(resolvedAddress));

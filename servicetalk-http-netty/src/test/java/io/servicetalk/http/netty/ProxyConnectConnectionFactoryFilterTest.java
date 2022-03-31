@@ -165,9 +165,9 @@ class ProxyConnectConnectionFactoryFilterTest {
     private void subscribeToProxyConnectionFactory(Consumer<FilterableStreamingHttpConnection> onSuccess) {
         @SuppressWarnings("unchecked")
         ConnectionFactory<String, FilterableStreamingHttpConnection> original = mock(ConnectionFactory.class);
-        when(original.newConnection(any(), any())).thenReturn(succeeded(connection));
+        when(original.newConnection(any(), any(), any())).thenReturn(succeeded(connection));
         toSource(new ProxyConnectConnectionFactoryFilter<String, FilterableStreamingHttpConnection>(CONNECT_ADDRESS)
-                .create(original).newConnection(RESOLVED_ADDRESS, null).afterOnSuccess(onSuccess))
+                .create(original).newConnection(RESOLVED_ADDRESS, null, null).afterOnSuccess(onSuccess))
                 .subscribe(subscriber);
     }
 

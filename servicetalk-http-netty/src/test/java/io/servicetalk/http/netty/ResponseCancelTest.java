@@ -22,6 +22,7 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource.Processor;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategies;
@@ -177,10 +178,11 @@ class ResponseCancelTest {
 
         @Override
         public Single<FilterableStreamingHttpConnection> newConnection(final InetSocketAddress inetSocketAddress,
+                                                                       @Nullable final ContextMap context,
                                                                        @Nullable final TransportObserver observer) {
             return defer(() -> {
                 connectionCount.incrementAndGet();
-                return delegate().newConnection(inetSocketAddress, observer);
+                return delegate().newConnection(inetSocketAddress, context, observer);
             });
         }
     }

@@ -54,7 +54,7 @@ class LingeringRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerTest {
 
     private void hostDownDoesntCloseConnection(boolean gracefulClosure) throws Exception {
         sendServiceDiscoveryEvents(upEvent("address-1"));
-        TestLoadBalancedConnection conn = lb.selectConnection(any()).toFuture().get();
+        TestLoadBalancedConnection conn = lb.selectConnection(any(), null).toFuture().get();
         sendServiceDiscoveryEvents(downEvent("address-1"));
         verify(conn, never()).closeAsyncGracefully();
         verify(conn, never()).closeAsync();
@@ -77,8 +77,8 @@ class LingeringRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerTest {
         sendServiceDiscoveryEvents(upEvent("address-1"));
         final Predicate<TestLoadBalancedConnection> connectionFilter = alwaysNewConnectionFilter();
 
-        TestLoadBalancedConnection conn1 = lb.selectConnection(connectionFilter).toFuture().get();
-        TestLoadBalancedConnection conn2 = lb.selectConnection(connectionFilter).toFuture().get();
+        TestLoadBalancedConnection conn1 = lb.selectConnection(connectionFilter, null).toFuture().get();
+        TestLoadBalancedConnection conn2 = lb.selectConnection(connectionFilter, null).toFuture().get();
         assertConnectionCount(lb.usedAddresses(), connectionsCount("address-1", 2));
 
         sendServiceDiscoveryEvents(downEvent("address-1"));
@@ -97,7 +97,7 @@ class LingeringRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerTest {
         Executor executor = Executors.newFixedSizeExecutor(1);
         try {
             sendServiceDiscoveryEvents(upEvent("address-1"));
-            TestLoadBalancedConnection conn = lb.selectConnection(alwaysNewConnectionFilter()).toFuture().get();
+            TestLoadBalancedConnection conn = lb.selectConnection(alwaysNewConnectionFilter(), null).toFuture().get();
             sendServiceDiscoveryEvents(downEvent("address-1"));
             assertConnectionCount(lb.usedAddresses(), connectionsCount("address-1", 1));
 
@@ -127,7 +127,7 @@ class LingeringRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerTest {
 
             Future<Object> f = executor.submit(() -> {
                 try {
-                     connection.set(lb.selectConnection(alwaysNewConnectionFilter()).toFuture().get());
+                     connection.set(lb.selectConnection(alwaysNewConnectionFilter(), null).toFuture().get());
                 } catch (Exception ex) {
                     e.set(ex);
                 }
@@ -154,7 +154,7 @@ class LingeringRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerTest {
 
                 // Confirm host is expired:
                 ExecutionException ex = assertThrows(ExecutionException.class,
-                        () -> lb.selectConnection(alwaysNewConnectionFilter()).toFuture().get());
+                        () -> lb.selectConnection(alwaysNewConnectionFilter(), null).toFuture().get());
                 assertThat(ex.getCause(), instanceOf(NoAvailableHostException.class));
 
                 lb.closeAsyncGracefully().toFuture().get();
@@ -173,8 +173,8 @@ class LingeringRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerTest {
             sendServiceDiscoveryEvents(upEvent("address-1"));
             assertConnectionCount(lb.usedAddresses(), connectionsCount("address-1", 0));
 
-            TestLoadBalancedConnection conn1 = lb.selectConnection(alwaysNewConnectionFilter()).toFuture().get();
-            TestLoadBalancedConnection conn2 = lb.selectConnection(alwaysNewConnectionFilter()).toFuture().get();
+            TestLoadBalancedConnection conn1 = lb.selectConnection(alwaysNewConnectionFilter(), null).toFuture().get();
+            TestLoadBalancedConnection conn2 = lb.selectConnection(alwaysNewConnectionFilter(), null).toFuture().get();
 
             Future<Object> f = executor.submit(() -> {
                 sendServiceDiscoveryEvents(downEvent("address-1"));
@@ -196,8 +196,8 @@ class LingeringRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerTest {
         sendServiceDiscoveryEvents(upEvent("address-1"));
         final Predicate<TestLoadBalancedConnection> connectionFilter = alwaysNewConnectionFilter();
 
-        TestLoadBalancedConnection conn1 = lb.selectConnection(connectionFilter).toFuture().get();
-        TestLoadBalancedConnection conn2 = lb.selectConnection(connectionFilter).toFuture().get();
+        TestLoadBalancedConnection conn1 = lb.selectConnection(connectionFilter, null).toFuture().get();
+        TestLoadBalancedConnection conn2 = lb.selectConnection(connectionFilter, null).toFuture().get();
         assertConnectionCount(lb.usedAddresses(), connectionsCount("address-1", 2));
         conn1.closeAsync().toFuture().get();
         assertConnectionCount(lb.usedAddresses(), connectionsCount("address-1", 1));
@@ -212,23 +212,23 @@ class LingeringRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerTest {
         sendServiceDiscoveryEvents(upEvent("address-1"));
         assertAddresses(lb.usedAddresses(), "address-1");
 
-        lb.selectConnection(any()).toFuture().get();
+        lb.selectConnection(any(), null).toFuture().get();
         assertConnectionCount(lb.usedAddresses(), connectionsCount("address-1", 1));
 
         sendServiceDiscoveryEvents(downEvent("address-1"));
         assertConnectionCount(lb.usedAddresses(), connectionsCount("address-1", 1));
-        assertThat(lb.selectConnection(any()).toFuture().get(), is(notNullValue()));
+        assertThat(lb.selectConnection(any(), null).toFuture().get(), is(notNullValue()));
 
         // We validate the host is expired by attempting to create a new connection
         final Predicate<TestLoadBalancedConnection> createNewConnection = alwaysNewConnectionFilter();
         Exception e = assertThrows(ExecutionException.class, () ->
-                lb.selectConnection(createNewConnection).toFuture().get());
+                lb.selectConnection(createNewConnection, null).toFuture().get());
         assertThat(e.getCause(), instanceOf(NoAvailableHostException.class));
 
         // When the host becomes available again, new connections can be created
         sendServiceDiscoveryEvents(upEvent("address-1"));
         assertAddresses(lb.usedAddresses(), "address-1");
-        lb.selectConnection(createNewConnection).toFuture().get();
+        lb.selectConnection(createNewConnection, null).toFuture().get();
         assertConnectionCount(lb.usedAddresses(), connectionsCount("address-1", 2));
     }
 
@@ -241,13 +241,13 @@ class LingeringRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerTest {
         sendServiceDiscoveryEvents(upEvent("address-1"));
         assertAddresses(lb.usedAddresses(), "address-1");
         // For an added host, connection needs to be initiated, otherwise the host is free to be deleted
-        lb.selectConnection(connectionFilter).toFuture().get();
+        lb.selectConnection(connectionFilter, null).toFuture().get();
 
         sendServiceDiscoveryEvents(downEvent("address-1"));
         assertAddresses(lb.usedAddresses(), "address-1");
 
         sendServiceDiscoveryEvents(upEvent("address-2"));
-        TestLoadBalancedConnection address2connection = lb.selectConnection(connectionFilter).toFuture().get();
+        TestLoadBalancedConnection address2connection = lb.selectConnection(connectionFilter, null).toFuture().get();
 
         assertAddresses(lb.usedAddresses(), "address-1", "address-2");
 

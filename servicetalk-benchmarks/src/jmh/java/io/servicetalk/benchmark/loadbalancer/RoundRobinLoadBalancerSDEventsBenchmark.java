@@ -22,6 +22,7 @@ import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory;
 import io.servicetalk.transport.api.TransportObserver;
 
@@ -98,6 +99,7 @@ public class RoundRobinLoadBalancerSDEventsBenchmark {
 
         @Override
         public Single<LoadBalancedConnection> newConnection(final InetSocketAddress inetSocketAddress,
+                                                            @Nullable final ContextMap context,
                                                             @Nullable final TransportObserver observer) {
             return succeeded(new LoadBalancedConnection() {
                 @Override

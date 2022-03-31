@@ -37,6 +37,7 @@ import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.transport.api.TransportObserver;
 
 import org.hamcrest.Matcher;
@@ -70,6 +71,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.AVAILABLE;
 import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.EXPIRED;
@@ -233,7 +235,7 @@ abstract class RoundRobinLoadBalancerTest {
 
     @Test
     void noServiceDiscoveryEvent() {
-        toSource(lb.selectConnection(any())).subscribe(selectConnectionListener);
+        toSource(lb.selectConnection(any(), null)).subscribe(selectConnectionListener);
         assertThat(selectConnectionListener.awaitOnError(), instanceOf(NoAvailableHostException.class));
 
         assertThat(connectionsCreated, is(empty()));
@@ -270,7 +272,7 @@ abstract class RoundRobinLoadBalancerTest {
 
                     Publisher<TestLoadBalancedConnection> selections = Publisher.empty();
                     for (int j = 0; j < 5; j++) {
-                        selections = selections.concat(lb.selectConnection(selectionFilter));
+                        selections = selections.concat(lb.selectConnection(selectionFilter, null));
                     }
                     selectedConnections.addAll(selections.toFuture().get());
                 } catch (final Throwable t) {
@@ -316,11 +318,11 @@ abstract class RoundRobinLoadBalancerTest {
     void roundRobining() throws Exception {
         sendServiceDiscoveryEvents(upEvent("address-1"));
         sendServiceDiscoveryEvents(upEvent("address-2"));
-        final List<String> connections = awaitIndefinitely((lb.selectConnection(any())
-                .concat(lb.selectConnection(any()))
-                .concat(lb.selectConnection(any()))
-                .concat(lb.selectConnection(any()))
-                .concat(lb.selectConnection(any()))
+        final List<String> connections = awaitIndefinitely((lb.selectConnection(any(), null)
+                .concat(lb.selectConnection(any(), null))
+                .concat(lb.selectConnection(any(), null))
+                .concat(lb.selectConnection(any(), null))
+                .concat(lb.selectConnection(any(), null))
                 .map(TestLoadBalancedConnection::address)));
 
         assertThat(connections, contains("address-1", "address-2", "address-1", "address-2", "address-1"));
@@ -336,7 +338,7 @@ abstract class RoundRobinLoadBalancerTest {
     void closedConnectionPruning() throws Exception {
         sendServiceDiscoveryEvents(upEvent("address-1"));
 
-        final TestLoadBalancedConnection connection = awaitIndefinitely(lb.selectConnection(any()));
+        final TestLoadBalancedConnection connection = awaitIndefinitely(lb.selectConnection(any(), null));
         assert connection != null;
         List<Map.Entry<String, List<TestLoadBalancedConnection>>> activeAddresses = lb.usedAddresses();
 
@@ -359,7 +361,7 @@ abstract class RoundRobinLoadBalancerTest {
         sendServiceDiscoveryEvents(upEvent("address-1"));
 
         ExecutionException ex = assertThrows(ExecutionException.class,
-                                             () -> awaitIndefinitely(lb.selectConnection(any())));
+                                             () -> awaitIndefinitely(lb.selectConnection(any(), null)));
         assertThat(ex.getCause(), is(instanceOf(DeliberateException.class)));
     }
 
@@ -369,7 +371,7 @@ abstract class RoundRobinLoadBalancerTest {
         awaitIndefinitely(lb.closeAsync());
 
         ExecutionException ex = assertThrows(ExecutionException.class,
-                                             () -> awaitIndefinitely(lb.selectConnection(any())));
+                                             () -> awaitIndefinitely(lb.selectConnection(any(), null)));
         assertThat(ex.getCause(), is(instanceOf(IllegalStateException.class)));
 
         assertThat(connectionsCreated, is(empty()));
@@ -385,7 +387,7 @@ abstract class RoundRobinLoadBalancerTest {
     void newConnectionIsClosedWhenSelectorRejects() throws Exception {
         sendServiceDiscoveryEvents(upEvent("address-1"));
         try {
-            awaitIndefinitely(lb.selectConnection(__ -> false));
+            awaitIndefinitely(lb.selectConnection(__ -> false, null));
             fail();
         } catch (ExecutionException e) {
             assertThat(e.getCause(), is(instanceOf(ConnectionRejectedException.class)));
@@ -414,7 +416,7 @@ abstract class RoundRobinLoadBalancerTest {
 
         for (int i = 0; i < DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD * 2; ++i) {
             try {
-                final TestLoadBalancedConnection selectedConnection = lb.selectConnection(any()).toFuture().get();
+                final TestLoadBalancedConnection selectedConnection = lb.selectConnection(any(), null).toFuture().get();
                 assertThat(selectedConnection, equalTo(properConnection.toFuture().get()));
             } catch (Exception e) {
                 assertThat(e.getCause(), is(UNHEALTHY_HOST_EXCEPTION));
@@ -422,7 +424,7 @@ abstract class RoundRobinLoadBalancerTest {
         }
 
         for (int i = 0; i < 10; ++i) {
-            final TestLoadBalancedConnection selectedConnection = lb.selectConnection(any()).toFuture().get();
+            final TestLoadBalancedConnection selectedConnection = lb.selectConnection(any(), null).toFuture().get();
             assertThat(selectedConnection, equalTo(properConnection.toFuture().get()));
         }
 
@@ -435,7 +437,7 @@ abstract class RoundRobinLoadBalancerTest {
         assertThat(testExecutor.scheduledTasksPending(), equalTo(0));
 
         for (int i = 0; i < 10; ++i) {
-            final TestLoadBalancedConnection selectedConnection = lb.selectConnection(any()).toFuture().get();
+            final TestLoadBalancedConnection selectedConnection = lb.selectConnection(any(), null).toFuture().get();
             assertThat(selectedConnection, equalTo(properConnection.toFuture().get()));
         }
     }
@@ -459,7 +461,8 @@ abstract class RoundRobinLoadBalancerTest {
         sendServiceDiscoveryEvents(upEvent("address-1"));
 
         for (int i = 0; i < DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD; ++i) {
-            Exception e = assertThrows(ExecutionException.class, () -> lb.selectConnection(any()).toFuture().get());
+            Exception e = assertThrows(ExecutionException.class, () -> lb.selectConnection(any(), null)
+                    .toFuture().get());
             assertThat(e.getCause(), is(UNHEALTHY_HOST_EXCEPTION));
         }
 
@@ -467,14 +470,15 @@ abstract class RoundRobinLoadBalancerTest {
 
         for (int i = 0; i < timeAdvancementsTillHealthy - 1; ++i) {
             unhealthyHostConnectionFactory.advanceTime(testExecutor);
-            Exception e = assertThrows(ExecutionException.class, () -> lb.selectConnection(any()).toFuture().get());
+            Exception e = assertThrows(ExecutionException.class, () -> lb.selectConnection(any(), null)
+                    .toFuture().get());
             assertThat(e.getCause(), is(UNHEALTHY_HOST_EXCEPTION));
         }
 
         unhealthyHostConnectionFactory.advanceTime(testExecutor);
         assertThat(testExecutor.scheduledTasksPending(), equalTo(0));
 
-        final TestLoadBalancedConnection selectedConnection = lb.selectConnection(any()).toFuture().get();
+        final TestLoadBalancedConnection selectedConnection = lb.selectConnection(any(), null).toFuture().get();
         assertThat(selectedConnection, equalTo(properConnection.toFuture().get()));
     }
 
@@ -492,7 +496,8 @@ abstract class RoundRobinLoadBalancerTest {
         sendServiceDiscoveryEvents(upEvent("address-1"));
 
         for (int i = 0; i < DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD; ++i) {
-            Exception e = assertThrows(ExecutionException.class, () -> lb.selectConnection(any()).toFuture().get());
+            Exception e = assertThrows(ExecutionException.class, () -> lb.selectConnection(any(), null)
+                    .toFuture().get());
             assertThat(e.getCause(), is(UNHEALTHY_HOST_EXCEPTION));
         }
 
@@ -500,7 +505,7 @@ abstract class RoundRobinLoadBalancerTest {
             unhealthyHostConnectionFactory.advanceTime(testExecutor);
         }
 
-        final TestLoadBalancedConnection selectedConnection = lb.selectConnection(any()).toFuture().get();
+        final TestLoadBalancedConnection selectedConnection = lb.selectConnection(any(), null).toFuture().get();
         assertThat(selectedConnection, equalTo(properConnection.toFuture().get()));
 
         // 5 failed attempts trigger health check, 2 health check attempts fail, 3rd health check attempt
@@ -537,7 +542,7 @@ abstract class RoundRobinLoadBalancerTest {
         sendServiceDiscoveryEvents(upEvent("address-1"));
 
         // Trigger first health check:
-        Exception e = assertThrows(ExecutionException.class, () -> lb.selectConnection(any()).toFuture().get());
+        Exception e = assertThrows(ExecutionException.class, () -> lb.selectConnection(any(), null).toFuture().get());
         assertThat(e.getCause(), is(UNHEALTHY_HOST_EXCEPTION));
         // Execute two health checks: first will fail due to connectionFactory,
         // second - due to an unexpected error from executor:
@@ -546,7 +551,7 @@ abstract class RoundRobinLoadBalancerTest {
         }
 
         // Trigger yet another health check:
-        e = assertThrows(ExecutionException.class, () -> lb.selectConnection(any()).toFuture().get());
+        e = assertThrows(ExecutionException.class, () -> lb.selectConnection(any(), null).toFuture().get());
         assertThat(e.getCause(), is(UNHEALTHY_HOST_EXCEPTION));
         // Execute two health checks: first will fail due to connectionFactory, second succeeds:
         for (int i = 0; i < 2; ++i) {
@@ -554,7 +559,7 @@ abstract class RoundRobinLoadBalancerTest {
         }
 
         // Make sure we can select a connection:
-        final TestLoadBalancedConnection selectedConnection = lb.selectConnection(any()).toFuture().get();
+        final TestLoadBalancedConnection selectedConnection = lb.selectConnection(any(), null).toFuture().get();
         assertThat(selectedConnection, equalTo(properConnection.toFuture().get()));
 
         assertThat(unhealthyHostConnectionFactory.requests.get(), equalTo(5));
@@ -578,7 +583,7 @@ abstract class RoundRobinLoadBalancerTest {
         ExecutorService executor = Executors.newFixedThreadPool(3);
         try {
             final Runnable runnable = () ->
-                    assertThrows(ExecutionException.class, () -> lb.selectConnection(any()).toFuture().get());
+                    assertThrows(ExecutionException.class, () -> lb.selectConnection(any(), null).toFuture().get());
 
             for (int i = 0; i < 1000; i++) {
                 executor.submit(runnable);
@@ -588,7 +593,7 @@ abstract class RoundRobinLoadBalancerTest {
             // NoHostAvailableException being thrown from selection AFTER a health check was scheduled by any thread.
             final Executor executorForRetries = io.servicetalk.concurrent.api.Executors.newFixedSizeExecutor(1);
             try {
-                awaitIndefinitely(lb.selectConnection(any()).retryWhen(retryWithConstantBackoffFullJitter((t) ->
+                awaitIndefinitely(lb.selectConnection(any(), null).retryWhen(retryWithConstantBackoffFullJitter((t) ->
                                 // DeliberateException comes from connection opening, check for that first
                                 // Next, NoAvailableHostException is thrown when the host is unhealthy,
                                 // but we still wait until the health check is scheduled and only then stop retrying.
@@ -609,7 +614,8 @@ abstract class RoundRobinLoadBalancerTest {
                 unhealthyHostConnectionFactory.advanceTime(testExecutor);
 
                 // Assert still unhealthy
-                Exception e = assertThrows(ExecutionException.class, () -> lb.selectConnection(any()).toFuture().get());
+                Exception e = assertThrows(ExecutionException.class, () -> lb.selectConnection(any(), null)
+                        .toFuture().get());
                 assertThat(e.getCause(), instanceOf(NoAvailableHostException.class));
             }
         } finally {
@@ -620,7 +626,7 @@ abstract class RoundRobinLoadBalancerTest {
 
         unhealthyHostConnectionFactory.advanceTime(testExecutor);
 
-        final TestLoadBalancedConnection selectedConnection = lb.selectConnection(any()).toFuture().get();
+        final TestLoadBalancedConnection selectedConnection = lb.selectConnection(any(), null).toFuture().get();
         assertThat(selectedConnection, equalTo(properConnection.toFuture().get()));
     }
 
@@ -652,8 +658,8 @@ abstract class RoundRobinLoadBalancerTest {
         assertAddresses(lb.usedAddresses(), "address-2", "address-1");
 
         // Make sure both hosts have connections
-        lb.selectConnection(any()).toFuture().get();
-        lb.selectConnection(any()).toFuture().get();
+        lb.selectConnection(any(), null).toFuture().get();
+        lb.selectConnection(any(), null).toFuture().get();
 
         sendServiceDiscoveryEvents(downEvent("address-1", EXPIRED));
         assertAddresses(lb.usedAddresses(), "address-2", "address-1");
@@ -788,6 +794,12 @@ abstract class RoundRobinLoadBalancerTest {
 
         @Override
         public Single<TestLoadBalancedConnection> newConnection(String s, TransportObserver observer) {
+            return connectionFactory.apply(s);
+        }
+
+        @Override
+        public Single<TestLoadBalancedConnection> newConnection(String s, @Nullable ContextMap context,
+                                                                @Nullable TransportObserver observer) {
             return connectionFactory.apply(s);
         }
 

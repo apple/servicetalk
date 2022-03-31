@@ -34,6 +34,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.concurrent.internal.ThrowableUtils;
+import io.servicetalk.context.api.ContextMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -319,8 +320,8 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
     }
 
     @Override
-    public Single<C> selectConnection(Predicate<C> selector) {
-        return defer(() -> selectConnection0(selector).shareContextOnSubscribe());
+    public Single<C> selectConnection(final Predicate<C> selector, @Nullable final ContextMap context) {
+        return defer(() -> selectConnection0(selector, context).shareContextOnSubscribe());
     }
 
     @Override
@@ -336,7 +337,7 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
                 '}';
     }
 
-    private Single<C> selectConnection0(Predicate<C> selector) {
+    private Single<C> selectConnection0(final Predicate<C> selector, @Nullable final ContextMap context) {
         final List<Host<ResolvedAddress, C>> usedHosts = this.usedHosts;
         if (usedHosts.isEmpty()) {
             return usedHosts == CLOSED_LIST ? failedLBClosed(targetResource) :
@@ -387,7 +388,7 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
 
         // This LB implementation does not automatically provide TransportObserver. Therefore, we pass "null" here.
         // Users can apply a ConnectionFactoryFilter if they need to override this "null" value with TransportObserver.
-        Single<? extends C> establishConnection = connectionFactory.newConnection(host.address, null);
+        Single<? extends C> establishConnection = connectionFactory.newConnection(host.address, context, null);
         if (host.healthCheckConfig != null) {
                 // Schedule health check before returning
                 establishConnection = establishConnection.beforeOnError(t -> host.markUnhealthy(t, connectionFactory));
@@ -756,7 +757,7 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
                                 host.healthCheckConfig.healthCheckInterval,
                                 host.healthCheckConfig.executor)
                                 .apply(0, originalCause)
-                                .concat(connectionFactory.newConnection(host.address, null)
+                                .concat(connectionFactory.newConnection(host.address, null, null)
                                         // There is no risk for StackOverflowError because result of each connection
                                         // attempt will be invoked on IoExecutor as a new task.
                                         .retryWhen(retryWithConstantBackoffFullJitter(

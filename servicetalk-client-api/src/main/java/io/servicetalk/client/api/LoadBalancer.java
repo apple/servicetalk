@@ -18,10 +18,12 @@ package io.servicetalk.client.api;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.context.api.ContextMap;
 
 import java.net.SocketAddress;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import javax.annotation.Nullable;
 
 /**
  * Given multiple {@link SocketAddress}es select the most desired {@link SocketAddress} to use. This is typically used
@@ -42,8 +44,31 @@ public interface LoadBalancer<C extends LoadBalancedConnection> extends Listenab
      * {@link Single#failed(Throwable) failed Single} with {@link NoAvailableHostException} can be returned if no
      * connection can be selected at this time or with {@link ConnectionRejectedException} if a newly created connection
      * was rejected by the {@code selector} or this load balancer.
+     * @deprecated Use {@link #selectConnection(Predicate, ContextMap)}.
      */
-    Single<C> selectConnection(Predicate<C> selector);
+    @Deprecated
+    default Single<C> selectConnection(Predicate<C> selector) { // FIXME: 0.43 - remove deprecated method
+        throw new UnsupportedOperationException("LoadBalancer#selectConnection(Predicate) is not supported by " +
+                getClass());
+    }
+
+    /**
+     * Select the most appropriate connection for a request. Returned connection may be used concurrently for other
+     * requests.
+     *
+     * @param selector A {@link Function} that evaluates a connection for selection. This selector should return
+     * {@code null} if the connection <strong>MUST</strong> not be selected. This selector is guaranteed to be called
+     * for any connection that is returned from this method.
+     * @param context A {@link ContextMap context} of the caller (e.g. request context) or {@code null} if no context
+     * provided.
+     * @return a {@link Single} that completes with the most appropriate connection to use. A
+     * {@link Single#failed(Throwable) failed Single} with {@link NoAvailableHostException} can be returned if no
+     * connection can be selected at this time or with {@link ConnectionRejectedException} if a newly created connection
+     * was rejected by the {@code selector} or this load balancer.
+     */
+    default Single<C> selectConnection(Predicate<C> selector, @Nullable ContextMap context) {
+        return selectConnection(selector);  // FIXME: 0.43 - remove default impl
+    }
 
     /**
      * A {@link Publisher} of events provided by this {@link LoadBalancer}. This maybe used to broadcast internal state

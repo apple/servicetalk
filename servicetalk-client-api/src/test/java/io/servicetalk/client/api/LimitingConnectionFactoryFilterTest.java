@@ -54,7 +54,7 @@ class LimitingConnectionFactoryFilterTest {
     public void setUp() {
         original = newMockConnectionFactory();
         connectionOnClose = new LinkedBlockingQueue<>();
-        when(original.newConnection(any(), any())).thenAnswer(invocation -> {
+        when(original.newConnection(any(), any(), any())).thenAnswer(invocation -> {
             ListenableAsyncCloseable conn = mock(ListenableAsyncCloseable.class);
             Processor onClose = newCompletableProcessor();
             connectionOnClose.add(onClose);
@@ -73,8 +73,9 @@ class LimitingConnectionFactoryFilterTest {
     void enforceMaxConnections() throws Exception {
         ConnectionFactory<String, ? extends ListenableAsyncCloseable> cf =
                 makeCF(LimitingConnectionFactoryFilter.withMax(1), original);
-        cf.newConnection("c1", null).toFuture().get();
-        Exception e = assertThrows(ExecutionException.class, () -> cf.newConnection("c2", null).toFuture().get());
+        cf.newConnection("c1", null, null).toFuture().get();
+        Exception e = assertThrows(ExecutionException.class, () -> cf.newConnection("c2", null, null)
+                .toFuture().get());
         assertThat(e.getCause(), instanceOf(ConnectException.class));
     }
 
@@ -82,33 +83,33 @@ class LimitingConnectionFactoryFilterTest {
     void onCloseReleasesPermit() throws Exception {
         ConnectionFactory<String, ? extends ListenableAsyncCloseable> cf =
                 makeCF(LimitingConnectionFactoryFilter.withMax(1), original);
-        cf.newConnection("c1", null).toFuture().get();
+        cf.newConnection("c1", null, null).toFuture().get();
         connectAndVerifyFailed(cf);
         connectionOnClose.take().onComplete();
-        cf.newConnection("c3", null).toFuture().get();
+        cf.newConnection("c3", null, null).toFuture().get();
     }
 
     @Test
     void cancelReleasesPermit() throws Exception {
         ConnectionFactory<String, ListenableAsyncCloseable> o = newMockConnectionFactory();
-        when(o.newConnection(any(), any())).thenReturn(never());
+        when(o.newConnection(any(), any(), any())).thenReturn(never());
         ConnectionFactory<String, ? extends ListenableAsyncCloseable> cf =
                 makeCF(LimitingConnectionFactoryFilter.withMax(1), o);
-        toSource(cf.newConnection("c1", null)).subscribe(connectlistener);
+        toSource(cf.newConnection("c1", null, null)).subscribe(connectlistener);
         assertThat(connectlistener.pollTerminal(10, MILLISECONDS), is(nullValue()));
         connectAndVerifyFailed(cf);
         connectlistener.awaitSubscription().cancel();
 
         ListenableAsyncCloseable c = mock(ListenableAsyncCloseable.class);
         when(c.onClose()).thenReturn(Completable.never());
-        when(o.newConnection(any(), any())).thenReturn(succeeded(c));
-        cf.newConnection("c2", null).toFuture().get();
+        when(o.newConnection(any(), any(), any())).thenReturn(succeeded(c));
+        cf.newConnection("c2", null, null).toFuture().get();
     }
 
     private static void connectAndVerifyFailed(final ConnectionFactory<String, ? extends ListenableAsyncCloseable> cf)
             throws Exception {
         try {
-            cf.newConnection("c-fail", null).toFuture().get();
+            cf.newConnection("c-fail", null, null).toFuture().get();
             fail("Connect expected to fail.");
         } catch (ExecutionException e) {
             assertThat("Unexpected exception.", e.getCause(), instanceOf(ConnectException.class));

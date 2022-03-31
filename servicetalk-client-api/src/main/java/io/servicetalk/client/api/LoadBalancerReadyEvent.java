@@ -15,19 +15,22 @@
  */
 package io.servicetalk.client.api;
 
+import io.servicetalk.context.api.ContextMap;
+
 import java.util.function.Predicate;
 
 /**
  * A hint from {@link LoadBalancer#eventStream()} that the internal state of the {@link LoadBalancer} is ready such
- * {@link LoadBalancer#selectConnection(Predicate)} is not likely to fail. Note that the return status of
- * {@link LoadBalancer#selectConnection(Predicate)} may depend upon many factors including but not limited to:
+ * {@link LoadBalancer#selectConnection(Predicate, ContextMap)} is not likely to fail. Note that the return status of
+ * {@link LoadBalancer#selectConnection(Predicate, ContextMap)} may depend upon many factors including but not limited
+ * to:
  * <ul>
  *     <li>Instantaneous demand vs the amount of resources (e.g. connections) on hand</li>
  *     <li>If the {@link LoadBalancer} favors queuing requests or "fail fast" behavior</li>
  *     <li>The dynamic nature of host availability may result in no hosts being available</li>
  * </ul>
  * This is meant to emphasize that {@link #isReady()} returning {@code true} doesn't necessarily mean
- * {@link LoadBalancer#selectConnection(Predicate)} will always return successfully.
+ * {@link LoadBalancer#selectConnection(Predicate, ContextMap)} will always return successfully.
  */
 public interface LoadBalancerReadyEvent {
     /**
