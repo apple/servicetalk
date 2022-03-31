@@ -19,15 +19,17 @@ import io.opentracing.Span;
 import io.opentracing.SpanContext;
 import io.opentracing.Tracer.SpanBuilder;
 
+import javax.annotation.Nullable;
+
 /**
  * A {@link SpanBuilder} that works with {@link InMemorySpan} instances.
  */
 public interface InMemorySpanBuilder extends SpanBuilder {
     @Override
-    InMemorySpanBuilder asChildOf(SpanContext parent);
+    InMemorySpanBuilder asChildOf(@Nullable SpanContext parent);
 
     @Override
-    InMemorySpanBuilder asChildOf(Span parent);
+    InMemorySpanBuilder asChildOf(@Nullable Span parent);
 
     /**
      * {@inheritDoc}
