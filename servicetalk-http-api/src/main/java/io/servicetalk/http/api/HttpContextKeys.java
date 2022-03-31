@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021-2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.context.api.ContextMap.Key;
+import io.servicetalk.transport.api.ConnectionInfo;
 
 import static io.servicetalk.context.api.ContextMap.Key.newKey;
 
@@ -32,6 +33,19 @@ public final class HttpContextKeys {
      */
     public static final Key<HttpExecutionStrategy> HTTP_EXECUTION_STRATEGY_KEY =
             newKey("HTTP_EXECUTION_STRATEGY_KEY", HttpExecutionStrategy.class);
+
+    /**
+     * When opening a connection to a proxy, this key tells what is the actual (unresolved) target address behind the
+     * proxy this connection will be established to.
+     * <p>
+     * To distinguish between a
+     * <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Proxy_servers_and_tunneling#http_tunneling">secure
+     * HTTP proxy tunneling</a> and a clear text HTTP proxy, check presence of {@link ConnectionInfo#sslConfig()}.
+     *
+     * @see SingleAddressHttpClientBuilder#proxyAddress(Object)
+     */
+    public static final Key<Object> HTTP_TARGET_ADDRESS_BEHIND_PROXY =
+            newKey("HTTP_TARGET_ADDRESS_BEHIND_PROXY", Object.class);
 
     private HttpContextKeys() {
         // No instances

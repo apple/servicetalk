@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019-2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2020, 2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,12 +33,15 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.ssl.SslHandshakeCompletionEvent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
+import static io.servicetalk.http.api.HttpContextKeys.HTTP_TARGET_ADDRESS_BEHIND_PROXY;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESSFUL_2XX;
@@ -51,6 +54,8 @@ import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESSFUL_
  */
 final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C extends FilterableStreamingHttpConnection>
         implements ConnectionFactoryFilter<ResolvedAddress, C> {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ProxyConnectConnectionFactoryFilter.class);
 
     private final String connectAddress;
 
@@ -71,17 +76,26 @@ final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C extends Filte
 
         @Override
         public Single<C> newConnection(final ResolvedAddress resolvedAddress,
-                                       @Nullable final ContextMap context,
+                                       @Nullable ContextMap context,
                                        @Nullable final TransportObserver observer) {
-            return delegate().newConnection(resolvedAddress, context, observer).flatMap(c -> {
-                try {
-                    return c.request(c.connect(connectAddress).addHeader(CONTENT_LENGTH, ZERO))
-                            .flatMap(response -> handleConnectResponse(c, response))
-                            // Close recently created connection in case of any error while it connects to the proxy:
-                            .onErrorResume(t -> c.closeAsync().concat(failed(t)));
-                } catch (Throwable t) {
-                    return c.closeAsync().concat(failed(t));
+            return Single.defer(() -> {
+                if (context == null) {
+                    // context = new DefaultContextMap();
                 }
+                logUnexpectedAddress(context.put(HTTP_TARGET_ADDRESS_BEHIND_PROXY, connectAddress),
+                        connectAddress, LOGGER);
+                return delegate().newConnection(resolvedAddress, context, observer).flatMap(c -> {
+                    try {
+                        return c.request(c.connect(connectAddress).addHeader(CONTENT_LENGTH, ZERO))
+                                .flatMap(response -> handleConnectResponse(c, response))
+                                // Close recently created connection in case of any error while it connects to the
+                                // proxy:
+                                .onErrorResume(t -> c.closeAsync().concat(failed(t)));
+                        // We do not apply shareContextOnSubscribe() here to isolate a context for `CONNECT` request.
+                    } catch (Throwable t) {
+                        return c.closeAsync().concat(failed(t));
+                    }
+                }).shareContextOnSubscribe();
             });
         }
 
@@ -118,6 +132,13 @@ final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C extends Filte
             // There is no need to apply offloading explicitly (despite completing `processor` on the EventLoop)
             // because `payloadBody()` will be offloaded according to the strategy for the request.
             return response.messageBody().ignoreElements().concat(fromSource(processor));
+        }
+    }
+
+    static void logUnexpectedAddress(@Nullable final Object current, final Object expected, final Logger logger) {
+        if (current != null && !expected.equals(current)) {
+            logger.info("Observed unexpected value for {}: {}, overridden with: {}",
+                    HTTP_TARGET_ADDRESS_BEHIND_PROXY, current, expected);
         }
     }
 
