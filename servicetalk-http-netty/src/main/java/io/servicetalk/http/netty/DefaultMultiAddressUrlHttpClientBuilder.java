@@ -86,6 +86,7 @@ import static io.servicetalk.http.api.HttpContextKeys.HTTP_CLIENT_API_KEY;
 import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadAll;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.setExecutionContext;
@@ -411,8 +412,10 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             HttpExecutionStrategy useStrategy = requestStrategy.hasOffloads() ?
                     defaultStrategy() == singleClientStrategy ?
                         defaultStrategy() == requestStrategy ? offloadAll() : requestStrategy :
-                    singleClientStrategy.merge(defaultStrategy() == requestStrategy ?
-                            clientAPI.defaultStrategy() : requestStrategy) :
+                        offloadNever() != singleClientStrategy ?
+                                singleClientStrategy.merge(defaultStrategy() == requestStrategy ?
+                                        clientAPI.defaultStrategy() : requestStrategy) :
+                                requestStrategy :
                     offloadNone();
             contextMap.put(HTTP_EXECUTION_STRATEGY_KEY, useStrategy);
             return useStrategy;

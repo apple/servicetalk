@@ -399,7 +399,6 @@ class ClientEffectiveStrategyTest {
                 }
                 return merged;
             case Multi_ExecutionStrategy_In_Initializer:
-                if (null == builder || defaultStrategy() == builder || !builder.hasOffloads()) {
                     if (defaultStrategy() == merged || (null != builder && !builder.hasOffloads())) {
                         merged = offloadNone();
                     }
@@ -417,8 +416,6 @@ class ClientEffectiveStrategyTest {
                         default:
                             throw new AssertionError("Unexpected client api: " + clientApi);
                     }
-                }
-                return merged;
             default:
                 throw new AssertionError("Unexpected builder type: " + builderType);
         }
