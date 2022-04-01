@@ -71,11 +71,30 @@ public interface MultiAddressHttpClientBuilder<U, R> extends HttpClientBuilder<U
 
     /**
      * {@inheritDoc}
+     *
      * <p>Provides the base execution strategy for all clients created from this builder and the default strategy for
      * the {@link SingleAddressHttpClientBuilder} used to construct client instances. The
      * {@link #initializer(SingleAddressInitializer)} may be used for some customization of the execution strategy for a
      * specific client. Unless {@link HttpExecutionStrategies#offloadNone()} is specified as the execution strategy on
      * this builder then the single client computed execution strategy will be merged with this builder strategy.
+     *
+     * <dl>
+     *     <dt>unspecified or {@link HttpExecutionStrategies#defaultStrategy()}
+     *     <dd>Effective execution strategy will be appropriate for the API (async/blocking streaming/aggregate) of the
+     *     client used and will be be merged with the computed execution strategy of the single address client produced
+     *     by {@link SingleAddressHttpClientBuilder}.
+     *
+     *     <dt>{@link HttpExecutionStrategies#offloadNone()}
+     *     (or deprecated {@link HttpExecutionStrategies#offloadNever()})
+     *     <dd>No offloading will be used regardless of the client API used or the computed execution strategy of the
+     *     contained single address client.
+     *
+     *     <dt>A custom execution strategy ({@link HttpExecutionStrategies#customStrategyBuilder()}) or
+     *     {@link HttpExecutionStrategies#offloadAll()}
+     *     <dd>Will be used, as specified, without regard to the API of the client used and will be merged with the
+     *     computed execution strategy of the single address client produced by
+     *     {@link SingleAddressHttpClientBuilder}.
+     * </dl>
      *
      * @param strategy {@inheritDoc}
      * @return {@inheritDoc}

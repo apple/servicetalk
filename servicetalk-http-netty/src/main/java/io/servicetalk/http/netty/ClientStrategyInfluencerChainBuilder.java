@@ -126,7 +126,7 @@ final class ClientStrategyInfluencerChainBuilder {
         }
     }
 
-    HttpExecutionStrategy buildForClient(HttpExecutionStrategy transportStrategy) {
+    HttpExecutionStrategy buildForClient(HttpExecutionStrategy builderStrategy) {
         HttpExecutionStrategy chainStrategy = clientChain;
         if (null != connFilterChain) {
             chainStrategy = null != chainStrategy ? chainStrategy.merge(connFilterChain) : connFilterChain;
@@ -138,10 +138,10 @@ final class ClientStrategyInfluencerChainBuilder {
         }
 
         return (null == chainStrategy || !chainStrategy.hasOffloads()) ?
-                transportStrategy :
-                defaultStrategy() == transportStrategy ?
-                        chainStrategy : transportStrategy.hasOffloads() ?
-                            chainStrategy.merge(transportStrategy) : offloadNone();
+                builderStrategy :
+                defaultStrategy() == builderStrategy ?
+                        chainStrategy : builderStrategy.hasOffloads() ?
+                            chainStrategy.merge(builderStrategy) : builderStrategy;
     }
 
     ExecutionStrategy buildForConnectionFactory() {

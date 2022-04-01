@@ -175,10 +175,26 @@ public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<
      * {@inheritDoc}
      *
      * <p>Unless {@link HttpExecutionStrategies#offloadNone()} is specified as the execution strategy on
-     * this builder, the actual execution strategy used will be influenced by the filters added via
-     * {@link #appendClientFilter(StreamingHttpClientFilterFactory)},
+     * this builder, the actual execution strategy used will be influenced by the execution strategy required by filters
+     * added via {@link #appendClientFilter(StreamingHttpClientFilterFactory)},
      * {@link #appendConnectionFilter(StreamingHttpConnectionFilterFactory)}, and
      * {@link #appendConnectionFactoryFilter(ConnectionFactoryFilter)}</p>, etc.
+     *
+     * <dl>
+     *     <dt>unspecified or {@link HttpExecutionStrategies#defaultStrategy()}
+     *     <dd>Effective execution strategy will be appropriate for the API (async/blocking streaming/aggregate) of the
+     *     client used and will be {@linkplain HttpExecutionStrategyInfluencer influenced} by required strategies of
+     *     any filters.
+     *
+     *     <dt>{@link HttpExecutionStrategies#offloadNone()}
+     *     (or deprecated {@link HttpExecutionStrategies#offloadNever()})
+     *     <dd>No offloading will be used regardless of the client API used or the influence of the filters.
+     *
+     *     <dt>A custom execution strategy ({@link HttpExecutionStrategies#customStrategyBuilder()}) or
+     *     {@link HttpExecutionStrategies#offloadAll()}
+     *     <dd>Will be used, as specified, without regard to the API of the client used. Effective execution strategy
+     *     will be specified value plus any additional offloads required by any filters.
+     * </dl>
      *
      * @param strategy {@inheritDoc}
      * @return {@inheritDoc}

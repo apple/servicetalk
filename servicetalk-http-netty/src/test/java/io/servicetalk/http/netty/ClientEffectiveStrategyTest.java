@@ -91,15 +91,15 @@ class ClientEffectiveStrategyTest {
     private static final String SCHEME = "http";
     private static final String PATH = "/";
     private static final String GREETING = "Hello";
-    private static final HttpExecutionStrategy CUSTOM_OFFLOAD_ALL = new HttpExecutionStrategy() {
+    private static final HttpExecutionStrategy CUSTOM_OFFLOAD_SEND = new HttpExecutionStrategy() {
         @Override
         public boolean isMetadataReceiveOffloaded() {
-            return true;
+            return false;
         }
 
         @Override
         public boolean isDataReceiveOffloaded() {
-            return true;
+            return false;
         }
 
         @Override
@@ -109,17 +109,17 @@ class ClientEffectiveStrategyTest {
 
         @Override
         public boolean isEventOffloaded() {
-            return true;
+            return false;
         }
 
         @Override
         public HttpExecutionStrategy merge(final HttpExecutionStrategy other) {
-            return HttpExecutionStrategies.offloadAll();
+            return HttpExecutionStrategies.customStrategyBuilder().offloadSend().build().merge(other);
         }
 
         @Override
         public boolean isCloseOffloaded() {
-            return true;
+            return false;
         }
     };
 
@@ -315,7 +315,7 @@ class ClientEffectiveStrategyTest {
                 if (BuilderType.Multi_ExecutionStrategy_Initializer_Override == builderType &&
                         null != builderStrategy) {
                     // This is expected to ALWAYS be overridden in initializer.
-                    multiClientBuilder.executionStrategy(CUSTOM_OFFLOAD_ALL);
+                    multiClientBuilder.executionStrategy(CUSTOM_OFFLOAD_SEND);
                 }
                 clientBuilder = multiClientBuilder::buildStreaming;
                 break;
@@ -353,9 +353,22 @@ class ClientEffectiveStrategyTest {
         @Nullable HttpExecutionStrategy chain = mergeStrategies(cf, mergeStrategies(lb, filter));
 
         HttpExecutionStrategy merged = null != chain && chain.hasOffloads() ?
+                // filter chain has offloads
                 null == builder || defaultStrategy() == builder ?
-                        chain : builder.hasOffloads() ? mergeStrategies(builder, chain) : builder :
-                null == builder ? defaultStrategy() : builder;
+                        // builder has default strategy, use chain strategy
+                        chain :
+                        // builder specifies strategy.
+                        builder.hasOffloads() ?
+                                // combine with chain strategy
+                                mergeStrategies(builder, chain) :
+                                // builder wants no offloads
+                                builder :
+                // filter chain has no offloads
+                null == builder ?
+                        // unspecified, it is default
+                        defaultStrategy() :
+                        // use builder strategy as specified
+                        builder;
 
         switch (builderType) {
             case Single:
