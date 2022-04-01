@@ -71,8 +71,11 @@ public interface MultiAddressHttpClientBuilder<U, R> extends HttpClientBuilder<U
 
     /**
      * {@inheritDoc}
-     * <p>Provides the default strategy for the {@link SingleAddressHttpClientBuilder} used to construct client
-     * instances. The {@link #initializer(SingleAddressInitializer)} may override the default execution strategy.</p>
+     * <p>Provides the base execution strategy for all clients created from this builder and the default strategy for
+     * the {@link SingleAddressHttpClientBuilder} used to construct client instances. The
+     * {@link #initializer(SingleAddressInitializer)} may be used for some customization of the execution strategy for a
+     * specific client. Unless {@link HttpExecutionStrategies#offloadNone()} is specified as the execution strategy on
+     * this builder then the single client computed execution strategy will be merged with this builder strategy.
      *
      * @param strategy {@inheritDoc}
      * @return {@inheritDoc}

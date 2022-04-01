@@ -171,6 +171,18 @@ public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<
     @Override
     SingleAddressHttpClientBuilder<U, R> executor(Executor executor);
 
+    /**
+     * {@inheritDoc}
+     *
+     * <p>Unless {@link HttpExecutionStrategies#offloadNone()} is specified as the execution strategy on
+     * this builder, the actual execution strategy used will be influenced by the filters added via
+     * {@link #appendClientFilter(StreamingHttpClientFilterFactory)},
+     * {@link #appendConnectionFilter(StreamingHttpConnectionFilterFactory)}, and
+     * {@link #appendConnectionFactoryFilter(ConnectionFactoryFilter)}</p>, etc.
+     *
+     * @param strategy {@inheritDoc}
+     * @return {@inheritDoc}
+     */
     @Override
     SingleAddressHttpClientBuilder<U, R> executionStrategy(HttpExecutionStrategy strategy);
 

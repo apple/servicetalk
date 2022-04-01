@@ -30,7 +30,7 @@ import static io.servicetalk.http.api.StreamingHttpConnectionToHttpConnection.DE
 public final class HttpApiConversions {
 
     /**
-     * The "flavors" of client API available
+     * The "flavors" of client API available.
      */
     public enum ClientAPI {
         BLOCKING_AGGREGATED(DEFAULT_BLOCKING_CONNECTION_STRATEGY),
@@ -252,7 +252,7 @@ public final class HttpApiConversions {
     /**
      * Convert from {@link FilterableStreamingHttpClient} to {@link StreamingHttpClient}.
      *
-     * @param client orignal {@link FilterableClientToClient} to convert.
+     * @param client Original {@link FilterableClientToClient} to convert.
      * @param strategy required strategy for the service when invoking the resulting {@link HttpClient}
      * @return The conversion result.
      */

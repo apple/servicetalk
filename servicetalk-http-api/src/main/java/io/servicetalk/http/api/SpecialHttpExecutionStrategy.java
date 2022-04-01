@@ -129,7 +129,7 @@ enum SpecialHttpExecutionStrategy implements HttpExecutionStrategy {
             // assert false : "merging defaultStrategy() with other strategies is deprecated";
             if (!mergeWarning) {
                 mergeWarning = true;
-                LOGGER.warn("merging defaultStrategy() with other strategies is deprecated", new Throwable("culprit"));
+                LOGGER.warn("merging defaultStrategy() with other strategies is deprecated");
             }
             return other;
         }

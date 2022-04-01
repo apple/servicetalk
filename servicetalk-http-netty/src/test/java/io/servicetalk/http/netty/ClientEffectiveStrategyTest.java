@@ -140,7 +140,7 @@ class ClientEffectiveStrategyTest {
         BlockingAggregate,
         BlockingStreaming,
         AsyncAggregate,
-        AsyncStreaming;
+        AsyncStreaming
     }
 
     /**
@@ -323,7 +323,6 @@ class ClientEffectiveStrategyTest {
                 throw new AssertionError("Unexpected clientType");
         }
 
-        ClientApi[] clientApis = {ClientApi.BlockingStreaming};
         // Exercise the client
         try (StreamingHttpClient client = Objects.requireNonNull(clientBuilder.get())) {
             String responseBody = getResponse(clientApi, client, requestTarget);
@@ -355,10 +354,10 @@ class ClientEffectiveStrategyTest {
 
         HttpExecutionStrategy merged = null != chain && chain.hasOffloads() ?
                 null == builder || defaultStrategy() == builder ?
-                        chain : builder.hasOffloads() ? mergeStrategies(builder, chain) : offloadNone() :
+                        chain : builder.hasOffloads() ? mergeStrategies(builder, chain) : builder :
                 null == builder ? defaultStrategy() : builder;
 
-        switch(builderType) {
+        switch (builderType) {
             case Single:
                 if (defaultStrategy() == merged) {
                     switch (clientApi) {

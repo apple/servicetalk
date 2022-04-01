@@ -85,9 +85,6 @@ import static io.servicetalk.http.api.HttpApiConversions.toStreamingClient;
 import static io.servicetalk.http.api.HttpContextKeys.HTTP_CLIENT_API_KEY;
 import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
-import static io.servicetalk.http.api.HttpExecutionStrategies.offloadAll;
-import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
-import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.setExecutionContext;
 import static java.util.Objects.requireNonNull;
@@ -272,17 +269,17 @@ final class DefaultMultiAddressUrlHttpClientBuilder
 
             StreamingHttpClient singleClient = builder.buildStreaming();
 
-            return new StreamingHttpClientExecutionStrategy(singleClient, executionContext.executionStrategy());
+            return new SingleAddressStreamingHttpClientWrapper(singleClient, executionContext.executionStrategy());
         }
     }
 
-    private static final class StreamingHttpClientExecutionStrategy implements StreamingHttpClient {
+    private static final class SingleAddressStreamingHttpClientWrapper implements StreamingHttpClient {
 
         final StreamingHttpClient singleClient;
         final HttpExecutionStrategy multiClientStrategy;
 
-        StreamingHttpClientExecutionStrategy(final StreamingHttpClient singleClient,
-                                             final HttpExecutionStrategy multiClientStrategy) {
+        SingleAddressStreamingHttpClientWrapper(final StreamingHttpClient singleClient,
+                                                final HttpExecutionStrategy multiClientStrategy) {
             this.singleClient = singleClient;
             this.multiClientStrategy = multiClientStrategy;
         }
@@ -329,7 +326,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
                     // created and hence could have an incorrect default strategy. Doing this makes sure we never call
                     // the method without strategy just as we do for the regular connection.
                     return Single.defer(() -> {
-                        updateStrategy(request.context(), ourStrategy);
+                        applyMultiAddressStrategy(request.context(), ourStrategy);
                         return rc.request(request).shareContextOnSubscribe();
                     });
                 }
@@ -400,24 +397,34 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         @Override
         public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
             return defer(() -> {
-                updateStrategy(request.context(), singleClient.executionContext().executionStrategy());
+                applyMultiAddressStrategy(request.context(), singleClient.executionContext().executionStrategy());
                 return singleClient.request(request);
             });
         }
 
-        private HttpExecutionStrategy updateStrategy(final ContextMap contextMap,
-                                                     final HttpExecutionStrategy singleClientStrategy) {
+        private HttpExecutionStrategy applyMultiAddressStrategy(final ContextMap contextMap,
+                                                                final HttpExecutionStrategy singleClientStrategy) {
             HttpExecutionStrategy requestStrategy = contextMap.get(HTTP_EXECUTION_STRATEGY_KEY);
             HttpApiConversions.ClientAPI clientAPI = contextMap.get(HTTP_CLIENT_API_KEY);
             HttpExecutionStrategy useStrategy = requestStrategy.hasOffloads() ?
+                    // multi-client offloads something
                     defaultStrategy() == singleClientStrategy ?
-                        defaultStrategy() == requestStrategy ? offloadAll() : requestStrategy :
-                        offloadNever() != singleClientStrategy ?
+                        defaultStrategy() == requestStrategy ?
+                                // async streaming client with default strategy
+                                HttpApiConversions.ClientAPI.ASYNC_STREAMING.defaultStrategy() :
+                                // single client tried to "reset" strategy to default, use multi-client strategy
+                                requestStrategy :
+                        // non-default strategy client
+                        singleClientStrategy.hasOffloads() ?
+                                // merge single client strategy with request strategy
                                 singleClientStrategy.merge(defaultStrategy() == requestStrategy ?
                                         clientAPI.defaultStrategy() : requestStrategy) :
+                                // single client tried to force no offloads, use multi-client strategy
                                 requestStrategy :
-                    offloadNone();
-            contextMap.put(HTTP_EXECUTION_STRATEGY_KEY, useStrategy);
+                    requestStrategy;
+            if (useStrategy != requestStrategy) {
+                contextMap.put(HTTP_EXECUTION_STRATEGY_KEY, useStrategy);
+            }
             return useStrategy;
         }
 
