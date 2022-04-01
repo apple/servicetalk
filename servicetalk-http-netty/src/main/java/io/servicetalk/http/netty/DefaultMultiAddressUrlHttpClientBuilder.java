@@ -32,6 +32,7 @@ import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.FilterableReservedStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
+import io.servicetalk.http.api.HttpApiConversions;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpConnectionContext;
 import io.servicetalk.http.api.HttpEventKey;
@@ -81,9 +82,11 @@ import static io.servicetalk.http.api.HttpApiConversions.toReservedBlockingConne
 import static io.servicetalk.http.api.HttpApiConversions.toReservedBlockingStreamingConnection;
 import static io.servicetalk.http.api.HttpApiConversions.toReservedConnection;
 import static io.servicetalk.http.api.HttpApiConversions.toStreamingClient;
+import static io.servicetalk.http.api.HttpContextKeys.HTTP_CLIENT_API_KEY;
 import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadAll;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.setExecutionContext;
 import static java.util.Objects.requireNonNull;
@@ -257,7 +260,6 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             final SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder =
                     requireNonNull(builderFactory.apply(urlKey.hostAndPort));
 
-            // XXX This makes executionContextSet() always true.
             setExecutionContext(builder, executionContext);
             if (HTTPS_SCHEME.equalsIgnoreCase(urlKey.scheme)) {
                 builder.sslConfig(DEFAULT_CLIENT_SSL_CONFIG);
@@ -267,36 +269,39 @@ final class DefaultMultiAddressUrlHttpClientBuilder
                 singleAddressInitializer.initialize(urlKey.scheme, urlKey.hostAndPort, builder);
             }
 
-            StreamingHttpClient client = builder.buildStreaming();
-            // if executionStrategySet then wrap client with wrapper that sets execution strategy on request context.
-            return new StreamingHttpClientExecutionStrategy(client);
+            StreamingHttpClient singleClient = builder.buildStreaming();
+
+            return new StreamingHttpClientExecutionStrategy(singleClient, executionContext.executionStrategy());
         }
     }
 
     private static final class StreamingHttpClientExecutionStrategy implements StreamingHttpClient {
 
-        final StreamingHttpClient original;
+        final StreamingHttpClient singleClient;
+        final HttpExecutionStrategy multiClientStrategy;
 
-        StreamingHttpClientExecutionStrategy(final StreamingHttpClient original) {
-            this.original = original;
+        StreamingHttpClientExecutionStrategy(final StreamingHttpClient singleClient,
+                                             final HttpExecutionStrategy multiClientStrategy) {
+            this.singleClient = singleClient;
+            this.multiClientStrategy = multiClientStrategy;
         }
 
         @Override
         public Completable closeAsync() {
-            return original.closeAsync();
+            return singleClient.closeAsync();
         }
 
         @Override
         public Completable onClose() {
-            return original.onClose();
+            return singleClient.onClose();
         }
 
         @Override
         public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpRequestMetaData metaData) {
-            HttpExecutionStrategy ourStrategy = original.executionContext().executionStrategy();
+            HttpExecutionStrategy ourStrategy = singleClient.executionContext().executionStrategy();
             return Single.defer(() -> {
             metaData.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, ourStrategy);
-            return original.reserveConnection(metaData).map(rc -> new ReservedStreamingHttpConnection() {
+            return singleClient.reserveConnection(metaData).map(rc -> new ReservedStreamingHttpConnection() {
                 @Override
                 public ReservedHttpConnection asConnection() {
                     return toReservedConnection(this, ourStrategy);
@@ -373,50 +378,54 @@ final class DefaultMultiAddressUrlHttpClientBuilder
 
         @Override
         public HttpClient asClient() {
-            return toClient(this, original.executionContext().executionStrategy());
+            return toClient(this, singleClient.executionContext().executionStrategy());
         }
 
         @Override
         public BlockingStreamingHttpClient asBlockingStreamingClient() {
-            return toBlockingStreamingClient(this, original.executionContext().executionStrategy());
+            return toBlockingStreamingClient(this, singleClient.executionContext().executionStrategy());
         }
 
         @Override
         public BlockingHttpClient asBlockingClient() {
-            return toBlockingClient(this, original.executionContext().executionStrategy());
+            return toBlockingClient(this, singleClient.executionContext().executionStrategy());
         }
 
         @Override
         public StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
-            return original.newRequest(method, requestTarget);
+            return singleClient.newRequest(method, requestTarget);
         }
 
         @Override
         public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
             return defer(() -> {
-                updateStrategy(request.context(), original.executionContext().executionStrategy());
-                return original.request(request);
+                updateStrategy(request.context(), singleClient.executionContext().executionStrategy());
+                return singleClient.request(request);
             });
         }
 
-        private HttpExecutionStrategy updateStrategy(ContextMap contextMap, HttpExecutionStrategy ourStrategy) {
-            HttpExecutionStrategy multiAddressStrategy =
-                    contextMap.getOrDefault(HTTP_EXECUTION_STRATEGY_KEY, defaultStrategy());
-            HttpExecutionStrategy combinedStrategy = defaultStrategy() == ourStrategy ?
-                    defaultStrategy() == multiAddressStrategy ? offloadAll() : multiAddressStrategy :
-                    defaultStrategy() == multiAddressStrategy ? offloadAll() : ourStrategy.merge(multiAddressStrategy);
-            contextMap.put(HTTP_EXECUTION_STRATEGY_KEY, combinedStrategy);
-            return combinedStrategy;
+        private HttpExecutionStrategy updateStrategy(final ContextMap contextMap,
+                                                     final HttpExecutionStrategy singleClientStrategy) {
+            HttpExecutionStrategy requestStrategy = contextMap.get(HTTP_EXECUTION_STRATEGY_KEY);
+            HttpApiConversions.ClientAPI clientAPI = contextMap.get(HTTP_CLIENT_API_KEY);
+            HttpExecutionStrategy useStrategy = requestStrategy.hasOffloads() ?
+                    defaultStrategy() == singleClientStrategy ?
+                        defaultStrategy() == requestStrategy ? offloadAll() : requestStrategy :
+                    singleClientStrategy.merge(defaultStrategy() == requestStrategy ?
+                            clientAPI.defaultStrategy() : requestStrategy) :
+                    offloadNone();
+            contextMap.put(HTTP_EXECUTION_STRATEGY_KEY, useStrategy);
+            return useStrategy;
         }
 
         @Override
         public HttpExecutionContext executionContext() {
-            return original.executionContext();
+            return singleClient.executionContext();
         }
 
         @Override
         public StreamingHttpResponseFactory httpResponseFactory() {
-            return original.httpResponseFactory();
+            return singleClient.httpResponseFactory();
         }
     }
 

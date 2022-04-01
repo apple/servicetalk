@@ -25,6 +25,7 @@ import static io.servicetalk.http.api.HttpApiConversions.toClient;
 import static io.servicetalk.http.api.HttpApiConversions.toReservedBlockingConnection;
 import static io.servicetalk.http.api.HttpApiConversions.toReservedBlockingStreamingConnection;
 import static io.servicetalk.http.api.HttpApiConversions.toReservedConnection;
+import static io.servicetalk.http.api.HttpContextKeys.HTTP_CLIENT_API_KEY;
 import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
 
 final class FilterableClientToClient implements StreamingHttpClient {
@@ -59,16 +60,10 @@ final class FilterableClientToClient implements StreamingHttpClient {
     @Override
     public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
         return Single.defer(() -> {
-            request.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, executionContext.executionStrategy());
-            // HttpExecutionStrategy currentStrategy = request.context().getOrDefault(
-            //         HTTP_EXECUTION_STRATEGY_KEY, defaultStrategy());
-            // if (defaultStrategy() == currentStrategy) {
-            //     HttpApiConversions.ClientAPI clientApi = request.context().getOrDefault(
-            //             HTTP_CLIENT_API_KEY, HttpApiConversions.ClientAPI.ASYNC_STREAMING);
-            //     request.context().put(HTTP_EXECUTION_STRATEGY_KEY, clientApi.defaultStrategy().merge(strategy));
-            // } else {
-            //     request.context().put(HTTP_EXECUTION_STRATEGY_KEY, strategy);
-            // }
+            if (null == request.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY,
+                    executionContext().executionStrategy())) {
+                request.context().put(HTTP_CLIENT_API_KEY, HttpApiConversions.ClientAPI.ASYNC_STREAMING);
+            }
             return client.request(request).shareContextOnSubscribe();
         });
     }
@@ -76,7 +71,11 @@ final class FilterableClientToClient implements StreamingHttpClient {
     @Override
     public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpRequestMetaData metaData) {
         return Single.defer(() -> {
-            metaData.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, executionContext.executionStrategy());
+            if (null == metaData.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY,
+                    executionContext().executionStrategy())) {
+                metaData.context().put(HTTP_CLIENT_API_KEY, HttpApiConversions.ClientAPI.ASYNC_STREAMING);
+            }
+
             return client.reserveConnection(metaData).map(rc -> new ReservedStreamingHttpConnection() {
                 @Override
                 public ReservedHttpConnection asConnection() {
@@ -104,8 +103,10 @@ final class FilterableClientToClient implements StreamingHttpClient {
                     // created and hence could have an incorrect default strategy. Doing this makes sure we never call
                     // the method without strategy just as we do for the regular connection.
                     return Single.defer(() -> {
-                        request.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY,
-                                FilterableClientToClient.this.executionContext.executionStrategy());
+                        if (null == request.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY,
+                                FilterableClientToClient.this.executionContext().executionStrategy())) {
+                            request.context().put(HTTP_CLIENT_API_KEY, HttpApiConversions.ClientAPI.ASYNC_STREAMING);
+                        }
                         return rc.request(request).shareContextOnSubscribe();
                     });
                 }

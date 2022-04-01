@@ -69,6 +69,14 @@ public interface MultiAddressHttpClientBuilder<U, R> extends HttpClientBuilder<U
     @Override
     MultiAddressHttpClientBuilder<U, R> executor(Executor executor);
 
+    /**
+     * {@inheritDoc}
+     * <p>Provides the default strategy for the {@link SingleAddressHttpClientBuilder} used to construct client
+     * instances. The {@link #initializer(SingleAddressInitializer)} may override the default execution strategy.</p>
+     *
+     * @param strategy {@inheritDoc}
+     * @return {@inheritDoc}
+     */
     @Override
     MultiAddressHttpClientBuilder<U, R> executionStrategy(HttpExecutionStrategy strategy);
 

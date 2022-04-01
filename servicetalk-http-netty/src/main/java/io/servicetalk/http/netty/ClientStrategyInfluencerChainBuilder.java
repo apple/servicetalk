@@ -69,17 +69,17 @@ final class ClientStrategyInfluencerChainBuilder {
 
     private void add(String purpose, ExecutionStrategyInfluencer<?> influencer, HttpExecutionStrategy strategy) {
         if (offloadNever() == strategy) {
-            LOGGER.warn("{}#requiredOffloads() returns offloadNever(), which is unexpected. " +
-                            "offloadNone() should be used instead. " +
-                            "Making automatic adjustment, update the {} to avoid this warning.",
-                    influencer, purpose);
+            // LOGGER.warn("{}#requiredOffloads() returns offloadNever(), which is unexpected. " +
+            //                 "offloadNone() should be used instead. " +
+            //                 "Making automatic adjustment, update the {} to avoid this warning.",
+            //         influencer, purpose);
             strategy = offloadNone();
         }
         if (defaultStrategy() == strategy) {
-            LOGGER.warn("{}#requiredOffloads() returns defaultStrategy(), which is unexpected. " +
-                            "offloadAll() (safe default) or more appropriate custom strategy should be used instead." +
-                            "Making automatic adjustment, update the {} to avoid this warning.",
-                    influencer, purpose);
+            // LOGGER.warn("{}#requiredOffloads() returns defaultStrategy(), which is unexpected. " +
+            //                 "offloadAll() (safe default) or more appropriate custom strategy should be used instead." +
+            //                 "Making automatic adjustment, update the {} to avoid this warning.",
+            //         influencer, purpose);
             strategy = offloadAll();
         }
         clientChain = null != clientChain ? clientChain.merge(strategy) : strategy;
@@ -88,17 +88,17 @@ final class ClientStrategyInfluencerChainBuilder {
     void add(ConnectionFactoryFilter<?, FilterableStreamingHttpConnection> connectionFactoryFilter) {
         ExecutionStrategy filterOffloads = connectionFactoryFilter.requiredOffloads();
         if (offloadNever() == filterOffloads) {
-            LOGGER.warn("{}#requiredOffloads() returns offloadNever(), which is unexpected. " +
-                            "offloadNone() should be used instead. " +
-                            "Making automatic adjustment, update the filter.",
-                    connectionFactoryFilter);
+            // LOGGER.warn("{}#requiredOffloads() returns offloadNever(), which is unexpected. " +
+            //                 "offloadNone() should be used instead. " +
+            //                 "Making automatic adjustment, update the filter.",
+            //         connectionFactoryFilter);
             filterOffloads = offloadNone();
         }
         if (defaultStrategy() == filterOffloads) {
-            LOGGER.warn("{}#requiredOffloads() returns defaultStrategy(), which is unexpected. " +
-                            "offloadAll() (safe default) or more appropriate custom strategy should be used instead." +
-                            "Making automatic adjustment, consider updating the filter.",
-                    connectionFactoryFilter);
+            // LOGGER.warn("{}#requiredOffloads() returns defaultStrategy(), which is unexpected. " +
+            //                 "offloadAll() (safe default) or more appropriate custom strategy should be used instead." +
+            //                 "Making automatic adjustment, consider updating the filter.",
+            //         connectionFactoryFilter);
             filterOffloads = offloadAll();
         }
         connFactoryChain = null != connFactoryChain ?
@@ -108,17 +108,17 @@ final class ClientStrategyInfluencerChainBuilder {
     void add(StreamingHttpConnectionFilterFactory connectionFilter) {
         HttpExecutionStrategy filterOffloads = connectionFilter.requiredOffloads();
         if (offloadNever() == filterOffloads) {
-            LOGGER.warn("{}#requiredOffloads() returns offloadNever(), which is unexpected. " +
-                            "offloadNone() should be used instead. " +
-                            "Making automatic adjustment, consider updating the filter.",
-                    connectionFilter);
+            // LOGGER.warn("{}#requiredOffloads() returns offloadNever(), which is unexpected. " +
+            //                 "offloadNone() should be used instead. " +
+            //                 "Making automatic adjustment, consider updating the filter.",
+            //         connectionFilter);
             filterOffloads = offloadNone();
         }
         if (defaultStrategy() == filterOffloads) {
-            LOGGER.warn("{}#requiredOffloads() returns defaultStrategy(), which is unexpected. " +
-                            "offloadAll() (safe default) or more appropriate custom strategy should be used instead." +
-                            "Making automatic adjustment, consider updating the filter.",
-                    connectionFilter);
+            // LOGGER.warn("{}#requiredOffloads() returns defaultStrategy(), which is unexpected. " +
+            //                 "offloadAll() (safe default) or more appropriate custom strategy should be used instead." +
+            //                 "Making automatic adjustment, consider updating the filter.",
+            //         connectionFilter);
             filterOffloads = offloadAll();
         }
         if (filterOffloads.hasOffloads()) {
@@ -139,8 +139,9 @@ final class ClientStrategyInfluencerChainBuilder {
 
         return (null == chainStrategy || !chainStrategy.hasOffloads()) ?
                 transportStrategy :
-                defaultStrategy() == transportStrategy || !transportStrategy.hasOffloads() ?
-                        chainStrategy : chainStrategy.merge(transportStrategy);
+                defaultStrategy() == transportStrategy ?
+                        chainStrategy : transportStrategy.hasOffloads() ?
+                            chainStrategy.merge(transportStrategy) : offloadNone();
     }
 
     ExecutionStrategy buildForConnectionFactory() {
