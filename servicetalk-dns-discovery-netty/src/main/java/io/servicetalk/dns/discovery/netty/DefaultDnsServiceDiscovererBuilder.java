@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021-2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.EXPIRED;
 import static io.servicetalk.dns.discovery.netty.DnsClients.asHostAndPortDiscoverer;
 import static io.servicetalk.dns.discovery.netty.DnsClients.asSrvDiscoverer;
 import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
+import static io.servicetalk.utils.internal.DurationUtils.ensurePositive;
 import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
 
@@ -52,6 +53,7 @@ public final class DefaultDnsServiceDiscovererBuilder {
     @Nullable
     private Duration queryTimeout;
     private int minTTLSeconds = 10;
+    private Duration jitter = ofSeconds(4);
     private int srvConcurrency = 2048;
     private boolean inactiveEventsOnError;
     private boolean completeOncePreferredResolved = true;
@@ -75,6 +77,21 @@ public final class DefaultDnsServiceDiscovererBuilder {
             throw new IllegalArgumentException("minTTLSeconds: " + minTTLSeconds + " (expected > 0)");
         }
         this.minTTLSeconds = minTTLSeconds;
+        return this;
+    }
+
+    /**
+     * The jitter to apply to schedule the next query after TTL.
+     * <p>
+     * The jitter value will be added on top of the TTL value returned from the DNS server to help spread out
+     * subsequent DNS queries.
+     *
+     * @param jitter The jitter to apply to schedule the next query after TTL.
+     * @return {@code this}.
+     */
+    public DefaultDnsServiceDiscovererBuilder jitter(final Duration jitter) {
+        ensurePositive(jitter, "jitter");
+        this.jitter = jitter;
         return this;
     }
 
@@ -288,7 +305,8 @@ public final class DefaultDnsServiceDiscovererBuilder {
      */
     DnsClient build() {
         final DnsClient rawClient = new DefaultDnsClient(
-                ioExecutor == null ? globalExecutionContext().ioExecutor() : ioExecutor, minTTLSeconds, srvConcurrency,
+                ioExecutor == null ? globalExecutionContext().ioExecutor() : ioExecutor, minTTLSeconds,
+                jitter.toNanos(), srvConcurrency,
                 inactiveEventsOnError, completeOncePreferredResolved, srvFilterDuplicateEvents,
                 srvHostNameRepeatInitialDelay, srvHostNameRepeatJitter, maxUdpPayloadSize, ndots, optResourceEnabled,
                 queryTimeout, dnsResolverAddressTypes, dnsServerAddressStreamProvider, observer, missingRecordStatus);

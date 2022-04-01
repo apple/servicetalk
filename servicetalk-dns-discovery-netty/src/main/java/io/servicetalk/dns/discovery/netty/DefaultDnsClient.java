@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021-2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,6 +64,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.RandomAccess;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.IntFunction;
 import javax.annotation.Nullable;
 
@@ -117,9 +118,11 @@ final class DefaultDnsClient implements DnsClient {
     private final int srvConcurrency;
     private final boolean srvFilterDuplicateEvents;
     private final boolean inactiveEventsOnError;
+    private final long scheduleJitterNanos;
     private boolean closed;
 
-    DefaultDnsClient(final IoExecutor ioExecutor, final int minTTL, int srvConcurrency, boolean inactiveEventsOnError,
+    DefaultDnsClient(final IoExecutor ioExecutor, final int minTTL, final long scheduleJitterNanos,
+                     final int srvConcurrency, final boolean inactiveEventsOnError,
                      final boolean completeOncePreferredResolved, final boolean srvFilterDuplicateEvents,
                      Duration srvHostNameRepeatInitialDelay, Duration srvHostNameRepeatJitter,
                      @Nullable Integer maxUdpPayloadSize, @Nullable final Integer ndots,
@@ -141,6 +144,7 @@ final class DefaultDnsClient implements DnsClient {
                 srvHostNameRepeatInitialDelay, srvHostNameRepeatJitter, nettyIoExecutor);
         this.ttlCache = new MinTtlCache(new DefaultDnsCache(minTTL, Integer.MAX_VALUE, minTTL), minTTL,
                 nettyIoExecutor);
+        this.scheduleJitterNanos = scheduleJitterNanos;
         this.observer = observer;
         this.missingRecordStatus = missingRecordStatus;
         asyncCloseable = toAsyncCloseable(graceful -> {
@@ -629,12 +633,15 @@ final class DefaultDnsClient implements DnsClient {
             private void scheduleQuery0(final long nanos) {
                 assertInEventloop();
 
-                LOGGER.trace("DnsClient {}, scheduling DNS query for {} after {} nanos.",
-                        DefaultDnsClient.this, AbstractDnsPublisher.this, nanos);
+                final long delay = ThreadLocalRandom.current()
+                        .nextLong(nanos, addWithOverflowProtection(nanos, scheduleJitterNanos));
+                LOGGER.debug("DnsClient {}, scheduling DNS query for {} after {}ms, original TTL: {}ms.",
+                        DefaultDnsClient.this, AbstractDnsPublisher.this, NANOSECONDS.toMillis(delay),
+                        NANOSECONDS.toMillis(nanos));
 
                 // This value is coming from DNS TTL for which the unit is seconds and the minimum value we accept
                 // in the builder is 1 second.
-                cancellableForQuery = nettyIoExecutor.schedule(this::doQuery0, nanos, NANOSECONDS);
+                cancellableForQuery = nettyIoExecutor.schedule(this::doQuery0, delay, NANOSECONDS);
             }
 
             private void handleResolveDone0(final Future<DnsAnswer<T>> addressFuture,
