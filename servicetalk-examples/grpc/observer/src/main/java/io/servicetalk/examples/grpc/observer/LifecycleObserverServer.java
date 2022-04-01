@@ -30,8 +30,17 @@ import static io.servicetalk.logging.api.LogLevel.TRACE;
  */
 public final class LifecycleObserverServer {
     public static void main(String... args) throws Exception {
+        GrpcLifecycleObserver observer =
+                GrpcLifecycleObservers.logging("servicetalk-examples-grpc-observer-logger", TRACE);
         GrpcServers.forPort(8080)
-                .lifecycleObserver(GrpcLifecycleObservers.logging("servicetalk-examples-grpc-observer-logger", TRACE))
+                // Option 1: apply an observer for entire server to capture processing by all filters:
+                .lifecycleObserver(observer)
+                // Option 2: apply an observer using a filter to move it later in a filter chain (before/after tracing
+                // info is available or retry/timeout/authentication/exception-mapping filters applied), or to apply it
+                // conditionally:
+                // .initializeHttp(builder -> builder
+                        // .appendNonOffloadingServiceFilter(tracingFilter)
+                        // .appendNonOffloadingServiceFilter(new GrpcLifecycleObserverServiceFilter(observer)))
                 .listenAndAwait((GreeterService) (ctx, request) ->
                         succeeded(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build()))
                 .awaitShutdown();
