@@ -161,6 +161,12 @@ abstract class AbstractLifecycleObserverHttpFilter implements HttpExecutionStrat
         return HttpExecutionStrategies.offloadNone();
     }
 
+    @Override
+    public final HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+        // no influence since we do not block and the observer is not expected to block either
+        return strategy;
+    }
+
     private static final class ExchangeContext implements TerminalSignalConsumer {
 
         private static final AtomicIntegerFieldUpdater<ExchangeContext> remainingUpdater =

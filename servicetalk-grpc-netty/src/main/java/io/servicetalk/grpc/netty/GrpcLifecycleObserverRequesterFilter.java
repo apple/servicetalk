@@ -31,6 +31,8 @@ import io.servicetalk.http.utils.RedirectingHttpRequesterFilter;
  * (which can be configured using {@link GrpcClientBuilder#initializeHttp(GrpcClientBuilder.HttpInitializer)})
  * to account for all work done by other filters. If it's preferred to get visibility in all retried or redirected
  * requests, consider adding it after {@link RetryingHttpRequesterFilter} or {@link RedirectingHttpRequesterFilter}.
+ * If it's preferred to get visibility to information populated by other filters (like tracing keys), it can be appended
+ * after those filters.
  */
 public final class GrpcLifecycleObserverRequesterFilter extends HttpLifecycleObserverRequesterFilter {
 
