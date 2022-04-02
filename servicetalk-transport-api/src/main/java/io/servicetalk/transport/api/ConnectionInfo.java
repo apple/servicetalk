@@ -40,6 +40,16 @@ public interface ConnectionInfo {
     SocketAddress remoteAddress();
 
     /**
+     * Get the {@link SslConfig} for this connection.
+     *
+     * @return The {@link SslConfig} if SSL/TLS is configured, or {@code null} otherwise.
+     */
+    @Nullable
+    default SslConfig sslConfig() { // FIXME: 0.43 - consider removing default impl
+        throw new UnsupportedOperationException(getClass().getSimpleName() + "does not implement sslConfig()");
+    }
+
+    /**
      * Get the {@link SSLSession} for this connection.
      *
      * @return The {@link SSLSession} if SSL/TLS is enabled, or {@code null} otherwise.

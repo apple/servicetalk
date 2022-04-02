@@ -100,11 +100,11 @@ final class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> 
         boolean removeSubscriber(final MulticastFixedSubscriber<T> subscriber) {
             for (;;) {
                 final Subscriber<? super T>[] currSubs = subscribers;
-                if (currSubs.length == 0 || currSubs.length == 1 && currSubs[0] instanceof TerminalSubscriber) {
+                final int i = ArrayUtils.indexOf(subscriber, currSubs);
+                if (i < 0) {
                     // terminated, demandQueue is not thread safe and isn't cleaned up on the Subscriber thread.
                     return false;
                 }
-                final int i = ArrayUtils.indexOf(subscriber, currSubs);
                 @SuppressWarnings("unchecked")
                 Subscriber<? super T>[] newSubs = (Subscriber<? super T>[])
                         Array.newInstance(Subscriber.class, currSubs.length - 1);
@@ -180,7 +180,7 @@ final class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> 
                     new MulticastFixedSubscriber<>(this, subscriber, contextMap, contextProvider, sCount);
             for (;;) {
                 final Subscriber<? super T>[] currSubs = subscribers;
-                if (currSubs.length != 0 && currSubs[0] instanceof TerminalSubscriber) {
+                if (currSubs.length == 1 && currSubs[0] instanceof TerminalSubscriber) {
                     ((TerminalSubscriber<?>) currSubs[0]).terminate(subscriber);
                     break;
                 } else {
@@ -231,7 +231,7 @@ final class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> 
         }
 
         private void onTerminal(@Nullable Throwable t, BiConsumer<Subscriber<? super T>, Throwable> terminator) {
-            safeTerminalStateReset(t).afterFinally(() ->
+            safeTerminalStateReset(t).whenFinally(() ->
                     state = new State(maxQueueSize, minSubscribers)).subscribe();
 
             @SuppressWarnings("unchecked")

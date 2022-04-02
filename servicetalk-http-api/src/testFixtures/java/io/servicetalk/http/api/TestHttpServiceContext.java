@@ -16,6 +16,7 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.netty.internal.AddressUtils;
 
 import java.net.SocketAddress;
@@ -69,6 +70,12 @@ public class TestHttpServiceContext extends HttpServiceContext {
     @Override
     public SocketAddress remoteAddress() {
         return remoteAddress;
+    }
+
+    @Nullable
+    @Override
+    public SslConfig sslConfig() {
+        return null;
     }
 
     @Nullable

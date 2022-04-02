@@ -16,19 +16,20 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.internal.QueueFullException;
-import io.servicetalk.concurrent.internal.TerminalNotification;
 
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.ProcessorBufferUtils.consumeIfTerminal;
+import static io.servicetalk.concurrent.api.ProcessorBufferUtils.consumeNextItem;
 import static io.servicetalk.concurrent.api.SubscriberApiUtils.wrapNull;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.concurrent.internal.TerminalNotification.error;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
-abstract class AbstractPublisherProcessorSignalsHolder<T, Q extends Queue<Object>> extends AbstractProcessorBuffer
+abstract class AbstractPublisherProcessorSignalsHolder<T, Q extends Queue<Object>>
         implements PublisherProcessorSignalsHolder<T> {
     @SuppressWarnings("rawtypes")
     private static final AtomicIntegerFieldUpdater<AbstractPublisherProcessorSignalsHolder> bufferedUpdater =
@@ -59,18 +60,12 @@ abstract class AbstractPublisherProcessorSignalsHolder<T, Q extends Queue<Object
 
     @Override
     public void terminate() {
-        TerminalNotification terminal = complete();
-        if (tryTerminate(terminal)) {
-            offerSignal(terminal);
-        }
+        offerSignal(complete());
     }
 
     @Override
     public void terminate(final Throwable cause) {
-        TerminalNotification terminal = error(cause);
-        if (tryTerminate(terminal)) {
-            offerSignal(terminal);
-        }
+        offerSignal(error(cause));
     }
 
     @Override

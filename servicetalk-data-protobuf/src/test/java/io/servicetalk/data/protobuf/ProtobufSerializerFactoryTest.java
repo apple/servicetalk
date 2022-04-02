@@ -60,8 +60,18 @@ class ProtobufSerializerFactoryTest {
     @Test
     void serializeDeserialize() {
         final DummyMessage testMessage = DummyMessage.newBuilder().setMessage("test").build();
+        serializeDeserialize(testMessage, PROTOBUF.serializerDeserializer(DummyMessage.parser()));
+    }
+
+    @Test
+    void serializeDeserializeClass() {
+        final DummyMessage testMessage = DummyMessage.newBuilder().setMessage("test").build();
+        serializeDeserialize(testMessage, PROTOBUF.serializerDeserializer(DummyMessage.class));
+    }
+
+    private static void serializeDeserialize(final DummyMessage testMessage,
+                                             final SerializerDeserializer<DummyMessage> serializer) {
         final byte[] testMessageBytes = testMessage.toByteArray();
-        SerializerDeserializer<DummyMessage> serializer = PROTOBUF.serializerDeserializer(DummyMessage.parser());
         Buffer buffer = serializer.serialize(testMessage, DEFAULT_ALLOCATOR);
         byte[] bytes = new byte[buffer.readableBytes()];
         buffer.getBytes(buffer.readerIndex(), bytes);
@@ -72,9 +82,17 @@ class ProtobufSerializerFactoryTest {
     @ParameterizedTest(name = "pojos={0}")
     @MethodSource("pojos")
     void streamingWriteDelimitedToDeserialized(Collection<DummyMessage> msgs) throws Exception {
-        Parser<DummyMessage> parser = DummyMessage.parser();
-        StreamingSerializerDeserializer<DummyMessage> serializer = PROTOBUF.streamingSerializerDeserializer(parser);
+        streamingWriteDelimitedToDeserialized(PROTOBUF.streamingSerializerDeserializer(DummyMessage.parser()), msgs);
+    }
 
+    @ParameterizedTest(name = "pojos={0}")
+    @MethodSource("pojos")
+    void streamingWriteDelimitedToDeserializedClass(Collection<DummyMessage> msgs) throws Exception {
+        streamingWriteDelimitedToDeserialized(PROTOBUF.streamingSerializerDeserializer(DummyMessage.class), msgs);
+    }
+
+    private static void streamingWriteDelimitedToDeserialized(StreamingSerializerDeserializer<DummyMessage> serializer,
+                                                              Collection<DummyMessage> msgs) throws Exception {
         Buffer buffer = DEFAULT_ALLOCATOR.newBuffer();
         OutputStream os = asOutputStream(buffer);
         for (DummyMessage msg : msgs) {
@@ -87,12 +105,21 @@ class ProtobufSerializerFactoryTest {
     @ParameterizedTest(name = "pojos={0}")
     @MethodSource("pojos")
     void streamingParseDelimitedFromSerialized(Collection<DummyMessage> msgs) throws Exception {
-        Parser<DummyMessage> parser = parser();
-        StreamingSerializerDeserializer<DummyMessage> serializer = PROTOBUF.streamingSerializerDeserializer(parser);
+        streamingParseDelimitedFromSerialized(msgs, PROTOBUF.streamingSerializerDeserializer(parser()));
+    }
 
+    @ParameterizedTest(name = "pojos={0}")
+    @MethodSource("pojos")
+    void streamingParseDelimitedFromSerializedClass(Collection<DummyMessage> msgs) throws Exception {
+        streamingParseDelimitedFromSerialized(msgs, PROTOBUF.streamingSerializerDeserializer(DummyMessage.class));
+    }
+
+    private static void streamingParseDelimitedFromSerialized(
+            Collection<DummyMessage> msgs, StreamingSerializerDeserializer<DummyMessage> serializer) throws Exception {
         Collection<Buffer> serialized = serializer.serialize(fromIterable(msgs), DEFAULT_ALLOCATOR)
                 .toFuture().get();
 
+        Parser<DummyMessage> parser = parser();
         Collection<DummyMessage> deserialized = new ArrayList<>(serialized.size());
         for (Buffer buf : serialized) {
             deserialized.add(parser.parseDelimitedFrom(asInputStream(buf)));

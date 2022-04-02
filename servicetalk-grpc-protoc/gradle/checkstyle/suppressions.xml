@@ -21,4 +21,5 @@
 <suppressions>
   <suppress id="ConsolePrint" files="io[\\/]servicetalk[\\/]grpc[\\/]protoc[\\/]Main.java"/>
   <suppress checks="UncommentedMain" files="io[\\/]servicetalk[\\/]grpc[\\/]protoc[\\/]Main.java"/>
+  <suppress checks="LineLength" files="io[\\/]servicetalk[\\/]grpc[\\/]protoc[\\/]FileDescriptor.java"/>
 </suppressions>

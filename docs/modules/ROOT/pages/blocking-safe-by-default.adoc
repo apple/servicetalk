@@ -52,31 +52,31 @@ __offload__ invocation of user code out of the event loop to a different thread.
 
 Although the outcome is simple that no user code should run on the event loop, implementations of this offloading are
 often either naive hence sub-optimal or fairly complex. ServiceTalk internally does the heavy lifting to make sure that
-it does not offload more than what is required. In other words, it reduces offloading when it can deduce that no user
+it does not offload more than what is required. In other words, it reduces offloading when it can determine that no user
 code can interact with the event loop on a certain path.
 
+[#execution-strategy]
 === Execution Strategy
 
-An link:{source-root}/servicetalk-transport-api/src/main/java/io/servicetalk/transport/api/ExecutionStrategy.java[Execution Strategy]
-has two primary purposes:
-
-. Define which interaction paths require offloading.
-. Optionally specify an
-link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Executor.java[Executor]
-to use for offloading. In absence of a specified `Executor`, ServiceTalk will use a default `Executor`.
-
-At a general transport layer (no application level protocol), only two offload paths are available:
+The primary purpose of an link:{source-root}/servicetalk-transport-api/src/main/java/io/servicetalk/transport/api/ExecutionStrategy.java[Execution Strategy]
+is to define which interaction paths of a particular transport or protocol layer require offloading. For
+example, at the xref:{page-version}@servicetalk-http-api::blocking-safe-by-default.adoc[HTTP] transport layer, four
+offload paths are available:
 
 . Sending data to the transport.
 . Receiving data from the transport.
+. Handling transport events.
+. Closing the transport.
 
-However, different protocols, eg: xref:{page-version}@servicetalk-http-api::blocking-safe-by-default.adoc[HTTP] may
-provide more sophisticated offloading paths that can be controlled by a strategy.
+A given application, filter or component may indicate that it requires offloading for none, some or all of these
+interactions. Protocols other than HTTP will have their own APIs that would otherwise execute user code on an
+`EventLoop` thread and define their own `ExecutionStrategy` to control which of those interaction paths APIs are
+subject to offloading.
 
 [#influencing-offloading-decisions]
 === Influencing offloading decisions
 
-ServiceTalk does the heavy lifting of determining the optimal offloading strategy. This optimal
+ServiceTalk will determine the optimal offloading strategy for handling requests and responses. This optimal
 strategy is determined based on different inputs as outlined below:
 
 . __xref:{page-version}@servicetalk::programming-paradigms.adoc[Programming Paradigms].__: A certain programming model
@@ -103,5 +103,6 @@ the strategy for a client/server, but it comes with additional responsibility fr
 
 === ServiceTalk developers
 
-Internals of ServiceTalk still discourages blocking code and hence should be avoided while contributing to ServiceTalk.
-Unless there is a valid reason to do it, ServiceTalk internals are always non-blocking.
+The internal implementation of ServiceTalk generally discourages blocking code and hence introducing blocking should be
+avoided while contributing to ServiceTalk. Unless there is a valid reason to do it, ServiceTalk internals are always
+non-blocking.

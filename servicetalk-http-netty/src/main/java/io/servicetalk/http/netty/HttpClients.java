@@ -27,6 +27,8 @@ import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpHeaderNames;
+import io.servicetalk.http.api.HttpProviders.MultiAddressHttpClientBuilderProvider;
+import io.servicetalk.http.api.HttpProviders.SingleAddressHttpClientBuilderProvider;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.MultiAddressHttpClientBuilder;
 import io.servicetalk.http.api.MultiAddressHttpClientBuilder.SingleAddressInitializer;
@@ -36,9 +38,13 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.netty.internal.BuilderUtils;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.Collection;
+import java.util.List;
 import java.util.function.Function;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
@@ -46,6 +52,7 @@ import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalDnsServiceDiscoverer;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalSrvDnsServiceDiscoverer;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.mappingServiceDiscoverer;
+import static io.servicetalk.utils.internal.ServiceLoaderUtils.loadProviders;
 import static java.util.function.Function.identity;
 
 /**
@@ -53,8 +60,35 @@ import static java.util.function.Function.identity;
  */
 public final class HttpClients {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(HttpClients.class);
+
+    private static final List<SingleAddressHttpClientBuilderProvider> SINGLE_ADDRESS_PROVIDERS;
+    private static final List<MultiAddressHttpClientBuilderProvider> MULTI_ADDRESS_PROVIDERS;
+
+    static {
+        final ClassLoader classLoader = HttpClients.class.getClassLoader();
+        SINGLE_ADDRESS_PROVIDERS = loadProviders(SingleAddressHttpClientBuilderProvider.class, classLoader, LOGGER);
+        MULTI_ADDRESS_PROVIDERS = loadProviders(MultiAddressHttpClientBuilderProvider.class, classLoader, LOGGER);
+    }
+
     private HttpClients() {
         // No instances
+    }
+
+    private static <U, R> SingleAddressHttpClientBuilder<U, R> applyProviders(
+            final U address, SingleAddressHttpClientBuilder<U, R> builder) {
+        for (SingleAddressHttpClientBuilderProvider provider : SINGLE_ADDRESS_PROVIDERS) {
+            builder = provider.newBuilder(address, builder);
+        }
+        return builder;
+    }
+
+    private static <U, R> MultiAddressHttpClientBuilder<U, R> applyProviders(
+            MultiAddressHttpClientBuilder<U, R> builder) {
+        for (MultiAddressHttpClientBuilderProvider provider : MULTI_ADDRESS_PROVIDERS) {
+            builder = provider.newBuilder(builder);
+        }
+        return builder;
     }
 
     /**
@@ -65,11 +99,14 @@ public final class HttpClients {
      * When a <a href="https://tools.ietf.org/html/rfc3986#section-4.2">relative URL</a> is passed in the {@link
      * StreamingHttpRequest#requestTarget(String)} this client requires a {@link HttpHeaderNames#HOST} present in
      * order to infer the remote address.
+     * <p>
+     * The returned builder can be customized using {@link MultiAddressHttpClientBuilderProvider}.
      *
      * @return new builder with default configuration
+     * @see MultiAddressHttpClientBuilderProvider
      */
     public static MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forMultiAddressUrl() {
-        return new DefaultMultiAddressUrlHttpClientBuilder(HttpClients::forSingleAddress);
+        return applyProviders(new DefaultMultiAddressUrlHttpClientBuilder(HttpClients::forSingleAddress));
     }
 
     /**
@@ -80,10 +117,13 @@ public final class HttpClients {
      * When a <a href="https://tools.ietf.org/html/rfc3986#section-4.2">relative URL</a> is passed in the {@link
      * StreamingHttpRequest#requestTarget(String)} this client requires a {@link HttpHeaderNames#HOST} present in
      * order to infer the remote address.
+     * <p>
+     * The returned builder can be customized using {@link MultiAddressHttpClientBuilderProvider}.
      *
      * @param serviceDiscoverer The {@link ServiceDiscoverer} to resolve addresses of remote servers to connect to.
      * The lifecycle of the provided {@link ServiceDiscoverer} should be managed by the caller.
      * @return new builder with default configuration
+     * @see MultiAddressHttpClientBuilderProvider
      * @deprecated Use {@link #forMultiAddressUrl()} to create {@link MultiAddressHttpClientBuilder}, then use
      * {@link MultiAddressHttpClientBuilder#initializer(SingleAddressInitializer)} to override {@link ServiceDiscoverer}
      * using {@link SingleAddressHttpClientBuilder#serviceDiscoverer(ServiceDiscoverer)} for all or some of the internal
@@ -93,12 +133,15 @@ public final class HttpClients {
     public static MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forMultiAddressUrl(
             final ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>>
                     serviceDiscoverer) {
-        return new DefaultMultiAddressUrlHttpClientBuilder(address -> forSingleAddress(serviceDiscoverer, address));
+        return applyProviders(
+                new DefaultMultiAddressUrlHttpClientBuilder(address -> forSingleAddress(serviceDiscoverer, address)));
     }
 
     /**
      * Creates a {@link SingleAddressHttpClientBuilder} for an address with default {@link LoadBalancer} and DNS {@link
      * ServiceDiscoverer}.
+     * <p>
+     * The returned builder can be customized using {@link SingleAddressHttpClientBuilderProvider}.
      *
      * @param host host to connect to, resolved by default using a DNS {@link ServiceDiscoverer}. This will also be
      * used for the {@link HttpHeaderNames#HOST} together with the {@code port}. Use
@@ -106,6 +149,7 @@ public final class HttpClients {
      * or {@link SingleAddressHttpClientBuilder#hostHeaderFallback(boolean)} if you want to disable this behavior.
      * @param port port to connect to
      * @return new builder for the address
+     * @see SingleAddressHttpClientBuilderProvider
      */
     public static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forSingleAddress(
             final String host, final int port) {
@@ -115,29 +159,37 @@ public final class HttpClients {
     /**
      * Creates a {@link SingleAddressHttpClientBuilder} for an address with default {@link LoadBalancer} and DNS {@link
      * ServiceDiscoverer}.
+     * <p>
+     * The returned builder can be customized using {@link SingleAddressHttpClientBuilderProvider}.
      *
      * @param address the {@code UnresolvedAddress} to connect to, resolved by default using a DNS {@link
      * ServiceDiscoverer}. This address will also be used for the {@link HttpHeaderNames#HOST}.
      * Use {@link SingleAddressHttpClientBuilder#unresolvedAddressToHost(Function)} if you want to override that
      * value or {@link SingleAddressHttpClientBuilder#hostHeaderFallback(boolean)} if you want to disable this behavior.
      * @return new builder for the address
+     * @see SingleAddressHttpClientBuilderProvider
      */
     public static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forSingleAddress(
             final HostAndPort address) {
-        return new DefaultSingleAddressHttpClientBuilder<>(address, globalDnsServiceDiscoverer());
+        return applyProviders(address,
+                new DefaultSingleAddressHttpClientBuilder<>(address, globalDnsServiceDiscoverer()));
     }
 
     /**
      * Creates a {@link SingleAddressHttpClientBuilder} for the passed {@code serviceName} with default
      * {@link LoadBalancer} and a DNS {@link ServiceDiscoverer} using
      * <a href="https://tools.ietf.org/html/rfc2782">SRV record</a> lookups.
+     * <p>
+     * The returned builder can be customized using {@link SingleAddressHttpClientBuilderProvider}.
      *
      * @param serviceName The service name to resolve with <a href="https://tools.ietf.org/html/rfc2782">SRV DNS</a>.
      * @return new builder for the address
+     * @see SingleAddressHttpClientBuilderProvider
      */
     public static SingleAddressHttpClientBuilder<String, InetSocketAddress> forServiceAddress(
             final String serviceName) {
-        return new DefaultSingleAddressHttpClientBuilder<>(serviceName, globalSrvDnsServiceDiscoverer());
+        return applyProviders(serviceName,
+                new DefaultSingleAddressHttpClientBuilder<>(serviceName, globalSrvDnsServiceDiscoverer()));
     }
 
     /**
@@ -151,8 +203,12 @@ public final class HttpClients {
      * Note, if {@link SingleAddressHttpClientBuilder#proxyAddress(Object) a proxy} is configured for this client,
      * the proxy address also needs to be already resolved. Otherwise, runtime exceptions will be thrown when
      * the client is built.
+     * <p>
+     * The returned builder can be customized using {@link SingleAddressHttpClientBuilderProvider}.
+     *
      * @param port port to connect to
      * @return new builder for the address
+     * @see SingleAddressHttpClientBuilderProvider
      */
     public static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forResolvedAddress(
             final String host, final int port) {
@@ -170,16 +226,22 @@ public final class HttpClients {
      * Note, if {@link SingleAddressHttpClientBuilder#proxyAddress(Object) a proxy} is configured for this client,
      * the proxy address also needs to be already resolved. Otherwise, runtime exceptions will be thrown when
      * the client is built.
+     * <p>
+     * The returned builder can be customized using {@link SingleAddressHttpClientBuilderProvider}.
+     *
      * @return new builder for the address
+     * @see SingleAddressHttpClientBuilderProvider
      */
     public static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forResolvedAddress(
             final HostAndPort address) {
-        return new DefaultSingleAddressHttpClientBuilder<>(address,
-                mappingServiceDiscoverer(BuilderUtils::toResolvedInetSocketAddress));
+        return applyProviders(address, new DefaultSingleAddressHttpClientBuilder<>(address,
+                mappingServiceDiscoverer(BuilderUtils::toResolvedInetSocketAddress)));
     }
 
     /**
      * Creates a {@link SingleAddressHttpClientBuilder} for an address with default {@link LoadBalancer}.
+     * <p>
+     * The returned builder can be customized using {@link SingleAddressHttpClientBuilderProvider}.
      *
      * @param address the {@code ResolvedAddress} to connect. This address will also be used for the
      * {@link HttpHeaderNames#HOST}. Use {@link SingleAddressHttpClientBuilder#unresolvedAddressToHost(Function)}
@@ -187,14 +249,18 @@ public final class HttpClients {
      * want to disable this behavior.
      * @param <R> The type of resolved {@link SocketAddress}.
      * @return new builder for the address
+     * @see SingleAddressHttpClientBuilderProvider
      */
     public static <R extends SocketAddress> SingleAddressHttpClientBuilder<R, R> forResolvedAddress(final R address) {
-        return new DefaultSingleAddressHttpClientBuilder<>(address, mappingServiceDiscoverer(identity()));
+        return applyProviders(address,
+                new DefaultSingleAddressHttpClientBuilder<>(address, mappingServiceDiscoverer(identity())));
     }
 
     /**
      * Creates a {@link SingleAddressHttpClientBuilder} for a custom address type with default {@link LoadBalancer} and
      * user provided {@link ServiceDiscoverer}.
+     * <p>
+     * The returned builder can be customized using {@link SingleAddressHttpClientBuilderProvider}.
      *
      * @param serviceDiscoverer The {@link ServiceDiscoverer} to resolve addresses of remote servers to connect to.
      * The lifecycle of the provided {@link ServiceDiscoverer} should be managed by the caller.
@@ -205,11 +271,12 @@ public final class HttpClients {
      * @param <U> the type of address before resolution (unresolved address)
      * @param <R> the type of address after resolution (resolved address)
      * @return new builder with provided configuration
+     * @see SingleAddressHttpClientBuilderProvider
      */
     public static <U, R> SingleAddressHttpClientBuilder<U, R> forSingleAddress(
             final ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer,
             final U address) {
-        return new DefaultSingleAddressHttpClientBuilder<>(address, serviceDiscoverer);
+        return applyProviders(address, new DefaultSingleAddressHttpClientBuilder<>(address, serviceDiscoverer));
     }
 
     /**

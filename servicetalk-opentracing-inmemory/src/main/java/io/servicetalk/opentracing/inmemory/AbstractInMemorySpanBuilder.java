@@ -53,14 +53,18 @@ abstract class AbstractInMemorySpanBuilder implements InMemorySpanBuilder {
     }
 
     @Override
-    public final InMemorySpanBuilder asChildOf(SpanContext parent) {
-        addReference(CHILD_OF, parent);
+    public final InMemorySpanBuilder asChildOf(@Nullable SpanContext parent) {
+        if (parent != null) {
+            addReference(CHILD_OF, parent);
+        }
         return this;
     }
 
     @Override
-    public final InMemorySpanBuilder asChildOf(Span parent) {
-        addReference(CHILD_OF, parent.context());
+    public final InMemorySpanBuilder asChildOf(@Nullable Span parent) {
+        if (parent != null) {
+            addReference(CHILD_OF, parent.context());
+        }
         return this;
     }
 

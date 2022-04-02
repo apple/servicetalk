@@ -23,6 +23,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ConcurrentUtils;
 import io.servicetalk.transport.api.ExecutionContext;
+import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
@@ -135,6 +136,12 @@ final class NettyPipelinedConnection<Req, Resp> implements NettyConnectionContex
     @Override
     public SocketAddress remoteAddress() {
         return connection.remoteAddress();
+    }
+
+    @Nullable
+    @Override
+    public SslConfig sslConfig() {
+        return connection.sslConfig();
     }
 
     @Override

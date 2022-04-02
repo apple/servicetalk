@@ -20,6 +20,8 @@ import io.servicetalk.concurrent.internal.TerminalNotification;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -123,6 +125,27 @@ class PublisherProcessorTest {
         processor.onComplete();
         toSource(processor).subscribe(subscriber);
         subscriber.awaitOnComplete();
+    }
+
+    @ParameterizedTest
+    @CsvSource(value = {"true,true", "true,false", "false,true", "false,false"})
+    void duplicateTerminalFiltered(boolean firstComplete, boolean secondComplete) {
+        toSource(processor).subscribe(subscriber);
+        if (firstComplete) {
+            processor.onComplete();
+            subscriber.awaitOnComplete();
+        } else {
+            processor.onError(DELIBERATE_EXCEPTION);
+            assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
+        }
+
+        // TestPublisherSubscriber will throw on delivery after terminal.
+        processor.onNext(1);
+        if (secondComplete) {
+            processor.onComplete();
+        } else {
+            processor.onError(DELIBERATE_EXCEPTION);
+        }
     }
 
     @Test

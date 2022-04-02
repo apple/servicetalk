@@ -15,17 +15,22 @@
  */
 package io.servicetalk.opentracing.inmemory;
 
+import io.servicetalk.opentracing.inmemory.api.InMemoryReference;
 import io.servicetalk.opentracing.inmemory.api.InMemoryScopeManager;
 import io.servicetalk.opentracing.inmemory.api.InMemorySpan;
 import io.servicetalk.opentracing.inmemory.api.InMemorySpanBuilder;
 import io.servicetalk.opentracing.inmemory.api.InMemorySpanContext;
 import io.servicetalk.opentracing.inmemory.api.InMemoryTracer;
 
+import io.opentracing.SpanContext;
 import org.junit.jupiter.api.Test;
+
+import java.util.Optional;
 
 import static io.opentracing.References.CHILD_OF;
 import static io.opentracing.References.FOLLOWS_FROM;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -40,6 +45,23 @@ class DefaultInMemoryTracerTest {
         verifyParentReference("followsFromReferenceRespected", false);
     }
 
+    @Test
+    void testChildOfNullParent() {
+        InMemoryScopeManager mockScopeManager = mock(InMemoryScopeManager.class);
+        InMemoryTracer tracer = new DefaultInMemoryTracer.Builder(mockScopeManager).build();
+        InMemorySpan parentSpan = tracer.buildSpan("parent")
+                .asChildOf((SpanContext) null)
+                .start();
+
+        assertEquals(Optional.empty(), findChildRef(parentSpan));
+
+        InMemorySpan childSpan = tracer.buildSpan("child")
+                .asChildOf(parentSpan)
+                .start();
+
+        assertTrue(isChildOf(childSpan, parentSpan));
+    }
+
     private static void verifyParentReference(final String parentTraceIdHex, boolean childOf) {
         InMemoryScopeManager mockScopeManager = mock(InMemoryScopeManager.class);
         InMemorySpanContext mockParentContext = mock(InMemorySpanContext.class);
@@ -49,5 +71,21 @@ class DefaultInMemoryTracerTest {
         spanBuilder.addReference(childOf ? CHILD_OF : FOLLOWS_FROM, mockParentContext);
         InMemorySpan span = spanBuilder.start();
         assertEquals(parentTraceIdHex, span.context().toTraceId());
+    }
+
+    private static boolean isChildOf(InMemorySpan span, InMemorySpan maybeParent) {
+        final InMemorySpanContext maybeParentContext = maybeParent.context();
+        return findChildRef(span)
+                .map(ref -> ref.referredTo().equals(maybeParentContext))
+                .orElse(false);
+    }
+
+    private static Optional<InMemoryReference> findChildRef(InMemorySpan span) {
+        for (InMemoryReference ref : span.references()) {
+            if (ref.type().equals(CHILD_OF)) {
+                return Optional.of(ref);
+            }
+        }
+        return Optional.empty();
     }
 }

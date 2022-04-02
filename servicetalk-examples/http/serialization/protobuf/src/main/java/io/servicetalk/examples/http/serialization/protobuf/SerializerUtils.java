@@ -26,10 +26,11 @@ import io.servicetalk.http.api.HttpStreamingSerializerDeserializer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.data.protobuf.ProtobufSerializerFactory.PROTOBUF;
 import static io.servicetalk.http.api.HeaderUtils.hasContentType;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
+import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_X_PROTOBUF;
+import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_X_PROTOBUF_VAR_INT;
 import static io.servicetalk.http.api.HttpSerializers.serializer;
 import static io.servicetalk.http.api.HttpSerializers.streamingSerializer;
 
@@ -40,12 +41,14 @@ import static io.servicetalk.http.api.HttpSerializers.streamingSerializer;
  * utilities to concert it to HTTP-aware variants.
  */
 public final class SerializerUtils {
-
-    private static final CharSequence APPLICATION_PROTOBUF = newAsciiString("application/protobuf");
     private static final Consumer<HttpHeaders> CONTENT_TYPE_SETTER =
-            headers -> headers.set(CONTENT_TYPE, APPLICATION_PROTOBUF);
+            headers -> headers.set(CONTENT_TYPE, APPLICATION_X_PROTOBUF);
     private static final Predicate<HttpHeaders> CONTENT_TYPE_VALIDATOR =
-            headers -> hasContentType(headers, APPLICATION_PROTOBUF, null);
+            headers -> hasContentType(headers, APPLICATION_X_PROTOBUF, null);
+    private static final Consumer<HttpHeaders> VAR_INT_CONTENT_TYPE_SETTER =
+            headers -> headers.set(CONTENT_TYPE, APPLICATION_X_PROTOBUF_VAR_INT);
+    private static final Predicate<HttpHeaders> VAR_INT_CONTENT_TYPE_VALIDATOR =
+            headers -> hasContentType(headers, APPLICATION_X_PROTOBUF_VAR_INT, null);
 
     public static final HttpSerializerDeserializer<RequestMessage> REQ_SERIALIZER =
             serializer(PROTOBUF.serializerDeserializer(RequestMessage.parser()),
@@ -53,7 +56,7 @@ public final class SerializerUtils {
 
     public static final HttpStreamingSerializerDeserializer<RequestMessage> REQ_STREAMING_SERIALIZER =
             streamingSerializer(PROTOBUF.streamingSerializerDeserializer(RequestMessage.parser()),
-                    CONTENT_TYPE_SETTER, CONTENT_TYPE_VALIDATOR);
+                    VAR_INT_CONTENT_TYPE_SETTER, VAR_INT_CONTENT_TYPE_VALIDATOR);
 
     public static final HttpSerializerDeserializer<ResponseMessage> RESP_SERIALIZER =
             serializer(PROTOBUF.serializerDeserializer(ResponseMessage.parser()),
@@ -61,7 +64,7 @@ public final class SerializerUtils {
 
     public static final HttpStreamingSerializerDeserializer<ResponseMessage> RESP_STREAMING_SERIALIZER =
             streamingSerializer(PROTOBUF.streamingSerializerDeserializer(ResponseMessage.parser()),
-                    CONTENT_TYPE_SETTER, CONTENT_TYPE_VALIDATOR);
+                    VAR_INT_CONTENT_TYPE_SETTER, VAR_INT_CONTENT_TYPE_VALIDATOR);
 
     private SerializerUtils() {
         // No instances.

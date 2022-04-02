@@ -91,6 +91,7 @@ final class DefaultGrpcServerBuilder implements GrpcServerBuilder, ServerBinder 
     @Nullable
     private Duration defaultTimeout;
 
+    // Do not use this ctor directly, GrpcServers is the entry point for creating a new builder.
     DefaultGrpcServerBuilder(final Supplier<HttpServerBuilder> httpServerBuilderSupplier) {
         this.httpServerBuilderSupplier = () -> httpServerBuilderSupplier.get()
                 .protocols(h2Default()).allowDropRequestTrailers(true);

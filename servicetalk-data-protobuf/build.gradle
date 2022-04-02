@@ -31,6 +31,7 @@ dependencies {
   api project(":servicetalk-buffer-api")
   api project(":servicetalk-concurrent-api")
   api project(":servicetalk-serializer-api")
+  api "com.google.protobuf:protobuf-java:$protobufVersion"
 
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-concurrent-api-internal")
@@ -38,7 +39,6 @@ dependencies {
   implementation project(":servicetalk-serialization-api")
   implementation project(":servicetalk-serializer-utils")
   implementation "com.google.code.findbugs:jsr305:$jsr305Version"
-  implementation "com.google.protobuf:protobuf-java:$protobufVersion"
 
   testImplementation testFixtures(project(":servicetalk-concurrent-api"))
   testImplementation testFixtures(project(":servicetalk-concurrent-internal"))

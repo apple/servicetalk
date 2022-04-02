@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.concurrent.internal.FlowControlUtils;
 import io.servicetalk.concurrent.internal.QueueFullException;
+import io.servicetalk.concurrent.internal.SubscriberUtils;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
 import org.slf4j.Logger;
@@ -412,21 +413,12 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
 
             private boolean onSingleTerminated() {
                 if (singleCancellable == null) {
-                    logDuplicateTerminal();
+                    SubscriberUtils.logDuplicateTerminal(this);
                     return false;
                 }
                 cancellableSet.remove(singleCancellable);
                 singleCancellable = null;
                 return decrementActiveMappedSources();
-            }
-
-            private void logDuplicateTerminal() {
-                LOGGER.warn("onSubscribe not called before terminal or duplicate terminal on Subscriber {}", this,
-                        new IllegalStateException(
-                                "onSubscribe not called before terminal or duplicate terminal on Subscriber " + this +
-                                " forbidden see: " +
-                                "https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#1.9" +
-                                "https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#1.7"));
             }
         }
     }

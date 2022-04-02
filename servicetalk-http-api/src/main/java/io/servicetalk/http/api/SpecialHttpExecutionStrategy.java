@@ -27,8 +27,14 @@ import org.slf4j.LoggerFactory;
 enum SpecialHttpExecutionStrategy implements HttpExecutionStrategy {
     /**
      * Enforces no offloading and maintains this even when merged.
+     * @deprecated Use {@link #offloadNone()} instead in most cases.
      */
+    // FIXME: 0.43 - remove deprecated method
+    @Deprecated
     OFFLOAD_NEVER_STRATEGY {
+
+        private volatile boolean mergeWarning;
+
         @Override
         public boolean hasOffloads() {
             return false;
@@ -67,6 +73,11 @@ enum SpecialHttpExecutionStrategy implements HttpExecutionStrategy {
          */
         @Override
         public HttpExecutionStrategy merge(final HttpExecutionStrategy other) {
+            // assert false : "merging offloadNever() with other strategies is deprecated";
+            if (!mergeWarning) {
+                mergeWarning = true;
+                LOGGER.warn("merging offloadNever() with other strategies is deprecated, consider using offloadNone()");
+            }
             return this;
         }
     },
@@ -115,7 +126,7 @@ enum SpecialHttpExecutionStrategy implements HttpExecutionStrategy {
          */
         @Override
         public HttpExecutionStrategy merge(final HttpExecutionStrategy other) {
-            assert false : "merging defaultStrategy() with other strategies is deprecated";
+            // assert false : "merging defaultStrategy() with other strategies is deprecated";
             if (!mergeWarning) {
                 mergeWarning = true;
                 LOGGER.warn("merging defaultStrategy() with other strategies is deprecated");

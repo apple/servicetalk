@@ -23,12 +23,18 @@ import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServerContext;
+import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.ReservedBlockingHttpConnection;
 import io.servicetalk.http.api.ReservedBlockingStreamingHttpConnection;
 import io.servicetalk.http.api.ReservedHttpConnection;
 import io.servicetalk.http.api.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpClient;
+import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.StreamingHttpResponseFactory;
+import io.servicetalk.http.api.StreamingHttpService;
+import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 
@@ -48,6 +54,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
@@ -79,16 +86,26 @@ class ExecutionStrategyInContextTest {
     @ValueSource(booleans = {false, true})
     void testStreaming(boolean customStrategy) throws Exception {
         StreamingHttpClient client = initClientAndServer(builder ->
-                builder.listenStreaming((ctx, request, responseFactory) -> {
-                    serviceStrategyRef.set(ctx.executionContext().executionStrategy());
-                    return succeeded(responseFactory.ok());
+                builder.listenStreaming(new StreamingHttpService() {
+                    @Override
+                    public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
+                                                                final StreamingHttpRequest request,
+                                                                final StreamingHttpResponseFactory responseFactory) {
+                        serviceStrategyRef.set(ctx.executionContext().executionStrategy());
+                        return succeeded(responseFactory.ok());
+                    }
+
+                    @Override
+                    public HttpExecutionStrategy requiredOffloads() {
+                        return offloadNone();
+                    }
                 }), customStrategy).buildStreaming();
         clientAsCloseable = client;
         if (!customStrategy) {
             assert expectedClientStrategy == null;
             expectedClientStrategy = defaultStrategy();
             assert expectedServerStrategy == null;
-            expectedServerStrategy = defaultStrategy();
+            expectedServerStrategy = offloadNone();
         }
         HttpExecutionStrategy clientStrat = client.executionContext().executionStrategy();
         assertThat("Unexpected client strategy.", clientStrat, equalStrategies(expectedClientStrategy));
@@ -211,18 +228,18 @@ class ExecutionStrategyInContextTest {
         return clientBuilder;
     }
 
-    static Matcher<HttpExecutionStrategy> equalStrategies(@Nullable HttpExecutionStrategy expected) {
-        return new TypeSafeMatcher<HttpExecutionStrategy>() {
+    static Matcher<ExecutionStrategy> equalStrategies(@Nullable ExecutionStrategy expected) {
+        return new TypeSafeMatcher<ExecutionStrategy>() {
 
             @Override
-            public void describeMismatchSafely(@Nullable HttpExecutionStrategy item, Description mismatchDescription) {
+            public void describeMismatchSafely(@Nullable ExecutionStrategy item, Description mismatchDescription) {
                 mismatchDescription
                         .appendText("was strategy ")
                         .appendValue(item);
             }
 
             @Override
-            protected boolean matchesSafely(final @Nullable HttpExecutionStrategy item) {
+            protected boolean matchesSafely(final @Nullable ExecutionStrategy item) {
                 return Objects.equals(expected, item);
             }
 

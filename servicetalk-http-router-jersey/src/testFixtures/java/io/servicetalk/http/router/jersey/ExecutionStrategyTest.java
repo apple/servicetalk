@@ -44,7 +44,7 @@ import java.util.Set;
 import javax.ws.rs.core.Application;
 
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
-import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_JSON;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.router.jersey.AbstractJerseyStreamingHttpServiceTest.RouterApi.BLOCKING_STREAMING;
@@ -95,7 +95,7 @@ final class ExecutionStrategyTest extends AbstractJerseyStreamingHttpServiceTest
     protected enum TestExecutorStrategy {
         DEFAULT {
             @Override
-            void configureRouterBuilder(final HttpServerBuilder builder, final Executor ignored) {
+            void configureRouterBuilder(final HttpServerBuilder builder, final Executor __) {
                 // noop
             }
         },
@@ -107,8 +107,8 @@ final class ExecutionStrategyTest extends AbstractJerseyStreamingHttpServiceTest
         },
         NO_OFFLOADS {
             @Override
-            void configureRouterBuilder(final HttpServerBuilder builder, final Executor ignored) {
-                builder.executionStrategy(offloadNever());
+            void configureRouterBuilder(final HttpServerBuilder builder, final Executor __) {
+                builder.executionStrategy(offloadNone());
             }
         };
 

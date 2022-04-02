@@ -31,7 +31,6 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.utils.auth.BasicAuthHttpServiceFilter;
 import io.servicetalk.http.utils.auth.BasicAuthHttpServiceFilter.CredentialsVerifier;
-import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
@@ -53,7 +52,6 @@ import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpHeaderNames.AUTHORIZATION;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
@@ -130,10 +128,11 @@ class BasicAuthStrategyInfluencerTest {
         when(credentialsVerifier.apply(anyString(), anyString())).thenReturn(succeeded("success"));
         when(credentialsVerifier.closeAsync()).thenReturn(completed());
         when(credentialsVerifier.closeAsyncGracefully()).thenReturn(completed());
+        when(credentialsVerifier.requiredOffloads()).thenCallRealMethod();
         CredentialsVerifier<String> verifier = credentialsVerifier;
         if (noOffloadsInfluence) {
             verifier = new InfluencingVerifier(verifier, offloadNone());
-            serverBuilder.executionStrategy(offloadNever());
+            serverBuilder.executionStrategy(offloadNone());
         }
         serverBuilder.appendServiceFilter(new BasicAuthHttpServiceFilter.Builder<>(verifier, "dummy")
                 .buildServer());
@@ -147,8 +146,7 @@ class BasicAuthStrategyInfluencerTest {
         return this.client;
     }
 
-    private static final class OffloadCheckingService implements StreamingHttpService,
-                                                                 ExecutionStrategyInfluencer<HttpExecutionStrategy> {
+    private static final class OffloadCheckingService implements StreamingHttpService {
 
         private enum OffloadPoint {
             ServiceHandle,

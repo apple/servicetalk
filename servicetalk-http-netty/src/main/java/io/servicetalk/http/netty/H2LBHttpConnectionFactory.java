@@ -64,7 +64,7 @@ final class H2LBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpCon
         return TcpConnector.connect(null, resolvedAddress, tcpConfig, true, executionContext,
                 (channel, connectionObserver) -> H2ClientParentConnectionContext.initChannel(channel,
                         executionContext, config.h2Config(), reqRespFactoryFunc.apply(HTTP_2_0),
-                        tcpConfig.flushStrategy(), tcpConfig.idleTimeoutMs(),
+                        tcpConfig.flushStrategy(), tcpConfig.idleTimeoutMs(), tcpConfig.sslConfig(),
                         new TcpClientChannelInitializer(tcpConfig, connectionObserver).andThen(
                                 new H2ClientParentChannelInitializer(config.h2Config())), connectionObserver,
                         config.allowDropTrailersReadFromTransport()), observer);

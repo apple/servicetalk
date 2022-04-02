@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021-2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,14 @@
  * limitations under the License.
  */
 
+buildscript {
+  dependencies {
+    classpath "com.google.protobuf:protobuf-gradle-plugin:$protobufGradlePluginVersion"
+  }
+}
+
 apply plugin: "java"
+apply plugin: "com.google.protobuf"
 apply from: "../../gradle/idea.gradle"
 
 dependencies {
@@ -25,11 +32,24 @@ dependencies {
   // input stream adaptation that kicks in with out-of-the-box body readers and also allows accepting/returning
   // Single<Pojo> and Publisher<Pojo> from resource methods.
   implementation project(":servicetalk-data-jackson-jersey")
+  implementation project(":servicetalk-data-protobuf-jersey")
   implementation project(":servicetalk-http-netty")
   implementation project(":servicetalk-http-router-jersey")
+  implementation project(":servicetalk-data-protobuf") // only for ProtobufClient
+  implementation "com.google.protobuf:protobuf-java:$protobufVersion"
   implementation "org.glassfish.jersey.media:jersey-media-multipart"
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
   runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
   runtimeOnly "org.glassfish.jersey.inject:jersey-hk2"
+}
+
+protobuf {
+  protoc {
+    artifact = "com.google.protobuf:protoc:$protobufVersion"
+  }
+}
+
+clean {
+  delete protobuf.generatedFilesBaseDir
 }

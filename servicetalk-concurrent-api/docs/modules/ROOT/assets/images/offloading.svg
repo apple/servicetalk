@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xl="http://www.w3.org/1999/xlink" xmlns:dc="http://purl.org/dc/elements/1.1/" viewBox="144.03137 -56.5 1028.9686 1188.9117" width="1028.9686" height="1188.9117">
+  <title>ServiceTalk Source/Subscription Offloading</title>
+  <desc>Shows thread offloading during subscribe and publish using the subscribeOn() and publishOn() operators.
+  Subscribe offloads from application thread to executor thread and publish offloads from Netty Event loop to
+  executor thread.</desc>
+  <defs>
+    <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="FilledDiamond_Marker" stroke-linejoin="miter" stroke-miterlimit="10" viewBox="-1 -3 6 6" markerWidth="6" markerHeight="6" color="black">
+      <g>
+        <path d="M 3.7333333 0 L 1.8666667 -1.4 L 0 0 L 1.8666667 1.4 Z" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+      </g>
+    </marker>
+    <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="FilledDiamond_Marker_2" stroke-linejoin="miter" stroke-miterlimit="10" viewBox="-5 -3 6 6" markerWidth="6" markerHeight="6" color="black">
+      <g>
+        <path d="M -3.7333333 0 L -1.8666667 1.4 L 0 0 L -1.8666667 -1.4 Z" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+      </g>
+    </marker>
+    <filter id="Shadow" filterUnits="userSpaceOnUse" x="41.134507" y="-175.39117">
+      <feGaussianBlur in="SourceAlpha" result="blur" stdDeviation="1.3030978"/>
+      <feOffset in="blur" result="offset" dx="0" dy="2"/>
+      <feFlood flood-color="black" flood-opacity=".2" result="flood"/>
+      <feComposite in="flood" in2="offset" operator="in" result="color"/>
+      <feMerge>
+        <feMergeNode in="color"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <linearGradient x1="0" x2="1" id="Gradient" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fffd78"/>
+      <stop offset=".45238096" stop-color="#ffe979"/>
+      <stop offset="1" stop-color="#ffd579"/>
+    </linearGradient>
+    <linearGradient id="Obj_Gradient" xl:href="#Gradient" gradientTransform="translate(406.375 18.875) scale(18.5)"/>
+    <linearGradient id="Obj_Gradient_2" xl:href="#Gradient" gradientTransform="translate(444.375 18.875) scale(18.5)"/>
+    <linearGradient id="Obj_Gradient_3" xl:href="#Gradient" gradientTransform="translate(520.375 18.875) scale(18.5)"/>
+    <linearGradient x1="0" x2="1" id="Gradient_2" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#9ddaff"/>
+      <stop offset=".45238096" stop-color="#7fc7f3"/>
+      <stop offset="1" stop-color="#5db3e6"/>
+    </linearGradient>
+    <linearGradient id="Obj_Gradient_4" xl:href="#Gradient_2" gradientTransform="translate(921 597.375) scale(18.5)"/>
+    <linearGradient id="Obj_Gradient_5" xl:href="#Gradient_2" gradientTransform="translate(959.875 597.375) scale(18.5)"/>
+    <linearGradient id="Obj_Gradient_6" xl:href="#Gradient_2" gradientTransform="translate(1035.875 597.375) scale(18.5)"/>
+    <linearGradient id="Obj_Gradient_7" xl:href="#Gradient" gradientTransform="translate(240.0083 882.4687) rotate(89.92462) scale(47.689493)"/>
+    <linearGradient id="Obj_Gradient_8" xl:href="#Gradient_2" gradientTransform="translate(220.03967 517.8134) scale(40)"/>
+    <linearGradient id="Obj_Gradient_9" xl:href="#Gradient" gradientTransform="translate(739.488 276.00387) rotate(180) scale(40)"/>
+    <linearGradient id="Obj_Gradient_10" xl:href="#Gradient_2" gradientTransform="translate(739.5 782.3822) rotate(180) scale(40)"/>
+    <linearGradient id="Obj_Gradient_11" xl:href="#Gradient" gradientTransform="translate(727.0083 387.90527) rotate(89.92462) scale(47.689493)"/>
+    <linearGradient id="Obj_Gradient_12" xl:href="#Gradient" gradientTransform="translate(220.03967 1024) scale(40)"/>
+  </defs>
+  <metadata> Produced by OmniGraffle 7.19.5\n2022-03-15 22:32:38 +0000</metadata>
+  <g id="Subscribe_and_Publish_Offloading" stroke="none" stroke-dasharray="none" fill="none" fill-opacity="1" stroke-opacity="1">
+    <title>Subscribe and Publish Offloading</title>
+    <g id="Subscribe_and_Publish_Offloading_Layer_1">
+      <title>Layer 1</title>
+      <g id="Line_37">
+        <line x1="476.5562" y1="459" x2="476.5562" y2="863.5" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2.0,8.0" stroke-width="2"/>
+      </g>
+      <g id="Line_23">
+        <line x1="201.9495" y1="280.88148" x2="762.5505" y2="276.11852" marker-end="url(#FilledDiamond_Marker)" marker-start="url(#FilledDiamond_Marker_2)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
+      </g>
+      <g id="Line_24">
+        <line x1="196.2562" y1="1035.4881" x2="756.8562" y2="1035.0119" marker-end="url(#FilledDiamond_Marker)" marker-start="url(#FilledDiamond_Marker_2)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
+      </g>
+      <g id="Graphic_2" filter="url(#Shadow)">
+        <rect x="281.5562" y="975.5" width="390" height="120" fill="white"/>
+        <rect x="281.5562" y="975.5" width="390" height="120" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        <text transform="translate(286.5562 1024.5)" fill="black">
+          <tspan font-family="Helvetica" font-size="18" fill="black" x="142.98291" y="18">Subscriber</tspan>
+        </text>
+      </g>
+      <g id="Graphic_3" filter="url(#Shadow)">
+        <rect x="277.25" y="218.5" width="390" height="120" fill="white"/>
+        <rect x="277.25" y="218.5" width="390" height="120" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        <text transform="translate(282.25 267.5)" fill="black">
+          <tspan font-family="Helvetica" font-size="18" fill="black" x="159.48877" y="18">Source</tspan>
+        </text>
+      </g>
+      <g id="Graphic_5" filter="url(#Shadow)">
+        <path d="M 309.5 104 L 390.875 62.5 L 553.625 62.5 L 635 104 L 553.625 145.5 L 390.875 145.5 Z" fill="white"/>
+        <path d="M 309.5 104 L 390.875 62.5 L 553.625 62.5 L 635 104 L 553.625 145.5 L 390.875 145.5 Z" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        <text transform="translate(314.5 92.5)" fill="black">
+          <tspan font-family="Helvetica" font-size="19" fill="black" x="74.35132" y="19">Netty Event Loops</tspan>
+        </text>
+      </g>
+      <g id="Group_71">
+        <g id="Graphic_6">
+          <rect x="406.375" y="-36" width="18.5" height="109.75" fill="url(#Obj_Gradient)"/>
+          <rect x="406.375" y="-36" width="18.5" height="109.75" stroke="#ef8e00" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+          <text transform="translate(408.625 55.03125) rotate(-90)" fill="black">
+            <tspan font-family="Helvetica" font-size="12" fill="black" x="9.469727" y="11">Eventloop</tspan>
+          </text>
+        </g>
+        <g id="Graphic_7">
+          <rect x="444.375" y="-36" width="18.5" height="109.75" fill="url(#Obj_Gradient_2)"/>
+          <rect x="444.375" y="-36" width="18.5" height="109.75" stroke="#ef8e00" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+          <text transform="translate(446.625 55.03125) rotate(-90)" fill="black">
+            <tspan font-family="Helvetica" font-size="12" fill="black" x="9.469727" y="11">Eventloop</tspan>
+          </text>
+        </g>
+        <g id="Graphic_9">
+          <rect x="520.375" y="-36" width="18.5" height="109.75" fill="url(#Obj_Gradient_3)"/>
+          <rect x="520.375" y="-36" width="18.5" height="109.75" stroke="#ef8e00" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+          <text transform="translate(522.625 55.03125) rotate(-90)" fill="black">
+            <tspan font-family="Helvetica" font-size="12" fill="black" x="9.469727" y="11">Eventloop</tspan>
+          </text>
+        </g>
+        <g id="Graphic_25">
+          <text transform="translate(483.625 9.651001)" fill="black">
+            <tspan font-family="Helvetica Neue" font-size="16" fill="black" x="0" y="15">…</tspan>
+          </text>
+        </g>
+      </g>
+      <g id="Graphic_20" filter="url(#Shadow)">
+        <path d="M 825 682.5 L 906.375 641 L 1069.125 641 L 1150.5 682.5 L 1069.125 724 L 906.375 724 Z" fill="white"/>
+        <path d="M 825 682.5 L 906.375 641 L 1069.125 641 L 1150.5 682.5 L 1069.125 724 L 906.375 724 Z" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        <text transform="translate(830 671)" fill="black">
+          <tspan font-family="Helvetica" font-size="19" fill="black" x="117.09668" y="19">Executor</tspan>
+        </text>
+      </g>
+      <g id="Group_69">
+        <g id="Graphic_19">
+          <rect x="921" y="542.5" width="18.5" height="109.75" fill="url(#Obj_Gradient_4)"/>
+          <rect x="921" y="542.5" width="18.5" height="109.75" stroke="#008ad5" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+          <text transform="translate(923.25 633.53125) rotate(-90)" fill="black">
+            <tspan font-family="Helvetica" font-size="12" fill="black" x="17.145508" y="11">Thread</tspan>
+          </text>
+        </g>
+        <g id="Graphic_18">
+          <rect x="959.875" y="542.5" width="18.5" height="109.75" fill="url(#Obj_Gradient_5)"/>
+          <rect x="959.875" y="542.5" width="18.5" height="109.75" stroke="#008ad5" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+          <text transform="translate(962.125 633.53125) rotate(-90)" fill="black">
+            <tspan font-family="Helvetica" font-size="12" fill="black" x="17.145508" y="11">Thread</tspan>
+          </text>
+        </g>
+        <g id="Graphic_16">
+          <rect x="1035.875" y="542.5" width="18.5" height="109.75" fill="url(#Obj_Gradient_6)"/>
+          <rect x="1035.875" y="542.5" width="18.5" height="109.75" stroke="#008ad5" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+          <text transform="translate(1038.125 633.53125) rotate(-90)" fill="black">
+            <tspan font-family="Helvetica" font-size="12" fill="black" x="17.145508" y="11">Thread</tspan>
+          </text>
+        </g>
+        <g id="Graphic_26">
+          <text transform="translate(999.125 588.151)" fill="black">
+            <tspan font-family="Helvetica Neue" font-size="16" fill="black" x="0" y="15">…</tspan>
+          </text>
+        </g>
+      </g>
+      <g id="Graphic_31">
+        <path d="M 340.0562 364.5 L 613.0562 364.5 C 645.3482 364.5 671.5562 385.668 671.5562 411.75 C 671.5562 437.832 645.3482 459 613.0562 459 L 340.0562 459 C 307.7642 459 281.5562 437.832 281.5562 411.75 C 281.5562 385.668 307.7642 364.5 340.0562 364.5 Z" fill="white"/>
+        <path d="M 340.0562 364.5 L 613.0562 364.5 C 645.3482 364.5 671.5562 385.668 671.5562 411.75 C 671.5562 437.832 645.3482 459 613.0562 459 L 340.0562 459 C 307.7642 459 281.5562 437.832 281.5562 411.75 C 281.5562 385.668 307.7642 364.5 340.0562 364.5 Z" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        <text transform="translate(325.5562 402.75)" fill="black">
+          <tspan font-family="Courier New" font-size="16" fill="black" x="59.785156" y="13">publishOn(executor)</tspan>
+        </text>
+      </g>
+      <g id="Graphic_32">
+        <path d="M 340.0562 491.78136 L 613.0562 491.78136 C 645.3482 491.78136 671.5562 512.94936 671.5562 539.03136 C 671.5562 565.11336 645.3482 586.28136 613.0562 586.28136 L 340.0562 586.28136 C 307.7642 586.28136 281.5562 565.11336 281.5562 539.03136 C 281.5562 512.94936 307.7642 491.78136 340.0562 491.78136 Z" fill="white"/>
+        <path d="M 340.0562 491.78136 L 613.0562 491.78136 C 645.3482 491.78136 671.5562 512.94936 671.5562 539.03136 C 671.5562 565.11336 645.3482 586.28136 613.0562 586.28136 L 340.0562 586.28136 C 307.7642 586.28136 281.5562 565.11336 281.5562 539.03136 C 281.5562 512.94936 307.7642 491.78136 340.0562 491.78136 Z" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        <text transform="translate(325.5562 529.80736)" fill="black">
+          <tspan font-family="Helvetica Neue" font-size="16" fill="black" x="119.144" y="15">Operator</tspan>
+        </text>
+      </g>
+      <g id="Graphic_33">
+        <path d="M 340.0562 863.5 L 613.0562 863.5 C 645.3482 863.5 671.5562 884.668 671.5562 910.75 C 671.5562 936.832 645.3482 958 613.0562 958 L 340.0562 958 C 307.7642 958 281.5562 936.832 281.5562 910.75 C 281.5562 884.668 307.7642 863.5 340.0562 863.5 Z" fill="white"/>
+        <path d="M 340.0562 863.5 L 613.0562 863.5 C 645.3482 863.5 671.5562 884.668 671.5562 910.75 C 671.5562 936.832 645.3482 958 613.0562 958 L 340.0562 958 C 307.7642 958 281.5562 936.832 281.5562 910.75 C 281.5562 884.668 307.7642 863.5 340.0562 863.5 Z" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        <text transform="translate(325.5562 901.75)" fill="black">
+          <tspan font-family="Courier New" font-size="16" fill="black" x="50.183594" y="13">subscribeOn(executor)</tspan>
+        </text>
+      </g>
+      <g id="Graphic_38">
+        <path d="M 340.0562 607.0037 L 613.0562 607.0037 C 645.3482 607.0037 671.5562 628.1717 671.5562 654.2537 C 671.5562 680.3357 645.3482 701.5037 613.0562 701.5037 L 340.0562 701.5037 C 307.7642 701.5037 281.5562 680.3357 281.5562 654.2537 C 281.5562 628.1717 307.7642 607.0037 340.0562 607.0037 Z" fill="white"/>
+        <path d="M 340.0562 607.0037 L 613.0562 607.0037 C 645.3482 607.0037 671.5562 628.1717 671.5562 654.2537 C 671.5562 680.3357 645.3482 701.5037 613.0562 701.5037 L 340.0562 701.5037 C 307.7642 701.5037 281.5562 680.3357 281.5562 654.2537 C 281.5562 628.1717 307.7642 607.0037 340.0562 607.0037 Z" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        <text transform="translate(325.5562 645.0297)" fill="black">
+          <tspan font-family="Helvetica Neue" font-size="16" fill="black" x="119.144" y="15">Operator</tspan>
+        </text>
+      </g>
+      <g id="Graphic_39">
+        <path d="M 340.0562 735.1322 L 613.0562 735.1322 C 645.3482 735.1322 671.5562 756.3002 671.5562 782.3822 C 671.5562 808.4642 645.3482 829.6322 613.0562 829.6322 L 340.0562 829.6322 C 307.7642 829.6322 281.5562 808.4642 281.5562 782.3822 C 281.5562 756.3002 307.7642 735.1322 340.0562 735.1322 Z" fill="white"/>
+        <path d="M 340.0562 735.1322 L 613.0562 735.1322 C 645.3482 735.1322 671.5562 756.3002 671.5562 782.3822 C 671.5562 808.4642 645.3482 829.6322 613.0562 829.6322 L 340.0562 829.6322 C 307.7642 829.6322 281.5562 808.4642 281.5562 782.3822 C 281.5562 756.3002 307.7642 735.1322 340.0562 735.1322 Z" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        <text transform="translate(325.5562 773.1582)" fill="black">
+          <tspan font-family="Helvetica Neue" font-size="16" fill="black" x="119.144" y="15">Operator</tspan>
+        </text>
+      </g>
+      <g id="Graphic_43">
+        <path d="M 209.55662 890.5888 L 213.38611 912.5232 L 164.53137 906.4128 L 229.26413 930.1724 L 226.1783 909.3125 L 276.7796 924.7472 L 273.7883 899.066 L 315.54797 906.2141 L 257.40737 882.445 L 260.1592 906.8827 L 209.55707 890.5888 Z" fill="url(#Obj_Gradient_7)"/>
+        <path d="M 209.55662 890.5888 L 213.38611 912.5232 L 164.53137 906.4128 L 229.26413 930.1724 L 226.1783 909.3125 L 276.7796 924.7472 L 273.7883 899.066 L 315.54797 906.2141 L 257.40737 882.445 L 260.1592 906.8827 L 209.55707 890.5888 Z" stroke="#ef8e00" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        <text transform="translate(169.52018 897.9062) rotate(-.07537842)" fill="black">
+          <tspan font-family="Helvetica" font-size="14" fill="black" x="36.680725" y="14">OFFLOAD</tspan>
+        </text>
+      </g>
+      <g id="Graphic_44">
+        <path d="M 250.03967 874.6269 L 230.03967 874.6269 L 230.03967 181 L 220.03967 181 L 240.03967 161 L 260.03967 181 L 250.03967 181 Z" fill="url(#Obj_Gradient_8)"/>
+        <path d="M 250.03967 874.6269 L 230.03967 874.6269 L 230.03967 181 L 220.03967 181 L 240.03967 161 L 260.03967 181 L 250.03967 181 Z" stroke="#008ad5" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+      </g>
+      <g id="Graphic_50">
+        <path d="M 709.488 166.00775 L 729.488 166.00775 L 729.488 366 L 739.488 366 L 719.488 386 L 699.488 366 L 709.488 366 Z" fill="url(#Obj_Gradient_9)"/>
+        <path d="M 709.488 166.00775 L 729.488 166.00775 L 729.488 366 L 739.488 366 L 719.488 386 L 699.488 366 L 709.488 366 Z" stroke="#ef8e00" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+      </g>
+      <g id="Graphic_56">
+        <path d="M 709.5 452.8526 L 729.5 452.8526 L 729.5 1091.9117 L 739.5 1091.9117 L 719.5 1111.9117 L 699.5 1091.9117 L 709.5 1091.9117 Z" fill="url(#Obj_Gradient_10)"/>
+        <path d="M 709.5 452.8526 L 729.5 452.8526 L 729.5 1091.9117 L 739.5 1091.9117 L 719.5 1111.9117 L 699.5 1091.9117 L 709.5 1091.9117 Z" stroke="#008ad5" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+      </g>
+      <g id="Graphic_68">
+        <path d="M 696.5566 396.0254 L 700.3861 417.9598 L 651.5314 411.84934 L 716.2641 435.60894 L 713.1783 414.7491 L 763.7796 430.18374 L 760.7883 404.5026 L 802.548 411.65066 L 744.4074 387.8816 L 747.1592 412.3193 L 696.5571 396.0254 Z" fill="url(#Obj_Gradient_11)"/>
+        <path d="M 696.5566 396.0254 L 700.3861 417.9598 L 651.5314 411.84934 L 716.2641 435.60894 L 713.1783 414.7491 L 763.7796 430.18374 L 760.7883 404.5026 L 802.548 411.65066 L 744.4074 387.8816 L 747.1592 412.3193 L 696.5571 396.0254 Z" stroke="#ef8e00" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        <text transform="translate(656.5202 403.34277) rotate(-.07537842)" fill="black">
+          <tspan font-family="Helvetica" font-size="14" fill="black" x="36.680725" y="14">OFFLOAD</tspan>
+        </text>
+      </g>
+      <g id="Graphic_72">
+        <path d="M 250.03967 1110 L 230.03967 1110 L 230.03967 958 L 220.03967 958 L 240.03967 938 L 260.03967 958 L 250.03967 958 Z" fill="url(#Obj_Gradient_12)"/>
+        <path d="M 250.03967 1110 L 230.03967 1110 L 230.03967 958 L 220.03967 958 L 240.03967 938 L 260.03967 958 L 250.03967 958 Z" stroke="#ef8e00" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+      </g>
+    </g>
+  </g>
+</svg>

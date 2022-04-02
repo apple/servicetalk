@@ -1058,7 +1058,7 @@ class ProtocolCompatibilityTest {
                 .listenAndAwait(new ServiceFactory.Builder()
                         .bufferDecoderGroup(serviceTalkDecompression(compression))
                         .bufferEncoders(serviceTalkCompressions(compression))
-                        .addService(new BlockingCompatService() {
+                        .addBlockingService(new BlockingCompatService() {
                             @Override
                             public void bidirectionalStreamingCall(
                                     final GrpcServiceContext ctx, final BlockingIterable<CompatRequest> request,

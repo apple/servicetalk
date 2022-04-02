@@ -15,6 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.internal.TerminalNotification;
@@ -134,6 +135,25 @@ class MulticastPublisherTest {
         Subscription subscription1 = subscriber1.awaitSubscription();
         subscription1.cancel();
         subscription1.cancel(); // multiple cancels should be safe.
+        if (cancelUpstream) {
+            subscription.awaitCancelled();
+        } else {
+            assertThat(subscription.isCancelled(), is(false));
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void twoSubscribersOneCancelsMultipleTimes(boolean cancelUpstream) throws InterruptedException {
+        Publisher<Integer> publisher = source.multicast(2, cancelUpstream);
+        toSource(publisher).subscribe(subscriber1);
+        toSource(publisher).subscribe(subscriber2);
+        Cancellable subscription1 = subscriber1.awaitSubscription();
+        Cancellable subscription2 = subscriber2.awaitSubscription();
+        subscription1.cancel();
+        subscription1.cancel(); // multiple cancels should be safe.
+        subscription2.cancel();
+        subscription2.cancel(); // multiple cancels should be safe.
         if (cancelUpstream) {
             subscription.awaitCancelled();
         } else {

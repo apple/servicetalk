@@ -38,7 +38,7 @@ import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyN
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoffFullJitter;
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
@@ -64,7 +64,7 @@ abstract class AbstractEchoServerBasedHttpRequesterTest {
     void startServer() throws Exception {
         serverContext = forAddress(localAddress(0))
             .ioExecutor(CTX.ioExecutor())
-            .executionStrategy(offloadNever())
+            .executionStrategy(offloadNone())
             .listenStreamingAndAwait(new EchoServiceStreaming());
     }
 

@@ -43,7 +43,7 @@ import javax.net.ssl.SSLHandshakeException;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
@@ -90,8 +90,9 @@ class SslAndNonSslConnectionsTest {
                 });
         when(STREAMING_HTTP_SERVICE.closeAsync()).thenReturn(completed());
         when(STREAMING_HTTP_SERVICE.closeAsyncGracefully()).thenReturn(completed());
+        when(STREAMING_HTTP_SERVICE.requiredOffloads()).thenCallRealMethod();
         serverCtx = HttpServers.forAddress(localAddress(0))
-                .executionStrategy(offloadNever())
+                .executionStrategy(offloadNone())
                 .listenStreamingAndAwait(STREAMING_HTTP_SERVICE);
         final String serverHostHeader = hostHeader(serverHostAndPort(serverCtx));
         requestTarget = "http://" + serverHostHeader + "/";
@@ -106,10 +107,11 @@ class SslAndNonSslConnectionsTest {
                 });
         when(SECURE_STREAMING_HTTP_SERVICE.closeAsync()).thenReturn(completed());
         when(SECURE_STREAMING_HTTP_SERVICE.closeAsyncGracefully()).thenReturn(completed());
+        when(SECURE_STREAMING_HTTP_SERVICE.requiredOffloads()).thenCallRealMethod();
         secureServerCtx = HttpServers.forAddress(localAddress(0))
                 .sslConfig(new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
                         DefaultTestCerts::loadServerKey).build())
-                .executionStrategy(offloadNever())
+                .executionStrategy(offloadNone())
                 .listenStreamingAndAwait(SECURE_STREAMING_HTTP_SERVICE);
         final String secureServerHostHeader = hostHeader(serverHostAndPort(secureServerCtx));
         secureRequestTarget = "https://" + secureServerHostHeader + "/";

@@ -20,6 +20,9 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.buffer.api.CompositeBuffer;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.examples.http.jaxrs.client.ProtobufClient;
+import io.servicetalk.tests.helloworld.HelloReply;
+import io.servicetalk.tests.helloworld.HelloRequest;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import org.glassfish.jersey.media.multipart.FormDataParam;
@@ -41,6 +44,8 @@ import javax.ws.rs.core.Response;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.fromInputStream;
+import static io.servicetalk.data.protobuf.jersey.ProtobufMediaTypes.APPLICATION_X_PROTOBUF;
+import static io.servicetalk.data.protobuf.jersey.ProtobufMediaTypes.APPLICATION_X_PROTOBUF_VAR_INT;
 import static java.lang.Math.random;
 import static java.util.Collections.singletonMap;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -93,6 +98,23 @@ public class HelloWorldJaxRsResource {
     @Produces(APPLICATION_JSON)
     public Map<String, String> hello(final Map<String, String> salutation) {
         return singletonMap("hello", salutation.getOrDefault("who", "world"));
+    }
+
+    /**
+     * Resource that relies on the Publisher/OIO adapters and Protobuf to consume and produce Protobuf entities.
+     * This project uses ServiceTalk's Protobuf provider for Jersey hence no OIO adaptation is involved.
+     * <p>
+     * Test with: {@link ProtobufClient}.
+     *
+     * @param request a {@link HelloRequest}.
+     * @return reply as a {@link HelloReply}.
+     */
+    @POST
+    @Path("hello")
+    @Consumes(APPLICATION_X_PROTOBUF)
+    @Produces(APPLICATION_X_PROTOBUF)
+    public HelloReply hello(final HelloRequest request) {
+        return HelloReply.newBuilder().setMessage("hello " + request.getName()).build();
     }
 
     /**
@@ -235,5 +257,39 @@ public class HelloWorldJaxRsResource {
     @Produces(APPLICATION_JSON)
     public Single<Map<String, String>> singleHello(final Single<Map<String, String>> salutation) {
         return salutation.map(m -> singletonMap("single hello", m.getOrDefault("who", "world")));
+    }
+
+    /**
+     * Resource that relies on the {@link Single}/OIO adapters and Protobuf to consume and produce Protobuf entities.
+     * This project uses ServiceTalk's Protobuf provider for Jersey hence no OIO adaptation is involved.
+     * <p>
+     * Test with: Test with: {@link ProtobufClient}.
+     *
+     * @param single a {@link Single} of {@link HelloRequest}.
+     * @return reply as a {@link Single} of {@link HelloReply}.
+     */
+    @POST
+    @Path("single-hello")
+    @Consumes(APPLICATION_X_PROTOBUF)
+    @Produces(APPLICATION_X_PROTOBUF)
+    public Single<HelloReply> hello(final Single<HelloRequest> single) {
+        return single.map(request -> HelloReply.newBuilder().setMessage("hello " + request.getName()).build());
+    }
+
+    /**
+     * Resource that relies on the {@link Publisher}/OIO adapters and Protobuf to consume and produce Protobuf entities.
+     * This project uses ServiceTalk's Protobuf provider for Jersey hence no OIO adaptation is involved.
+     * <p>
+     * Test with: Test with: {@link ProtobufClient}.
+     *
+     * @param publisher a {@link Publisher} of {@link HelloRequest}.
+     * @return reply as a {@link Publisher} of {@link HelloReply}.
+     */
+    @POST
+    @Path("publisher-hello")
+    @Consumes(APPLICATION_X_PROTOBUF_VAR_INT)
+    @Produces(APPLICATION_X_PROTOBUF_VAR_INT)
+    public Publisher<HelloReply> hello(final Publisher<HelloRequest> publisher) {
+        return publisher.map(request -> HelloReply.newBuilder().setMessage("hello " + request.getName()).build());
     }
 }

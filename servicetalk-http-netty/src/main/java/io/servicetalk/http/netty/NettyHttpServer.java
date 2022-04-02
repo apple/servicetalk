@@ -49,6 +49,7 @@ import io.servicetalk.tcp.netty.internal.TcpServerBinder;
 import io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer;
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.transport.netty.internal.CloseHandler.CloseEventObservedException;
@@ -169,10 +170,11 @@ final class NettyHttpServer {
         if (h1Config == null) {
             return failed(newH1ConfigException());
         }
+        final ReadOnlyTcpServerConfig tcpConfig = config.tcpConfig();
         return showPipeline(DefaultNettyConnection.initChannel(channel,
                 httpExecutionContext.bufferAllocator(), httpExecutionContext.executor(),
-                httpExecutionContext.ioExecutor(), closeHandler, config.tcpConfig().flushStrategy(),
-                        config.tcpConfig().idleTimeoutMs(),
+                httpExecutionContext.ioExecutor(), closeHandler, tcpConfig.flushStrategy(), tcpConfig.idleTimeoutMs(),
+                tcpConfig.sslConfig(),
                 initializer.andThen(getChannelInitializer(getByteBufAllocator(httpExecutionContext.bufferAllocator()),
                         h1Config, closeHandler)), httpExecutionContext.executionStrategy(), HTTP_1_1, observer, false,
                         __ -> false)
@@ -273,7 +275,7 @@ final class NettyHttpServer {
             this.headersFactory = headersFactory;
             executionContext = new DefaultHttpExecutionContext(connection.executionContext().bufferAllocator(),
                     connection.executionContext().ioExecutor(), connection.executionContext().executor(),
-                    HttpExecutionStrategies.offloadNever());
+                    HttpExecutionStrategies.offloadNone());
             this.service = service;
             flushStrategy = new SplittingFlushStrategy(connection.defaultFlushStrategy(),
                     // h2 may return a single HttpResponseMetaData for an empty response in some scenarios,
@@ -478,6 +480,12 @@ final class NettyHttpServer {
         @Override
         public SocketAddress remoteAddress() {
             return connection.remoteAddress();
+        }
+
+        @Nullable
+        @Override
+        public SslConfig sslConfig() {
+            return connection.sslConfig();
         }
 
         @Nullable

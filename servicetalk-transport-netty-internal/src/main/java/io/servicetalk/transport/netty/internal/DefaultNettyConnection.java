@@ -41,6 +41,7 @@ import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.RetryableException;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
+import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.netty.internal.CloseHandler.AbortWritesEvent;
 import io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent;
 import io.servicetalk.transport.netty.internal.CloseHandler.CloseEventObservedException;
@@ -116,6 +117,8 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     @Nullable
     private final Long idleTimeoutMs;
     private final Protocol protocol;
+    @Nullable
+    private final SslConfig sslConfig;
     private volatile ChannelOutboundListener channelOutboundListener = NoopChannelOutboundListener.INSTANCE;
     /**
      * Potentially contains more information when a protocol or channel level close event was observed.
@@ -167,7 +170,8 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     private DefaultNettyConnection(
             Channel channel, ExecutionContext<?> executionContext,
             CloseHandler closeHandler, FlushStrategy flushStrategy,
-            @Nullable Long idleTimeoutMs, Protocol protocol, @Nullable SSLSession sslSession,
+            @Nullable Long idleTimeoutMs, Protocol protocol,
+            @Nullable SslConfig sslConfig, @Nullable SSLSession sslSession,
             @Nullable ChannelConfig parentChannelConfig, DataObserver dataObserver, boolean isClient,
             Predicate<Object> shouldWait, UnaryOperator<Throwable> enrichProtocolError) {
         super(channel,
@@ -204,6 +208,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         } else {
             onClosing = null;
         }
+        this.sslConfig = sslConfig;
         this.sslSession = sslSession;
         this.parentChannelConfig = parentChannelConfig;
         this.protocol = requireNonNull(protocol);
@@ -232,7 +237,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
      * @return A {@link Single} that completes with a {@link DefaultNettyConnection} after the channel is activated and
      * ready to use.
      * @deprecated Use {@code #initChildChannel(Channel, ExecutionContext, CloseHandler, FlushStrategy, Long, Protocol,
-     * SSLSession, ChannelConfig, StreamObserver, boolean, Predicate, UnaryOperator)}.
+     * SslConfig, SSLSession, ChannelConfig, StreamObserver, boolean, Predicate, UnaryOperator)}.
      */
     @Deprecated // FIXME: 0.43 - remove deprecated method
     public static <Read, Write> DefaultNettyConnection<Read, Write> initChildChannel(
@@ -264,11 +269,46 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
      * @param <Write> Type of objects written to the {@link NettyConnection}.
      * @return A {@link Single} that completes with a {@link DefaultNettyConnection} after the channel is activated and
      * ready to use.
+     * @deprecated Use {@code #initChildChannel(Channel, ExecutionContext, CloseHandler, FlushStrategy, Long, Protocol,
+     * SslConfig, SSLSession, ChannelConfig, StreamObserver, boolean, Predicate, UnaryOperator)}.
      */
+    @Deprecated // FIXME: 0.43 - remove deprecated method
     public static <Read, Write> DefaultNettyConnection<Read, Write> initChildChannel(
             Channel channel, ExecutionContext<?> executionContext,
             CloseHandler closeHandler, FlushStrategy flushStrategy,
             @Nullable Long idleTimeoutMs, Protocol protocol, @Nullable SSLSession sslSession,
+            @Nullable ChannelConfig parentChannelConfig, StreamObserver streamObserver, boolean isClient,
+            Predicate<Object> shouldWait, UnaryOperator<Throwable> enrichProtocolError) {
+        return initChildChannel(channel, executionContext, closeHandler, flushStrategy, idleTimeoutMs, protocol, null,
+                sslSession, parentChannelConfig, streamObserver, isClient, shouldWait, enrichProtocolError);
+    }
+
+    /**
+     * Given a {@link Channel} this will initialize the {@link ChannelPipeline} just to create a
+     * {@link DefaultNettyConnection}. It is assumed this is a child channel and all TLS handshaking is completed.
+     * @param channel A newly created {@link Channel}.
+     * @param executionContext Used to derive the {@link #executionContext()}.
+     * @param closeHandler Manages the half closure of the {@link DefaultNettyConnection}.
+     * @param flushStrategy Manages flushing of data for the {@link DefaultNettyConnection}.
+     * @param idleTimeoutMs Value for {@link ServiceTalkSocketOptions#IDLE_TIMEOUT IDLE_TIMEOUT} socket option.
+     * @param protocol {@link Protocol} for the returned {@link DefaultNettyConnection}.
+     * @param sslConfig The {@link SslConfig} to use for the {@link DefaultNettyConnection}.
+     * @param sslSession Provides access to the {@link SSLSession} associated with this connection.
+     * @param parentChannelConfig {@link ChannelConfig} of the parent {@link Channel} to query {@link SocketOption}s.
+     * @param streamObserver {@link StreamObserver} to report internal events.
+     * @param isClient tells if this {@link Channel} is for the client.
+     * @param enrichProtocolError enriches protocol-specific {@link Throwable}s.
+     * @param shouldWait predicate that tells when request payload body should wait for continuation signal.
+     * @param <Read> Type of objects read from the {@link NettyConnection}.
+     * @param <Write> Type of objects written to the {@link NettyConnection}.
+     * @return A {@link Single} that completes with a {@link DefaultNettyConnection} after the channel is activated and
+     * ready to use.
+     */
+    public static <Read, Write> DefaultNettyConnection<Read, Write> initChildChannel(
+            Channel channel, ExecutionContext<?> executionContext,
+            CloseHandler closeHandler, FlushStrategy flushStrategy,
+            @Nullable Long idleTimeoutMs, Protocol protocol,
+            @Nullable SslConfig sslConfig, @Nullable SSLSession sslSession,
             @Nullable ChannelConfig parentChannelConfig, StreamObserver streamObserver, boolean isClient,
             Predicate<Object> shouldWait, UnaryOperator<Throwable> enrichProtocolError) {
         DefaultExecutionContext<?> childExecutionContext = new DefaultExecutionContext<>(
@@ -276,7 +316,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                 fromNettyEventLoop(channel.eventLoop(), executionContext.ioExecutor().isIoThreadSupported()),
                 executionContext.executor(), executionContext.executionStrategy());
         DefaultNettyConnection<Read, Write> connection = new DefaultNettyConnection<>(channel, childExecutionContext,
-                closeHandler, flushStrategy, idleTimeoutMs, protocol, sslSession, parentChannelConfig,
+                closeHandler, flushStrategy, idleTimeoutMs, protocol, sslConfig, sslSession, parentChannelConfig,
                 streamObserver.streamEstablished(), isClient, shouldWait, enrichProtocolError);
         channel.pipeline().addLast(new NettyToStChannelInboundHandler<>(connection, null,
                 null, false, NoopConnectionObserver.INSTANCE));
@@ -304,7 +344,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
      * @return A {@link Single} that completes with a {@link DefaultNettyConnection} after the channel is activated and
      * ready to use.
      * @deprecated Use {@code #initChannel(Channel, BufferAllocator, Executor, IoExecutor, CloseHandler, FlushStrategy,
-     * Long, ChannelInitializer, ExecutionStrategy, Protocol, ConnectionObserver, boolean, Predicate)}.
+     * Long, SslConfig, ChannelInitializer, ExecutionStrategy, Protocol, ConnectionObserver, boolean, Predicate)}.
      */
     @Deprecated // FIXME: 0.43 - remove deprecated method
     public static <Read, Write> Single<DefaultNettyConnection<Read, Write>> initChannel(
@@ -337,10 +377,46 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
      * @param <Write> Type of objects written to the {@link NettyConnection}.
      * @return A {@link Single} that completes with a {@link DefaultNettyConnection} after the channel is activated and
      * ready to use.
+     * @deprecated Use {@code #initChannel(Channel, BufferAllocator, Executor, IoExecutor, CloseHandler, FlushStrategy,
+     * Long, SslConfig, ChannelInitializer, ExecutionStrategy, Protocol, ConnectionObserver, boolean, Predicate)}.
+     */
+    @Deprecated // FIXME: 0.43 - remove deprecated method
+    public static <Read, Write> Single<DefaultNettyConnection<Read, Write>> initChannel(
+            Channel channel, BufferAllocator allocator, Executor executor, @Nullable IoExecutor ioExecutor,
+            CloseHandler closeHandler, FlushStrategy flushStrategy, @Nullable Long idleTimeoutMs,
+            ChannelInitializer initializer, ExecutionStrategy executionStrategy, Protocol protocol,
+            ConnectionObserver observer, boolean isClient, Predicate<Object> shouldWait) {
+        return initChannel(channel, allocator, executor, ioExecutor, closeHandler, flushStrategy, idleTimeoutMs, null,
+                initializer, executionStrategy, protocol, observer, isClient, shouldWait);
+    }
+
+    /**
+     * Given a {@link Channel} this will initialize the {@link ChannelPipeline} and create a
+     * {@link DefaultNettyConnection}. The resulting single will complete after the TLS handshake has completed
+     * (if applicable) or otherwise after the channel is active and ready to use.
+     * @param channel A newly created {@link Channel}.
+     * @param allocator The {@link BufferAllocator} to use for the {@link DefaultNettyConnection}.
+     * @param executor The {@link Executor} to use for the {@link DefaultNettyConnection}.
+     * @param ioExecutor The {@link IoExecutor} to use for the {@link DefaultNettyConnection}.
+     * @param closeHandler Manages the half closure of the {@link DefaultNettyConnection}.
+     * @param flushStrategy Manages flushing of data for the {@link DefaultNettyConnection}.
+     * @param idleTimeoutMs Value for {@link ServiceTalkSocketOptions#IDLE_TIMEOUT IDLE_TIMEOUT} socket option.
+     * @param sslConfig The {@link SslConfig} to use for the {@link DefaultNettyConnection}.
+     * @param initializer Synchronously initializes the pipeline upon subscribe.
+     * @param executionStrategy {@link ExecutionStrategy} to use for this connection.
+     * @param protocol {@link Protocol} for the returned {@link DefaultNettyConnection}.
+     * @param observer {@link ConnectionObserver} to report network events.
+     * @param isClient tells if this {@link Channel} is for the client.
+     * @param shouldWait predicate that tells when request payload body should wait for continuation signal.
+     * @param <Read> Type of objects read from the {@link NettyConnection}.
+     * @param <Write> Type of objects written to the {@link NettyConnection}.
+     * @return A {@link Single} that completes with a {@link DefaultNettyConnection} after the channel is activated and
+     * ready to use.
      */
     public static <Read, Write> Single<DefaultNettyConnection<Read, Write>> initChannel(
             Channel channel, BufferAllocator allocator, Executor executor, @Nullable IoExecutor ioExecutor,
             CloseHandler closeHandler, FlushStrategy flushStrategy, @Nullable Long idleTimeoutMs,
+            @Nullable SslConfig sslConfig,
             ChannelInitializer initializer, ExecutionStrategy executionStrategy, Protocol protocol,
             ConnectionObserver observer, boolean isClient, Predicate<Object> shouldWait) {
         return new SubscribableSingle<DefaultNettyConnection<Read, Write>>() {
@@ -355,8 +431,8 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                     DefaultExecutionContext<?> executionContext = new DefaultExecutionContext<>(allocator,
                             fromNettyEventLoop(channel.eventLoop(), supportsIoThread), executor, executionStrategy);
                     DefaultNettyConnection<Read, Write> connection = new DefaultNettyConnection<>(channel,
-                            executionContext, closeHandler, flushStrategy, idleTimeoutMs, protocol, null, null,
-                            NoopDataObserver.INSTANCE, isClient, shouldWait, identity());
+                            executionContext, closeHandler, flushStrategy, idleTimeoutMs, protocol, sslConfig, null,
+                            null, NoopDataObserver.INSTANCE, isClient, shouldWait, identity());
                     channel.attr(CHANNEL_CLOSEABLE_KEY).set(connection);
                     // We need the NettyToStChannelInboundHandler to be last in the pipeline. We accomplish that by
                     // calling the ChannelInitializer before we do addLast for the NettyToStChannelInboundHandler.
@@ -519,6 +595,12 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     @Override
     public SocketAddress remoteAddress() {
         return channel().remoteAddress();
+    }
+
+    @Nullable
+    @Override
+    public SslConfig sslConfig() {
+        return sslConfig;
     }
 
     @Override

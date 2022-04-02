@@ -34,6 +34,7 @@ include "servicetalk-annotations",
         "servicetalk-context-api",
         "servicetalk-data-jackson",
         "servicetalk-data-jackson-jersey",
+        "servicetalk-data-protobuf-jersey",
         "servicetalk-data-protobuf",
         "servicetalk-dns-discovery-netty",
         "servicetalk-encoding-api",
@@ -48,6 +49,7 @@ include "servicetalk-annotations",
         "servicetalk-examples:grpc:debugging",
         "servicetalk-examples:grpc:execution-strategy",
         "servicetalk-examples:grpc:observer",
+        "servicetalk-examples:grpc:health",
         "servicetalk-examples:http:helloworld",
         "servicetalk-examples:http:mutual-tls",
         "servicetalk-examples:http:redirects",
@@ -66,6 +68,7 @@ include "servicetalk-annotations",
         "servicetalk-examples:http:timeout",
         "servicetalk-gradle-plugin-internal",
         "servicetalk-grpc-api",
+        "servicetalk-grpc-health",
         "servicetalk-grpc-internal",
         "servicetalk-grpc-netty",
         "servicetalk-grpc-protobuf",
@@ -113,6 +116,7 @@ project(":servicetalk-examples:grpc:debugging").name = "servicetalk-examples-grp
 project(":servicetalk-examples:grpc:errors").name = "servicetalk-examples-grpc-errors"
 project(":servicetalk-examples:grpc:execution-strategy").name = "servicetalk-examples-grpc-execution-strategy"
 project(":servicetalk-examples:grpc:observer").name = "servicetalk-examples-grpc-observer"
+project(":servicetalk-examples:grpc:health").name = "servicetalk-examples-grpc-health"
 project(":servicetalk-examples:http:http2").name = "servicetalk-examples-http-http2"
 project(":servicetalk-examples:http:helloworld").name = "servicetalk-examples-http-helloworld"
 project(":servicetalk-examples:http:debugging").name = "servicetalk-examples-http-debugging"

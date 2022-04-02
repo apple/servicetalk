@@ -1,0 +1,3 @@
+== ServiceTalk gRPC Health Example
+
+Extends "Hello World" ServiceTalk gRPC example to demonstrate default health service.

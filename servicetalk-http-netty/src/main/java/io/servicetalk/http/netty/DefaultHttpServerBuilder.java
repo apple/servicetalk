@@ -62,7 +62,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
-import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.netty.StrategyInfluencerAwareConversions.toConditionalServiceFilterFactory;
 import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
 import static java.util.Objects.requireNonNull;
@@ -84,6 +84,7 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
     private final HttpExecutionContextBuilder executionContextBuilder = new HttpExecutionContextBuilder();
     private final SocketAddress address;
 
+    // Do not use this ctor directly, HttpServers is the entry point for creating a new builder.
     DefaultHttpServerBuilder(SocketAddress address) {
         appendNonOffloadingServiceFilter(ClearAsyncContextHttpServiceFilter.CLEAR_ASYNC_CONTEXT_HTTP_SERVICE_FILTER);
         this.address = address;
@@ -155,7 +156,7 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
     @Override
     public HttpServerBuilder appendNonOffloadingServiceFilter(final Predicate<StreamingHttpRequest> predicate,
                                                               final StreamingHttpServiceFilterFactory factory) {
-        checkNonOffloading("Non-offloading predicate", offloadNever(), predicate);
+        checkNonOffloading("Non-offloading predicate", offloadNone(), predicate);
         checkNonOffloading("Non-offloading filter", defaultStrategy(), factory);
         noOffloadServiceFilters.add(toConditionalServiceFilterFactory(predicate, factory));
         return this;
@@ -261,7 +262,7 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
 
     @Override
     public Single<HttpServerContext> listenStreaming(final StreamingHttpService service) {
-        return listenForService(service, strategy);
+        return listenForService(service, computeServiceStrategy(service));
     }
 
     @Override
@@ -359,7 +360,8 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
     private HttpExecutionStrategy computeServiceStrategy(Object service) {
         HttpExecutionStrategy serviceStrategy = requiredOffloads(service, defaultStrategy());
         HttpExecutionStrategy filterStrategy = computeRequiredStrategy(serviceFilters, serviceStrategy);
-        return defaultStrategy() == strategy ? filterStrategy : strategy.merge(filterStrategy);
+        return defaultStrategy() == strategy ? filterStrategy :
+                strategy.hasOffloads() ? strategy.merge(filterStrategy) : strategy;
     }
 
     private static StreamingHttpService applyInternalFilters(StreamingHttpService service,
@@ -407,7 +409,7 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
         @Override
         public HttpExecutionStrategy requiredOffloads() {
             // no influence since we do not block
-            return HttpExecutionStrategies.offloadNone();
+            return offloadNone();
         }
     }
 }

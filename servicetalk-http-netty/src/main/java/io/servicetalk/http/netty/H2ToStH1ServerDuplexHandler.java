@@ -17,6 +17,7 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.http.api.Http2Exception;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpRequestMethod;
@@ -85,19 +86,24 @@ final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
     }
 
     @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) {
+    public void channelRead(final ChannelHandlerContext ctx, final Object msg) throws Http2Exception {
         if (msg instanceof Http2HeadersFrame) {
-            Http2HeadersFrame headersFrame = (Http2HeadersFrame) msg;
-            Http2Headers h2Headers = headersFrame.headers();
+            final Http2HeadersFrame headersFrame = (Http2HeadersFrame) msg;
+            final int streamId = headersFrame.stream().id();
+            final Http2Headers h2Headers = headersFrame.headers();
             final HttpRequestMethod httpMethod;
             final String path;
             if (!readHeaders) {
                 closeHandler.protocolPayloadBeginInbound(ctx);
                 CharSequence method = h2Headers.getAndRemove(METHOD.value());
                 CharSequence pathSequence = h2Headers.getAndRemove(PATH.value());
-                if (pathSequence == null || method == null) {
-                    throw new IllegalArgumentException("a request must have " + METHOD + " and " +
-                            PATH + " headers");
+                if (pathSequence == null) {
+                    throw protocolError(ctx, streamId, false,
+                            "Incoming request must have '" + PATH.value() + "' header");
+                }
+                if (method == null) {
+                    throw protocolError(ctx, streamId, false,
+                            "Incoming request must have '" + METHOD.value() + "' header");
                 }
                 path = pathSequence.toString();
                 httpMethod = sequenceToHttpRequestMethod(method);
@@ -109,17 +115,17 @@ final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
 
             if (headersFrame.isEndStream()) {
                 if (httpMethod != null) {
-                    fireFullRequest(ctx, h2Headers, httpMethod, path);
+                    fireFullRequest(ctx, h2Headers, httpMethod, path, streamId);
                 } else {
                     ctx.fireChannelRead(h2TrailersToH1TrailersServer(h2Headers));
                 }
                 closeHandler.protocolPayloadEndInbound(ctx);
             } else if (httpMethod == null) {
-                throw new IllegalArgumentException("a request must have " + METHOD + " and " +
-                        PATH + " headers");
+                throw protocolError(ctx, streamId, false,
+                        "Incoming request must have '" + METHOD.value() + "' header");
             } else {
                 ctx.fireChannelRead(newRequestMetaData(HTTP_2_0, httpMethod, path,
-                        h2HeadersToH1HeadersServer(h2Headers, httpMethod, false)));
+                        h2HeadersToH1HeadersServer(ctx, h2Headers, httpMethod, false, streamId)));
             }
         } else if (msg instanceof Http2DataFrame) {
             readDataFrame(ctx, msg);
@@ -128,15 +134,18 @@ final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
         }
     }
 
-    private void fireFullRequest(ChannelHandlerContext ctx, final Http2Headers h2Headers,
-                                 HttpRequestMethod httpMethod, String path) {
+    private void fireFullRequest(final ChannelHandlerContext ctx, final Http2Headers h2Headers,
+                                 final HttpRequestMethod httpMethod, final String path,
+                                 final int streamId) throws Http2Exception {
         ctx.fireChannelRead(newRequestMetaData(HTTP_2_0, httpMethod, path,
-                h2HeadersToH1HeadersServer(h2Headers, httpMethod, true)));
+                h2HeadersToH1HeadersServer(ctx, h2Headers, httpMethod, true, streamId)));
     }
 
-    private NettyH2HeadersToHttpHeaders h2HeadersToH1HeadersServer(Http2Headers h2Headers,
-                                                                   @Nullable HttpRequestMethod httpMethod,
-                                                                   boolean fullRequest) {
+    private NettyH2HeadersToHttpHeaders h2HeadersToH1HeadersServer(final ChannelHandlerContext ctx,
+                                                                   final Http2Headers h2Headers,
+                                                                   @Nullable final HttpRequestMethod httpMethod,
+                                                                   final boolean fullRequest,
+                                                                   final int streamId) throws Http2Exception {
         CharSequence value = h2Headers.getAndRemove(AUTHORITY.value());
         if (value != null) {
             h2Headers.set(HOST, value);
@@ -154,7 +163,7 @@ final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
                     }
                 }
             } else if (containsContentLength) {
-                throw new IllegalArgumentException("content-length (" + h2Headers.get(CONTENT_LENGTH) +
+                throw protocolError(ctx, streamId, fullRequest, "content-length (" + h2Headers.get(CONTENT_LENGTH) +
                         ") header is not expected for " + httpMethod.name() + " request");
             }
         }
