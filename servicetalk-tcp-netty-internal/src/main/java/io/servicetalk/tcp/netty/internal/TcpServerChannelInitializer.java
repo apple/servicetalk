@@ -51,7 +51,7 @@ public class TcpServerChannelInitializer implements ChannelInitializer {
                     new ConnectionObserverInitializer(observer, config.sslContext() != null, false));
         }
 
-        if (config.idleTimeoutMs() != null) {
+        if (config.idleTimeoutMs() > 0L) {
             delegate = delegate.andThen(new IdleTimeoutInitializer(config.idleTimeoutMs()));
         }
 

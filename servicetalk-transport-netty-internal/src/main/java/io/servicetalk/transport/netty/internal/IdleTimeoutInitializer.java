@@ -39,8 +39,10 @@ public class IdleTimeoutInitializer implements ChannelInitializer {
      * New instance.
      *
      * @param idleTimeout timeout duration.
+     * @deprecated Use {@link #IdleTimeoutInitializer(long)}
      */
-    public IdleTimeoutInitializer(Duration idleTimeout) {
+    @Deprecated
+    public IdleTimeoutInitializer(Duration idleTimeout) {   // FIXME: 0.43 - remove deprecated constructor (not used)
         this(idleTimeout.toMillis());
     }
 
@@ -55,24 +57,22 @@ public class IdleTimeoutInitializer implements ChannelInitializer {
 
     @Override
     public void init(Channel channel) {
-        if (timeoutMs > 0) {
-            LOGGER.debug("Channel idle timeout is {}ms.", timeoutMs);
-            channel.pipeline().addLast(new IdleStateHandler(0, 0, timeoutMs, TimeUnit.MILLISECONDS) {
-                @Override
-                protected void channelIdle(ChannelHandlerContext ctx, IdleStateEvent evt) {
-                    if (evt.state() == IdleState.ALL_IDLE) {
-                        // Some protocols may have their own grace period to shutdown the channel
-                        // and we don't want the idle timeout to fire again during this process.
-                        ctx.pipeline().remove(this);
-                        if (LOGGER.isDebugEnabled()) {
-                            LOGGER.debug("Closing channel {} after {}ms of inactivity.", ctx.channel(), timeoutMs);
-                        }
-                        // Fire the event through the pipeline so protocols can prepare for the close event.
-                        ctx.fireUserEventTriggered(evt);
-                        ctx.close();
+        LOGGER.debug("Channel idle timeout is {}ms.", timeoutMs);
+        channel.pipeline().addLast(new IdleStateHandler(0, 0, timeoutMs, TimeUnit.MILLISECONDS) {
+            @Override
+            protected void channelIdle(ChannelHandlerContext ctx, IdleStateEvent evt) {
+                if (evt.state() == IdleState.ALL_IDLE) {
+                    // Some protocols may have their own grace period to shutdown the channel
+                    // and we don't want the idle timeout to fire again during this process.
+                    ctx.pipeline().remove(this);
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("Closing channel {} after {}ms of inactivity.", ctx.channel(), timeoutMs);
                     }
+                    // Fire the event through the pipeline so protocols can prepare for the close event.
+                    ctx.fireUserEventTriggered(evt);
+                    ctx.close();
                 }
-            });
-        }
+            }
+        });
     }
 }

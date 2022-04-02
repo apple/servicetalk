@@ -114,7 +114,6 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     private final CompletableSource.Processor onClosing;
     private final SingleSource.Processor<Throwable, Throwable> transportError = newSingleProcessor();
     private final FlushStrategyHolder flushStrategyHolder;
-    @Nullable
     private final Long idleTimeoutMs;
     private final Protocol protocol;
     @Nullable
@@ -170,7 +169,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     private DefaultNettyConnection(
             Channel channel, ExecutionContext<?> executionContext,
             CloseHandler closeHandler, FlushStrategy flushStrategy,
-            @Nullable Long idleTimeoutMs, Protocol protocol,
+            Long idleTimeoutMs, Protocol protocol,
             @Nullable SslConfig sslConfig, @Nullable SSLSession sslSession,
             @Nullable ChannelConfig parentChannelConfig, DataObserver dataObserver, boolean isClient,
             Predicate<Object> shouldWait, UnaryOperator<Throwable> enrichProtocolError) {
@@ -243,7 +242,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     public static <Read, Write> DefaultNettyConnection<Read, Write> initChildChannel(
             Channel channel, ExecutionContext<?> executionContext,
             CloseHandler closeHandler, FlushStrategy flushStrategy,
-            @Nullable Long idleTimeoutMs, Protocol protocol, @Nullable SSLSession sslSession,
+            Long idleTimeoutMs, Protocol protocol, @Nullable SSLSession sslSession,
             @Nullable ChannelConfig parentChannelConfig, StreamObserver streamObserver, boolean isClient,
             UnaryOperator<Throwable> enrichProtocolError) {
         return initChildChannel(channel, executionContext, closeHandler, flushStrategy, idleTimeoutMs, protocol,
@@ -276,7 +275,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     public static <Read, Write> DefaultNettyConnection<Read, Write> initChildChannel(
             Channel channel, ExecutionContext<?> executionContext,
             CloseHandler closeHandler, FlushStrategy flushStrategy,
-            @Nullable Long idleTimeoutMs, Protocol protocol, @Nullable SSLSession sslSession,
+            Long idleTimeoutMs, Protocol protocol, @Nullable SSLSession sslSession,
             @Nullable ChannelConfig parentChannelConfig, StreamObserver streamObserver, boolean isClient,
             Predicate<Object> shouldWait, UnaryOperator<Throwable> enrichProtocolError) {
         return initChildChannel(channel, executionContext, closeHandler, flushStrategy, idleTimeoutMs, protocol, null,
@@ -307,7 +306,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     public static <Read, Write> DefaultNettyConnection<Read, Write> initChildChannel(
             Channel channel, ExecutionContext<?> executionContext,
             CloseHandler closeHandler, FlushStrategy flushStrategy,
-            @Nullable Long idleTimeoutMs, Protocol protocol,
+            Long idleTimeoutMs, Protocol protocol,
             @Nullable SslConfig sslConfig, @Nullable SSLSession sslSession,
             @Nullable ChannelConfig parentChannelConfig, StreamObserver streamObserver, boolean isClient,
             Predicate<Object> shouldWait, UnaryOperator<Throwable> enrichProtocolError) {
@@ -349,7 +348,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     @Deprecated // FIXME: 0.43 - remove deprecated method
     public static <Read, Write> Single<DefaultNettyConnection<Read, Write>> initChannel(
             Channel channel, BufferAllocator allocator, Executor executor, @Nullable IoExecutor ioExecutor,
-            CloseHandler closeHandler, FlushStrategy flushStrategy, @Nullable Long idleTimeoutMs,
+            CloseHandler closeHandler, FlushStrategy flushStrategy, Long idleTimeoutMs,
             ChannelInitializer initializer, ExecutionStrategy executionStrategy, Protocol protocol,
             ConnectionObserver observer, boolean isClient) {
         return initChannel(channel, allocator, executor, ioExecutor, closeHandler, flushStrategy, idleTimeoutMs,
@@ -383,7 +382,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     @Deprecated // FIXME: 0.43 - remove deprecated method
     public static <Read, Write> Single<DefaultNettyConnection<Read, Write>> initChannel(
             Channel channel, BufferAllocator allocator, Executor executor, @Nullable IoExecutor ioExecutor,
-            CloseHandler closeHandler, FlushStrategy flushStrategy, @Nullable Long idleTimeoutMs,
+            CloseHandler closeHandler, FlushStrategy flushStrategy, Long idleTimeoutMs,
             ChannelInitializer initializer, ExecutionStrategy executionStrategy, Protocol protocol,
             ConnectionObserver observer, boolean isClient, Predicate<Object> shouldWait) {
         return initChannel(channel, allocator, executor, ioExecutor, closeHandler, flushStrategy, idleTimeoutMs, null,
@@ -415,7 +414,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
      */
     public static <Read, Write> Single<DefaultNettyConnection<Read, Write>> initChannel(
             Channel channel, BufferAllocator allocator, Executor executor, @Nullable IoExecutor ioExecutor,
-            CloseHandler closeHandler, FlushStrategy flushStrategy, @Nullable Long idleTimeoutMs,
+            CloseHandler closeHandler, FlushStrategy flushStrategy, Long idleTimeoutMs,
             @Nullable SslConfig sslConfig,
             ChannelInitializer initializer, ExecutionStrategy executionStrategy, Protocol protocol,
             ConnectionObserver observer, boolean isClient, Predicate<Object> shouldWait) {

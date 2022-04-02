@@ -45,8 +45,7 @@ abstract class AbstractTcpConfig<SslConfigType> {
     @Nullable
     @SuppressWarnings("rawtypes")
     private Map<ChannelOption, Object> options;
-    @Nullable
-    private Long idleTimeoutMs;
+    private long idleTimeoutMs = 300_000L;  // 5 min
     private FlushStrategy flushStrategy = defaultFlushStrategy();
     @Nullable
     private UserDataLoggerConfig wireLoggerConfig;
@@ -70,8 +69,7 @@ abstract class AbstractTcpConfig<SslConfigType> {
         return options;
     }
 
-    @Nullable
-    final Long idleTimeoutMs() {
+    final long idleTimeoutMs() {
         return idleTimeoutMs;
     }
 
@@ -109,6 +107,9 @@ abstract class AbstractTcpConfig<SslConfigType> {
         requireNonNull(value);
         if (option == ServiceTalkSocketOptions.IDLE_TIMEOUT) {
             idleTimeoutMs = (Long) value;
+            if (idleTimeoutMs < 0) {
+                throw new IllegalArgumentException("IDLE_TIMEOUT: " + idleTimeoutMs + " (expected>=0)");
+            }
         } else {
             if (options == null) {
                 options = new HashMap<>();

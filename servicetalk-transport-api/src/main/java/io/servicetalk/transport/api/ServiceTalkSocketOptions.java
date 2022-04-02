@@ -40,7 +40,7 @@ public final class ServiceTalkSocketOptions {
             new ServiceTalkSocketOption<>("WRITE_BUFFER_THRESHOLD", Integer.class);
 
     /**
-     * Connection idle timeout in milliseconds after which the connection is closed.
+     * Connection idle timeout in milliseconds after which the connection is closed. {@code 0} disables idle timeout.
      */
     public static final SocketOption<Long> IDLE_TIMEOUT = new ServiceTalkSocketOption<>("IDLE_TIMEOUT", Long.class);
 

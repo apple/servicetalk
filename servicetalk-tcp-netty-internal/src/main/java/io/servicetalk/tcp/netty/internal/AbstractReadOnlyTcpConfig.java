@@ -37,8 +37,7 @@ import static java.util.Collections.unmodifiableMap;
 abstract class AbstractReadOnlyTcpConfig<SecurityConfig> {
     @SuppressWarnings("rawtypes")
     private final Map<ChannelOption, Object> options;
-    @Nullable
-    private final Long idleTimeoutMs;
+    private final long idleTimeoutMs;
     private final FlushStrategy flushStrategy;
     @Nullable
     private final UserDataLoggerConfig wireLoggerConfig;
@@ -77,8 +76,7 @@ abstract class AbstractReadOnlyTcpConfig<SecurityConfig> {
      *
      * @return idle timeout in milliseconds
      */
-    @Nullable
-    public final Long idleTimeoutMs() {
+    public final long idleTimeoutMs() {
         return idleTimeoutMs;
     }
 

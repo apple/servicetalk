@@ -71,13 +71,12 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
     private final KeepAliveManager keepAliveManager;
     @Nullable
     private final SslConfig sslConfig;
-    @Nullable
     final Long idleTimeoutMs;
     @Nullable
     private SSLSession sslSession;
 
     H2ParentConnectionContext(final Channel channel, final HttpExecutionContext executionContext,
-                              final FlushStrategy flushStrategy, @Nullable final Long idleTimeoutMs,
+                              final FlushStrategy flushStrategy, final Long idleTimeoutMs,
                               @Nullable final SslConfig sslConfig,
                               final KeepAliveManager keepAliveManager) {
         super(channel, executionContext.executor());

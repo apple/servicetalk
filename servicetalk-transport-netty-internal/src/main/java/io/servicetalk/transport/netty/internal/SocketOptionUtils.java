@@ -96,12 +96,13 @@ public final class SocketOptionUtils {
     @Nullable
     @SuppressWarnings("unchecked")
     public static <T> T getOption(final SocketOption<T> option, final ChannelConfig config,
-                                  @Nullable final Long idleTimeoutMs) {
+                                  final Long idleTimeoutMs) {
         @SuppressWarnings("unchecked")
         OptConverter<T> converter = (OptConverter<T>) SOCKET_OPT_MAP.get(option);
         if (converter != null) {
             return (T) converter.toSocketValue.apply(config.getOption(converter.option));
-        } else if (option == ServiceTalkSocketOptions.IDLE_TIMEOUT) {
+        }
+        if (option == ServiceTalkSocketOptions.IDLE_TIMEOUT) {
             return (T) idleTimeoutMs;
         }
         throw unsupported(option);
