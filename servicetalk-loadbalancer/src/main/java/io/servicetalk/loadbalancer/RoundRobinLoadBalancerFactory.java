@@ -73,13 +73,16 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends LoadBalancedConnection>
         implements LoadBalancerFactory<ResolvedAddress, C> {
 
-    static final Duration DEFAULT_HEALTH_CHECK_INTERVAL = Duration.ofSeconds(1);
+    private static final Duration DEFAULT_HEALTH_CHECK_INTERVAL = Duration.ofSeconds(1);
     static final int DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD = 5; // higher than default for AutoRetryStrategy
 
+    private final int linearSearchSpace;
     @Nullable
     private final HealthCheckConfig healthCheckConfig;
 
-    private RoundRobinLoadBalancerFactory(@Nullable HealthCheckConfig healthCheckConfig) {
+    private RoundRobinLoadBalancerFactory(final int linearSearchSpace,
+                                          @Nullable final HealthCheckConfig healthCheckConfig) {
+        this.linearSearchSpace = linearSearchSpace;
         this.healthCheckConfig = healthCheckConfig;
     }
 
@@ -89,7 +92,7 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
             final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
             final ConnectionFactory<ResolvedAddress, T> connectionFactory) {
         return new RoundRobinLoadBalancer<>(requireNonNull(targetResource), eventPublisher, connectionFactory,
-                healthCheckConfig);
+                linearSearchSpace, healthCheckConfig);
     }
 
     @Override
@@ -105,6 +108,7 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
      * @param <C> The type of connection.
      */
     public static final class Builder<ResolvedAddress, C extends LoadBalancedConnection> {
+        private int linearSearchSpace = 16;
         @Nullable
         private Executor backgroundExecutor;
         private Duration healthCheckInterval = DEFAULT_HEALTH_CHECK_INTERVAL;
@@ -114,6 +118,28 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
          * Creates a new instance with default settings.
          */
         public Builder() {
+        }
+
+        /**
+         * Sets the linear search space to find an available connection for the next host.
+         * <p>
+         * When the next host has already opened connections, this {@link LoadBalancer} will perform a linear search for
+         * a connection that can serve the next request up to a specified number of attempts. If there are more open
+         * connections, selection of remaining connections will be attempted randomly.
+         * <p>
+         * Higher linear search space may help to better identify excess connections in highly concurrent environments,
+         * but may result in slightly increased selection time.
+         *
+         * @param linearSearchSpace the number of attempts for a linear search space, {@code 0} enforces random
+         * selection all the time.
+         * @return {@code this}.
+         */
+        public RoundRobinLoadBalancerFactory.Builder<ResolvedAddress, C> linearSearchSpace(int linearSearchSpace) {
+            if (linearSearchSpace < 0) {
+                throw new IllegalArgumentException("linearSearchSpace: " + linearSearchSpace + " (expected >=0)");
+            }
+            this.linearSearchSpace = linearSearchSpace;
+            return this;
         }
 
         /**
@@ -185,14 +211,14 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
          */
         public RoundRobinLoadBalancerFactory<ResolvedAddress, C> build() {
             if (this.healthCheckFailedConnectionsThreshold < 0) {
-                return new RoundRobinLoadBalancerFactory<>(null);
+                return new RoundRobinLoadBalancerFactory<>(linearSearchSpace, null);
             }
 
             HealthCheckConfig healthCheckConfig = new HealthCheckConfig(
                             this.backgroundExecutor == null ? SharedExecutor.getInstance() : this.backgroundExecutor,
                     healthCheckInterval, healthCheckFailedConnectionsThreshold);
 
-            return new RoundRobinLoadBalancerFactory<>(healthCheckConfig);
+            return new RoundRobinLoadBalancerFactory<>(linearSearchSpace, healthCheckConfig);
         }
     }
 
