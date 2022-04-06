@@ -53,7 +53,7 @@ public final class DefaultDnsServiceDiscovererBuilder {
     @Nullable
     private Duration queryTimeout;
     private int minTTLSeconds = 10;
-    private Duration jitter = ofSeconds(4);
+    private Duration ttlJitter = ofSeconds(4);
     private int srvConcurrency = 2048;
     private boolean inactiveEventsOnError;
     private boolean completeOncePreferredResolved = true;
@@ -86,12 +86,12 @@ public final class DefaultDnsServiceDiscovererBuilder {
      * The jitter value will be added on top of the TTL value returned from the DNS server to help spread out
      * subsequent DNS queries.
      *
-     * @param jitter The jitter to apply to schedule the next query after TTL.
+     * @param ttlJitter The jitter to apply to schedule the next query after TTL.
      * @return {@code this}.
      */
-    public DefaultDnsServiceDiscovererBuilder jitter(final Duration jitter) {
-        ensurePositive(jitter, "jitter");
-        this.jitter = jitter;
+    public DefaultDnsServiceDiscovererBuilder ttlJitter(final Duration ttlJitter) {
+        ensurePositive(ttlJitter, "jitter");
+        this.ttlJitter = ttlJitter;
         return this;
     }
 
@@ -306,7 +306,7 @@ public final class DefaultDnsServiceDiscovererBuilder {
     DnsClient build() {
         final DnsClient rawClient = new DefaultDnsClient(
                 ioExecutor == null ? globalExecutionContext().ioExecutor() : ioExecutor, minTTLSeconds,
-                jitter.toNanos(), srvConcurrency,
+                ttlJitter.toNanos(), srvConcurrency,
                 inactiveEventsOnError, completeOncePreferredResolved, srvFilterDuplicateEvents,
                 srvHostNameRepeatInitialDelay, srvHostNameRepeatJitter, maxUdpPayloadSize, ndots, optResourceEnabled,
                 queryTimeout, dnsResolverAddressTypes, dnsServerAddressStreamProvider, observer, missingRecordStatus);

@@ -118,10 +118,10 @@ final class DefaultDnsClient implements DnsClient {
     private final int srvConcurrency;
     private final boolean srvFilterDuplicateEvents;
     private final boolean inactiveEventsOnError;
-    private final long scheduleJitterNanos;
+    private final long ttlJitterNanos;
     private boolean closed;
 
-    DefaultDnsClient(final IoExecutor ioExecutor, final int minTTL, final long scheduleJitterNanos,
+    DefaultDnsClient(final IoExecutor ioExecutor, final int minTTL, final long ttlJitterNanos,
                      final int srvConcurrency, final boolean inactiveEventsOnError,
                      final boolean completeOncePreferredResolved, final boolean srvFilterDuplicateEvents,
                      Duration srvHostNameRepeatInitialDelay, Duration srvHostNameRepeatJitter,
@@ -144,7 +144,7 @@ final class DefaultDnsClient implements DnsClient {
                 srvHostNameRepeatInitialDelay, srvHostNameRepeatJitter, nettyIoExecutor);
         this.ttlCache = new MinTtlCache(new DefaultDnsCache(minTTL, Integer.MAX_VALUE, minTTL), minTTL,
                 nettyIoExecutor);
-        this.scheduleJitterNanos = scheduleJitterNanos;
+        this.ttlJitterNanos = ttlJitterNanos;
         this.observer = observer;
         this.missingRecordStatus = missingRecordStatus;
         asyncCloseable = toAsyncCloseable(graceful -> {
@@ -634,7 +634,7 @@ final class DefaultDnsClient implements DnsClient {
                 assertInEventloop();
 
                 final long delay = ThreadLocalRandom.current()
-                        .nextLong(nanos, addWithOverflowProtection(nanos, scheduleJitterNanos));
+                        .nextLong(nanos, addWithOverflowProtection(nanos, ttlJitterNanos));
                 LOGGER.debug("DnsClient {}, scheduling DNS query for {} after {}ms, original TTL: {}ms.",
                         DefaultDnsClient.this, AbstractDnsPublisher.this, NANOSECONDS.toMillis(delay),
                         NANOSECONDS.toMillis(nanos));
