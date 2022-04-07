@@ -93,7 +93,7 @@ import static java.util.Objects.requireNonNull;
 
 final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
     private H2ClientParentConnectionContext(Channel channel, HttpExecutionContext executionContext,
-                                            FlushStrategy flushStrategy, @Nullable Long idleTimeoutMs,
+                                            FlushStrategy flushStrategy, long idleTimeoutMs,
                                             @Nullable final SslConfig sslConfig,
                                             final KeepAliveManager keepAliveManager) {
         super(channel, executionContext, flushStrategy, idleTimeoutMs, sslConfig, keepAliveManager);
@@ -106,7 +106,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                                                         H2ProtocolConfig config,
                                                         StreamingHttpRequestResponseFactory reqRespFactory,
                                                         FlushStrategy parentFlushStrategy,
-                                                        @Nullable Long idleTimeoutMs,
+                                                        long idleTimeoutMs,
                                                         @Nullable SslConfig sslConfig,
                                                         ChannelInitializer initializer,
                                                         ConnectionObserver observer,

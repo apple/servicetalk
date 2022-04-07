@@ -64,7 +64,7 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
     private final SocketAddress listenAddress;
     private H2ServerParentConnectionContext(final Channel channel, final HttpExecutionContext executionContext,
                                             final FlushStrategy flushStrategy,
-                                            @Nullable final Long idleTimeoutMs,
+                                            final long idleTimeoutMs,
                                             @Nullable final SslConfig sslConfig,
                                             final SocketAddress listenAddress,
                                             final KeepAliveManager keepAliveManager) {

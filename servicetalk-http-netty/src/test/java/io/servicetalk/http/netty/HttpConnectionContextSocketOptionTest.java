@@ -80,18 +80,18 @@ class HttpConnectionContextSocketOptionTest {
 
     @ParameterizedTest(name = "protocol={0}")
     @EnumSource(HttpProtocol.class)
-    void stIdleTimeoutSocketOptionIsNull(HttpProtocol protocol) throws Exception {
-        testSocketOption(ServiceTalkSocketOptions.IDLE_TIMEOUT, is(nullValue()), equalTo("null"), null, protocol);
+    void stIdleTimeoutSocketOptionIsZero(HttpProtocol protocol) throws Exception {
+        testSocketOption(ServiceTalkSocketOptions.IDLE_TIMEOUT, is(0L), equalTo("0"), 0L, protocol);
     }
 
-    private <T> void testSocketOption(SocketOption<T> socketOption, Matcher<Object> clientMatcher,
-                                      Matcher<Object> serverMatcher, HttpProtocol protocol) throws Exception {
+    private static <T> void testSocketOption(SocketOption<T> socketOption, Matcher<Object> clientMatcher,
+                                             Matcher<Object> serverMatcher, HttpProtocol protocol) throws Exception {
         testSocketOption(socketOption, clientMatcher, serverMatcher, null, protocol);
     }
 
-    private <T> void testSocketOption(SocketOption<T> socketOption, Matcher<Object> clientMatcher,
-                                      Matcher<Object> serverMatcher, @Nullable Long idleTimeoutMs,
-                                      HttpProtocol protocol)
+    private static <T> void testSocketOption(SocketOption<T> socketOption, Matcher<Object> clientMatcher,
+                                             Matcher<Object> serverMatcher, @Nullable Long idleTimeoutMs,
+                                             HttpProtocol protocol)
         throws Exception {
         try (ServerContext serverContext = startServer(idleTimeoutMs, socketOption, protocol);
              BlockingHttpClient client = newClient(serverContext, idleTimeoutMs, protocol);
@@ -104,8 +104,8 @@ class HttpConnectionContextSocketOptionTest {
         }
     }
 
-    private <T> ServerContext startServer(@Nullable Long idleTimeoutMs, SocketOption<T> socketOption,
-                                          HttpProtocol protocol) throws Exception {
+    private static <T> ServerContext startServer(@Nullable Long idleTimeoutMs, SocketOption<T> socketOption,
+                                                 HttpProtocol protocol) throws Exception {
         final HttpServerBuilder builder = HttpServers.forAddress(localAddress(0))
                 .protocols(protocol.config);
         if (idleTimeoutMs != null) {
@@ -115,8 +115,8 @@ class HttpConnectionContextSocketOptionTest {
                 .payloadBody(valueOf(ctx.socketOption(socketOption)), textSerializerUtf8()));
     }
 
-    private BlockingHttpClient newClient(ServerContext serverContext, @Nullable Long idleTimeoutMs,
-                                         HttpProtocol protocol) {
+    private static BlockingHttpClient newClient(ServerContext serverContext, @Nullable Long idleTimeoutMs,
+                                                HttpProtocol protocol) {
         SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder =
                 HttpClients.forSingleAddress(serverHostAndPort(serverContext))
                         .protocols(protocol.config);
