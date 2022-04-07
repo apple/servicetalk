@@ -20,6 +20,7 @@ import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.DelegatingConnectionFactory;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.internal.DefaultContextMap;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategies;
@@ -79,12 +80,10 @@ final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C extends Filte
                                        @Nullable ContextMap context,
                                        @Nullable final TransportObserver observer) {
             return Single.defer(() -> {
-                if (context == null) {
-                    // context = new DefaultContextMap();
-                }
-                logUnexpectedAddress(context.put(HTTP_TARGET_ADDRESS_BEHIND_PROXY, connectAddress),
+                final ContextMap contextMap = context != null ? context : new DefaultContextMap();
+                logUnexpectedAddress(contextMap.put(HTTP_TARGET_ADDRESS_BEHIND_PROXY, connectAddress),
                         connectAddress, LOGGER);
-                return delegate().newConnection(resolvedAddress, context, observer).flatMap(c -> {
+                return delegate().newConnection(resolvedAddress, contextMap, observer).flatMap(c -> {
                     try {
                         return c.request(c.connect(connectAddress).addHeader(CONTENT_LENGTH, ZERO))
                                 .flatMap(response -> handleConnectResponse(c, response))

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021-2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.api;
+package io.servicetalk.concurrent.internal;
 
-import io.servicetalk.concurrent.internal.ContextMapUtils;
 import io.servicetalk.context.api.ContextMap;
 
 import java.util.HashMap;
@@ -26,11 +25,19 @@ import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
 
-final class DefaultContextMap implements ContextMap {
+/**
+ * Default implementation of {@link ContextMap}.
+ * <p>
+ * Note: it's not concurrent!
+ */
+public final class DefaultContextMap implements ContextMap {
 
     private final HashMap<Key<?>, Object> theMap;
 
-    DefaultContextMap() {
+    /**
+     * Creates a new instance.
+     */
+    public DefaultContextMap() {
         theMap = new HashMap<>(4); // start with a smaller table
     }
 
