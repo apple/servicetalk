@@ -86,42 +86,11 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAnd
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-@Execution(ExecutionMode.SAME_THREAD)
+@Execution(ExecutionMode.CONCURRENT)
 class ClientEffectiveStrategyTest {
     private static final String SCHEME = "http";
     private static final String PATH = "/";
     private static final String GREETING = "Hello";
-    private static final HttpExecutionStrategy CUSTOM_OFFLOAD_SEND = new HttpExecutionStrategy() {
-        @Override
-        public boolean isMetadataReceiveOffloaded() {
-            return false;
-        }
-
-        @Override
-        public boolean isDataReceiveOffloaded() {
-            return false;
-        }
-
-        @Override
-        public boolean isSendOffloaded() {
-            return true;
-        }
-
-        @Override
-        public boolean isEventOffloaded() {
-            return false;
-        }
-
-        @Override
-        public HttpExecutionStrategy merge(final HttpExecutionStrategy other) {
-            return HttpExecutionStrategies.customStrategyBuilder().offloadSend().build().merge(other);
-        }
-
-        @Override
-        public boolean isCloseOffloaded() {
-            return false;
-        }
-    };
 
     /**
      * Which builder API will be used and where will ExecutionStrategy be initialized.
@@ -141,15 +110,6 @@ class ClientEffectiveStrategyTest {
         BlockingStreaming,
         AsyncAggregate,
         AsyncStreaming
-    }
-
-    /**
-     * Execution points at which the client will sample the executing thread
-     */
-    enum ClientOffloadPoint {
-        Send,
-        ReceiveMeta,
-        ReceiveData
     }
 
     private static final HttpExecutionStrategy[] BUILDER_STRATEGIES = {
@@ -202,9 +162,6 @@ class ClientEffectiveStrategyTest {
     static Stream<Arguments> casesSupplier() {
         List<Arguments> arguments = new ArrayList<>();
         for (BuilderType builderType : BuilderType.values()) {
-            if (BuilderType.Multi_ExecutionStrategy_Initializer_Override == builderType) {
-                continue;
-            }
             for (ClientApi clientApi : ClientApi.values()) {
                 for (HttpExecutionStrategy builderStrategy : BUILDER_STRATEGIES) {
                     if (BuilderType.Multi_ExecutionStrategy_Initializer_Override == builderType &&
@@ -315,7 +272,7 @@ class ClientEffectiveStrategyTest {
                 if (BuilderType.Multi_ExecutionStrategy_Initializer_Override == builderType &&
                         null != builderStrategy) {
                     // This is expected to ALWAYS be overridden in initializer.
-                    multiClientBuilder.executionStrategy(CUSTOM_OFFLOAD_SEND);
+                    multiClientBuilder.executionStrategy(offloadNone());
                 }
                 clientBuilder = multiClientBuilder::buildStreaming;
                 break;
@@ -327,7 +284,7 @@ class ClientEffectiveStrategyTest {
         try (StreamingHttpClient client = Objects.requireNonNull(clientBuilder.get())) {
             String responseBody = getResponse(clientApi, client, requestTarget);
             assertThat(responseBody, is(GREETING));
-            invokingThreadsRecorder.verifyOffloads();
+            invokingThreadsRecorder.verifyOffloads(clientApi);
         }
     }
 
@@ -335,6 +292,7 @@ class ClientEffectiveStrategyTest {
      * Computes the base execution strategy that the client will use based on the selected builder strategy, filter
      * strategy, load balancer strategy, connection factory filter strategy.
      *
+     * @param builderType Type of the builder being used for creating the client.
      * @param builder strategy specified for client builder or null to use builder default.
      * @param filter strategy specified for client stream filter to be added to client builder or null if no
      * filter will be added.
@@ -342,14 +300,15 @@ class ClientEffectiveStrategyTest {
      * load balancer will be added.
      * @param cf strategy specified for connection filter factory to be added to client builder or null if no
      * connection filter will be added.
+     * @param clientApi the client API which will be used for the request.
      * @return The strategy as computed
      */
-    private HttpExecutionStrategy computeClientExecutionStrategy(BuilderType builderType,
+    private HttpExecutionStrategy computeClientExecutionStrategy(final BuilderType builderType,
                                                                  @Nullable final HttpExecutionStrategy builder,
                                                                  @Nullable final HttpExecutionStrategy filter,
                                                                  @Nullable final HttpExecutionStrategy lb,
                                                                  @Nullable final HttpExecutionStrategy cf,
-                                                                 ClientApi clientApi) {
+                                                                 final ClientApi clientApi) {
         @Nullable HttpExecutionStrategy chain = mergeStrategies(cf, mergeStrategies(lb, filter));
 
         HttpExecutionStrategy merged = null != chain && chain.hasOffloads() ?
@@ -371,6 +330,7 @@ class ClientEffectiveStrategyTest {
                         builder;
 
         switch (builderType) {
+            case Multi_ExecutionStrategy_Initializer_Override:
             case Single:
                 if (defaultStrategy() == merged) {
                     switch (clientApi) {
@@ -510,8 +470,21 @@ class ClientEffectiveStrategyTest {
                         throw new AssertionError("unexpected case " + clientApi);
                 }
             }
-        }
 
+            if (defaultStrategy() != streamingAsyncStrategy) {
+                // adjust expected offloads for specific execution strategy
+                if (streamingAsyncStrategy.isSendOffloaded()) {
+                    offloadPoints.add(Send);
+                }
+                if (streamingAsyncStrategy.isMetadataReceiveOffloaded()) {
+                    offloadPoints.add(ReceiveMeta);
+                }
+                if (streamingAsyncStrategy.isDataReceiveOffloaded()) {
+                    offloadPoints.add(ReceiveData);
+                }
+            }
+            System.out.println("API: " + clientApi + " base:" + streamingAsyncStrategy + " Expecting " + offloadPoints);
+        }
         @Override
         public HttpExecutionStrategy requiredOffloads() {
             // No influence since we do not block.
@@ -551,8 +524,8 @@ class ClientEffectiveStrategyTest {
             });
         }
 
-        public void verifyOffloads() {
-            assertNoAsyncErrors(errors);
+        public void verifyOffloads(ClientApi clientApi) {
+            assertNoAsyncErrors("API=" + clientApi + " Async Errors! See suppressed" ,errors);
             assertThat("Unexpected offload points recorded. " + invokingThreads,
                     invokingThreads.size(), Matchers.is(ClientOffloadPoint.values().length));
         }
@@ -576,5 +549,13 @@ class ClientEffectiveStrategyTest {
         public ExecutionStrategy requiredOffloads() {
             return ExecutionStrategy.offloadNone();
         }
+    }
+    /**
+     * Execution points at which the client will sample the executing thread
+     */
+    enum ClientOffloadPoint {
+        Send,
+        ReceiveMeta,
+        ReceiveData
     }
 }

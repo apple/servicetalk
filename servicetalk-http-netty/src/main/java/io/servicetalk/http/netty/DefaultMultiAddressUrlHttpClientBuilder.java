@@ -421,7 +421,16 @@ final class DefaultMultiAddressUrlHttpClientBuilder
                                         clientAPI.defaultStrategy() : requestStrategy) :
                                 // single client tried to force no offloads, use multi-client strategy
                                 requestStrategy :
-                    requestStrategy;
+                    // multi-client configured for no offloads
+                    singleClientStrategy.hasOffloads() ?
+                            // override in single client
+                            defaultStrategy() == singleClientStrategy ?
+                                    // use API default
+                                    clientAPI.defaultStrategy() :
+                                    // use as specified
+                                    singleClientStrategy :
+                            // single client does not override
+                            requestStrategy;
             if (useStrategy != requestStrategy) {
                 contextMap.put(HTTP_EXECUTION_STRATEGY_KEY, useStrategy);
             }
