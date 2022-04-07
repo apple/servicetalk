@@ -64,7 +64,7 @@ final class TextMapFormatter implements InMemorySpanContextInjector<TextMapInjec
         String traceId = null;
         String spanId = null;
         String parentSpanId = null;
-        boolean sampled = false;
+        Boolean sampled = null;
         for (Map.Entry<String, String> e : carrier) {
             String key = e.getKey();
             String value = e.getValue().trim();
