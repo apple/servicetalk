@@ -52,6 +52,9 @@ public class IdleTimeoutInitializer implements ChannelInitializer {
      * @param idleTimeoutMillis timeout in milliseconds.
      */
     public IdleTimeoutInitializer(long idleTimeoutMillis) {
+        if (idleTimeoutMillis <= 0L) {
+            throw new IllegalArgumentException("idleTimeoutMillis: " + idleTimeoutMillis + " (expected >0)");
+        }
         timeoutMs = idleTimeoutMillis;
     }
 
