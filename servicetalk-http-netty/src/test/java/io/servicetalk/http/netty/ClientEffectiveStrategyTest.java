@@ -485,6 +485,7 @@ class ClientEffectiveStrategyTest {
             }
             System.out.println("API: " + clientApi + " base:" + streamingAsyncStrategy + " Expecting " + offloadPoints);
         }
+
         @Override
         public HttpExecutionStrategy requiredOffloads() {
             // No influence since we do not block.
@@ -525,7 +526,7 @@ class ClientEffectiveStrategyTest {
         }
 
         public void verifyOffloads(ClientApi clientApi) {
-            assertNoAsyncErrors("API=" + clientApi + " Async Errors! See suppressed" ,errors);
+            assertNoAsyncErrors("API=" + clientApi + " Async Errors! See suppressed", errors);
             assertThat("Unexpected offload points recorded. " + invokingThreads,
                     invokingThreads.size(), Matchers.is(ClientOffloadPoint.values().length));
         }
@@ -550,6 +551,7 @@ class ClientEffectiveStrategyTest {
             return ExecutionStrategy.offloadNone();
         }
     }
+
     /**
      * Execution points at which the client will sample the executing thread
      */
