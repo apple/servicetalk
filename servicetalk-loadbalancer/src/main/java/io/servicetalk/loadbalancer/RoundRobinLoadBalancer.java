@@ -578,8 +578,8 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
                     final ActiveState nextState = previousState.forNextFailedConnection();
                     if (connStateUpdater.compareAndSet(this, previous,
                             new ConnState(previous.connections, nextState))) {
-                        LOGGER.debug("Load balancer for {}: failed to open a new connection to the host on address {}" +
-                                        " {} time(s) ({} consecutive failures will trigger health check).",
+                        LOGGER.info("Load balancer for {}: failed to open a new connection to the host on address {}" +
+                                        " {} time(s) ({} consecutive failures will trigger health-checking).",
                                 targetResource, address, nextState.failedConnections,
                                 healthCheckConfig.failedThreshold, cause);
                         break;
@@ -588,11 +588,12 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
                     continue;
                 }
 
-                final HealthCheck<Addr, C> healthCheck = new HealthCheck<>(connectionFactory, this);
+                final HealthCheck<Addr, C> healthCheck = new HealthCheck<>(connectionFactory, this, cause);
                 final ConnState nextState = new ConnState(previous.connections, healthCheck);
                 if (connStateUpdater.compareAndSet(this, previous, nextState)) {
-                    LOGGER.debug("Load balancer for {}: failed to open a new connection to the host on address {}" +
-                                    " {} time(s). Threshold reached, triggering health check for this host.",
+                    LOGGER.warn("Load balancer for {}: failed to open a new connection to the host on address {} " +
+                                    "{} time(s) in a row. Error counting threshold reached, marking this host as " +
+                                    "UNHEALTHY for the selection algorithm and triggering background health-checking.",
                             targetResource, address, healthCheckConfig.failedThreshold, cause);
                     healthCheck.schedule(cause);
                     break;
@@ -757,11 +758,13 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
                 extends DelayedCancellable {
             private final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory;
             private final Host<ResolvedAddress, C> host;
+            private final Throwable lastError;
 
             private HealthCheck(final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory,
-                                final Host<ResolvedAddress, C> host) {
+                                final Host<ResolvedAddress, C> host, final Throwable lastError) {
                 this.connectionFactory = connectionFactory;
                 this.host = host;
+                this.lastError = lastError;
             }
 
             public void schedule(final Throwable originalCause) {
@@ -787,12 +790,13 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
                                 .flatMapCompletable(newCnx -> {
                                     if (host.addConnection(newCnx)) {
                                         host.markHealthy(this);
-                                        LOGGER.debug("Load balancer for {}: health check passed for {}.",
+                                        LOGGER.info("Load balancer for {}: health check passed for {}, marking this " +
+                                                        "host as ACTIVE for the selection algorithm.",
                                                 host.targetResource, host);
                                         return completed();
                                     } else {
                                         // This happens only if the host is closed, no need to mark as healthy.
-                                        LOGGER.debug("Load balancer for {}: health check finished for {}, but the " +
+                                        LOGGER.debug("Load balancer for {}: health check passed for {}, but the " +
                                                         "host rejected a new connection {}. Closing it now.",
                                                 host.targetResource, host, newCnx);
                                         return newCnx.closeAsync();
@@ -812,7 +816,7 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
 
             @Override
             public String toString() {
-                return "UNHEALTHY";
+                return "UNHEALTHY(" + lastError + ')';
             }
         }
 
