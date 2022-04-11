@@ -43,7 +43,7 @@ jobs:
         run: ./gradlew --no-daemon --parallel clean test
       - name: Upload Test Results
         if: always()
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: test-results-${{ matrix.os }}-${{ matrix.java }}
           path: '**/build/test-results/test/TEST-*.xml'
