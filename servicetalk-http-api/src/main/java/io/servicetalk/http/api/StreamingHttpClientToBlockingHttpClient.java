@@ -17,7 +17,7 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.BlockingIterable;
 
-import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
+import static io.servicetalk.concurrent.api.internal.BlockingUtils.blockingInvocation;
 import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.RequestResponseFactories.toAggregated;
@@ -59,7 +59,7 @@ final class StreamingHttpClientToBlockingHttpClient implements BlockingHttpClien
     @Override
     public HttpResponse request(final HttpRequest request) throws Exception {
         request.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, strategy);
-        return BlockingUtils.request(client, request);
+        return BlockingRequestUtils.request(client, request);
     }
 
     @Override
@@ -146,7 +146,7 @@ final class StreamingHttpClientToBlockingHttpClient implements BlockingHttpClien
 
         @Override
         public HttpResponse request(final HttpRequest request) throws Exception {
-            return BlockingUtils.request(connection, request);
+            return BlockingRequestUtils.request(connection, request);
         }
 
         @Override

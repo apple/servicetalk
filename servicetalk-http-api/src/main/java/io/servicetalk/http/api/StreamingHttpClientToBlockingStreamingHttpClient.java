@@ -17,7 +17,7 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.BlockingIterable;
 
-import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
+import static io.servicetalk.concurrent.api.internal.BlockingUtils.blockingInvocation;
 import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.RequestResponseFactories.toBlockingStreaming;

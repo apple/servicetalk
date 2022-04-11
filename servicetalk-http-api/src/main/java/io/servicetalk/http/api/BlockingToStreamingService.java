@@ -19,7 +19,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 
 import static io.servicetalk.concurrent.api.Single.fromCallable;
-import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
+import static io.servicetalk.concurrent.api.internal.BlockingUtils.blockingToCompletable;
 import static io.servicetalk.http.api.DefaultHttpExecutionStrategy.OFFLOAD_RECEIVE_DATA_STRATEGY;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static java.util.Objects.requireNonNull;

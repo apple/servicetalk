@@ -66,7 +66,7 @@ final class StreamingHttpConnectionToBlockingHttpConnection implements BlockingH
 
     @Override
     public HttpResponse request(final HttpRequest request) throws Exception {
-        return BlockingUtils.request(connection, request);
+        return BlockingRequestUtils.request(connection, request);
     }
 
     @Override
