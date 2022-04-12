@@ -26,6 +26,7 @@ import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.EmptyHttpHeaders;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpRequestMetaData;
+import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.tcp.netty.internal.ReadOnlyTcpServerConfig;
@@ -53,6 +54,7 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
@@ -80,6 +82,7 @@ import static io.servicetalk.http.api.HttpHeaderValues.KEEP_ALIVE;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMetaDataFactory.newRequestMetaData;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
+import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
@@ -112,11 +115,11 @@ class HttpRequestEncoderTest extends HttpEncoderTest<HttpRequestMetaData> {
     static final ExecutionContextExtension SEC =
             new ExecutionContextExtension(() -> allocator,
                     () -> createIoExecutor("server-io"),
-                    Executors::immediate).setClassLevel(true);;
+                    Executors::immediate).setClassLevel(true);
     @RegisterExtension
     static final ExecutionContextExtension CEC = new ExecutionContextExtension(() -> allocator,
             () -> createIoExecutor("client-io"),
-            Executors::newCachedThreadExecutor).setClassLevel(true);;
+            Executors::newCachedThreadExecutor).setClassLevel(true);
 
     @Override
     EmbeddedChannel newEmbeddedChannel() {
@@ -267,27 +270,33 @@ class HttpRequestEncoderTest extends HttpEncoderTest<HttpRequestMetaData> {
         assertFalse(channel.finishAndReleaseAll());
     }
 
-    @Test
-    void variableNoTrailers() {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void variableNoTrailers(boolean get) {
         EmbeddedChannel channel = newEmbeddedChannel();
         byte[] content = new byte[128];
         ThreadLocalRandom.current().nextBytes(content);
         Buffer buffer = allocator.wrap(content);
         HttpRequestMetaData request = newRequestMetaData(HTTP_1_1,
-                GET, "/some/path?foo=bar&baz=yyy", INSTANCE.newHeaders());
+                get ? GET : POST, "/some/path?foo=bar&baz=yyy", INSTANCE.newHeaders());
         request.headers()
                 .add(CONNECTION, KEEP_ALIVE)
                 .add(USER_AGENT, "unit-test");
         channel.writeOutbound(request);
-        channel.writeOutbound(buffer.duplicate());
-        channel.writeOutbound(EmptyHttpHeaders.INSTANCE);
-        verifyHttpRequest(channel, buffer, TransferEncoding.Variable, false);
-        assertFalse(channel.finishAndReleaseAll());
+        if (get) {
+            assertThrows(IOException.class, () -> channel.writeOutbound(buffer.duplicate()));
+            assertTrue(channel.finishAndReleaseAll());
+        } else {
+            channel.writeOutbound(buffer.duplicate());
+            channel.writeOutbound(EmptyHttpHeaders.INSTANCE);
+            verifyHttpRequest(channel, buffer, TransferEncoding.Variable, false, POST);
+            assertFalse(channel.finishAndReleaseAll());
+        }
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void variableWithTrailers(boolean emptyTrailers) {
+    @CsvSource({"true,true", "true,false", "false,true", "false,false"})
+    void variableWithTrailers(boolean emptyTrailers, boolean get) {
         EmbeddedChannel channel = newEmbeddedChannel();
         byte[] content = new byte[128];
         ThreadLocalRandom.current().nextBytes(content);
@@ -297,21 +306,25 @@ class HttpRequestEncoderTest extends HttpEncoderTest<HttpRequestMetaData> {
             trailers.add("TrailerStatus", "good");
         }
         HttpRequestMetaData request = newRequestMetaData(HTTP_1_1,
-                GET, "/some/path?foo=bar&baz=yyy", INSTANCE.newHeaders());
+                get ? GET : POST, "/some/path?foo=bar&baz=yyy", INSTANCE.newHeaders());
         request.headers()
                 .add(CONNECTION, KEEP_ALIVE)
                 .add(USER_AGENT, "unit-test");
         channel.writeOutbound(request);
-        channel.writeOutbound(buffer.duplicate());
-        if (!emptyTrailers) {
-            assertThrows(IOException.class, () -> channel.writeOutbound(trailers));
+        if (get) {
+            assertThrows(IOException.class, () -> channel.writeOutbound(buffer.duplicate()));
+            assertTrue(channel.finishAndReleaseAll());
         } else {
-            channel.writeOutbound(trailers);
-            verifyHttpRequest(channel, buffer, TransferEncoding.Variable, false);
+            channel.writeOutbound(buffer.duplicate());
+            if (!emptyTrailers) {
+                assertThrows(IOException.class, () -> channel.writeOutbound(trailers));
+            } else {
+                channel.writeOutbound(trailers);
+                verifyHttpRequest(channel, buffer, TransferEncoding.Variable, false, POST);
+            }
+            // The trailers will just not be encoded if the transfer encoding is not set correctly.
+            assertNotEquals(emptyTrailers, channel.finishAndReleaseAll());
         }
-
-        // The trailers will just not be encoded if the transfer encoding is not set correctly.
-        assertNotEquals(emptyTrailers, channel.finishAndReleaseAll());
     }
 
     @ParameterizedTest
@@ -347,11 +360,16 @@ class HttpRequestEncoderTest extends HttpEncoderTest<HttpRequestMetaData> {
 
     private static String verifyHttpRequest(EmbeddedChannel channel, Buffer buffer, TransferEncoding encoding,
                                             boolean trailers) {
+        return verifyHttpRequest(channel, buffer, encoding, trailers, GET);
+    }
+
+    private static String verifyHttpRequest(EmbeddedChannel channel, Buffer buffer, TransferEncoding encoding,
+        boolean trailers, HttpRequestMethod method) {
         ByteBuf byteBuf = channel.readOutbound();
         String actualMetaData = byteBuf.toString(US_ASCII);
         byteBuf.release();
-        assertTrue(actualMetaData.contains(
-                "GET /some/path?foo=bar&baz=yyy HTTP/1.1" + "\r\n"), () -> "unexpected metadata: " + actualMetaData);
+        assertTrue(actualMetaData.contains(method +
+                " /some/path?foo=bar&baz=yyy HTTP/1.1" + "\r\n"), () -> "unexpected metadata: " + actualMetaData);
         assertTrue(actualMetaData.contains(
                 CONNECTION + ": " + KEEP_ALIVE + "\r\n"), () -> "unexpected metadata: " + actualMetaData);
         assertTrue(actualMetaData.contains(

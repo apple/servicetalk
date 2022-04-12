@@ -152,7 +152,10 @@ final class HttpRequestEncoder extends HttpObjectEncoder<HttpRequestMetaData> {
     @Override
     protected long getContentLength(final HttpRequestMetaData message) {
         final long len = HttpObjectDecoder.getContentLength(message);
-        return len < 0 && shouldAddZeroContentLength(message.method()) ? 0 : len;
+        // If there is no length header, and we omitted adding one previously because the method isn't expected to have
+        // content-length then assume the length is 0. If the user does attempt to write content they will get an error
+        // and should explicitly set content-length.
+        return len < 0 && !shouldAddZeroContentLength(message.method()) ? 0 : len;
     }
 
     @Override
