@@ -26,19 +26,19 @@ jobs:
         run: ./gradlew --parallel clean quality
       - name: Upload CheckStyle Results
         if: always()
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: checkstyle-results-${{ matrix.java }}
           path: '**/build/reports/checkstyle/*.xml'
       - name: Upload PMD Results
         if: always()
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: pmd-results-${{ matrix.java }}
           path: '**/build/reports/pmd/*.xml'
       - name: Upload SpotBugs Results
         if: always()
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: spotbugs-results-${{ matrix.java }}
           path: '**/build/reports/spotbugs/*.xml'
