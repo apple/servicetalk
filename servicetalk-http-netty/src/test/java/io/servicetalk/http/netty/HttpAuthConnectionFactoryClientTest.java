@@ -18,6 +18,7 @@ package io.servicetalk.http.netty;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.DelegatingConnectionFactory;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -95,8 +96,9 @@ class HttpAuthConnectionFactoryClientTest {
 
         @Override
         public Single<C> newConnection(
-                final ResolvedAddress resolvedAddress, @Nullable final TransportObserver observer) {
-            return super.newConnection(resolvedAddress, observer).flatMap(cnx ->
+                final ResolvedAddress resolvedAddress, @Nullable final ContextMap context,
+                @Nullable final TransportObserver observer) {
+            return delegate().newConnection(resolvedAddress, context, observer).flatMap(cnx ->
                     cnx.request(newTestRequest(cnx, "/auth"))
                             .onErrorResume(cause -> {
                                 cnx.closeAsync().subscribe();

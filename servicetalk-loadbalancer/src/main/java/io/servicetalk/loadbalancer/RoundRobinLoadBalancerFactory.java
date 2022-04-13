@@ -24,6 +24,7 @@ import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.loadbalancer.RoundRobinLoadBalancer.HealthCheckConfig;
 import io.servicetalk.transport.api.ExecutionStrategy;
 
@@ -48,9 +49,10 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * <li>Round robining is done at address level.</li>
  * <li>Connections are created lazily, without any concurrency control on their creation.
  * This can lead to over-provisioning connections when dealing with a requests surge.</li>
- * <li>Existing connections are reused unless a selector passed to {@link LoadBalancer#selectConnection(Predicate)}
- * suggests otherwise. This can lead to situations where connections will be used to their maximum capacity
- * (for example in the context of pipelining) before new connections are created.</li>
+ * <li>Existing connections are reused unless a selector passed to
+ * {@link LoadBalancer#selectConnection(Predicate, ContextMap)} suggests otherwise. This can lead to situations where
+ * connections will be used to their maximum capacity (for example in the context of pipelining) before new connections
+ * are created.</li>
  * <li>Closed connections are automatically pruned.</li>
  * <li>When {@link Publisher}&lt;{@link ServiceDiscovererEvent}&gt; delivers events with
  * {@link ServiceDiscovererEvent#status()} of value {@link ServiceDiscovererEvent.Status#UNAVAILABLE}, connections

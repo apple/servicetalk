@@ -72,7 +72,7 @@ final class LoadBalancedStreamingHttpClient implements FilterableStreamingHttpCl
         // LoadBalancer takes ownership of it (e.g. connection initialization) and in that case they will not be
         // following the LoadBalancer API which this Client depends upon to ensure the concurrent request count state is
         // correct.
-        return loadBalancer.selectConnection(SELECTOR_FOR_REQUEST).flatMap(c -> {
+        return loadBalancer.selectConnection(SELECTOR_FOR_REQUEST, request.context()).flatMap(c -> {
                 final Consumer<ConnectionInfo> onConnectionSelected = AsyncContext.get(ON_CONNECTION_SELECTED_CONSUMER);
                 if (onConnectionSelected != null) {
                     onConnectionSelected.accept(c.connectionContext());
@@ -131,7 +131,7 @@ final class LoadBalancedStreamingHttpClient implements FilterableStreamingHttpCl
     public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpRequestMetaData metaData) {
         return Single.defer(() -> {
             Single<ReservedStreamingHttpConnection> connection =
-                    loadBalancer.selectConnection(SELECTOR_FOR_RESERVE).map(identity());
+                    loadBalancer.selectConnection(SELECTOR_FOR_RESERVE, metaData.context()).map(identity());
             final HttpExecutionStrategy strategy = requestExecutionStrategy(metaData,
                     executionContext().executionStrategy());
             return (strategy.isMetadataReceiveOffloaded() || strategy.isDataReceiveOffloaded() ?

@@ -81,13 +81,13 @@ class EagerRoundRobinLoadBalancerTest extends RoundRobinLoadBalancerTest {
     @Test
     void hostDownGracefullyClosesConnections() throws Exception {
         sendServiceDiscoveryEvents(upEvent("address-1"));
-        TestLoadBalancedConnection host1Conn1 = lb.selectConnection(alwaysNewConnectionFilter()).toFuture().get();
+        TestLoadBalancedConnection host1Conn1 = lb.selectConnection(alwaysNewConnectionFilter(), null).toFuture().get();
 
         sendServiceDiscoveryEvents(upEvent("address-2"));
-        TestLoadBalancedConnection host2Conn1 = lb.selectConnection(alwaysNewConnectionFilter()).toFuture().get();
+        TestLoadBalancedConnection host2Conn1 = lb.selectConnection(alwaysNewConnectionFilter(), null).toFuture().get();
 
         // create another for address-1
-        TestLoadBalancedConnection host1Conn2 = lb.selectConnection(alwaysNewConnectionFilter()).toFuture().get();
+        TestLoadBalancedConnection host1Conn2 = lb.selectConnection(alwaysNewConnectionFilter(), null).toFuture().get();
 
         sendServiceDiscoveryEvents(downEvent("address-1"));
         validateConnectionClosedGracefully(host1Conn1);

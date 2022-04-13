@@ -20,6 +20,7 @@ import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.DelegatingConnectionFactory;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
@@ -70,8 +71,9 @@ final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C extends Filte
 
         @Override
         public Single<C> newConnection(final ResolvedAddress resolvedAddress,
+                                       @Nullable final ContextMap context,
                                        @Nullable final TransportObserver observer) {
-            return delegate().newConnection(resolvedAddress, observer).flatMap(c -> {
+            return delegate().newConnection(resolvedAddress, context, observer).flatMap(c -> {
                 try {
                     return c.request(c.connect(connectAddress).addHeader(CONTENT_LENGTH, ZERO))
                             .flatMap(response -> handleConnectResponse(c, response))

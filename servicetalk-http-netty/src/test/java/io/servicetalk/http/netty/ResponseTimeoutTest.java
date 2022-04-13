@@ -20,6 +20,7 @@ import io.servicetalk.client.api.DelegatingConnectionFactory;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpResponse;
@@ -198,10 +199,11 @@ class ResponseTimeoutTest {
 
         @Override
         public Single<FilterableStreamingHttpConnection> newConnection(final InetSocketAddress inetSocketAddress,
+                                                                       @Nullable final ContextMap context,
                                                                        @Nullable final TransportObserver observer) {
             return defer(() -> {
                 connectionCount.incrementAndGet();
-                return delegate().newConnection(inetSocketAddress, observer);
+                return delegate().newConnection(inetSocketAddress, context, observer);
             });
         }
     }

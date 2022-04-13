@@ -24,6 +24,7 @@ import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpPayloadWriter;
 import io.servicetalk.http.api.HttpServerBuilder;
@@ -587,8 +588,9 @@ class GracefulConnectionClosureHandlingTest {
 
         @Override
         public Single<FilterableStreamingHttpConnection> newConnection(ResolvedAddress address,
+                                                                       @Nullable final ContextMap context,
                                                                        @Nullable final TransportObserver observer) {
-            return delegate().newConnection(address, observer).whenOnSuccess(connection ->
+            return delegate().newConnection(address, context, observer).whenOnSuccess(connection ->
                     ((NettyConnectionContext) connection
                             .connectionContext()).onClosing()
                             .whenFinally(onClosing::countDown)

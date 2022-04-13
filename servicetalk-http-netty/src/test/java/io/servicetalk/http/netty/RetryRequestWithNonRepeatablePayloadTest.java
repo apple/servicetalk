@@ -21,6 +21,7 @@ import io.servicetalk.client.api.DelegatingConnectionFactory;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.internal.DeliberateException;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
@@ -74,8 +75,9 @@ class RetryRequestWithNonRepeatablePayloadTest extends AbstractNettyHttpServerTe
                 FilterableStreamingHttpConnection>(factory) {
             @Override
             public Single<FilterableStreamingHttpConnection> newConnection(InetSocketAddress address,
+                                                                           @Nullable ContextMap context,
                                                                            @Nullable TransportObserver observer) {
-                return delegate().newConnection(address, observer).map(c -> {
+                return delegate().newConnection(address, context, observer).map(c -> {
                     final Channel channel = ((NettyConnectionContext) c.connectionContext()).nettyChannel();
                     if (protocol == HTTP_1) {
                         // Insert right before HttpResponseDecoder to avoid seeing failed frames on wire logs

@@ -15,11 +15,15 @@
  */
 package io.servicetalk.client.api;
 
+import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.transport.api.TransportObserver;
 
 import javax.annotation.Nullable;
+
+import static io.servicetalk.client.api.DeprecatedToNewConnectionFactoryFilter.CONNECTION_FACTORY_CONTEXT_MAP_KEY;
 
 /**
  * A factory for creating new connections.
@@ -38,6 +42,32 @@ public interface ConnectionFactory<ResolvedAddress, C extends ListenableAsyncClo
      * @param address to connect.
      * @param observer {@link TransportObserver} for the newly created connection.
      * @return {@link Single} that emits the created connection.
+     * @deprecated Use {@link #newConnection(Object, ContextMap, TransportObserver)}.
      */
-    Single<C> newConnection(ResolvedAddress address, @Nullable TransportObserver observer);
+    @Deprecated // FIXME: 0.43 - remove deprecated method
+    default Single<C> newConnection(ResolvedAddress address, @Nullable TransportObserver observer) {
+        throw new UnsupportedOperationException("ConnectionFactory#newConnection(ResolvedAddress, TransportObserver) " +
+                "is not supported by " + getClass());
+    }
+
+    /**
+     * Creates and asynchronously returns a connection.
+     *
+     * @param address to connect.
+     * @param context {@link ContextMap context} of the caller (e.g. request context) or {@code null} if no context
+     * provided. {@code null} context may also mean that a connection is created outside the normal request processing
+     * (e.g. health-checking).
+     * @param observer {@link TransportObserver} for the newly created connection or {@code null} if no observer
+     * provided.
+     * @return {@link Single} that emits the created connection.
+     */
+    default Single<C> newConnection(ResolvedAddress address, @Nullable ContextMap context,
+                                    @Nullable TransportObserver observer) { // FIXME: 0.43 - remove default impl
+        return Single.defer(() -> {
+            if (context != null) {
+                AsyncContext.put(CONNECTION_FACTORY_CONTEXT_MAP_KEY, context);
+            }
+            return newConnection(address, observer).shareContextOnSubscribe();
+        });
+    }
 }

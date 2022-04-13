@@ -17,6 +17,7 @@ package io.servicetalk.client.api;
 
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.TransportObserver;
 
@@ -65,6 +66,7 @@ public final class TransportObserverConnectionFactoryFilter<ResolvedAddress, C e
         return new DelegatingConnectionFactory<ResolvedAddress, C>(original) {
             @Override
             public Single<C> newConnection(final ResolvedAddress resolvedAddress,
+                                           @Nullable final ContextMap context,
                                            @Nullable final TransportObserver originalObserver) {
                 final TransportObserver newObserver;
                 try {
@@ -72,7 +74,7 @@ public final class TransportObserverConnectionFactoryFilter<ResolvedAddress, C e
                 } catch (Throwable t) {
                     return failed(t);
                 }
-                return delegate().newConnection(resolvedAddress, originalObserver == null ? newObserver :
+                return delegate().newConnection(resolvedAddress, context, originalObserver == null ? newObserver :
                        newObserver == null ? originalObserver : combine(originalObserver, newObserver));
             }
         };
