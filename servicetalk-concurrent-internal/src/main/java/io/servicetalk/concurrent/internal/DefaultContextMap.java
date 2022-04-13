@@ -28,7 +28,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * Default implementation of {@link ContextMap}.
  * <p>
- * Note: it's not concurrent!
+ * Note: it's not thread-safe!
  */
 public final class DefaultContextMap implements ContextMap {
 
