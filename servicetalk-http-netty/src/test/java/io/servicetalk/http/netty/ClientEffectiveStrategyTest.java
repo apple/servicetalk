@@ -35,6 +35,7 @@ import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpLoadBalancerFactory;
 import io.servicetalk.http.api.HttpRequest;
+import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.MultiAddressHttpClientBuilder;
@@ -90,7 +91,7 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAnd
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-@Execution(ExecutionMode.CONCURRENT)
+@Execution(ExecutionMode.SAME_THREAD)
 class ClientEffectiveStrategyTest {
     private static final String SCHEME = "http";
     private static final String PATH = "/";
@@ -100,10 +101,10 @@ class ClientEffectiveStrategyTest {
      * Which builder API will be used and where will ExecutionStrategy be initialized.
      */
     private enum BuilderType {
-        Single,
-        Multi_ExecutionStrategy_On_Builder,
-        Multi_ExecutionStrategy_In_Initializer,
-        Multi_ExecutionStrategy_Initializer_Override
+        SINGLE_BUILDER,
+        MULTI_BUILDER,
+        MULTI_DEFAULT_SINGLE_BUILDER,
+        MULTI_NONE_SINGLE_BUILDER
     }
 
     private static final HttpExecutionStrategy[] BUILDER_STRATEGIES = {
@@ -157,7 +158,7 @@ class ClientEffectiveStrategyTest {
         List<Arguments> arguments = new ArrayList<>();
         for (BuilderType builderType : BuilderType.values()) {
             for (HttpExecutionStrategy builderStrategy : BUILDER_STRATEGIES) {
-                if (BuilderType.Multi_ExecutionStrategy_Initializer_Override == builderType &&
+                if (BuilderType.MULTI_NONE_SINGLE_BUILDER == builderType &&
                         null == builderStrategy) {
                     // null builderStrategy won't actually override, so skip.
                     continue;
@@ -233,14 +234,14 @@ class ClientEffectiveStrategyTest {
                         });
                     }
 
-                    if (builderType != BuilderType.Multi_ExecutionStrategy_On_Builder && null != builderStrategy) {
+                    if (builderType != BuilderType.MULTI_BUILDER && null != builderStrategy) {
                         clientBuilder.executionStrategy(builderStrategy);
                     }
                 };
         String requestTarget;
         Supplier<StreamingHttpClient> clientBuilder;
         switch (builderType) {
-            case Single:
+            case SINGLE_BUILDER:
                 requestTarget = PATH;
                 SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> singleClientBuilder =
                         HttpClients.forSingleAddress(serverHostAndPort(context));
@@ -248,16 +249,16 @@ class ClientEffectiveStrategyTest {
                 initializer.initialize(SCHEME, serverHostAndPort(context), singleClientBuilder);
                 clientBuilder = singleClientBuilder::buildStreaming;
                 break;
-            case Multi_ExecutionStrategy_On_Builder:
-            case Multi_ExecutionStrategy_In_Initializer:
-            case Multi_ExecutionStrategy_Initializer_Override:
+            case MULTI_BUILDER:
+            case MULTI_DEFAULT_SINGLE_BUILDER:
+            case MULTI_NONE_SINGLE_BUILDER:
                 requestTarget = SCHEME + "://" + serverHostAndPort(context) + PATH;
                 MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> multiClientBuilder =
                         HttpClients.forMultiAddressUrl().initializer(initializer);
-                if (BuilderType.Multi_ExecutionStrategy_On_Builder == builderType && null != builderStrategy) {
+                if (BuilderType.MULTI_BUILDER == builderType && null != builderStrategy) {
                     multiClientBuilder.executionStrategy(builderStrategy);
                 }
-                if (BuilderType.Multi_ExecutionStrategy_Initializer_Override == builderType &&
+                if (BuilderType.MULTI_NONE_SINGLE_BUILDER == builderType &&
                         null != builderStrategy) {
                     // This is expected to ALWAYS be overridden in initializer.
                     multiClientBuilder.executionStrategy(offloadNone());
@@ -275,7 +276,7 @@ class ClientEffectiveStrategyTest {
                         builderType, builderStrategy, filterStrategy, lbStrategy, cfStrategy, clientApi);
 
                 invokingThreadsRecorder.reset(clientApi, effectiveStrategy);
-                String responseBody = getResponse(clientApi, client, requestTarget);
+                String responseBody = getResponse(clientApi, client, HttpRequestMethod.GET, requestTarget);
                 assertThat("Unexpected response: " + responseBody, responseBody, is(GREETING));
                 invokingThreadsRecorder.verifyOffloads(clientApi);
             }
@@ -324,22 +325,16 @@ class ClientEffectiveStrategyTest {
                         builder;
 
         switch (builderType) {
-            case Multi_ExecutionStrategy_Initializer_Override:
-                if (null == merged || defaultStrategy() == merged) {
-                    return offloadNone();
-                } else {
-                    return merged;
-                }
-            case Single:
+           case SINGLE_BUILDER:
                 if (defaultStrategy() == merged) {
                     switch (clientApi) {
-                        case BlockingAggregate:
+                        case BLOCKING_AGGREGATE:
                             return offloadNone();
-                        case BlockingStreaming:
+                        case BLOCKING_STREAMING:
                             return HttpExecutionStrategies.customStrategyBuilder().offloadSend().build();
-                        case AsyncAggregate:
+                        case ASYNC_AGGREGATE:
                             return HttpExecutionStrategies.customStrategyBuilder().offloadReceiveData().build();
-                        case AsyncStreaming:
+                        case ASYNC_STREAMING:
                             return HttpExecutionStrategies.customStrategyBuilder()
                                     .offloadSend().offloadReceiveMetadata().offloadReceiveData().build();
                         default:
@@ -348,20 +343,20 @@ class ClientEffectiveStrategyTest {
                 } else {
                     return merged;
                 }
-            case Multi_ExecutionStrategy_On_Builder:
+            case MULTI_BUILDER:
                 if (null == builder || defaultStrategy() == builder) {
                     if (defaultStrategy() == merged) {
                         merged = offloadNone();
                     }
                     switch (clientApi) {
-                        case BlockingAggregate:
+                        case BLOCKING_AGGREGATE:
                             return merged;
-                        case BlockingStreaming:
+                        case BLOCKING_STREAMING:
                             return HttpExecutionStrategies.customStrategyBuilder().offloadSend().build().merge(merged);
-                        case AsyncAggregate:
+                        case ASYNC_AGGREGATE:
                             return HttpExecutionStrategies.customStrategyBuilder()
                                     .offloadReceiveData().build().merge(merged);
-                        case AsyncStreaming:
+                        case ASYNC_STREAMING:
                             return HttpExecutionStrategies.customStrategyBuilder()
                                     .offloadSend().offloadReceiveMetadata().offloadReceiveData().build().merge(merged);
                         default:
@@ -369,24 +364,30 @@ class ClientEffectiveStrategyTest {
                     }
                 }
                 return merged;
-            case Multi_ExecutionStrategy_In_Initializer:
+            case MULTI_DEFAULT_SINGLE_BUILDER:
                     if (defaultStrategy() == merged || (null != builder && !builder.hasOffloads())) {
                         merged = offloadNone();
                     }
                     switch (clientApi) {
-                        case BlockingAggregate:
+                        case BLOCKING_AGGREGATE:
                             return merged;
-                        case BlockingStreaming:
+                        case BLOCKING_STREAMING:
                             return HttpExecutionStrategies.customStrategyBuilder().offloadSend().build().merge(merged);
-                        case AsyncAggregate:
+                        case ASYNC_AGGREGATE:
                             return HttpExecutionStrategies.customStrategyBuilder()
                                     .offloadReceiveData().build().merge(merged);
-                        case AsyncStreaming:
+                        case ASYNC_STREAMING:
                             return HttpExecutionStrategies.customStrategyBuilder()
                                     .offloadSend().offloadReceiveMetadata().offloadReceiveData().build().merge(merged);
                         default:
                             throw new AssertionError("Unexpected client api: " + clientApi);
                     }
+            case MULTI_NONE_SINGLE_BUILDER:
+                if (null == merged || defaultStrategy() == merged) {
+                    return offloadNone();
+                } else {
+                    return merged;
+                }
             default:
                 throw new AssertionError("Unexpected builder type: " + builderType);
         }
@@ -399,18 +400,19 @@ class ClientEffectiveStrategyTest {
         return null == first ? second : null == second ? first : first.merge(second);
     }
 
-    private String getResponse(ClientApi clientApi, StreamingHttpClient client, String requestTarget) throws Exception {
+    private String getResponse(final ClientApi clientApi, final StreamingHttpClient client,
+                               final HttpRequestMethod requestMethod, final String requestTarget) throws Exception {
         switch (clientApi) {
-            case BlockingAggregate: {
+            case BLOCKING_AGGREGATE: {
                 BlockingHttpClient blockingClient = client.asBlockingClient();
-                HttpRequest request = blockingClient.get(requestTarget);
+                HttpRequest request = blockingClient.newRequest(requestMethod, requestTarget);
                 HttpResponse response = blockingClient.request(request);
                 return response.payloadBody().toString(StandardCharsets.US_ASCII);
             }
 
-            case BlockingStreaming: {
+            case BLOCKING_STREAMING: {
                 BlockingStreamingHttpClient blockingStreamingClient = client.asBlockingStreamingClient();
-                BlockingStreamingHttpRequest request = blockingStreamingClient.get(requestTarget);
+                BlockingStreamingHttpRequest request = blockingStreamingClient.newRequest(requestMethod, requestTarget);
                 BlockingStreamingHttpResponse response = blockingStreamingClient.request(request);
                 Supplier<CompositeBuffer> supplier =
                         blockingStreamingClient.executionContext().bufferAllocator()::newCompositeBuffer;
@@ -421,15 +423,15 @@ class ClientEffectiveStrategyTest {
                         .orElseThrow(() -> new AssertionError("No payload in response"));
             }
 
-            case AsyncAggregate: {
+            case ASYNC_AGGREGATE: {
                 HttpClient httpClient = client.asClient();
-                HttpRequest request = httpClient.get(requestTarget);
+                HttpRequest request = httpClient.newRequest(requestMethod, requestTarget);
                 HttpResponse response = httpClient.request(request).toFuture().get();
                 return response.payloadBody().toString(StandardCharsets.US_ASCII);
             }
 
-            case AsyncStreaming: {
-                StreamingHttpRequest request = client.get(requestTarget);
+            case ASYNC_STREAMING: {
+                StreamingHttpRequest request = client.newRequest(requestMethod, requestTarget);
                 CompositeBuffer responsePayload = client.request(request)
                         .flatMap(resp -> resp.payloadBody().collect(() ->
                                         client.executionContext().bufferAllocator().newCompositeBuffer(),
@@ -469,16 +471,16 @@ class ClientEffectiveStrategyTest {
             } else {
                 // apply default offloads per client api
                 switch (clientApi) {
-                    case BlockingAggregate:
+                    case BLOCKING_AGGREGATE:
                         offloadPoints = EnumSet.noneOf(ClientOffloadPoint.class);
                         break;
-                    case BlockingStreaming:
+                    case BLOCKING_STREAMING:
                         offloadPoints = EnumSet.of(Send);
                         break;
-                    case AsyncAggregate:
+                    case ASYNC_AGGREGATE:
                         offloadPoints = EnumSet.of(ReceiveData);
                         break;
-                    case AsyncStreaming:
+                    case ASYNC_STREAMING:
                         offloadPoints = EnumSet.allOf(ClientOffloadPoint.class);
                         break;
                     default:
@@ -557,10 +559,10 @@ class ClientEffectiveStrategyTest {
      * Which API flavor will be used.
      */
     private enum ClientApi {
-        BlockingAggregate,
-        BlockingStreaming,
-        AsyncAggregate,
-        AsyncStreaming
+        BLOCKING_AGGREGATE,
+        BLOCKING_STREAMING,
+        ASYNC_AGGREGATE,
+        ASYNC_STREAMING
     }
 
     /**
