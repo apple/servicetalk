@@ -127,5 +127,5 @@ task testJavadoc(type: Javadoc) {
 test.finalizedBy(testJavadoc)
 
 test {
-  systemProperty 'generatedFilesBaseDir', "$buildDir/generated/sources/proto"
+  systemProperty 'generatedFilesBaseDir', protobuf.generatedFilesBaseDir
 }

@@ -67,7 +67,6 @@ final class FileDescriptor implements GenerationContext {
     private final List<TypeSpec.Builder> serviceClassBuilders;
     private final Set<String> reservedJavaTypeName = new HashSet<>();
     private final Map<TypeSpec.Builder, ServiceDescriptorProto> protoForServiceBuilder;
-    static final String INSERTION_POINT_FORMAT = "// @@protoc_insertion_point(service_scope:%s)";
 
     /**
      * A single protoc file for which we will be generating classes
@@ -100,7 +99,7 @@ final class FileDescriptor implements GenerationContext {
         reservedJavaTypeName.add(outerClassName);
 
         serviceClassBuilders = new ArrayList<>(protoFile.getServiceCount());
-        protoForServiceBuilder = new HashMap<>(protoFile.getServiceCount());
+        protoForServiceBuilder = new HashMap<>();
     }
 
     String protoFileName() {
@@ -128,10 +127,10 @@ final class FileDescriptor implements GenerationContext {
         return protoFile.getSourceCodeInfo();
     }
 
-    private void addMessageTypes(final List<DescriptorProto> messageTypes,
-                                 final @Nullable String parentProtoScope,
-                                 final String parentJavaScope,
-                                 final Map<String, ClassName> messageTypesMap) {
+    private static void addMessageTypes(final List<DescriptorProto> messageTypes,
+                                        @Nullable final String parentProtoScope,
+                                        final String parentJavaScope,
+                                        final Map<String, ClassName> messageTypesMap) {
         messageTypes.forEach(t -> {
             final String protoTypeName = parentProtoScope != null ?
                     (parentProtoScope + '.' + t.getName()) : '.' + t.getName();
@@ -233,12 +232,13 @@ final class FileDescriptor implements GenerationContext {
     }
 
     private String addInsertionPoint(String content, String name) {
-        String fqn = protoPackageName != null ? protoPackageName + "." + name : name;
-        content = content.replaceAll(
-            "class __" + fqn + " \\{\n *}",
-            String.format(INSERTION_POINT_FORMAT, fqn)
-        );
+        String fqn = protoPackageName != null ? protoPackageName + '.' + name : name;
+        content = content.replaceAll("class __" + fqn + " \\{\n *}", insertionPoint(fqn));
         return content;
+    }
+
+    static String insertionPoint(final String fqn) {
+        return "// @@protoc_insertion_point(service_scope:" + fqn + ')';
     }
 
     private static void insertSingleFileContent(final String content, String fileName,

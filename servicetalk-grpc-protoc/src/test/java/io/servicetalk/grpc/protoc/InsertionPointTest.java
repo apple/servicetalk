@@ -29,7 +29,7 @@ import java.io.PrintStream;
 import java.nio.file.Files;
 import java.util.List;
 
-import static io.servicetalk.grpc.protoc.FileDescriptor.INSERTION_POINT_FORMAT;
+import static io.servicetalk.grpc.protoc.FileDescriptor.insertionPoint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -40,19 +40,19 @@ class InsertionPointTest {
         List<CodeGeneratorResponse.File> files = generate("test_multi.proto");
         assertEquals(2, files.size());
 
-        assertTrue(files.get(0).getContent().contains(String.format(INSERTION_POINT_FORMAT, "test.multi.Tester")));
-        assertTrue(files.get(1).getContent().contains(String.format(INSERTION_POINT_FORMAT, "test.multi.Tester2")));
+        assertTrue(files.get(0).getContent().contains(insertionPoint("test.multi.Tester")));
+        assertTrue(files.get(1).getContent().contains(insertionPoint("test.multi.Tester2")));
     }
 
     @Test
     void insertionPointExistsInSingleFile() throws IOException {
         List<CodeGeneratorResponse.File> files = generate("test_single.proto");
         assertEquals(3, files.size());
-        assertTrue(files.get(1).getContent().contains(String.format(INSERTION_POINT_FORMAT, "test.single.Greeter")));
-        assertTrue(files.get(2).getContent().contains(String.format(INSERTION_POINT_FORMAT, "test.single.Fareweller")));
+        assertTrue(files.get(1).getContent().contains(insertionPoint("test.single.Greeter")));
+        assertTrue(files.get(2).getContent().contains(insertionPoint("test.single.Fareweller")));
     }
 
-    private List<CodeGeneratorResponse.File> generate(String file) throws IOException {
+    private static List<CodeGeneratorResponse.File> generate(String file) throws IOException {
         final CodeGeneratorRequest.Builder reqBuilder = CodeGeneratorRequest.newBuilder();
         reqBuilder.addAllProtoFile(getFileDescriptorSet().getFileList());
         reqBuilder.addFileToGenerate(file);
@@ -66,7 +66,7 @@ class InsertionPointTest {
      * @return generator response
      * @throws IOException throws exception if it fails to get hold of descriptor set
      */
-    private CodeGeneratorResponse executePlugin(CodeGeneratorRequest request) throws IOException {
+    private static CodeGeneratorResponse executePlugin(CodeGeneratorRequest request) throws IOException {
         // make stdin with request
         ByteArrayOutputStream tempCollector = new ByteArrayOutputStream();
         request.writeTo(tempCollector);
@@ -97,7 +97,8 @@ class InsertionPointTest {
      * @throws IOException throws exception if it fails to locate descriptor set on file system
      */
     static DescriptorProtos.FileDescriptorSet getFileDescriptorSet() throws IOException {
-        String baseDir = System.getProperty("generatedFilesBaseDir");
+        String baseDir = System.getProperty("generatedFilesBaseDir",
+                "servicetalk-grpc-protoc/build/generated/sources/proto");
         File descriptorSet = new File(baseDir + "/test/descriptor_set.desc");
         assertTrue(descriptorSet.exists());
         byte[] data = Files.readAllBytes(descriptorSet.toPath());
