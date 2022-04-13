@@ -325,6 +325,11 @@ class ClientEffectiveStrategyTest {
 
         switch (builderType) {
             case Multi_ExecutionStrategy_Initializer_Override:
+                if (null == merged || defaultStrategy() == merged) {
+                    return offloadNone();
+                } else {
+                    return merged;
+                }
             case Single:
                 if (defaultStrategy() == merged) {
                     switch (clientApi) {

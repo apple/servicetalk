@@ -19,7 +19,6 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 
-import static io.servicetalk.http.api.HttpContextKeys.HTTP_CLIENT_API_KEY;
 import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.RequestResponseFactories.toAggregated;
@@ -47,9 +46,7 @@ final class StreamingHttpClientToHttpClient implements HttpClient {
     @Override
     public Single<HttpResponse> request(final HttpRequest request) {
         return Single.defer(() -> {
-            if (null == request.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, strategy)) {
-                request.context().put(HTTP_CLIENT_API_KEY, HttpApiConversions.ClientAPI.ASYNC_AGGREGATED);
-            }
+            request.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, strategy);
             return client.request(request.toStreamingRequest())
                     .flatMap(response -> response.toResponse().shareContextOnSubscribe())
                     .shareContextOnSubscribe();
@@ -59,9 +56,7 @@ final class StreamingHttpClientToHttpClient implements HttpClient {
     @Override
     public Single<ReservedHttpConnection> reserveConnection(final HttpRequestMetaData metaData) {
         return Single.defer(() -> {
-            if (null == metaData.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, strategy)) {
-                metaData.context().put(HTTP_CLIENT_API_KEY, HttpApiConversions.ClientAPI.ASYNC_AGGREGATED);
-            }
+            metaData.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, strategy);
             return client.reserveConnection(metaData)
                     .map(c -> new ReservedStreamingHttpConnectionToReservedHttpConnection(c, this.strategy,
                             reqRespFactory))

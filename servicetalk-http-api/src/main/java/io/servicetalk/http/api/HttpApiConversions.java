@@ -20,34 +20,11 @@ import io.servicetalk.http.api.StreamingHttpClientToBlockingStreamingHttpClient.
 import io.servicetalk.http.api.StreamingHttpClientToHttpClient.ReservedStreamingHttpConnectionToReservedHttpConnection;
 
 import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
-import static io.servicetalk.http.api.StreamingHttpConnectionToBlockingHttpConnection.DEFAULT_BLOCKING_CONNECTION_STRATEGY;
-import static io.servicetalk.http.api.StreamingHttpConnectionToBlockingStreamingHttpConnection.DEFAULT_BLOCKING_STREAMING_CONNECTION_STRATEGY;
-import static io.servicetalk.http.api.StreamingHttpConnectionToHttpConnection.DEFAULT_ASYNC_CONNECTION_STRATEGY;
 
 /**
  * Conversion routines to {@link StreamingHttpService}.
  */
 public final class HttpApiConversions {
-
-    /**
-     * The "flavors" of client API available.
-     */
-    public enum ClientAPI {
-        BLOCKING_AGGREGATED(DEFAULT_BLOCKING_CONNECTION_STRATEGY),
-        BLOCKING_STREAMING(DEFAULT_BLOCKING_STREAMING_CONNECTION_STRATEGY),
-        ASYNC_AGGREGATED(DEFAULT_ASYNC_CONNECTION_STRATEGY),
-        ASYNC_STREAMING(DefaultHttpExecutionStrategy.OFFLOAD_ALL_REQRESP_EVENT_STRATEGY);
-
-        private final HttpExecutionStrategy defaultApiStrategy;
-
-        ClientAPI(HttpExecutionStrategy defaultApiStrategy) {
-            this.defaultApiStrategy = defaultApiStrategy;
-        }
-
-        public HttpExecutionStrategy defaultStrategy() {
-            return defaultApiStrategy;
-        }
-    }
 
     private HttpApiConversions() {
         // no instances

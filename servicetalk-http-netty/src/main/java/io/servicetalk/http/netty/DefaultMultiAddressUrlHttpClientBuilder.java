@@ -32,7 +32,6 @@ import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.FilterableReservedStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
-import io.servicetalk.http.api.HttpApiConversions;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpConnectionContext;
 import io.servicetalk.http.api.HttpEventKey;
@@ -82,9 +81,9 @@ import static io.servicetalk.http.api.HttpApiConversions.toReservedBlockingConne
 import static io.servicetalk.http.api.HttpApiConversions.toReservedBlockingStreamingConnection;
 import static io.servicetalk.http.api.HttpApiConversions.toReservedConnection;
 import static io.servicetalk.http.api.HttpApiConversions.toStreamingClient;
-import static io.servicetalk.http.api.HttpContextKeys.HTTP_CLIENT_API_KEY;
 import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadAll;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.setExecutionContext;
 import static java.util.Objects.requireNonNull;
@@ -285,6 +284,16 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         }
 
         @Override
+        public void close() throws Exception {
+            singleClient.close();
+        }
+
+        @Override
+        public void closeGracefully() throws Exception {
+            singleClient.closeGracefully();
+        }
+
+        @Override
         public Completable closeAsync() {
             return singleClient.closeAsync();
         }
@@ -404,33 +413,15 @@ final class DefaultMultiAddressUrlHttpClientBuilder
 
         private HttpExecutionStrategy applyMultiAddressStrategy(final ContextMap contextMap,
                                                                 final HttpExecutionStrategy singleClientStrategy) {
-            HttpExecutionStrategy requestStrategy = contextMap.get(HTTP_EXECUTION_STRATEGY_KEY);
-            HttpApiConversions.ClientAPI clientAPI = contextMap.get(HTTP_CLIENT_API_KEY);
-            HttpExecutionStrategy useStrategy = requestStrategy.hasOffloads() ?
-                    // multi-client offloads something
-                    defaultStrategy() == singleClientStrategy ?
-                        defaultStrategy() == requestStrategy ?
-                                // async streaming client with default strategy
-                                HttpApiConversions.ClientAPI.ASYNC_STREAMING.defaultStrategy() :
-                                // single client tried to "reset" strategy to default, use multi-client strategy
-                                requestStrategy :
-                        // non-default strategy client
-                        singleClientStrategy.hasOffloads() ?
-                                // merge single client strategy with request strategy
-                                singleClientStrategy.merge(defaultStrategy() == requestStrategy ?
-                                        clientAPI.defaultStrategy() : requestStrategy) :
-                                // single client tried to force no offloads, use multi-client strategy
-                                requestStrategy :
-                    // multi-client configured for no offloads
-                    singleClientStrategy.hasOffloads() ?
-                            // override in single client
-                            defaultStrategy() == singleClientStrategy ?
-                                    // use API default
-                                    clientAPI.defaultStrategy() :
-                                    // use as specified
-                                    singleClientStrategy :
-                            // single client does not override
-                            requestStrategy;
+            HttpExecutionStrategy requestStrategy =
+                    contextMap.getOrDefault(HTTP_EXECUTION_STRATEGY_KEY, defaultStrategy());
+            HttpExecutionStrategy useStrategy = defaultStrategy() == requestStrategy ?
+                    offloadAll() : defaultStrategy() == singleClientStrategy || !singleClientStrategy.hasOffloads() ?
+                            // single client is default or has no *additional* offloads
+                            requestStrategy :
+                            // add single client offloads to existing strategy
+                            requestStrategy.merge(singleClientStrategy);
+
             if (useStrategy != requestStrategy) {
                 contextMap.put(HTTP_EXECUTION_STRATEGY_KEY, useStrategy);
             }

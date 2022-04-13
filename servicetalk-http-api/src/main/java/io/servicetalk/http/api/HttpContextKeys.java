@@ -33,12 +33,6 @@ public final class HttpContextKeys {
     public static final Key<HttpExecutionStrategy> HTTP_EXECUTION_STRATEGY_KEY =
             newKey("HTTP_EXECUTION_STRATEGY_KEY", HttpExecutionStrategy.class);
 
-    /**
-     * Tracks the original API mode used for client API conversions
-     */
-    public static final Key<HttpApiConversions.ClientAPI> HTTP_CLIENT_API_KEY =
-            newKey("HTTP_CLIENT_API_KEY", HttpApiConversions.ClientAPI.class);
-
     private HttpContextKeys() {
         // No instances
     }

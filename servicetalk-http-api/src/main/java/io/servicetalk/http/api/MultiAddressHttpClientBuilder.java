@@ -84,12 +84,10 @@ public interface MultiAddressHttpClientBuilder<U, R> extends HttpClientBuilder<U
      *     client used and will be be merged with the computed execution strategy of the single address client produced
      *     by {@link SingleAddressHttpClientBuilder}.
      *
-     *     <dt>{@link HttpExecutionStrategies#offloadNone()}
-     *     (or deprecated {@link HttpExecutionStrategies#offloadNever()})
-     *     <dd>No offloading will be used regardless of the client API used or the computed execution strategy of the
-     *     contained single address client.
      *
-     *     <dt>A custom execution strategy ({@link HttpExecutionStrategies#customStrategyBuilder()}) or
+     *     <dt>{@link HttpExecutionStrategies#offloadNone()}
+     *     (or deprecated {@link HttpExecutionStrategies#offloadNever()}),
+     *     a custom execution strategy ({@link HttpExecutionStrategies#customStrategyBuilder()}), or
      *     {@link HttpExecutionStrategies#offloadAll()}
      *     <dd>Will be used, as specified, without regard to the API of the client used and will be merged with the
      *     computed execution strategy of the single address client produced by

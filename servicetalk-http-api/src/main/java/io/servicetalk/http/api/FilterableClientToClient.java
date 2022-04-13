@@ -25,7 +25,6 @@ import static io.servicetalk.http.api.HttpApiConversions.toClient;
 import static io.servicetalk.http.api.HttpApiConversions.toReservedBlockingConnection;
 import static io.servicetalk.http.api.HttpApiConversions.toReservedBlockingStreamingConnection;
 import static io.servicetalk.http.api.HttpApiConversions.toReservedConnection;
-import static io.servicetalk.http.api.HttpContextKeys.HTTP_CLIENT_API_KEY;
 import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
 
 final class FilterableClientToClient implements StreamingHttpClient {
@@ -60,10 +59,7 @@ final class FilterableClientToClient implements StreamingHttpClient {
     @Override
     public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
         return Single.defer(() -> {
-            if (null == request.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY,
-                    executionContext().executionStrategy())) {
-                request.context().put(HTTP_CLIENT_API_KEY, HttpApiConversions.ClientAPI.ASYNC_STREAMING);
-            }
+            request.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, executionContext().executionStrategy());
             return client.request(request).shareContextOnSubscribe();
         });
     }
@@ -71,10 +67,7 @@ final class FilterableClientToClient implements StreamingHttpClient {
     @Override
     public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpRequestMetaData metaData) {
         return Single.defer(() -> {
-            if (null == metaData.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY,
-                    executionContext().executionStrategy())) {
-                metaData.context().put(HTTP_CLIENT_API_KEY, HttpApiConversions.ClientAPI.ASYNC_STREAMING);
-            }
+            metaData.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, executionContext().executionStrategy());
 
             return client.reserveConnection(metaData).map(rc -> new ReservedStreamingHttpConnection() {
                 @Override
@@ -103,10 +96,8 @@ final class FilterableClientToClient implements StreamingHttpClient {
                     // created and hence could have an incorrect default strategy. Doing this makes sure we never call
                     // the method without strategy just as we do for the regular connection.
                     return Single.defer(() -> {
-                        if (null == request.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY,
-                                FilterableClientToClient.this.executionContext().executionStrategy())) {
-                            request.context().put(HTTP_CLIENT_API_KEY, HttpApiConversions.ClientAPI.ASYNC_STREAMING);
-                        }
+                        request.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY,
+                                FilterableClientToClient.this.executionContext().executionStrategy());
                         return rc.request(request).shareContextOnSubscribe();
                     });
                 }
