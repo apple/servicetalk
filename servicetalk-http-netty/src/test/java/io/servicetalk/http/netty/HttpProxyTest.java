@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021-2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
+import io.servicetalk.http.netty.HttpsProxyTest.TargetAddressCheckConnectionFactoryFilter;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 
@@ -30,6 +31,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
@@ -42,6 +44,7 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 
 class HttpProxyTest {
@@ -57,6 +60,7 @@ class HttpProxyTest {
     @Nullable
     private HostAndPort serverAddress;
     private final AtomicInteger proxyRequestCount = new AtomicInteger();
+    private final AtomicReference<Object> targetAddress = new AtomicReference<>();
 
     @BeforeEach
     void setup() throws Exception {
@@ -108,12 +112,14 @@ class HttpProxyTest {
 
         final BlockingHttpClient client = clientSource.clientBuilderFactory.apply(serverAddress)
                 .proxyAddress(proxyAddress)
+                .appendConnectionFactoryFilter(new TargetAddressCheckConnectionFactoryFilter(targetAddress, false))
                 .buildBlocking();
 
         final HttpResponse httpResponse = client.request(client.get("/path"));
         assertThat(httpResponse.status(), is(OK));
         assertThat(proxyRequestCount.get(), is(1));
         assertThat(httpResponse.payloadBody().toString(US_ASCII), is("host: " + serverAddress));
+        assertThat(targetAddress.get(), is(equalTo(serverAddress.toString())));
         safeClose(client);
     }
 
@@ -131,6 +137,7 @@ class HttpProxyTest {
                     return otherProxyClient.request(request);
                 });
              BlockingHttpClient otherClient = builder.proxyAddress(serverHostAndPort(otherProxyContext))
+                     .appendConnectionFactoryFilter(new TargetAddressCheckConnectionFactoryFilter(targetAddress, false))
                      .buildBlocking()) {
 
             final HttpResponse httpResponse = otherClient.request(client.get("/path"));
@@ -143,5 +150,6 @@ class HttpProxyTest {
         assertThat(httpResponse.status(), is(OK));
         assertThat(proxyRequestCount.get(), is(1));
         assertThat(httpResponse.payloadBody().toString(US_ASCII), is("host: " + serverAddress));
+        assertThat(targetAddress.get(), is(equalTo(serverAddress.toString())));
     }
 }

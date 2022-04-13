@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021-2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,12 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import static io.servicetalk.concurrent.api.Single.defer;
+import static io.servicetalk.http.api.HttpContextKeys.HTTP_TARGET_ADDRESS_BEHIND_PROXY;
+import static io.servicetalk.http.netty.ProxyConnectConnectionFactoryFilter.logUnexpectedAddress;
 import static io.servicetalk.http.utils.HttpRequestUriUtils.getEffectiveRequestUri;
 import static java.util.Objects.requireNonNull;
 
@@ -39,6 +44,9 @@ import static java.util.Objects.requireNonNull;
  */
 final class AbsoluteAddressHttpRequesterFilter implements StreamingHttpClientFilterFactory,
                                                           StreamingHttpConnectionFilterFactory {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbsoluteAddressHttpRequesterFilter.class);
+
     private final String scheme;
     private final String authority;
 
@@ -84,6 +92,7 @@ final class AbsoluteAddressHttpRequesterFilter implements StreamingHttpClientFil
     private Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                   final StreamingHttpRequest request) {
         return defer(() -> {
+            logUnexpectedAddress(request.context().put(HTTP_TARGET_ADDRESS_BEHIND_PROXY, authority), authority, LOGGER);
             final String effectiveRequestUri = getEffectiveRequestUri(request, scheme, authority, false);
             request.requestTarget(effectiveRequestUri);
             return delegate.request(request).shareContextOnSubscribe();
