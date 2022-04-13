@@ -78,6 +78,8 @@ protobuf {
   }
   generateProtoTasks {
     all().each { task ->
+      task.generateDescriptorSet = true
+      task.descriptorSetOptions.includeImports = true
       task.inputs
           .file(pluginJar)
           .withNormalizer(ClasspathNormalizer)
@@ -113,6 +115,7 @@ task testJavadoc(type: Javadoc) {
   dependsOn tasks.compileTestJava
 
   source = protobuf.generatedFilesBaseDir
+  exclude "**/*.desc"
   classpath = sourceSets.test.compileClasspath
   destinationDir = file("$buildDir/tmp/testjavadoc")
   options.addBooleanOption("Xdoclint:syntax", true)
@@ -122,3 +125,7 @@ task testJavadoc(type: Javadoc) {
 }
 
 test.finalizedBy(testJavadoc)
+
+test {
+  systemProperty 'generatedFilesBaseDir', protobuf.generatedFilesBaseDir
+}
