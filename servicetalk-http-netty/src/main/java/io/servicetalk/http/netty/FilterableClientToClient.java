@@ -13,11 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.api;
+package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.BlockingHttpClient;
+import io.servicetalk.http.api.BlockingStreamingHttpClient;
+import io.servicetalk.http.api.DelegatingHttpExecutionContext;
+import io.servicetalk.http.api.FilterableStreamingHttpClient;
+import io.servicetalk.http.api.HttpClient;
+import io.servicetalk.http.api.HttpConnectionContext;
+import io.servicetalk.http.api.HttpEventKey;
+import io.servicetalk.http.api.HttpExecutionContext;
+import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpRequestMetaData;
+import io.servicetalk.http.api.HttpRequestMethod;
+import io.servicetalk.http.api.ReservedBlockingHttpConnection;
+import io.servicetalk.http.api.ReservedBlockingStreamingHttpConnection;
+import io.servicetalk.http.api.ReservedHttpConnection;
+import io.servicetalk.http.api.ReservedStreamingHttpConnection;
+import io.servicetalk.http.api.StreamingHttpClient;
+import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.StreamingHttpResponseFactory;
 
 import static io.servicetalk.http.api.HttpApiConversions.toBlockingClient;
 import static io.servicetalk.http.api.HttpApiConversions.toBlockingStreamingClient;
@@ -29,7 +48,7 @@ import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KE
 
 final class FilterableClientToClient implements StreamingHttpClient {
     private final FilterableStreamingHttpClient client;
-    private final DelegatingHttpExecutionContext executionContext;
+    private final HttpExecutionContext executionContext;
 
     FilterableClientToClient(FilterableStreamingHttpClient filteredClient, HttpExecutionStrategy strategy) {
         client = filteredClient;

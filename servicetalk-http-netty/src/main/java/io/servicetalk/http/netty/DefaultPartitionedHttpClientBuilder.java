@@ -63,7 +63,6 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoffDeltaJitter;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.failed;
-import static io.servicetalk.http.api.HttpApiConversions.toStreamingClient;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.SD_RETRY_STRATEGY_INIT_DURATION;
 import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.SD_RETRY_STRATEGY_JITTER;
@@ -133,7 +132,7 @@ final class DefaultPartitionedHttpClientBuilder<U, R> implements PartitionedHttp
                         executionContext, partitionMapFactory);
 
         LOGGER.debug("Partitioned client created with base strategy {}", executionContext.executionStrategy());
-        return toStreamingClient(partitionedClient, executionContext.executionStrategy());
+        return new FilterableClientToClient(partitionedClient, executionContext.executionStrategy());
     }
 
     private static final class DefaultPartitionedStreamingHttpClientFilter<U, R> implements

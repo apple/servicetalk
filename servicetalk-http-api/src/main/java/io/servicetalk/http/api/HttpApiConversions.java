@@ -227,18 +227,6 @@ public final class HttpApiConversions {
     }
 
     /**
-     * Convert from {@link FilterableStreamingHttpClient} to {@link StreamingHttpClient}.
-     *
-     * @param client Original {@link FilterableClientToClient} to convert.
-     * @param strategy required strategy for the service when invoking the resulting {@link HttpClient}
-     * @return The conversion result.
-     */
-    public static StreamingHttpClient toStreamingClient(final FilterableStreamingHttpClient client,
-                                                        final HttpExecutionStrategy strategy) {
-        return new FilterableClientToClient(client, strategy);
-    }
-
-    /**
      * Convert from {@link StreamingHttpClient} to {@link BlockingHttpClient}.
      *
      * @param original {@link StreamingHttpClient} to convert.
