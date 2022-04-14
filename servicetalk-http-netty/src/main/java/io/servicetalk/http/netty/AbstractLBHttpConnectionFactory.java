@@ -23,6 +23,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpExecutionContext;
@@ -83,7 +84,8 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
 
                     @Override
                     public Single<FilterableStreamingHttpConnection> newConnection(
-                            final ResolvedAddress ra, @Nullable final TransportObserver observer) {
+                            final ResolvedAddress ra, @Nullable final ContextMap context,
+                            @Nullable final TransportObserver observer) {
                         Single<FilterableStreamingHttpConnection> connection =
                                 newFilterableConnection(ra, observer == null ? NoopTransportObserver.INSTANCE :
                                 asSafeObserver(observer));
@@ -114,8 +116,9 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
 
     @Override
     public final Single<LoadBalancedStreamingHttpConnection> newConnection(
-            final ResolvedAddress resolvedAddress, @Nullable final TransportObserver observer) {
-        return filterableConnectionFactory.newConnection(resolvedAddress, observer)
+            final ResolvedAddress resolvedAddress, @Nullable final ContextMap context,
+            @Nullable final TransportObserver observer) {
+        return filterableConnectionFactory.newConnection(resolvedAddress, context, observer)
                 .map(conn -> {
                     FilterableStreamingHttpConnection filteredConnection =
                             connectionFilterFunction != null ? connectionFilterFunction.create(conn) : conn;

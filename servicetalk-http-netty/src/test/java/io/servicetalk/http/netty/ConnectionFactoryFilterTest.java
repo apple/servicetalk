@@ -23,6 +23,7 @@ import io.servicetalk.concurrent.api.AsyncCloseables;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.DelegatingHttpConnectionContext;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
@@ -161,8 +162,9 @@ class ConnectionFactoryFilterTest {
                 new DelegatingConnectionFactory<InetSocketAddress, FilterableStreamingHttpConnection>(original) {
                     @Override
                     public Single<FilterableStreamingHttpConnection> newConnection(
-                            final InetSocketAddress inetSocketAddress, @Nullable final TransportObserver observer) {
-                        return delegate().newConnection(inetSocketAddress, observer).map(filter);
+                            final InetSocketAddress inetSocketAddress, @Nullable final ContextMap context,
+                            @Nullable final TransportObserver observer) {
+                        return delegate().newConnection(inetSocketAddress, context, observer).map(filter);
                     }
                 }, ExecutionStrategy.offloadNone());
     }

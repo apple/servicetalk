@@ -66,7 +66,7 @@ public class TcpClientChannelInitializer implements ChannelInitializer {
                     sslContext != null && !deferSslHandler, true));
         }
 
-        if (config.idleTimeoutMs() != null) {
+        if (config.idleTimeoutMs() > 0L) {
             delegate = delegate.andThen(new IdleTimeoutInitializer(config.idleTimeoutMs()));
         }
 

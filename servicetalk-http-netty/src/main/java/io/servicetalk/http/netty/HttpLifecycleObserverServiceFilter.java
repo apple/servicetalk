@@ -47,7 +47,7 @@ import io.servicetalk.http.utils.TimeoutHttpServiceFilter;
  * {@link HttpExceptionMapperServiceFilter} right after this filter to make sure all {@link Throwable}(s) are mapped
  * into an HTTP response.
  */
-public final class HttpLifecycleObserverServiceFilter extends AbstractLifecycleObserverHttpFilter implements
+public class HttpLifecycleObserverServiceFilter extends AbstractLifecycleObserverHttpFilter implements
             StreamingHttpServiceFilterFactory {
 
     /**
@@ -60,7 +60,7 @@ public final class HttpLifecycleObserverServiceFilter extends AbstractLifecycleO
     }
 
     @Override
-    public StreamingHttpServiceFilter create(final StreamingHttpService service) {
+    public final StreamingHttpServiceFilter create(final StreamingHttpService service) {
         return new StreamingHttpServiceFilter(service) {
             @Override
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,

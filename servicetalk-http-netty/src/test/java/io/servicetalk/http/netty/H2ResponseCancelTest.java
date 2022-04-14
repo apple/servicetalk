@@ -20,6 +20,7 @@ import io.servicetalk.client.api.DelegatingConnectionFactory;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.test.StepVerifiers;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.ReservedStreamingHttpConnection;
@@ -104,10 +105,10 @@ class H2ResponseCancelTest extends AbstractNettyHttpServerTest {
                         FilterableStreamingHttpConnection>(factory) {
                     @Override
                     public Single<FilterableStreamingHttpConnection> newConnection(InetSocketAddress inetSocketAddress,
-                              @Nullable TransportObserver observer) {
+                            @Nullable ContextMap context, @Nullable TransportObserver observer) {
                         return defer(() -> {
                             newConnectionsCounter.incrementAndGet();
-                            return delegate().newConnection(inetSocketAddress, observer);
+                            return delegate().newConnection(inetSocketAddress, context, observer);
                         });
                     }
                 }, ExecutionStrategy.offloadNone()));

@@ -38,7 +38,6 @@ import io.opentracing.propagation.TextMap;
 import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
-import static io.opentracing.Tracer.SpanBuilder;
 import static io.opentracing.tag.Tags.HTTP_METHOD;
 import static io.opentracing.tag.Tags.HTTP_URL;
 import static io.opentracing.tag.Tags.SPAN_KIND;
@@ -123,15 +122,13 @@ public class TracingHttpServiceFilter extends AbstractTracingHttpFilter implemen
     }
 
     private ScopeTracker newTracker(final StreamingHttpRequest request) {
-        SpanBuilder spanBuilder = tracer.buildSpan(getOperationName(componentName, request))
+        SpanContext parentSpanContext = extractor.apply(request.headers());
+        Span span = tracer.buildSpan(getOperationName(componentName, request))
+                .asChildOf(parentSpanContext)
                 .withTag(SPAN_KIND.getKey(), SPAN_KIND_SERVER)
                 .withTag(HTTP_METHOD.getKey(), request.method().name())
-                .withTag(HTTP_URL.getKey(), request.path());
-        SpanContext parentSpanContext = extractor.apply(request.headers());
-        if (parentSpanContext != null) {
-            spanBuilder = spanBuilder.asChildOf(parentSpanContext);
-        }
-        Span span = spanBuilder.start();
+                .withTag(HTTP_URL.getKey(), request.path())
+                .start();
         Scope scope = tracer.activateSpan(span);
         return new ServiceScopeTracker(scope, span, parentSpanContext);
     }

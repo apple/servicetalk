@@ -20,6 +20,7 @@ import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.ConnectAndHttpExecutionStrategy;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpClient;
@@ -81,9 +82,10 @@ class ConnectionFactoryOffloadingTest {
 
                                 @Override
                                 public Single<FilterableStreamingHttpConnection> newConnection(
-                                        final SocketAddress socketAddress, @Nullable final TransportObserver observer) {
+                                        final SocketAddress socketAddress, @Nullable final ContextMap context,
+                                        @Nullable final TransportObserver observer) {
                                     factoryThread.set(Thread.currentThread());
-                                    return original.newConnection(socketAddress, observer);
+                                    return original.newConnection(socketAddress, context, observer);
                                 }
 
                                 @Override

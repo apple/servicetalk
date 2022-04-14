@@ -24,6 +24,7 @@ import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ClientSslConfig;
 import io.servicetalk.transport.api.IoExecutor;
@@ -210,7 +211,7 @@ public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<
      * builder.
      * <p>
      * Filtering allows you to wrap a {@link ConnectionFactory} and modify behavior of
-     * {@link ConnectionFactory#newConnection(Object, TransportObserver)}.
+     * {@link ConnectionFactory#newConnection(Object, ContextMap, TransportObserver)}.
      * Some potential candidates for filtering include logging and metrics.
      * <p>
      * The order of execution of these filters are in order of append. If 3 filters are added as follows:

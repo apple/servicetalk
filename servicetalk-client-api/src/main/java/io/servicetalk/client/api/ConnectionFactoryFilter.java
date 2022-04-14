@@ -70,7 +70,8 @@ public interface ConnectionFactoryFilter<ResolvedAddress, C extends ListenableAs
      */
     default ConnectionFactoryFilter<ResolvedAddress, C> append(ConnectionFactoryFilter<ResolvedAddress, C> before) {
         requireNonNull(before);
-        return withStrategy(service -> create(before.create(service)),
+        return withStrategy(service -> create(before.create(
+                new DeprecatedToNewConnectionFactoryFilter<ResolvedAddress, C>().create(service))),
                 this.requiredOffloads().merge(before.requiredOffloads()));
     }
 

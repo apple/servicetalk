@@ -34,6 +34,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.concurrent.internal.ThrowableUtils;
+import io.servicetalk.context.api.ContextMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,6 +72,7 @@ import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
 import static java.lang.Integer.toHexString;
+import static java.lang.Math.min;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
@@ -103,7 +105,7 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
      * exhausting the full search space without sacrificing too much latency caused by the cost of a CAS operation per
      * selection attempt.
      */
-    private static final int MIN_SEARCH_SPACE = 64;
+    private static final int MIN_RANDOM_SEARCH_SPACE = 64;
 
     /**
      * For larger search spaces, due to the cost of a CAS operation per selection attempt we see diminishing returns for
@@ -113,7 +115,7 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
      * The current heuristics were chosen based on a set of benchmarks under various circumstances, low connection
      * counts, larger connection counts, low connection churn, high connection churn.
      */
-    private static final float SEARCH_FACTOR = 0.75f;
+    private static final float RANDOM_SEARCH_FACTOR = 0.75f;
 
     @SuppressWarnings("unused")
     private volatile int index;
@@ -123,6 +125,7 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
     private final Publisher<Object> eventStream;
     private final SequentialCancellable discoveryCancellable = new SequentialCancellable();
     private final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory;
+    private final int linearSearchSpace;
     private final ListenableAsyncCloseable asyncCloseable;
 
     /**
@@ -141,11 +144,13 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
             final String targetResourceName,
             final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
             final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory,
+            final int linearSearchSpace,
             @Nullable final HealthCheckConfig healthCheckConfig) {
         this.targetResource = requireNonNull(targetResourceName) + " (instance @" + toHexString(hashCode()) + ')';
         Processor<Object, Object> eventStreamProcessor = newPublisherProcessorDropHeadOnOverflow(32);
         this.eventStream = fromSource(eventStreamProcessor);
         this.connectionFactory = requireNonNull(connectionFactory);
+        this.linearSearchSpace = linearSearchSpace;
 
         toSource(eventPublisher).subscribe(
                 new Subscriber<Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>>() {
@@ -319,8 +324,8 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
     }
 
     @Override
-    public Single<C> selectConnection(Predicate<C> selector) {
-        return defer(() -> selectConnection0(selector).shareContextOnSubscribe());
+    public Single<C> selectConnection(final Predicate<C> selector, @Nullable final ContextMap context) {
+        return defer(() -> selectConnection0(selector, context).shareContextOnSubscribe());
     }
 
     @Override
@@ -336,7 +341,7 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
                 '}';
     }
 
-    private Single<C> selectConnection0(Predicate<C> selector) {
+    private Single<C> selectConnection0(final Predicate<C> selector, @Nullable final ContextMap context) {
         final List<Host<ResolvedAddress, C>> usedHosts = this.usedHosts;
         if (usedHosts.isEmpty()) {
             return usedHosts == CLOSED_LIST ? failedLBClosed(targetResource) :
@@ -352,21 +357,34 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
         Host<ResolvedAddress, C> pickedHost = null;
         for (int i = 0; i < usedHosts.size(); ++i) {
             // for a particular iteration we maintain a local cursor without contention with other requests
-            int localCursor = (cursor + i) % usedHosts.size();
+            final int localCursor = (cursor + i) % usedHosts.size();
             final Host<ResolvedAddress, C> host = usedHosts.get(localCursor);
             assert host != null : "Host can't be null.";
 
             // Try first to see if an existing connection can be used
             final Object[] connections = host.connState.connections;
-            // With small enough search space, attempt all connections.
-            // Back off after exploring most of the search space, it gives diminishing returns.
-            final int attempts = connections.length < MIN_SEARCH_SPACE ?
-                    connections.length : (int) (connections.length * SEARCH_FACTOR);
-            for (int j = 0; j < attempts; ++j) {
+            // Exhaust the linear search space first:
+            final int linearAttempts = min(connections.length, linearSearchSpace);
+            for (int j = 0; j < linearAttempts; ++j) {
                 @SuppressWarnings("unchecked")
-                final C connection = (C) connections[rnd.nextInt(connections.length)];
+                final C connection = (C) connections[j];
                 if (selector.test(connection)) {
                     return succeeded(connection);
+                }
+            }
+            // Try other connections randomly:
+            if (connections.length > linearAttempts) {
+                final int diff = connections.length - linearAttempts;
+                // With small enough search space, attempt number of times equal to number of remaining connections.
+                // Back off after exploring most of the search space, it gives diminishing returns.
+                final int randomAttempts = diff < MIN_RANDOM_SEARCH_SPACE ? diff :
+                        (int) (diff * RANDOM_SEARCH_FACTOR);
+                for (int j = 0; j < randomAttempts; ++j) {
+                    @SuppressWarnings("unchecked")
+                    final C connection = (C) connections[rnd.nextInt(linearAttempts, connections.length)];
+                    if (selector.test(connection)) {
+                        return succeeded(connection);
+                    }
                 }
             }
 
@@ -387,7 +405,7 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
 
         // This LB implementation does not automatically provide TransportObserver. Therefore, we pass "null" here.
         // Users can apply a ConnectionFactoryFilter if they need to override this "null" value with TransportObserver.
-        Single<? extends C> establishConnection = connectionFactory.newConnection(host.address, null);
+        Single<? extends C> establishConnection = connectionFactory.newConnection(host.address, context, null);
         if (host.healthCheckConfig != null) {
                 // Schedule health check before returning
                 establishConnection = establishConnection.beforeOnError(t -> host.markUnhealthy(t, connectionFactory));
@@ -561,8 +579,8 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
                     final ActiveState nextState = previousState.forNextFailedConnection();
                     if (connStateUpdater.compareAndSet(this, previous,
                             new ConnState(previous.connections, nextState))) {
-                        LOGGER.debug("Load balancer for {}: failed to open a new connection to the host on address {}" +
-                                        " {} time(s) ({} consecutive failures will trigger health check).",
+                        LOGGER.info("Load balancer for {}: failed to open a new connection to the host on address {}" +
+                                        " {} time(s) ({} consecutive failures will trigger health-checking).",
                                 targetResource, address, nextState.failedConnections,
                                 healthCheckConfig.failedThreshold, cause);
                         break;
@@ -571,11 +589,12 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
                     continue;
                 }
 
-                final HealthCheck<Addr, C> healthCheck = new HealthCheck<>(connectionFactory, this);
+                final HealthCheck<Addr, C> healthCheck = new HealthCheck<>(connectionFactory, this, cause);
                 final ConnState nextState = new ConnState(previous.connections, healthCheck);
                 if (connStateUpdater.compareAndSet(this, previous, nextState)) {
-                    LOGGER.debug("Load balancer for {}: failed to open a new connection to the host on address {}" +
-                                    " {} time(s). Threshold reached, triggering health check for this host.",
+                    LOGGER.warn("Load balancer for {}: failed to open a new connection to the host on address {} " +
+                                    "{} time(s) in a row. Error counting threshold reached, marking this host as " +
+                                    "UNHEALTHY for the selection algorithm and triggering background health-checking.",
                             targetResource, address, healthCheckConfig.failedThreshold, cause);
                     healthCheck.schedule(cause);
                     break;
@@ -740,11 +759,13 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
                 extends DelayedCancellable {
             private final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory;
             private final Host<ResolvedAddress, C> host;
+            private final Throwable lastError;
 
             private HealthCheck(final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory,
-                                final Host<ResolvedAddress, C> host) {
+                                final Host<ResolvedAddress, C> host, final Throwable lastError) {
                 this.connectionFactory = connectionFactory;
                 this.host = host;
+                this.lastError = lastError;
             }
 
             public void schedule(final Throwable originalCause) {
@@ -756,7 +777,7 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
                                 host.healthCheckConfig.healthCheckInterval,
                                 host.healthCheckConfig.executor)
                                 .apply(0, originalCause)
-                                .concat(connectionFactory.newConnection(host.address, null)
+                                .concat(connectionFactory.newConnection(host.address, null, null)
                                         // There is no risk for StackOverflowError because result of each connection
                                         // attempt will be invoked on IoExecutor as a new task.
                                         .retryWhen(retryWithConstantBackoffFullJitter(
@@ -770,12 +791,13 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
                                 .flatMapCompletable(newCnx -> {
                                     if (host.addConnection(newCnx)) {
                                         host.markHealthy(this);
-                                        LOGGER.debug("Load balancer for {}: health check passed for {}.",
+                                        LOGGER.info("Load balancer for {}: health check passed for {}, marking this " +
+                                                        "host as ACTIVE for the selection algorithm.",
                                                 host.targetResource, host);
                                         return completed();
                                     } else {
                                         // This happens only if the host is closed, no need to mark as healthy.
-                                        LOGGER.debug("Load balancer for {}: health check finished for {}, but the " +
+                                        LOGGER.debug("Load balancer for {}: health check passed for {}, but the " +
                                                         "host rejected a new connection {}. Closing it now.",
                                                 host.targetResource, host, newCnx);
                                         return newCnx.closeAsync();
@@ -795,7 +817,7 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
 
             @Override
             public String toString() {
-                return "UNHEALTHY";
+                return "UNHEALTHY(" + lastError + ')';
             }
         }
 

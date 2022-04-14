@@ -85,16 +85,16 @@ class HttpClientBuilderTest extends AbstractEchoServerBasedHttpRequesterTest {
         makeRequestValidateResponseAndClose(requester);
 
         InOrder verifier = inOrder(factory1, factory2);
-        verifier.verify(factory1).newConnection(any(), any());
-        verifier.verify(factory2).newConnection(any(), any());
+        verifier.verify(factory1).newConnection(any(), any(), any());
+        verifier.verify(factory2).newConnection(any(), any(), any());
     }
 
     private static ConnectionFactoryFilter<InetSocketAddress, FilterableStreamingHttpConnection> factoryFilter(
             final ConnectionFactory<InetSocketAddress, FilterableStreamingHttpConnection> factory) {
         return ConnectionFactoryFilter.withStrategy(orig -> {
-            when(factory.newConnection(any(), any()))
+            when(factory.newConnection(any(), any(), any()))
                     .thenAnswer(invocation -> orig.newConnection(invocation.getArgument(0),
-                            invocation.getArgument(1)));
+                            invocation.getArgument(1), invocation.getArgument(2)));
             return factory;
         }, HttpExecutionStrategies.offloadNone());
     }

@@ -103,7 +103,7 @@ final class TcpConnectorTest extends AbstractTcpServerTest {
                 serverContext.listenAddress(), new TcpClientConfig().asReadOnly(), false,
                 CLIENT_CTX, (channel, connectionObserver) -> DefaultNettyConnection.initChannel(channel,
                         CLIENT_CTX.bufferAllocator(), CLIENT_CTX.executor(), CLIENT_CTX.ioExecutor(), closeHandler,
-                        defaultFlushStrategy(), null, null, channel2 ->
+                        defaultFlushStrategy(), 0L, null, channel2 ->
                                 channel2.pipeline().addLast(new ChannelInboundHandlerAdapter() {
                             @Override
                             public void channelRegistered(ChannelHandlerContext ctx) {

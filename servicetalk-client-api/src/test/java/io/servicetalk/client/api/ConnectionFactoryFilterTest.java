@@ -18,6 +18,7 @@ package io.servicetalk.client.api;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.transport.api.TransportObserver;
 
 import org.junit.jupiter.api.Test;
@@ -61,9 +62,10 @@ class ConnectionFactoryFilterTest {
 
             @Override
             public Single<ListenableAsyncCloseable> newConnection(final InetSocketAddress unused,
+                                                                  @Nullable final ContextMap context,
                                                                   @Nullable final TransportObserver observer) {
                 connectOrder.add(order);
-                return original.newConnection(unused, observer);
+                return original.newConnection(unused, context, observer);
             }
 
             @Override
@@ -101,6 +103,7 @@ class ConnectionFactoryFilterTest {
                 new ConnectionFactory<InetSocketAddress, ListenableAsyncCloseable>() {
             @Override
             public Single<ListenableAsyncCloseable> newConnection(final InetSocketAddress unused,
+                                                                  @Nullable final ContextMap context,
                                                                   @Nullable final TransportObserver observer) {
                 return Single.succeeded(DUMMY_CLOSABLE);
             }
@@ -118,8 +121,8 @@ class ConnectionFactoryFilterTest {
 
         ConnectionFactory<InetSocketAddress, ListenableAsyncCloseable> factory = combined.create(root);
 
-        ListenableAsyncCloseable connection = factory.newConnection(mock(InetSocketAddress.class),
-                                                            null).toFuture().get();
+        ListenableAsyncCloseable connection = factory.newConnection(mock(InetSocketAddress.class), null, null)
+                .toFuture().get();
 
         assertThat(connection, is(sameInstance(DUMMY_CLOSABLE)));
         assertThat(createOrder, is(hasSize(2)));

@@ -26,6 +26,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
@@ -234,10 +235,10 @@ class RetryingHttpRequesterFilterTest {
         }
 
         @Override
-        public Single<C> selectConnection(final Predicate<C> selector) {
+        public Single<C> selectConnection(final Predicate<C> selector, @Nullable ContextMap context) {
             return defer(() -> {
                 lbSelectInvoked.incrementAndGet();
-                return delegate.selectConnection(selector);
+                return delegate.selectConnection(selector, context);
             });
         }
 
@@ -271,8 +272,9 @@ class RetryingHttpRequesterFilterTest {
 
         @Override
         public Single<FilterableStreamingHttpConnection> newConnection(final InetSocketAddress inetSocketAddress,
+                                                                       @Nullable final ContextMap context,
                                                                        @Nullable final TransportObserver observer) {
-            return delegate().newConnection(inetSocketAddress, observer)
+            return delegate().newConnection(inetSocketAddress, context, observer)
                     .flatMap(c -> c.closeAsync().concat(succeeded(c)));
         }
     }
