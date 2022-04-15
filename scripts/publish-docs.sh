@@ -52,9 +52,9 @@ function clean_up_gh_pages() {
   rm -rf gh-pages
 }
 
-# Enforce JDK11 to keep javadoc format consistent for all versions:
+# Enforce JDK17 to get latest LTS javadoc format/features (search, etc.):
 java_version=$(./gradlew --no-daemon -version | grep ^JVM: | awk -F\. '{gsub(/^JVM:[ \t]*/,"",$1); print $1"."$2}')
-if [ "$java_version" != "11.0" ]; then
+if [ "$java_version" != "17.0" ]; then
   echo "Docs can be published only using Java 11, current version: $java_version"
   exit 1
 fi
