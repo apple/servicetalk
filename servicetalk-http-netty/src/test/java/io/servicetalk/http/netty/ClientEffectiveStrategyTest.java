@@ -73,6 +73,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -269,6 +270,8 @@ class ClientEffectiveStrategyTest {
                 throw new AssertionError("Unexpected clientType");
         }
 
+        TimeUnit.MILLISECONDS.sleep(150);
+
         // Exercise the client
         for (final ClientApi clientApi : ClientApi.values()) {
             try (StreamingHttpClient client = Objects.requireNonNull(clientBuilder.get())) {
@@ -326,20 +329,18 @@ class ClientEffectiveStrategyTest {
 
         switch (builderType) {
            case SINGLE_BUILDER:
-                return null == merged || defaultStrategy() == merged ? clientApi.strategy() : merged;
+                return defaultStrategy() == merged ? clientApi.strategy() : merged;
             case MULTI_BUILDER:
-                if (null == builder || defaultStrategy() == builder) {
-                    return null == merged || defaultStrategy() == merged ?
-                            clientApi.strategy() : clientApi.strategy().merge(merged);
-                }
-                return merged;
+                return null == builder || defaultStrategy() == builder ?
+                    defaultStrategy() == merged ? clientApi.strategy() : clientApi.strategy().merge(merged) :
+                    merged;
             case MULTI_DEFAULT_SINGLE_BUILDER:
                     if (defaultStrategy() == merged || (null != builder && !builder.hasOffloads())) {
                         merged = offloadNone();
                     }
                     return clientApi.strategy().merge(merged);
             case MULTI_NONE_SINGLE_BUILDER:
-                return null == merged || defaultStrategy() == merged ? offloadNone() : merged;
+                return defaultStrategy() == merged ? offloadNone() : merged;
             default:
                 throw new AssertionError("Unexpected builder type: " + builderType);
         }
