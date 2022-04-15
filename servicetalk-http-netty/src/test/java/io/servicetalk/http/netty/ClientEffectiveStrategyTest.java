@@ -271,7 +271,7 @@ class ClientEffectiveStrategyTest {
 
         // Exercise the client
         for (final ClientApi clientApi : ClientApi.values()) {
-            try (StreamingHttpClient client = Objects.requireNonNull(clientBuilder.get())) {
+            try (final StreamingHttpClient client = Objects.requireNonNull(clientBuilder.get())) {
                 HttpExecutionStrategy effectiveStrategy = computeClientExecutionStrategy(
                         builderType, builderStrategy, filterStrategy, lbStrategy, cfStrategy, clientApi);
 
@@ -330,7 +330,7 @@ class ClientEffectiveStrategyTest {
             case MULTI_BUILDER:
                 if (null == builder || defaultStrategy() == builder) {
                     return null == merged || defaultStrategy() == merged ?
-                            offloadNone() : clientApi.strategy().merge(merged);
+                            clientApi.strategy() : clientApi.strategy().merge(merged);
                 }
                 return merged;
             case MULTI_DEFAULT_SINGLE_BUILDER:
