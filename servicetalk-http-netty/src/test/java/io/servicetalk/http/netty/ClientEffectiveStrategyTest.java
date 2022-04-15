@@ -271,7 +271,7 @@ class ClientEffectiveStrategyTest {
 
         // Exercise the client
         for (final ClientApi clientApi : ClientApi.values()) {
-            try (final StreamingHttpClient client = Objects.requireNonNull(clientBuilder.get())) {
+            try (StreamingHttpClient client = Objects.requireNonNull(clientBuilder.get())) {
                 HttpExecutionStrategy effectiveStrategy = computeClientExecutionStrategy(
                         builderType, builderStrategy, filterStrategy, lbStrategy, cfStrategy, clientApi);
 
