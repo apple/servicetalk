@@ -329,10 +329,8 @@ class ClientEffectiveStrategyTest {
                 return null == merged || defaultStrategy() == merged ? clientApi.strategy() : merged;
             case MULTI_BUILDER:
                 if (null == builder || defaultStrategy() == builder) {
-                    if (defaultStrategy() == merged) {
-                        merged = offloadNone();
-                    }
-                    return clientApi.strategy().merge(merged);
+                    return null == merged || defaultStrategy() == merged ?
+                            offloadNone() : clientApi.strategy().merge(merged);
                 }
                 return merged;
             case MULTI_DEFAULT_SINGLE_BUILDER:
