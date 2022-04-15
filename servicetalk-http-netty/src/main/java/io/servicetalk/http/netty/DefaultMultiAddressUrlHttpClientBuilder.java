@@ -24,7 +24,6 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
-import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.FilterableReservedStreamingHttpConnection;
@@ -258,40 +257,42 @@ final class DefaultMultiAddressUrlHttpClientBuilder
 
             StreamingHttpClient singleClient = builder.buildStreaming();
 
-            wrapper.clientStrategy = singleClient.executionContext().executionStrategy();
+            wrapper.singleStrategy = singleClient.executionContext().executionStrategy();
             return singleClient;
         }
     }
 
     private static final class MultiAddressStrategyWrapper implements StreamingHttpClientFilterFactory {
 
-        HttpExecutionStrategy clientStrategy = defaultStrategy();
+        /**
+         * The strategy used by the single client. Any requests made during the `buildStreaming` will have to use the
+         * default strategy.
+         */
+        HttpExecutionStrategy singleStrategy = defaultStrategy();
+
         @Override
         public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {
             return new StreamingHttpClientFilter(client) {
                 @Override
                 protected Single<StreamingHttpResponse> request(
                         final StreamingHttpRequester delegate, final StreamingHttpRequest request) {
-                    applyMultiAddressStrategy(request.context(), clientStrategy);
-                    return super.request(delegate, request);
-                }
+                    return defer(() -> {
+                        HttpExecutionStrategy requestStrategy =
+                                request.context().getOrDefault(HTTP_EXECUTION_STRATEGY_KEY, defaultStrategy());
+                        HttpExecutionStrategy useStrategy =
+                                null == requestStrategy || defaultStrategy() == requestStrategy ?
+                                        offloadAll() :
+                                        defaultStrategy() == singleStrategy || !singleStrategy.hasOffloads() ?
+                                                // single client is default or has no *additional* offloads
+                                                requestStrategy :
+                                                // add single client offloads to existing strategy
+                                                requestStrategy.merge(singleStrategy);
 
-                private HttpExecutionStrategy applyMultiAddressStrategy(
-                        final ContextMap contextMap, final HttpExecutionStrategy singleClientStrategy) {
-                    HttpExecutionStrategy requestStrategy =
-                            contextMap.getOrDefault(HTTP_EXECUTION_STRATEGY_KEY, defaultStrategy());
-                    HttpExecutionStrategy useStrategy = defaultStrategy() == requestStrategy ?
-                            offloadAll() :
-                            defaultStrategy() == singleClientStrategy || !singleClientStrategy.hasOffloads() ?
-                                    // single client is default or has no *additional* offloads
-                                    requestStrategy :
-                                    // add single client offloads to existing strategy
-                                    requestStrategy.merge(singleClientStrategy);
-
-                    if (useStrategy != requestStrategy) {
-                        contextMap.put(HTTP_EXECUTION_STRATEGY_KEY, useStrategy);
-                    }
-                    return useStrategy;
+                        if (useStrategy != requestStrategy) {
+                            request.context().put(HTTP_EXECUTION_STRATEGY_KEY, useStrategy);
+                        }
+                        return delegate.request(request);
+                    });
                 }
             };
         }
