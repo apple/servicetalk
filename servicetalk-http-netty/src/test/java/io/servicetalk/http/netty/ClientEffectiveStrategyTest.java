@@ -326,68 +326,22 @@ class ClientEffectiveStrategyTest {
 
         switch (builderType) {
            case SINGLE_BUILDER:
-                if (defaultStrategy() == merged) {
-                    switch (clientApi) {
-                        case BLOCKING_AGGREGATE:
-                            return offloadNone();
-                        case BLOCKING_STREAMING:
-                            return HttpExecutionStrategies.customStrategyBuilder().offloadSend().build();
-                        case ASYNC_AGGREGATE:
-                            return HttpExecutionStrategies.customStrategyBuilder().offloadReceiveData().build();
-                        case ASYNC_STREAMING:
-                            return HttpExecutionStrategies.customStrategyBuilder()
-                                    .offloadSend().offloadReceiveMetadata().offloadReceiveData().build();
-                        default:
-                            throw new AssertionError("Unexpected client api: " + clientApi);
-                    }
-                } else {
-                    return merged;
-                }
+                return null == merged || defaultStrategy() == merged ? clientApi.strategy() : merged;
             case MULTI_BUILDER:
                 if (null == builder || defaultStrategy() == builder) {
                     if (defaultStrategy() == merged) {
                         merged = offloadNone();
                     }
-                    switch (clientApi) {
-                        case BLOCKING_AGGREGATE:
-                            return merged;
-                        case BLOCKING_STREAMING:
-                            return HttpExecutionStrategies.customStrategyBuilder().offloadSend().build().merge(merged);
-                        case ASYNC_AGGREGATE:
-                            return HttpExecutionStrategies.customStrategyBuilder()
-                                    .offloadReceiveData().build().merge(merged);
-                        case ASYNC_STREAMING:
-                            return HttpExecutionStrategies.customStrategyBuilder()
-                                    .offloadSend().offloadReceiveMetadata().offloadReceiveData().build().merge(merged);
-                        default:
-                            throw new AssertionError("Unexpected client api: " + clientApi);
-                    }
+                    return clientApi.strategy().merge(merged);
                 }
                 return merged;
             case MULTI_DEFAULT_SINGLE_BUILDER:
                     if (defaultStrategy() == merged || (null != builder && !builder.hasOffloads())) {
                         merged = offloadNone();
                     }
-                    switch (clientApi) {
-                        case BLOCKING_AGGREGATE:
-                            return merged;
-                        case BLOCKING_STREAMING:
-                            return HttpExecutionStrategies.customStrategyBuilder().offloadSend().build().merge(merged);
-                        case ASYNC_AGGREGATE:
-                            return HttpExecutionStrategies.customStrategyBuilder()
-                                    .offloadReceiveData().build().merge(merged);
-                        case ASYNC_STREAMING:
-                            return HttpExecutionStrategies.customStrategyBuilder()
-                                    .offloadSend().offloadReceiveMetadata().offloadReceiveData().build().merge(merged);
-                        default:
-                            throw new AssertionError("Unexpected client api: " + clientApi);
-                    }
+                    return clientApi.strategy().merge(merged);
             case MULTI_NONE_SINGLE_BUILDER:
-                if (null == merged || defaultStrategy() == merged) {
-                    return offloadNone();
-                } else {
-                    return merged;
-                }
+                return null == merged || defaultStrategy() == merged ? offloadNone() : merged;
             default:
                 throw new AssertionError("Unexpected builder type: " + builderType);
         }
@@ -447,17 +401,15 @@ class ClientEffectiveStrategyTest {
 
     private static final class ClientInvokingThreadRecorder implements StreamingHttpClientFilterFactory {
 
-        private EnumSet<ClientOffloadPoint> offloadPoints;
+        private final EnumSet<ClientOffloadPoint> offloadPoints = EnumSet.noneOf(ClientOffloadPoint.class);
         private final ConcurrentMap<ClientOffloadPoint, String> invokingThreads = new ConcurrentHashMap<>();
         private final Queue<Throwable> errors = new LinkedBlockingQueue<>();
 
         void reset(ClientApi clientApi, HttpExecutionStrategy streamingAsyncStrategy) {
             invokingThreads.clear();
             errors.clear();
-            if (!streamingAsyncStrategy.hasOffloads()) {
-                offloadPoints = EnumSet.noneOf(ClientOffloadPoint.class);
-            } else if (defaultStrategy() != streamingAsyncStrategy) {
-                offloadPoints = EnumSet.noneOf(ClientOffloadPoint.class);
+            offloadPoints.clear();
+            if (defaultStrategy() != streamingAsyncStrategy) {
                 // adjust expected offloads for specific execution strategy
                 if (streamingAsyncStrategy.isSendOffloaded()) {
                     offloadPoints.add(Send);
@@ -470,22 +422,7 @@ class ClientEffectiveStrategyTest {
                 }
             } else {
                 // apply default offloads per client api
-                switch (clientApi) {
-                    case BLOCKING_AGGREGATE:
-                        offloadPoints = EnumSet.noneOf(ClientOffloadPoint.class);
-                        break;
-                    case BLOCKING_STREAMING:
-                        offloadPoints = EnumSet.of(Send);
-                        break;
-                    case ASYNC_AGGREGATE:
-                        offloadPoints = EnumSet.of(ReceiveData);
-                        break;
-                    case ASYNC_STREAMING:
-                        offloadPoints = EnumSet.allOf(ClientOffloadPoint.class);
-                        break;
-                    default:
-                        throw new AssertionError("unexpected case " + clientApi);
-                }
+                offloadPoints.addAll(clientApi.offloads());
             }
         }
 
@@ -559,10 +496,39 @@ class ClientEffectiveStrategyTest {
      * Which API flavor will be used.
      */
     private enum ClientApi {
-        BLOCKING_AGGREGATE,
-        BLOCKING_STREAMING,
-        ASYNC_AGGREGATE,
-        ASYNC_STREAMING
+        BLOCKING_AGGREGATE(EnumSet.noneOf(ClientOffloadPoint.class)),
+        BLOCKING_STREAMING(EnumSet.of(Send)),
+        ASYNC_AGGREGATE(EnumSet.of(ReceiveData)),
+        ASYNC_STREAMING(EnumSet.allOf(ClientOffloadPoint.class));
+
+        private final EnumSet<ClientOffloadPoint> offloads;
+        private final HttpExecutionStrategy strategy;
+
+        ClientApi(EnumSet<ClientOffloadPoint> offloads) {
+            this.offloads = offloads;
+
+            HttpExecutionStrategies.Builder builder = HttpExecutionStrategies.customStrategyBuilder();
+
+            if (offloads.contains(Send)) {
+                builder.offloadSend();
+            }
+            if (offloads.contains(ReceiveMeta)) {
+                builder.offloadReceiveMetadata();
+            }
+            if (offloads.contains(ReceiveData)) {
+                builder.offloadReceiveData();
+            }
+
+            this.strategy = builder.build();
+        }
+
+        public EnumSet<ClientOffloadPoint> offloads() {
+            return offloads;
+        }
+
+        public HttpExecutionStrategy strategy() {
+            return strategy;
+        }
     }
 
     /**
