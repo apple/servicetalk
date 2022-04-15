@@ -30,6 +30,7 @@ import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
+import io.servicetalk.http.api.DelegatingHttpExecutionContext;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionContext;
@@ -208,7 +209,15 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
 
     private static <U, R> StreamingHttpClient buildStreaming(final HttpClientBuildContext<U, R> ctx) {
         final ReadOnlyHttpClientConfig roConfig = ctx.httpConfig().asReadOnly();
-        final HttpExecutionContext executionContext = ctx.builder.executionContextBuilder.build();
+        final HttpExecutionContext builderExecutionContext = ctx.builder.executionContextBuilder.build();
+        final HttpExecutionStrategy computedStrategy =
+                ctx.builder.strategyComputation.buildForClient(builderExecutionContext.executionStrategy());
+        final HttpExecutionContext executionContext = new DelegatingHttpExecutionContext(builderExecutionContext) {
+            @Override
+            public HttpExecutionStrategy executionStrategy() {
+                return computedStrategy;
+            }
+        };
         if (roConfig.h2Config() != null && roConfig.hasProxy()) {
             throw new IllegalStateException("Proxying is not yet supported with HTTP/2");
         }
@@ -233,7 +242,6 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                 connectionFactoryStrategy = connectionFactoryStrategy.merge(proxy.requiredOffloads());
             }
 
-            final HttpExecutionStrategy executionStrategy = executionContext.executionStrategy();
             // closed by the LoadBalancer
             final ConnectionFactory<R, LoadBalancedStreamingHttpConnection> connectionFactory;
             final StreamingHttpRequestResponseFactory reqRespFactory = defaultReqRespFactory(roConfig,
@@ -290,9 +298,9 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                 currClientFilterFactory = appendFilter(currClientFilterFactory,
                         ctx.builder.retryingHttpRequesterFilter);
             }
-            HttpExecutionStrategy computedStrategy = ctx.builder.strategyComputation.buildForClient(executionStrategy);
+
             LOGGER.debug("Client for {} created with base strategy {} → computed strategy {}",
-                    targetAddress(ctx), executionStrategy, computedStrategy);
+                    targetAddress(ctx), builderExecutionContext.executionStrategy(), computedStrategy);
             return new FilterableClientToClient(currClientFilterFactory != null ?
                     currClientFilterFactory.create(lbClient, lb.eventStream(), ctx.sdStatus) :
                         lbClient, computedStrategy);

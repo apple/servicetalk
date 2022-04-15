@@ -93,6 +93,8 @@ final class DefaultMultiAddressUrlHttpClientBuilder
 
     private static final String HTTPS_SCHEME = HTTPS.toString();
 
+    private static final MultiAddressStrategyWrapper MULTI_ADDRESS_STRATEGY_WRAPPER = new MultiAddressStrategyWrapper();
+
     private final Function<HostAndPort, SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>> builderFactory;
     private final HttpExecutionContextBuilder executionContextBuilder = new HttpExecutionContextBuilder();
 
@@ -248,8 +250,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
                 builder.sslConfig(DEFAULT_CLIENT_SSL_CONFIG);
             }
 
-            MultiAddressStrategyWrapper wrapper = new MultiAddressStrategyWrapper();
-            builder.appendClientFilter(wrapper);
+            builder.appendClientFilter(MULTI_ADDRESS_STRATEGY_WRAPPER);
 
             if (singleAddressInitializer != null) {
                 singleAddressInitializer.initialize(urlKey.scheme, urlKey.hostAndPort, builder);
@@ -257,18 +258,11 @@ final class DefaultMultiAddressUrlHttpClientBuilder
 
             StreamingHttpClient singleClient = builder.buildStreaming();
 
-            wrapper.singleStrategy = singleClient.executionContext().executionStrategy();
             return singleClient;
         }
     }
 
     private static final class MultiAddressStrategyWrapper implements StreamingHttpClientFilterFactory {
-
-        /**
-         * The strategy used by the single client. Any requests made during the `buildStreaming` will have to use the
-         * default strategy.
-         */
-        HttpExecutionStrategy singleStrategy = defaultStrategy();
 
         @Override
         public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {
@@ -277,6 +271,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
                 protected Single<StreamingHttpResponse> request(
                         final StreamingHttpRequester delegate, final StreamingHttpRequest request) {
                     return defer(() -> {
+                        HttpExecutionStrategy singleStrategy = client.executionContext().executionStrategy();
                         HttpExecutionStrategy requestStrategy =
                                 request.context().getOrDefault(HTTP_EXECUTION_STRATEGY_KEY, defaultStrategy());
                         HttpExecutionStrategy useStrategy =

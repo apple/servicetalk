@@ -73,7 +73,6 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -270,15 +269,13 @@ class ClientEffectiveStrategyTest {
                 throw new AssertionError("Unexpected clientType");
         }
 
-        TimeUnit.MILLISECONDS.sleep(150);
-
         // Exercise the client
         for (final ClientApi clientApi : ClientApi.values()) {
             try (StreamingHttpClient client = Objects.requireNonNull(clientBuilder.get())) {
                 HttpExecutionStrategy effectiveStrategy = computeClientExecutionStrategy(
                         builderType, builderStrategy, filterStrategy, lbStrategy, cfStrategy, clientApi);
 
-                invokingThreadsRecorder.reset(clientApi, effectiveStrategy);
+                invokingThreadsRecorder.reset(effectiveStrategy);
                 String responseBody = getResponse(clientApi, client, HttpRequestMethod.GET, requestTarget);
                 assertThat("Unexpected response: " + responseBody, responseBody, is(GREETING));
                 invokingThreadsRecorder.verifyOffloads(clientApi);
@@ -404,24 +401,20 @@ class ClientEffectiveStrategyTest {
         private final ConcurrentMap<ClientOffloadPoint, String> invokingThreads = new ConcurrentHashMap<>();
         private final Queue<Throwable> errors = new LinkedBlockingQueue<>();
 
-        void reset(ClientApi clientApi, HttpExecutionStrategy streamingAsyncStrategy) {
+        void reset(HttpExecutionStrategy streamingAsyncStrategy) {
             invokingThreads.clear();
             errors.clear();
             offloadPoints.clear();
-            if (defaultStrategy() != streamingAsyncStrategy) {
-                // adjust expected offloads for specific execution strategy
-                if (streamingAsyncStrategy.isSendOffloaded()) {
-                    offloadPoints.add(Send);
-                }
-                if (streamingAsyncStrategy.isMetadataReceiveOffloaded()) {
-                    offloadPoints.add(ReceiveMeta);
-                }
-                if (streamingAsyncStrategy.isDataReceiveOffloaded()) {
-                    offloadPoints.add(ReceiveData);
-                }
-            } else {
-                // apply default offloads per client api
-                offloadPoints.addAll(clientApi.offloads());
+
+            // adjust expected offloads for specific execution strategy
+            if (streamingAsyncStrategy.isSendOffloaded()) {
+                offloadPoints.add(Send);
+            }
+            if (streamingAsyncStrategy.isMetadataReceiveOffloaded()) {
+                offloadPoints.add(ReceiveMeta);
+            }
+            if (streamingAsyncStrategy.isDataReceiveOffloaded()) {
+                offloadPoints.add(ReceiveData);
             }
         }
 
