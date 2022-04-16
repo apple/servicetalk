@@ -20,15 +20,18 @@ cd ..
 
 set -eu
 
+DEFAULT_BRANCH="main"
+JAPICMP_SKIP_VERSION="skip"
+
 function usage() {
   echo "Usage: $0 old_version next_version [branch_name]"
-  echo "old_version - the previous version to run japicmp against. 'skip' to skip japicmp"
-  echo "next_version - the next version to update gradle.properties, expected -SNAPSHOT suffix"
-  echo "branch_name - the branch name to release from (default is 'main')"
+  echo "old_version - the previous version to run japicmp against. \"${JAPICMP_SKIP_VERSION}\" to skip japicmp"
+  echo "next_version - the next version to update gradle.properties, \"-SNAPSHOT\" suffix expected"
+  echo "branch_name - the branch name to release from (default is \"${DEFAULT_BRANCH})]"
   echo "Example to release 0.42.10: $0 0.42.9 0.42.11-SNAPSHOT"
 }
 
-if [ "$#" -ne "2" ]; then
+if [ "$#" -lt "2" ]; then
     usage
     exit 1
 fi
@@ -39,7 +42,7 @@ nextVersion="$2"
 if [ "$#" -gt "2" ]; then
   branchName="$3"
 else
-  branchName="main"
+  branchName=DEFAULT_BRANCH
 fi
 
 if ( echo "$nextVersion" | grep -qv "SNAPSHOT" ); then
@@ -74,7 +77,7 @@ fi
 echo "Building local artifacts..."
 ./gradlew ${gradle_build_args}
 
-if [[ "$oldVersion" == "skip" ]]; then
+if [[ "$oldVersion" == "$JAPICMP_SKIP_VERSION" ]]; then
   echo "Skipping japicmp"
 else
   echo "Running japicmp of local artifacts (which will be released as $version) against old version $oldVersion..."
@@ -144,18 +147,26 @@ done
 sed "s/^version=.*/version=$nextVersion/" gradle.properties > gradle.properties.tmp
 mv gradle.properties.tmp gradle.properties
 
-for file in docs/antora.yml */docs/antora.yml; do
+if [[ "$branchName" == "$DEFAULT_BRANCH" ]]; then
+  for file in docs/antora.yml */docs/antora.yml; do
     sed "s/^version:.*/version: SNAPSHOT/" "$file" > "$file.tmp"
     mv "$file.tmp" "$file"
-done
-for file in docs/modules/ROOT/nav.adoc */docs/modules/ROOT/nav.adoc; do
+  done
+  for file in docs/modules/ROOT/nav.adoc */docs/modules/ROOT/nav.adoc; do
     sed "s/^:page-version: .*/:page-version: SNAPSHOT/" "$file" > "$file.tmp"
     mv "$file.tmp" "$file"
-done
+  done
+fi
 
 $git commit -a -m "Preparing for $nextVersion development"
 $git push -u ${remote_name} "$branchName"
 # Push tag after branch otherwise, CodeQL GH Action will fail.
 $git push ${remote_name} "$version"
 
-./scripts/publish-docs.sh "$version_majorminor"
+# Antora docs are published as a single bundle which includes all versions from site-remote.yml. We only publish docs
+# from main branch or else we may publish docs that are incomplete and missing newer versions.
+if [[ "$branchName" == "$DEFAULT_BRANCH" ]]; then
+  ./scripts/publish-docs.sh "$version_majorminor"
+else
+  echo "Skipping publish-docs.sh. Cherry-pick site-remote.yml changes to $DEFAULT_BRANCH and run manually if desired."
+fi
