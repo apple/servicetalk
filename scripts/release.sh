@@ -168,6 +168,5 @@ $git push ${remote_name} "$version"
 if [[ "$branchName" == "$DEFAULT_BRANCH" ]]; then
   ./scripts/publish-docs.sh "$version_majorminor"
 else
-  echo "Skipping publish-docs.sh. Cherry-pick site-remote.yml changes to $DEFAULT_BRANCH and run manually if desired. \
-  Javadocs are assumed not to change, if they do they much also be generated manually."
+  echo "Skipping publish-docs.sh. Cherry-pick site-remote.yml changes to $DEFAULT_BRANCH and run manually if desired."
 fi
