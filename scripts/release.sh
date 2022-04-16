@@ -25,9 +25,9 @@ JAPICMP_SKIP_VERSION="skip"
 
 function usage() {
   echo "Usage: $0 old_version next_version [branch_name]"
-  echo "old_version - the previous version to run japicmp against. ${JAPICMP_SKIP_VERSION} to skip japicmp"
-  echo "next_version - the next version to update gradle.properties, expected -SNAPSHOT suffix"
-  echo "branch_name - the branch name to release from (default is ${DEFAULT_BRANCH})"
+  echo "old_version - the previous version to run japicmp against. \"${JAPICMP_SKIP_VERSION}\" to skip japicmp"
+  echo "next_version - the next version to update gradle.properties, \"-SNAPSHOT\" suffix expected"
+  echo "branch_name - the branch name to release from (default is \"${DEFAULT_BRANCH})]"
   echo "Example to release 0.42.10: $0 0.42.9 0.42.11-SNAPSHOT"
 }
 
@@ -163,9 +163,11 @@ $git push -u ${remote_name} "$branchName"
 # Push tag after branch otherwise, CodeQL GH Action will fail.
 $git push ${remote_name} "$version"
 
-# Antora docs are published as a single bundle which includes versions, and can only be published from main branch
-# (or else we main drop docs for newer versions). If docs are updated on minor release update the tag version in
-# site-remote.yml on the main branch.
+# Antora docs are published as a single bundle which includes all versions from site-remote.yml. We only publish docs
+# from main branch or else we may publish docs that are incomplete and missing newer versions.
 if [[ "$branchName" == "$DEFAULT_BRANCH" ]]; then
   ./scripts/publish-docs.sh "$version_majorminor"
+else
+  echo "Skipping publish-docs.sh. Cherry-pick site-remote.yml changes to $DEFAULT_BRANCH and run manually if desired. \
+  Javadocs are assumed not to change, if they do they much also be generated manually."
 fi
