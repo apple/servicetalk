@@ -108,6 +108,7 @@ import static io.servicetalk.grpc.protoc.Words.Builder;
 import static io.servicetalk.grpc.protoc.Words.COMMENT_POST_TAG;
 import static io.servicetalk.grpc.protoc.Words.COMMENT_PRE_TAG;
 import static io.servicetalk.grpc.protoc.Words.Call;
+import static io.servicetalk.grpc.protoc.Words.Client;
 import static io.servicetalk.grpc.protoc.Words.Default;
 import static io.servicetalk.grpc.protoc.Words.Factory;
 import static io.servicetalk.grpc.protoc.Words.INSTANCE;
@@ -209,19 +210,24 @@ final class Generator {
         final ClassName clientClass;
         final ClassName blockingClientClass;
 
-        private State(final ServiceDescriptorProto serviceProto, String name, int serviceIndex) {
+        private State(ServiceDescriptorProto serviceProto, GenerationContext context, String outerClassName,
+                      int serviceIndex) {
             this.serviceProto = serviceProto;
             this.serviceIndex = serviceIndex;
 
+            final String sanitizedProtoName = sanitizeIdentifier(serviceProto.getName(), false);
+
             // Filled in during addServiceRpcInterfaces()
             serviceRpcInterfaces = new ArrayList<>(2 * serviceProto.getMethodCount());
-            serviceClass = ClassName.bestGuess(name);
-            blockingServiceClass = ClassName.bestGuess(Blocking + name);
+            serviceClass = ClassName.bestGuess(context.deconflictJavaTypeName(outerClassName,
+                    sanitizedProtoName + Service));
+            blockingServiceClass = serviceClass.peerClass(Blocking + serviceClass.simpleName());
             serviceFactoryClass = serviceClass.peerClass(Service + Factory);
 
             // Filled in during addClientMetadata()
             clientMetaDatas = new ArrayList<>(serviceProto.getMethodCount());
-            clientClass = ClassName.bestGuess(sanitizeIdentifier(serviceProto.getName(), false) + "Client");
+            clientClass = ClassName.bestGuess(context.deconflictJavaTypeName(outerClassName,
+                    sanitizedProtoName + Client));
             blockingClientClass = clientClass.peerClass(Blocking + clientClass.simpleName());
         }
     }
@@ -242,34 +248,30 @@ final class Generator {
     /**
      * Generate Service class for the provided proto service descriptor.
      *
-     *
      * @param serviceProto The service descriptor.
      * @param serviceIndex The index of the service within the current file (0 based).
      * @return The service class builder
      */
     TypeSpec.Builder generate(FileDescriptor f, final ServiceDescriptorProto serviceProto, final int serviceIndex) {
-        final String name = context.deconflictJavaTypeName(
-                sanitizeIdentifier(serviceProto.getName(), false) + Service);
-        final State state = new State(serviceProto, name, serviceIndex);
-
-        final TypeSpec.Builder serviceClassBuilder = context.newServiceClassBuilder(serviceProto);
+        final ServiceClassBuilder container = context.newServiceClassBuilder(serviceProto);
+        final State state = new State(serviceProto, context, container.className, serviceIndex);
         if (printJavaDocs) {
-            serviceClassBuilder.addJavadoc("Class for $L Service", serviceProto.getName());
+            container.builder.addJavadoc("Class for $L Service", serviceProto.getName());
         }
 
-        addSerializationProviderInit(state, serviceClassBuilder);
+        addSerializationProviderInit(state, container.builder);
 
-        addServiceRpcInterfaces(state, serviceClassBuilder);
-        addServiceInterfaces(state, serviceClassBuilder);
-        addServiceFactory(state, serviceClassBuilder);
+        addServiceRpcInterfaces(state, container.builder);
+        addServiceInterfaces(state, container.builder);
+        addServiceFactory(state, container.builder);
 
-        addClientMetadata(state, serviceClassBuilder);
-        addClientInterfaces(state, serviceClassBuilder);
-        addClientFactory(state, serviceClassBuilder);
+        addClientMetadata(state, container.builder);
+        addClientInterfaces(state, container.builder);
+        addClientFactory(state, container.builder);
         // this empty class is a placeholder and get replaced with insertion point comment
-        serviceClassBuilder.addType(TypeSpec.classBuilder("__" + serviceFQN(f, serviceProto)).build());
+        container.builder.addType(TypeSpec.classBuilder("__" + serviceFQN(f, serviceProto)).build());
 
-        return serviceClassBuilder;
+        return container.builder;
     }
 
     private String serviceFQN(FileDescriptor f, ServiceDescriptorProto serviceDescriptorProto) {
@@ -615,8 +617,9 @@ final class Generator {
                 .addJavadoc(JAVADOC_PARAM + service + " the {@link $T} implementation to add." + lineSeparator(),
                         state.blockingServiceClass)
                 .addJavadoc(JAVADOC_RETURN + "this." + lineSeparator())
-                .addJavadoc(JAVADOC_DEPRECATED + "Use {@link #$L($T)}." + lineSeparator(), addBlockingService,
-                        state.blockingServiceClass)
+                .addJavadoc(JAVADOC_DEPRECATED + "Use {@link #$L($L)}." + lineSeparator(),
+                        // force canonicalName to work around JDK8 erroneous javadoc `warning - Tag @link: can't find`
+                        addBlockingService, state.blockingServiceClass.canonicalName())
                 .returns(builderClass)
                 .addParameter(state.blockingServiceClass, service, FINAL)
                 .addStatement("return $L($L)", addBlockingService, service)
@@ -953,12 +956,12 @@ final class Generator {
     }
 
     private TypeSpec.Builder addClientFactory(final State state, final TypeSpec.Builder serviceClassBuilder) {
-        final ClassName clientFactoryClass = state.clientClass.peerClass("Client" + Factory);
-        final ClassName defaultClientClass = clientFactoryClass.peerClass(Default + state.clientClass.simpleName());
-        final ClassName defaultBlockingClientClass = clientFactoryClass.peerClass(Default +
+        final ClassName clientFactoryClass = state.clientClass.peerClass(Client + Factory);
+        final ClassName defaultClientClass = clientFactoryClass.nestedClass(Default + state.clientClass.simpleName());
+        final ClassName defaultBlockingClientClass = clientFactoryClass.nestedClass(Default +
                 state.blockingClientClass.simpleName());
-        final ClassName clientToBlockingClientClass = clientFactoryClass.peerClass(state.clientClass.simpleName() + To +
-                state.blockingClientClass.simpleName());
+        final ClassName clientToBlockingClientClass = clientFactoryClass.nestedClass(state.clientClass.simpleName() + To
+                + state.blockingClientClass.simpleName());
 
         final TypeSpec.Builder clientFactorySpecBuilder = classBuilder(clientFactoryClass)
                 .addModifiers(PUBLIC, STATIC)

@@ -41,7 +41,8 @@ import static java.util.Objects.requireNonNull;
  * invoked for every {@link #subscribe(Subscriber)} invocation, and the result is used as the delegate for subsequent
  * {@link #onSubscribe(Subscription)}, {@link #onNext(Object[])}, {@link #onComplete()}, and
  * {@link #onError(Throwable)} calls. See {@link Builder} for more information.
- * <h3>Defaults</h3>
+ * <p>
+ * Defaults:
  * <ul>
  *     <li>Allows sequential but not concurrent subscribers.</li>
  *     <li>Asserts that {@link #onNext(Object[])} is not called without sufficient demand.</li>
