@@ -37,7 +37,6 @@ import io.servicetalk.http.api.HttpLoadBalancerFactory;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponse;
-import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.MultiAddressHttpClientBuilder;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpClient;
@@ -53,9 +52,12 @@ import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoThreadFactory;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -66,6 +68,7 @@ import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
@@ -93,9 +96,22 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 @Execution(ExecutionMode.CONCURRENT)
 class ClientEffectiveStrategyTest {
+
+    @RegisterExtension
+    static final ExecutionContextExtension SERVER_CTX =
+            ExecutionContextExtension.cached("server-io", "server-executor")
+                    .setClassLevel(true);
+
+    @RegisterExtension
+    static final ExecutionContextExtension CLIENT_CTX =
+            ExecutionContextExtension.cached("client-io", "client-executor")
+                    .setClassLevel(true);
+
     private static final String SCHEME = "http";
     private static final String PATH = "/";
     private static final String GREETING = "Hello";
+
+    private static final String MYNAME = "Nobody";
 
     /**
      * Which builder API will be used and where will ExecutionStrategy be initialized.
@@ -140,16 +156,29 @@ class ClientEffectiveStrategyTest {
             offloadAll(),
     };
 
-    private static final ServerContext context;
+    private static ServerContext context;
 
-    static {
+    @BeforeAll
+    static void initServer() {
         try {
-            HttpServerBuilder serverBuilder = HttpServers.forAddress(localAddress(0));
-            context = serverBuilder.listenBlocking((ctx, request, responseFactory) ->
-                    responseFactory.ok().payloadBody(ctx.executionContext().bufferAllocator()
-                            .fromAscii(GREETING))).toFuture().get();
+            context = HttpServers.forAddress(localAddress(0))
+                    .ioExecutor(SERVER_CTX.ioExecutor())
+                    .executor(SERVER_CTX.executor())
+                    .listenBlocking((ctx, request, responseFactory) -> {
+                            String requestBody = request.payloadBody().toString(StandardCharsets.UTF_8);
+                            String response = GREETING + " " + requestBody;
+                            return responseFactory.ok()
+                                    .payloadBody(ctx.executionContext().bufferAllocator().fromUtf8(response));
+                    }).toFuture().get();
         } catch (Throwable all) {
             throw new AssertionError("Failed to initialize server", all);
+        }
+    }
+
+    @AfterAll
+    static void shutdownServer() throws Exception {
+        if (context != null) {
+            context.close();
         }
     }
 
@@ -174,11 +203,6 @@ class ClientEffectiveStrategyTest {
             }
         }
         return arguments.stream();
-    }
-
-    @AfterAll
-    static void shutdown() throws Exception {
-        context.closeGracefully();
     }
 
     @ParameterizedTest(name = "Type={0} builder={1} filter={2} LB={3} CF={4}")
@@ -244,7 +268,9 @@ class ClientEffectiveStrategyTest {
             case SINGLE_BUILDER:
                 requestTarget = PATH;
                 SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> singleClientBuilder =
-                        HttpClients.forSingleAddress(serverHostAndPort(context));
+                        HttpClients.forSingleAddress(serverHostAndPort(context))
+                                .ioExecutor(CLIENT_CTX.ioExecutor())
+                                .executor(CLIENT_CTX.executor());
                 // apply initializer immediately
                 initializer.initialize(SCHEME, serverHostAndPort(context), singleClientBuilder);
                 clientBuilder = singleClientBuilder::buildStreaming;
@@ -254,7 +280,10 @@ class ClientEffectiveStrategyTest {
             case MULTI_NONE_SINGLE_BUILDER:
                 requestTarget = SCHEME + "://" + serverHostAndPort(context) + PATH;
                 MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> multiClientBuilder =
-                        HttpClients.forMultiAddressUrl().initializer(initializer);
+                        HttpClients.forMultiAddressUrl()
+                                .initializer(initializer)
+                                .ioExecutor(CLIENT_CTX.ioExecutor())
+                                .executor(CLIENT_CTX.executor());
                 if (BuilderType.MULTI_BUILDER == builderType && null != builderStrategy) {
                     multiClientBuilder.executionStrategy(builderStrategy);
                 }
@@ -270,15 +299,23 @@ class ClientEffectiveStrategyTest {
         }
 
         // Exercise the client
-        for (final ClientApi clientApi : ClientApi.values()) {
-            try (StreamingHttpClient client = Objects.requireNonNull(clientBuilder.get())) {
+        try (StreamingHttpClient client = Objects.requireNonNull(clientBuilder.get())) {
+            for (final ClientApi clientApi : ClientApi.values()) {
                 HttpExecutionStrategy effectiveStrategy = computeClientExecutionStrategy(
                         builderType, builderStrategy, filterStrategy, lbStrategy, cfStrategy, clientApi);
 
                 invokingThreadsRecorder.reset(effectiveStrategy);
-                String responseBody = getResponse(clientApi, client, HttpRequestMethod.GET, requestTarget);
-                assertThat("Unexpected response: " + responseBody, responseBody, is(GREETING));
+                String responseBody = getResponse(clientApi, client, HttpRequestMethod.POST, requestTarget, MYNAME);
+                assertThat("Unexpected response: " + responseBody,
+                        responseBody, is(GREETING + " " + MYNAME));
                 invokingThreadsRecorder.verifyOffloads(clientApi);
+
+                // Complete a second request because connection factory opening can offload strangely
+                // invokingThreadsRecorder.reset(effectiveStrategy);
+                // responseBody = getResponse(clientApi, client, HttpRequestMethod.POST, requestTarget, MYNAME);
+                // assertThat("Unexpected response: " + responseBody,
+                //         responseBody, is(GREETING + " " + MYNAME));
+                // invokingThreadsRecorder.verifyOffloads(clientApi);
             }
         }
     }
@@ -350,44 +387,74 @@ class ClientEffectiveStrategyTest {
         return null == first ? second : null == second ? first : first.merge(second);
     }
 
+    /**
+     * Return a string response by performing a request operation.
+     *
+     * @param clientApi The client API variation to use for the request.
+     * @param client The async streaming HTTP client to use for the request.
+     * @param requestMethod The request method to use.
+     * @param requestTarget The target of the request.
+     * @param requestBody The optional body for the request which will be converted to a UTF-8 payload
+     * @return The response converted to a String from UTF-8 payload.
+     * @throws Exception for any problems completing the request.
+     */
     private String getResponse(final ClientApi clientApi, final StreamingHttpClient client,
-                               final HttpRequestMethod requestMethod, final String requestTarget) throws Exception {
+                               final HttpRequestMethod requestMethod, final String requestTarget,
+                               final @Nullable String requestBody) throws Exception {
         switch (clientApi) {
             case BLOCKING_AGGREGATE: {
                 BlockingHttpClient blockingClient = client.asBlockingClient();
                 HttpRequest request = blockingClient.newRequest(requestMethod, requestTarget);
+                if (null != requestBody) {
+                    Buffer requestPayload = blockingClient.executionContext().bufferAllocator().fromUtf8(requestBody);
+                    request.payloadBody(requestPayload);
+                }
                 HttpResponse response = blockingClient.request(request);
-                return response.payloadBody().toString(StandardCharsets.US_ASCII);
+                return response.payloadBody().toString(StandardCharsets.UTF_8);
             }
 
             case BLOCKING_STREAMING: {
                 BlockingStreamingHttpClient blockingStreamingClient = client.asBlockingStreamingClient();
                 BlockingStreamingHttpRequest request = blockingStreamingClient.newRequest(requestMethod, requestTarget);
+                if (null != requestBody) {
+                    Buffer requestPayload =
+                            blockingStreamingClient.executionContext().bufferAllocator().fromUtf8(requestBody);
+                    request.payloadBody(Collections.singleton(requestPayload));
+                }
                 BlockingStreamingHttpResponse response = blockingStreamingClient.request(request);
                 Supplier<CompositeBuffer> supplier =
                         blockingStreamingClient.executionContext().bufferAllocator()::newCompositeBuffer;
                 return StreamSupport.stream(response.payloadBody().spliterator(), false)
                         .reduce((Buffer base, Buffer buffer) -> (base instanceof CompositeBuffer ?
                                 ((CompositeBuffer) base) : supplier.get().addBuffer(base)).addBuffer(buffer))
-                        .map(buffer -> buffer.toString(StandardCharsets.US_ASCII))
+                        .map(buffer -> buffer.toString(StandardCharsets.UTF_8))
                         .orElseThrow(() -> new AssertionError("No payload in response"));
             }
 
             case ASYNC_AGGREGATE: {
                 HttpClient httpClient = client.asClient();
                 HttpRequest request = httpClient.newRequest(requestMethod, requestTarget);
+                if (null != requestBody) {
+                    Buffer requestPayload = httpClient.executionContext().bufferAllocator().fromUtf8(requestBody);
+                    request.payloadBody(requestPayload);
+                }
                 HttpResponse response = httpClient.request(request).toFuture().get();
-                return response.payloadBody().toString(StandardCharsets.US_ASCII);
+                return response.payloadBody().toString(StandardCharsets.UTF_8);
             }
 
             case ASYNC_STREAMING: {
                 StreamingHttpRequest request = client.newRequest(requestMethod, requestTarget);
+                if (null != requestBody) {
+                    Buffer requestPayload =
+                            client.executionContext().bufferAllocator().fromUtf8(requestBody);
+                    request.payloadBody(Publisher.from(requestPayload));
+                }
                 CompositeBuffer responsePayload = client.request(request)
                         .flatMap(resp -> resp.payloadBody().collect(() ->
                                         client.executionContext().bufferAllocator().newCompositeBuffer(),
                                 CompositeBuffer::addBuffer))
                         .toFuture().get();
-                return responsePayload.toString(StandardCharsets.US_ASCII);
+                return responsePayload.toString(StandardCharsets.UTF_8);
             }
 
             default:
@@ -446,11 +513,13 @@ class ClientEffectiveStrategyTest {
                 boolean ioThread = IoThreadFactory.IoThread.isIoThread(current);
                 if (offloadPoints.contains(offloadPoint)) {
                     if (ioThread) {
-                        errors.add(new AssertionError("Expected offloaded thread at " + offloadPoint));
+                        errors.add(new AssertionError("Expected offloaded thread at " + offloadPoint +
+                                ", but was running on " + current.getName()));
                     }
                 } else {
                     if (!ioThread) {
-                        errors.add(new AssertionError("Expected ioThread at " + offloadPoint));
+                        errors.add(new AssertionError("Expected IoThread at " + offloadPoint +
+                                ", but was running on " + current.getName()));
                     }
                 }
                 return ioThread ? "eventLoop" : "offloaded";
