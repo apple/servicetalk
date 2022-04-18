@@ -41,8 +41,8 @@ import static java.util.Objects.requireNonNull;
  * invoked for every {@link #subscribe(Subscriber)} invocation, and the result is used as the delegate for subsequent
  * {@link #onSubscribe(Cancellable)}, {@link #onSuccess(Object)}, and
  * {@link #onError(Throwable)} calls. See {@link Builder} for more information.
- *
- * <h3>Defaults</h3>
+ * <p>
+ * Defaults:
  * <ul>
  *     <li>Allows sequential but not concurrent subscribers.</li>
  *     <li>Sends {@link #onSubscribe(Cancellable)} automatically when subscribed to.</li>
