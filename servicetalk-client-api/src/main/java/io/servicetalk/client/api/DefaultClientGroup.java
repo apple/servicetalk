@@ -123,17 +123,19 @@ final class DefaultClientGroup<Key, Client extends ListenableAsyncCloseable> imp
         try {
             client = requireNonNull(clientFactory.apply(key), "Newly created client can not be null");
         } catch (Throwable t) {
-            clientMap.remove(key); // PLACEHOLDER_CLIENT
+            final boolean removed = clientMap.remove(key, PLACEHOLDER_CLIENT);
+            assert removed : "Expected to remove PLACEHOLDER_CLIENT";
             throw new IllegalArgumentException("Failed to create new client", t);
         }
 
-        clientMap.put(key, client); // Overwrite PLACEHOLDER_CLIENT
+        final boolean replaced = clientMap.replace(key, PLACEHOLDER_CLIENT, client);
+        assert replaced : "Expected to replace PLACEHOLDER_CLIENT";
         toSource(client.onClose()).subscribe(new RemoveClientOnClose(key, client));
         LOGGER.debug("A new client {} was created", client);
 
         if (closed) {
             // group has been closed after a new client was created
-            if (clientMap.remove(key) != null) { // not closed by closing thread
+            if (clientMap.remove(key, client)) { // not closed by closing thread
                 client.closeAsync().subscribe();
                 LOGGER.debug("Recently created client {} was removed and closed, group {} closed", client, this);
             }

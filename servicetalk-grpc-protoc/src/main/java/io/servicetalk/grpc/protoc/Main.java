@@ -138,7 +138,7 @@ public final class Main {
                 List<ServiceDescriptorProto> serviceDescriptorProtoList = f.protoServices();
                 for (int i = 0; i < serviceDescriptorProtoList.size(); ++i) {
                     ServiceDescriptorProto serviceDescriptor = serviceDescriptorProtoList.get(i);
-                    generator.generate(serviceDescriptor, i);
+                    generator.generate(f, serviceDescriptor, i);
                 }
                 f.writeTo(responseBuilder);
             }

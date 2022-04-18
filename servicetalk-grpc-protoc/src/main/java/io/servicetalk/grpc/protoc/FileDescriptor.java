@@ -66,6 +66,7 @@ final class FileDescriptor implements GenerationContext {
     private final String typeNameSuffix;
     private final List<TypeSpec.Builder> serviceClassBuilders;
     private final Set<String> reservedJavaTypeName = new HashSet<>();
+    private final Map<TypeSpec.Builder, ServiceDescriptorProto> protoForServiceBuilder;
 
     /**
      * A single protoc file for which we will be generating classes
@@ -98,10 +99,16 @@ final class FileDescriptor implements GenerationContext {
         reservedJavaTypeName.add(outerClassName);
 
         serviceClassBuilders = new ArrayList<>(protoFile.getServiceCount());
+        protoForServiceBuilder = new HashMap<>();
     }
 
     String protoFileName() {
         return protoFile.getName();
+    }
+
+    @Nullable
+    String getProtoPackageName() {
+        return protoPackageName;
     }
 
     List<ServiceDescriptorProto> protoServices() {
@@ -120,10 +127,10 @@ final class FileDescriptor implements GenerationContext {
         return protoFile.getSourceCodeInfo();
     }
 
-    private void addMessageTypes(final List<DescriptorProto> messageTypes,
-                                 final @Nullable String parentProtoScope,
-                                 final String parentJavaScope,
-                                 final Map<String, ClassName> messageTypesMap) {
+    private static void addMessageTypes(final List<DescriptorProto> messageTypes,
+                                        @Nullable final String parentProtoScope,
+                                        final String parentJavaScope,
+                                        final Map<String, ClassName> messageTypesMap) {
         messageTypes.forEach(t -> {
             final String protoTypeName = parentProtoScope != null ?
                     (parentProtoScope + '.' + t.getName()) : '.' + t.getName();
@@ -170,6 +177,7 @@ final class FileDescriptor implements GenerationContext {
         }
 
         serviceClassBuilders.add(builder);
+        protoForServiceBuilder.put(builder, serviceProto);
         return builder;
     }
 
@@ -196,7 +204,11 @@ final class FileDescriptor implements GenerationContext {
 
             insertSingleFileContent("// " + GENERATED_BY_COMMENT, fileName, responseBuilder);
             for (final TypeSpec.Builder builder : serviceClassBuilders) {
-                insertSingleFileContent(builder.addModifiers(STATIC).build().toString(), fileName, responseBuilder);
+                String content = addInsertionPoint(
+                    builder.addModifiers(STATIC).build().toString(),
+                    protoForServiceBuilder.get(builder).getName()
+                );
+                insertSingleFileContent(content, fileName, responseBuilder);
             }
             return;
         }
@@ -205,6 +217,7 @@ final class FileDescriptor implements GenerationContext {
         final String packageName = javaPackageName();
         for (final TypeSpec.Builder builder : serviceClassBuilders) {
             final TypeSpec serviceType = builder.build();
+            ServiceDescriptorProto serviceDescriptorProto = protoForServiceBuilder.get(builder);
             final File.Builder fileBuilder = File.newBuilder();
             fileBuilder.setName(calculateFileName(packageName, serviceType.name));
 
@@ -213,9 +226,19 @@ final class FileDescriptor implements GenerationContext {
                     .addFileComment(GENERATED_BY_COMMENT)
                     .build();
 
-            fileBuilder.setContent(javaFile.toString());
+            fileBuilder.setContent(addInsertionPoint(javaFile.toString(), serviceDescriptorProto.getName()));
             responseBuilder.addFile(fileBuilder.build());
         }
+    }
+
+    private String addInsertionPoint(String content, String name) {
+        String fqn = protoPackageName != null ? protoPackageName + '.' + name : name;
+        content = content.replaceAll("class __" + fqn + " \\{\n *}", insertionPoint(fqn));
+        return content;
+    }
+
+    static String insertionPoint(final String fqn) {
+        return "// @@protoc_insertion_point(service_scope:" + fqn + ')';
     }
 
     private static void insertSingleFileContent(final String content, String fileName,
