@@ -311,11 +311,11 @@ class ClientEffectiveStrategyTest {
                 invokingThreadsRecorder.verifyOffloads(clientApi);
 
                 // Complete a second request because connection factory opening can offload strangely
-                // invokingThreadsRecorder.reset(effectiveStrategy);
-                // responseBody = getResponse(clientApi, client, HttpRequestMethod.POST, requestTarget, MYNAME);
-                // assertThat("Unexpected response: " + responseBody,
-                //         responseBody, is(GREETING + " " + MYNAME));
-                // invokingThreadsRecorder.verifyOffloads(clientApi);
+                invokingThreadsRecorder.reset(effectiveStrategy);
+                responseBody = getResponse(clientApi, client, HttpRequestMethod.POST, requestTarget, MYNAME);
+                assertThat("Unexpected response: " + responseBody,
+                        responseBody, is(GREETING + " " + MYNAME));
+                invokingThreadsRecorder.verifyOffloads(clientApi);
             }
         }
     }
