@@ -464,6 +464,7 @@ class ClientEffectiveStrategyTest {
 
     private static final class ClientInvokingThreadRecorder implements StreamingHttpClientFilterFactory {
 
+        private Thread applicationThread;
         private final EnumSet<ClientOffloadPoint> offloadPoints = EnumSet.noneOf(ClientOffloadPoint.class);
         private final ConcurrentMap<ClientOffloadPoint, String> invokingThreads = new ConcurrentHashMap<>();
         private final Queue<Throwable> errors = new LinkedBlockingQueue<>();
@@ -472,6 +473,7 @@ class ClientEffectiveStrategyTest {
             invokingThreads.clear();
             errors.clear();
             offloadPoints.clear();
+            applicationThread = Thread.currentThread();
 
             // adjust expected offloads for specific execution strategy
             if (streamingAsyncStrategy.isSendOffloaded()) {
@@ -510,19 +512,22 @@ class ClientEffectiveStrategyTest {
         void recordThread(final ClientOffloadPoint offloadPoint) {
             invokingThreads.compute(offloadPoint, (ClientOffloadPoint offload, String recorded) -> {
                 Thread current = Thread.currentThread();
+                boolean appThread = (current == applicationThread);
                 boolean ioThread = IoThreadFactory.IoThread.isIoThread(current);
-                if (offloadPoints.contains(offloadPoint)) {
-                    if (ioThread) {
-                        errors.add(new AssertionError("Expected offloaded thread at " + offloadPoint +
-                                ", but was running on " + current.getName()));
-                    }
-                } else {
-                    if (!ioThread) {
-                        errors.add(new AssertionError("Expected IoThread at " + offloadPoint +
-                                ", but was running on " + current.getName()));
+                if (Send == offloadPoint && !appThread) {
+                    if (offloadPoints.contains(offloadPoint)) {
+                        if (ioThread) {
+                            errors.add(new AssertionError("Expected offloaded thread at " + offloadPoint +
+                                    ", but was running on " + current.getName()));
+                        }
+                    } else {
+                        if (!ioThread) {
+                            errors.add(new AssertionError("Expected IoThread/Application at " + offloadPoint +
+                                    ", but was running on " + current.getName()));
+                        }
                     }
                 }
-                return ioThread ? "eventLoop" : "offloaded";
+                return ioThread ? "eventLoop" : appThread ? "application" : "offloaded";
             });
         }
 
