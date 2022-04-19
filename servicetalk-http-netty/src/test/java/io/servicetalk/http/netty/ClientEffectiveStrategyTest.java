@@ -512,9 +512,11 @@ class ClientEffectiveStrategyTest {
         void recordThread(final ClientOffloadPoint offloadPoint) {
             invokingThreads.compute(offloadPoint, (ClientOffloadPoint offload, String recorded) -> {
                 Thread current = Thread.currentThread();
-                boolean appThread = (current == applicationThread);
+                boolean appThread = current == applicationThread;
                 boolean ioThread = IoThreadFactory.IoThread.isIoThread(current);
-                if (Send == offloadPoint && !appThread) {
+                if (appThread && Send == offloadPoint) {
+                    // We allow the app thread to be used for send.
+                } else {
                     if (offloadPoints.contains(offloadPoint)) {
                         if (ioThread) {
                             errors.add(new AssertionError("Expected offloaded thread at " + offloadPoint +
