@@ -506,8 +506,8 @@ class ClientEffectiveStrategyTest {
                 Thread current = Thread.currentThread();
                 boolean appThread = current == applicationThread;
                 boolean ioThread = IoThreadFactory.IoThread.isIoThread(current);
-                if (appThread && Send == offloadPoint) {
-                    // We allow the app thread to be used for send.
+                if (appThread && Send == offloadPoint && !offloadPoints.contains(Send)) {
+                    // We allow the app thread to be used for send if not offloaded
                 } else {
                     if (offloadPoints.contains(offloadPoint)) {
                         if (ioThread) {
