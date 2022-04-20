@@ -89,7 +89,8 @@ public final class DefaultContextMap implements ContextMap {
     @SuppressWarnings("unchecked")
     public <T> T put(final Key<T> key, @Nullable final T value) {
         List<Throwable> list = stacktraces.computeIfAbsent(key, __ -> new CopyOnWriteArrayList<>());
-        list.add(new Throwable("put"));
+        list.add(new Throwable("put on " + Thread.currentThread().getName() + " at " + System.nanoTime() +
+                " for " + Integer.toHexString(hashCode())));
         return (T) theMap.put(requireNonNull(key, "key"), value);
     }
 
@@ -98,7 +99,8 @@ public final class DefaultContextMap implements ContextMap {
     @SuppressWarnings("unchecked")
     public <T> T putIfAbsent(final Key<T> key, @Nullable final T value) {
         List<Throwable> list = stacktraces.computeIfAbsent(key, __ -> new CopyOnWriteArrayList<>());
-        list.add(new Throwable("putIfAbsent"));
+        list.add(new Throwable("putIfAbsent on " + Thread.currentThread().getName() + " at " + System.nanoTime() +
+                " for " + Integer.toHexString(hashCode())));
         return (T) theMap.putIfAbsent(requireNonNull(key, "key"), value);
     }
 
