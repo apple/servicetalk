@@ -89,9 +89,9 @@ fi
 clean_up_gh_pages
 
 if [ -z "${DRYRUN:-}" ]; then
-    gradle_build_args="--no-build-cache --warning-mode all --refresh-dependencies clean build publishToMavenLocal"
+    gradle_build_args="--no-build-cache --warning-mode all --refresh-dependencies clean assemble"
 else
-    gradle_build_args="build publishToMavenLocal"
+    gradle_build_args="assemble"
     echo "DRYRUN mode is enabled, using cached build."
 fi
 
