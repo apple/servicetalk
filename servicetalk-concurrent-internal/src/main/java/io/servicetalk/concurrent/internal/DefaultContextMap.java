@@ -18,7 +18,11 @@ package io.servicetalk.concurrent.internal;
 import io.servicetalk.context.api.ContextMap;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import javax.annotation.Nullable;
@@ -33,6 +37,7 @@ import static java.util.Objects.requireNonNull;
 public final class DefaultContextMap implements ContextMap {
 
     private final HashMap<Key<?>, Object> theMap;
+    private final ConcurrentMap<Key<?>, List<Throwable>> stacktraces = new ConcurrentHashMap<>();
 
     /**
      * Creates a new instance.
@@ -83,6 +88,8 @@ public final class DefaultContextMap implements ContextMap {
     @Override
     @SuppressWarnings("unchecked")
     public <T> T put(final Key<T> key, @Nullable final T value) {
+        List<Throwable> list = stacktraces.computeIfAbsent(key, __ -> new CopyOnWriteArrayList<>());
+        list.add(new Throwable("put"));
         return (T) theMap.put(requireNonNull(key, "key"), value);
     }
 
@@ -90,7 +97,13 @@ public final class DefaultContextMap implements ContextMap {
     @Override
     @SuppressWarnings("unchecked")
     public <T> T putIfAbsent(final Key<T> key, @Nullable final T value) {
+        List<Throwable> list = stacktraces.computeIfAbsent(key, __ -> new CopyOnWriteArrayList<>());
+        list.add(new Throwable("putIfAbsent"));
         return (T) theMap.putIfAbsent(requireNonNull(key, "key"), value);
+    }
+
+    public List<Throwable> stacktrace(Key<?> key) {
+        return stacktraces.get(key);
     }
 
     @Nullable

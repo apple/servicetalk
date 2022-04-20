@@ -23,6 +23,8 @@ import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.internal.DefaultContextMap;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.BlockingStreamingHttpClient;
 import io.servicetalk.http.api.BlockingStreamingHttpRequest;
@@ -31,7 +33,6 @@ import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpClient;
-import io.servicetalk.http.api.HttpContextKeys;
 import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpLoadBalancerFactory;
@@ -81,6 +82,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadAll;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
@@ -487,18 +489,22 @@ class ClientEffectiveStrategyTest {
                 protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                                 final StreamingHttpRequest request) {
                     final HttpExecutionStrategy clientStrategy = delegate.executionContext().executionStrategy();
-                    final HttpExecutionStrategy requestStrategy = request.context().get(HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY);
+                    final HttpExecutionStrategy requestStrategy = request.context().get(HTTP_EXECUTION_STRATEGY_KEY);
                     return delegate.request(request.transformPayloadBody(payload ->
-                                    payload.beforeRequest(__ -> recordThread(Send, clientStrategy, requestStrategy))))
-                            .beforeOnSuccess(__ -> recordThread(ReceiveMeta, clientStrategy, requestStrategy))
-                            .map(resp -> resp.transformPayloadBody(payload ->
-                                    payload.beforeOnNext(__ -> recordThread(ReceiveData, clientStrategy, requestStrategy))));
+                                    payload.beforeRequest(__ -> recordThread(Send, clientStrategy, requestStrategy,
+                                            request.context()))))
+                            .beforeOnSuccess(__ -> recordThread(ReceiveMeta, clientStrategy, requestStrategy,
+                                    request.context()))
+                            .map(resp -> resp.transformPayloadBody(payload -> payload
+                                    .beforeOnNext(__ -> recordThread(ReceiveData, clientStrategy, requestStrategy,
+                                            request.context()))));
                 }
             };
         }
 
         void recordThread(final ClientOffloadPoint offloadPoint, final HttpExecutionStrategy clientStrategy,
-                          @Nullable final HttpExecutionStrategy requestStrategy) {
+                          @Nullable final HttpExecutionStrategy requestStrategy,
+                          final ContextMap reqCtx) {
             invokingThreads.compute(offloadPoint, (ClientOffloadPoint offload, String recorded) -> {
                 Thread current = Thread.currentThread();
                 boolean appThread = current == applicationThread;
@@ -508,16 +514,32 @@ class ClientEffectiveStrategyTest {
                 } else {
                     if (offloadPoints.contains(offloadPoint)) {
                         if (ioThread) {
-                            errors.add(new AssertionError("Expected offloaded thread at " + offloadPoint +
+                            final AssertionError e = new AssertionError("Expected offloaded thread at " + offloadPoint +
                                     ", but was running on " + current.getName() + ". clientStrategy=" + clientStrategy +
-                                    ", requestStrategy=" + requestStrategy));
+                                    ", requestStrategy=" + requestStrategy);
+                            if (reqCtx instanceof DefaultContextMap) {
+                                List<Throwable> stacktrace = ((DefaultContextMap) reqCtx)
+                                        .stacktrace(HTTP_EXECUTION_STRATEGY_KEY);
+                                for (Throwable t : stacktrace) {
+                                    e.addSuppressed(t);
+                                }
+                            }
+                            errors.add(e);
                         }
                     } else {
                         if (!ioThread) {
-                            errors.add(new AssertionError("Expected IoThread or " +
+                            final AssertionError e = new AssertionError("Expected IoThread or " +
                                     applicationThread.getName() + " at " + offloadPoint +
                                     ", but was running on an offloading executor thread: " + current.getName() +
-                                    ". clientStrategy=" + clientStrategy + ", requestStrategy=" + requestStrategy));
+                                    ". clientStrategy=" + clientStrategy + ", requestStrategy=" + requestStrategy);
+                            if (reqCtx instanceof DefaultContextMap) {
+                                List<Throwable> stacktrace = ((DefaultContextMap) reqCtx)
+                                        .stacktrace(HTTP_EXECUTION_STRATEGY_KEY);
+                                for (Throwable t : stacktrace) {
+                                    e.addSuppressed(t);
+                                }
+                            }
+                            errors.add(e);
                         }
                     }
                 }

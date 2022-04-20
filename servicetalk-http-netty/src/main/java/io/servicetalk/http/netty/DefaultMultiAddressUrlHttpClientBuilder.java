@@ -284,6 +284,8 @@ final class DefaultMultiAddressUrlHttpClientBuilder
                                                 requestStrategy.merge(singleStrategy);
 
                         if (useStrategy != requestStrategy) {
+                            LOGGER.debug("Request strategy {} changes to {}. SingleAddressClient strategy: {}",
+                                    requestStrategy, useStrategy, singleStrategy);
                             request.context().put(HTTP_EXECUTION_STRATEGY_KEY, useStrategy);
                         }
                         return delegate.request(request);
