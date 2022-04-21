@@ -82,10 +82,6 @@ sourceSets {
   }
 }
 
-javadoc {
-  exclude "**/${generatedJavaPkg.replace('.', '/')}/**"
-}
-
 protobuf {
   protoc {
     artifact = "com.google.protobuf:protoc:$protobufVersion"

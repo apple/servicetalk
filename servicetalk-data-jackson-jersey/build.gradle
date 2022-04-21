@@ -21,6 +21,7 @@ dependencies {
   testImplementation enforcedPlatform("org.glassfish.jersey:jersey-bom:$jerseyVersion")
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
 
+  api project(":servicetalk-data-jackson")
   api "jakarta.ws.rs:jakarta.ws.rs-api:$jaxRsVersion" // MediaType, Feature
   api "org.glassfish.jersey.core:jersey-common" // AutoDiscoverable
 
@@ -28,7 +29,6 @@ dependencies {
   implementation project(":servicetalk-buffer-netty")
   implementation project(":servicetalk-concurrent-api-internal")
   implementation project(":servicetalk-concurrent-internal")
-  implementation project(":servicetalk-data-jackson")
   implementation project(":servicetalk-http-api")
   implementation project(":servicetalk-http-router-jersey")
   implementation project(":servicetalk-http-router-jersey-internal")

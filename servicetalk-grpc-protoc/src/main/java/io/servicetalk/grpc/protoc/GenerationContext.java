@@ -17,13 +17,11 @@ package io.servicetalk.grpc.protoc;
 
 import com.google.protobuf.DescriptorProtos.MethodDescriptorProto;
 import com.google.protobuf.DescriptorProtos.ServiceDescriptorProto;
-import com.squareup.javapoet.TypeSpec;
 
 interface GenerationContext {
     /**
-     * Return a canonical and unique type name based upon the provided type name.
-     * The returned name will not conflict with any other identically named types
-     * in the same context.
+     * Return a canonical and unique type name based upon the provided type name. The returned name will not conflict
+     * with any other identically named types in the same context.
      *
      * @param name The Java type name to deconflict
      * @return The deconflicted, possibly unchanged, Java type name.
@@ -31,14 +29,32 @@ interface GenerationContext {
     String deconflictJavaTypeName(String name);
 
     /**
-     * Create and return the builder for a service class described by the provided
-     * descriptor. The builder will be registered for the destination file and the
-     * generator responsible for filling in the builder will
+     * Return a qualified, canonical, and unique type name based upon the provided type name. The returned name will not
+     * conflict with any other identically named types in the same context.
+     *
+     * @param outerClassName The outer class name that contains this type. This will be used to generate a
+     * more fully qualified return value.
+     * @param name The Java type name to deconflict
+     * @return Deconflicted, possibly unchanged, Java type name that is qualified with the outer java
+     * package+typename+{@code outerClassName} scope.
+     */
+    String deconflictJavaTypeName(String outerClassName, String name);
+
+    /**
+     * Create and return the builder for a service class described by the provided descriptor. The builder will be
+     * registered for the destination file and the generator responsible for filling in the builder will
      *
      * @param serviceProto The service descriptor being created.
      * @return a new builder for the service class
      */
-    TypeSpec.Builder newServiceClassBuilder(ServiceDescriptorProto serviceProto);
+    ServiceClassBuilder newServiceClassBuilder(ServiceDescriptorProto serviceProto);
 
+    /**
+     * Get the <a href="https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md">gRPC H2 path</a> for a method.
+     * @param serviceProto protobuf descriptor for the service.
+     * @param methodProto protobuf descriptor for the method.
+     * @return the <a href="https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md">gRPC H2 path</a> for a
+     * method.
+     */
     String methodPath(ServiceDescriptorProto serviceProto, MethodDescriptorProto methodProto);
 }

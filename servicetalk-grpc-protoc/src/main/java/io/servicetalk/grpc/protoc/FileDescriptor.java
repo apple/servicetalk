@@ -62,6 +62,7 @@ final class FileDescriptor implements GenerationContext {
     private final boolean multipleClassFiles;
     private final String javaPackageName;
     private final String outerClassName;
+    private final String javaOuterScope;
     @Nullable
     private final String typeNameSuffix;
     private final List<TypeSpec.Builder> serviceClassBuilders;
@@ -96,6 +97,7 @@ final class FileDescriptor implements GenerationContext {
             javaPackageName = inferJavaPackageName(protoPackageName, sanitizedProtoFileName);
             outerClassName = inferOuterClassName(sanitizedProtoFileName, protoFile);
         }
+        javaOuterScope = multipleClassFiles ? javaPackageName() : javaPackageName() + '.' + outerJavaClassName();
         reservedJavaTypeName.add(outerClassName);
 
         serviceClassBuilders = new ArrayList<>(protoFile.getServiceCount());
@@ -118,8 +120,7 @@ final class FileDescriptor implements GenerationContext {
     Map<String, ClassName> messageTypesMap() {
         final Map<String, ClassName> messageTypesMap = new HashMap<>(protoFile.getMessageTypeCount());
         addMessageTypes(protoFile.getMessageTypeList(), protoPackageName != null ? '.' + protoPackageName : null,
-                multipleClassFiles ? javaPackageName() : javaPackageName() + '.' + outerJavaClassName(),
-                messageTypesMap);
+                javaOuterScope, messageTypesMap);
         return messageTypesMap;
     }
 
@@ -158,7 +159,12 @@ final class FileDescriptor implements GenerationContext {
     }
 
     @Override
-    public TypeSpec.Builder newServiceClassBuilder(final ServiceDescriptorProto serviceProto) {
+    public String deconflictJavaTypeName(final String outerClassName, final String name) {
+        return javaOuterScope + '.' + outerClassName + '.' + deconflictJavaTypeName(sanitizeClassName(name));
+    }
+
+    @Override
+    public ServiceClassBuilder newServiceClassBuilder(final ServiceDescriptorProto serviceProto) {
         final String rawClassName = typeNameSuffix == null ? serviceProto.getName() :
                 serviceProto.getName() + typeNameSuffix;
         final String className = deconflictJavaTypeName(sanitizeClassName(rawClassName));
@@ -178,7 +184,7 @@ final class FileDescriptor implements GenerationContext {
 
         serviceClassBuilders.add(builder);
         protoForServiceBuilder.put(builder, serviceProto);
-        return builder;
+        return new ServiceClassBuilder(builder, className);
     }
 
     @Override

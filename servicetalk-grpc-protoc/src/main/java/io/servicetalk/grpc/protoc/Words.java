@@ -51,6 +51,7 @@ final class Words {
     static final String methodDescriptor = "methodDescriptor";
     static final String methodDescriptors = methodDescriptor + "s";
     static final String Service = "Service";
+    static final String Client = "Client";
     static final String Blocking = "Blocking";
     static final String Builder = "Builder";
     static final String Call = "Call";
