@@ -582,8 +582,8 @@ class ClientEffectiveStrategyTest {
      * Which API flavor will be used.
      */
     private enum ClientApi {
-        BLOCKING_AGGREGATE(EnumSet.noneOf(ClientOffloadPoint.class)),
         BLOCKING_STREAMING(EnumSet.of(Send)),
+        BLOCKING_AGGREGATE(EnumSet.noneOf(ClientOffloadPoint.class)),
         ASYNC_AGGREGATE(EnumSet.of(ReceiveData)),
         ASYNC_STREAMING(EnumSet.allOf(ClientOffloadPoint.class));
 
