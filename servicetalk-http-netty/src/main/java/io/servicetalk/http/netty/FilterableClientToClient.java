@@ -86,22 +86,22 @@ final class FilterableClientToClient implements StreamingHttpClient {
     @Override
     public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpRequestMetaData metaData) {
         return Single.defer(() -> {
-            metaData.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, executionContext().executionStrategy());
-
+            HttpExecutionStrategy clientstrategy = executionContext().executionStrategy();
+            metaData.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, clientstrategy);
             return client.reserveConnection(metaData).map(rc -> new ReservedStreamingHttpConnection() {
                 @Override
                 public ReservedHttpConnection asConnection() {
-                    return toReservedConnection(this, executionContext.executionStrategy());
+                    return toReservedConnection(this, clientstrategy);
                 }
 
                 @Override
                 public ReservedBlockingStreamingHttpConnection asBlockingStreamingConnection() {
-                    return toReservedBlockingStreamingConnection(this, executionContext.executionStrategy());
+                    return toReservedBlockingStreamingConnection(this, clientstrategy);
                 }
 
                 @Override
                 public ReservedBlockingHttpConnection asBlockingConnection() {
-                    return toReservedBlockingConnection(this, executionContext.executionStrategy());
+                    return toReservedBlockingConnection(this, clientstrategy);
                 }
 
                 @Override

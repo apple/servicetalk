@@ -23,19 +23,20 @@ import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.internal.DefaultContextMap;
-import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.BlockingStreamingHttpClient;
+import io.servicetalk.http.api.BlockingStreamingHttpRequest;
 import io.servicetalk.http.api.BlockingStreamingHttpResponse;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpClient;
-import io.servicetalk.http.api.HttpExecutionContext;
+import io.servicetalk.http.api.HttpContextKeys;
 import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpLoadBalancerFactory;
+import io.servicetalk.http.api.HttpRequest;
+import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.MultiAddressHttpClientBuilder;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
@@ -65,6 +66,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
@@ -79,7 +81,6 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadAll;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
@@ -90,12 +91,9 @@ import static io.servicetalk.http.netty.ClientEffectiveStrategyTest.ClientOffloa
 import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.singleton;
-import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.emptyString;
-import static org.hamcrest.Matchers.not;
 
 @Execution(ExecutionMode.CONCURRENT)
 class ClientEffectiveStrategyTest {
@@ -111,7 +109,8 @@ class ClientEffectiveStrategyTest {
                     .setClassLevel(true);
 
     private static final String SCHEME = "http";
-    private static final String PATH = TestServiceStreaming.SVC_ECHO;
+    private static final String PATH = "/";
+    private static final String GREETING = "Hello";
 
     /**
      * Which builder API will be used and where will ExecutionStrategy be initialized.
@@ -164,7 +163,12 @@ class ClientEffectiveStrategyTest {
             context = HttpServers.forAddress(localAddress(0))
                     .ioExecutor(SERVER_CTX.ioExecutor())
                     .executor(SERVER_CTX.executor())
-                    .listenStreamingAndAwait(new TestServiceStreaming());
+                    .listenBlocking((ctx, request, responseFactory) -> {
+                            String requestBody = request.payloadBody().toString(StandardCharsets.UTF_8);
+                            String response = GREETING + " " + requestBody;
+                            return responseFactory.ok()
+                                    .payloadBody(ctx.executionContext().bufferAllocator().fromUtf8(response));
+                    }).toFuture().get();
         } catch (Throwable all) {
             throw new AssertionError("Failed to initialize server", all);
         }
@@ -299,22 +303,18 @@ class ClientEffectiveStrategyTest {
                 HttpExecutionStrategy effectiveStrategy = computeClientExecutionStrategy(
                         builderType, builderStrategy, filterStrategy, lbStrategy, cfStrategy, clientApi);
 
-                long startTime = System.nanoTime();
                 invokingThreadsRecorder.reset(effectiveStrategy);
-                String responseBody = getResponse(clientApi, client, requestTarget);
-                long endTime = System.nanoTime();
-                assertThat("Unexpected response: " + responseBody, responseBody, is(not(emptyString())));
+                String responseBody = getResponse(clientApi, client, HttpRequestMethod.POST, requestTarget);
+                assertThat("Unexpected response: " + responseBody, responseBody, startsWith(GREETING));
                 invokingThreadsRecorder.verifyOffloads(clientApi, client.executionContext().executionStrategy(),
-                        responseBody, startTime, endTime);
+                        responseBody);
 
                 // Complete a second request because connection factory opening can offload strangely
-                startTime = System.nanoTime();
                 invokingThreadsRecorder.reset(effectiveStrategy);
-                responseBody = getResponse(clientApi, client, requestTarget);
-                endTime = System.nanoTime();
-                assertThat("Unexpected response: " + responseBody, responseBody, is(not(emptyString())));
+                responseBody = getResponse(clientApi, client, HttpRequestMethod.POST, requestTarget);
+                assertThat("Unexpected response: " + responseBody, responseBody, startsWith(GREETING));
                 invokingThreadsRecorder.verifyOffloads(clientApi, client.executionContext().executionStrategy(),
-                        responseBody, startTime, endTime);
+                        responseBody);
             }
         }
     }
@@ -379,9 +379,8 @@ class ClientEffectiveStrategyTest {
         }
     }
 
-    @Nullable
-    private static HttpExecutionStrategy mergeStrategies(@Nullable HttpExecutionStrategy first,
-                                                         @Nullable HttpExecutionStrategy second) {
+    private static @Nullable HttpExecutionStrategy mergeStrategies(@Nullable HttpExecutionStrategy first,
+                                                            @Nullable HttpExecutionStrategy second) {
         first = offloadNever() != first ? defaultStrategy() != first ? first : offloadAll() : offloadNone();
         second = offloadNever() != second ? defaultStrategy() != second ? second : offloadAll() : offloadNone();
         return null == first ? second : null == second ? first : first.merge(second);
@@ -392,50 +391,57 @@ class ClientEffectiveStrategyTest {
      *
      * @param clientApi The client API variation to use for the request.
      * @param client The async streaming HTTP client to use for the request.
+     * @param requestMethod The request method to use.
      * @param requestTarget The target of the request.
      * @return The response converted to a String from UTF-8 payload.
      * @throws Exception for any problems completing the request.
      */
-    private static String getResponse(final ClientApi clientApi, final StreamingHttpClient client,
-                                      final String requestTarget) throws Exception {
+    private String getResponse(final ClientApi clientApi, final StreamingHttpClient client,
+                               final HttpRequestMethod requestMethod, final String requestTarget) throws Exception {
         switch (clientApi) {
             case BLOCKING_AGGREGATE: {
                 BlockingHttpClient blockingClient = client.asBlockingClient();
-                HttpResponse response = blockingClient.request(blockingClient.post(requestTarget)
-                        .payloadBody(content(blockingClient.executionContext())));
-                return response.payloadBody().toString(UTF_8);
+                HttpRequest request = blockingClient.newRequest(requestMethod, requestTarget)
+                        .payloadBody(blockingClient.executionContext().bufferAllocator()
+                                .fromUtf8(blockingClient.executionContext().executionStrategy().toString()));
+                HttpResponse response = blockingClient.request(request);
+                return response.payloadBody().toString(StandardCharsets.UTF_8);
             }
 
             case BLOCKING_STREAMING: {
                 BlockingStreamingHttpClient blockingStreamingClient = client.asBlockingStreamingClient();
-                BlockingStreamingHttpResponse response = blockingStreamingClient.request(
-                        blockingStreamingClient.post(requestTarget)
-                                .payloadBody(singleton(content(blockingStreamingClient.executionContext()))));
+                BlockingStreamingHttpRequest request = blockingStreamingClient.newRequest(requestMethod, requestTarget)
+                        .payloadBody(singleton(blockingStreamingClient.executionContext().bufferAllocator()
+                                .fromUtf8(blockingStreamingClient.executionContext().executionStrategy().toString())));
+                BlockingStreamingHttpResponse response = blockingStreamingClient.request(request);
                 Supplier<CompositeBuffer> supplier =
                         blockingStreamingClient.executionContext().bufferAllocator()::newCompositeBuffer;
                 return StreamSupport.stream(response.payloadBody().spliterator(), false)
                         .reduce((Buffer base, Buffer buffer) -> (base instanceof CompositeBuffer ?
-                                (CompositeBuffer) base : supplier.get().addBuffer(base)).addBuffer(buffer))
-                        .map(buffer -> buffer.toString(UTF_8))
+                                ((CompositeBuffer) base) : supplier.get().addBuffer(base)).addBuffer(buffer))
+                        .map(buffer -> buffer.toString(StandardCharsets.UTF_8))
                         .orElseThrow(() -> new AssertionError("No payload in response"));
             }
 
             case ASYNC_AGGREGATE: {
                 HttpClient httpClient = client.asClient();
-                HttpResponse response = httpClient.request(httpClient.post(requestTarget)
-                        .payloadBody(content(httpClient.executionContext())))
-                        .toFuture().get();
-                return response.payloadBody().toString(UTF_8);
+                HttpRequest request = httpClient.newRequest(requestMethod, requestTarget)
+                        .payloadBody(httpClient.executionContext().bufferAllocator()
+                                .fromUtf8(httpClient.executionContext().executionStrategy().toString()));
+                HttpResponse response = httpClient.request(request).toFuture().get();
+                return response.payloadBody().toString(StandardCharsets.UTF_8);
             }
 
             case ASYNC_STREAMING: {
-                CompositeBuffer responsePayload = client.request(client.post(requestTarget)
-                                .payloadBody(Publisher.from(content(client.executionContext()))))
+                StreamingHttpRequest request = client.newRequest(requestMethod, requestTarget)
+                        .payloadBody(Publisher.from(client.executionContext().bufferAllocator()
+                                .fromUtf8(client.executionContext().executionStrategy().toString())));
+                CompositeBuffer responsePayload = client.request(request)
                         .flatMap(resp -> resp.payloadBody().collect(() ->
                                         client.executionContext().bufferAllocator().newCompositeBuffer(),
                                 CompositeBuffer::addBuffer))
                         .toFuture().get();
-                return responsePayload.toString(UTF_8);
+                return responsePayload.toString(StandardCharsets.UTF_8);
             }
 
             default:
@@ -443,13 +449,9 @@ class ClientEffectiveStrategyTest {
         }
     }
 
-    private static Buffer content(HttpExecutionContext ctx) {
-        return ctx.bufferAllocator().fromUtf8(ctx.executionStrategy().toString());
-    }
-
     private static final class ClientInvokingThreadRecorder implements StreamingHttpClientFilterFactory {
 
-        private Thread applicationThread = Thread.currentThread();
+        private Thread applicationThread;
         private final EnumSet<ClientOffloadPoint> offloadPoints = EnumSet.noneOf(ClientOffloadPoint.class);
         private final ConcurrentMap<ClientOffloadPoint, String> invokingThreads = new ConcurrentHashMap<>();
         private final Queue<Throwable> errors = new LinkedBlockingQueue<>();
@@ -486,22 +488,20 @@ class ClientEffectiveStrategyTest {
                 protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                                 final StreamingHttpRequest request) {
                     final HttpExecutionStrategy clientStrategy = delegate.executionContext().executionStrategy();
-                    final HttpExecutionStrategy requestStrategy = request.context().get(HTTP_EXECUTION_STRATEGY_KEY);
+                    final HttpExecutionStrategy requestStrategy =
+                            request.context().get(HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY);
                     return delegate.request(request.transformPayloadBody(payload ->
-                                    payload.beforeRequest(__ -> recordThread(Send, clientStrategy, requestStrategy,
-                                            request.context()))))
-                            .beforeOnSuccess(__ -> recordThread(ReceiveMeta, clientStrategy, requestStrategy,
-                                    request.context()))
-                            .map(resp -> resp.transformPayloadBody(payload -> payload
-                                    .beforeOnNext(__ -> recordThread(ReceiveData, clientStrategy, requestStrategy,
-                                            request.context()))));
+                                    payload.beforeRequest(__ -> recordThread(Send, clientStrategy, requestStrategy))))
+                            .beforeOnSuccess(__ -> recordThread(ReceiveMeta, clientStrategy, requestStrategy))
+                            .map(resp -> resp.transformPayloadBody(payload ->
+                                    payload.beforeOnNext(__ ->
+                                            recordThread(ReceiveData, clientStrategy, requestStrategy))));
                 }
             };
         }
 
         void recordThread(final ClientOffloadPoint offloadPoint, final HttpExecutionStrategy clientStrategy,
-                          @Nullable final HttpExecutionStrategy requestStrategy,
-                          final ContextMap reqCtx) {
+                          @Nullable final HttpExecutionStrategy requestStrategy) {
             invokingThreads.compute(offloadPoint, (ClientOffloadPoint offload, String recorded) -> {
                 Thread current = Thread.currentThread();
                 boolean appThread = current == applicationThread;
@@ -511,48 +511,26 @@ class ClientEffectiveStrategyTest {
                 } else {
                     if (offloadPoints.contains(offloadPoint)) {
                         if (ioThread) {
-                            final AssertionError e = new AssertionError("Expected offloaded thread at " + offloadPoint +
+                            errors.add(new AssertionError("Expected offloaded thread at " + offloadPoint +
                                     ", but was running on " + current.getName() + ". clientStrategy=" + clientStrategy +
-                                    ", requestStrategy=" + requestStrategy +
-                                    ", timestamp=" + System.nanoTime() +
-                                    ", requestContext=" + Integer.toHexString(System.identityHashCode(reqCtx)));
-                            if (reqCtx instanceof DefaultContextMap) {
-                                List<Throwable> stacktrace = ((DefaultContextMap) reqCtx)
-                                        .stacktrace(HTTP_EXECUTION_STRATEGY_KEY);
-                                for (Throwable t : stacktrace) {
-                                    e.addSuppressed(t);
-                                }
-                            }
-                            errors.add(e);
+                                    ", requestStrategy=" + requestStrategy));
                         }
                     } else {
                         if (!ioThread) {
-                            final AssertionError e = new AssertionError("Expected IoThread or " +
+                            errors.add(new AssertionError("Expected IoThread or " +
                                     applicationThread.getName() + " at " + offloadPoint +
                                     ", but was running on an offloading executor thread: " + current.getName() +
-                                    ". clientStrategy=" + clientStrategy + ", requestStrategy=" + requestStrategy +
-                                    ", timestamp=" + System.nanoTime() +
-                                    ", requestContext=" + Integer.toHexString(System.identityHashCode(reqCtx)));
-                            if (reqCtx instanceof DefaultContextMap) {
-                                List<Throwable> stacktrace = ((DefaultContextMap) reqCtx)
-                                        .stacktrace(HTTP_EXECUTION_STRATEGY_KEY);
-                                for (Throwable t : stacktrace) {
-                                    e.addSuppressed(t);
-                                }
-                            }
-                            errors.add(e);
+                                    ". clientStrategy=" + clientStrategy + ", requestStrategy=" + requestStrategy));
                         }
                     }
                 }
-                return ioThread ? "eventLoop" : (appThread ? "application" : "offloaded");
+                return ioThread ? "eventLoop" : appThread ? "application" : "offloaded";
             });
         }
 
-        public void verifyOffloads(ClientApi clientApi, HttpExecutionStrategy clientStrategy, String apiStrategy,
-                long startTime, long endTime) {
+        public void verifyOffloads(ClientApi clientApi, HttpExecutionStrategy clientStrategy, String apiStrategy) {
             assertNoAsyncErrors("API=" + clientApi + ", clientStrategy=" + clientStrategy + ", apiStrategy=" +
-                    apiStrategy + ", startTime=" + startTime + ", endTime=" + endTime +
-                    ". Async Errors! See suppressed", errors);
+                    apiStrategy + ". Async Errors! See suppressed", errors);
             assertThat("Unexpected offload points recorded. " + invokingThreads,
                     invokingThreads.size(), Matchers.is(ClientOffloadPoint.values().length));
         }
@@ -587,9 +565,12 @@ class ClientEffectiveStrategyTest {
         ASYNC_AGGREGATE(EnumSet.of(ReceiveData)),
         ASYNC_STREAMING(EnumSet.allOf(ClientOffloadPoint.class));
 
+        private final EnumSet<ClientOffloadPoint> offloads;
         private final HttpExecutionStrategy strategy;
 
         ClientApi(EnumSet<ClientOffloadPoint> offloads) {
+            this.offloads = offloads;
+
             HttpExecutionStrategies.Builder builder = HttpExecutionStrategies.customStrategyBuilder();
 
             if (offloads.contains(Send)) {
@@ -603,6 +584,10 @@ class ClientEffectiveStrategyTest {
             }
 
             this.strategy = builder.build();
+        }
+
+        public EnumSet<ClientOffloadPoint> offloads() {
+            return offloads;
         }
 
         public HttpExecutionStrategy strategy() {
