@@ -299,19 +299,22 @@ class ClientEffectiveStrategyTest {
                 HttpExecutionStrategy effectiveStrategy = computeClientExecutionStrategy(
                         builderType, builderStrategy, filterStrategy, lbStrategy, cfStrategy, clientApi);
 
+                long startTime = System.nanoTime();
                 invokingThreadsRecorder.reset(effectiveStrategy);
                 String responseBody = getResponse(clientApi, client, requestTarget);
+                long endTime = System.nanoTime();
                 assertThat("Unexpected response: " + responseBody, responseBody, is(not(emptyString())));
                 invokingThreadsRecorder.verifyOffloads(clientApi, client.executionContext().executionStrategy(),
-                        responseBody);
+                        responseBody, startTime, endTime);
 
                 // Complete a second request because connection factory opening can offload strangely
+                startTime = System.nanoTime();
                 invokingThreadsRecorder.reset(effectiveStrategy);
                 responseBody = getResponse(clientApi, client, requestTarget);
-                assertThat("Unexpected response: " + responseBody,
-                        responseBody, is(not(emptyString())));
+                endTime = System.nanoTime();
+                assertThat("Unexpected response: " + responseBody, responseBody, is(not(emptyString())));
                 invokingThreadsRecorder.verifyOffloads(clientApi, client.executionContext().executionStrategy(),
-                        responseBody);
+                        responseBody, startTime, endTime);
             }
         }
     }
@@ -511,7 +514,8 @@ class ClientEffectiveStrategyTest {
                             final AssertionError e = new AssertionError("Expected offloaded thread at " + offloadPoint +
                                     ", but was running on " + current.getName() + ". clientStrategy=" + clientStrategy +
                                     ", requestStrategy=" + requestStrategy +
-                                    ", requestContext=" + Integer.toHexString(reqCtx.hashCode()));
+                                    ", timestamp=" + System.nanoTime() +
+                                    ", requestContext=" + Integer.toHexString(System.identityHashCode(reqCtx)));
                             if (reqCtx instanceof DefaultContextMap) {
                                 List<Throwable> stacktrace = ((DefaultContextMap) reqCtx)
                                         .stacktrace(HTTP_EXECUTION_STRATEGY_KEY);
@@ -527,7 +531,8 @@ class ClientEffectiveStrategyTest {
                                     applicationThread.getName() + " at " + offloadPoint +
                                     ", but was running on an offloading executor thread: " + current.getName() +
                                     ". clientStrategy=" + clientStrategy + ", requestStrategy=" + requestStrategy +
-                                    ", requestContext=" + Integer.toHexString(reqCtx.hashCode()));
+                                    ", timestamp=" + System.nanoTime() +
+                                    ", requestContext=" + Integer.toHexString(System.identityHashCode(reqCtx)));
                             if (reqCtx instanceof DefaultContextMap) {
                                 List<Throwable> stacktrace = ((DefaultContextMap) reqCtx)
                                         .stacktrace(HTTP_EXECUTION_STRATEGY_KEY);
@@ -543,9 +548,11 @@ class ClientEffectiveStrategyTest {
             });
         }
 
-        public void verifyOffloads(ClientApi clientApi, HttpExecutionStrategy clientStrategy, String apiStrategy) {
+        public void verifyOffloads(ClientApi clientApi, HttpExecutionStrategy clientStrategy, String apiStrategy,
+                long startTime, long endTime) {
             assertNoAsyncErrors("API=" + clientApi + ", clientStrategy=" + clientStrategy + ", apiStrategy=" +
-                    apiStrategy + ". Async Errors! See suppressed", errors);
+                    apiStrategy + ", startTime=" + startTime + ", endTime=" + endTime +
+                    ". Async Errors! See suppressed", errors);
             assertThat("Unexpected offload points recorded. " + invokingThreads,
                     invokingThreads.size(), Matchers.is(ClientOffloadPoint.values().length));
         }

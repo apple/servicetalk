@@ -89,8 +89,9 @@ public final class DefaultContextMap implements ContextMap {
     @SuppressWarnings("unchecked")
     public <T> T put(final Key<T> key, @Nullable final T value) {
         List<Throwable> list = stacktraces.computeIfAbsent(key, __ -> new CopyOnWriteArrayList<>());
-        list.add(new Throwable("put on " + Thread.currentThread().getName() + " at " + System.nanoTime() +
-                " for " + Integer.toHexString(hashCode())));
+        list.add(new Throwable("put(" + value + ") on " + Thread.currentThread().getName() +
+                " at " + System.nanoTime() +
+                " for " + Integer.toHexString(System.identityHashCode(this))));
         return (T) theMap.put(requireNonNull(key, "key"), value);
     }
 
@@ -98,10 +99,13 @@ public final class DefaultContextMap implements ContextMap {
     @Override
     @SuppressWarnings("unchecked")
     public <T> T putIfAbsent(final Key<T> key, @Nullable final T value) {
+        final T oldVal = (T) theMap.putIfAbsent(requireNonNull(key, "key"), value);
         List<Throwable> list = stacktraces.computeIfAbsent(key, __ -> new CopyOnWriteArrayList<>());
-        list.add(new Throwable("putIfAbsent on " + Thread.currentThread().getName() + " at " + System.nanoTime() +
-                " for " + Integer.toHexString(hashCode())));
-        return (T) theMap.putIfAbsent(requireNonNull(key, "key"), value);
+        list.add(new Throwable("putIfAbsent(" + value + ")=" + oldVal +
+                " on " + Thread.currentThread().getName() +
+                " at " + System.nanoTime() +
+                " for " + Integer.toHexString(System.identityHashCode(this))));
+        return oldVal;
     }
 
     public List<Throwable> stacktrace(Key<?> key) {
