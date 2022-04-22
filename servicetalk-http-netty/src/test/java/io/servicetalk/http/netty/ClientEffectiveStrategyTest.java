@@ -409,7 +409,8 @@ class ClientEffectiveStrategyTest {
                         .payloadBody(content(blockingClient.executionContext()));
                 HttpResponse response = blockingClient.request(request);
                 return response.payloadBody().toString(UTF_8) +
-                        ", request=" + Integer.toHexString(System.identityHashCode(request));
+                        ", request=" + Integer.toHexString(System.identityHashCode(request)) +
+                        ", requestContext=" + Integer.toHexString(System.identityHashCode(request.context()));
             }
 
             case BLOCKING_STREAMING: {
@@ -425,7 +426,8 @@ class ClientEffectiveStrategyTest {
                                 (CompositeBuffer) base : supplier.get().addBuffer(base)).addBuffer(buffer))
                         .map(buffer -> buffer.toString(UTF_8))
                         .orElseThrow(() -> new AssertionError("No payload in response")) +
-                        ", request=" + Integer.toHexString(System.identityHashCode(request));
+                        ", request=" + Integer.toHexString(System.identityHashCode(request)) +
+                        ", requestContext=" + Integer.toHexString(System.identityHashCode(request.context()));
             }
 
             case ASYNC_AGGREGATE: {
@@ -435,7 +437,8 @@ class ClientEffectiveStrategyTest {
                 HttpResponse response = httpClient.request(request)
                         .toFuture().get();
                 return response.payloadBody().toString(UTF_8) +
-                        ", request=" + Integer.toHexString(System.identityHashCode(request));
+                        ", request=" + Integer.toHexString(System.identityHashCode(request)) +
+                        ", requestContext=" + Integer.toHexString(System.identityHashCode(request.context()));
             }
 
             case ASYNC_STREAMING: {
@@ -447,7 +450,8 @@ class ClientEffectiveStrategyTest {
                                 CompositeBuffer::addBuffer))
                         .toFuture().get();
                 return responsePayload.toString(UTF_8) +
-                        ", request=" + Integer.toHexString(System.identityHashCode(request));
+                        ", request=" + Integer.toHexString(System.identityHashCode(request)) +
+                        ", requestContext=" + Integer.toHexString(System.identityHashCode(request.context()));
             }
 
             default:
