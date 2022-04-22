@@ -36,6 +36,8 @@ import static java.util.Objects.requireNonNull;
  */
 public final class DefaultContextMap implements ContextMap {
 
+    private static final Key<?> CTOR_KEY = Key.newKey("CTOR_KEY", Object.class);
+
     private final HashMap<Key<?>, Object> theMap;
     private final ConcurrentMap<Key<?>, List<Throwable>> stacktraces = new ConcurrentHashMap<>();
 
@@ -44,10 +46,22 @@ public final class DefaultContextMap implements ContextMap {
      */
     public DefaultContextMap() {
         theMap = new HashMap<>(4); // start with a smaller table
+        List<Throwable> list = stacktraces.computeIfAbsent(CTOR_KEY, __ -> new CopyOnWriteArrayList<>());
+        list.add(new Throwable("new DefaultContextMap() on " + Thread.currentThread().getName() +
+                " at " + System.nanoTime() +
+                " for " + Integer.toHexString(System.identityHashCode(this))));
     }
 
     private DefaultContextMap(DefaultContextMap other) {
         theMap = new HashMap<>(other.theMap);
+    }
+
+    public List<Throwable> stacktrace(Key<?> key) {
+        return stacktraces.get(key);
+    }
+
+    public List<Throwable> ctorStacktrace() {
+        return stacktraces.get(CTOR_KEY);
     }
 
     @Override
@@ -106,10 +120,6 @@ public final class DefaultContextMap implements ContextMap {
                 " at " + System.nanoTime() +
                 " for " + Integer.toHexString(System.identityHashCode(this))));
         return oldVal;
-    }
-
-    public List<Throwable> stacktrace(Key<?> key) {
-        return stacktraces.get(key);
     }
 
     @Nullable

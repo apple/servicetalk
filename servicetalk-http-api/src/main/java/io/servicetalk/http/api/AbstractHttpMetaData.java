@@ -19,6 +19,8 @@ import io.servicetalk.concurrent.internal.DefaultContextMap;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.encoding.api.ContentCodec;
 
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -27,7 +29,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * Abstract base class for {@link HttpMetaData}.
  */
-abstract class AbstractHttpMetaData implements HttpMetaData {
+public abstract class AbstractHttpMetaData implements HttpMetaData {
     @Deprecated
     @Nullable
     private ContentCodec encoding;
@@ -36,11 +38,19 @@ abstract class AbstractHttpMetaData implements HttpMetaData {
     @Nullable
     private ContextMap context;
 
+    public final List<Throwable> contextAssigned = new CopyOnWriteArrayList<>();
+
     AbstractHttpMetaData(final HttpProtocolVersion version, final HttpHeaders headers,
                          @Nullable final ContextMap context) {
         this.version = requireNonNull(version);
         this.headers = requireNonNull(headers);
         this.context = context;
+        if (context != null) {
+            contextAssigned.add(new Throwable("context=" + context +
+                    " on " + Thread.currentThread().getName() +
+                    " at " + System.nanoTime() +
+                    " for " + Integer.toHexString(System.identityHashCode(this))));
+        }
     }
 
     @Override
@@ -85,6 +95,10 @@ abstract class AbstractHttpMetaData implements HttpMetaData {
     public final ContextMap context() {
         if (context == null) {
             context = new DefaultContextMap();
+            contextAssigned.add(new Throwable("context=" + context +
+                    " on " + Thread.currentThread().getName() +
+                    " at " + System.nanoTime() +
+                    " for " + Integer.toHexString(System.identityHashCode(this))));
         }
         return context;
     }
@@ -92,6 +106,10 @@ abstract class AbstractHttpMetaData implements HttpMetaData {
     @Override
     public HttpMetaData context(final ContextMap context) {
         this.context = requireNonNull(context);
+        contextAssigned.add(new Throwable("context=" + context +
+                " on " + Thread.currentThread().getName() +
+                " at " + System.nanoTime() +
+                " for " + Integer.toHexString(System.identityHashCode(this))));
         return this;
     }
 
