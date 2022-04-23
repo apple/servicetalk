@@ -259,7 +259,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
 
     private static final class MultiAddressStrategyWrapper implements StreamingHttpClientFilterFactory {
 
-        private static final StreamingHttpClientFilterFactory INSTANCE = new MultiAddressStrategyWrapper();
+        static final StreamingHttpClientFilterFactory INSTANCE = new MultiAddressStrategyWrapper();
 
         private MultiAddressStrategyWrapper() {
             // Singleton
