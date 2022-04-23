@@ -115,8 +115,7 @@ final class FilterableClientToClient implements StreamingHttpClient {
                     // created and hence could have an incorrect default strategy. Doing this makes sure we never call
                     // the method without strategy just as we do for the regular connection.
                     return Single.defer(() -> {
-                        request.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY,
-                                FilterableClientToClient.this.executionContext().executionStrategy());
+                        request.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, clientstrategy);
                         return rc.request(request).shareContextOnSubscribe();
                     });
                 }

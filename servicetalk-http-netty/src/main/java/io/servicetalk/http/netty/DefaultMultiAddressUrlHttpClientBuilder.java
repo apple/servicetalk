@@ -93,8 +93,6 @@ final class DefaultMultiAddressUrlHttpClientBuilder
 
     private static final String HTTPS_SCHEME = HTTPS.toString();
 
-    private static final MultiAddressStrategyWrapper MULTI_ADDRESS_STRATEGY_WRAPPER = new MultiAddressStrategyWrapper();
-
     private final Function<HostAndPort, SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>> builderFactory;
     private final HttpExecutionContextBuilder executionContextBuilder = new HttpExecutionContextBuilder();
 
@@ -115,8 +113,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         final CompositeCloseable closeables = newCompositeCloseable();
         try {
             final HttpExecutionContext executionContext = executionContextBuilder.build();
-            final ClientFactory clientFactory = new ClientFactory(builderFactory,
-                    executionContext,
+            final ClientFactory clientFactory = new ClientFactory(builderFactory, executionContext,
                     singleAddressInitializer);
             final CachingKeyFactory keyFactory = closeables.prepend(new CachingKeyFactory());
             final HttpHeadersFactory headersFactory = this.headersFactory;
@@ -250,19 +247,23 @@ final class DefaultMultiAddressUrlHttpClientBuilder
                 builder.sslConfig(DEFAULT_CLIENT_SSL_CONFIG);
             }
 
-            builder.appendClientFilter(MULTI_ADDRESS_STRATEGY_WRAPPER);
+            builder.appendClientFilter(MultiAddressStrategyWrapper.INSTANCE);
 
             if (singleAddressInitializer != null) {
                 singleAddressInitializer.initialize(urlKey.scheme, urlKey.hostAndPort, builder);
             }
 
-            StreamingHttpClient singleClient = builder.buildStreaming();
-
-            return singleClient;
+            return builder.buildStreaming();
         }
     }
 
     private static final class MultiAddressStrategyWrapper implements StreamingHttpClientFilterFactory {
+
+        private static final StreamingHttpClientFilterFactory INSTANCE = new MultiAddressStrategyWrapper();
+
+        private MultiAddressStrategyWrapper() {
+            // Singleton
+        }
 
         @Override
         public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {
