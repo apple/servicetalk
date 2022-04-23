@@ -392,7 +392,7 @@ class ClientEffectiveStrategyTest {
     private static String getResponse(final ClientApi clientApi, final StreamingHttpClient client,
                                       final String requestTarget) throws Exception {
         switch (clientApi) {
-            case BLOCKING_AGGREGATE: {
+            case BLOCKING_AGGREGATED: {
                 BlockingHttpClient blockingClient = client.asBlockingClient();
                 HttpResponse response = blockingClient.request(blockingClient.post(requestTarget)
                         .payloadBody(content(blockingClient.executionContext())));
@@ -413,7 +413,7 @@ class ClientEffectiveStrategyTest {
                         .orElseThrow(() -> new AssertionError("No payload in response"));
             }
 
-            case ASYNC_AGGREGATE: {
+            case ASYNC_AGGREGATED: {
                 HttpClient httpClient = client.asClient();
                 HttpResponse response = httpClient.request(httpClient.post(requestTarget)
                                 .payloadBody(content(httpClient.executionContext())))
@@ -551,10 +551,10 @@ class ClientEffectiveStrategyTest {
      * Which API flavor will be used.
      */
     private enum ClientApi {
-        BLOCKING_STREAMING(EnumSet.of(Send)),
-        BLOCKING_AGGREGATE(EnumSet.noneOf(ClientOffloadPoint.class)),
-        ASYNC_AGGREGATE(EnumSet.of(ReceiveData)),
-        ASYNC_STREAMING(EnumSet.allOf(ClientOffloadPoint.class));
+        ASYNC_AGGREGATED(EnumSet.of(ReceiveData)),
+        ASYNC_STREAMING(EnumSet.allOf(ClientOffloadPoint.class)),
+        BLOCKING_AGGREGATED(EnumSet.noneOf(ClientOffloadPoint.class)),
+        BLOCKING_STREAMING(EnumSet.of(Send));
 
         private final HttpExecutionStrategy strategy;
 
