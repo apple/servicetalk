@@ -117,8 +117,8 @@ class ClientEffectiveStrategyTest {
     private enum BuilderType {
         SINGLE_BUILDER,
         MULTI_BUILDER,
-        MULTI_DEFAULT_SINGLE_BUILDER,
-        MULTI_NONE_SINGLE_BUILDER
+        MULTI_DEFAULT_STRATEGY_SINGLE_BUILDER,
+        MULTI_OFFLOAD_NONE_SINGLE_BUILDER
     }
 
     private static final HttpExecutionStrategy[] BUILDER_STRATEGIES = {
@@ -180,7 +180,7 @@ class ClientEffectiveStrategyTest {
         List<Arguments> arguments = new ArrayList<>();
         for (BuilderType builderType : BuilderType.values()) {
             for (HttpExecutionStrategy builderStrategy : BUILDER_STRATEGIES) {
-                if (BuilderType.MULTI_NONE_SINGLE_BUILDER == builderType &&
+                if (BuilderType.MULTI_OFFLOAD_NONE_SINGLE_BUILDER == builderType &&
                         null == builderStrategy) {
                     // null builderStrategy won't actually override, so skip.
                     continue;
@@ -269,8 +269,8 @@ class ClientEffectiveStrategyTest {
                 clientBuilder = singleClientBuilder::buildStreaming;
                 break;
             case MULTI_BUILDER:
-            case MULTI_DEFAULT_SINGLE_BUILDER:
-            case MULTI_NONE_SINGLE_BUILDER:
+            case MULTI_DEFAULT_STRATEGY_SINGLE_BUILDER:
+            case MULTI_OFFLOAD_NONE_SINGLE_BUILDER:
                 requestTarget = SCHEME + "://" + serverHostAndPort(context) + PATH;
                 MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> multiClientBuilder =
                         HttpClients.forMultiAddressUrl()
@@ -280,7 +280,7 @@ class ClientEffectiveStrategyTest {
                 if (BuilderType.MULTI_BUILDER == builderType && null != builderStrategy) {
                     multiClientBuilder.executionStrategy(builderStrategy);
                 }
-                if (BuilderType.MULTI_NONE_SINGLE_BUILDER == builderType &&
+                if (BuilderType.MULTI_OFFLOAD_NONE_SINGLE_BUILDER == builderType &&
                         null != builderStrategy) {
                     // This is expected to ALWAYS be overridden in initializer.
                     multiClientBuilder.executionStrategy(offloadNone());
@@ -357,18 +357,18 @@ class ClientEffectiveStrategyTest {
                         builder;
 
         switch (builderType) {
-           case SINGLE_BUILDER:
+            case SINGLE_BUILDER:
                 return defaultStrategy() == merged ? clientApi.strategy() : merged;
             case MULTI_BUILDER:
                 return null == builder || defaultStrategy() == builder ?
                     defaultStrategy() == merged ? clientApi.strategy() : clientApi.strategy().merge(merged) :
                     merged;
-            case MULTI_DEFAULT_SINGLE_BUILDER:
+            case MULTI_DEFAULT_STRATEGY_SINGLE_BUILDER:
                     if (defaultStrategy() == merged || (null != builder && !builder.hasOffloads())) {
                         merged = offloadNone();
                     }
                     return clientApi.strategy().merge(merged);
-            case MULTI_NONE_SINGLE_BUILDER:
+            case MULTI_OFFLOAD_NONE_SINGLE_BUILDER:
                 return defaultStrategy() == merged ? offloadNone() : merged;
             default:
                 throw new AssertionError("Unexpected builder type: " + builderType);
@@ -378,9 +378,16 @@ class ClientEffectiveStrategyTest {
     @Nullable
     private static HttpExecutionStrategy mergeStrategies(@Nullable HttpExecutionStrategy first,
                                                          @Nullable HttpExecutionStrategy second) {
-        first = offloadNever() != first ? defaultStrategy() != first ? first : offloadAll() : offloadNone();
-        second = offloadNever() != second ? defaultStrategy() != second ? second : offloadAll() : offloadNone();
-        return null == first ? second : null == second ? first : first.merge(second);
+        first = replaceSpecialStrategies(first);
+        second = replaceSpecialStrategies(second);
+        return null == first ? second :
+                null == second ? first : first.merge(second);
+    }
+
+    @Nullable
+    private static HttpExecutionStrategy replaceSpecialStrategies(@Nullable final HttpExecutionStrategy strategy) {
+        return offloadNever() == strategy ? offloadNone() :
+                defaultStrategy() == strategy ? offloadAll() : strategy;
     }
 
     /**
