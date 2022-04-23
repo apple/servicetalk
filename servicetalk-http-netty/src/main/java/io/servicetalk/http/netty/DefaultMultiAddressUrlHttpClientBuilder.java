@@ -28,7 +28,9 @@ import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.FilterableReservedStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
+import io.servicetalk.http.api.HttpContextKeys;
 import io.servicetalk.http.api.HttpExecutionContext;
+import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpRequestMetaData;
@@ -247,7 +249,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
                 builder.sslConfig(DEFAULT_CLIENT_SSL_CONFIG);
             }
 
-            builder.appendClientFilter(MultiAddressStrategyWrapper.INSTANCE);
+            builder.appendClientFilter(HttpExecutionStrategyUpdater.INSTANCE);
 
             if (singleAddressInitializer != null) {
                 singleAddressInitializer.initialize(urlKey.scheme, urlKey.hostAndPort, builder);
@@ -257,11 +259,19 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         }
     }
 
-    private static final class MultiAddressStrategyWrapper implements StreamingHttpClientFilterFactory {
+    /**
+     * When request transitions from the multi-address level to the single-address level, this filter will make sure
+     * that any missing offloading required by the selected single-address client will be applied for the request
+     * execution. This filter never reduces offloading, it can only add missing offloading flags. Users who want to
+     * execute a request without offloading must specify {@link HttpExecutionStrategies#offloadNone()} strategy at the
+     * {@link MultiAddressHttpClientBuilder} or explicitly set the required strategy at request context with
+     * {@link HttpContextKeys#HTTP_EXECUTION_STRATEGY_KEY}.
+     */
+    private static final class HttpExecutionStrategyUpdater implements StreamingHttpClientFilterFactory {
 
-        static final StreamingHttpClientFilterFactory INSTANCE = new MultiAddressStrategyWrapper();
+        static final StreamingHttpClientFilterFactory INSTANCE = new HttpExecutionStrategyUpdater();
 
-        private MultiAddressStrategyWrapper() {
+        private HttpExecutionStrategyUpdater() {
             // Singleton
         }
 
