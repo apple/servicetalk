@@ -18,11 +18,7 @@ package io.servicetalk.concurrent.internal;
 import io.servicetalk.context.api.ContextMap;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import javax.annotation.Nullable;
@@ -36,32 +32,17 @@ import static java.util.Objects.requireNonNull;
  */
 public final class DefaultContextMap implements ContextMap {
 
-    private static final Key<?> CTOR_KEY = Key.newKey("CTOR_KEY", Object.class);
-
     private final HashMap<Key<?>, Object> theMap;
-    private final ConcurrentMap<Key<?>, List<Throwable>> stacktraces = new ConcurrentHashMap<>();
 
     /**
      * Creates a new instance.
      */
     public DefaultContextMap() {
         theMap = new HashMap<>(4); // start with a smaller table
-        List<Throwable> list = stacktraces.computeIfAbsent(CTOR_KEY, __ -> new CopyOnWriteArrayList<>());
-        list.add(new Throwable("new DefaultContextMap() on " + Thread.currentThread().getName() +
-                " at " + System.nanoTime() +
-                " for " + Integer.toHexString(System.identityHashCode(this))));
     }
 
     private DefaultContextMap(DefaultContextMap other) {
         theMap = new HashMap<>(other.theMap);
-    }
-
-    public List<Throwable> stacktrace(Key<?> key) {
-        return stacktraces.get(key);
-    }
-
-    public List<Throwable> ctorStacktrace() {
-        return stacktraces.get(CTOR_KEY);
     }
 
     @Override
@@ -102,10 +83,6 @@ public final class DefaultContextMap implements ContextMap {
     @Override
     @SuppressWarnings("unchecked")
     public <T> T put(final Key<T> key, @Nullable final T value) {
-        List<Throwable> list = stacktraces.computeIfAbsent(key, __ -> new CopyOnWriteArrayList<>());
-        list.add(new Throwable("put(" + value + ") on " + Thread.currentThread().getName() +
-                " at " + System.nanoTime() +
-                " for " + Integer.toHexString(System.identityHashCode(this))));
         return (T) theMap.put(requireNonNull(key, "key"), value);
     }
 
@@ -113,13 +90,7 @@ public final class DefaultContextMap implements ContextMap {
     @Override
     @SuppressWarnings("unchecked")
     public <T> T putIfAbsent(final Key<T> key, @Nullable final T value) {
-        final T oldVal = (T) theMap.putIfAbsent(requireNonNull(key, "key"), value);
-        List<Throwable> list = stacktraces.computeIfAbsent(key, __ -> new CopyOnWriteArrayList<>());
-        list.add(new Throwable("putIfAbsent(" + value + ")=" + oldVal +
-                " on " + Thread.currentThread().getName() +
-                " at " + System.nanoTime() +
-                " for " + Integer.toHexString(System.identityHashCode(this))));
-        return oldVal;
+        return (T) theMap.putIfAbsent(requireNonNull(key, "key"), value);
     }
 
     @Nullable

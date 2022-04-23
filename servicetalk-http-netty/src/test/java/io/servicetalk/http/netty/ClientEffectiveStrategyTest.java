@@ -23,12 +23,8 @@ import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.internal.DefaultContextMap;
-import io.servicetalk.context.api.ContextMap;
-import io.servicetalk.http.api.AbstractHttpMetaData;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.BlockingStreamingHttpClient;
-import io.servicetalk.http.api.BlockingStreamingHttpRequest;
 import io.servicetalk.http.api.BlockingStreamingHttpResponse;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
@@ -38,8 +34,6 @@ import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpLoadBalancerFactory;
-import io.servicetalk.http.api.HttpMetaData;
-import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.MultiAddressHttpClientBuilder;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
@@ -300,22 +294,20 @@ class ClientEffectiveStrategyTest {
                 HttpExecutionStrategy effectiveStrategy = computeClientExecutionStrategy(
                         builderType, builderStrategy, filterStrategy, lbStrategy, cfStrategy, clientApi);
 
-                long startTime = System.nanoTime();
                 invokingThreadsRecorder.reset(effectiveStrategy);
                 String responseBody = getResponse(clientApi, client, requestTarget);
-                long endTime = System.nanoTime();
                 assertThat("Unexpected response: " + responseBody, responseBody, is(not(emptyString())));
                 invokingThreadsRecorder.verifyOffloads(clientApi, client.executionContext().executionStrategy(),
-                        responseBody, startTime, endTime);
+                        responseBody);
 
-                // Complete a second request because connection factory opening can offload strangely
-                startTime = System.nanoTime();
+                // Execute request one more time to make sure we cover all paths:
+                // 1. When client opens a new connection, open connection callback comes on IoThread.
+                // 2. When client reuses connection, aggregation of request payload body can run on application thread.
                 invokingThreadsRecorder.reset(effectiveStrategy);
                 responseBody = getResponse(clientApi, client, requestTarget);
-                endTime = System.nanoTime();
                 assertThat("Unexpected response: " + responseBody, responseBody, is(not(emptyString())));
                 invokingThreadsRecorder.verifyOffloads(clientApi, client.executionContext().executionStrategy(),
-                        responseBody, startTime, endTime);
+                        responseBody);
             }
         }
     }
@@ -402,53 +394,41 @@ class ClientEffectiveStrategyTest {
         switch (clientApi) {
             case BLOCKING_AGGREGATE: {
                 BlockingHttpClient blockingClient = client.asBlockingClient();
-                final HttpRequest request = blockingClient.post(requestTarget)
-                        .payloadBody(content(blockingClient.executionContext()));
-                HttpResponse response = blockingClient.request(request);
-                return response.payloadBody().toString(UTF_8) +
-                        ", request=" + Integer.toHexString(System.identityHashCode(request)) +
-                        ", requestContext=" + Integer.toHexString(System.identityHashCode(request.context()));
+                HttpResponse response = blockingClient.request(blockingClient.post(requestTarget)
+                        .payloadBody(content(blockingClient.executionContext())));
+                return response.payloadBody().toString(UTF_8);
             }
 
             case BLOCKING_STREAMING: {
                 BlockingStreamingHttpClient blockingStreamingClient = client.asBlockingStreamingClient();
-                final BlockingStreamingHttpRequest request = blockingStreamingClient.post(requestTarget)
-                        .payloadBody(singleton(content(blockingStreamingClient.executionContext())));
                 BlockingStreamingHttpResponse response = blockingStreamingClient.request(
-                        request);
+                        blockingStreamingClient.post(requestTarget)
+                                .payloadBody(singleton(content(blockingStreamingClient.executionContext()))));
                 Supplier<CompositeBuffer> supplier =
                         blockingStreamingClient.executionContext().bufferAllocator()::newCompositeBuffer;
                 return StreamSupport.stream(response.payloadBody().spliterator(), false)
                         .reduce((Buffer base, Buffer buffer) -> (base instanceof CompositeBuffer ?
                                 (CompositeBuffer) base : supplier.get().addBuffer(base)).addBuffer(buffer))
                         .map(buffer -> buffer.toString(UTF_8))
-                        .orElseThrow(() -> new AssertionError("No payload in response")) +
-                        ", request=" + Integer.toHexString(System.identityHashCode(request)) +
-                        ", requestContext=" + Integer.toHexString(System.identityHashCode(request.context()));
+                        .orElseThrow(() -> new AssertionError("No payload in response"));
             }
 
             case ASYNC_AGGREGATE: {
                 HttpClient httpClient = client.asClient();
-                final HttpRequest request = httpClient.post(requestTarget)
-                        .payloadBody(content(httpClient.executionContext()));
-                HttpResponse response = httpClient.request(request)
+                HttpResponse response = httpClient.request(httpClient.post(requestTarget)
+                                .payloadBody(content(httpClient.executionContext())))
                         .toFuture().get();
-                return response.payloadBody().toString(UTF_8) +
-                        ", request=" + Integer.toHexString(System.identityHashCode(request)) +
-                        ", requestContext=" + Integer.toHexString(System.identityHashCode(request.context()));
+                return response.payloadBody().toString(UTF_8);
             }
 
             case ASYNC_STREAMING: {
-                final StreamingHttpRequest request = client.post(requestTarget)
-                        .payloadBody(Publisher.from(content(client.executionContext())));
-                CompositeBuffer responsePayload = client.request(request)
+                CompositeBuffer responsePayload = client.request(client.post(requestTarget)
+                                .payloadBody(Publisher.from(content(client.executionContext()))))
                         .flatMap(resp -> resp.payloadBody().collect(() ->
                                         client.executionContext().bufferAllocator().newCompositeBuffer(),
                                 CompositeBuffer::addBuffer))
                         .toFuture().get();
-                return responsePayload.toString(UTF_8) +
-                        ", request=" + Integer.toHexString(System.identityHashCode(request)) +
-                        ", requestContext=" + Integer.toHexString(System.identityHashCode(request.context()));
+                return responsePayload.toString(UTF_8);
             }
 
             default:
@@ -499,19 +479,18 @@ class ClientEffectiveStrategyTest {
                 protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                                 final StreamingHttpRequest request) {
                     final HttpExecutionStrategy clientStrategy = delegate.executionContext().executionStrategy();
+                    final HttpExecutionStrategy requestStrategy = request.context().get(HTTP_EXECUTION_STRATEGY_KEY);
                     return delegate.request(request.transformPayloadBody(payload ->
-                                    payload.beforeRequest(__ -> recordThread(Send, clientStrategy, request))))
-                            .beforeOnSuccess(__ -> recordThread(ReceiveMeta, clientStrategy, request))
+                                    payload.beforeRequest(__ -> recordThread(Send, clientStrategy, requestStrategy))))
+                            .beforeOnSuccess(__ -> recordThread(ReceiveMeta, clientStrategy, requestStrategy))
                             .map(resp -> resp.transformPayloadBody(payload -> payload
-                                    .beforeOnNext(__ -> recordThread(ReceiveData, clientStrategy, request))));
+                                    .beforeOnNext(__ -> recordThread(ReceiveData, clientStrategy, requestStrategy))));
                 }
             };
         }
 
         void recordThread(final ClientOffloadPoint offloadPoint, final HttpExecutionStrategy clientStrategy,
-                          final HttpMetaData metaData) {
-            final ContextMap reqCtx = metaData.context();
-            final HttpExecutionStrategy requestStrategy = reqCtx.get(HTTP_EXECUTION_STRATEGY_KEY);
+                          @Nullable final HttpExecutionStrategy requestStrategy) {
             invokingThreads.compute(offloadPoint, (ClientOffloadPoint offload, String recorded) -> {
                 Thread current = Thread.currentThread();
                 boolean appThread = current == applicationThread;
@@ -523,26 +502,7 @@ class ClientEffectiveStrategyTest {
                         if (ioThread) {
                             final AssertionError e = new AssertionError("Expected offloaded thread at " + offloadPoint +
                                     ", but was running on " + current.getName() + ". clientStrategy=" + clientStrategy +
-                                    ", requestStrategy=" + requestStrategy +
-                                    ", timestamp=" + System.nanoTime() +
-                                    ", request=" + Integer.toHexString(System.identityHashCode(metaData)) +
-                                    ", requestContext=" + Integer.toHexString(System.identityHashCode(reqCtx)));
-                            if (reqCtx instanceof DefaultContextMap) {
-                                List<Throwable> stacktrace = ((DefaultContextMap) reqCtx).ctorStacktrace();
-                                for (Throwable t : stacktrace) {
-                                    e.addSuppressed(t);
-                                }
-                                stacktrace = ((DefaultContextMap) reqCtx).stacktrace(HTTP_EXECUTION_STRATEGY_KEY);
-                                for (Throwable t : stacktrace) {
-                                    e.addSuppressed(t);
-                                }
-                            }
-                            if (metaData instanceof AbstractHttpMetaData) {
-                                List<Throwable> stacktrace = ((AbstractHttpMetaData) metaData).contextAssigned;
-                                for (Throwable t : stacktrace) {
-                                    e.addSuppressed(t);
-                                }
-                            }
+                                    ", requestStrategy=" + requestStrategy);
                             errors.add(e);
                         }
                     } else {
@@ -550,26 +510,7 @@ class ClientEffectiveStrategyTest {
                             final AssertionError e = new AssertionError("Expected IoThread or " +
                                     applicationThread.getName() + " at " + offloadPoint +
                                     ", but was running on an offloading executor thread: " + current.getName() +
-                                    ". clientStrategy=" + clientStrategy + ", requestStrategy=" + requestStrategy +
-                                    ", timestamp=" + System.nanoTime() +
-                                    ", request=" + Integer.toHexString(System.identityHashCode(metaData)) +
-                                    ", requestContext=" + Integer.toHexString(System.identityHashCode(reqCtx)));
-                            if (reqCtx instanceof DefaultContextMap) {
-                                List<Throwable> stacktrace = ((DefaultContextMap) reqCtx).ctorStacktrace();
-                                for (Throwable t : stacktrace) {
-                                    e.addSuppressed(t);
-                                }
-                                stacktrace = ((DefaultContextMap) reqCtx).stacktrace(HTTP_EXECUTION_STRATEGY_KEY);
-                                for (Throwable t : stacktrace) {
-                                    e.addSuppressed(t);
-                                }
-                            }
-                            if (metaData instanceof AbstractHttpMetaData) {
-                                List<Throwable> stacktrace = ((AbstractHttpMetaData) metaData).contextAssigned;
-                                for (Throwable t : stacktrace) {
-                                    e.addSuppressed(t);
-                                }
-                            }
+                                    ". clientStrategy=" + clientStrategy + ", requestStrategy=" + requestStrategy);
                             errors.add(e);
                         }
                     }
@@ -578,11 +519,9 @@ class ClientEffectiveStrategyTest {
             });
         }
 
-        public void verifyOffloads(ClientApi clientApi, HttpExecutionStrategy clientStrategy,
-                                   String apiStrategyAndResponseIdentity, long startTime, long endTime) {
+        public void verifyOffloads(ClientApi clientApi, HttpExecutionStrategy clientStrategy, String apiStrategy) {
             assertNoAsyncErrors("API=" + clientApi + ", clientStrategy=" + clientStrategy + ", apiStrategy=" +
-                    apiStrategyAndResponseIdentity + ", startTime=" + startTime + ", endTime=" + endTime +
-                    ". Async Errors! See suppressed", errors);
+                    apiStrategy + ". Async Errors! See suppressed", errors);
             assertThat("Unexpected offload points recorded. " + invokingThreads,
                     invokingThreads.size(), Matchers.is(ClientOffloadPoint.values().length));
         }
