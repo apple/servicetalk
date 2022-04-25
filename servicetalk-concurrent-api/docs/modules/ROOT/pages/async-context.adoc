@@ -145,18 +145,31 @@ examples below:
 [source, java]
 ----
 Publisher<String> publisher = ...;
+AsyncContext.put(KEY, 10); // (1) put a value into AsyncContext before a .subscribe(..)
 publisher
-.flatMapSingle(v -> {
-  // (1) AsyncContext will be saved before the async boundary
+.flatMapMergeSingle(v -> {
+  Integer contextValue = AsyncContext.get(KEY);
+  assert contextValue == 10 || contextValue == 30; // (2) Subscriber chain may see either value.
 
   // AsyncContext will be copied/isolated when this async source is subscribed to
-  client.request(/*do something with v*/)
-)
+  return client.request(/*do something with v*/)
+               .map(x -> {
+                    AsyncContext.put(KEY, 20); // (3) put a new value for the same key
+                    return x;
+                });
+})
 .map(v -> {
-  // AsyncContext before the async boundary (1) is restored
+  Integer contextValue = AsyncContext.get(KEY);
+  assert contextValue == 10 || contextValue == 30;
 
-  // Note that modifications made to AsyncContext here may introduce concurrency
-  // and be visible before the async boundary above (1).
+  // `publisher` may emit more items, and if it does then `flatMapMergeSingle` `Function` may be invoked concurrently
+  // with this code. This is because `client.request(..)`` may complete on a different thread than `publisher` is
+  // delivering data on. This code has access to the same map as (2) which may result in concurrent modifications on
+  // `AsyncContext`. This is allowed by `AsyncContext` but may not be obvious due to modifications made "later" in the
+  // operator chain being visible "earlier" in the operator chain.
+  AsyncContext.put(KEY, 30);
+
+  return v;
 })
 ----
 
@@ -167,11 +180,11 @@ visible outside the asynchronous boundary.
 ----
 Executor executor = ...
 
-AsyncContext.put(key, "foo")
+AsyncContext.put(KEY, "foo");
 executor.execute(() -> {
-  AsyncContext.put(key, "bar")
+  AsyncContext.put(KEY, "bar");
 });
-String value = AsyncContext.get(key);
+String value = AsyncContext.get(KEY);
 // value maybe "foo" or "bar" due to concurrent modifications
 ----
 
