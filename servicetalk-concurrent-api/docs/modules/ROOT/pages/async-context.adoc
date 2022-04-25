@@ -150,8 +150,8 @@ publisher.flatMapMergeSingle(v -> {
   Integer contextValue = AsyncContext.get(KEY);
   assert contextValue == 10 || contextValue == 30; // (2) Subscriber chain may see either value.
 
-  // AsyncContext will be copied/isolated when this async source is subscribed to. Changes to the AsyncContext map from
-  // async operators on inner operator chain will therefore not be visible in the outer operator chain.
+  // AsyncContext will be copied when Single.subscribe(..) is called. Changes to the AsyncContext map from operators on
+  // the inner Single operator chain will therefore not be visible in the outer Publisher operator chain.
   return client.request(/*do something with v*/)
                .map(x -> {
                     AsyncContext.put(KEY, 20); // (3) put a new value for the same key
@@ -162,7 +162,7 @@ publisher.flatMapMergeSingle(v -> {
   assert contextValue == 10 || contextValue == 30;
 
   // `publisher` may emit more items, and if it does then `flatMapMergeSingle` `Function` may be invoked concurrently
-  // with this code. This is because `client.request(..)`` may complete on a different thread than `publisher` is
+  // with this code. This is because `client.request(..)` may complete on a different thread than `publisher` is
   // delivering data on. This code has access to the same map as (2) which may result in concurrent modifications on
   // `AsyncContext`. This is allowed by `AsyncContext` but may not be obvious due to modifications made "later" in the
   // operator chain being visible "earlier" in the operator chain.
