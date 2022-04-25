@@ -146,19 +146,18 @@ examples below:
 ----
 Publisher<String> publisher = ...;
 AsyncContext.put(KEY, 10); // (1) put a value into AsyncContext before a .subscribe(..)
-publisher
-.flatMapMergeSingle(v -> {
+publisher.flatMapMergeSingle(v -> {
   Integer contextValue = AsyncContext.get(KEY);
   assert contextValue == 10 || contextValue == 30; // (2) Subscriber chain may see either value.
 
-  // AsyncContext will be copied/isolated when this async source is subscribed to
+  // AsyncContext will be copied/isolated when this async source is subscribed to. Changes to the AsyncContext map from
+  // async operators on inner operator chain will therefore not be visible in the outer operator chain.
   return client.request(/*do something with v*/)
                .map(x -> {
                     AsyncContext.put(KEY, 20); // (3) put a new value for the same key
                     return x;
                 });
-})
-.map(v -> {
+}).map(v -> {
   Integer contextValue = AsyncContext.get(KEY);
   assert contextValue == 10 || contextValue == 30;
 
