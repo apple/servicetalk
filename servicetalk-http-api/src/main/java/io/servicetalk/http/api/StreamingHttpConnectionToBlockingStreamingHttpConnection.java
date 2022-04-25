@@ -32,6 +32,8 @@ final class StreamingHttpConnectionToBlockingStreamingHttpConnection implements 
 
     StreamingHttpConnectionToBlockingStreamingHttpConnection(final StreamingHttpConnection connection,
                                                              final HttpExecutionStrategy strategy) {
+        assert connection.executionContext().executionStrategy().hasOffloads() || !strategy.hasOffloads() :
+                "Incompatible client strategy : " + strategy;
         this.strategy = defaultStrategy() == strategy ? DEFAULT_BLOCKING_STREAMING_CONNECTION_STRATEGY : strategy;
         this.connection = connection;
         final HttpConnectionContext originalCtx = connection.connectionContext();

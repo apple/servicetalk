@@ -112,12 +112,38 @@ class ClientEffectiveStrategyTest {
     private static final String PATH = TestServiceStreaming.SVC_ECHO;
 
     /**
-     * Which builder API will be used and where will ExecutionStrategy be initialized.
+     * Which builder API will be used and where will test {@link HttpExecutionStrategy} be applied.
      */
     private enum BuilderType {
+        /**
+         * Test execution strategy applied to single client builder,
+         * {@link SingleAddressHttpClientBuilder#executionStrategy(HttpExecutionStrategy)}.
+         */
         SINGLE_BUILDER,
+
+        /**
+         * Test execution strategy applied to multi client builder,
+         * {@link MultiAddressHttpClientBuilder#executionStrategy(HttpExecutionStrategy)}.
+         * Single client builder inherits multi client execution context strategy.
+         */
         MULTI_BUILDER,
+
+        /**
+         * Multi client builder uses default strategy ({@link HttpExecutionStrategies#defaultStrategy()}).
+         * Single client builder inherits multi client builder execution context strategy,
+         * {@link HttpExecutionStrategies#defaultStrategy()}.
+         * Test execution strategy applied to single client builder,
+         * {@link SingleAddressHttpClientBuilder#executionStrategy(HttpExecutionStrategy)}.
+         */
         MULTI_DEFAULT_STRATEGY_SINGLE_BUILDER,
+
+        /**
+         * Multi client builder uses {@link HttpExecutionStrategies#offloadNone()} strategy.
+         * Single client builder inherits multi client builder execution context strategy,
+         * {@link HttpExecutionStrategies#offloadNone()}.
+         * Test execution strategy applied to single client builder,
+         * {@link SingleAddressHttpClientBuilder#executionStrategy(HttpExecutionStrategy)}.
+         */
         MULTI_OFFLOAD_NONE_SINGLE_BUILDER
     }
 
@@ -361,7 +387,7 @@ class ClientEffectiveStrategyTest {
                 return defaultStrategy() == merged ? clientApi.strategy() : merged;
             case MULTI_BUILDER:
                 return null == builder || defaultStrategy() == builder ?
-                    defaultStrategy() == merged ? clientApi.strategy() : clientApi.strategy().merge(merged) :
+                    defaultStrategy() == merged ? offloadAll() : clientApi.strategy().merge(merged) :
                     merged;
             case MULTI_DEFAULT_STRATEGY_SINGLE_BUILDER:
                     if (defaultStrategy() == merged || (null != builder && !builder.hasOffloads())) {
@@ -369,7 +395,7 @@ class ClientEffectiveStrategyTest {
                     }
                     return clientApi.strategy().merge(merged);
             case MULTI_OFFLOAD_NONE_SINGLE_BUILDER:
-                return defaultStrategy() == merged ? offloadNone() : merged;
+                return merged;
             default:
                 throw new AssertionError("Unexpected builder type: " + builderType);
         }

@@ -298,12 +298,13 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                 currClientFilterFactory = appendFilter(currClientFilterFactory,
                         ctx.builder.retryingHttpRequesterFilter);
             }
+            FilterableStreamingHttpClient wrappedClient = currClientFilterFactory != null ?
+                    currClientFilterFactory.create(lbClient, lb.eventStream(), ctx.sdStatus) :
+                    lbClient;
 
             LOGGER.debug("Client for {} created with base strategy {} → computed strategy {}",
                     targetAddress(ctx), builderExecutionContext.executionStrategy(), computedStrategy);
-            return new FilterableClientToClient(currClientFilterFactory != null ?
-                    currClientFilterFactory.create(lbClient, lb.eventStream(), ctx.sdStatus) :
-                        lbClient, computedStrategy);
+            return new FilterableClientToClient(wrappedClient, executionContext);
         } catch (final Throwable t) {
             closeOnException.closeAsync().subscribe();
             throw t;

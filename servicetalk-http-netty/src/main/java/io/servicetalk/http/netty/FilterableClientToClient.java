@@ -20,7 +20,6 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.BlockingStreamingHttpClient;
-import io.servicetalk.http.api.DelegatingHttpExecutionContext;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpConnectionContext;
@@ -50,14 +49,9 @@ final class FilterableClientToClient implements StreamingHttpClient {
     private final FilterableStreamingHttpClient client;
     private final HttpExecutionContext executionContext;
 
-    FilterableClientToClient(FilterableStreamingHttpClient filteredClient, HttpExecutionStrategy strategy) {
+    FilterableClientToClient(FilterableStreamingHttpClient filteredClient, HttpExecutionContext executionContext) {
         client = filteredClient;
-        this.executionContext = new DelegatingHttpExecutionContext(client.executionContext()) {
-            @Override
-            public HttpExecutionStrategy executionStrategy() {
-                return strategy;
-            }
-        };
+        this.executionContext = executionContext;
     }
 
     @Override

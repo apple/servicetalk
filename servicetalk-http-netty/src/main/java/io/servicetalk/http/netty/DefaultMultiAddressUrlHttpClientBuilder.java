@@ -71,6 +71,7 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverComplete
 import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadAll;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.setExecutionContext;
@@ -130,7 +131,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
                     new RedirectingHttpRequesterFilter(redirectConfig).create(urlClient);
 
             LOGGER.debug("Multi-address client created with base strategy {}", executionContext.executionStrategy());
-            return new FilterableClientToClient(urlClient, executionContext.executionStrategy());
+            return new FilterableClientToClient(urlClient, executionContext);
         } catch (final Throwable t) {
             closeables.closeAsync().subscribe();
             throw t;
@@ -341,7 +342,17 @@ final class DefaultMultiAddressUrlHttpClientBuilder
                 final HttpRequestMetaData metaData) {
             return defer(() -> {
                 try {
-                    return selectClient(metaData).reserveConnection(metaData).shareContextOnSubscribe();
+                    FilterableStreamingHttpClient singleClient = selectClient(metaData);
+                    HttpExecutionStrategy requestStrategy = metaData.context().get(HTTP_EXECUTION_STRATEGY_KEY);
+                    HttpExecutionStrategy clientStrategy = singleClient.executionContext().executionStrategy();
+                    HttpExecutionStrategy useStrategy = defaultStrategy() == clientStrategy ?
+                            requestStrategy :
+                            clientStrategy.merge(offloadNever() == requestStrategy ? offloadNone() : requestStrategy);
+                    if (requestStrategy != useStrategy) {
+                        // single client overrides request strategy;
+                        metaData.context().put(HTTP_EXECUTION_STRATEGY_KEY, useStrategy);
+                    }
+                    return singleClient.reserveConnection(metaData).shareContextOnSubscribe();
                 } catch (Throwable t) {
                     return Single.<FilterableReservedStreamingHttpConnection>failed(t).shareContextOnSubscribe();
                 }
@@ -352,7 +363,17 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
             return defer(() -> {
                 try {
-                    return selectClient(request).request(request).shareContextOnSubscribe();
+                    FilterableStreamingHttpClient singleClient = selectClient(request);
+                    HttpExecutionStrategy requestStrategy = request.context().get(HTTP_EXECUTION_STRATEGY_KEY);
+                    HttpExecutionStrategy clientStrategy = singleClient.executionContext().executionStrategy();
+                    HttpExecutionStrategy useStrategy = defaultStrategy() == clientStrategy ?
+                            requestStrategy :
+                            clientStrategy.merge(offloadNever() == requestStrategy ? offloadNone() : requestStrategy);
+                    if (requestStrategy != useStrategy) {
+                        // single client overrides request strategy;
+                        request.context().put(HTTP_EXECUTION_STRATEGY_KEY, useStrategy);
+                    }
+                    return singleClient.request(request).shareContextOnSubscribe();
                 } catch (Throwable t) {
                     return Single.<StreamingHttpResponse>failed(t).shareContextOnSubscribe();
                 }
