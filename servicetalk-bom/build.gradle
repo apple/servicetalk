@@ -17,9 +17,12 @@
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-core"
 apply plugin: "java-platform"
 
-rootProject.subprojects.findAll { !it.name.contains("bom") && !it.name.contains("examples") &&
-                                          !it.name.equals("grpc") && !it.name.equals("http") }.each {
-  dependencies.constraints.add("api", it)
+rootProject.subprojects.findAll {
+  !it.name.endsWith("-bom") && !it.name.contains("-examples") &&
+          !it.name.equals("grpc") && !it.name.equals("http") &&
+          !it.name.endsWith("-internal")
+}.each {
+  dependencies.constraints.add(JavaPlugin.API_CONFIGURATION_NAME, it)
 }
 
 // Keep publishing and signing configuration in sync with ServiceTalkLibraryPlugin.groovy from
