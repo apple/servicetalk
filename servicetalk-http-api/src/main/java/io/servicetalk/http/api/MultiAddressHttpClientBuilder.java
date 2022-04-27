@@ -16,6 +16,7 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.transport.api.IoExecutor;
@@ -75,23 +76,37 @@ public interface MultiAddressHttpClientBuilder<U, R> extends HttpClientBuilder<U
      * <p>Provides the base execution strategy for all clients created from this builder and the default strategy for
      * the {@link SingleAddressHttpClientBuilder} used to construct client instances. The
      * {@link #initializer(SingleAddressInitializer)} may be used for some customization of the execution strategy for a
-     * specific client. Unless {@link HttpExecutionStrategies#offloadNone()} is specified as the execution strategy on
-     * this builder then the single client computed execution strategy will be merged with this builder strategy.
+     * specific single address client instance, but may not reduce the offloading to be performed. Specifically, the
+     * initializer may introduce additional offloading via
+     * {@link SingleAddressHttpClientBuilder#executionStrategy(HttpExecutionStrategy)} and may add filters which
+     * influence the computed execution strategy.
+     *
+     * <p>Specifying an execution strategy will affect the offloading used during the execution of client requests:
      *
      * <dl>
-     *     <dt>unspecified or {@link HttpExecutionStrategies#defaultStrategy()}
-     *     <dd>Effective execution strategy will be appropriate for the API (async/blocking streaming/aggregate) of the
-     *     client used and will be be merged with the computed execution strategy of the single address client produced
-     *     by {@link SingleAddressHttpClientBuilder}.
-     *
+     *     <dt>Unspecified or {@link HttpExecutionStrategies#defaultStrategy()}
+     *     <dd>The resulting client instances will use the default safe strategy for each API variant and
+     *     {@link SingleAddressHttpClientBuilder} instances generated will also have
+     *     default strategy. The computed strategy <strong style="text-transform: uppercase;">MAY NOT</strong> reduce
+     *     the offloads used for client request execution from the client API safe default.
      *
      *     <dt>{@link HttpExecutionStrategies#offloadNone()}
-     *     (or deprecated {@link HttpExecutionStrategies#offloadNever()}),
-     *     a custom execution strategy ({@link HttpExecutionStrategies#customStrategyBuilder()}), or
+     *     (or deprecated {@link HttpExecutionStrategies#offloadNever()})
+     *     <dd>{@link SingleAddressHttpClientBuilder} instances created by the client will have a default strategy of
+     *     {@link HttpExecutionStrategies#offloadNone()}. An
+     *     {@link #initializer(SingleAddressInitializer) initializer} may override to add offloads using
+     *     {@link SingleAddressHttpClientBuilder#executionStrategy(HttpExecutionStrategy)}. Overriding the execution
+     *     strategy to require offloads will also allowed filters added to influence the computed execution strategy.
+     *     If not overridden by initializer, the resulting computed {@link HttpExecutionStrategies#offloadNone()}
+     *     execution strategy requires that filters
+     *     and asynchronous callbacks <strong style="text-transform: uppercase;">must not</strong> ever block during
+     *     the execution of client requests.
+     *
+     *     <dt>A custom execution strategy ({@link HttpExecutionStrategies#customStrategyBuilder()}) or
      *     {@link HttpExecutionStrategies#offloadAll()}
-     *     <dd>Will be used, as specified, without regard to the API of the client used and will be merged with the
-     *     computed execution strategy of the single address client produced by
-     *     {@link SingleAddressHttpClientBuilder}.
+     *     <dd>{@link SingleAddressHttpClientBuilder} instances created by the client will have a default strategy of
+     *     the provided strategy and must result in a computed execution strategy with at least the same offloads as the
+     *     provided.
      * </dl>
      *
      * @param strategy {@inheritDoc}
@@ -118,7 +133,10 @@ public interface MultiAddressHttpClientBuilder<U, R> extends HttpClientBuilder<U
     /**
      * Set a function which can customize options for each {@link StreamingHttpClient} that is built.
      * @param initializer Initializes the {@link SingleAddressHttpClientBuilder} used to build new
-     * {@link StreamingHttpClient}s.
+     * {@link StreamingHttpClient}s. See {@link #executionStrategy(HttpExecutionStrategy)} for discussion of
+     * restrictions on the use of {@link SingleAddressHttpClientBuilder#executionStrategy(HttpExecutionStrategy)}
+     * within an initializer.
+     *
      * @return {@code this}
      */
     MultiAddressHttpClientBuilder<U, R> initializer(SingleAddressInitializer<U, R> initializer);

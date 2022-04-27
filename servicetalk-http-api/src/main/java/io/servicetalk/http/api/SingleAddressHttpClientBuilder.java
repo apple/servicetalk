@@ -16,11 +16,7 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.BufferAllocator;
-import io.servicetalk.client.api.ConnectionFactory;
-import io.servicetalk.client.api.ConnectionFactoryFilter;
-import io.servicetalk.client.api.LoadBalancer;
-import io.servicetalk.client.api.ServiceDiscoverer;
-import io.servicetalk.client.api.ServiceDiscovererEvent;
+import io.servicetalk.client.api.*;
 import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
@@ -175,26 +171,31 @@ public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<
     /**
      * {@inheritDoc}
      *
-     * <p>Unless {@link HttpExecutionStrategies#offloadNone()} is specified as the execution strategy on
-     * this builder, the actual execution strategy used will be influenced by the execution strategy required by filters
-     * added via {@link #appendClientFilter(StreamingHttpClientFilterFactory)},
-     * {@link #appendConnectionFilter(StreamingHttpConnectionFilterFactory)}, and
-     * {@link #appendConnectionFactoryFilter(ConnectionFactoryFilter)}</p>, etc.
+     * <p>Specifying an execution strategy will affect the offloading used during the execution of client requests:
      *
      * <dl>
-     *     <dt>unspecified or {@link HttpExecutionStrategies#defaultStrategy()}
-     *     <dd>Effective execution strategy will be appropriate for the API (async/blocking streaming/aggregate) of the
-     *     client used and will be {@linkplain HttpExecutionStrategyInfluencer influenced} by required strategies of
-     *     any filters.
+     *     <dt>Unspecified or {@link HttpExecutionStrategies#defaultStrategy()}
+     *     <dd>A safe execution strategy appropriate for the client API and the filters added will be computed and used.
+     *     Each client API variant (async/blocking streaming/aggregate) requires a specific set of offloads to avoid
+     *     blocking the event-loop. In addition, filters added via
+     *     {@link #appendClientFilter(StreamingHttpClientFilterFactory)},
+     *     {@link #appendConnectionFilter(StreamingHttpConnectionFilterFactory)}, or
+     *     {@link #appendConnectionFactoryFilter(ConnectionFactoryFilter)}</p>, etc. may also require offloading.
+     *     The execution strategy used will be computed using the client API required strategy
+     *     {@linkplain HttpExecutionStrategyInfluencer influenced} by the required strategies of added filters.
      *
      *     <dt>{@link HttpExecutionStrategies#offloadNone()}
      *     (or deprecated {@link HttpExecutionStrategies#offloadNever()})
-     *     <dd>No offloading will be used regardless of the client API used or the influence of the filters.
+     *     <dd>No offloading will be used regardless of the client API used or the influence of added filters. Filters
+     *     and asynchronous callbacks <strong style="text-transform: uppercase;">must not</strong> ever block during
+     *     the execution of client requests.
      *
      *     <dt>A custom execution strategy ({@link HttpExecutionStrategies#customStrategyBuilder()}) or
      *     {@link HttpExecutionStrategies#offloadAll()}
-     *     <dd>Will be used, as specified, without regard to the API of the client used. Effective execution strategy
-     *     will be specified value plus any additional offloads required by any filters.
+     *     <dd>The specified execution strategy will be used rather than the client API's default safe strategy. Like
+     *     with the default strategy, the actual execution strategy used is computed from the provided strategy and
+     *     the added filters. Filters and asynchronous callbacks <strong style="text-transform: uppercase;">MAY</strong>
+     *     only block during the offloaded portions of the client request execution.
      * </dl>
      *
      * @param strategy {@inheritDoc}
