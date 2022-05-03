@@ -40,7 +40,7 @@ final class ServiceTalkRootPlugin extends ServiceTalkCorePlugin {
   private static void addJavadocAllTask(Project project) {
     project.configure(project) {
       project.task("javadocAll", type: Javadoc) {
-        description = "Consolidate sub-project's Javadoc into a single location"
+        description = "Generate consolidated public API Javadoc"
         group = "documentation"
         destinationDir = file("$buildDir/javadoc")
         // Disable module directories to avoid "undefined" sub-folder bug in JDK11. See:
@@ -51,7 +51,7 @@ final class ServiceTalkRootPlugin extends ServiceTalkCorePlugin {
         }
 
         gradle.projectsEvaluated {
-          subprojects.findAll {!it.name.contains("examples")}.each { prj ->
+          subprojects.findAll {!it.name.contains("examples") && !it.name.endsWith("-internal")}.each { prj ->
             prj.tasks.withType(Javadoc).each { javadocTask ->
               source += javadocTask.source
               classpath += javadocTask.classpath
