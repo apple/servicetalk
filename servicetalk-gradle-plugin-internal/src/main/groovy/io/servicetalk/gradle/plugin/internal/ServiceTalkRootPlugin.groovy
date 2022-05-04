@@ -52,7 +52,7 @@ final class ServiceTalkRootPlugin extends ServiceTalkCorePlugin {
 
         gradle.projectsEvaluated {
           subprojects.findAll {!it.name.contains("examples")}.each { prj ->
-            prj.tasks.withType(Javadoc).each { javadocTask ->
+            prj.tasks.withType(Javadoc).findAll {it.name.equals("javadoc")}.each { javadocTask ->
               source += javadocTask.source
               classpath += javadocTask.classpath
               excludes += javadocTask.excludes
