@@ -20,6 +20,7 @@
 ** xref:{page-version}@servicetalk-examples::grpc/index.adoc#HelloWorld[Hello World]
 ** xref:{page-version}@servicetalk-examples::grpc/index.adoc#Compression[Compression]
 ** xref:{page-version}@servicetalk-examples::grpc/index.adoc#Deadlines[Deadlines]
+** xref:{page-version}@servicetalk-examples::grpc/index.adoc#KeeepAlive[Keep Alive]
 ** xref:{page-version}@servicetalk-examples::grpc/index.adoc#Observer[Observer]
 ** xref:{page-version}@servicetalk-examples::grpc/index.adoc#Health[Health Checking]
 ** xref:{page-version}@servicetalk-examples::grpc/index.adoc#errors[Application Errors]
