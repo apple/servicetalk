@@ -56,7 +56,7 @@ final class BlockingStreamingHttpClientTest {
             // Allow first item in Iterator to return from next().
             nextSuppliers.countDownNextLatch();
             BlockingStreamingHttpResponse resp = client.request(client.get("/")
-                    .payloadBody(new TestBlockingIterable<>(nextSuppliers,nextSuppliers), appSerializerAsciiFixLen()));
+                    .payloadBody(new TestBlockingIterable<>(nextSuppliers, nextSuppliers), appSerializerAsciiFixLen()));
             StringBuilder responseBody = new StringBuilder(numItems);
             int i = 0;
             for (String respChunk : resp.payloadBody(appSerializerAsciiFixLen())) {
@@ -75,16 +75,16 @@ final class BlockingStreamingHttpClientTest {
         private final AtomicInteger nextIndex = new AtomicInteger();
         private final AtomicInteger latchIndex = new AtomicInteger();
 
+        NextSuppliers(List<NextSupplier<T>> items) {
+            this.items = items;
+        }
+
         static NextSuppliers<String> stringSuppliers(final int numItems) {
             List<NextSupplier<String>> items = new ArrayList<>(numItems);
             for (int i = 0; i < numItems; ++i) {
                 items.add(new NextSupplier<>(String.valueOf(i)));
             }
             return new NextSuppliers<>(items);
-        }
-
-        NextSuppliers(List<NextSupplier<T>> items) {
-            this.items = items;
         }
 
         void countDownNextLatch() {

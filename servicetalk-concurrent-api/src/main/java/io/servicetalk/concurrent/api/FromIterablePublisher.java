@@ -33,15 +33,15 @@ final class FromIterablePublisher<T> extends AbstractSynchronousPublisher<T> {
 
     private final Iterable<? extends T> iterable;
 
+    private FromIterablePublisher(Iterable<? extends T> iterable) {
+        this.iterable = requireNonNull(iterable);
+    }
+
     @SuppressWarnings("unchecked")
     static <T> Publisher<T> fromIterable0(Iterable<? extends T> iterable) {
         // Unwrap and grab the Publisher directly if possible to avoid conversion layers.
         return iterable instanceof PublisherAsBlockingIterable ? ((PublisherAsBlockingIterable<T>) iterable).original :
                 new FromIterablePublisher<>(iterable);
-    }
-
-    private FromIterablePublisher(Iterable<? extends T> iterable) {
-        this.iterable = requireNonNull(iterable);
     }
 
     @Override
