@@ -33,9 +33,16 @@ final class FromBlockingIterablePublisher<T> extends AbstractSynchronousPublishe
     private final LongSupplier timeoutSupplier;
     private final TimeUnit unit;
 
-    FromBlockingIterablePublisher(final BlockingIterable<? extends T> iterable,
-                                  final LongSupplier timeoutSupplier,
-                                  final TimeUnit unit) {
+    @SuppressWarnings("unchecked")
+    static <T> Publisher<T> fromBlockingIterable0(
+            BlockingIterable<? extends T> iterable, LongSupplier timeoutSupplier, TimeUnit unit) {
+        // Unwrap and grab the Publisher directly if possible to avoid conversion layers.
+        return iterable instanceof PublisherAsBlockingIterable ? ((PublisherAsBlockingIterable<T>) iterable).original :
+                new FromBlockingIterablePublisher<>(iterable, timeoutSupplier, unit);
+    }
+
+    private FromBlockingIterablePublisher(
+            final BlockingIterable<? extends T> iterable, final LongSupplier timeoutSupplier, final TimeUnit unit) {
         this.iterable = requireNonNull(iterable);
         this.timeoutSupplier = requireNonNull(timeoutSupplier);
         this.unit = requireNonNull(unit);

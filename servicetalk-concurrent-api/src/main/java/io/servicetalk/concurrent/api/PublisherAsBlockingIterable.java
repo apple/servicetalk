@@ -49,7 +49,7 @@ import static java.util.Objects.requireNonNull;
  * @param <T> Type of items emitted by the {@link Publisher} from which this {@link BlockingIterable} is created.
  */
 final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
-    private final Publisher<T> original;
+    final Publisher<T> original;
     private final int queueCapacityHint;
 
     PublisherAsBlockingIterable(final Publisher<T> original) {
