@@ -39,6 +39,9 @@ public final class KeepAliveClient {
         try (BlockingStreamingGreeterClient client = GrpcClients.forAddress("localhost", 8080)
                 .initializeHttp(httpBuilder -> httpBuilder.protocols(
                     // 4 second timeout is typically much shorter than necessary, but demonstrates PING frame traffic.
+                    // Using the default value is suitable in most scenarios, but if you want to customize the value
+                    // consider how many resources (network traffic, CPU for local timer management) vs time to detect
+                    // bad connection.
                     // By default, keep alive is only sent when no traffic is detected, so if both peers have keep alive
                     // the faster interval will be the primary sender.
                     h2().keepAlivePolicy(whenIdleFor(ofSeconds(4)))
