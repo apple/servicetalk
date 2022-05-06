@@ -102,7 +102,7 @@ within that time or cancels the request.
 Demonstrates how to use HTTP/2 keep alive for gRPC
 link:{source-root}/servicetalk-examples/grpc/keepalive/src/main/java/io/servicetalk/examples/grpc/keepalive/KeepAliveServer.java[server]
 and
-link:{source-root}/servicetalk-examples/grpc/keepalive/src/main/java/io/servicetalk/examples/grpc/keepalive/KeepAliveeClient.java[client].
+link:{source-root}/servicetalk-examples/grpc/keepalive/src/main/java/io/servicetalk/examples/grpc/keepalive/KeepAliveClient.java[client].
 Keep alive uses transport control frames to ensure the peer is still able to read and write to open connections. If the
 peer is not able to respond to the control frame within the configured amount of time, the connection is closed. This
 is useful if your environment doesn't provide other forms of connection keep alive (e.g.
