@@ -3827,7 +3827,7 @@ public abstract class Publisher<T> {
      * and emit all values to the {@link Subscriber} and then {@link Subscriber#onComplete()}.
      */
     public static <T> Publisher<T> fromIterable(Iterable<? extends T> iterable) {
-        return new FromIterablePublisher<>(iterable);
+        return FromIterablePublisher.fromIterable0(iterable);
     }
 
     /**
@@ -3855,7 +3855,7 @@ public abstract class Publisher<T> {
     public static <T> Publisher<T> fromBlockingIterable(BlockingIterable<? extends T> iterable,
                                                         LongSupplier timeoutSupplier,
                                                         TimeUnit unit) {
-        return new FromBlockingIterablePublisher<>(iterable, timeoutSupplier, unit);
+        return FromBlockingIterablePublisher.fromBlockingIterable0(iterable, timeoutSupplier, unit);
     }
 
     /**
