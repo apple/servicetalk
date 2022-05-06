@@ -1,0 +1,13 @@
+== ServiceTalk gRPC KeepAlive Example
+
+Demonstrates how to use HTTP/2 keep alive for gRPC
+link:{source-root}/servicetalk-examples/grpc/keepalive/src/main/java/io/servicetalk/examples/grpc/keepalive/KeepAliveServer.java[server]
+and
+link:{source-root}/servicetalk-examples/grpc/keepalive/src/main/java/io/servicetalk/examples/grpc/keepalive/KeepAliveClient.java[client].
+Keep alive uses transport control frames to ensure the peer is still able to read and write to open connections. If the
+peer is not able to respond to the control frame within the configured amount of time, the connection is closed. This
+is useful if your environment doesn't provide other forms of connection keep alive (e.g.
+link:https://docs.oracle.com/javase/8/docs/api/java/net/StandardSocketOptions.html#SO_KEEPALIVE[SO_KEEPALIVE], and maybe
+preferred to lower level keep alive because it is closer the application logic (more likely if this check works, that
+your application is able to read/write). Keep alive can be helpful to detect scenarios such as non-graceful disconnects
+(e.g. power outage, ethernet cable pulled, buggy middle box) and general network disconnects.
