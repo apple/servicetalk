@@ -18,7 +18,7 @@ package io.servicetalk.examples.grpc.keepalive;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.grpc.netty.GrpcServers;
 
-import io.grpc.examples.helloworld.StreamingGreeter.StreamingGreeterService;
+import io.grpc.examples.keepalive.StreamingGreeter.StreamingGreeterService;
 
 import static io.servicetalk.http.netty.H2KeepAlivePolicies.whenIdleFor;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2;
@@ -36,8 +36,8 @@ public final class KeepAliveServer {
                     // Using the default value is suitable in most scenarios, but if you want to customize the value
                     // consider how many resources (network traffic, CPU for local timer management) vs time to detect
                     // bad connection.
-                    // By default, keep alive is only sent when no traffic is detected, so if both peers have keep alive
-                    // the faster interval will be the primary sender.
+                    // The keep alive is only sent when no traffic is detected, so if both peers have keep alive the
+                    // faster interval will be the primary sender.
                     h2().keepAlivePolicy(whenIdleFor(ofSeconds(6)))
                     // Enable frame logging so we can see the PING frames sent/received.
                         .enableFrameLogging("servicetalk-examples-h2-frame-logger", TRACE, () -> true)
