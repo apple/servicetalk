@@ -25,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -1793,7 +1794,27 @@ public abstract class Completable {
      * @return A new {@code Completable}.
      */
     public static Completable fromRunnable(final Runnable runnable) {
-        return new RunnableCompletable(runnable);
+        return new CallableCompletable(() -> {
+            runnable.run();
+            return null;
+        });
+    }
+
+    /**
+     * Creates a {@link Completable} which when subscribed will invoke {@link Callable#call()} on the passed
+     * {@link Callable} and emit the value returned by that invocation from the returned {@link Completable}. Any error
+     * emitted by the {@link Callable} will terminate the returned {@link Completable} with the same error.
+     * <p>
+     * Blocking inside {@link Callable#call()} will in turn block the subscribe call to the returned
+     * {@link Completable}.
+     * If this behavior is undesirable then the returned {@link Completable} should be offloaded using
+     * {@link #subscribeOn(io.servicetalk.concurrent.Executor)} which offloads the subscribe call.
+     *
+     * @param callable {@link Callable} which is invoked before completion.
+     * @return A new {@code Completable}.
+     */
+    public static Completable fromCallable(final Callable<Void> callable) {
+        return new CallableCompletable(callable);
     }
 
     /**
