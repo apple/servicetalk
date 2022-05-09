@@ -15,15 +15,10 @@
  */
 package io.servicetalk.examples.grpc.helloworld.blocking;
 
-import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.grpc.api.GrpcServiceContext;
 import io.servicetalk.grpc.netty.GrpcServers;
 
-import io.grpc.examples.helloworld.Greeter;
 import io.grpc.examples.helloworld.Greeter.BlockingGreeterService;
-import io.grpc.examples.helloworld.Greeter.GreeterService;
 import io.grpc.examples.helloworld.HelloReply;
-import io.grpc.examples.helloworld.HelloRequest;
 
 public final class BlockingHelloWorldServer {
     public static void main(String[] args) throws Exception {

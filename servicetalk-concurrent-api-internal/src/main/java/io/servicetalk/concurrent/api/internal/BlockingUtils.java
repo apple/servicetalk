@@ -21,7 +21,6 @@ import io.servicetalk.concurrent.api.Single;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import static io.servicetalk.concurrent.api.Completable.fromRunnable;
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 
 /**
@@ -31,30 +30,6 @@ public final class BlockingUtils {
 
     private BlockingUtils() {
         // no instances
-    }
-
-    /**
-     * Wrapper {@link Runnable} that captures and converts exceptions to unchecked.
-     */
-    public interface RunnableCheckedException {
-        void run() throws Exception;
-
-        default void runUnchecked() {
-            try {
-                run();
-            } catch (Exception e) {
-                throwException(e);
-            }
-        }
-    }
-
-    /**
-     * Convert a blocking operation to {@link Completable} while adapting checked exceptions to unchecked ones.
-     * @param r the blocking operation.
-     * @return The resulting {@link Completable}.
-     */
-    public static Completable blockingToCompletable(RunnableCheckedException r) {
-        return fromRunnable(r::runUnchecked);
     }
 
     /**
