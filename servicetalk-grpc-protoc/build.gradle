@@ -30,7 +30,6 @@ dependencies {
   api project(":servicetalk-data-protobuf")
 
   compileOnly "com.google.code.findbugs:jsr305:$jsr305Version"
-  compileOnly "com.google.protobuf:protobuf-java:$protobufVersion"
   compileOnly "com.squareup:javapoet:$javaPoetVersion"
 
   testImplementation project(":servicetalk-grpc-api")
