@@ -49,6 +49,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.context.api.ContextMap.Key.newKey;
+import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
 import static java.util.Objects.requireNonNull;
 
 abstract class AbstractLifecycleObserverHttpFilter implements HttpExecutionStrategyInfluencer {
@@ -288,7 +289,7 @@ abstract class AbstractLifecycleObserverHttpFilter implements HttpExecutionStrat
         try {
             onError.accept(t);
         } catch (Throwable unexpected) {
-            unexpected.addSuppressed(t);
+            addSuppressed(unexpected, t);
             LOGGER.warn("Unexpected exception from {} while reporting a '{}' event", observer, eventName, unexpected);
         }
     }

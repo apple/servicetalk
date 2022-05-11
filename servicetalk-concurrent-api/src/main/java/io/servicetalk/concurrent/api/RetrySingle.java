@@ -21,6 +21,8 @@ import io.servicetalk.context.api.ContextMap;
 
 import javax.annotation.Nullable;
 
+import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
+
 /**
  * A {@link Single} implementation as returned by {@link Single#retry(BiIntPredicate)}.
  *
@@ -97,8 +99,7 @@ final class RetrySingle<T> extends AbstractNoHandleSubscribeSingle<T> {
             try {
                 shouldRetry = retrySingle.shouldRetry.test(++retryCount, t);
             } catch (Throwable cause) {
-                cause.addSuppressed(t);
-                target.onError(cause);
+                target.onError(addSuppressed(cause, t));
                 return;
             }
             if (shouldRetry) {

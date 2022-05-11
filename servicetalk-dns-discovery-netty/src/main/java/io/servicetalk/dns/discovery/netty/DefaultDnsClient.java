@@ -90,6 +90,7 @@ import static io.servicetalk.dns.discovery.netty.ServiceDiscovererUtils.calculat
 import static io.servicetalk.transport.netty.internal.BuilderUtils.datagramChannel;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.socketChannel;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
+import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
 import static java.nio.ByteBuffer.wrap;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
@@ -698,7 +699,7 @@ final class DefaultDnsClient implements DnsClient {
                 try {
                     resolutionObserver.resolutionFailed(cause);
                 } catch (Throwable unexpected) {
-                    unexpected.addSuppressed(cause);
+                    addSuppressed(unexpected, cause);
                     LOGGER.warn("Unexpected exception from {} while reporting DNS resolution failure",
                             resolutionObserver, unexpected);
                 }

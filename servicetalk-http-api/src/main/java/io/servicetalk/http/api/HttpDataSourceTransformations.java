@@ -40,6 +40,7 @@ import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateSubscription;
+import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
 import static java.lang.Integer.MAX_VALUE;
 import static java.lang.System.nanoTime;
 import static java.util.Objects.requireNonNull;
@@ -240,7 +241,7 @@ final class HttpDataSourceTransformations {
                 try {
                     iterator.close();
                 } catch (Throwable cause) {
-                    e.addSuppressed(cause);
+                    addSuppressed(e, cause);
                 }
                 throw e;
             }

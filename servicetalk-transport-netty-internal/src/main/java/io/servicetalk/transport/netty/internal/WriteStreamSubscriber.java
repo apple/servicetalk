@@ -47,6 +47,7 @@ import static io.servicetalk.transport.netty.internal.ByteMaskUtils.isAllSet;
 import static io.servicetalk.transport.netty.internal.ByteMaskUtils.isAnySet;
 import static io.servicetalk.transport.netty.internal.ByteMaskUtils.set;
 import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.assignConnectionError;
+import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -566,7 +567,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
                     observer.writeFailed(enrichedCause);
                     subscriber.onError(enrichedCause);
                 } catch (Throwable t) {
-                    t.addSuppressed(enrichedCause);
+                    addSuppressed(t, enrichedCause);
                     tryFailureOrLog(t);
                 }
                 if (!isAllSet(state, CHANNEL_CLOSED)) {

@@ -35,6 +35,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
 import static java.lang.Integer.MAX_VALUE;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
@@ -326,7 +327,7 @@ public final class DefaultSerializer implements Serializer {
             try {
                 deSerializer.close();
             } catch (SerializationException e) {
-                throwable.addSuppressed(e);
+                addSuppressed(throwable, e);
             }
             throw throwable;
         }
@@ -352,7 +353,7 @@ public final class DefaultSerializer implements Serializer {
             iterator.close(); // May throw in case of incomplete accumulated data
         } catch (Exception e) {
             if (cause != null) {
-                cause.addSuppressed(e);
+                addSuppressed(cause, e);
                 throw cause;
             }
             if (e instanceof SerializationException) {
