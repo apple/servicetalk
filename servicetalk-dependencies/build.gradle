@@ -37,6 +37,7 @@ dependencies {
     api "jakarta.ws.rs:jakarta.ws.rs-api:$jaxRsVersion"
     api "org.hamcrest:hamcrest:$hamcrestVersion"
     api "org.reactivestreams:reactive-streams:$reactiveStreamsVersion"
+    runtime "com.google.code.findbugs:jsr305:$jsr305Version"
     runtime "com.google.protobuf:protobuf-java-util:$protobufVersion"
     runtime "com.sun.activation:jakarta.activation:$javaxActivationVersion"
     runtime "com.sun.xml.bind:jaxb-core:$javaxJaxbCoreVersion"
