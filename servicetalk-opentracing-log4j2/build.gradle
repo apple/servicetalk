@@ -28,6 +28,7 @@ dependencies {
   implementation project(":servicetalk-opentracing-asynccontext")
   implementation "com.google.code.findbugs:jsr305:$jsr305Version"
   implementation "org.apache.logging.log4j:log4j-api:$log4jVersion"
+  implementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
   testImplementation testFixtures(project(":servicetalk-log4j2-mdc-utils"))

@@ -44,6 +44,7 @@ dependencies {
     runtime "com.sun.xml.bind:jaxb-impl:$javaxJaxbImplVersion"
     runtime "jakarta.xml.bind:jakarta.xml.bind-api:$javaxJaxbApiVersion"
     runtime "org.apache.logging.log4j:log4j-api:$log4jVersion"
+    runtime "org.apache.logging.log4j:log4j-core:$log4jVersion"
     runtime "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
     runtime "org.jctools:jctools-core:$jcToolsVersion"
     runtime "org.openjdk.jmh:jmh-core:$jmhCoreVersion"
