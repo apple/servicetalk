@@ -17,12 +17,49 @@
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-core"
 apply plugin: "java-platform"
 
-description="ServiceTalk BOM that includes all modules"
+description = "ServiceTalk BOM that includes direct dependencies"
 
-rootProject.subprojects.findAll { !it.name.endsWith("-bom") && !it.name.endsWith("-dependencies") &&
-                                            !it.name.contains("examples") &&
-                                          !it.name.equals("grpc") && !it.name.equals("http") }.each {
-    dependencies.constraints.add(it.name.endsWith("-internal") ? "runtime" : "api", it )
+javaPlatform {
+  allowDependencies()
+}
+
+rootProject.subprojects.findAll {
+  !it.name.endsWith("-bom") && !it.name.endsWith("-dependencies") &&
+      !it.name.contains("examples") &&
+      !it.name.equals("grpc") && !it.name.equals("http")
+}.each {
+  dependencies.constraints.add(it.name.endsWith("-internal") ? "runtime" : "api", it)
+}
+
+dependencies {
+  api platform("io.netty:netty-bom:${nettyVersion}")
+  api platform("org.glassfish.jersey:jersey-bom:$jerseyVersion")
+
+  constraints {
+    api "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
+    api "com.google.api.grpc:proto-google-common-protos:$protoGoogleCommonProtosVersion"
+    api "com.google.protobuf:protobuf-java:$protobufVersion"
+    api "io.opentracing:opentracing-api:$openTracingVersion"
+    api "io.zipkin.reporter2:zipkin-reporter:$zipkinReporterVersion"
+    api "jakarta.ws.rs:jakarta.ws.rs-api:$jaxRsVersion"
+    api "jakarta.ws.rs:jakarta.ws.rs-api:$jaxRsVersion" // MediaType, Feature
+    api "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+    api "org.glassfish.jersey.core:jersey-common" // AutoDiscoverable
+    api "org.hamcrest:hamcrest:$hamcrestVersion"
+    api "org.reactivestreams:reactive-streams:$reactiveStreamsVersion"
+    runtime "com.google.protobuf:protobuf-java-util:$protobufVersion"
+    runtime "com.sun.activation:jakarta.activation:$javaxActivationVersion"
+    runtime "com.sun.xml.bind:jaxb-core:$javaxJaxbCoreVersion"
+    runtime "com.sun.xml.bind:jaxb-impl:$javaxJaxbImplVersion"
+    runtime "jakarta.xml.bind:jakarta.xml.bind-api:$javaxJaxbApiVersion"
+    runtime "org.apache.logging.log4j:log4j-api:$log4jVersion"
+    runtime "org.apache.logging.log4j:log4j-core:$log4jVersion"
+    runtime "org.glassfish.jersey.core:jersey-server"
+    runtime "org.glassfish.jersey.media:jersey-media-multipart"
+    runtime "org.jctools:jctools-core:$jcToolsVersion"
+    runtime "org.openjdk.jmh:jmh-core:$jmhCoreVersion"
+    runtime 'io.opentracing.brave:brave-opentracing:1.0.0'
+  }
 }
 
 // Keep publishing and signing configuration in sync with ServiceTalkLibraryPlugin.groovy from
