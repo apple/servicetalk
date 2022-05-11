@@ -17,15 +17,15 @@
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
-  implementation platform("org.glassfish.jersey:jersey-bom:$jerseyVersion")
+  api platform(project(":servicetalk-dependencies"))
   testImplementation enforcedPlatform("org.glassfish.jersey:jersey-bom:$jerseyVersion")
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
 
-  api "jakarta.ws.rs:jakarta.ws.rs-api:$jaxRsVersion"
+  api "jakarta.ws.rs:jakarta.ws.rs-api"
 
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-concurrent-api")
-  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
+  implementation "com.google.code.findbugs:jsr305"
   implementation "org.glassfish.jersey.core:jersey-common"
 
   testImplementation testFixtures(project(":servicetalk-concurrent-internal"))

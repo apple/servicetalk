@@ -17,14 +17,15 @@
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
+  api platform(project(":servicetalk-dependencies"))
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
 
-  api "org.apache.logging.log4j:log4j-core:$log4jVersion"
+  api "org.apache.logging.log4j:log4j-core"
 
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-concurrent-api")
   implementation project(":servicetalk-concurrent-internal")
-  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
+  implementation "com.google.code.findbugs:jsr305"
 
   testImplementation project(":servicetalk-test-resources")
   testImplementation "org.junit.jupiter:junit-jupiter-api"

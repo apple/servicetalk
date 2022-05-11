@@ -17,17 +17,18 @@
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
+  api platform(project(":servicetalk-dependencies"))
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
 
   api project(":servicetalk-serialization-api")
   api project(":servicetalk-serializer-api")
-  api "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
+  api "com.fasterxml.jackson.core:jackson-databind"
 
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-concurrent-api-internal")
   implementation project(":servicetalk-concurrent-internal")
   implementation project(":servicetalk-utils-internal")
-  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
+  implementation "com.google.code.findbugs:jsr305"
 
   testImplementation testFixtures(project(":servicetalk-concurrent-api"))
   testImplementation testFixtures(project(":servicetalk-concurrent-internal"))

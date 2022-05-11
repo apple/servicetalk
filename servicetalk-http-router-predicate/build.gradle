@@ -17,12 +17,13 @@
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
+  implementation platform(project(":servicetalk-dependencies"))
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
 
   api project(":servicetalk-http-api")
 
   implementation project(":servicetalk-annotations")
-  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
+  implementation "com.google.code.findbugs:jsr305"
 
   testImplementation testFixtures(project(":servicetalk-concurrent-api"))
   testImplementation testFixtures(project(":servicetalk-concurrent-internal"))

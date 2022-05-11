@@ -17,6 +17,8 @@
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
+  implementation platform(project(":servicetalk-dependencies"))
+
   api project(":servicetalk-buffer-api")
   api project(":servicetalk-concurrent-api")
   api project(":servicetalk-oio-api")
@@ -24,5 +26,5 @@ dependencies {
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-concurrent-api-internal")
   implementation project(":servicetalk-oio-api-internal")
-  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
+  implementation "com.google.code.findbugs:jsr305"
 }

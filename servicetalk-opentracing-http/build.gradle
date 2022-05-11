@@ -17,18 +17,19 @@
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
+  api platform(project(":servicetalk-dependencies"))
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
 
   api project(":servicetalk-http-api")
-  api "io.opentracing:opentracing-api:$openTracingVersion"
+  api "io.opentracing:opentracing-api"
 
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-http-utils")
   implementation project(":servicetalk-opentracing-inmemory")
   implementation project(":servicetalk-opentracing-inmemory-api")
   implementation project(":servicetalk-opentracing-internal")
-  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
-  implementation "org.slf4j:slf4j-api:$slf4jVersion"
+  implementation "com.google.code.findbugs:jsr305"
+  implementation "org.slf4j:slf4j-api"
 
   testImplementation testFixtures(project(":servicetalk-concurrent-api"))
   testImplementation testFixtures(project(":servicetalk-concurrent-internal"))

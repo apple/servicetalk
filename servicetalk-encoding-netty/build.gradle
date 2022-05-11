@@ -17,7 +17,7 @@
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
-    implementation platform("io.netty:netty-bom:$nettyVersion")
+    implementation platform(project(":servicetalk-dependencies"))
     testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
 
     api project(":servicetalk-encoding-api")
@@ -26,8 +26,8 @@ dependencies {
     implementation project(":servicetalk-buffer-netty")
     implementation project(":servicetalk-concurrent-internal")
     implementation "io.netty:netty-codec"
-    implementation "com.google.code.findbugs:jsr305:$jsr305Version"
-    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+    implementation "com.google.code.findbugs:jsr305"
+    implementation "org.slf4j:slf4j-api"
 
     testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
     testImplementation "org.junit.jupiter:junit-jupiter-api"

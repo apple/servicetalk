@@ -32,26 +32,26 @@ dependencies {
     // Use `api` only for dependencies whose types appear in ServiceTalk API.
     api "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
     api "com.google.api.grpc:proto-google-common-protos:$protoGoogleCommonProtosVersion"
+    api "com.google.code.findbugs:jsr305:$jsr305Version"
     api "com.google.protobuf:protobuf-java:$protobufVersion"
+    api "com.google.protobuf:protobuf-java-util:$protobufVersion"
+    api "com.sun.activation:jakarta.activation:$javaxActivationVersion"
+    api "com.sun.xml.bind:jaxb-core:$javaxJaxbCoreVersion"
     api "io.opentracing:opentracing-api:$openTracingVersion"
     api "io.zipkin.reporter2:zipkin-reporter:$zipkinReporterVersion"
     // `spi` and `core` types exposed in `log4j2-mdc-utils`
     api "org.apache.logging.log4j:log4j-core:$log4jVersion"
     api "jakarta.ws.rs:jakarta.ws.rs-api:$jaxRsVersion"
+    api "jakarta.xml.bind:jakarta.xml.bind-api:$javaxJaxbApiVersion"
     // Matchers are exposed by `servicetalk-test-resources`
     api "org.hamcrest:hamcrest:$hamcrestVersion"
+    api "org.jctools:jctools-core:$jcToolsVersion"
+    api "org.openjdk.jmh:jmh-core:$jmhCoreVersion"
     api "org.reactivestreams:reactive-streams:$reactiveStreamsVersion"
-    // Use `runtime` for dependencies which are used for implementation
-    runtime "com.google.code.findbugs:jsr305:$jsr305Version"
-    runtime "com.google.protobuf:protobuf-java-util:$protobufVersion"
-    runtime "com.sun.activation:jakarta.activation:$javaxActivationVersion"
-    runtime "com.sun.xml.bind:jaxb-core:$javaxJaxbCoreVersion"
+    api "org.slf4j:slf4j-api:$slf4jVersion"
+
     runtime "com.sun.xml.bind:jaxb-impl:$javaxJaxbImplVersion"
-    runtime "jakarta.xml.bind:jakarta.xml.bind-api:$javaxJaxbApiVersion"
     runtime "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
-    runtime "org.jctools:jctools-core:$jcToolsVersion"
-    runtime "org.openjdk.jmh:jmh-core:$jmhCoreVersion"
-    runtime "org.slf4j:slf4j-api:$slf4jVersion"
   }
 }
 

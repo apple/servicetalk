@@ -22,6 +22,8 @@ plugins {
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
+  implementation platform(project(":servicetalk-dependencies"))
+
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-buffer-netty")
   implementation project(":servicetalk-concurrent-api")
@@ -30,9 +32,9 @@ dependencies {
   implementation project(":servicetalk-http-netty")
   implementation project(":servicetalk-transport-netty-internal")
   implementation project(":servicetalk-loadbalancer")
-  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
-  implementation "io.netty:netty-codec-http:$nettyVersion"
-  implementation "org.openjdk.jmh:jmh-core:$jmhCoreVersion"
+  implementation "com.google.code.findbugs:jsr305"
+  implementation "io.netty:netty-codec-http"
+  implementation "org.openjdk.jmh:jmh-core"
 
   testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
   testImplementation project(":servicetalk-concurrent-internal")
