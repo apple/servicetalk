@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.PublisherSource;
 import java.util.Objects;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -80,8 +81,7 @@ public final class TerminalNotification {
             subscriber.onError(additionalCause);
         } else {
             assert cause != null;
-            cause.addSuppressed(additionalCause);
-            subscriber.onError(cause);
+            subscriber.onError(addSuppressed(cause, additionalCause));
         }
     }
 
@@ -102,8 +102,7 @@ public final class TerminalNotification {
             subscriber.onError(additionalCause);
         } else {
             assert cause != null;
-            cause.addSuppressed(additionalCause);
-            subscriber.onError(cause);
+            subscriber.onError(addSuppressed(cause, additionalCause));
         }
     }
 

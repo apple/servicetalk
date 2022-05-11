@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
+import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
 import static java.util.Objects.requireNonNull;
 
 final class BeforeFinallyPublisher<T> extends AbstractSynchronousPublisherOperator<T, T> {
@@ -93,8 +94,7 @@ final class BeforeFinallyPublisher<T> extends AbstractSynchronousPublisherOperat
                     doFinally.onError(cause);
                 }
             } catch (Throwable err) {
-                err.addSuppressed(cause);
-                original.onError(err);
+                original.onError(addSuppressed(err, cause));
                 return;
             }
             original.onError(cause);

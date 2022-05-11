@@ -89,6 +89,7 @@ import static io.servicetalk.http.netty.HttpDebugUtils.showPipeline;
 import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.close;
 import static io.servicetalk.transport.netty.internal.ChannelSet.CHANNEL_CLOSEABLE_KEY;
 import static io.servicetalk.transport.netty.internal.CloseHandler.forNonPipelined;
+import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
 import static java.util.Objects.requireNonNull;
 
 final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
@@ -375,8 +376,8 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                         try {
                             close(streamChannel, cause);
                         } catch (Throwable unexpected) {
-                            unexpected.addSuppressed(cause);
-                            LOGGER.warn("Unexpected exception while handling the original cause", unexpected);
+                            LOGGER.warn("Unexpected exception while handling the original cause",
+                                    addSuppressed(unexpected, cause));
                         }
                     } else {
                         cleanupWhenError(cause, streamObserver, onCloseRunnable);

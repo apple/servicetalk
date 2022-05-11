@@ -37,6 +37,7 @@ import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
+import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -307,8 +308,8 @@ final class CatchAllTransportObserver implements TransportObserver {
         try {
             runnable.run();
         } catch (Throwable unexpected) {
-            unexpected.addSuppressed(original);
-            LOGGER.warn("Unexpected exception from {} while reporting a {} event", observer, eventName, unexpected);
+            LOGGER.warn("Unexpected exception from {} while reporting a {} event",
+                    observer, eventName, addSuppressed(unexpected, original));
         }
     }
 }

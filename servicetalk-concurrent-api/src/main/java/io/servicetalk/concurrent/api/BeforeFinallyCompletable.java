@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.Cancellable;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
+import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
 import static java.util.Objects.requireNonNull;
 
 final class BeforeFinallyCompletable extends AbstractSynchronousCompletableOperator {
@@ -78,8 +79,7 @@ final class BeforeFinallyCompletable extends AbstractSynchronousCompletableOpera
                     doFinally.onError(cause);
                 }
             } catch (Throwable error) {
-                error.addSuppressed(cause);
-                original.onError(error);
+                original.onError(addSuppressed(error, cause));
                 return;
             }
             original.onError(cause);

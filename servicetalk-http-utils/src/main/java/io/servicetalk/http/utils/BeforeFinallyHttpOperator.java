@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
@@ -281,7 +282,7 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
                                                     beforeFinally.onError(t);
                                                 }
                                             } catch (Throwable cause) {
-                                                t.addSuppressed(cause);
+                                                addSuppressed(t, cause);
                                             }
                                             subscriber.onError(t);
                                             return;
@@ -298,7 +299,7 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
                                         try {
                                             beforeFinally.onError(t);
                                         } catch (Throwable cause) {
-                                            t.addSuppressed(cause);
+                                            addSuppressed(t, cause);
                                         }
                                         try {
                                             subscriber.onError(t);
@@ -398,7 +399,7 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
                     return;
                 }
             } catch (Throwable cause) {
-                t.addSuppressed(cause);
+                addSuppressed(t, cause);
             }
             subscriber.onError(t);
         }

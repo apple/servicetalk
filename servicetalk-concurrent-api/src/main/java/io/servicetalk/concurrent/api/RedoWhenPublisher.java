@@ -25,6 +25,7 @@ import java.util.function.BiFunction;
 import java.util.function.IntFunction;
 
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
+import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -143,7 +144,7 @@ final class RedoWhenPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
             } catch (Throwable cause) {
                 Throwable originalCause = terminalNotification.cause();
                 if (originalCause != null) {
-                    cause.addSuppressed(originalCause);
+                    addSuppressed(cause, originalCause);
                 }
                 subscriber.onError(cause);
                 return;

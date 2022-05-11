@@ -21,6 +21,7 @@ import org.hamcrest.TypeSafeMatcher;
 
 import java.util.Queue;
 
+import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
 import static java.lang.Integer.min;
 
 /**
@@ -57,7 +58,7 @@ public final class TestUtils {
         final AssertionError error = null != message ? new AssertionError(message) : new AssertionError();
         Throwable t;
         while ((t = errors.poll()) != null) {
-            error.addSuppressed(t);
+            addSuppressed(error, t);
         }
 
         throw error;
