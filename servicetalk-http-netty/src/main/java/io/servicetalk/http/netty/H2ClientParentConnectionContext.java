@@ -376,8 +376,8 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                         try {
                             close(streamChannel, cause);
                         } catch (Throwable unexpected) {
-                            LOGGER.warn("Unexpected exception while handling the original cause",
-                                    addSuppressed(unexpected, cause));
+                            addSuppressed(unexpected, cause);
+                            LOGGER.warn("Unexpected exception while handling the original cause", unexpected);
                         }
                     } else {
                         cleanupWhenError(cause, streamObserver, onCloseRunnable);

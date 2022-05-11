@@ -308,8 +308,8 @@ final class CatchAllTransportObserver implements TransportObserver {
         try {
             runnable.run();
         } catch (Throwable unexpected) {
-            LOGGER.warn("Unexpected exception from {} while reporting a {} event",
-                    observer, eventName, addSuppressed(unexpected, original));
+            addSuppressed(unexpected, original);
+            LOGGER.warn("Unexpected exception from {} while reporting a {} event", observer, eventName, unexpected);
         }
     }
 }

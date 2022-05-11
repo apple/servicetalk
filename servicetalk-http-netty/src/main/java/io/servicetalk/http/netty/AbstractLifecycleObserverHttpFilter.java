@@ -289,8 +289,8 @@ abstract class AbstractLifecycleObserverHttpFilter implements HttpExecutionStrat
         try {
             onError.accept(t);
         } catch (Throwable unexpected) {
-            LOGGER.warn("Unexpected exception from {} while reporting a '{}' event",
-                    observer, eventName, addSuppressed(unexpected, t));
+            addSuppressed(unexpected, t);
+            LOGGER.warn("Unexpected exception from {} while reporting a '{}' event", observer, eventName, unexpected);
         }
     }
 

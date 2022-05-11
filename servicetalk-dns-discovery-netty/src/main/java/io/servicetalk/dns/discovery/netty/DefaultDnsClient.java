@@ -699,8 +699,9 @@ final class DefaultDnsClient implements DnsClient {
                 try {
                     resolutionObserver.resolutionFailed(cause);
                 } catch (Throwable unexpected) {
+                    addSuppressed(unexpected, cause);
                     LOGGER.warn("Unexpected exception from {} while reporting DNS resolution failure",
-                            resolutionObserver, addSuppressed(unexpected, cause));
+                            resolutionObserver, unexpected);
                 }
             }
 
