@@ -59,6 +59,7 @@ dependencies {
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
   testImplementation "org.mockito:mockito-junit-jupiter:$mockitoCoreVersion"
 
+  testFixturesImplementation project(":servicetalk-utils-internal")
   testFixturesImplementation "io.netty.incubator:netty-incubator-transport-native-io_uring:$nettyIoUringVersion"
   testFixturesImplementation "com.google.code.findbugs:jsr305:$jsr305Version"
   testFixturesImplementation "org.junit.jupiter:junit-jupiter-api"
