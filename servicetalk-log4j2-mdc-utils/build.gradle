@@ -19,7 +19,7 @@ apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 dependencies {
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
 
-  api "org.apache.logging.log4j:log4j-core:$log4jVersion"
+  api "org.apache.logging.log4j:log4j-api:$log4jVersion"
 
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-concurrent-api")
