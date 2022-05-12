@@ -48,6 +48,7 @@ public final class NetworkUtils {
     /**
      * Takes a string and parses it to see if it is a valid IPV4 address.
      *
+     * @param ip the IP-address to validate
      * @return true, if the string represents an IPV4 address in dotted notation, false otherwise.
      */
     public static boolean isValidIpV4Address(final CharSequence ip) {
@@ -67,6 +68,7 @@ public final class NetworkUtils {
     /**
      * Takes a string and parses it to see if it is a valid IPV6 address.
      *
+     * @param ip the IP-address to validate
      * @return true, if the string represents an IPV6 address
      */
     public static boolean isValidIpV6Address(final CharSequence ip) {
