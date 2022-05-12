@@ -40,6 +40,7 @@ import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@SuppressWarnings("PMD.AvoidUsingHardCodedIP")
 class NetworkUtilsTest {
 
     private static final List<String> validIpV4Hosts = asList(
@@ -376,7 +377,7 @@ class NetworkUtilsTest {
             "::ffff:0.1.2.");
 
     @Test
-    public void testIsValidIpV4Address() {
+    void testIsValidIpV4Address() {
         for (String host : validIpV4Hosts) {
             assertTrue(isValidIpV4Address(host), host);
         }
@@ -386,7 +387,7 @@ class NetworkUtilsTest {
     }
 
     @Test
-    public void testIsValidIpV6Address() {
+    void testIsValidIpV6Address() {
         for (String host : validIpV6Hosts) {
             assertTrue(isValidIpV6Address(host), host);
             if (host.charAt(0) != '[' && !host.contains("%")) {
