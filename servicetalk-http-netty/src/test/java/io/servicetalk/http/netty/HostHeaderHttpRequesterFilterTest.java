@@ -22,6 +22,7 @@ import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.ReservedBlockingHttpConnection;
+import io.servicetalk.http.utils.HostHeaderHttpRequesterFilter;
 import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.jupiter.params.ParameterizedTest;
@@ -128,7 +129,6 @@ class HostHeaderHttpRequesterFilterTest {
         try (ServerContext context = buildServer();
              BlockingHttpClient client = forSingleAddress(serverHostAndPort(context))
                      .protocols(httpVersionConfig.config())
-                     .hostHeaderFallback(false) // turn off the default
                      .appendClientFilter(new HostHeaderHttpRequesterFilter("foo.bar:-1"))
                      .buildBlocking()) {
             assertResponse(client, null, "foo.bar:-1");
@@ -142,7 +142,6 @@ class HostHeaderHttpRequesterFilterTest {
         try (ServerContext context = buildServer();
              BlockingHttpClient client = forSingleAddress(serverHostAndPort(context))
                      .protocols(httpVersionConfig.config())
-                     .hostHeaderFallback(false) // turn off the default
                      .appendConnectionFilter(new HostHeaderHttpRequesterFilter("foo.bar:-1"))
                      .buildBlocking()) {
             assertResponse(client, null, "foo.bar:-1");
@@ -156,7 +155,6 @@ class HostHeaderHttpRequesterFilterTest {
         try (ServerContext context = buildServer();
              BlockingHttpClient client = HttpClients.forResolvedAddress(serverHostAndPort(context))
                      .protocols(httpVersionConfig.config())
-                     .hostHeaderFallback(false) // turn off the default
                      .appendConnectionFilter(new HostHeaderHttpRequesterFilter("foo.bar:-1"))
                      .buildBlocking();
              ReservedBlockingHttpConnection conn = client.reserveConnection(client.get("/"))) {
@@ -172,7 +170,6 @@ class HostHeaderHttpRequesterFilterTest {
         try (ServerContext context = buildServer();
              BlockingHttpClient client = forSingleAddress(serverHostAndPort(context))
                      .protocols(httpVersionConfig.config())
-                     .hostHeaderFallback(false) // turn off the default
                      .appendClientFilter(new HostHeaderHttpRequesterFilter("foo.bar:-1"))
                      .buildBlocking()) {
             assertResponse(client, "bar.only:-1", "bar.only:-1");
