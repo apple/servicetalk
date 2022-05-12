@@ -77,7 +77,10 @@
     <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/http/index.html#Timeout">Timeout</a>
   </li>
   <li class="nav-item" data-depth="3">
-    <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/http/index.html#Serialization">Serialization</a>
+    <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/http/index.html#SerializationJson">Serialization: JSON</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/http/index.html#SerializationProtobuf">Serialization: Protobuf</a>
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/http/index.html#JAXRS">JAX-RS</a>
@@ -101,6 +104,9 @@
     <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/http/index.html#Redirects">Redirects</a>
   </li>
   <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/http/index.html#Retries">Retries</a>
+  </li>
+  <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/http/index.html#uds">Unix Domain Sockets</a>
   </li>
   <li class="nav-item" data-depth="3">
@@ -122,7 +128,13 @@
     <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/grpc/index.html#Deadlines">Deadlines</a>
   </li>
   <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/grpc/index.html#KeepAlive">Keep Alive</a>
+  </li>
+  <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/grpc/index.html#Observer">Observer</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/grpc/index.html#Health">Health Checking</a>
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/grpc/index.html#errors">Application Errors</a>
@@ -158,6 +170,9 @@
   </li>
   <li class="nav-item" data-depth="2">
     <a class="nav-link" href="../../servicetalk-concurrent-api/SNAPSHOT/async-context.html">Async Context</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../../servicetalk-concurrent-api/SNAPSHOT/pitfalls.html">Concurrency Pitfalls</a>
   </li>
 </ul>
   </li>
@@ -1181,24 +1196,16 @@ that potentially blocks IO EventLoop threads. Read the chapter on
 <a href="blocking-safe-by-default.html" class="page">blocking code safe by default</a> for more details.</p>
 </div>
 <div class="paragraph">
-<p><code>ServiceTalk</code> has
-<a href="../../servicetalk-concurrent-api/SNAPSHOT/blocking-safe-by-default.html#executor-affinity" class="page">Executor Affinity</a> which
-ensures that the same <code>Executor</code> is used for each <code>Subscriber</code> chain on asynchronous operator boundaries. By default
-when using the streaming APIs this requires wrapping on the asynchronous operator boundaries and may result in
-additional thread hops between <code>Executor</code>s (and even if <code>Executor</code> happens to be the same). Depending upon the use
-case, performance costs maybe relatively high but we have the following compensatory strategies in place:</p>
+<p>Offloading is expected to add some overhead which can be mitigated as follows:</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p>ServiceTalk team is investigating ways to reduce the cost of offloading for streaming APIs</p>
+<p>Choosing the appropriate <a href="#offloading-and-flushing">programming model</a>
+for your use case allows ServiceTalk to be more optimal and reduce offloading</p>
 </li>
 <li>
-<p>choosing the appropriate <a href="#offloading-and-flushing">programming model</a>
-for your use case allows us to be more optimal and reduce offloading</p>
-</li>
-<li>
-<p>you can opt-out of (some or all) offloading via
+<p>Opting-out of some or all offloading through use of
 <a href="#ExecutionStrategy">ExecutionStrategy</a></p>
 </li>
 </ul>
@@ -1210,7 +1217,7 @@ for your use case allows us to be more optimal and reduce offloading</p>
 <h2 id="tuning-options-and-recommendations"><a class="anchor" href="#tuning-options-and-recommendations"></a><a class="link" href="#tuning-options-and-recommendations">Tuning options and recommendations</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Below sections will offer suggestions that may improve performance depending on your use-case.</p>
+<p>The following sections will offer suggestions that may improve performance depending on your use-case.</p>
 </div>
 <div class="sect2">
 <h3 id="offloading-and-flushing"><a class="anchor" href="#offloading-and-flushing"></a><a class="link" href="#offloading-and-flushing">Programming model (offloading &amp; flushing)</a></h3>
@@ -1360,7 +1367,7 @@ connection.releaseAsync().toFuture().get(); // this blocks, for brevity in this 
 </div>
 </div>
 <div class="sect3">
-<h4 id="ExecutionStrategy"><a class="anchor" href="#ExecutionStrategy"></a><a class="link" href="#ExecutionStrategy">ExecutionStrategy (offloading)</a></h4>
+<h4 id="ExecutionStrategy"><a class="anchor" href="#ExecutionStrategy"></a><a class="link" href="#ExecutionStrategy">Offloading and <code>ExecutionStrategy</code></a></h4>
 <div class="paragraph">
 <p><a href="https://github.com/apple/servicetalk/blob/main/servicetalk-transport-api/src/main/java/io/servicetalk/transport/api/ExecutionStrategy.java">ExecutionStrategy</a>
 is the core abstraction ServiceTalk uses to drive offloading delivering signals and data from the IO EventLoop threads.

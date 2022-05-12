@@ -77,7 +77,10 @@
     <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/http/index.html#Timeout">Timeout</a>
   </li>
   <li class="nav-item" data-depth="3">
-    <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/http/index.html#Serialization">Serialization</a>
+    <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/http/index.html#SerializationJson">Serialization: JSON</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/http/index.html#SerializationProtobuf">Serialization: Protobuf</a>
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/http/index.html#JAXRS">JAX-RS</a>
@@ -101,6 +104,9 @@
     <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/http/index.html#Redirects">Redirects</a>
   </li>
   <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/http/index.html#Retries">Retries</a>
+  </li>
+  <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/http/index.html#uds">Unix Domain Sockets</a>
   </li>
   <li class="nav-item" data-depth="3">
@@ -122,7 +128,13 @@
     <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/grpc/index.html#Deadlines">Deadlines</a>
   </li>
   <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/grpc/index.html#KeepAlive">Keep Alive</a>
+  </li>
+  <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/grpc/index.html#Observer">Observer</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/grpc/index.html#Health">Health Checking</a>
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/grpc/index.html#errors">Application Errors</a>
@@ -158,6 +170,9 @@
   </li>
   <li class="nav-item is-current-page" data-depth="2">
     <a class="nav-link" href="async-context.html">Async Context</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="pitfalls.html">Concurrency Pitfalls</a>
   </li>
 </ul>
   </li>
@@ -1237,18 +1252,30 @@ examples below:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">Publisher&lt;String&gt; publisher = ...;
-publisher
-.flatMapSingle(v -&gt; {
-  // (1) AsyncContext will be saved before the async boundary
+AsyncContext.put(KEY, 10); // (1) put a value into AsyncContext before a .subscribe(..)
+publisher.flatMapMergeSingle(v -&gt; {
+  Integer contextValue = AsyncContext.get(KEY);
+  assert contextValue == 10 || contextValue == 30; // (2) Subscriber chain may see either value.
 
-  // AsyncContext will be copied/isolated when this async source is subscribed to
-  client.request(/*do something with v*/)
-)
-.map(v -&gt; {
-  // AsyncContext before the async boundary (1) is restored
+  // AsyncContext will be copied when Single.subscribe(..) is called. Changes to the AsyncContext map from operators on
+  // the inner Single operator chain will therefore not be visible in the outer Publisher operator chain.
+  return client.request(/*do something with v*/)
+               .map(x -&gt; {
+                    AsyncContext.put(KEY, 20); // (3) put a new value for the same key
+                    return x;
+                });
+}).map(v -&gt; {
+  Integer contextValue = AsyncContext.get(KEY);
+  assert contextValue == 10 || contextValue == 30;
 
-  // Note that modifications made to AsyncContext here may introduce concurrency
-  // and be visible before the async boundary above (1).
+  // `publisher` may emit more items, and if it does then `flatMapMergeSingle` `Function` may be invoked concurrently
+  // with this code. This is because `client.request(..)` may complete on a different thread than `publisher` is
+  // delivering data on. This code has access to the same map as (2) which may result in concurrent modifications on
+  // `AsyncContext`. This is allowed by `AsyncContext` but may not be obvious due to modifications made "later" in the
+  // operator chain being visible "earlier" in the operator chain.
+  AsyncContext.put(KEY, 30);
+
+  return v;
 })</code></pre>
 </div>
 </div>
@@ -1264,11 +1291,11 @@ visible outside the asynchronous boundary.</p>
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">Executor executor = ...
 
-AsyncContext.put(key, "foo")
+AsyncContext.put(KEY, "foo");
 executor.execute(() -&gt; {
-  AsyncContext.put(key, "bar")
+  AsyncContext.put(KEY, "bar");
 });
-String value = AsyncContext.get(key);
+String value = AsyncContext.get(KEY);
 // value maybe "foo" or "bar" due to concurrent modifications</code></pre>
 </div>
 </div>

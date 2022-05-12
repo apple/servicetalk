@@ -77,7 +77,10 @@
     <a class="nav-link" href="../http/index.html#Timeout">Timeout</a>
   </li>
   <li class="nav-item" data-depth="3">
-    <a class="nav-link" href="../http/index.html#Serialization">Serialization</a>
+    <a class="nav-link" href="../http/index.html#SerializationJson">Serialization: JSON</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../http/index.html#SerializationProtobuf">Serialization: Protobuf</a>
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../http/index.html#JAXRS">JAX-RS</a>
@@ -101,6 +104,9 @@
     <a class="nav-link" href="../http/index.html#Redirects">Redirects</a>
   </li>
   <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../http/index.html#Retries">Retries</a>
+  </li>
+  <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../http/index.html#uds">Unix Domain Sockets</a>
   </li>
   <li class="nav-item" data-depth="3">
@@ -122,7 +128,13 @@
     <a class="nav-link" href="#Deadlines">Deadlines</a>
   </li>
   <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="#KeepAlive">Keep Alive</a>
+  </li>
+  <li class="nav-item" data-depth="3">
     <a class="nav-link" href="#Observer">Observer</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="#Health">Health Checking</a>
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="#errors">Application Errors</a>
@@ -158,6 +170,9 @@
   </li>
   <li class="nav-item" data-depth="2">
     <a class="nav-link" href="../../../servicetalk-concurrent-api/SNAPSHOT/async-context.html">Async Context</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../../../servicetalk-concurrent-api/SNAPSHOT/pitfalls.html">Concurrency Pitfalls</a>
   </li>
 </ul>
   </li>
@@ -1194,6 +1209,24 @@ within that time or cancels the request.</p>
 </div>
 </div>
 <div class="sect1">
+<h2 id="KeepAlive"><a class="anchor" href="#KeepAlive"></a><a class="link" href="#KeepAlive">Keep Alive</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Demonstrates how to use HTTP/2 keep alive for gRPC
+<a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/grpc/keepalive/src/main/java/io/servicetalk/examples/grpc/keepalive/KeepAliveServer.java">server</a>
+and
+<a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/grpc/keepalive/src/main/java/io/servicetalk/examples/grpc/keepalive/KeepAliveClient.java">client</a>.
+Keep alive uses transport control frames to ensure the peer is still able to read and write to open connections. If the
+peer is not able to respond to the control frame within the configured amount of time, the connection is closed. This
+is useful if your environment doesn&#8217;t provide other forms of connection keep alive (e.g.
+<a href="https://docs.oracle.com/javase/8/docs/api/java/net/StandardSocketOptions.html#SO_KEEPALIVE">SO_KEEPALIVE</a>, and maybe
+preferred to lower level keep alive because it is closer the application logic (more likely if this check works, that
+your application is able to read/write). Keep alive can be helpful to detect scenarios such as non-graceful disconnects
+(e.g. power outage, ethernet cable pulled, buggy middle box) and general network disconnects.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
 <h2 id="Debugging"><a class="anchor" href="#Debugging"></a><a class="link" href="#Debugging">Debugging</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
@@ -1237,6 +1270,25 @@ on the server builder.</p>
 on via a client filter on the client builder.</p>
 </li>
 </ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="Health"><a class="anchor" href="#Health"></a><a class="link" href="#Health">Health Checking</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This example demonstrates the following:
+- Use of
+<a href="https://github.com/apple/servicetalk/blob/main/servicetalk-grpc-health/src/main/java/io/servicetalk/grpc/health/DefaultHealthService.java">DefaultHealthService</a>
+which implements <a href="https://github.com/grpc/grpc/blob/master/doc/health-checking.md">gRPC health checking</a> paired with a simple "hello world" service.</p>
+</div>
+<div class="paragraph">
+<p>Using the following classes:
+* <a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/grpc/health/src/main/java/io/servicetalk/examples/grpc/health/HealthServerExample.java">HealthServerExample</a> a server
+that installs <a href="https://github.com/apple/servicetalk/blob/main/servicetalk-grpc-health/src/main/java/io/servicetalk/grpc/health/DefaultHealthService.java">DefaultHealthService</a> in addition to
+a simple "hello world" service.
+* <a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/grpc/health/src/main/java/io/servicetalk/examples/grpc/health/HealthClientExample.java">HealthClientExample</a> a client
+that calls the "hello world" server, the "health check" server, and prints results.</p>
 </div>
 </div>
 </div>
