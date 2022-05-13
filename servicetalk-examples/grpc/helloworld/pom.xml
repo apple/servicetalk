@@ -54,6 +54,7 @@
                   <groupId>io.servicetalk</groupId>
                   <artifactId>servicetalk-grpc-protoc</artifactId>
                   <version>${servicetalk.version}</version>
+                  <classifier>all</classifier>
                   <mainClass>io.servicetalk.grpc.protoc.Main</mainClass>
                 </protocPlugin>
               </protocPlugins>
