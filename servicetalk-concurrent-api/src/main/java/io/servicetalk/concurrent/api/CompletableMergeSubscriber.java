@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
 abstract class CompletableMergeSubscriber implements Subscriber {
@@ -68,9 +69,7 @@ abstract class CompletableMergeSubscriber implements Subscriber {
                     return;
                 }
             } else {
-                Throwable tmpT = (Throwable) terminalNotification;
-                tmpT.addSuppressed(t);
-                t = tmpT;
+                t = addSuppressed((Throwable) terminalNotification, t);
                 break;
             }
         }

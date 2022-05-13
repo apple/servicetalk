@@ -39,9 +39,7 @@ public final class ThrowableUtils {
     public static Throwable combine(@Nullable final Object first, @Nullable final Object second) {
         if (first instanceof Throwable) {
             if (second instanceof Throwable) {
-                final Throwable result = (Throwable) first;
-                result.addSuppressed((Throwable) second);
-                return result;
+                return addSuppressed((Throwable) first, (Throwable) second);
             } else {
                 return (Throwable) first;
             }
@@ -50,5 +48,19 @@ public final class ThrowableUtils {
         } else {
             return null;
         }
+    }
+
+    /**
+     * Adds suppressed exception avoiding self-suppression.
+     *
+     * @param original the original {@link Throwable}
+     * @param suppressed the {@link Throwable} to be suppressed
+     * @return the original {@link Throwable}
+     */
+    public static Throwable addSuppressed(final Throwable original, final Throwable suppressed) {
+        if (original != suppressed) {
+            original.addSuppressed(suppressed);
+        }
+        return original;
     }
 }

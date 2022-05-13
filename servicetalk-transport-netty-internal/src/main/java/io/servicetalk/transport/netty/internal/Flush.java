@@ -24,6 +24,7 @@ import io.servicetalk.transport.netty.internal.FlushStrategy.WriteEventsListener
 import io.netty.channel.Channel;
 import io.netty.util.concurrent.EventExecutor;
 
+import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -122,7 +123,7 @@ final class Flush {
             try {
                 writeEventsListener.writeTerminated();
             } catch (Throwable t1) {
-                t.addSuppressed(t1);
+                addSuppressed(t, t1);
             }
             subscriber.onError(t);
         }

@@ -22,6 +22,7 @@ import java.util.function.BiPredicate;
 import java.util.function.IntPredicate;
 
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
+import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
 
 /**
  * {@link Publisher} to do {@link Publisher#repeat(IntPredicate)} and {@link Publisher#retry(BiIntPredicate)}
@@ -116,7 +117,7 @@ final class RedoPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
             } catch (Throwable cause) {
                 Throwable originalCause = notification.cause();
                 if (originalCause != null) {
-                    cause.addSuppressed(originalCause);
+                    addSuppressed(cause, originalCause);
                 }
                 subscriber.onError(cause);
                 return;
