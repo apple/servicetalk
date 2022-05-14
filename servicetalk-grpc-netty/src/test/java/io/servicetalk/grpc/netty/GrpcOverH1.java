@@ -38,9 +38,9 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 final class GrpcOverH1 {
-    private static final HttpProtocolConfig[] H1 = new HttpProtocolConfig[] { h1Default() };
-    private static final HttpProtocolConfig[] H1H2 = new HttpProtocolConfig[] { h1Default(), h2Default() };
-    private static final HttpProtocolConfig[] H2H1 = new HttpProtocolConfig[] { h2Default(), h1Default() };
+    private static final HttpProtocolConfig[] H1 = new HttpProtocolConfig[] {h1Default()};
+    private static final HttpProtocolConfig[] H1H2 = new HttpProtocolConfig[] {h1Default(), h2Default()};
+    private static final HttpProtocolConfig[] H2H1 = new HttpProtocolConfig[] {h2Default(), h1Default()};
 
     private enum ProtocolTestMode {
         ServerH1_ClientH1H2(H1, H1H2),
