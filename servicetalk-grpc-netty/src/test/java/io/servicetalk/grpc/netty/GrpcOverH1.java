@@ -26,7 +26,7 @@ import io.grpc.examples.helloworld.Greeter.BlockingGreeterClient;
 import io.grpc.examples.helloworld.HelloReply;
 import io.grpc.examples.helloworld.HelloRequest;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.grpc.netty.GrpcClients.forResolvedAddress;
@@ -38,21 +38,36 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 final class GrpcOverH1 {
+    private static final HttpProtocolConfig[] H1 = new HttpProtocolConfig[] { h1Default() };
+    private static final HttpProtocolConfig[] H1H2 = new HttpProtocolConfig[] { h1Default(), h2Default() };
+    private static final HttpProtocolConfig[] H2H1 = new HttpProtocolConfig[] { h2Default(), h1Default() };
+
+    private enum ProtocolTestMode {
+        ServerH1_ClientH1H2(H1, H1H2),
+        ServerH1_ClientH2H1(H1, H2H1),
+        ServerH1H2_ClientH1(H1H2, H1),
+        ServerH2H1_ClientH1(H2H1, H1);
+
+        final HttpProtocolConfig[] serverConfigs;
+        final HttpProtocolConfig[] clientConfigs;
+
+        ProtocolTestMode(HttpProtocolConfig[] serverConfigs, HttpProtocolConfig[] clientConfigs) {
+            this.serverConfigs = serverConfigs;
+            this.clientConfigs = clientConfigs;
+        }
+    }
+
     @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void tlsClientH1ServerH1H2(boolean serverH2First) throws Exception {
+    @EnumSource(ProtocolTestMode.class)
+    void tlsNegotiated(ProtocolTestMode testMode) throws Exception {
         String greetingPrefix = "Hello ";
         String name = "foo";
         String expectedResponse = greetingPrefix + name;
-        // Server supports H2 and H1
-        HttpProtocolConfig[] serverConfigs = serverH2First ?
-                new HttpProtocolConfig[] {h2Default(), h1Default()} :
-                new HttpProtocolConfig[] {h1Default(), h2Default()};
         try (ServerContext serverContext = forAddress(localAddress(0))
                 .initializeHttp(builder -> builder
                         .sslConfig(new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
                                 DefaultTestCerts::loadServerKey).build())
-                        .protocols(serverConfigs))
+                        .protocols(testMode.serverConfigs))
                 .listenAndAwait((Greeter.GreeterService) (ctx, request) ->
                         succeeded(HelloReply.newBuilder().setMessage(greetingPrefix + request.getName()).build()));
              BlockingGreeterClient client = forResolvedAddress(serverContext.listenAddress())
@@ -60,8 +75,7 @@ final class GrpcOverH1 {
                              .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                                      .peerHost(serverPemHostname())
                                      .build())
-                             // Client only supports H1. TLS+ALPN negotiates H1 (supported by server too).
-                             .protocols(h1Default()))
+                             .protocols(testMode.clientConfigs))
                      .buildBlocking(new Greeter.ClientFactory())) {
             assertEquals(expectedResponse,
                     client.sayHello(HelloRequest.newBuilder().setName(name).build()).getMessage());
