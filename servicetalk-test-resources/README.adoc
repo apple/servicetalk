@@ -20,7 +20,7 @@ This module provides internal common resources to be used for ServiceTalk tests.
 The useful resources provided are:
 
 * Certificates and Keys
-* Log4J configuration file
+* Log4J configuration file (and Log4J runtime dependencies)
 
 This module should be included as a dependency in other ServiceTalk modules as:
 
