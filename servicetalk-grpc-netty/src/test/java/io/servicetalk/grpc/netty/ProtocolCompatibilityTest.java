@@ -126,6 +126,7 @@ import static io.servicetalk.test.resources.DefaultTestCerts.loadServerPem;
 import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
 import static io.servicetalk.transport.api.SslProvider.OPENSSL;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
+import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
 import static java.time.Duration.ofMillis;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -980,7 +981,7 @@ class ProtocolCompatibilityTest {
                 if (re == null) {
                     re = new RuntimeException("Failure(s) when closing: " + Arrays.toString(acs));
                 }
-                re.addSuppressed(t);
+                addSuppressed(re, t);
             }
         }
 

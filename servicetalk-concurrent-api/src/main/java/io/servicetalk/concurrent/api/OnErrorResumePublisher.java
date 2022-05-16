@@ -21,6 +21,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
 import static java.util.Objects.requireNonNull;
 
 final class OnErrorResumePublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
@@ -76,18 +77,17 @@ final class OnErrorResumePublisher<T> extends AbstractNoHandleSubscribePublisher
         }
 
         @Override
-        public void onError(Throwable t) {
+        public void onError(Throwable throwable) {
             final Publisher<? extends T> next;
             try {
-                next = !resubscribed && predicate.test(t) ? requireNonNull(nextFactory.apply(t)) : null;
-            } catch (Throwable throwable) {
-                throwable.addSuppressed(t);
-                subscriber.onError(throwable);
+                next = !resubscribed && predicate.test(throwable) ? requireNonNull(nextFactory.apply(throwable)) : null;
+            } catch (Throwable t) {
+                subscriber.onError(addSuppressed(t, throwable));
                 return;
             }
 
             if (next == null) {
-                subscriber.onError(t);
+                subscriber.onError(throwable);
             } else {
                 final Subscriber<? super T> offloadedSubscriber =
                         contextProvider.wrapPublisherSubscriber(this, contextMap);

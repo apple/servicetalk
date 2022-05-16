@@ -31,6 +31,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.test.internal.AwaitUtils.await;
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
+import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -153,7 +154,7 @@ public final class TestSingle<T> extends Single<T> implements SingleSource<T> {
             final RuntimeException exception = new RuntimeException("Unexpected exception(s) encountered",
                     exceptions.get(0));
             for (int i = 1; i < exceptions.size(); i++) {
-                exception.addSuppressed(exceptions.get(i));
+                addSuppressed(exception, exceptions.get(i));
             }
             throw exception;
         }

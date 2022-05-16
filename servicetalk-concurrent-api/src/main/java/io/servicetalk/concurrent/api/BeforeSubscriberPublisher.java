@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import java.util.function.Supplier;
 
+import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
 import static java.util.Objects.requireNonNull;
 
 final class BeforeSubscriberPublisher<T> extends AbstractSynchronousPublisherOperator<T, T> {
@@ -70,8 +71,7 @@ final class BeforeSubscriberPublisher<T> extends AbstractSynchronousPublisherOpe
             try {
                 subscriber.onError(t);
             } catch (Throwable cause) {
-                t.addSuppressed(cause);
-                original.onError(t);
+                original.onError(addSuppressed(t, cause));
                 return;
             }
             original.onError(t);

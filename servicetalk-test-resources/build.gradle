@@ -20,6 +20,7 @@ dependencies {
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
 
   implementation project(":servicetalk-annotations")
+  implementation project(":servicetalk-utils-internal")
 
   api "org.hamcrest:hamcrest:$hamcrestVersion"
 
