@@ -29,22 +29,25 @@ dependencies {
   api platform("org.glassfish.jersey:jersey-bom:$jerseyVersion")
 
   constraints {
+    // Use `api` only for dependencies whose types appear in ServiceTalk API.
     api "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
     api "com.google.api.grpc:proto-google-common-protos:$protoGoogleCommonProtosVersion"
     api "com.google.protobuf:protobuf-java:$protobufVersion"
     api "io.opentracing:opentracing-api:$openTracingVersion"
     api "io.zipkin.reporter2:zipkin-reporter:$zipkinReporterVersion"
+    // `spi` and `core` types exposed in `log4j2-mdc-utils`
+    api "org.apache.logging.log4j:log4j-core:$log4jVersion"
     api "jakarta.ws.rs:jakarta.ws.rs-api:$jaxRsVersion"
+    // Matchers are exposed by `servicetalk-test-resources`
     api "org.hamcrest:hamcrest:$hamcrestVersion"
     api "org.reactivestreams:reactive-streams:$reactiveStreamsVersion"
+    // Use `runtime` for dependencies which are used for implementation
     runtime "com.google.code.findbugs:jsr305:$jsr305Version"
     runtime "com.google.protobuf:protobuf-java-util:$protobufVersion"
     runtime "com.sun.activation:jakarta.activation:$javaxActivationVersion"
     runtime "com.sun.xml.bind:jaxb-core:$javaxJaxbCoreVersion"
     runtime "com.sun.xml.bind:jaxb-impl:$javaxJaxbImplVersion"
     runtime "jakarta.xml.bind:jakarta.xml.bind-api:$javaxJaxbApiVersion"
-    runtime "org.apache.logging.log4j:log4j-api:$log4jVersion"
-    runtime "org.apache.logging.log4j:log4j-core:$log4jVersion"
     runtime "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
     runtime "org.jctools:jctools-core:$jcToolsVersion"
     runtime "org.openjdk.jmh:jmh-core:$jmhCoreVersion"
