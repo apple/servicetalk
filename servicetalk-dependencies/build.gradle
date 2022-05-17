@@ -29,7 +29,6 @@ dependencies {
   api platform("org.glassfish.jersey:jersey-bom:$jerseyVersion")
 
   constraints {
-    // Use `api` only for dependencies whose types appear in ServiceTalk API.
     api "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
     api "com.google.api.grpc:proto-google-common-protos:$protoGoogleCommonProtosVersion"
     api "com.google.code.findbugs:jsr305:$jsr305Version"
@@ -39,7 +38,7 @@ dependencies {
     api "com.sun.xml.bind:jaxb-core:$javaxJaxbCoreVersion"
     api "io.opentracing:opentracing-api:$openTracingVersion"
     api "io.zipkin.reporter2:zipkin-reporter:$zipkinReporterVersion"
-    // `spi` and `core` types exposed in `log4j2-mdc-utils`
+    api "org.apache.logging.log4j:log4j-api:$log4jVersion"
     api "org.apache.logging.log4j:log4j-core:$log4jVersion"
     api "jakarta.ws.rs:jakarta.ws.rs-api:$jaxRsVersion"
     api "jakarta.xml.bind:jakarta.xml.bind-api:$javaxJaxbApiVersion"
@@ -50,6 +49,7 @@ dependencies {
     api "org.reactivestreams:reactive-streams:$reactiveStreamsVersion"
     api "org.slf4j:slf4j-api:$slf4jVersion"
 
+    // Use `runtime` for dependencies which are used ONLY at runtime
     runtime "com.sun.xml.bind:jaxb-impl:$javaxJaxbImplVersion"
     runtime "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
   }
