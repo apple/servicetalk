@@ -26,10 +26,11 @@ apply plugin: "com.google.protobuf"
 ideaModule.dependsOn "generateTestProto"
 
 dependencies {
+  api platform(project(":servicetalk-dependencies"))
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
 
   api project(":servicetalk-grpc-api")
-  api "com.google.protobuf:protobuf-java:$protobufVersion"
+  api "com.google.protobuf:protobuf-java"
   api "com.google.api.grpc:proto-google-common-protos:$protoGoogleCommonProtosVersion"
 
   implementation project(":servicetalk-annotations")
@@ -37,8 +38,8 @@ dependencies {
   implementation project(":servicetalk-serializer-api")
   implementation project(":servicetalk-data-protobuf")
   implementation project(":servicetalk-serializer-utils")
-  implementation "org.slf4j:slf4j-api:$slf4jVersion"
-  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
+  implementation "org.slf4j:slf4j-api"
+  implementation "com.google.code.findbugs:jsr305"
 
   testImplementation project(":servicetalk-test-resources")
   testImplementation "org.junit.jupiter:junit-jupiter-api"

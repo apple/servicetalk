@@ -22,6 +22,7 @@ plugins {
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
+  implementation platform(project(":servicetalk-dependencies"))
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
 
   implementation project(":servicetalk-annotations")
@@ -29,7 +30,7 @@ dependencies {
   // Needed for the generated classes
   api project(":servicetalk-data-protobuf")
 
-  compileOnly "com.google.code.findbugs:jsr305:$jsr305Version"
+  compileOnly "com.google.code.findbugs:jsr305"
   compileOnly "com.squareup:javapoet:$javaPoetVersion"
 
   testImplementation project(":servicetalk-grpc-api")

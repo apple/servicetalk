@@ -17,7 +17,7 @@
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
-  api platform("io.netty:netty-bom:$nettyVersion")
+  api platform(project(":servicetalk-dependencies"))
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
   testFixturesImplementation platform("org.junit:junit-bom:$junit5Version")
 
@@ -32,7 +32,7 @@ dependencies {
   implementation project(":servicetalk-concurrent-internal")
   implementation project(":servicetalk-logging-slf4j-internal")
   implementation project(":servicetalk-utils-internal")
-  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
+  implementation "com.google.code.findbugs:jsr305"
   implementation "io.netty:netty-transport-native-epoll"
   runtimeOnly( group:"io.netty", name:"netty-transport-native-epoll", classifier:"linux-x86_64")
   runtimeOnly( group:"io.netty", name:"netty-transport-native-epoll", classifier:"linux-aarch_64")
@@ -46,7 +46,7 @@ dependencies {
   runtimeOnly( group:"io.netty", name:"netty-tcnative-boringssl-static", classifier:"linux-aarch_64")
   runtimeOnly( group:"io.netty", name:"netty-tcnative-boringssl-static", classifier:"osx-x86_64")
   runtimeOnly( group:"io.netty", name:"netty-tcnative-boringssl-static", classifier:"osx-aarch_64")
-  implementation "org.slf4j:slf4j-api:$slf4jVersion"
+  implementation "org.slf4j:slf4j-api"
 
   testImplementation testFixtures(project(":servicetalk-concurrent-api"))
   testImplementation testFixtures(project(":servicetalk-concurrent-internal"))

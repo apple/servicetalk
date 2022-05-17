@@ -26,28 +26,30 @@ javaPlatform {
 dependencies {
   api platform(project(":servicetalk-bom"))
   api platform("io.netty:netty-bom:${nettyVersion}")
-  api platform("com.fasterxml.jackson:jackson-bom:${jacksonVersion}")
   api platform("com.google.protobuf:protobuf-bom:${protobufVersion}")
   api platform("org.apache.logging.log4j:log4j-bom:${log4jVersion}")
   api platform("org.glassfish.jersey:jersey-bom:${jerseyVersion}")
 
   constraints {
+    // We don't use the jackson-bom because we want to target specifically jackson-databind
+    api "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
     api "com.google.api.grpc:proto-google-common-protos:$protoGoogleCommonProtosVersion"
+    api "com.google.code.findbugs:jsr305:$jsr305Version"
+    api "com.sun.activation:jakarta.activation:$javaxActivationVersion"
+    api "com.sun.xml.bind:jaxb-core:$javaxJaxbCoreVersion"
     api "io.opentracing:opentracing-api:$openTracingVersion"
     api "io.zipkin.reporter2:zipkin-reporter:$zipkinReporterVersion"
     api "jakarta.ws.rs:jakarta.ws.rs-api:$jaxRsVersion"
+    api "jakarta.xml.bind:jakarta.xml.bind-api:$javaxJaxbApiVersion"
     // Matchers are exposed by `servicetalk-test-resources`
     api "org.hamcrest:hamcrest:$hamcrestVersion"
+    api "org.jctools:jctools-core:$jcToolsVersion"
+    api "org.openjdk.jmh:jmh-core:$jmhCoreVersion"
     api "org.reactivestreams:reactive-streams:$reactiveStreamsVersion"
+    api "org.slf4j:slf4j-api:$slf4jVersion"
+
     // Use `runtime` for dependencies which are used ONLY at runtime
-    runtime "com.google.code.findbugs:jsr305:$jsr305Version"
-    runtime "com.sun.activation:jakarta.activation:$javaxActivationVersion"
-    runtime "com.sun.xml.bind:jaxb-core:$javaxJaxbCoreVersion"
     runtime "com.sun.xml.bind:jaxb-impl:$javaxJaxbImplVersion"
-    runtime "jakarta.xml.bind:jakarta.xml.bind-api:$javaxJaxbApiVersion"
-    runtime "org.jctools:jctools-core:$jcToolsVersion"
-    runtime "org.openjdk.jmh:jmh-core:$jmhCoreVersion"
-    runtime "org.slf4j:slf4j-api:$slf4jVersion"
   }
 }
 

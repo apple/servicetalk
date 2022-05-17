@@ -17,6 +17,7 @@
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
+  api platform(project(":servicetalk-dependencies"))
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
 
   api project(":servicetalk-concurrent-api")
@@ -35,9 +36,9 @@ dependencies {
   implementation project(":servicetalk-grpc-internal")
   implementation project(":servicetalk-oio-api-internal")
   implementation project(":servicetalk-serializer-utils")
-  implementation "org.slf4j:slf4j-api:$slf4jVersion"
-  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
-  implementation "com.google.protobuf:protobuf-java:$protobufVersion"
+  implementation "com.google.code.findbugs:jsr305"
+  implementation "com.google.protobuf:protobuf-java"
+  implementation "org.slf4j:slf4j-api"
 
   testImplementation project(":servicetalk-test-resources")
   testImplementation "org.junit.jupiter:junit-jupiter-api"

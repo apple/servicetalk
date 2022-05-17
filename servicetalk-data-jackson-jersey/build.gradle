@@ -17,12 +17,12 @@
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
-  implementation platform("org.glassfish.jersey:jersey-bom:$jerseyVersion")
+  api platform(project(":servicetalk-dependencies"))
   testImplementation enforcedPlatform("org.glassfish.jersey:jersey-bom:$jerseyVersion")
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
 
   api project(":servicetalk-data-jackson")
-  api "jakarta.ws.rs:jakarta.ws.rs-api:$jaxRsVersion" // MediaType, Feature
+  api "jakarta.ws.rs:jakarta.ws.rs-api" // MediaType, Feature
   api "org.glassfish.jersey.core:jersey-common" // AutoDiscoverable
 
   implementation project(":servicetalk-annotations")
@@ -34,9 +34,9 @@ dependencies {
   implementation project(":servicetalk-http-router-jersey-internal")
   implementation project(":servicetalk-http-utils")
   implementation project(":servicetalk-transport-netty")
-  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
+  implementation "com.google.code.findbugs:jsr305"
   implementation "org.glassfish.jersey.core:jersey-server"
-  implementation "org.slf4j:slf4j-api:$slf4jVersion"
+  implementation "org.slf4j:slf4j-api"
 
   testImplementation testFixtures(project(":servicetalk-concurrent-api"))
   testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
