@@ -26,20 +26,18 @@ javaPlatform {
 dependencies {
   api platform(project(":servicetalk-bom"))
   api platform("io.netty:netty-bom:${nettyVersion}")
-  api platform("org.glassfish.jersey:jersey-bom:$jerseyVersion")
+  api platform("com.fasterxml.jackson:jackson-bom:${jacksonVersion}")
+  api platform("com.google.protobuf:protobuf-bom:${protobufVersion}")
+  api platform("org.apache.logging.log4j:log4j-bom:${log4jVersion}")
+  api platform("org.glassfish.jersey:jersey-bom:${jerseyVersion}")
 
   constraints {
-    api "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
     api "com.google.api.grpc:proto-google-common-protos:$protoGoogleCommonProtosVersion"
     api "com.google.code.findbugs:jsr305:$jsr305Version"
-    api "com.google.protobuf:protobuf-java:$protobufVersion"
-    api "com.google.protobuf:protobuf-java-util:$protobufVersion"
     api "com.sun.activation:jakarta.activation:$javaxActivationVersion"
     api "com.sun.xml.bind:jaxb-core:$javaxJaxbCoreVersion"
     api "io.opentracing:opentracing-api:$openTracingVersion"
     api "io.zipkin.reporter2:zipkin-reporter:$zipkinReporterVersion"
-    api "org.apache.logging.log4j:log4j-api:$log4jVersion"
-    api "org.apache.logging.log4j:log4j-core:$log4jVersion"
     api "jakarta.ws.rs:jakarta.ws.rs-api:$jaxRsVersion"
     api "jakarta.xml.bind:jakarta.xml.bind-api:$javaxJaxbApiVersion"
     // Matchers are exposed by `servicetalk-test-resources`
@@ -51,7 +49,6 @@ dependencies {
 
     // Use `runtime` for dependencies which are used ONLY at runtime
     runtime "com.sun.xml.bind:jaxb-impl:$javaxJaxbImplVersion"
-    runtime "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
   }
 }
 
