@@ -43,6 +43,7 @@ final class GrpcOverH1 {
     private static final HttpProtocolConfig[] H2H1 = new HttpProtocolConfig[] {h2Default(), h1Default()};
 
     private enum ProtocolTestMode {
+        ServerH1_ClientH1(H1, H1),
         ServerH1_ClientH1H2(H1, H1H2),
         ServerH1_ClientH2H1(H1, H2H1),
         ServerH1H2_ClientH1(H1H2, H1),
