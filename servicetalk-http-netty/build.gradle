@@ -69,4 +69,5 @@ dependencies {
   testFixturesImplementation project(":servicetalk-http-utils")
   testFixturesImplementation project(":servicetalk-test-resources")
   testFixturesImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
+  testFixturesRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
 }
