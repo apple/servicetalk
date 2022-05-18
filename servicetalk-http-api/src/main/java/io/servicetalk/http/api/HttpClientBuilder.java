@@ -54,9 +54,12 @@ interface HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> {
     HttpClientBuilder<U, R, SDE> bufferAllocator(BufferAllocator allocator);
 
     /**
-     * Sets the {@link HttpExecutionStrategy} for all clients created from this builder.
+     * Sets the {@link HttpExecutionStrategy} to be used for client callbacks when executing client requests for all
+     * clients created from this builder.
      *
-     * @param strategy {@link HttpExecutionStrategy} to use.
+     * @param strategy {@link HttpExecutionStrategy} to use. If callbacks to the application code may block then those
+     * callbacks must request to be offloaded.
+     *
      * @return {@code this}.
      * @see HttpExecutionStrategies
      */
