@@ -21,7 +21,7 @@ dependencies {
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
 
   api project(":servicetalk-concurrent-api")
-  api "org.reactivestreams:reactive-streams:$reactiveStreamsVersion"
+  api "org.reactivestreams:reactive-streams"
 
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-serializer-utils")
