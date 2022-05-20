@@ -15,6 +15,7 @@
  */
 package io.servicetalk.grpc.netty;
 
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.SingleSource.Processor;
@@ -51,7 +52,9 @@ import io.servicetalk.grpc.netty.CompatProto.Compat.ServerStreamingCallMetadata;
 import io.servicetalk.grpc.netty.CompatProto.Compat.ServiceFactory;
 import io.servicetalk.grpc.netty.CompatProto.RequestContainer.CompatRequest;
 import io.servicetalk.grpc.netty.CompatProto.ResponseContainer.CompatResponse;
+import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpServerBuilder;
+import io.servicetalk.http.api.HttpServerContext;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpClient;
@@ -69,6 +72,7 @@ import io.servicetalk.transport.api.ServerSslConfigBuilder;
 
 import com.google.protobuf.Any;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.rpc.Code;
 import io.grpc.Codec;
 import io.grpc.Compressor;
 import io.grpc.CompressorRegistry;
@@ -85,6 +89,7 @@ import io.grpc.protobuf.StatusProto;
 import io.grpc.stub.StreamObserver;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -116,11 +121,13 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.internal.TestTimeoutConstants.DEFAULT_TIMEOUT_SECONDS;
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.defaultStrategy;
-import static io.servicetalk.grpc.api.GrpcExecutionStrategies.offloadNever;
+import static io.servicetalk.grpc.api.GrpcExecutionStrategy.from;
 import static io.servicetalk.grpc.api.GrpcStatusCode.CANCELLED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.DEADLINE_EXCEEDED;
+import static io.servicetalk.grpc.api.GrpcStatusCode.UNKNOWN;
 import static io.servicetalk.grpc.internal.DeadlineUtils.GRPC_TIMEOUT_HEADER_KEY;
-import static io.servicetalk.http.netty.HttpProtocolConfigs.h2;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
+import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 import static io.servicetalk.test.resources.DefaultTestCerts.loadServerKey;
 import static io.servicetalk.test.resources.DefaultTestCerts.loadServerPem;
 import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
@@ -132,6 +139,7 @@ import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -404,7 +412,7 @@ class ProtocolCompatibilityTest {
                                                        final String compression)
             throws Exception {
         final TestServerContext server = serviceTalkServer(ErrorMode.SIMPLE_IN_RESPONSE, ssl,
-                offloadNever(), compression, null);
+                from(offloadNone()), compression, null);
         final CompatClient client = grpcJavaClient(server.listenAddress(), compression, ssl, null);
         testGrpcError(client, server, false, streaming, compression);
     }
@@ -458,7 +466,7 @@ class ProtocolCompatibilityTest {
         final boolean streaming,
         final String compression) throws Exception {
         final TestServerContext server = serviceTalkServer(ErrorMode.STATUS_IN_RESPONSE, ssl,
-                offloadNever(), compression, null);
+                from(offloadNone()), compression, null);
         final CompatClient client = grpcJavaClient(server.listenAddress(), compression, ssl, null);
         testGrpcError(client, server, true, streaming, compression);
     }
@@ -483,6 +491,52 @@ class ProtocolCompatibilityTest {
         final TestServerContext server = serviceTalkServerBlocking(ErrorMode.NONE, ssl, compression);
         final CompatClient client = grpcJavaClient(server.listenAddress(), compression, ssl, null);
         testRequestResponse(client, server, streaming, compression);
+    }
+
+    @Test
+    void clientH2ReturnStatus() throws Exception {
+        try (HttpServerContext server = HttpServers.forAddress(localAddress(0))
+                .protocols(h2Default())
+                .listenBlockingAndAwait((ctx, request, responseFactory) -> {
+                    byte meta = request.payloadBody().readByte();
+                    if (meta != 0) {
+                        throw new IllegalArgumentException("compression not supported");
+                    }
+                    int length = request.payloadBody().readInt();
+                    if (request.payloadBody().readableBytes() != length) {
+                        throw new IllegalArgumentException("payload body length incomplete: " + length);
+                    }
+                    CompatRequest compatRequest = CompatRequest.parser().parseFrom(
+                            Buffer.asInputStream(request.payloadBody()));
+                    return responseFactory.newResponse(HttpResponseStatus.of(compatRequest.getId(), "foo"))
+                            .payloadBody(ctx.executionContext().bufferAllocator().fromAscii("error"));
+                });
+             CompatClient grpcJavaClient = grpcJavaClient(server.listenAddress(), null, false, null);
+             CompatClient stClient = serviceTalkClient(server.listenAddress(), false, null, null)) {
+            for (int httpCode = 100; httpCode < 999; ++httpCode) {
+                CompatRequest request = CompatRequest.newBuilder().setId(httpCode).build();
+                int grpcJavaCode = Code.OK.getNumber();
+                int stCode = GrpcStatusCode.OK.value();
+                try {
+                    grpcJavaClient.scalarCall(request).toFuture().get();
+                } catch (ExecutionException e) {
+                    grpcJavaCode = ((StatusRuntimeException) e.getCause()).getStatus().getCode().value();
+                }
+                try {
+                    stClient.scalarCall(request).toFuture().get();
+                } catch (ExecutionException e) {
+                    stCode = ((GrpcStatusException) e.getCause()).status().code().value();
+                }
+                if (httpCode < 200) {
+                    // grpc-java maps 1xx responses to error code INTERNAL, we currently map to UNKNOWN. The test server
+                    // isn't following the http protocol by returning only a 1xx response and each framework catches
+                    // this exception differently internally.
+                    assertThat("mismatch for h2 response code: " + httpCode, stCode, equalTo(UNKNOWN.value()));
+                } else {
+                    assertThat("mismatch for h2 response code: " + httpCode, stCode, equalTo(grpcJavaCode));
+                }
+            }
+        }
     }
 
     @ParameterizedTest
@@ -603,7 +657,7 @@ class ProtocolCompatibilityTest {
         Duration serverTimeout = clientInitiatedTimeout ? null : DEFAULT_DEADLINE;
         BlockingQueue<Throwable> serverErrorQueue = new ArrayBlockingQueue<>(16);
         final TestServerContext server = stServer ?
-                serviceTalkServer(ErrorMode.NONE, false, offloadNever(), null, null, serverErrorQueue) :
+                serviceTalkServer(ErrorMode.NONE, false, from(offloadNone()), null, null, serverErrorQueue) :
                 grpcJavaServer(ErrorMode.NONE, false, null);
         try (ServerContext proxyCtx = buildTimeoutProxy(server.listenAddress(), serverTimeout, false)) {
             final CompatClient client = stClient ?
@@ -633,8 +687,8 @@ class ProtocolCompatibilityTest {
     private static ServerContext buildTimeoutProxy(SocketAddress serverAddress, @Nullable Duration forcedTimeout,
                                                    boolean ssl) throws Exception {
         HttpServerBuilder proxyBuilder = HttpServers.forAddress(localAddress(0))
-                .executionStrategy(offloadNever())
-                .protocols(h2().build());
+                .executionStrategy(from(offloadNone()))
+                .protocols(h2Default());
         if (ssl) {
             proxyBuilder.sslConfig(new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
                     DefaultTestCerts::loadServerKey).build());
@@ -651,8 +705,8 @@ class ProtocolCompatibilityTest {
                                  boolean ssl) {
             SingleAddressHttpClientBuilder<InetSocketAddress, InetSocketAddress> builder =
                     HttpClients.forResolvedAddress((InetSocketAddress) serverAddress)
-                            .executionStrategy(offloadNever())
-                            .protocols(h2().build());
+                            .executionStrategy(from(offloadNone()))
+                            .protocols(h2Default());
             if (ssl) {
                 builder.sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                         .peerHost(serverPemHostname()).build());

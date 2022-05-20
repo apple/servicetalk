@@ -40,17 +40,34 @@ public enum GrpcStatusCode {
     NOT_FOUND(5),
     /** Some entity that we attempted to create already exists. */
     ALREADY_EXISTS(6),
-    /** Permission denied for a particular client. Different from {@link #UNAUTHENTICATED}. */
+    /**
+     * Permission denied for a particular client. Must not be used for the following cases:
+     * <ul>
+     *     <li>rejections caused by exhausting some resource (use {@link #RESOURCE_EXHAUSTED} instead)</li>
+     *     <li>the caller cannot be identified (use {@link #UNAUTHENTICATED} instead)</li>
+     * </ul>
+     */
     PERMISSION_DENIED(7),
     /** Resource exhausted. */
     RESOURCE_EXHAUSTED(8),
-    /** The action cannot be executed on the current system state. Client should not retry.. */
+    /** The action cannot be executed on the current system state. Client should not retry. */
     FAILED_PRECONDITION(9),
-    /** Aborted, typically due to a concurrency issue (think CAS). Client may retry the whole sequence.. */
+    /** Aborted, typically due to a concurrency issue (think CAS). Client may retry the whole sequence. */
     ABORTED(10),
-    /** Used for range errors. */
+    /**
+     * Used for range errors (e.g. seeking or reading past end of file.)
+     * <p>
+     * Unlike {@link #INVALID_ARGUMENT}, this error indicates a problem that may be fixed if the system state changes.
+     * For example, a 32-bit file system will generate {@link #INVALID_ARGUMENT} if asked to read at an offset that is
+     * not in the range [0,2^32-1], but it will generate OUT_OF_RANGE if asked to read from an offset past the current
+     * file size.
+     * <p>
+     * There is a fair bit of overlap with {@link #FAILED_PRECONDITION}. This error is more specific and recommended
+     * in scenarios when callers who are iterating through a space can easily look for an OUT_OF_RANGE error to detect
+     * when they are done.
+     */
     OUT_OF_RANGE(11),
-    /** Unimplemented action. */
+    /** The method/operation is not implemented/supported/implemented. */
     UNIMPLEMENTED(12),
     /** Internal invariant violated. */
     INTERNAL(13),
