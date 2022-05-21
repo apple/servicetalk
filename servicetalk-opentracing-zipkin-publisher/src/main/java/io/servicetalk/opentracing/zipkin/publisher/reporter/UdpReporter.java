@@ -50,6 +50,7 @@ import java.util.function.BooleanSupplier;
 import javax.annotation.Nullable;
 
 import static io.netty.channel.ChannelOption.RCVBUF_ALLOCATOR;
+import static io.netty.util.internal.PlatformDependent.throwException;
 import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.datagramChannel;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
@@ -215,7 +216,7 @@ public final class UdpReporter extends Component implements Reporter<Span>, Asyn
     @Override
     public void report(final Span span) {
         if (!channel.isActive()) {
-            throw new RuntimeException(StacklessClosedChannelException.newInstance(this.getClass(), "report"));
+            throwException(StacklessClosedChannelException.newInstance(this.getClass(), "report"));
         }
         channel.writeAndFlush(span);
     }

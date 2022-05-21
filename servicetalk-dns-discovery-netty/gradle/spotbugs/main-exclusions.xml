@@ -21,4 +21,19 @@
     <Method name="queryTimeout"/>
     <Bug pattern="EI_EXPOSE_REP2"/>
   </Match>
+  <Match>
+    <Class name="io.servicetalk.dns.discovery.netty.DefaultDnsClient$ARecordPublisher$1"/>
+    <Method name="lambda$doDnsQuery$0"/>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.dns.discovery.netty.DefaultDnsClient$AbstractDnsPublisher$AbstractDnsSubscription"/>
+    <Method name="lambda$doQuery0$2"/>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.dns.discovery.netty.DefaultDnsClient$SrvRecordPublisher$1"/>
+    <Method name="lambda$doDnsQuery$0"/>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
 </FindBugsFilter>

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+  ~ Copyright © 2019, 2022 Apple Inc. and the ServiceTalk project authors
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -41,7 +41,69 @@
   <!-- Exposing Throwable cause intentional -->
   <Match>
     <Class name="io.servicetalk.grpc.api.GrpcStatus"/>
-    <Method name ="&lt;init&gt;"/>
+    <Method name="&lt;init&gt;"/>
     <Bug pattern="EI_EXPOSE_REP2"/>
+  </Match>
+
+  <Match>
+    <Or>
+      <Class name="io.servicetalk.grpc.api.BlockingGrpcService"/>
+      <Class name="io.servicetalk.grpc.api.GrpcClient"/>
+    </Or>
+    <Or>
+      <Method name="close"/>
+      <Method name="closeGracefully"/>
+    </Or>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.grpc.api.DefaultGrpcClientCallFactory"/>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
+  <Match>
+    <Or>
+      <Class name="io.servicetalk.grpc.api.DelegatingGrpcServerBuilder"/>
+      <Class name="io.servicetalk.grpc.api.GrpcServerBuilder"/>
+    </Or>
+    <Method name="listenAndAwait"/>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
+  <Match>
+    <Or>
+      <Class name="io.servicetalk.grpc.api.GrpcClientCallFactory$BlockingClientCall"/>
+      <Class name="io.servicetalk.grpc.api.GrpcClientCallFactory$BlockingRequestStreamingClientCall"/>
+      <Class name="io.servicetalk.grpc.api.GrpcClientCallFactory$BlockingResponseStreamingClientCall"/>
+      <Class name="io.servicetalk.grpc.api.GrpcClientCallFactory$BlockingStreamingClientCall"/>
+    </Or>
+    <Method name="request"/>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
+  <Match>
+    <Or>
+      <Class name="io.servicetalk.grpc.api.GrpcRouter$Builder$6"/>
+      <Class name="io.servicetalk.grpc.api.GrpcRouter$Builder$7"/>
+      <Class name="io.servicetalk.grpc.api.GrpcRouter$Builder$8"/>
+      <Class name="io.servicetalk.grpc.api.GrpcRouter$Builder$9"/>
+      <Class name="io.servicetalk.grpc.api.GrpcRouter$DefaultGrpcServerContext"/>
+      <Class name="io.servicetalk.grpc.api.GrpcRoutes$BlockingRequestStreamingRoute"/>
+      <Class name="io.servicetalk.grpc.api.GrpcRoutes$BlockingRequestStreamingRoute$1"/>
+      <Class name="io.servicetalk.grpc.api.GrpcRoutes$BlockingResponseStreamingRoute"/>
+      <Class name="io.servicetalk.grpc.api.GrpcRoutes$BlockingResponseStreamingRoute$1"/>
+      <Class name="io.servicetalk.grpc.api.GrpcRoutes$BlockingRoute"/>
+      <Class name="io.servicetalk.grpc.api.GrpcRoutes$BlockingRoute$1"/>
+      <Class name="io.servicetalk.grpc.api.GrpcRoutes$BlockingStreamingRoute"/>
+      <Class name="io.servicetalk.grpc.api.GrpcRoutes$BlockingStreamingRoute$1"/>
+    </Or>
+    <Or>
+      <Method name="close"/>
+      <Method name="closeGracefully"/>
+      <Method name="handle"/>
+    </Or>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.grpc.api.GrpcUtils$1"/>
+    <Method name="payloadFailed"/>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_THROWABLE"/>
   </Match>
 </FindBugsFilter>

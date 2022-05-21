@@ -2712,7 +2712,7 @@ final class CopyOnWriteContextMap implements ContextMap {
                             (Key<?>) context[8], context[9],
                             (Key<?>) context[10], context[11]);
                 default:
-                    throw new RuntimeException("Programming error, unable to remove a key at index=" + i);
+                    throw new IllegalStateException("Programming error, unable to remove a key at index=" + i);
             }
         }
 
@@ -2838,7 +2838,7 @@ final class CopyOnWriteContextMap implements ContextMap {
                 default:
                     break;
             }
-            throw new RuntimeException("Programming error, unable to reduce from " + size() + " to " +
+            throw new IllegalStateException("Programming error, unable to reduce from " + size() + " to " +
                     (size() - indexesToRemove.count()));
         }
 

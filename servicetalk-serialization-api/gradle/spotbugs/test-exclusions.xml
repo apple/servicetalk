@@ -20,4 +20,15 @@
     <Source name="~.*Test\.java"/>
     <Bug pattern="NP_NONNULL_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR"/>
   </Match>
+  <Match>
+    <Source name="~.*Test\.java"/>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
+  <Match>
+    <Or>
+      <Source name="~.*Test\.java"/>
+      <Source name="~.*Mock\.java"/>
+    </Or>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_THROWABLE"/>
+  </Match>
 </FindBugsFilter>

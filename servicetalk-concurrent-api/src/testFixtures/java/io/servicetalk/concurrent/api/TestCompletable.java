@@ -148,7 +148,7 @@ public final class TestCompletable extends Completable implements CompletableSou
 
     private Subscriber checkSubscriberAndExceptions() {
         if (!exceptions.isEmpty()) {
-            final RuntimeException exception = new RuntimeException("Unexpected exception(s) encountered",
+            final IllegalStateException exception = new IllegalStateException("Unexpected exception(s) encountered",
                     exceptions.get(0));
             for (int i = 1; i < exceptions.size(); i++) {
                 addSuppressed(exception, exceptions.get(i));
@@ -353,7 +353,7 @@ public final class TestCompletable extends Completable implements CompletableSou
                 Thread.currentThread().interrupt();
                 return throwException(e);
             } catch (ExecutionException e) {
-                throw new RuntimeException(e);
+                return throwException(e);
             }
         }
     }
