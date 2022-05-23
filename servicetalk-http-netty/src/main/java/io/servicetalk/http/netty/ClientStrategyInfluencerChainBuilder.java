@@ -111,8 +111,8 @@ final class ClientStrategyInfluencerChainBuilder {
         }
         if (filterOffloads.hasOffloads()) {
             @Nullable
-            HttpExecutionStrategy connFilterChain = this.connFilterChain;
-            connFilterChain = null != connFilterChain ? connFilterChain.merge(filterOffloads) : filterOffloads;
+            final HttpExecutionStrategy connFilterChain = this.connFilterChain;
+            this.connFilterChain = null != connFilterChain ? connFilterChain.merge(filterOffloads) : filterOffloads;
             logIfChanges(ConnectionFactoryFilter.class, connectionFilter, connFilterChain, this.connFilterChain);
         }
     }
