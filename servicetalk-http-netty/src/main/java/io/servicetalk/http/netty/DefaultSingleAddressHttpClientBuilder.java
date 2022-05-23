@@ -45,6 +45,7 @@ import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
+import io.servicetalk.http.utils.HostHeaderHttpRequesterFilter;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ClientSslConfig;
 import io.servicetalk.transport.api.ExecutionStrategy;
@@ -448,13 +449,22 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         requireNonNull(factory);
         connectionFilterFactory = appendConnectionFilter(connectionFilterFactory, factory);
         strategyComputation.add(factory);
+        ifHostHeaderHttpRequesterFilter(factory);
         return this;
     }
 
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> appendConnectionFilter(
             final Predicate<StreamingHttpRequest> predicate, final StreamingHttpConnectionFilterFactory factory) {
-        return appendConnectionFilter(toConditionalConnectionFilterFactory(predicate, factory));
+        appendConnectionFilter(toConditionalConnectionFilterFactory(predicate, factory));
+        ifHostHeaderHttpRequesterFilter(factory);
+        return this;
+    }
+
+    private void ifHostHeaderHttpRequesterFilter(final Object filter) {
+        if (filter instanceof HostHeaderHttpRequesterFilter) {
+            addHostHeaderFallbackFilter = false;
+        }
     }
 
     // Use another method to keep final references and avoid StackOverflowError
@@ -491,7 +501,9 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
             ensureSingleRetryFilter();
             retryingHttpRequesterFilter = (RetryingHttpRequesterFilter) factory;
         }
-        return appendClientFilter(toConditionalClientFilterFactory(predicate, factory));
+        appendClientFilter(toConditionalClientFilterFactory(predicate, factory));
+        ifHostHeaderHttpRequesterFilter(factory);
+        return this;
     }
 
     private void ensureSingleRetryFilter() {
@@ -518,6 +530,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         }
         clientFilterFactory = appendFilter(clientFilterFactory, factory);
         strategyComputation.add(factory);
+        ifHostHeaderHttpRequesterFilter(factory);
         return this;
     }
 

@@ -25,6 +25,7 @@ import io.servicetalk.concurrent.PublisherSource.Processor;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.AsyncCloseable;
+import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Executor;
@@ -777,6 +778,8 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
                                 host.healthCheckConfig.healthCheckInterval,
                                 host.healthCheckConfig.executor)
                                 .apply(0, originalCause)
+                                // Remove any state from async context
+                                .beforeOnSubscribe(__ -> AsyncContext.clear())
                                 .concat(connectionFactory.newConnection(host.address, null, null)
                                         // There is no risk for StackOverflowError because result of each connection
                                         // attempt will be invoked on IoExecutor as a new task.

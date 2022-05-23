@@ -22,6 +22,7 @@ import io.servicetalk.http.api.HttpConnection;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.netty.ConditionalFilterFactory.FilterFactory;
+import io.servicetalk.http.utils.HostHeaderHttpRequesterFilter;
 import io.servicetalk.http.utils.RedirectingHttpRequesterFilter;
 import io.servicetalk.transport.api.HostAndPort;
 

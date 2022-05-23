@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2021-2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,29 +28,37 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-package io.servicetalk.http.api;
+package io.servicetalk.utils.internal;
 
 import static io.servicetalk.buffer.api.CharSequences.indexOf;
 
-final class NetUtils {
+/**
+ * Network-related utilities.
+ * <p>
+ * This class borrowed some of its methods from
+ * <a href="https://github.com/netty/netty/blob/4.1/common/src/main/java/io/netty/util/NetUtil.java">NetUtil</a> class
+ * which was part of Netty.
+ */
+public final class NetworkUtils {
 
-    private NetUtils() {
+    private NetworkUtils() {
         // no instances
     }
 
     /**
      * Takes a string and parses it to see if it is a valid IPV4 address.
      *
+     * @param ip the IP-address to validate
      * @return true, if the string represents an IPV4 address in dotted notation, false otherwise.
      */
-    static boolean isValidIpV4Address(final CharSequence ip) {
+    public static boolean isValidIpV4Address(final CharSequence ip) {
         return isValidIpV4Address(ip, 0, ip.length());
     }
 
     private static boolean isValidIpV4Address(final CharSequence ip, int from, int toExclusive) {
         int len = toExclusive - from;
         int i;
-        return len <= 15 && len > 7 &&
+        return len <= 15 && len >= 7 &&
                 (i = indexOf(ip, '.', from + 1)) > 0 && isValidIpV4Word(ip, from, i) &&
                 (i = indexOf(ip, '.', from = i + 2)) > 0 && isValidIpV4Word(ip, from - 1, i) &&
                 (i = indexOf(ip, '.', from = i + 2)) > 0 && isValidIpV4Word(ip, from - 1, i) &&
@@ -60,9 +68,10 @@ final class NetUtils {
     /**
      * Takes a string and parses it to see if it is a valid IPV6 address.
      *
+     * @param ip the IP-address to validate
      * @return true, if the string represents an IPV6 address
      */
-    static boolean isValidIpV6Address(final CharSequence ip) {
+    public static boolean isValidIpV6Address(final CharSequence ip) {
         int end = ip.length();
         if (end < 2) {
             return false;
