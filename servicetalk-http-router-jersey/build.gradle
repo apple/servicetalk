@@ -19,7 +19,7 @@ apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 dependencies {
   api platform(project(":servicetalk-dependencies"))
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
-  testFixturesImplementation enforcedPlatform(project(":servicetalk-dependencies"))
+  testFixturesImplementation platform(project(":servicetalk-dependencies"))
   testFixturesImplementation platform("org.junit:junit-bom:$junit5Version")
 
   api project(":servicetalk-http-api")

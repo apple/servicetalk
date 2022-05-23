@@ -21,7 +21,7 @@ dependencies {
 
   testImplementation enforcedPlatform(project(":servicetalk-dependencies"))
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
-  testFixturesImplementation enforcedPlatform(project(":servicetalk-dependencies"))
+  testFixturesImplementation platform(project(":servicetalk-dependencies"))
   testFixturesImplementation platform("org.junit:junit-bom:$junit5Version")
 
   api project(":servicetalk-client-api")
