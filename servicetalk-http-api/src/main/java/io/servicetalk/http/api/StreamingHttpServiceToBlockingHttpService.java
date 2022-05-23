@@ -15,7 +15,7 @@
  */
 package io.servicetalk.http.api;
 
-import static io.servicetalk.http.api.BlockingUtils.futureGetCancelOnInterrupt;
+import static io.servicetalk.concurrent.api.internal.BlockingUtils.futureGetCancelOnInterrupt;
 import static java.util.Objects.requireNonNull;
 
 final class StreamingHttpServiceToBlockingHttpService implements BlockingHttpService {
