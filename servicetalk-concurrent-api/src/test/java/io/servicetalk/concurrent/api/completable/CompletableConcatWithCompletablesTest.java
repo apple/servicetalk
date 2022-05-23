@@ -23,6 +23,7 @@ import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.stubbing.Answer;
@@ -86,6 +87,7 @@ class CompletableConcatWithCompletablesTest {
 
     @ParameterizedTest
     @ValueSource(ints = {1, 2, 10000})
+    @Timeout(30)
     void testSourceSuccessReentrant(int num) {
         Completable[] mockCompletables = new Completable[num];
         for (int i = 0; i < mockCompletables.length; ++i) {
