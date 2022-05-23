@@ -69,6 +69,8 @@ import static io.netty.util.NetUtil.toSocketAddressString;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoffDeltaJitter;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.netty.AlpnIds.HTTP_2;
@@ -234,7 +236,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                 connectionFactoryStrategy = connectionFactoryStrategy.merge(proxy.requiredOffloads());
             }
 
-            final HttpExecutionStrategy executionStrategy = executionContext.executionStrategy();
+            final HttpExecutionStrategy builderStrategy = executionContext.executionStrategy();
             // closed by the LoadBalancer
             final ConnectionFactory<R, LoadBalancedStreamingHttpConnection> connectionFactory;
             final StreamingHttpRequestResponseFactory reqRespFactory = defaultReqRespFactory(roConfig,
@@ -291,9 +293,20 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                 currClientFilterFactory = appendFilter(currClientFilterFactory,
                         ctx.builder.retryingHttpRequesterFilter);
             }
-            HttpExecutionStrategy computedStrategy = ctx.builder.strategyComputation.buildForClient(executionStrategy);
-            LOGGER.debug("Client for {} created with base strategy {} → computed strategy {}",
-                    targetAddress(ctx), executionStrategy, computedStrategy);
+            HttpExecutionStrategy computedStrategy = ctx.builder.strategyComputation.buildForClient(builderStrategy);
+            if (builderStrategy != defaultStrategy() &&
+                    builderStrategy.missing(computedStrategy) != offloadNone()) {
+                LOGGER.info("Client for {} created with the builder strategy {} but resulting computed strategy is " +
+                                "{}. One of the filters enforces additional offloading. To find out what filter is " +
+                                "it, enable debug level logging for {}.", targetAddress(ctx), builderStrategy,
+                        computedStrategy, ClientStrategyInfluencerChainBuilder.class);
+            } else if (builderStrategy == computedStrategy) {
+                LOGGER.debug("Client for {} created with the execution strategy {}.",
+                        targetAddress(ctx), computedStrategy);
+            } else {
+                LOGGER.debug("Client for {} created with the builder strategy {}, resulting computed strategy is {}.",
+                        targetAddress(ctx), builderStrategy, computedStrategy);
+            }
             return new FilterableClientToClient(currClientFilterFactory != null ?
                     currClientFilterFactory.create(lbClient, lb.eventStream(), ctx.sdStatus) :
                         lbClient, computedStrategy);
