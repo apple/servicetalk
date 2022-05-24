@@ -18,6 +18,7 @@ apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
   implementation platform(project(":servicetalk-dependencies"))
+  testImplementation enforcedPlatform(project(":servicetalk-dependencies"))
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
 
   api project(":servicetalk-opentracing-inmemory")
@@ -28,8 +29,8 @@ dependencies {
 
   testImplementation project(":servicetalk-test-resources")
   testImplementation "org.junit.jupiter:junit-jupiter-api"
-  testImplementation "org.slf4j:slf4j-api:$slf4jVersion"
-  testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
+  testImplementation "org.slf4j:slf4j-api"
+  testImplementation "org.hamcrest:hamcrest"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
   testImplementation "org.mockito:mockito-junit-jupiter:$mockitoCoreVersion"
 }

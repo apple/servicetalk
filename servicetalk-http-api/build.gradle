@@ -19,6 +19,7 @@ apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 dependencies {
   implementation platform(project(":servicetalk-dependencies"))
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
+  testFixturesImplementation platform(project(":servicetalk-dependencies"))
   testFixturesImplementation platform("org.junit:junit-bom:$junit5Version")
 
   api project(":servicetalk-buffer-api")
@@ -59,7 +60,7 @@ dependencies {
   testFixturesImplementation testFixtures(project(":servicetalk-concurrent-internal"))
   testFixturesImplementation testFixtures(project(":servicetalk-transport-netty-internal"))
   testFixturesImplementation project(":servicetalk-buffer-netty")
-  testFixturesImplementation "com.google.code.findbugs:jsr305:$jsr305Version"
+  testFixturesImplementation "com.google.code.findbugs:jsr305"
   testFixturesImplementation "org.junit.jupiter:junit-jupiter-api"
   testFixturesImplementation "org.junit.jupiter:junit-jupiter-params"
   testFixturesImplementation "org.hamcrest:hamcrest:$hamcrestVersion"

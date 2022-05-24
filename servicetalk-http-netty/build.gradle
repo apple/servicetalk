@@ -18,8 +18,9 @@ apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
   implementation platform(project(":servicetalk-dependencies"))
-  implementation platform("io.netty:netty-bom:$nettyVersion")
+  testImplementation enforcedPlatform(project(":servicetalk-dependencies"))
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
+  testFixturesImplementation platform(project(":servicetalk-dependencies"))
 
   api project(":servicetalk-concurrent-api")
   api project(":servicetalk-logging-api")
