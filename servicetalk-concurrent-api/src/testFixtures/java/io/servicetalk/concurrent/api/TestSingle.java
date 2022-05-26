@@ -151,7 +151,7 @@ public final class TestSingle<T> extends Single<T> implements SingleSource<T> {
 
     private Subscriber<? super T> checkSubscriberAndExceptions() {
         if (!exceptions.isEmpty()) {
-            final RuntimeException exception = new IllegalStateException("Unexpected exception(s) encountered",
+            final AssertionError exception = new AssertionError("Unexpected exception(s) encountered",
                     exceptions.get(0));
             for (int i = 1; i < exceptions.size(); i++) {
                 addSuppressed(exception, exceptions.get(i));
