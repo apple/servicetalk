@@ -217,6 +217,11 @@ class HttpTransportObserverAsyncContextTest extends AbstractNettyHttpServerTest 
             }
 
             @Override
+            public void connectionWritabilityChanged(final boolean isWritable) {
+                // AsyncContext is unknown at this point because this event is triggered by network
+            }
+
+            @Override
             public void connectionClosed(final Throwable error) {
                 // AsyncContext is unknown at this point because this event is triggered by network
             }

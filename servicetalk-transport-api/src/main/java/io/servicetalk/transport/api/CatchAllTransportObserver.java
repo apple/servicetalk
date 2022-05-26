@@ -107,6 +107,12 @@ final class CatchAllTransportObserver implements TransportObserver {
         }
 
         @Override
+        public void connectionWritabilityChanged(final boolean isWritable) {
+            safeReport(() -> observer.connectionWritabilityChanged(isWritable), observer,
+                    "connection writability changed");
+        }
+
+        @Override
         public void connectionClosed(final Throwable error) {
             safeReport(() -> observer.connectionClosed(error), observer, "connection closed", error);
         }
