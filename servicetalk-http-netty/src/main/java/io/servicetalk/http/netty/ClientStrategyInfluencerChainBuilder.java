@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021-2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,12 +63,13 @@ final class ClientStrategyInfluencerChainBuilder {
         add(StreamingHttpClientFilterFactory.class, clientFilter, clientFilter.requiredOffloads());
     }
 
+    @SuppressWarnings({"rawtypes", "unchecked"})
     void add(HttpLoadBalancerFactory<?> lb) {
         add(HttpLoadBalancerFactory.class, (HttpLoadBalancerFactory) lb, lb.requiredOffloads());
     }
 
-    private <E extends ExecutionStrategyInfluencer<HttpExecutionStrategy>> void add(
-            final Class<E> clazz, final E influencer, HttpExecutionStrategy strategy) {
+    private <T extends ExecutionStrategyInfluencer<HttpExecutionStrategy>> void add(
+            final Class<T> clazz, final T influencer, HttpExecutionStrategy strategy) {
         if (offloadNever() == strategy) {
             offloadNeverWarning(clazz, influencer);
             strategy = offloadNone();
@@ -150,23 +151,23 @@ final class ClientStrategyInfluencerChainBuilder {
         return new ClientStrategyInfluencerChainBuilder(this);
     }
 
-    private static <E extends ExecutionStrategyInfluencer<?>> void offloadNeverWarning(
-            final Class<E> clazz, final E influencer) {
+    private static <T extends ExecutionStrategyInfluencer<?>> void offloadNeverWarning(final Class<T> clazz,
+                                                                                       final T influencer) {
         LOGGER.warn("{}#requiredOffloads() returns offloadNever(), which is unexpected. offloadNone() should be used " +
                         "instead. Making automatic adjustment, update the {} to avoid this warning.",
                 influencer, clazz.getSimpleName());
     }
 
-    private static <E extends ExecutionStrategyInfluencer<?>> void defaultStrategyWarning(
-            final Class<E> clazz, final E influencer) {
+    private static <T extends ExecutionStrategyInfluencer<?>> void defaultStrategyWarning(final Class<T> clazz,
+                                                                                          final T influencer) {
         LOGGER.warn("{}#requiredOffloads() returns defaultStrategy(), which is unexpected. " +
                         "offloadAll() (safe default) or more appropriate custom strategy should be used instead." +
                         "Making automatic adjustment, update the {} to avoid this warning.",
                 influencer, clazz.getSimpleName());
     }
 
-    private static <S extends ExecutionStrategy, E extends ExecutionStrategyInfluencer<S>> void logIfChanges(
-            final Class<E> clazz, final E influencer, final @Nullable S before, final @Nullable S after) {
+    private static <T extends ExecutionStrategyInfluencer<?>> void logIfChanges(final Class<T> clazz,
+                final T influencer, @Nullable final ExecutionStrategy before, @Nullable final ExecutionStrategy after) {
         if (before != after) {
             LOGGER.debug("{} '{}' changes execution strategy from '{}' to '{}'", clazz, influencer, before, after);
         }

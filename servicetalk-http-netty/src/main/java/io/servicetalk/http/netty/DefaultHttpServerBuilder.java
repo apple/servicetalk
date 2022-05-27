@@ -372,8 +372,8 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
                 filteredService, drainRequestPayloadBody);
     }
 
-    private <I extends HttpExecutionStrategyInfluencer> HttpExecutionStrategy computeServiceStrategy(
-            final Class<I> clazz, final I service) {
+    private <T extends HttpExecutionStrategyInfluencer> HttpExecutionStrategy computeServiceStrategy(
+            final Class<T> clazz, final T service) {
         final HttpExecutionStrategy serviceStrategy = service.requiredOffloads();
         LOGGER.debug("{} '{}' requires {} strategy.", clazz.getSimpleName(), service, serviceStrategy);
         final HttpExecutionStrategy builderStrategy = this.strategy;
