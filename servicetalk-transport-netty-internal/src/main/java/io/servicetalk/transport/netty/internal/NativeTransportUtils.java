@@ -93,7 +93,7 @@ final class NativeTransportUtils {
                     "running with native libraries. Consider using \"-D{}=true\" to fail application initialization " +
                     "without native libraries. If this is intentional, let netty know about it using \"-D{}=true\". " +
                     "For more information, see https://netty.io/wiki/native-transports.html",
-                    transport, os, normalizedArch(), REQUIRE_NATIVE_LIBS_NAME, NETTY_NO_NATIVE_NAME);
+                    transport, os, normalizedArch(), REQUIRE_NATIVE_LIBS_NAME, NETTY_NO_NATIVE_NAME, cause);
         }
     }
 
