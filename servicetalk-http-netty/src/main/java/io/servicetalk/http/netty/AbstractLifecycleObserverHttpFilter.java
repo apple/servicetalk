@@ -104,7 +104,9 @@ abstract class AbstractLifecycleObserverHttpFilter implements HttpExecutionStrat
                                 return NoopSubscriber.INSTANCE;
                             });
                         }
-                        return p.beforeOnNext(item -> {
+                        return p.beforeRequest(n -> safeReport(onRequest::onRequestDataRequested, n, onRequest,
+                                "onRequestDataRequested"))
+                        .beforeOnNext(item -> {
                             if (item instanceof Buffer) {
                                 safeReport(onRequest::onRequestData, (Buffer) item, onRequest, "onRequestData");
                             } else if (item instanceof HttpHeaders) {
@@ -151,7 +153,9 @@ abstract class AbstractLifecycleObserverHttpFilter implements HttpExecutionStrat
                     // needs to be applied last.
                     .map(resp -> {
                         exchangeContext.onResponse(resp);
-                        return resp.transformMessageBody(p -> p.beforeOnNext(exchangeContext::onResponseBody));
+                        return resp.transformMessageBody(p -> p
+                                .beforeRequest(exchangeContext::onResponseDataRequested)
+                                .beforeOnNext(exchangeContext::onResponseBody));
                     }).shareContextOnSubscribe();
         });
     }
@@ -190,6 +194,11 @@ abstract class AbstractLifecycleObserverHttpFilter implements HttpExecutionStrat
         void onResponse(HttpResponseMetaData responseMetaData) {
             this.onResponse = safeReport(onExchange::onResponse, responseMetaData, onExchange, "onResponse",
                     NoopHttpLifecycleObserver.NoopHttpResponseObserver.INSTANCE);
+        }
+
+        void onResponseDataRequested(final long n) {
+            assert onResponse != null;
+            safeReport(onResponse::onResponseDataRequested, n, onResponse, "onResponseDataRequested");
         }
 
         void onResponseBody(final Object item) {
