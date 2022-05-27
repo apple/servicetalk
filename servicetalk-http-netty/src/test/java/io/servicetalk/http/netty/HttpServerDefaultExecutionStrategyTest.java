@@ -42,7 +42,7 @@ import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class HttpServerDefaultExecutionStrategyTest {
+class HttpServerDefaultExecutionStrategyTest {
 
     private static Stream<Arguments> services() {
         return Stream.of(offloadNone(),
