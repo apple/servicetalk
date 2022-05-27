@@ -174,7 +174,7 @@ public final class TestPublisher<T> extends Publisher<T> implements PublisherSou
 
     private Subscriber<? super T> checkSubscriberAndExceptions() {
         if (!exceptions.isEmpty()) {
-            final RuntimeException exception = new RuntimeException("Unexpected exception(s) encountered",
+            final AssertionError exception = new AssertionError("Unexpected exception(s) encountered",
                     exceptions.get(0));
             for (int i = 1; i < exceptions.size(); i++) {
                 addSuppressed(exception, exceptions.get(i));
@@ -422,7 +422,7 @@ public final class TestPublisher<T> extends Publisher<T> implements PublisherSou
                 Thread.currentThread().interrupt();
                 return throwException(e);
             } catch (ExecutionException e) {
-                throw new RuntimeException(e);
+                return throwException(e);
             }
         }
     }

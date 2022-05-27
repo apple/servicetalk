@@ -47,4 +47,54 @@
     <Method name="channelRead"/>
     <Bug pattern="EI_EXPOSE_REP2"/>
   </Match>
+
+  <Match>
+    <Class name="io.servicetalk.transport.netty.internal.ByteToMessageDecoder"/>
+    <Or>
+      <Method name="channelInputClosed"/>
+      <Method name="decode"/>
+      <Method name="decodeLast"/>
+      <Method name="decodeRemovalReentryProtection"/>
+      <Method name="userEventTriggered"/>
+    </Or>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.transport.netty.internal.ChannelSet$1"/>
+    <Method name="operationComplete"/>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.transport.netty.internal.ConnectionObserverInitializer"/>
+    <Method name="lambda$init$0"/>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.transport.netty.internal.NettyFutureCompletable"/>
+    <Method name="lambda$connectToSubscriber$1"/>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.transport.netty.internal.NettyFutureCompletable"/>
+    <Method name="lambda$connectToSubscriber$1"/>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.transport.netty.internal.NonPipelinedCloseHandler"/>
+    <Method name="lambda$protocolPayloadEndOutbound$1"/>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.transport.netty.internal.RequestResponseCloseHandler"/>
+    <Or>
+      <Method name="lambda$halfCloseOutbound$2"/>
+      <Method name="lambda$protocolPayloadEndOutbound$1"/>
+    </Or>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.transport.netty.internal.WriteStreamSubscriber"/>
+    <Method name="lambda$static$0"/>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
 </FindBugsFilter>

@@ -25,4 +25,16 @@
     <Source name="~.*Test\.java"/>
     <Bug pattern="DMI_RANDOM_USED_ONLY_ONCE"/>
   </Match>
+  <Match>
+    <Source name="~.*Test.*\.java"/>
+    <Bug pattern="THROWS_METHOD_THROWS_RUNTIMEEXCEPTION"/>
+  </Match>
+  <Match>
+    <Source name="~.*Test.*\.java"/>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
+  <Match>
+    <Source name="~.*Test.*\.java"/>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_THROWABLE"/>
+  </Match>
 </FindBugsFilter>

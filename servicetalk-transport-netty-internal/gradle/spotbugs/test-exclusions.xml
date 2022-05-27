@@ -30,4 +30,12 @@
     <Source name="~.*Test\.java"/>
     <Bug pattern="SIC_INNER_SHOULD_BE_STATIC"/>
   </Match>
+  <Match>
+    <Source name="~.*Test\.java"/>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
+  <Match>
+    <Source name="~.*Test\.java"/>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_THROWABLE"/>
+  </Match>
 </FindBugsFilter>

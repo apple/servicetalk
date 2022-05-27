@@ -26,4 +26,19 @@
     <Method name="newLargePayload"/>
     <Bug pattern="DMI_RANDOM_USED_ONLY_ONCE"/>
   </Match>
+  <Match>
+    <Source name="~.*Test\.java"/>
+    <Bug pattern="THROWS_METHOD_THROWS_RUNTIMEEXCEPTION"/>
+  </Match>
+  <Match>
+    <Or>
+      <Source name="~.*Test\.java"/>
+      <Source name="~.*resources.*\.java"/>
+    </Or>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
+  <Match>
+    <Source name="~.*Test\.java"/>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_THROWABLE"/>
+  </Match>
 </FindBugsFilter>

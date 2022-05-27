@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright © 2018, 2020 Apple Inc. and the ServiceTalk project authors
+  ~ Copyright © 2018, 2020, 2022 Apple Inc. and the ServiceTalk project authors
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -100,5 +100,230 @@
       <Method name ="trailersToRedirect"/>
     </Or>
     <Bug pattern="EI_EXPOSE_REP2"/>
+  </Match>
+
+  <Match>
+    <Or>
+      <Class name="io.servicetalk.http.api.BlockingHttpClient"/>
+      <Class name="io.servicetalk.http.api.BlockingStreamingHttpClient"/>
+      <Class name="io.servicetalk.http.api.StreamingHttpClientToBlockingHttpClient"/>
+      <Class name="io.servicetalk.http.api.StreamingHttpClientToBlockingStreamingHttpClient"/>
+    </Or>
+    <Method name="reserveConnection"/>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.api.BlockingHttpRequester"/>
+    <Or>
+      <Method name="close"/>
+      <Method name="request"/>
+    </Or>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.api.BlockingHttpService"/>
+    <Or>
+      <Method name="close"/>
+      <Method name="handle"/>
+    </Or>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.api.BlockingStreamingHttpMessageBodyUtils$1"/>
+    <Method name="close"/>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.api.BlockingStreamingHttpMessageBodyUtils$DefaultHttpMessageBodyIterator"/>
+    <Method name="close"/>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
+  <Match>
+    <Or>
+      <Class name="io.servicetalk.http.api.BlockingStreamingHttpRequester"/>
+      <Class name="io.servicetalk.http.api.StreamingHttpClientToBlockingHttpClient"/>
+      <Class name="io.servicetalk.http.api.StreamingHttpClientToBlockingHttpClient$ReservedStreamingHttpConnectionToReservedBlockingHttpConnection"/>
+      <Class name="io.servicetalk.http.api.StreamingHttpClientToBlockingStreamingHttpClient"/>
+      <Class name="io.servicetalk.http.api.StreamingHttpClientToBlockingStreamingHttpClient$ReservedStreamingHttpConnectionToBlockingStreaming"/>
+      <Class name="io.servicetalk.http.api.StreamingHttpConnectionToBlockingHttpConnection"/>
+      <Class name="io.servicetalk.http.api.StreamingHttpConnectionToBlockingStreamingHttpConnection"/>
+    </Or>
+    <Or>
+      <Method name="close"/>
+      <Method name="request"/>
+    </Or>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
+  <Match>
+    <Or>
+      <Class name="io.servicetalk.http.api.BlockingStreamingHttpService"/>
+      <Class name="io.servicetalk.http.api.StreamingHttpServiceToBlockingHttpService"/>
+      <Class name="io.servicetalk.http.api.StreamingHttpServiceToBlockingStreamingHttpService"/>
+    </Or>
+    <Or>
+      <Method name="close"/>
+      <Method name="handle"/>
+    </Or>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.api.BlockingToStreamingService"/>
+    <Or>
+      <Method name="lambda$null$0"/>
+      <Method name="lambda$handle$0"/>
+      <Method name="lambda$closeAsync$2"/>
+      <Method name="lambda$closeAsyncGracefully$3"/>
+    </Or>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.api.BlockingUtils"/>
+    <Or>
+      <Method name="blockingInvocation"/>
+      <Method name="futureGetCancelOnInterrupt"/>
+      <Method name="request"/>
+    </Or>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.api.BlockingUtils$RunnableCheckedException"/>
+    <Method name="run"/>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.api.BlockingRequestUtils"/>
+    <Method name="request"/>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.api.BlockingStreamingToStreamingService"/>
+    <Or>
+      <Method name="lambda$closeAsync$0"/>
+      <Method name="lambda$closeAsyncGracefully$1"/>
+    </Or>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
+  <Match>
+    <Or>
+      <Class name="io.servicetalk.http.api.DefaultHttpRequest"/>
+      <Class name="io.servicetalk.http.api.DefaultHttpResponse"/>
+    </Or>
+    <Method name="catchPayloadFailure"/>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_THROWABLE"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.api.DelegatingHttpServerBuilder"/>
+    <Method name="listenAndAwait"/>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
+  <Match>
+    <Or>
+      <Class name="io.servicetalk.http.api.DelegatingHttpServerBuilder"/>
+      <Class name="io.servicetalk.http.api.HttpServerBuilder"/>
+    </Or>
+    <Or>
+      <Method name="listenAndAwait"/>
+      <Method name="listenBlockingAndAwait"/>
+      <Method name="listenBlockingStreamingAndAwait"/>
+      <Method name="listenStreamingAndAwait"/>
+    </Or>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.api.FormUrlEncodedHttpDeserializer$1"/>
+    <Method name="close"/>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.api.FormUrlEncodedHttpSerializer"/>
+    <Method name="urlEncode"/>
+    <Bug pattern="THROWS_METHOD_THROWS_RUNTIMEEXCEPTION"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.api.FormUrlEncodedHttpSerializer$1"/>
+    <Method name="close"/>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.api.FormUrlEncodedSerializer"/>
+    <Method name="urlEncode"/>
+    <Bug pattern="THROWS_METHOD_THROWS_RUNTIMEEXCEPTION"/>
+  </Match>
+  <Match>
+    <Or>
+      <Class name="io.servicetalk.http.api.HttpClient"/>
+      <Class name="io.servicetalk.http.api.HttpConnection"/>
+      <Class name="io.servicetalk.http.api.StreamingHttpClient"/>
+      <Class name="io.servicetalk.http.api.StreamingHttpClientToBlockingHttpClient"/>
+      <Class name="io.servicetalk.http.api.StreamingHttpClientToBlockingHttpClient$ReservedStreamingHttpConnectionToReservedBlockingHttpConnection"/>
+      <Class name="io.servicetalk.http.api.StreamingHttpClientToBlockingStreamingHttpClient"/>
+      <Class name="io.servicetalk.http.api.StreamingHttpClientToBlockingStreamingHttpClient$ReservedStreamingHttpConnectionToBlockingStreaming"/>
+      <Class name="io.servicetalk.http.api.StreamingHttpClientToHttpClient"/>
+      <Class name="io.servicetalk.http.api.StreamingHttpClientToHttpClient$ReservedStreamingHttpConnectionToReservedHttpConnection"/>
+      <Class name="io.servicetalk.http.api.StreamingHttpConnection"/>
+      <Class name="io.servicetalk.http.api.StreamingHttpConnectionToBlockingHttpConnection"/>
+      <Class name="io.servicetalk.http.api.StreamingHttpConnectionToBlockingStreamingHttpConnection"/>
+      <Class name="io.servicetalk.http.api.StreamingHttpConnectionToHttpConnection"/>
+      <Class name="io.servicetalk.http.api.StreamingHttpServiceToBlockingStreamingHttpService"/>
+    </Or>
+    <Or>
+      <Method name="close"/>
+      <Method name="closeGracefully"/>
+    </Or>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.api.HttpDataSourceTransformations$HttpBufferFilterIterable$JustBufferBlockingIterator"/>
+    <Method name="close"/>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
+  <Match>
+    <Or>
+      <Class name="io.servicetalk.http.api.HttpStringDeserializer$1"/>
+      <Class name="io.servicetalk.http.api.HttpStringSerializer$1"/>
+    </Or>
+    <Method name="close"/>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
+  <Match>
+    <Or>
+      <Class name="io.servicetalk.http.api.ReservedBlockingHttpConnection"/>
+      <Class name="io.servicetalk.http.api.ReservedBlockingStreamingHttpConnection"/>
+      <Class name="io.servicetalk.http.api.StreamingHttpClientToBlockingHttpClient$ReservedStreamingHttpConnectionToReservedBlockingHttpConnection"/>
+      <Class name="io.servicetalk.http.api.StreamingHttpClientToBlockingStreamingHttpClient$ReservedStreamingHttpConnectionToBlockingStreaming"/>
+    </Or>
+    <Method name="release"/>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.api.StatelessTrailersTransformer"/>
+    <Or>
+      <Method name="catchPayloadFailure"/>
+      <Method name="payloadFailed"/>
+    </Or>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_THROWABLE"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.api.StreamingHttpPayloadHolder$TrailersMapper"/>
+    <Method name="mapOnError"/>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_THROWABLE"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.api.StreamingHttpServiceToOffloadedStreamingHttpService"/>
+    <Method name="lambda$handle$1"/>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.api.TrailersTransformer"/>
+    <Method name="catchPayloadFailure"/>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_THROWABLE"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.api.RequestResponseFactories"/>
+    <Or>
+      <Method name="newRequestBlocking"/>
+      <Method name="newResponseBlocking"/>
+    </Or>
+    <Bug pattern="THROWS_METHOD_THROWS_RUNTIMEEXCEPTION"/>
   </Match>
 </FindBugsFilter>

@@ -64,4 +64,20 @@
     <Class name="io.servicetalk.http.netty.ExpectContinueTest"/>
     <Bug pattern="RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE"/>
   </Match>
+  <Match>
+    <Source name="~.*Test\.java"/>
+    <Bug pattern="THROWS_METHOD_THROWS_RUNTIMEEXCEPTION"/>
+  </Match>
+  <Match>
+    <Or>
+      <Source name="~.*Test\.java"/>
+      <Class name="io.servicetalk.http.netty.InvokingThreadsRecorder"/>
+      <Class name="io.servicetalk.http.netty.ProxyTunnel"/>
+    </Or>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
+  <Match>
+    <Source name="~.*Test\.java"/>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_THROWABLE"/>
+  </Match>
 </FindBugsFilter>

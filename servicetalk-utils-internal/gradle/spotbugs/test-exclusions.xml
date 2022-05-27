@@ -20,4 +20,8 @@
     <Class name="io.servicetalk.utils.internal.IllegalCharacterExceptionTest"/>
     <Bug pattern="RV_EXCEPTION_NOT_THROWN"/>
   </Match>
+  <Match>
+    <Source name="~.*Test\.java"/>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_THROWABLE"/>
+  </Match>
 </FindBugsFilter>

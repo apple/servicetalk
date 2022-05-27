@@ -28,4 +28,8 @@
       <Bug pattern="EI_EXPOSE_REP2"/>
     </Or>
   </Match>
+  <Match>
+    <Class name="io.servicetalk.data.jackson.JacksonSerializerFactoryTest"/>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_THROWABLE"/>
+  </Match>
 </FindBugsFilter>

@@ -142,7 +142,7 @@ class TestDnsServer extends DnsServer {
                 try {
                     bytes = InetAddress.getByName(resourceRecord.get(DnsAttribute.IP_ADDRESS)).getAddress();
                 } catch (UnknownHostException e) {
-                    throw new RuntimeException(e);
+                    throw new IllegalStateException(e);
                 }
                 ioBuffer.put(bytes);
             }
