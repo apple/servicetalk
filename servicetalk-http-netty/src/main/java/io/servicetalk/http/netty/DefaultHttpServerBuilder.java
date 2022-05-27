@@ -374,12 +374,12 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
                 filteredService, drainRequestPayloadBody);
     }
 
-    private HttpExecutionStrategy computeServiceStrategy(Class<?> clazz, HttpExecutionStrategyInfluencer service) {
+    private <I extends HttpExecutionStrategyInfluencer> HttpExecutionStrategy computeServiceStrategy(
+            final Class<I> clazz, final I service) {
         final HttpExecutionStrategy serviceStrategy = service.requiredOffloads();
-        LOGGER.debug("{} {} requires {} strategy.", clazz.getSimpleName(), service, serviceStrategy);
+        LOGGER.debug("{} '{}' requires {} strategy.", clazz.getSimpleName(), service, serviceStrategy);
         final HttpExecutionStrategy builderStrategy = this.strategy;
-        final HttpExecutionStrategy computedStrategy =
-                computeRequiredStrategy(serviceFilters, serviceStrategy);
+        final HttpExecutionStrategy computedStrategy = computeRequiredStrategy(serviceFilters, serviceStrategy);
         return defaultStrategy() == builderStrategy ? computedStrategy :
                 builderStrategy.hasOffloads() ? builderStrategy.merge(computedStrategy) : builderStrategy;
     }
