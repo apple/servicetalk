@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021-2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,69 +60,63 @@ final class ClientStrategyInfluencerChainBuilder {
     }
 
     void add(StreamingHttpClientFilterFactory clientFilter) {
-        add("filter", clientFilter, clientFilter.requiredOffloads());
+        add(StreamingHttpClientFilterFactory.class, clientFilter, clientFilter.requiredOffloads());
     }
 
+    @SuppressWarnings({"rawtypes", "unchecked"})
     void add(HttpLoadBalancerFactory<?> lb) {
-        add("load balancer", lb, lb.requiredOffloads());
+        add(HttpLoadBalancerFactory.class, (HttpLoadBalancerFactory) lb, lb.requiredOffloads());
     }
 
-    private void add(String purpose, ExecutionStrategyInfluencer<?> influencer, HttpExecutionStrategy strategy) {
+    private <T extends ExecutionStrategyInfluencer<HttpExecutionStrategy>> void add(
+            final Class<T> clazz, final T influencer, HttpExecutionStrategy strategy) {
         if (offloadNever() == strategy) {
-            LOGGER.warn("{}#requiredOffloads() returns offloadNever(), which is unexpected. " +
-                            "offloadNone() should be used instead. " +
-                            "Making automatic adjustment, update the {} to avoid this warning.",
-                    influencer, purpose);
+            offloadNeverWarning(clazz, influencer);
             strategy = offloadNone();
         }
         if (defaultStrategy() == strategy) {
-            LOGGER.warn("{}#requiredOffloads() returns defaultStrategy(), which is unexpected. " +
-                            "offloadAll() (safe default) or more appropriate custom strategy should be used instead." +
-                            "Making automatic adjustment, update the {} to avoid this warning.",
-                    influencer, purpose);
+            defaultStrategyWarning(clazz, influencer);
             strategy = offloadAll();
         }
-        clientChain = null != clientChain ? clientChain.merge(strategy) : strategy;
+        @Nullable
+        final HttpExecutionStrategy clientChain = this.clientChain;
+        this.clientChain = null != clientChain ? clientChain.merge(strategy) : strategy;
+        logIfChanges(clazz, influencer, clientChain, this.clientChain);
     }
 
     void add(ConnectionFactoryFilter<?, FilterableStreamingHttpConnection> connectionFactoryFilter) {
         ExecutionStrategy filterOffloads = connectionFactoryFilter.requiredOffloads();
         if (offloadNever() == filterOffloads) {
-            LOGGER.warn("{}#requiredOffloads() returns offloadNever(), which is unexpected. " +
-                            "offloadNone() should be used instead. " +
-                            "Making automatic adjustment, update the filter.",
-                    connectionFactoryFilter);
+            offloadNeverWarning(ConnectionFactoryFilter.class, connectionFactoryFilter);
             filterOffloads = offloadNone();
         }
         if (defaultStrategy() == filterOffloads) {
-            LOGGER.warn("{}#requiredOffloads() returns defaultStrategy(), which is unexpected. " +
-                            "offloadAll() (safe default) or more appropriate custom strategy should be used instead." +
-                            "Making automatic adjustment, consider updating the filter.",
-                    connectionFactoryFilter);
+            defaultStrategyWarning(ConnectionFactoryFilter.class, connectionFactoryFilter);
             filterOffloads = offloadAll();
         }
-        connFactoryChain = null != connFactoryChain ?
+        @Nullable
+        final ConnectAndHttpExecutionStrategy connFactoryChain = this.connFactoryChain;
+        this.connFactoryChain = null != connFactoryChain ?
                  connFactoryChain.merge(filterOffloads) : ConnectAndHttpExecutionStrategy.from(filterOffloads);
+        logIfChanges(ConnectionFactoryFilter.class, connectionFactoryFilter, connFactoryChain, this.connFactoryChain);
     }
 
     void add(StreamingHttpConnectionFilterFactory connectionFilter) {
         HttpExecutionStrategy filterOffloads = connectionFilter.requiredOffloads();
         if (offloadNever() == filterOffloads) {
-            LOGGER.warn("{}#requiredOffloads() returns offloadNever(), which is unexpected. " +
-                            "offloadNone() should be used instead. " +
-                            "Making automatic adjustment, consider updating the filter.",
-                    connectionFilter);
+            offloadNeverWarning(StreamingHttpConnectionFilterFactory.class, connectionFilter);
             filterOffloads = offloadNone();
         }
         if (defaultStrategy() == filterOffloads) {
-            LOGGER.warn("{}#requiredOffloads() returns defaultStrategy(), which is unexpected. " +
-                            "offloadAll() (safe default) or more appropriate custom strategy should be used instead." +
-                            "Making automatic adjustment, consider updating the filter.",
-                    connectionFilter);
+            defaultStrategyWarning(StreamingHttpConnectionFilterFactory.class, connectionFilter);
             filterOffloads = offloadAll();
         }
         if (filterOffloads.hasOffloads()) {
-            connFilterChain = null != connFilterChain ? connFilterChain.merge(filterOffloads) : filterOffloads;
+            @Nullable
+            final HttpExecutionStrategy connFilterChain = this.connFilterChain;
+            this.connFilterChain = null != connFilterChain ? connFilterChain.merge(filterOffloads) : filterOffloads;
+            logIfChanges(StreamingHttpConnectionFilterFactory.class,
+                    connectionFilter, connFilterChain, this.connFilterChain);
         }
     }
 
@@ -155,5 +149,27 @@ final class ClientStrategyInfluencerChainBuilder {
 
     ClientStrategyInfluencerChainBuilder copy() {
         return new ClientStrategyInfluencerChainBuilder(this);
+    }
+
+    private static <T extends ExecutionStrategyInfluencer<?>> void offloadNeverWarning(final Class<T> clazz,
+                                                                                       final T influencer) {
+        LOGGER.warn("{}#requiredOffloads() returns offloadNever(), which is unexpected. offloadNone() should be used " +
+                        "instead. Making automatic adjustment, update the {} to avoid this warning.",
+                influencer, clazz.getSimpleName());
+    }
+
+    private static <T extends ExecutionStrategyInfluencer<?>> void defaultStrategyWarning(final Class<T> clazz,
+                                                                                          final T influencer) {
+        LOGGER.warn("{}#requiredOffloads() returns defaultStrategy(), which is unexpected. " +
+                        "offloadAll() (safe default) or more appropriate custom strategy should be used instead." +
+                        "Making automatic adjustment, update the {} to avoid this warning.",
+                influencer, clazz.getSimpleName());
+    }
+
+    private static <T extends ExecutionStrategyInfluencer<?>> void logIfChanges(final Class<T> clazz,
+                final T influencer, @Nullable final ExecutionStrategy before, @Nullable final ExecutionStrategy after) {
+        if (before != after) {
+            LOGGER.debug("{} '{}' changes execution strategy from '{}' to '{}'", clazz, influencer, before, after);
+        }
     }
 }
