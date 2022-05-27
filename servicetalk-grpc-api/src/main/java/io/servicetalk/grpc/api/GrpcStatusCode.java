@@ -67,7 +67,7 @@ public enum GrpcStatusCode {
      * when they are done.
      */
     OUT_OF_RANGE(11),
-    /** The method/operation is not implemented/supported/implemented. */
+    /** The method/operation is not implemented/supported. */
     UNIMPLEMENTED(12),
     /** Internal invariant violated. */
     INTERNAL(13),

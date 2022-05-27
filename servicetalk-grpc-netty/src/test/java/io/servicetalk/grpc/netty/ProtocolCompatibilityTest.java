@@ -124,9 +124,18 @@ import static io.servicetalk.grpc.api.GrpcExecutionStrategies.defaultStrategy;
 import static io.servicetalk.grpc.api.GrpcExecutionStrategy.from;
 import static io.servicetalk.grpc.api.GrpcStatusCode.CANCELLED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.DEADLINE_EXCEEDED;
+import static io.servicetalk.grpc.api.GrpcStatusCode.FAILED_PRECONDITION;
+import static io.servicetalk.grpc.api.GrpcStatusCode.INTERNAL;
+import static io.servicetalk.grpc.api.GrpcStatusCode.INVALID_ARGUMENT;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNKNOWN;
 import static io.servicetalk.grpc.internal.DeadlineUtils.GRPC_TIMEOUT_HEADER_KEY;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
+import static io.servicetalk.http.api.HttpResponseStatus.BAD_REQUEST;
+import static io.servicetalk.http.api.HttpResponseStatus.EXPECTATION_FAILED;
+import static io.servicetalk.http.api.HttpResponseStatus.PRECONDITION_FAILED;
+import static io.servicetalk.http.api.HttpResponseStatus.REQUEST_HEADER_FIELDS_TOO_LARGE;
+import static io.servicetalk.http.api.HttpResponseStatus.REQUEST_TIMEOUT;
+import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.CLIENT_ERROR_4XX;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 import static io.servicetalk.test.resources.DefaultTestCerts.loadServerKey;
 import static io.servicetalk.test.resources.DefaultTestCerts.loadServerPem;
@@ -531,9 +540,19 @@ class ProtocolCompatibilityTest {
                     // grpc-java maps 1xx responses to error code INTERNAL, we currently map to UNKNOWN. The test server
                     // isn't following the http protocol by returning only a 1xx response and each framework catches
                     // this exception differently internally.
-                    assertThat("mismatch for h2 response code: " + httpCode, stCode, equalTo(UNKNOWN.value()));
-                } else {
-                    assertThat("mismatch for h2 response code: " + httpCode, stCode, equalTo(grpcJavaCode));
+                    assertThat("h2 response code: " + httpCode, stCode, equalTo(UNKNOWN.value()));
+                    assertThat("h2 response code: " + httpCode, grpcJavaCode, equalTo(INTERNAL.value()));
+                } else if (httpCode == REQUEST_TIMEOUT.code()) {
+                    assertThat("h2 response code: " + httpCode, stCode, equalTo(DEADLINE_EXCEEDED.value()));
+                    assertThat("h2 response code: " + httpCode, grpcJavaCode, equalTo(UNKNOWN.value()));
+                } else if (httpCode == PRECONDITION_FAILED.code() || httpCode == EXPECTATION_FAILED.code()) {
+                    assertThat("h2 response code: " + httpCode, stCode, equalTo(FAILED_PRECONDITION.value()));
+                    assertThat("h2 response code: " + httpCode, grpcJavaCode, equalTo(UNKNOWN.value()));
+                } else if (stCode != grpcJavaCode && CLIENT_ERROR_4XX.contains(httpCode)) {
+                    assertThat("h2 response code: " + httpCode, stCode, equalTo(INVALID_ARGUMENT.value()));
+                    assertThat("h2 response code: " + httpCode, grpcJavaCode, equalTo(
+                            httpCode == BAD_REQUEST.code() || httpCode == REQUEST_HEADER_FIELDS_TOO_LARGE.code() ?
+                                    INTERNAL.value() : UNKNOWN.value()));
                 }
             }
         }

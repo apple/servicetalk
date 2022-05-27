@@ -78,7 +78,8 @@ import static io.servicetalk.grpc.api.GrpcHeaderValues.GRPC_CONTENT_TYPE_PROTO_S
 import static io.servicetalk.grpc.api.GrpcHeaderValues.SERVICETALK_USER_AGENT;
 import static io.servicetalk.grpc.api.GrpcStatusCode.CANCELLED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.DEADLINE_EXCEEDED;
-import static io.servicetalk.grpc.api.GrpcStatusCode.INTERNAL;
+import static io.servicetalk.grpc.api.GrpcStatusCode.FAILED_PRECONDITION;
+import static io.servicetalk.grpc.api.GrpcStatusCode.INVALID_ARGUMENT;
 import static io.servicetalk.grpc.api.GrpcStatusCode.PERMISSION_DENIED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNAUTHENTICATED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNAVAILABLE;
@@ -94,13 +95,16 @@ import static io.servicetalk.http.api.HttpHeaderNames.USER_AGENT;
 import static io.servicetalk.http.api.HttpHeaderValues.TRAILERS;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static io.servicetalk.http.api.HttpResponseStatus.BAD_GATEWAY;
-import static io.servicetalk.http.api.HttpResponseStatus.BAD_REQUEST;
+import static io.servicetalk.http.api.HttpResponseStatus.EXPECTATION_FAILED;
 import static io.servicetalk.http.api.HttpResponseStatus.FORBIDDEN;
 import static io.servicetalk.http.api.HttpResponseStatus.GATEWAY_TIMEOUT;
 import static io.servicetalk.http.api.HttpResponseStatus.NOT_FOUND;
+import static io.servicetalk.http.api.HttpResponseStatus.NOT_IMPLEMENTED;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
-import static io.servicetalk.http.api.HttpResponseStatus.REQUEST_HEADER_FIELDS_TOO_LARGE;
+import static io.servicetalk.http.api.HttpResponseStatus.PRECONDITION_FAILED;
+import static io.servicetalk.http.api.HttpResponseStatus.REQUEST_TIMEOUT;
 import static io.servicetalk.http.api.HttpResponseStatus.SERVICE_UNAVAILABLE;
+import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.CLIENT_ERROR_4XX;
 import static io.servicetalk.http.api.HttpResponseStatus.TOO_MANY_REQUESTS;
 import static io.servicetalk.http.api.HttpResponseStatus.UNAUTHORIZED;
 import static java.lang.String.valueOf;
@@ -290,10 +294,14 @@ final class GrpcUtils {
             grpcStatusCode = UNAUTHENTICATED;
         } else if (statusCode == FORBIDDEN.code()) {
             grpcStatusCode = PERMISSION_DENIED;
-        } else if (statusCode == NOT_FOUND.code()) {
+        } else if (statusCode == NOT_FOUND.code() || statusCode == NOT_IMPLEMENTED.code()) {
             grpcStatusCode = UNIMPLEMENTED;
-        } else if (statusCode == BAD_REQUEST.code() || statusCode == REQUEST_HEADER_FIELDS_TOO_LARGE.code()) {
-            grpcStatusCode = INTERNAL;
+        } else if (statusCode == REQUEST_TIMEOUT.code()) {
+            grpcStatusCode = DEADLINE_EXCEEDED;
+        } else if (statusCode == PRECONDITION_FAILED.code() || statusCode == EXPECTATION_FAILED.code()) {
+            grpcStatusCode = FAILED_PRECONDITION;
+        } else if (CLIENT_ERROR_4XX.contains(statusCode)) {
+            grpcStatusCode = INVALID_ARGUMENT;
         } else {
             grpcStatusCode = UNKNOWN;
         }
