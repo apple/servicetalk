@@ -49,7 +49,7 @@ class TestCompletableTest {
 
         source.subscribe(subscriber2);
 
-        Exception e = assertThrows(RuntimeException.class, () -> source.onComplete());
+        AssertionError e = assertThrows(AssertionError.class, () -> source.onComplete());
         assertEquals("Unexpected exception(s) encountered", e.getMessage());
         assertThat(e.getCause(), allOf(instanceOf(IllegalStateException.class),
                 hasProperty("message", startsWith("Duplicate subscriber"))));

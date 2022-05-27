@@ -47,7 +47,7 @@ class TestSingleTest {
 
         source.subscribe(subscriber2);
 
-        Exception e = assertThrows(RuntimeException.class, () -> source.onSuccess("b"));
+        AssertionError e = assertThrows(AssertionError.class, () -> source.onSuccess("b"));
         assertEquals("Unexpected exception(s) encountered", e.getMessage());
         assertThat(e.getCause(), allOf(instanceOf(IllegalStateException.class),
                                        hasProperty("message",
