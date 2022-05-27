@@ -349,8 +349,6 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
                                         "resulting computed strategy is {}.",
                                 serverContext.listenAddress(), builderStrategy, computedStrategy);
                     }
-                    LOGGER.debug("Server for address {} uses strategy {}",
-                            serverContext.listenAddress(), computedStrategy);
                 });
     }
 
