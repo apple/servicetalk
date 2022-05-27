@@ -318,12 +318,4 @@
     <Method name="catchPayloadFailure"/>
     <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_THROWABLE"/>
   </Match>
-  <Match>
-    <Class name="io.servicetalk.http.api.RequestResponseFactories"/>
-    <Or>
-      <Method name="newRequestBlocking"/>
-      <Method name="newResponseBlocking"/>
-    </Or>
-    <Bug pattern="THROWS_METHOD_THROWS_RUNTIMEEXCEPTION"/>
-  </Match>
 </FindBugsFilter>

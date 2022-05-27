@@ -35,6 +35,7 @@ import zipkin2.codec.SpanBytesDecoder;
 
 import java.io.Closeable;
 import java.net.InetSocketAddress;
+import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
@@ -108,7 +109,7 @@ class UdpReporterTest {
             assertThat("Unexpected check state.", reporter.check(), is(OK));
             reporter.close();
             assertThat("Unexpected check state.", reporter.check(), is(not(OK)));
-            assertThrows(RuntimeException.class, () -> reporter.report(newSpan("1")),
+            assertThrows(ClosedChannelException.class, () -> reporter.report(newSpan("1")),
                     "Report post close accepted.");
         }
     }

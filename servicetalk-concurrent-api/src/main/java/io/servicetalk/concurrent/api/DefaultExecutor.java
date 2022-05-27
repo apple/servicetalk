@@ -36,6 +36,7 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
+import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.lang.Thread.NORM_PRIORITY;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -157,7 +158,7 @@ final class DefaultExecutor extends AbstractExecutor implements Consumer<Runnabl
             try {
                 ((AutoCloseable) jdkExecutor).close();
             } catch (Exception e) {
-                throw new RuntimeException("unexpected exception while closing executor: " + jdkExecutor, e);
+                throwException(e);
             }
         }
     }
