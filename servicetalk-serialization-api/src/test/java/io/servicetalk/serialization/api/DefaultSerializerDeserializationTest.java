@@ -256,8 +256,8 @@ class DefaultSerializerDeserializationTest {
         try {
             iterator.hasNext();
             Assertions.fail();
-        } catch (RuntimeException re) {
-            assertThat("Unexpected exception.", re.getCause(), sameInstance(e));
+        } catch (SerializationException se) {
+            assertThat(se, sameInstance(e));
         }
         verify(deSerializer).close();
     }
@@ -308,8 +308,8 @@ class DefaultSerializerDeserializationTest {
         try {
             deserialized.iterator().hasNext();
             Assertions.fail();
-        } catch (RuntimeException re) {
-            assertThat("Unexpected exception.", re.getCause(), sameInstance(e));
+        } catch (SerializationException se) {
+            assertThat(se, sameInstance(e));
         }
         verify(deSerializer).close();
     }
@@ -331,8 +331,8 @@ class DefaultSerializerDeserializationTest {
         try {
             deserialized.iterator().hasNext();
             Assertions.fail();
-        } catch (RuntimeException re) {
-            assertThat("Unexpected exception.", re.getCause(), sameInstance(e));
+        } catch (SerializationException se) {
+            assertThat(se, sameInstance(e));
         }
         verify(listDeSerializer).close();
     }

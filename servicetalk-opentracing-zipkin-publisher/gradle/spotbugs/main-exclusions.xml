@@ -31,10 +31,4 @@
     <Method name="batchSpans"/>
     <Bug pattern="EI_EXPOSE_REP2"/>
   </Match>
-
-  <Match>
-    <Class name="io.servicetalk.opentracing.zipkin.publisher.reporter.UdpReporter"/>
-    <Method name="report"/>
-    <Bug pattern="THROWS_METHOD_THROWS_RUNTIMEEXCEPTION"/>
-  </Match>
 </FindBugsFilter>

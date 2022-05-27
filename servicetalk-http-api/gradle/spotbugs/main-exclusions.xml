@@ -245,11 +245,6 @@
     <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
   </Match>
   <Match>
-    <Class name="io.servicetalk.http.api.FormUrlEncodedSerializer"/>
-    <Method name="urlEncode"/>
-    <Bug pattern="THROWS_METHOD_THROWS_RUNTIMEEXCEPTION"/>
-  </Match>
-  <Match>
     <Or>
       <Class name="io.servicetalk.http.api.HttpClient"/>
       <Class name="io.servicetalk.http.api.HttpConnection"/>
@@ -317,13 +312,5 @@
     <Class name="io.servicetalk.http.api.TrailersTransformer"/>
     <Method name="catchPayloadFailure"/>
     <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_THROWABLE"/>
-  </Match>
-  <Match>
-    <Class name="io.servicetalk.http.api.RequestResponseFactories"/>
-    <Or>
-      <Method name="newRequestBlocking"/>
-      <Method name="newResponseBlocking"/>
-    </Or>
-    <Bug pattern="THROWS_METHOD_THROWS_RUNTIMEEXCEPTION"/>
   </Match>
 </FindBugsFilter>

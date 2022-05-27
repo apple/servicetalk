@@ -91,7 +91,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
-import static org.hamcrest.core.CombinableMatcher.either;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -595,14 +594,12 @@ class NettyHttpServerTest extends AbstractNettyHttpServerTest {
 
             final BlockingIterator<Buffer> httpPayloadChunks = response.payloadBody().toIterable().iterator();
 
-            Exception e = assertThrows(Exception.class, httpPayloadChunks::next);
-            assertThat(e, either(instanceOf(RuntimeException.class)).or(instanceOf(ExecutionException.class)));
             // Due to a race condition, the exception cause here can vary.
             // If the socket closure is delayed slightly
             // (for example, by delaying the Publisher.error(...) on the server)
             // then the client throws ClosedChannelException. However if the socket closure happens quickly enough,
             // the client throws NativeIoException (KQueue) or IOException (NIO).
-            assertThat(e.getCause(), instanceOf(IOException.class));
+            assertThrows(IOException.class, httpPayloadChunks::next);
         } catch (Throwable cause) {
             // The server intentionally triggers an error when it writes, if this happens before all content is read
             // the client may fail to write the request due to premature connection closure.
@@ -640,8 +637,8 @@ class NettyHttpServerTest extends AbstractNettyHttpServerTest {
                 sb.append(httpPayloadChunks.next().toString(US_ASCII));
             }
             fail("Server should close upon receiving the request");
-        } catch (RuntimeException wrapped) { // BlockingIterator wraps
-            assertClientTransportInboundClosed(wrapped.getCause());
+        } catch (Throwable cause) {
+            assertClientTransportInboundClosed(cause);
         }
         assertEquals("Goodbyecruelworld!", sb.toString());
         assertConnectionClosed();

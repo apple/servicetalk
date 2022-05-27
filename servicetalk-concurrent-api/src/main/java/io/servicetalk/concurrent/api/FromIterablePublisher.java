@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Iterator;
 import java.util.concurrent.TimeoutException;
 
-import static io.servicetalk.concurrent.internal.AutoClosableUtils.closeAndReThrowUnchecked;
+import static io.servicetalk.concurrent.internal.AutoClosableUtils.closeAndReThrow;
 import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
@@ -113,7 +113,7 @@ final class FromIterablePublisher<T> extends AbstractSynchronousPublisher<T> {
         public final void cancel() {
             cleanupForCancel();
             if (iterator instanceof AutoCloseable) {
-                closeAndReThrowUnchecked((AutoCloseable) iterator);
+                closeAndReThrow((AutoCloseable) iterator);
             }
         }
 
