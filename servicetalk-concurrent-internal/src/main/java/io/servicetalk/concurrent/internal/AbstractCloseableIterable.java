@@ -21,6 +21,8 @@ import io.servicetalk.concurrent.CloseableIterator;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
+import static io.servicetalk.utils.internal.PlatformDependent.throwException;
+
 /**
  * An abstract implementation of {@link CloseableIterable} that wraps an {@link Iterable}.
  *
@@ -58,7 +60,7 @@ public abstract class AbstractCloseableIterable<T> implements CloseableIterable<
                         try {
                             close();
                         } catch (Exception e) {
-                            throw new RuntimeException(e);
+                            throwException(e);
                         }
                     }
                     return false;

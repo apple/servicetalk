@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.internal.AutoClosableUtils.closeAndReThrowUnchecked;
+import static io.servicetalk.concurrent.internal.AutoClosableUtils.closeAndReThrow;
 import static io.servicetalk.concurrent.internal.ConcurrentUtils.releaseLock;
 import static io.servicetalk.concurrent.internal.ConcurrentUtils.tryAcquireLock;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateSubscription;
@@ -161,7 +161,7 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
 
         private static <U> void tryClose(final Iterator<? extends U> currentIterator) {
             if (currentIterator instanceof AutoCloseable) {
-                closeAndReThrowUnchecked(((AutoCloseable) currentIterator));
+                closeAndReThrow(((AutoCloseable) currentIterator));
             }
         }
 

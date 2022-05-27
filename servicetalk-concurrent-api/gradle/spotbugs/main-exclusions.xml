@@ -84,11 +84,6 @@
     <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
   </Match>
   <Match>
-    <Class name="io.servicetalk.concurrent.api.PublisherAsBlockingIterable$SubscriberAndIterator"/>
-    <Method name="processNext"/>
-    <Bug pattern="THROWS_METHOD_THROWS_RUNTIMEEXCEPTION"/>
-  </Match>
-  <Match>
     <Class name="io.servicetalk.concurrent.api.ScanWithMapper"/>
     <Method name="mapOnError"/>
     <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_THROWABLE"/>

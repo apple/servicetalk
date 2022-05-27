@@ -38,14 +38,6 @@
     <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
   </Match>
   <Match>
-    <Class name="io.servicetalk.concurrent.internal.AbstractCloseableIterable$1"/>
-    <Or>
-      <Method name="close"/>
-      <Method name="hasNext"/>
-    </Or>
-    <Bug pattern="THROWS_METHOD_THROWS_RUNTIMEEXCEPTION"/>
-  </Match>
-  <Match>
     <Class name="io.servicetalk.concurrent.internal.AutoClosableUtils"/>
     <Method name="closeAndReThrowUnchecked"/>
     <Bug pattern="THROWS_METHOD_THROWS_RUNTIMEEXCEPTION"/>
