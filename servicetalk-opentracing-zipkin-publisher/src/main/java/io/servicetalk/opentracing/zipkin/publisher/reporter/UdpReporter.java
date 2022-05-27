@@ -50,7 +50,6 @@ import java.util.function.BooleanSupplier;
 import javax.annotation.Nullable;
 
 import static io.netty.channel.ChannelOption.RCVBUF_ALLOCATOR;
-import static io.netty.util.internal.PlatformDependent.throwException;
 import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.datagramChannel;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
