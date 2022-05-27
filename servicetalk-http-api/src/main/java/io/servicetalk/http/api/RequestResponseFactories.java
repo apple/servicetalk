@@ -130,7 +130,7 @@ final class RequestResponseFactories {
             currentThread().interrupt(); // Reset the interrupted flag.
             return throwException(e);
         } catch (ExecutionException e) {
-            return throwException(e);
+            throw new RuntimeException(e);
         }
     }
 
@@ -142,7 +142,7 @@ final class RequestResponseFactories {
             Thread.currentThread().interrupt();
             throw new RuntimeException(e);
         } catch (ExecutionException e) {
-            return throwException(e);
+            throw new RuntimeException(e);
         }
     }
 }

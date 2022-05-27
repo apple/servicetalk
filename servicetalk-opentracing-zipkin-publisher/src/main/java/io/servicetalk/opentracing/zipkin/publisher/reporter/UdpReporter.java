@@ -216,7 +216,7 @@ public final class UdpReporter extends Component implements Reporter<Span>, Asyn
     @Override
     public void report(final Span span) {
         if (!channel.isActive()) {
-            throwException(StacklessClosedChannelException.newInstance(this.getClass(), "report"));
+            throw new RuntimeException(StacklessClosedChannelException.newInstance(this.getClass(), "report"));
         }
         channel.writeAndFlush(span);
     }
