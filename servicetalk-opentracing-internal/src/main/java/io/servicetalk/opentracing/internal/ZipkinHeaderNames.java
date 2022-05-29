@@ -16,7 +16,7 @@
 package io.servicetalk.opentracing.internal;
 
 /**
- * See <a href="http://zipkin.io/pages/instrumenting.html">zipkin documentation</a>.
+ * See <a href="https://zipkin.io/pages/instrumenting.html">zipkin documentation</a>.
  */
 public final class ZipkinHeaderNames {
     // Use lowercase so the same header names can be used for HTTP/2 which requires lower case header names.

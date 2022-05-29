@@ -110,7 +110,7 @@ final class HttpRequestEncoder extends HttpObjectEncoder<HttpRequestMetaData> {
 
         if (uri.isEmpty()) {
             // Add " / " as absolute path if uri is not present.
-            // See http://tools.ietf.org/html/rfc2616#section-5.1.2
+            // See https://tools.ietf.org/html/rfc2616#section-5.1.2
             stBuffer.writeMedium(SPACE_SLASH_AND_SPACE_MEDIUM);
         } else {
             CharSequence uriCharSequence = uri;
