@@ -188,7 +188,7 @@ public final class RedirectConfigBuilder {
      * <p>
      * <b>Note:</b> This option expects that the redirected {@link StreamingHttpRequest requests} have a
      * {@link StreamingHttpRequest#payloadBody() payload body} that is
-     * <a href="http://reactivex.io/documentation/operators/replay.html">replayable</a>, i.e. multiple subscribes to the
+     * <a href="https://reactivex.io/documentation/operators/replay.html">replayable</a>, i.e. multiple subscribes to the
      * payload {@link Publisher} observe the same data. {@link Publisher}s that do not emit any data or which are
      * created from in-memory data are typically replayable.
      *
