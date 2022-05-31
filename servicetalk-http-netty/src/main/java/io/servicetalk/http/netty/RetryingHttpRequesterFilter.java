@@ -695,9 +695,9 @@ public final class RetryingHttpRequesterFilter
          * <p>
          * <b>Note:</b> This predicate expects that the retried {@link StreamingHttpRequest requests} have a
          * {@link StreamingHttpRequest#payloadBody() payload body} that is
-         * <a href="https://reactivex.io/documentation/operators/replay.html">replayable</a>, i.e. multiple subscribes to
-         * the payload {@link Publisher} observe the same data. {@link Publisher}s that do not emit any data or which
-         * are created from in-memory data are typically replayable.
+         * <a href="https://reactivex.io/documentation/operators/replay.html">replayable</a>, i.e. multiple subscribes
+         * to the payload {@link Publisher} observe the same data. {@link Publisher}s that do not emit any data or
+         * which are created from in-memory data are typically replayable.
          * To disable retries you can return {@link BackOffPolicy#NO_RETRIES} from the {@code mapper}.
          * <strong>It's important that this {@link Function} doesn't block to avoid performance impacts.</strong>
          *
