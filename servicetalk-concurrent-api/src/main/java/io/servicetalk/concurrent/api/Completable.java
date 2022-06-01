@@ -93,7 +93,7 @@ public abstract class Completable {
      * }</pre>
      * @return A {@link Completable} which transform errors emitted on this {@link Completable} into a
      * {@link Subscriber#onComplete()} signal (e.g. swallows the error).
-     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
      */
     public final Completable onErrorComplete() {
         return onErrorComplete(t -> true);
@@ -117,7 +117,7 @@ public abstract class Completable {
      * @param <E> The {@link Throwable} type.
      * @return A {@link Completable} which transform errors emitted on this {@link Completable} which match {@code type}
      * into a {@link Subscriber#onComplete()} signal (e.g. swallows the error).
-     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
      */
     public final <E extends Throwable> Completable onErrorComplete(Class<E> type) {
         return onErrorComplete(type::isInstance);
@@ -141,7 +141,7 @@ public abstract class Completable {
      * {@link Subscriber#onComplete()} signal. Returns {@code false} to propagate the error.
      * @return A {@link Completable} which transform errors emitted on this {@link Completable} which match
      * {@code predicate} into a {@link Subscriber#onComplete()} signal (e.g. swallows the error).
-     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
      */
     public final Completable onErrorComplete(Predicate<? super Throwable> predicate) {
         return new OnErrorCompleteCompletable(this, predicate);
@@ -160,7 +160,7 @@ public abstract class Completable {
      * }</pre>
      * @param mapper returns the error used to terminate the returned {@link Completable}.
      * @return A {@link Completable} which transform errors emitted on this {@link Completable} into a different error.
-     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
      */
     public final Completable onErrorMap(Function<? super Throwable, ? extends Throwable> mapper) {
         return onErrorMap(t -> true, mapper);
@@ -185,7 +185,7 @@ public abstract class Completable {
      * @param mapper returns the error used to terminate the returned {@link Completable}.
      * @param <E> The type of {@link Throwable} to transform.
      * @return A {@link Completable} which transform errors emitted on this {@link Completable} into a different error.
-     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
      */
     public final <E extends Throwable> Completable onErrorMap(
             Class<E> type, Function<? super E, ? extends Throwable> mapper) {
@@ -213,7 +213,7 @@ public abstract class Completable {
      * {@code false} to propagate the original error.
      * @param mapper returns the error used to terminate the returned {@link Completable}.
      * @return A {@link Completable} which transform errors emitted on this {@link Completable} into a different error.
-     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
      */
     public final Completable onErrorMap(Predicate<? super Throwable> predicate,
                                         Function<? super Throwable, ? extends Throwable> mapper) {
@@ -265,7 +265,7 @@ public abstract class Completable {
      * @param <E> The type of {@link Throwable} to transform.
      * @return A {@link Completable} that recovers from an error from this {@code Publisher} by using another
      * {@link Completable} provided by the passed {@code nextFactory}.
-     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
      */
     public final <E extends Throwable> Completable onErrorResume(
             Class<E> type, Function<? super E, ? extends Completable> nextFactory) {
@@ -298,7 +298,7 @@ public abstract class Completable {
      * @param nextFactory Returns the next {@link Completable}, when this {@link Completable} emits an error.
      * @return A {@link Completable} that recovers from an error from this {@link Completable} by using another
      * {@link Completable} provided by the passed {@code nextFactory}.
-     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
      */
     public final Completable onErrorResume(Predicate<? super Throwable> predicate,
                                            Function<? super Throwable, ? extends Completable> nextFactory) {
@@ -466,7 +466,7 @@ public abstract class Completable {
      * @param unit The units for {@code duration}.
      * @return a new {@link Completable} that will mimic the signals of this {@link Completable} but will terminate with
      * a {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onComplete()}.
-     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
     public final Completable timeout(long duration, TimeUnit unit) {
         return timeout(duration, unit, global());
@@ -486,7 +486,7 @@ public abstract class Completable {
      * notifications.
      * @return a new {@link Completable} that will mimic the signals of this {@link Completable} but will terminate with
      * a {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onComplete()}.
-     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
     public final Completable timeout(long duration, TimeUnit unit,
                                      io.servicetalk.concurrent.Executor timeoutExecutor) {
@@ -504,7 +504,7 @@ public abstract class Completable {
      * @param duration The time duration which is allowed to elapse before {@link Subscriber#onComplete()}.
      * @return a new {@link Completable} that will mimic the signals of this {@link Completable} but will terminate with
      * a {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onComplete()}.
-     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
     public final Completable timeout(Duration duration) {
         return timeout(duration, global());
@@ -523,7 +523,7 @@ public abstract class Completable {
      * notifications.
      * @return a new {@link Completable} that will mimic the signals of this {@link Completable} but will terminate with
      * a {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onComplete()}.
-     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
     public final Completable timeout(Duration duration, io.servicetalk.concurrent.Executor timeoutExecutor) {
         return new TimeoutCompletable(this, duration, timeoutExecutor);
@@ -722,7 +722,7 @@ public abstract class Completable {
      * It terminates with an error when any one of this {@link Completable} or passed {@link Publisher} terminates with
      * an error.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/merge.html">ReactiveX merge operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/merge.html">ReactiveX merge operator.</a>
      */
     public final <T> Publisher<T> merge(Publisher<? extends T> mergeWith) {
         return new CompletableMergeWithPublisher<>(this, mergeWith, false);
@@ -761,7 +761,7 @@ public abstract class Completable {
      * {@link Completable} and the passed {@link Publisher} terminate. If either terminates with an error then the
      * error will be propagated to the return value.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/merge.html">ReactiveX merge operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/merge.html">ReactiveX merge operator.</a>
      */
     public final <T> Publisher<T> mergeDelayError(Publisher<? extends T> mergeWith) {
         return new CompletableMergeWithPublisher<>(this, mergeWith, true);
@@ -922,7 +922,7 @@ public abstract class Completable {
      * @return A {@link Completable} that completes with this {@link Completable} or re-subscribes if an error is
      * emitted and if the passed {@link BiPredicate} returned {@code true}.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
      */
     public final Completable retry(BiIntPredicate<Throwable> shouldRetry) {
         return toSingle().retry(shouldRetry).ignoreElement();
@@ -966,7 +966,7 @@ public abstract class Completable {
      * @return A {@link Completable} that completes with this {@link Completable} or re-subscribes if an error is
      * emitted and {@link Completable} returned by {@link BiFunction} completes successfully.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
      */
     public final Completable retryWhen(BiIntFunction<Throwable, ? extends Completable> retryWhen) {
         return toSingle().retryWhen(retryWhen).ignoreElement();
@@ -993,7 +993,7 @@ public abstract class Completable {
      * @return A {@link Publisher} that emits the value returned by the passed {@link Supplier} everytime this
      * {@link Completable} completes.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/repeat.html">ReactiveX repeat operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/repeat.html">ReactiveX repeat operator.</a>
      */
     public final Publisher<Void> repeat(IntPredicate shouldRepeat) {
         return toSingle().repeat(shouldRepeat);
@@ -1027,7 +1027,7 @@ public abstract class Completable {
      * re-subscribed when this {@link Completable} completes.
      * @return A {@link Completable} that completes after all re-subscriptions completes.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
      */
     public final Publisher<Void> repeatWhen(IntFunction<? extends Completable> repeatWhen) {
         return toSingle().repeatWhen(repeatWhen);
@@ -1233,7 +1233,7 @@ public abstract class Completable {
      * </ul>
      * for Subscriptions/{@link Subscriber}s of the returned {@link Completable}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Completable}.
-     * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Completable beforeFinally(Runnable doFinally) {
         return beforeFinally(new RunnableTerminalSignalConsumer(doFinally));
@@ -1265,7 +1265,7 @@ public abstract class Completable {
      * @param doFinally For each subscribe of the returned {@link Completable}, at most one method of this
      * {@link TerminalSignalConsumer} will be invoked.
      * @return The new {@link Completable}.
-     * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Completable beforeFinally(TerminalSignalConsumer doFinally) {
         return new BeforeFinallyCompletable(this, doFinally);
@@ -1399,7 +1399,7 @@ public abstract class Completable {
      * </ul>
      * for Subscriptions/{@link Subscriber}s of the returned {@link Completable}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Completable}.
-     * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Completable afterFinally(Runnable doFinally) {
         return afterFinally(new RunnableTerminalSignalConsumer(doFinally));
@@ -1431,7 +1431,7 @@ public abstract class Completable {
      * @param doFinally For each subscribe of the returned {@link Completable}, at most one method of this
      * {@link TerminalSignalConsumer} will be invoked.
      * @return The new {@link Completable}.
-     * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Completable afterFinally(TerminalSignalConsumer doFinally) {
         return new AfterFinallyCompletable(this, doFinally);
@@ -1651,7 +1651,7 @@ public abstract class Completable {
      * @return A new {@link Completable} that terminates with the result (either success or error) of either this
      * {@link Completable} or the passed {@code other} {@link Completable}, whichever terminates first. Therefore the
      * result is said to be <strong>ambiguous</strong> relative to which source it originated from.
-     * @see <a href="http://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a>
      */
     public final Completable ambWith(final Completable other) {
         return toSingle().ambWith(other.toSingle()).ignoreElement();
@@ -2135,7 +2135,7 @@ public abstract class Completable {
      * @return A new {@link Completable} that terminates with the result (either success or error) of whichever amongst
      * the passed {@code completables} that terminates first. Therefore the result is said to be
      * <strong>ambiguous</strong> relative to which source it originated from.
-     * @see <a href="http://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a>
      */
     public static Completable amb(final Completable... completables) {
         return Single.amb(stream(spliterator(completables), false)
@@ -2159,7 +2159,7 @@ public abstract class Completable {
      * @return A new {@link Completable} that terminates with the result (either success or error) of whichever amongst
      * the passed {@code completables} that terminates first. Therefore the result is said to be
      * <strong>ambiguous</strong> relative to which source it originated from.
-     * @see <a href="http://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a>
      */
     public static Completable amb(final Iterable<Completable> completables) {
         return Single.amb(stream(completables.spliterator(), false)
@@ -2181,7 +2181,7 @@ public abstract class Completable {
      * @param completables {@link Completable}s which to subscribe to and race to propagate to the return value.
      * @return A new {@link Completable} that terminates with the result (either success or error) of whichever amongst
      * the passed {@code completables} that terminates first.
-     * @see <a href="http://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a>
      */
     public static Completable anyOf(final Completable... completables) {
         return amb(completables);
@@ -2203,7 +2203,7 @@ public abstract class Completable {
      * @return A new {@link Completable} that terminates with the result (either success or error) of whichever amongst
      * the passed {@code completables} that terminates first.
      * that result.
-     * @see <a href="http://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a>
      */
     public static Completable anyOf(final Iterable<Completable> completables) {
         return amb(completables);

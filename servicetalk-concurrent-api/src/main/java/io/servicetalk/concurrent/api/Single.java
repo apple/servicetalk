@@ -136,7 +136,7 @@ public abstract class Single<T> {
      * @param itemSupplier returns the element to emit to {@link Subscriber#onSuccess(Object)}.
      * @return A {@link Single} which transform errors emitted on this {@link Single} into
      * {@link Subscriber#onSuccess(Object)} signal (e.g. swallows the error).
-     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
      */
     public final Single<T> onErrorReturn(Function<? super Throwable, ? extends T> itemSupplier) {
         return onErrorReturn(t -> true, itemSupplier);
@@ -164,7 +164,7 @@ public abstract class Single<T> {
      * @param <E> The type of {@link Throwable} to transform.
      * @return A {@link Single} which transform errors emitted on this {@link Single} into
      * {@link Subscriber#onSuccess(Object)} signal (e.g. swallows the error).
-     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
      */
     public final <E extends Throwable> Single<T> onErrorReturn(
             Class<E> type, Function<? super E, ? extends T> itemSupplier) {
@@ -195,7 +195,7 @@ public abstract class Single<T> {
      * @param itemSupplier returns the element to emit to {@link Subscriber#onSuccess(Object)}.
      * @return A {@link Single} which transform errors emitted on this {@link Single} into
      * {@link Subscriber#onSuccess(Object)} signal (e.g. swallows the error).
-     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
      */
     public final Single<T> onErrorReturn(Predicate<? super Throwable> predicate,
                                          Function<? super Throwable, ? extends T> itemSupplier) {
@@ -218,7 +218,7 @@ public abstract class Single<T> {
      * }</pre>
      * @param mapper returns the error used to terminate the returned {@link Single}.
      * @return A {@link Single} which transform errors emitted on this {@link Single} into a different error.
-     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
      */
     public final Single<T> onErrorMap(Function<? super Throwable, ? extends Throwable> mapper) {
         return onErrorMap(t -> true, mapper);
@@ -245,7 +245,7 @@ public abstract class Single<T> {
      * @param mapper returns the error used to terminate the returned {@link Single}.
      * @param <E> The type of {@link Throwable} to transform.
      * @return A {@link Single} which transform errors emitted on this {@link Single} into a different error.
-     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
      */
     public final <E extends Throwable> Single<T> onErrorMap(
             Class<E> type, Function<? super E, ? extends Throwable> mapper) {
@@ -275,7 +275,7 @@ public abstract class Single<T> {
      * {@code false} to propagate the original error.
      * @param mapper returns the error used to terminate the returned {@link Single}.
      * @return A {@link Single} which transform errors emitted on this {@link Single} into a different error.
-     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
      */
     public final Single<T> onErrorMap(Predicate<? super Throwable> predicate,
                                       Function<? super Throwable, ? extends Throwable> mapper) {
@@ -330,7 +330,7 @@ public abstract class Single<T> {
      * @param <E> The type of {@link Throwable} to transform.
      * @return A {@link Single} that recovers from an error from this {@link Single} by using another
      * {@link Single} provided by the passed {@code nextFactory}.
-     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
      */
     public final <E extends Throwable> Single<T> onErrorResume(
             Class<E> type, Function<? super E, ? extends Single<? extends T>> nextFactory) {
@@ -365,7 +365,7 @@ public abstract class Single<T> {
      * @param nextFactory Returns the next {@link Single}, when this {@link Single} emits an error.
      * @return A {@link Single} that recovers from an error from this {@link Single} by using another
      * {@link Single} provided by the passed {@code nextFactory}.
-     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
      */
     public final Single<T> onErrorResume(Predicate<? super Throwable> predicate,
                                          Function<? super Throwable, ? extends Single<? extends T>> nextFactory) {
@@ -636,7 +636,7 @@ public abstract class Single<T> {
      * @param unit The units for {@code duration}.
      * @return a new {@link Single} that will mimic the signals of this {@link Single} but will terminate with a
      * {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onSuccess(Object)}.
-     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
     public final Single<T> timeout(long duration, TimeUnit unit) {
         return timeout(duration, unit, global());
@@ -656,7 +656,7 @@ public abstract class Single<T> {
      * notifications.
      * @return a new {@link Single} that will mimic the signals of this {@link Single} but will terminate with a
      * {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onSuccess(Object)}.
-     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
     public final Single<T> timeout(long duration, TimeUnit unit,
                                    io.servicetalk.concurrent.Executor timeoutExecutor) {
@@ -675,7 +675,7 @@ public abstract class Single<T> {
      * @param duration The time duration which is allowed to elapse before {@link Subscriber#onSuccess(Object)}.
      * @return a new {@link Single} that will mimic the signals of this {@link Single} but will terminate with a
      * {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onSuccess(Object)}.
-     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
     public final Single<T> timeout(Duration duration) {
         return timeout(duration, global());
@@ -694,7 +694,7 @@ public abstract class Single<T> {
      * notifications.
      * @return a new {@link Single} that will mimic the signals of this {@link Single} but will terminate with a
      * {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onSuccess(Object)}.
-     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
     public final Single<T> timeout(Duration duration, io.servicetalk.concurrent.Executor timeoutExecutor) {
         return new TimeoutSingle<>(this, duration, timeoutExecutor);
@@ -813,7 +813,7 @@ public abstract class Single<T> {
      * @param <R> The result type of the zipper.
      * @return a new {@link Single} that emits the results of a specified zipper {@link BiFunction} to items emitted by
      * {@code this} and {@code other}.
-     * @see <a href="http://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
      */
     public final <T2, R> Single<R> zipWith(Single<? extends T2> other,
                                            BiFunction<? super T, ? super T2, ? extends R> zipper) {
@@ -839,7 +839,7 @@ public abstract class Single<T> {
      * @param <R> The result type of the zipper.
      * @return a new {@link Single} that emits the results of a specified zipper {@link BiFunction} to items emitted by
      * {@code this} and {@code other}.
-     * @see <a href="http://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
      */
     public final <T2, R> Single<R> zipWithDelayError(Single<? extends T2> other,
                                                      BiFunction<? super T, ? super T2, ? extends R> zipper) {
@@ -879,7 +879,7 @@ public abstract class Single<T> {
      * @return A {@link Single} that emits the result from this {@link Single} or re-subscribes if an error is emitted
      * and if the passed {@link BiIntPredicate} returned {@code true}.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
      */
     public final Single<T> retry(BiIntPredicate<Throwable> shouldRetry) {
         return new RetrySingle<>(this, shouldRetry);
@@ -922,7 +922,7 @@ public abstract class Single<T> {
      * @return A {@link Single} that emits the result from this {@link Single} or re-subscribes if an error is emitted
      * and {@link Completable} returned by {@link BiIntFunction} completes successfully.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
      */
     public final Single<T> retryWhen(BiIntFunction<Throwable, ? extends Completable> retryWhen) {
         return new RetryWhenSingle<>(this, retryWhen);
@@ -949,7 +949,7 @@ public abstract class Single<T> {
      * @return A {@link Publisher} that emits all items from this {@link Single} and from all re-subscriptions whenever
      * the operation is repeated.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/repeat.html">ReactiveX repeat operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/repeat.html">ReactiveX repeat operator.</a>
      */
     public final Publisher<T> repeat(IntPredicate shouldRepeat) {
         return repeatWhen((i, __) -> shouldRepeat.test(i) ? Completable.completed() : END_REPEAT_COMPLETABLE);
@@ -978,7 +978,7 @@ public abstract class Single<T> {
      * @return A {@link Publisher} that emits all items from this {@link Single} and from all re-subscriptions whenever
      * the operation is repeated.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/repeat.html">ReactiveX repeat operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/repeat.html">ReactiveX repeat operator.</a>
      */
     public final Publisher<T> repeat(BiIntPredicate<? super T> shouldRepeat) {
         return repeatWhen((i, t) -> shouldRepeat.test(i, t) ? Completable.completed() : END_REPEAT_COMPLETABLE);
@@ -1015,7 +1015,7 @@ public abstract class Single<T> {
      * @return A {@link Publisher} that emits all items from this {@link Single} and from all re-subscriptions whenever
      * the operation is repeated.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
      */
     public final Publisher<T> repeatWhen(IntFunction<? extends Completable> repeatWhen) {
         return repeatWhen((i, __) -> repeatWhen.apply(i));
@@ -1051,7 +1051,7 @@ public abstract class Single<T> {
      * @return A {@link Publisher} that emits all items from this {@link Single} and from all re-subscriptions whenever
      * the operation is repeated.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
      */
     public final Publisher<T> repeatWhen(BiIntFunction<? super T, ? extends Completable> repeatWhen) {
         return new RepeatWhenSingle<>(this, repeatWhen);
@@ -1251,7 +1251,7 @@ public abstract class Single<T> {
      * </ul>
      * for Subscriptions/{@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
-     * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Single<T> beforeFinally(Runnable doFinally) {
         return beforeFinally(new RunnableSingleTerminalSignalConsumer<>(doFinally));
@@ -1286,7 +1286,7 @@ public abstract class Single<T> {
      * @param doFinally For each subscribe of the returned {@link Single}, at most one method of this
      * {@link TerminalSignalConsumer} will be invoked.
      * @return The new {@link Single}.
-     * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Single<T> beforeFinally(TerminalSignalConsumer doFinally) {
         return new BeforeFinallySingle<>(this, new TerminalSingleTerminalSignalConsumer<>(doFinally));
@@ -1321,7 +1321,7 @@ public abstract class Single<T> {
      * @param doFinally For each subscribe of the returned {@link Single}, at most one method of this
      * {@link SingleTerminalSignalConsumer} will be invoked.
      * @return The new {@link Single}.
-     * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Single<T> beforeFinally(SingleTerminalSignalConsumer<? super T> doFinally) {
         return new BeforeFinallySingle<>(this, doFinally);
@@ -1452,7 +1452,7 @@ public abstract class Single<T> {
      * </ul>
      * for Subscriptions/{@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
-     * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Single<T> afterFinally(Runnable doFinally) {
         return afterFinally(new RunnableSingleTerminalSignalConsumer<>(doFinally));
@@ -1487,7 +1487,7 @@ public abstract class Single<T> {
      * @param doFinally For each subscribe of the returned {@link Single}, at most one method of this
      * {@link TerminalSignalConsumer} will be invoked.
      * @return The new {@link Single}.
-     * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Single<T> afterFinally(TerminalSignalConsumer doFinally) {
         return new AfterFinallySingle<>(this, new TerminalSingleTerminalSignalConsumer<>(doFinally));
@@ -1522,7 +1522,7 @@ public abstract class Single<T> {
      * @param doFinally For each subscribe of the returned {@link Single}, at most one method of this
      * {@link SingleTerminalSignalConsumer} will be invoked.
      * @return The new {@link Single}.
-     * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Single<T> afterFinally(SingleTerminalSignalConsumer<? super T> doFinally) {
         return new AfterFinallySingle<>(this, doFinally);
@@ -1741,7 +1741,7 @@ public abstract class Single<T> {
      * @return A new {@link Single} that terminates with the result (either success or error) of either this
      * {@link Single} or the passed {@code other} {@link Single}, whichever terminates first. Therefore the result is
      * said to be <strong>ambiguous</strong> relative to which source it originated from.
-     * @see <a href="http://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a>
      */
     public final Single<T> ambWith(final Single<T> other) {
         return new SingleAmbWith<>(this, other);
@@ -2270,7 +2270,7 @@ public abstract class Single<T> {
      * @return A new {@link Single} that terminates with the result (either success or error) of whichever amongst the
      * passed {@code singles} that terminates first. Therefore the result is said to be <strong>ambiguous</strong>
      * relative to which source it originated from.
-     * @see <a href="http://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a>
      */
     @SafeVarargs
     public static <T> Single<T> amb(final Single<? extends T>... singles) {
@@ -2296,7 +2296,7 @@ public abstract class Single<T> {
      * @return A new {@link Single} that terminates with the result (either success or error) of whichever amongst the
      * passed {@code singles} that terminates first. Therefore the result is said to be <strong>ambiguous</strong>
      * relative to which source it originated from.
-     * @see <a href="http://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a>
      */
     public static <T> Single<T> amb(final Iterable<Single<? extends T>> singles) {
         return new AmbSingles<>(singles);
@@ -2318,7 +2318,7 @@ public abstract class Single<T> {
      * @param <T> Type of the result of the individual {@link Single}s
      * @return A new {@link Single} that terminates with the result (either success or error) of whichever amongst the
      * passed {@code singles} that terminates first.
-     * @see <a href="http://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a>
      */
     @SafeVarargs
     public static <T> Single<T> anyOf(final Single<? extends T>... singles) {
@@ -2341,7 +2341,7 @@ public abstract class Single<T> {
      * @param <T> Type of the result of the individual {@link Single}s
      * @return A new {@link Single} that terminates with the result (either success or error) of whichever amongst the
      * passed {@code singles} that terminates first.
-     * @see <a href="http://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a>
      */
     public static <T> Single<T> anyOf(final Iterable<Single<? extends T>> singles) {
         return amb(singles);
@@ -2366,7 +2366,7 @@ public abstract class Single<T> {
      * @param <R> The result type of the zipper.
      * @return a new {@link Single} that emits the results of a specified zipper {@link BiFunction} to items emitted by
      * {@code s1} and {@code s2}.
-     * @see <a href="http://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
      */
     public static <T1, T2, R> Single<R> zip(Single<? extends T1> s1, Single<? extends T2> s2,
                                             BiFunction<? super T1, ? super T2, ? extends R> zipper) {
@@ -2394,7 +2394,7 @@ public abstract class Single<T> {
      * @param <R> The result type of the zipper.
      * @return a new {@link Single} that emits the results of a specified zipper {@link BiFunction} to items emitted by
      * {@code s1} and {@code s2}.
-     * @see <a href="http://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
      */
     public static <T1, T2, R> Single<R> zipDelayError(Single<? extends T1> s1, Single<? extends T2> s2,
                                                       BiFunction<? super T1, ? super T2, ? extends R> zipper) {
@@ -2423,7 +2423,7 @@ public abstract class Single<T> {
      * @param <R> The result type of the zipper.
      * @return a new {@link Single} that emits the results of a specified zipper {@link Function3} to items emitted by
      * {@code s1}, {@code s2}, and {@code s3}.
-     * @see <a href="http://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
      */
     public static <T1, T2, T3, R> Single<R> zip(
             Single<? extends T1> s1, Single<? extends T2> s2, Single<? extends T3> s3,
@@ -2455,7 +2455,7 @@ public abstract class Single<T> {
      * @param <R> The result type of the zipper.
      * @return a new {@link Single} that emits the results of a specified zipper {@link Function3} to items emitted by
      * {@code s1}, {@code s2}, and {@code s3}.
-     * @see <a href="http://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
      */
     public static <T1, T2, T3, R> Single<R> zipDelayError(
             Single<? extends T1> s1, Single<? extends T2> s2, Single<? extends T3> s3,
@@ -2488,7 +2488,7 @@ public abstract class Single<T> {
      * @param <R> The result type of the zipper.
      * @return a new {@link Single} that emits the results of a specified zipper {@link Function4} to items emitted by
      * {@code s1}, {@code s2}, {@code s3}, and {@code s4}.
-     * @see <a href="http://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
      */
     public static <T1, T2, T3, T4, R> Single<R> zip(
             Single<? extends T1> s1, Single<? extends T2> s2, Single<? extends T3> s3, Single<? extends T4> s4,
@@ -2523,7 +2523,7 @@ public abstract class Single<T> {
      * @param <R> The result type of the zipper.
      * @return a new {@link Single} that emits the results of a specified zipper {@link Function4} to items emitted by
      * {@code s1}, {@code s2}, {@code s3}, and {@code s4}.
-     * @see <a href="http://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
      */
     public static <T1, T2, T3, T4, R> Single<R> zipDelayError(
             Single<? extends T1> s1, Single<? extends T2> s2, Single<? extends T3> s3, Single<? extends T4> s4,
@@ -2548,7 +2548,7 @@ public abstract class Single<T> {
      * @param <R> The result type of the zipper.
      * @return a new {@link Single} that emits the results of a specified zipper {@link Function} to items emitted by
      * {@code singles}.
-     * @see <a href="http://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
      */
     public static <R> Single<R> zip(Function<? super Object[], ? extends R> zipper, Single<?>... singles) {
         return SingleZipper.zip(zipper, singles);
@@ -2573,7 +2573,7 @@ public abstract class Single<T> {
      * @param <R> The result type of the zipper.
      * @return a new {@link Single} that emits the results of a specified zipper {@link Function} to items emitted by
      * {@code singles}.
-     * @see <a href="http://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/zip.html">ReactiveX zip operator.</a>
      */
     public static <R> Single<R> zipDelayError(Function<? super Object[], ? extends R> zipper, Single<?>... singles) {
         return SingleZipper.zipDelayError(zipper, singles);

@@ -76,7 +76,7 @@ public final class RouteSummaryBuilder {
 
     /**
      * Calculate the distance between two points using the "haversine" formula.
-     * The formula is based on http://mathforum.org/library/drmath/view/51879.html.
+     * The formula is based on https://en.wikipedia.org/wiki/Haversine_formula.
      *
      * @param start The starting point
      * @param end The end point

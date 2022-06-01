@@ -35,7 +35,7 @@ public interface Executor extends io.servicetalk.concurrent.Executor, Listenable
      * @param delay The time duration which is allowed to elapse between subscribe and termination.
      * @param unit The units for {@code duration}.
      * @return a new {@link Completable} that will complete after the time duration expires.
-     * @see <a href="http://reactivex.io/documentation/operators/timer.html">ReactiveX Timer.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/timer.html">ReactiveX Timer.</a>
      */
     default Completable timer(long delay, TimeUnit unit) {
         return new TimerCompletable(delay, unit, this);
@@ -46,7 +46,7 @@ public interface Executor extends io.servicetalk.concurrent.Executor, Listenable
      * @param delay The time duration which is allowed to elapse between subscribe and termination.
      *
      * @return a new {@link Completable} that will complete after the time duration expires.
-     * @see <a href="http://reactivex.io/documentation/operators/timer.html">ReactiveX Timer.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/timer.html">ReactiveX Timer.</a>
      */
     default Completable timer(Duration delay) {
         return new TimerCompletable(delay, this);

@@ -112,7 +112,7 @@ public abstract class Publisher<T> {
      * @param <R> Type of the items emitted by the returned {@link Publisher}.
      * @return A {@link Publisher} that transforms elements emitted by this {@link Publisher} into a different type.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/map.html">ReactiveX map operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/map.html">ReactiveX map operator.</a>
      */
     public final <R> Publisher<R> map(Function<? super T, ? extends R> mapper) {
         return new MapPublisher<>(this, mapper);
@@ -155,7 +155,7 @@ public abstract class Publisher<T> {
      *
      * @param predicate for the filter.
      * @return A {@link Publisher} that only emits the items that pass the {@code predicate}.
-     * @see <a href="http://reactivex.io/documentation/operators/filter.html">ReactiveX filter operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/filter.html">ReactiveX filter operator.</a>
      */
     public final Publisher<T> filter(Predicate<? super T> predicate) {
         return filter(() -> predicate);
@@ -202,8 +202,8 @@ public abstract class Publisher<T> {
      * {@code true} the item is emitted to the returned {@link Publisher}. This {@link Predicate} is unique per
      * subscribe and may therefore keep state and can be used for example to track distinct signals.
      * @return A {@link Publisher} emits filtered signals observed by this {@link Publisher}.
-     * @see <a href="http://reactivex.io/documentation/operators/filter.html">ReactiveX filter operator.</a>
-     * @see <a href="http://reactivex.io/documentation/operators/distinct.html">ReactiveX distinct operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/filter.html">ReactiveX filter operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/distinct.html">ReactiveX distinct operator.</a>
      */
     final Publisher<T> filter(Supplier<? extends Predicate<? super T>> filterSupplier) {
         return new FilterPublisher<>(this, filterSupplier);
@@ -223,7 +223,7 @@ public abstract class Publisher<T> {
      * }</pre>
      *
      * @return A {@link Publisher} that emits distinct signals observed by this {@link Publisher}.
-     * @see <a href="http://reactivex.io/documentation/operators/distinct.html">ReactiveX distinct operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/distinct.html">ReactiveX distinct operator.</a>
      */
     public final Publisher<T> distinct() {
         return filter(newDistinctSupplier());
@@ -249,7 +249,7 @@ public abstract class Publisher<T> {
      * {@link Subscriber#onNext(Object)} from this {@link Publisher}.
      * @param <R> Type of the items emitted by the returned {@link Publisher}.
      * @return A {@link Publisher} that transforms elements emitted by this {@link Publisher} into a different type.
-     * @see <a href="http://reactivex.io/documentation/operators/scan.html">ReactiveX scan operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/scan.html">ReactiveX scan operator.</a>
      */
     public final <R> Publisher<R> scanWith(Supplier<R> initial, BiFunction<R, ? super T, R> accumulator) {
         return new ScanWithPublisher<>(this, initial, accumulator);
@@ -283,7 +283,7 @@ public abstract class Publisher<T> {
      * state for the mapping/accumulation for each {@link Subscriber}.
      * @param <R> Type of the items emitted by the returned {@link Publisher}.
      * @return A {@link Publisher} that transforms elements emitted by this {@link Publisher} into a different type.
-     * @see <a href="http://reactivex.io/documentation/operators/scan.html">ReactiveX scan operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/scan.html">ReactiveX scan operator.</a>
      */
     public final <R> Publisher<R> scanWith(Supplier<? extends ScanWithMapper<? super T, ? extends R>> mapperSupplier) {
         return new ScanWithPublisher<>(this, mapperSupplier);
@@ -325,7 +325,7 @@ public abstract class Publisher<T> {
      * state for the mapping/accumulation for each {@link Subscriber}.
      * @param <R> Type of the items emitted by the returned {@link Publisher}.
      * @return A {@link Publisher} that transforms elements emitted by this {@link Publisher} into a different type.
-     * @see <a href="http://reactivex.io/documentation/operators/scan.html">ReactiveX scan operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/scan.html">ReactiveX scan operator.</a>
      */
     public final <R> Publisher<R> scanWithLifetime(
             Supplier<? extends ScanWithLifetimeMapper<? super T, ? extends R>> mapperSupplier) {
@@ -348,7 +348,7 @@ public abstract class Publisher<T> {
      * }</pre>
      * @return A {@link Publisher} which transform errors emitted on this {@link Publisher} into a
      * {@link Subscriber#onComplete()} signal (e.g. swallows the error).
-     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
      */
     public final Publisher<T> onErrorComplete() {
         return onErrorComplete(t -> true);
@@ -374,7 +374,7 @@ public abstract class Publisher<T> {
      * @param <E> The {@link Throwable} type.
      * @return A {@link Publisher} which transform errors emitted on this {@link Publisher} which match {@code type}
      * into a {@link Subscriber#onComplete()} signal (e.g. swallows the error).
-     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
      */
     public final <E extends Throwable> Publisher<T> onErrorComplete(Class<E> type) {
         return onErrorComplete(type::isInstance);
@@ -400,7 +400,7 @@ public abstract class Publisher<T> {
      * {@link Subscriber#onComplete()} signal. Returns {@code false} to propagate the error.
      * @return A {@link Publisher} which transform errors emitted on this {@link Publisher} which match
      * {@code predicate} into a {@link Subscriber#onComplete()} signal (e.g. swallows the error).
-     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
      */
     public final Publisher<T> onErrorComplete(Predicate<? super Throwable> predicate) {
         return new OnErrorCompletePublisher<>(this, predicate);
@@ -423,7 +423,7 @@ public abstract class Publisher<T> {
      * @param itemSupplier returns the element to emit to {@link Subscriber#onNext(Object)}.
      * @return A {@link Publisher} which transform errors emitted on this {@link Publisher} into
      * {@link Subscriber#onNext(Object)} then {@link Subscriber#onComplete()} signals (e.g. swallows the error).
-     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
      */
     public final Publisher<T> onErrorReturn(Function<? super Throwable, ? extends T> itemSupplier) {
         return onErrorReturn(t -> true, itemSupplier);
@@ -451,7 +451,7 @@ public abstract class Publisher<T> {
      * @param <E> The type of {@link Throwable} to transform.
      * @return A {@link Publisher} which transform errors emitted on this {@link Publisher} into
      * {@link Subscriber#onNext(Object)} then {@link Subscriber#onComplete()} signals (e.g. swallows the error).
-     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
      */
     public final <E extends Throwable> Publisher<T> onErrorReturn(
             Class<E> type, Function<? super E, ? extends T> itemSupplier) {
@@ -483,7 +483,7 @@ public abstract class Publisher<T> {
      * @param itemSupplier returns the element to emit to {@link Subscriber#onNext(Object)}.
      * @return A {@link Publisher} which transform errors emitted on this {@link Publisher} into
      * {@link Subscriber#onNext(Object)} then {@link Subscriber#onComplete()} signals (e.g. swallows the error).
-     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
      */
     public final Publisher<T> onErrorReturn(Predicate<? super Throwable> predicate,
                                             Function<? super Throwable, ? extends T> itemSupplier) {
@@ -506,7 +506,7 @@ public abstract class Publisher<T> {
      * }</pre>
      * @param mapper returns the error used to terminate the returned {@link Publisher}.
      * @return A {@link Publisher} which transform errors emitted on this {@link Publisher} into a different error.
-     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
      */
     public final Publisher<T> onErrorMap(Function<? super Throwable, ? extends Throwable> mapper) {
         return onErrorMap(t -> true, mapper);
@@ -533,7 +533,7 @@ public abstract class Publisher<T> {
      * @param mapper returns the error used to terminate the returned {@link Publisher}.
      * @param <E> The type of {@link Throwable} to transform.
      * @return A {@link Publisher} which transform errors emitted on this {@link Publisher} into a different error.
-     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
      */
     public final <E extends Throwable> Publisher<T> onErrorMap(
             Class<E> type, Function<? super E, ? extends Throwable> mapper) {
@@ -563,7 +563,7 @@ public abstract class Publisher<T> {
      * {@code false} to propagate the original error.
      * @param mapper returns the error used to terminate the returned {@link Publisher}.
      * @return A {@link Publisher} which transform errors emitted on this {@link Publisher} into a different error.
-     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
      */
     public final Publisher<T> onErrorMap(Predicate<? super Throwable> predicate,
                                          Function<? super Throwable, ? extends Throwable> mapper) {
@@ -589,7 +589,7 @@ public abstract class Publisher<T> {
      * @param nextFactory Returns the next {@link Publisher}, when this {@link Publisher} emits an error.
      * @return A {@link Publisher} that recovers from an error from this {@link Publisher} by using another
      * {@link Publisher} provided by the passed {@code nextFactory}.
-     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
      */
     public final Publisher<T> onErrorResume(Function<? super Throwable, ? extends Publisher<? extends T>> nextFactory) {
         return onErrorResume(t -> true, nextFactory);
@@ -620,7 +620,7 @@ public abstract class Publisher<T> {
      * @param <E> The type of {@link Throwable} to transform.
      * @return A {@link Publisher} that recovers from an error from this {@link Publisher} by using another
      * {@link Publisher} provided by the passed {@code nextFactory}.
-     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
      */
     public final <E extends Throwable> Publisher<T> onErrorResume(
             Class<E> type, Function<? super E, ? extends Publisher<? extends T>> nextFactory) {
@@ -655,7 +655,7 @@ public abstract class Publisher<T> {
      * @param nextFactory Returns the next {@link Publisher}, when this {@link Publisher} emits an error.
      * @return A {@link Publisher} that recovers from an error from this {@link Publisher} by using another
      * {@link Publisher} provided by the passed {@code nextFactory}.
-     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
      */
     public final Publisher<T> onErrorResume(Predicate<? super Throwable> predicate,
                                             Function<? super Throwable, ? extends Publisher<? extends T>> nextFactory) {
@@ -692,7 +692,7 @@ public abstract class Publisher<T> {
      * each mapped {@link Publisher}.
      * @param <R> The type of mapped {@link Publisher}.
      * @return A new {@link Publisher} which flattens the emissions from all mapped {@link Publisher}s.
-     * @see <a href="http://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
      */
     public final <R> Publisher<R> flatMapMerge(Function<? super T, ? extends Publisher<? extends R>> mapper) {
         return new PublisherFlatMapMerge<>(this, mapper, false);
@@ -726,7 +726,7 @@ public abstract class Publisher<T> {
      * @param maxConcurrency Maximum amount of outstanding upstream {@link Subscription#request(long) demand}.
      * @param <R> The type of mapped {@link Publisher}.
      * @return A new {@link Publisher} which flattens the emissions from all mapped {@link Publisher}s.
-     * @see <a href="http://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
      */
     public final <R> Publisher<R> flatMapMerge(Function<? super T, ? extends Publisher<? extends R>> mapper,
                                                int maxConcurrency) {
@@ -777,7 +777,7 @@ public abstract class Publisher<T> {
      * each mapped {@link Publisher}.
      * @param <R> The type of mapped {@link Publisher}.
      * @return A new {@link Publisher} which flattens the emissions from all mapped {@link Publisher}s.
-     * @see <a href="http://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
      */
     public final <R> Publisher<R> flatMapMergeDelayError(Function<? super T, ? extends Publisher<? extends R>> mapper) {
         return new PublisherFlatMapMerge<>(this, mapper, true);
@@ -824,7 +824,7 @@ public abstract class Publisher<T> {
      * @param maxConcurrency Maximum amount of outstanding upstream {@link Subscription#request(long) demand}.
      * @param <R> The type of mapped {@link Publisher}.
      * @return A new {@link Publisher} which flattens the emissions from all mapped {@link Publisher}s.
-     * @see <a href="http://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
      */
     public final <R> Publisher<R> flatMapMergeDelayError(Function<? super T, ? extends Publisher<? extends R>> mapper,
                                                          int maxConcurrency) {
@@ -874,7 +874,7 @@ public abstract class Publisher<T> {
      * discarded to reduce memory consumption.
      * @param <R> The type of mapped {@link Publisher}.
      * @return A new {@link Publisher} which flattens the emissions from all mapped {@link Publisher}s.
-     * @see <a href="http://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
      */
     public final <R> Publisher<R> flatMapMergeDelayError(Function<? super T, ? extends Publisher<? extends R>> mapper,
                                                          int maxConcurrency, int maxDelayedErrorsHint) {
@@ -916,7 +916,7 @@ public abstract class Publisher<T> {
      * @param <R> Type of items emitted by the returned {@link Publisher}.
      * @return A new {@link Publisher} that emits all items emitted by each single produced by {@code mapper}.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
      * @see #flatMapMergeSingle(Function, int)
      * @see #flatMapConcatSingle(Function)
      */
@@ -956,7 +956,7 @@ public abstract class Publisher<T> {
      * @param <R> Type of items emitted by the returned {@link Publisher}.
      * @return A new {@link Publisher} that emits all items emitted by each single produced by {@code mapper}.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
      * @see #flatMapConcatSingle(Function, int)
      */
     public final <R> Publisher<R> flatMapMergeSingle(Function<? super T, ? extends Single<? extends R>> mapper,
@@ -1147,7 +1147,7 @@ public abstract class Publisher<T> {
      * @return A new {@link Completable} that terminates successfully if all the intermediate {@link Completable}s have
      * terminated successfully or any one of them has terminated with a failure.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
      * @see #flatMapCompletable(Function, int)
      * @see #flatMapCompletableDelayError(Function)
      */
@@ -1185,7 +1185,7 @@ public abstract class Publisher<T> {
      * @return A new {@link Completable} that terminates successfully if all the intermediate {@link Completable}s have
      * terminated successfully or any one of them has terminated with a failure.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
      * @see #flatMapCompletable(Function)
      * @see #flatMapCompletableDelayError(Function, int)
      */
@@ -1231,7 +1231,7 @@ public abstract class Publisher<T> {
      * @return A new {@link Completable} that terminates successfully if all the intermediate {@link Completable}s have
      * terminated successfully or any one of them has terminated with a failure.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
      * @see #flatMapMergeSingleDelayError(Function, int)
      */
     public final Completable flatMapCompletableDelayError(Function<? super T, ? extends Completable> mapper) {
@@ -1274,7 +1274,7 @@ public abstract class Publisher<T> {
      * @return A new {@link Completable} that terminates successfully if all the intermediate {@link Completable}s have
      * terminated successfully or any one of them has terminated with a failure.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
      * @see #flatMapMergeSingleDelayError(Function, int)
      */
     public final Completable flatMapCompletableDelayError(Function<? super T, ? extends Completable> mapper,
@@ -1320,7 +1320,7 @@ public abstract class Publisher<T> {
      * @return A new {@link Completable} that terminates successfully if all the intermediate {@link Completable}s have
      * terminated successfully or any one of them has terminated with a failure.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
      * @see #flatMapMergeSingleDelayError(Function, int)
      */
     public final Completable flatMapCompletableDelayError(Function<? super T, ? extends Completable> mapper,
@@ -1358,7 +1358,7 @@ public abstract class Publisher<T> {
      * @param <R> Type of items emitted by the returned {@link Publisher}.
      * @return A new {@link Publisher} that emits all items emitted by each single produced by {@code mapper}.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
      * @see #flatMapConcatSingle(Function, int)
      * @see #flatMapMergeSingle(Function)
      */
@@ -1394,7 +1394,7 @@ public abstract class Publisher<T> {
      * @param <R> Type of items emitted by the returned {@link Publisher}.
      * @return A new {@link Publisher} that emits all items emitted by each single produced by {@code mapper}.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
      * @see #flatMapMergeSingle(Function, int)
      */
     public final <R> Publisher<R> flatMapConcatSingle(Function<? super T, ? extends Single<? extends R>> mapper,
@@ -1705,7 +1705,7 @@ public abstract class Publisher<T> {
      * returned {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> whenRequest(LongConsumer onRequest) {
         return beforeRequest(onRequest);
@@ -1739,7 +1739,7 @@ public abstract class Publisher<T> {
      * @param unit The units for {@code duration}.
      * @return a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
      * {@link TimeoutException} if time {@code duration} elapses between {@link Subscriber#onNext(Object)} calls.
-     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      * @see #timeout(long, TimeUnit, io.servicetalk.concurrent.Executor)
      */
     public final Publisher<T> timeout(long duration, TimeUnit unit) {
@@ -1757,7 +1757,7 @@ public abstract class Publisher<T> {
      * @param duration The time duration which is allowed to elapse between {@link Subscriber#onNext(Object)} calls.
      * @return a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
      * {@link TimeoutException} if time {@code duration} elapses between {@link Subscriber#onNext(Object)} calls.
-     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      * @see #timeout(long, TimeUnit, io.servicetalk.concurrent.Executor)
      */
     public final Publisher<T> timeout(Duration duration) {
@@ -1778,7 +1778,7 @@ public abstract class Publisher<T> {
      * notifications.
      * @return a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
      * {@link TimeoutException} if time {@code duration} elapses between {@link Subscriber#onNext(Object)} calls.
-     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
     public final Publisher<T> timeout(long duration, TimeUnit unit,
                                       io.servicetalk.concurrent.Executor timeoutExecutor) {
@@ -1798,7 +1798,7 @@ public abstract class Publisher<T> {
      * notifications.
      * @return a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
      * {@link TimeoutException} if time {@code duration} elapses between {@link Subscriber#onNext(Object)} calls.
-     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
     public final Publisher<T> timeout(Duration duration, io.servicetalk.concurrent.Executor timeoutExecutor) {
         return timeout(toNanos(duration), TimeUnit.NANOSECONDS, timeoutExecutor);
@@ -1815,7 +1815,7 @@ public abstract class Publisher<T> {
      * @param duration The time duration during which the Publisher must complete.
      * @return a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
      * {@link TimeoutException} if time {@code duration} elapses between subscribe and termination.
-     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
     public final Publisher<T> timeoutTerminal(Duration duration) {
         return timeoutTerminal(duration, global());
@@ -1834,7 +1834,7 @@ public abstract class Publisher<T> {
      * notifications.
      * @return a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
      * {@link TimeoutException} if time {@code duration} elapses between subscribe and termination.
-     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
     public final Publisher<T> timeoutTerminal(Duration duration, io.servicetalk.concurrent.Executor timeoutExecutor) {
         return timeoutTerminal(toNanos(duration), TimeUnit.NANOSECONDS, timeoutExecutor);
@@ -1852,7 +1852,7 @@ public abstract class Publisher<T> {
      * @param unit The units for {@code duration}.
      * @return a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
      * {@link TimeoutException} if time {@code duration} elapses between subscribe and termination.
-     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
     public final Publisher<T> timeoutTerminal(long duration, TimeUnit unit) {
         return timeoutTerminal(duration, unit, global());
@@ -1872,7 +1872,7 @@ public abstract class Publisher<T> {
      * notifications.
      * @return a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
      * {@link TimeoutException} if time {@code duration} elapses between subscribe and termination.
-     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
     public final Publisher<T> timeoutTerminal(long duration, TimeUnit unit,
                                               io.servicetalk.concurrent.Executor timeoutExecutor) {
@@ -1895,7 +1895,7 @@ public abstract class Publisher<T> {
      * successfully.
      * @return A {@link Publisher} that emits all items from this {@link Publisher} and {@code next} {@link Publisher}.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/concat.html">ReactiveX concat operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/concat.html">ReactiveX concat operator.</a>
      */
     public final Publisher<T> concat(Publisher<? extends T> next) {
         return new ConcatPublisher<>(this, next);
@@ -1917,7 +1917,7 @@ public abstract class Publisher<T> {
      * @return A {@link Publisher} that emits all items from this {@link Publisher} and the result of {@code next}
      * {@link Single}.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/concat.html">ReactiveX concat operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/concat.html">ReactiveX concat operator.</a>
      */
     public final Publisher<T> concat(Single<? extends T> next) {
         return new PublisherConcatWithSingle<>(this, next);
@@ -1941,7 +1941,7 @@ public abstract class Publisher<T> {
      * @return A {@link Publisher} that emits all items from this {@link Publisher} and then awaits successful
      * completion of {@code next} {@link Completable}.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/concat.html">ReactiveX concat operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/concat.html">ReactiveX concat operator.</a>
      */
     public final Publisher<T> concat(Completable next) {
         return new PublisherConcatWithCompletable<>(this, next);
@@ -1987,7 +1987,7 @@ public abstract class Publisher<T> {
      * @return A {@link Publisher} that emits all items from this {@link Publisher} and re-subscribes if an error is
      * emitted if the passed {@link BiIntPredicate} returned {@code true}.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
      */
     public final Publisher<T> retry(BiIntPredicate<Throwable> shouldRetry) {
         return new RedoPublisher<>(this,
@@ -2039,7 +2039,7 @@ public abstract class Publisher<T> {
      * @return A {@link Publisher} that emits all items from this {@link Publisher} and re-subscribes if an error is
      * emitted and {@link Completable} returned by {@link BiIntFunction} completes successfully.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
      */
     public final Publisher<T> retryWhen(BiIntFunction<Throwable, ? extends Completable> retryWhen) {
         return new RedoWhenPublisher<>(this, (retryCount, notification) -> {
@@ -2073,7 +2073,7 @@ public abstract class Publisher<T> {
      * @return A {@link Publisher} that emits all items from this {@link Publisher} and re-subscribes when it completes
      * if the passed {@link IntPredicate} returns {@code true}.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/repeat.html">ReactiveX repeat operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/repeat.html">ReactiveX repeat operator.</a>
      */
     public final Publisher<T> repeat(IntPredicate shouldRepeat) {
         return new RedoPublisher<>(this,
@@ -2113,7 +2113,7 @@ public abstract class Publisher<T> {
      * @return A {@link Publisher} that emits all items from this {@link Publisher} and re-subscribes if an error is
      * emitted and {@link Completable} returned by {@link IntFunction} completes successfully.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
      */
     public final Publisher<T> repeatWhen(IntFunction<? extends Completable> repeatWhen) {
         return new RedoWhenPublisher<>(this, (retryCount, notification) -> {
@@ -2147,7 +2147,7 @@ public abstract class Publisher<T> {
      * @param numElements Number of elements to take.
      * @return A {@link Publisher} that emits at most {@code numElements} elements from {@code this} {@link Publisher}.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/take.html">ReactiveX take operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/take.html">ReactiveX take operator.</a>
      */
     public final Publisher<T> takeAtMost(long numElements) {
         return new TakeNPublisher<>(this, numElements);
@@ -2175,7 +2175,7 @@ public abstract class Publisher<T> {
      * @return A {@link Publisher} that only emits the items as long as the {@link Predicate#test(Object)} method
      * returns {@code true}.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/takewhile.html">ReactiveX takeWhile operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/takewhile.html">ReactiveX takeWhile operator.</a>
      */
     public final Publisher<T> takeWhile(Predicate<? super T> predicate) {
         return new TakeWhilePublisher<>(this, predicate);
@@ -2200,7 +2200,7 @@ public abstract class Publisher<T> {
      * @param until {@link Completable}, termination of which, terminates the returned {@link Publisher}.
      * @return A {@link Publisher} that only emits the items till {@code until} {@link Completable} is completed.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/takeuntil.html">ReactiveX takeUntil operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/takeuntil.html">ReactiveX takeUntil operator.</a>
      */
     public final Publisher<T> takeUntil(Completable until) {
         return new TakeUntilPublisher<>(this, until);
@@ -2252,7 +2252,7 @@ public abstract class Publisher<T> {
      * @param <Key> Type of {@link GroupedPublisher} keys.
      * @return A {@link Publisher} that emits {@link GroupedPublisher}s for new {@code key}s as emitted by
      * {@code keySelector} {@link Function}.
-     * @see <a href="http://reactivex.io/documentation/operators/groupby.html">ReactiveX groupBy operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/groupby.html">ReactiveX groupBy operator.</a>
      */
     public final <Key> Publisher<GroupedPublisher<Key, T>> groupBy(Function<? super T, ? extends Key> keySelector) {
         return groupBy(keySelector, 64);
@@ -2307,7 +2307,7 @@ public abstract class Publisher<T> {
      * @param <Key> Type of {@link GroupedPublisher} keys.
      * @return A {@link Publisher} that emits {@link GroupedPublisher}s for new {@code key}s as emitted by
      * {@code keySelector} {@link Function}.
-     * @see <a href="http://reactivex.io/documentation/operators/groupby.html">ReactiveX groupBy operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/groupby.html">ReactiveX groupBy operator.</a>
      */
     public final <Key> Publisher<GroupedPublisher<Key, T>> groupBy(Function<? super T, ? extends Key> keySelector,
                                                                    int queueLimit) {
@@ -2365,7 +2365,7 @@ public abstract class Publisher<T> {
      * @param <Key> Type of {@link GroupedPublisher} keys.
      * @return A {@link Publisher} that emits {@link GroupedPublisher}s for new {@code key}s as emitted by
      * {@code keySelector} {@link Function}.
-     * @see <a href="http://reactivex.io/documentation/operators/groupby.html">ReactiveX groupBy operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/groupby.html">ReactiveX groupBy operator.</a>
      */
     public final <Key> Publisher<GroupedPublisher<Key, T>> groupBy(Function<? super T, ? extends Key> keySelector,
                                                                    int queueLimit, int expectedGroupCountHint) {
@@ -2530,7 +2530,7 @@ public abstract class Publisher<T> {
      * subscribe to the return value.
      * @return a {@link Publisher} that subscribes a single time upstream but allows for multiple downstream
      * {@link Subscriber}s. Signals from upstream will be multicast to each downstream {@link Subscriber}.
-     * @see <a href="http://reactivex.io/documentation/operators/publish.html">ReactiveX multicast operator</a>
+     * @see <a href="https://reactivex.io/documentation/operators/publish.html">ReactiveX multicast operator</a>
      */
     public final Publisher<T> multicast(int minSubscribers) {
         return multicast(minSubscribers, true);
@@ -2561,7 +2561,7 @@ public abstract class Publisher<T> {
      * all downstream {@link Subscriber}s cancel, and the upstream Subscription will stay valid until termination.
      * @return a {@link Publisher} that subscribes a single time upstream but allows for multiple downstream
      * {@link Subscriber}s. Signals from upstream will be multicast to each downstream {@link Subscriber}.
-     * @see <a href="http://reactivex.io/documentation/operators/publish.html">ReactiveX multicast operator</a>
+     * @see <a href="https://reactivex.io/documentation/operators/publish.html">ReactiveX multicast operator</a>
      */
     public final Publisher<T> multicast(int minSubscribers, boolean cancelUpstream) {
         return multicast(minSubscribers, 64, cancelUpstream);
@@ -2591,7 +2591,7 @@ public abstract class Publisher<T> {
      * for unequal demand.
      * @return a {@link Publisher} that subscribes a single time upstream but allows for multiple downstream
      * {@link Subscriber}s. Signals from upstream will be multicast to each downstream {@link Subscriber}.
-     * @see <a href="http://reactivex.io/documentation/operators/publish.html">ReactiveX multicast operator</a>
+     * @see <a href="https://reactivex.io/documentation/operators/publish.html">ReactiveX multicast operator</a>
      */
     public final Publisher<T> multicast(int minSubscribers, int queueLimit) {
         return multicast(minSubscribers, queueLimit, true);
@@ -2624,7 +2624,7 @@ public abstract class Publisher<T> {
      * all downstream {@link Subscriber}s cancel, and the upstream Subscription will stay valid until termination.
      * @return a {@link Publisher} that subscribes a single time upstream but allows for multiple downstream
      * {@link Subscriber}s. Signals from upstream will be multicast to each downstream {@link Subscriber}.
-     * @see <a href="http://reactivex.io/documentation/operators/publish.html">ReactiveX multicast operator</a>
+     * @see <a href="https://reactivex.io/documentation/operators/publish.html">ReactiveX multicast operator</a>
      */
     public final Publisher<T> multicast(int minSubscribers, int queueLimit, boolean cancelUpstream) {
         return multicast(minSubscribers, queueLimit, cancelUpstream, t -> completed());
@@ -2661,7 +2661,7 @@ public abstract class Publisher<T> {
      * </ul>
      * @return a {@link Publisher} that subscribes a single time upstream but allows for multiple downstream
      * {@link Subscriber}s. Signals from upstream will be multicast to each downstream {@link Subscriber}.
-     * @see <a href="http://reactivex.io/documentation/operators/publish.html">ReactiveX multicast operator</a>
+     * @see <a href="https://reactivex.io/documentation/operators/publish.html">ReactiveX multicast operator</a>
      */
     public final Publisher<T> multicast(int minSubscribers, int queueLimit,
                                         Function<Throwable, Completable> terminalResubscribe) {
@@ -2702,7 +2702,7 @@ public abstract class Publisher<T> {
      * </ul>
      * @return a {@link Publisher} that subscribes a single time upstream but allows for multiple downstream
      * {@link Subscriber}s. Signals from upstream will be multicast to each downstream {@link Subscriber}.
-     * @see <a href="http://reactivex.io/documentation/operators/publish.html">ReactiveX multicast operator</a>
+     * @see <a href="https://reactivex.io/documentation/operators/publish.html">ReactiveX multicast operator</a>
      */
     public final Publisher<T> multicast(int minSubscribers, int queueLimit, boolean cancelUpstream,
                                         Function<Throwable, Completable> terminalResubscribe) {
@@ -2745,7 +2745,7 @@ public abstract class Publisher<T> {
      * @return a {@link Publisher} that buffers items from this {@link Publisher} and emit those buffers instead of the
      * individual items.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/buffer.html">ReactiveX buffer operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/buffer.html">ReactiveX buffer operator.</a>
      */
     public final <BC extends Accumulator<T, B>, B> Publisher<B> buffer(final BufferStrategy<T, BC, B> strategy) {
         return new PublisherBuffer<>(this, strategy);
@@ -2761,7 +2761,7 @@ public abstract class Publisher<T> {
      * {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> beforeOnSubscribe(Consumer<? super Subscription> onSubscribe) {
         return beforeSubscriber(doOnSubscribeSupplier(onSubscribe));
@@ -2784,7 +2784,7 @@ public abstract class Publisher<T> {
      * of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> beforeOnNext(Consumer<? super T> onNext) {
         return beforeSubscriber(doOnNextSupplier(onNext));
@@ -2808,7 +2808,7 @@ public abstract class Publisher<T> {
      * {@link Subscriber}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> beforeOnError(Consumer<Throwable> onError) {
         return beforeSubscriber(doOnErrorSupplier(onError));
@@ -2829,7 +2829,7 @@ public abstract class Publisher<T> {
      * {@link Subscriber}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> beforeOnComplete(Runnable onComplete) {
         return beforeSubscriber(doOnCompleteSupplier(onComplete));
@@ -2843,7 +2843,7 @@ public abstract class Publisher<T> {
      * {@link Subscription}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> beforeRequest(LongConsumer onRequest) {
         return beforeSubscription(doOnRequestSupplier(onRequest));
@@ -2857,7 +2857,7 @@ public abstract class Publisher<T> {
      * {@link Subscription}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> beforeCancel(Runnable onCancel) {
         return beforeSubscription(doOnCancelSupplier(onCancel));
@@ -2891,7 +2891,7 @@ public abstract class Publisher<T> {
      * </ul>
      * for {@link Subscription}s/{@link Subscriber}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
-     * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> beforeFinally(Runnable doFinally) {
         return beforeFinally(new RunnableTerminalSignalConsumer(doFinally));
@@ -2923,7 +2923,7 @@ public abstract class Publisher<T> {
      * @param doFinally For each subscribe of the returned {@link Publisher}, at most one method of this
      * {@link TerminalSignalConsumer} will be invoked.
      * @return The new {@link Publisher}.
-     * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> beforeFinally(TerminalSignalConsumer doFinally) {
         return new BeforeFinallyPublisher<>(this, doFinally);
@@ -2939,7 +2939,7 @@ public abstract class Publisher<T> {
      * {@link Subscriber} methods <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> beforeSubscriber(Supplier<? extends Subscriber<? super T>> subscriberSupplier) {
         return new BeforeSubscriberPublisher<>(this, subscriberSupplier);
@@ -2955,7 +2955,7 @@ public abstract class Publisher<T> {
      * {@link Publisher}. {@link Subscription} methods <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> beforeSubscription(Supplier<? extends Subscription> subscriptionSupplier) {
         return new WhenSubscriptionPublisher<>(this, subscriptionSupplier, true);
@@ -2971,7 +2971,7 @@ public abstract class Publisher<T> {
      * {@link Subscriber}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> afterOnSubscribe(Consumer<? super Subscription> onSubscribe) {
         return afterSubscriber(doOnSubscribeSupplier(onSubscribe));
@@ -2994,7 +2994,7 @@ public abstract class Publisher<T> {
      * of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> afterOnNext(Consumer<? super T> onNext) {
         return afterSubscriber(doOnNextSupplier(onNext));
@@ -3018,7 +3018,7 @@ public abstract class Publisher<T> {
      * {@link Subscriber}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> afterOnError(Consumer<Throwable> onError) {
         return afterSubscriber(doOnErrorSupplier(onError));
@@ -3039,7 +3039,7 @@ public abstract class Publisher<T> {
      * {@link Subscriber}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> afterOnComplete(Runnable onComplete) {
         return afterSubscriber(doOnCompleteSupplier(onComplete));
@@ -3053,7 +3053,7 @@ public abstract class Publisher<T> {
      * {@link Subscription}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> afterRequest(LongConsumer onRequest) {
         return afterSubscription(doOnRequestSupplier(onRequest));
@@ -3067,7 +3067,7 @@ public abstract class Publisher<T> {
      * of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> afterCancel(Runnable onCancel) {
         return afterSubscription(doOnCancelSupplier(onCancel));
@@ -3101,7 +3101,7 @@ public abstract class Publisher<T> {
      * </ul>
      * for {@link Subscription}s/{@link Subscriber}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
-     * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> afterFinally(Runnable doFinally) {
         return afterFinally(new RunnableTerminalSignalConsumer(doFinally));
@@ -3133,7 +3133,7 @@ public abstract class Publisher<T> {
      * @param doFinally For each subscribe of the returned {@link Publisher}, at most one method of this
      * {@link TerminalSignalConsumer} will be invoked.
      * @return The new {@link Publisher}.
-     * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> afterFinally(TerminalSignalConsumer doFinally) {
         return new AfterFinallyPublisher<>(this, doFinally);
@@ -3149,7 +3149,7 @@ public abstract class Publisher<T> {
      * {@link Subscriber} methods <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> afterSubscriber(Supplier<? extends Subscriber<? super T>> subscriberSupplier) {
         return new AfterSubscriberPublisher<>(this, subscriberSupplier);
@@ -3179,7 +3179,7 @@ public abstract class Publisher<T> {
      * {@link Subscription} methods <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> afterSubscription(Supplier<? extends Subscription> subscriptionSupplier) {
         return new WhenSubscriptionPublisher<>(this, subscriptionSupplier, false);
@@ -3195,7 +3195,7 @@ public abstract class Publisher<T> {
      * {@link Subscription} methods <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> whenSubscription(Supplier<? extends Subscription> subscriptionSupplier) {
         return beforeSubscription(subscriptionSupplier);
@@ -3436,7 +3436,7 @@ public abstract class Publisher<T> {
      * If the source {@link Publisher} does not emit any item, then the returned {@link Single} will contain the value
      * as returned by the passed {@link Supplier}.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/first.html">ReactiveX first operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/first.html">ReactiveX first operator.</a>
      */
     public final Single<T> firstOrElse(Supplier<T> defaultValueSupplier) {
         return new PubToSingleFirstOrElse<>(this, defaultValueSupplier);
@@ -3463,7 +3463,7 @@ public abstract class Publisher<T> {
      *
      * @return A {@link Completable} that mirrors the terminal signal from this {@code Publisher}.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/ignoreelements.html">
+     * @see <a href="https://reactivex.io/documentation/operators/ignoreelements.html">
      *     ReactiveX ignoreElements operator.</a>
      */
     public final Completable ignoreElements() {
@@ -3492,7 +3492,7 @@ public abstract class Publisher<T> {
      * @return A {@link Single} that completes with the single {@code result} or any error emitted by the source
      * {@link Publisher}.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/reduce.html">ReactiveX reduce operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/reduce.html">ReactiveX reduce operator.</a>
      */
     public final <R> Single<R> collect(Supplier<? extends R> resultFactory,
                                        BiFunction<? super R, ? super T, R> collector) {
@@ -3750,7 +3750,7 @@ public abstract class Publisher<T> {
      * @return A new {@link Publisher} that emits {@code value} to its {@link Subscriber} and then
      * {@link Subscriber#onComplete()}.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/just.html">ReactiveX just operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/just.html">ReactiveX just operator.</a>
      */
     public static <T> Publisher<T> from(@Nullable T value) {
         return new FromSingleItemPublisher<>(value);
@@ -3767,7 +3767,7 @@ public abstract class Publisher<T> {
      * @return A new {@link Publisher} that emits {@code v1} and {@code v2} to its {@link Subscriber} and then
      * {@link Subscriber#onComplete()}.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/just.html">ReactiveX just operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/just.html">ReactiveX just operator.</a>
      */
     public static <T> Publisher<T> from(@Nullable T v1, @Nullable T v2) {
         return new FromNPublisher<>(v1, v2);
@@ -3785,7 +3785,7 @@ public abstract class Publisher<T> {
      * @return A new {@link Publisher} that emits {@code v1}, {@code v2}, and {@code v3} to its {@link Subscriber} and
      * then {@link Subscriber#onComplete()}.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/just.html">ReactiveX just operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/just.html">ReactiveX just operator.</a>
      */
     public static <T> Publisher<T> from(@Nullable T v1, @Nullable T v2, @Nullable T v3) {
         return new FromNPublisher<>(v1, v2, v3);
@@ -3801,7 +3801,7 @@ public abstract class Publisher<T> {
      * @return A new {@link Publisher} that emits all {@code values} to its {@link Subscriber} and then
      * {@link Subscriber#onComplete()}.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/from.html">ReactiveX from operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/from.html">ReactiveX from operator.</a>
      */
     @SafeVarargs
     public static <T> Publisher<T> from(T... values) {
@@ -3909,7 +3909,7 @@ public abstract class Publisher<T> {
      * @param end The end of the range (exclusive).
      * @return a new {@link Publisher} that when subscribed will emit all {@link Integer}s within the range of
      * [{@code begin}, {@code end}).
-     * @see <a href="http://reactivex.io/documentation/operators/range.html">Range.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/range.html">Range.</a>
      */
     public static Publisher<Integer> range(int begin, int end) {
         return new RangeIntPublisher(begin, end);
@@ -3923,7 +3923,7 @@ public abstract class Publisher<T> {
      * @param stride The amount to increment in between each signal.
      * @return a new {@link Publisher} that when subscribed will emit all {@link Integer}s within the range of
      * [{@code begin}, {@code end}) with an increment of {@code stride} between each signal.
-     * @see <a href="http://reactivex.io/documentation/operators/range.html">Range.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/range.html">Range.</a>
      */
     public static Publisher<Integer> range(int begin, int end, int stride) {
         return new RangeIntPublisher(begin, end, stride);
@@ -3937,7 +3937,7 @@ public abstract class Publisher<T> {
      * @return A new {@link Publisher} that completes when subscribed without emitting any item to its
      * {@link Subscriber}.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/empty-never-throw.html">ReactiveX empty operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/empty-never-throw.html">ReactiveX empty operator.</a>
      */
     public static <T> Publisher<T> empty() {
         return emptyPublisher();
@@ -3951,7 +3951,7 @@ public abstract class Publisher<T> {
      * @return A new {@link Publisher} that never emits any item to its {@link Subscriber} and never call any terminal
      * methods on it.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/empty-never-throw.html">ReactiveX never operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/empty-never-throw.html">ReactiveX never operator.</a>
      */
     public static <T> Publisher<T> never() {
         return neverPublisher();
@@ -3966,7 +3966,7 @@ public abstract class Publisher<T> {
      * @return A new {@link Publisher} that terminates its {@link Subscriber} with an error without emitting any item to
      * it.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/empty-never-throw.html">ReactiveX error operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/empty-never-throw.html">ReactiveX error operator.</a>
      */
     public static <T> Publisher<T> failed(Throwable cause) {
         return new ErrorPublisher<>(cause);
@@ -3982,7 +3982,7 @@ public abstract class Publisher<T> {
      * it is subscribed and forwards all items and terminal events from the newly created {@link Publisher} to its
      * {@link Subscriber}.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/defer.html">ReactiveX defer operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/defer.html">ReactiveX defer operator.</a>
      */
     public static <T> Publisher<T> defer(Supplier<? extends Publisher<? extends T>> publisherSupplier) {
         return new PublisherDefer<>(publisherSupplier);
