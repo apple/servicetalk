@@ -20,6 +20,7 @@ import io.servicetalk.http.api.BlockingStreamingHttpService;
 import io.servicetalk.http.api.HttpApiConversions.ServiceAdapterHolder;
 import io.servicetalk.http.api.HttpCookiePair;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -29,7 +30,6 @@ import io.servicetalk.http.router.predicate.dsl.RouteContinuation;
 import io.servicetalk.http.router.predicate.dsl.RouteStarter;
 import io.servicetalk.http.router.predicate.dsl.StringMultiValueMatcher;
 import io.servicetalk.transport.api.ConnectionContext;
-import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -42,7 +42,6 @@ import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
-import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.router.predicate.Predicates.method;
 import static io.servicetalk.http.router.predicate.Predicates.methodIsOneOf;
 import static io.servicetalk.http.router.predicate.Predicates.pathEquals;
@@ -276,17 +275,13 @@ public final class HttpPredicateRouterBuilder implements RouteStarter {
             return thenRouteTo0(adapterHolder.adaptor(), adapterHolder.serviceInvocationStrategy());
         }
 
-        private HttpExecutionStrategy serviceOffloads(final Object service) {
-            return null != strategy ? strategy :
-                    service instanceof ExecutionStrategyInfluencer ?
-                            HttpExecutionStrategy.from(((ExecutionStrategyInfluencer) service).requiredOffloads()) :
-                            defaultStrategy();
+        private HttpExecutionStrategy serviceOffloads(final HttpExecutionStrategyInfluencer service) {
+            return null != strategy ? strategy : service.requiredOffloads();
         }
 
-        private RouteStarter thenRouteTo0(final StreamingHttpService route,
-                                          @Nullable final HttpExecutionStrategy routeStrategy) {
+        private RouteStarter thenRouteTo0(final StreamingHttpService route, final HttpExecutionStrategy routeStrategy) {
             assert predicate != null;
-            routes.add(new Route(predicate, route, null == strategy ? null : routeStrategy));
+            routes.add(new Route(predicate, route, routeStrategy));
             // Reset shared state since we have finished current route construction
             predicate = null;
             strategy = null;
