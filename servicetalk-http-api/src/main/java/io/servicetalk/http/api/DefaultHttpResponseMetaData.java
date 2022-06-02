@@ -16,6 +16,7 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.context.api.ContextMap;
+import io.servicetalk.encoding.api.ContentCodec;
 
 import javax.annotation.Nullable;
 
@@ -45,6 +46,13 @@ class DefaultHttpResponseMetaData extends AbstractHttpMetaData implements HttpRe
     @Override
     public HttpResponseMetaData status(final HttpResponseStatus status) {
         this.status = requireNonNull(status);
+        return this;
+    }
+
+    @Deprecated
+    @Override
+    public HttpResponseMetaData encoding(final ContentCodec encoding) {
+        super.encoding(encoding);
         return this;
     }
 

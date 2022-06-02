@@ -98,7 +98,12 @@ public interface StreamingHttpRequest extends HttpRequestMetaData {
      * @deprecated Use {@link #payloadBody(Publisher, HttpStreamingSerializer)}.
      */
     @Deprecated
-    <T> StreamingHttpRequest payloadBody(Publisher<T> payloadBody, HttpSerializer<T> serializer);
+    default <T> StreamingHttpRequest payloadBody(Publisher<T> payloadBody, HttpSerializer<T> serializer) {
+        throw new UnsupportedOperationException("StreamingHttpRequest#payloadBody(Publisher, HttpSerializer) " +
+                "is not supported by " + getClass() + ". This method is deprecated, consider migrating to " +
+                "StreamingHttpRequest#payloadBody(Publisher, HttpStreamingSerializer) or implement this " +
+                "method if it's required temporarily.");
+    }
 
     /**
      * Returns a {@link StreamingHttpRequest} with its underlying payload set to the result of serialization.
@@ -127,8 +132,13 @@ public interface StreamingHttpRequest extends HttpRequestMetaData {
      * @deprecated Use {@link #transformPayloadBody(Function, HttpStreamingSerializer)}.
      */
     @Deprecated
-    <T> StreamingHttpRequest transformPayloadBody(Function<Publisher<Buffer>, Publisher<T>> transformer,
-                                                  HttpSerializer<T> serializer);
+    default <T> StreamingHttpRequest transformPayloadBody(Function<Publisher<Buffer>, Publisher<T>> transformer,
+                                                  HttpSerializer<T> serializer) {
+        throw new UnsupportedOperationException("StreamingHttpRequest#transformPayloadBody(Function, HttpSerializer) " +
+                "is not supported by " + getClass() + ". This method is deprecated, consider migrating to " +
+                "StreamingHttpRequest#transformPayloadBody(Function, HttpStreamingSerializer) or implement this " +
+                "method if it's required temporarily.");
+    }
 
     /**
      * Returns a {@link StreamingHttpRequest} with its underlying payload transformed to the result of serialization.
@@ -276,7 +286,11 @@ public interface StreamingHttpRequest extends HttpRequestMetaData {
 
     @Deprecated
     @Override
-    StreamingHttpRequest encoding(ContentCodec encoding);
+    default StreamingHttpRequest encoding(ContentCodec encoding) {
+        throw new UnsupportedOperationException("StreamingHttpRequest#encoding(ContentCodec) is not supported by " +
+                getClass() + ". This method is deprecated, consider migrating to provided alternatives or implement " +
+                "this method if it's required temporarily.");
+    }
 
     @Override
     StreamingHttpRequest contentEncoding(@Nullable BufferEncoder encoder);

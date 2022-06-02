@@ -77,7 +77,7 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
 
     @Deprecated
     @Override
-    public HttpMetaData encoding(final ContentCodec encoding) {
+    public HttpRequestMetaData encoding(final ContentCodec encoding) {
         super.encoding(encoding);
         return this;
     }
