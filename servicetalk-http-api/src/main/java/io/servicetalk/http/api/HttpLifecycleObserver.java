@@ -110,6 +110,17 @@ public interface HttpLifecycleObserver {
     interface HttpRequestObserver {
 
         /**
+         * Callback when subscriber requests {@code n} items of the request payload body.
+         * <p>
+         * May be invoked multiple times. Helps to track when items are requested and when they are
+         * {@link #onRequestData(Buffer) delivered}.
+         *
+         * @param n number of requested items
+         */
+        default void onRequestDataRequested(long n) {   // FIXME: 0.43 - consider removing default impl
+        }
+
+        /**
          * Callback when the request payload body data chunk was observed.
          * <p>
          * May be invoked multiple times if the payload body is split into multiple chunks.
@@ -157,6 +168,16 @@ public interface HttpLifecycleObserver {
      * event will be invoked per response.
      */
     interface HttpResponseObserver {
+
+        /**
+         * Callback when subscriber requests {@code n} items of the response payload body.
+         * <p>
+         * May be invoked multiple times. Helps to track when items are requested and when they are
+         * {@link #onResponseData delivered}.
+         *
+         * @param n number of requested items
+         */
+        void onResponseDataRequested(long n);   // FIXME: 0.43 - consider removing default impl
 
         /**
          * Callback when the response payload body data chunk was observed.

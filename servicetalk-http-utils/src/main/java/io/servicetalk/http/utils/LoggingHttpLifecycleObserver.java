@@ -92,6 +92,10 @@ final class LoggingHttpLifecycleObserver implements HttpLifecycleObserver {
         }
 
         @Override
+        public void onRequestDataRequested(final long n) {
+        }
+
+        @Override
         public void onRequestData(final Buffer data) {
             requestSize += data.readableBytes();
         }
@@ -125,6 +129,10 @@ final class LoggingHttpLifecycleObserver implements HttpLifecycleObserver {
             assert this.responseMetaData == null;
             this.responseMetaData = responseMetaData;
             return this;
+        }
+
+        @Override
+        public void onResponseDataRequested(final long n) {
         }
 
         @Override

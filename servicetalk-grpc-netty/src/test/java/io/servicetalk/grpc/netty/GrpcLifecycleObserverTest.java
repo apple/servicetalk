@@ -70,9 +70,12 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
@@ -236,6 +239,7 @@ class GrpcLifecycleObserverTest {
             inOrder.verify(exchange).onRequest(any(StreamingHttpRequest.class));
         }
         inOrder.verify(exchange).onResponse(any(StreamingHttpResponse.class));
+        verify(response, atLeastOnce()).onResponseDataRequested(anyLong());
         if (!error) {
             inOrder.verify(response).onResponseData(any(Buffer.class));
             inOrder.verify(response).onResponseTrailers(any(HttpHeaders.class));
@@ -258,6 +262,7 @@ class GrpcLifecycleObserverTest {
             }
         }
 
+        verify(request, atLeastOnce()).onRequestDataRequested(anyLong());
         requestInOrder.verify(request).onRequestData(any(Buffer.class));
         requestInOrder.verify(request, never()).onRequestTrailers(any(HttpHeaders.class));
         requestInOrder.verify(request).onRequestComplete();

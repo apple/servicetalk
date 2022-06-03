@@ -95,6 +95,11 @@ final class GrpcToHttpLifecycleObserverBridge implements HttpLifecycleObserver {
         }
 
         @Override
+        public void onRequestDataRequested(final long n) {
+            observer.onRequestDataRequested(n);
+        }
+
+        @Override
         public void onRequestData(final Buffer data) {
             observer.onRequestData(data);
         }
@@ -130,6 +135,11 @@ final class GrpcToHttpLifecycleObserverBridge implements HttpLifecycleObserver {
             if (grpcStatus != null) {
                 observer.onGrpcStatus(grpcStatus);
             }
+        }
+
+        @Override
+        public void onResponseDataRequested(final long n) {
+            observer.onResponseDataRequested(n);
         }
 
         @Override
