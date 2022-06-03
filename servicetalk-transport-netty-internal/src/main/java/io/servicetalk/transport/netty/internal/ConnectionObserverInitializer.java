@@ -153,5 +153,11 @@ public final class ConnectionObserverInitializer implements ChannelInitializer {
             observer.onFlush();
             ctx.flush();
         }
+
+        @Override
+        public void channelWritabilityChanged(final ChannelHandlerContext ctx) {
+            observer.connectionWritabilityChanged(ctx.channel().isWritable());
+            ctx.fireChannelWritabilityChanged();
+        }
     }
 }

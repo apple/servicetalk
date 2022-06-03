@@ -90,6 +90,16 @@ public interface ConnectionObserver {
     MultiplexedObserver multiplexedConnectionEstablished(ConnectionInfo info);
 
     /**
+     * Callback when a writable state of the connection changes.
+     *
+     * @param isWritable describes the current state of the connection: {@code true} when the I/O thread will perform
+     * the requested write operation immediately. If {@code false}, write requests will be queued until the I/O thread
+     * is ready to process the queued items and the transport will start applying backpressure.
+     */
+    default void connectionWritabilityChanged(boolean isWritable) { // FIXME: 0.43 - consider removing default impl
+    }
+
+    /**
      * Callback when the connection is closed due to an {@link Throwable error}.
      *
      * @param error an occurred error
