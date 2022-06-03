@@ -61,6 +61,7 @@ import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadAll;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.router.predicate.PredicateRouterOffloadingTest.RouteServiceType.ASYNC_AGGREGATED;
@@ -112,7 +113,7 @@ class PredicateRouterOffloadingTest {
 
     @ParameterizedTest
     @EnumSource(RouteServiceType.class)
-    void predicateAndRouteAreOffloaded(RouteServiceType routeServiceType) throws Exception {
+    void predicateDefaultAndRouteOffloaded(RouteServiceType routeServiceType) throws Exception {
         this.routeServiceType = routeServiceType;
         final HttpPredicateRouterBuilder routerBuilder = newRouterBuilder();
         serverBuilder.executor(executionContextRule.executor());
@@ -123,7 +124,7 @@ class PredicateRouterOffloadingTest {
         final BlockingHttpClient client = buildServerAndClient(routerBuilder.buildStreaming());
         client.request(client.get("/"));
         verifyAllOffloadPointsRecorded();
-        assertRouteAndPredicateOffloaded();
+        assertRouteOffloadedAndNotPredicate(EXECUTOR_NAME_PREFIX);
     }
 
     @ParameterizedTest
@@ -132,7 +133,7 @@ class PredicateRouterOffloadingTest {
         this.routeServiceType = routeServiceType;
         assumeSafeToDisableOffloading(routeServiceType);
         final HttpPredicateRouterBuilder routerBuilder = newRouterBuilder();
-        serverBuilder.executor(executionContextRule.executor());
+        serverBuilder.executionStrategy(offloadAll()).executor(executionContextRule.executor());
         routeServiceType.addThreadRecorderService(
                 routerBuilder.when(this::recordRouterThread).executionStrategy(offloadNone()),
                 this::recordThread);
@@ -214,7 +215,6 @@ class PredicateRouterOffloadingTest {
     }
 
     private HttpPredicateRouterBuilder newRouterBuilder() {
-        serverBuilder.executionStrategy(defaultStrategy());
         return new HttpPredicateRouterBuilder();
     }
 

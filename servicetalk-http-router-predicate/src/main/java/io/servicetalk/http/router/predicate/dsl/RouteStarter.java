@@ -130,7 +130,7 @@ public interface RouteStarter {
     /**
      * Begin a route that matches {@link StreamingHttpRequest}s with a user-specified {@code predicate}.
      *
-     * @param predicate the predicate to evaluate against requests.
+     * @param predicate the predicate to evaluate against requests. This predicate must not block.
      * @return {@link RouteContinuation} for the next steps of building a route.
      */
     RouteContinuation when(Predicate<StreamingHttpRequest> predicate);
@@ -140,6 +140,7 @@ public interface RouteStarter {
      * {@code predicate}.
      *
      * @param predicate the predicate to evaluate against the request and connection context.
+     *                  This predicate must not block
      * @return {@link RouteContinuation} for the next steps of building a route.
      */
     RouteContinuation when(BiPredicate<ConnectionContext, StreamingHttpRequest> predicate);

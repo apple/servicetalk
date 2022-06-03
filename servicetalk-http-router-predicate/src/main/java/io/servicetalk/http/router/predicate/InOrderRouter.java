@@ -31,6 +31,7 @@ import io.servicetalk.transport.api.IoThreadFactory;
 import java.util.List;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -88,5 +89,11 @@ final class InOrderRouter implements StreamingHttpService {
     @Override
     public Completable closeAsyncGracefully() {
         return closeable.closeAsyncGracefully();
+    }
+
+    @Override
+    public HttpExecutionStrategy requiredOffloads() {
+        // We require no prior offloading and will handle offloading routes that require it.
+        return offloadNone();
     }
 }
