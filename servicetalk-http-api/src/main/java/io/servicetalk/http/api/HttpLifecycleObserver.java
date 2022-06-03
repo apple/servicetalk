@@ -24,11 +24,11 @@ import io.servicetalk.transport.api.IoExecutor;
  * An observer interface that provides visibility into HTTP lifecycle events.
  * <p>
  * In order to deliver events at accurate time, callbacks on this interface can be invoked from the {@link IoExecutor}.
- * Implementation of this observer <b>must</b> be non-blocking. If the
- * consumer of events may block (uses a blocking library or
- * <a href="https://logging.apache.org/log4j/2.x/manual/async.html">logger configuration is not async</a>), it has to
- * offload publications to another {@link Executor} <b>after</b> capturing timing of events. If blocking code is
- * executed inside callbacks without offloading, it will negatively impact {@link IoExecutor}.
+ * Implementation of this observer <b>must</b> be non-blocking. If the consumer of events may block (uses a blocking
+ * library or <a href="https://logging.apache.org/log4j/2.x/manual/async.html">logger configuration is not async</a>),
+ * it has to offload publications to another {@link Executor} <b>after</b> capturing timing of events. If blocking code
+ * is executed inside callbacks without offloading, it will negatively impact {@link IoExecutor} and overall performance
+ * of the application.
  * <p>
  * To install this observer for the server use {@link HttpServerBuilder#lifecycleObserver(HttpLifecycleObserver)}, for
  * the client use {@link SingleAddressHttpClientBuilder#appendClientFilter(StreamingHttpClientFilterFactory)} with
