@@ -281,7 +281,7 @@ public final class HttpPredicateRouterBuilder implements RouteStarter {
 
         private RouteStarter thenRouteTo0(final StreamingHttpService route, final HttpExecutionStrategy routeStrategy) {
             assert predicate != null;
-            routes.add(new Route(predicate, route, routeStrategy));
+            routes.add(new Route(predicate, route, null == strategy ? null : routeStrategy));
             // Reset shared state since we have finished current route construction
             predicate = null;
             strategy = null;
