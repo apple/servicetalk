@@ -16,7 +16,6 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.LoadBalancer;
-import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TerminalSignalConsumer;
@@ -73,7 +72,10 @@ final class LoadBalancedStreamingHttpClient implements FilterableStreamingHttpCl
         // following the LoadBalancer API which this Client depends upon to ensure the concurrent request count state is
         // correct.
         return loadBalancer.selectConnection(SELECTOR_FOR_REQUEST, request.context()).flatMap(c -> {
-                final Consumer<ConnectionInfo> onConnectionSelected = AsyncContext.get(ON_CONNECTION_SELECTED_CONSUMER);
+                // Do not remove ON_CONNECTION_SELECTED_CONSUMER from the context to track new connection selections for
+                // retries and redirects.
+                final Consumer<ConnectionInfo> onConnectionSelected = request.context()
+                        .get(ON_CONNECTION_SELECTED_CONSUMER);
                 if (onConnectionSelected != null) {
                     onConnectionSelected.accept(c.connectionContext());
                 }
