@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021-2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,17 +17,19 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.internal.ThreadInterruptingCancellable;
 
+import java.util.concurrent.Callable;
+
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnComplete;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnError;
 import static java.lang.Thread.currentThread;
 import static java.util.Objects.requireNonNull;
 
-final class RunnableCompletable extends AbstractSynchronousCompletable {
-    private final Runnable runnable;
+final class CallableCompletable extends AbstractSynchronousCompletable {
+    private final Callable<Void> callable;
 
-    RunnableCompletable(final Runnable runnable) {
-        this.runnable = requireNonNull(runnable);
+    CallableCompletable(final Callable<Void> callable) {
+        this.callable = requireNonNull(callable);
     }
 
     @Override
@@ -41,14 +43,14 @@ final class RunnableCompletable extends AbstractSynchronousCompletable {
         }
 
         try {
-            runnable.run();
+            callable.call();
         } catch (Throwable cause) {
             cancellable.setDone(cause);
             safeOnError(subscriber, cause);
             return;
         }
         // It is safe to set this outside the scope of the try/catch above because we don't do any blocking
-        // operations which may be interrupted between the completion of the blockingHttpService call and
+        // operations which may be interrupted between the completion of the Callable call and
         // here.
         cancellable.setDone();
         safeOnComplete(subscriber);

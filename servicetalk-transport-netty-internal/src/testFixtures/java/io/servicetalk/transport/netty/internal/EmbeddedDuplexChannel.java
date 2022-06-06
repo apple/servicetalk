@@ -45,6 +45,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nullable;
 
 import static io.netty.channel.ChannelOption.ALLOW_HALF_CLOSURE;
+import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
 
 /**
  * {@link EmbeddedChannel} that implements {@link DuplexChannel}.
@@ -313,7 +314,7 @@ public final class EmbeddedDuplexChannel extends EmbeddedChannel implements Dupl
         Throwable shutdownInputCause = shutdownInputFuture.cause();
         if (shutdownOutputCause != null) {
             if (shutdownInputCause != null) {
-                shutdownOutputCause.addSuppressed(shutdownInputCause);
+                addSuppressed(shutdownOutputCause, shutdownInputCause);
             }
             promise.setFailure(shutdownOutputCause);
         } else if (shutdownInputCause != null) {

@@ -128,6 +128,15 @@ final class BiHttpLifecycleObserver implements HttpLifecycleObserver {
         }
 
         @Override
+        public void onRequestDataRequested(final long n) {
+            try {
+                first.onRequestDataRequested(n);
+            } finally {
+                second.onRequestDataRequested(n);
+            }
+        }
+
+        @Override
         public void onRequestData(final Buffer data) {
             try {
                 first.onRequestData(data);
@@ -181,6 +190,15 @@ final class BiHttpLifecycleObserver implements HttpLifecycleObserver {
         private BiHttpResponseObserver(final HttpResponseObserver first, final HttpResponseObserver second) {
             this.first = requireNonNull(first);
             this.second = requireNonNull(second);
+        }
+
+        @Override
+        public void onResponseDataRequested(final long n) {
+            try {
+                first.onResponseDataRequested(n);
+            } finally {
+                second.onResponseDataRequested(n);
+            }
         }
 
         @Override

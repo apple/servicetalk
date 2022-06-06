@@ -94,6 +94,12 @@ final class BiTransportObserver implements TransportObserver {
         }
 
         @Override
+        public void connectionWritabilityChanged(final boolean isWritable) {
+            first.connectionWritabilityChanged(isWritable);
+            second.connectionWritabilityChanged(isWritable);
+        }
+
+        @Override
         public void connectionClosed(final Throwable error) {
             first.connectionClosed(error);
             second.connectionClosed(error);

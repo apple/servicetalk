@@ -36,6 +36,7 @@ include "servicetalk-annotations",
         "servicetalk-data-jackson-jersey",
         "servicetalk-data-protobuf-jersey",
         "servicetalk-data-protobuf",
+        "servicetalk-dependencies",
         "servicetalk-dns-discovery-netty",
         "servicetalk-encoding-api",
         "servicetalk-encoding-api-internal",
@@ -50,6 +51,7 @@ include "servicetalk-annotations",
         "servicetalk-examples:grpc:execution-strategy",
         "servicetalk-examples:grpc:observer",
         "servicetalk-examples:grpc:health",
+        "servicetalk-examples:grpc:keepalive",
         "servicetalk-examples:http:helloworld",
         "servicetalk-examples:http:mutual-tls",
         "servicetalk-examples:http:redirects",
@@ -117,6 +119,7 @@ project(":servicetalk-examples:grpc:errors").name = "servicetalk-examples-grpc-e
 project(":servicetalk-examples:grpc:execution-strategy").name = "servicetalk-examples-grpc-execution-strategy"
 project(":servicetalk-examples:grpc:observer").name = "servicetalk-examples-grpc-observer"
 project(":servicetalk-examples:grpc:health").name = "servicetalk-examples-grpc-health"
+project(":servicetalk-examples:grpc:keepalive").name = "servicetalk-examples-grpc-keepalive"
 project(":servicetalk-examples:http:http2").name = "servicetalk-examples-http-http2"
 project(":servicetalk-examples:http:helloworld").name = "servicetalk-examples-http-helloworld"
 project(":servicetalk-examples:http:debugging").name = "servicetalk-examples-http-debugging"

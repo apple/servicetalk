@@ -23,6 +23,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
 import static java.util.Objects.requireNonNull;
 
 final class OnErrorResumeSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
@@ -81,8 +82,7 @@ final class OnErrorResumeSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
             try {
                 next = !resubscribed && predicate.test(throwable) ? requireNonNull(nextFactory.apply(throwable)) : null;
             } catch (Throwable t) {
-                t.addSuppressed(throwable);
-                subscriber.onError(t);
+                subscriber.onError(addSuppressed(t, throwable));
                 return;
             }
 

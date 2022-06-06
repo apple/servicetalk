@@ -57,4 +57,35 @@
     <Class name="io.servicetalk.concurrent.api.AsyncContext"/>
     <Bug pattern="NP_NONNULL_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR"/>
   </Match>
+
+  <Match>
+    <Class name="io.servicetalk.concurrent.api.AutoCloseables"/>
+    <Method name="closeGracefully"/>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.concurrent.api.CompositeCloseable"/>
+    <Method name="close"/>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.concurrent.api.ContextPreservingCallable"/>
+    <Method name="call"/>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.concurrent.api.ContextPreservingCallable"/>
+    <Method name="slowPath"/>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.concurrent.api.Completable"/>
+    <Method name="lambda$fromRunnable$4"/>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.concurrent.api.ScanWithMapper"/>
+    <Method name="mapOnError"/>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_THROWABLE"/>
+  </Match>
 </FindBugsFilter>

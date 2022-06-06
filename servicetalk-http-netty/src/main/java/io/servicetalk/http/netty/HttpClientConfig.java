@@ -22,9 +22,9 @@ import io.servicetalk.transport.api.DelegatingClientSslConfig;
 import java.util.List;
 import javax.annotation.Nullable;
 
-import static io.netty.util.NetUtil.isValidIpV4Address;
-import static io.netty.util.NetUtil.isValidIpV6Address;
 import static io.servicetalk.http.netty.HttpServerConfig.httpAlpnProtocols;
+import static io.servicetalk.utils.internal.NetworkUtils.isValidIpV4Address;
+import static io.servicetalk.utils.internal.NetworkUtils.isValidIpV6Address;
 
 final class HttpClientConfig {
 

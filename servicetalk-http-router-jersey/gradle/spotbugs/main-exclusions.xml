@@ -54,4 +54,10 @@
     <Bug pattern="NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE"/>
     <Local name="timeoutHandler"/>
   </Match>
+
+  <Match>
+    <Class name="io.servicetalk.http.router.jersey.EndpointEnhancingRequestFilter$AbstractWrappedEndpoint"/>
+    <Method name="lambda$callOriginalEndpoint$4"/>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
 </FindBugsFilter>

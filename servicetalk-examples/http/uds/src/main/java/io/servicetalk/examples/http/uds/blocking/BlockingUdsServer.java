@@ -24,7 +24,7 @@ import static io.servicetalk.examples.http.uds.blocking.UdsUtils.udsAddress;
 import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 
 /**
- * <a href="http://man7.org/linux/man-pages/man7/unix.7.html">AF_UNIX socket</a> server example.
+ * <a href="https://man7.org/linux/man-pages/man7/unix.7.html">AF_UNIX socket</a> server example.
  */
 public final class BlockingUdsServer {
     public static void main(String[] args) throws Exception {

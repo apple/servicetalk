@@ -27,4 +27,27 @@
     <Method name="&lt;init&gt;"/>
     <Bug pattern="EI_EXPOSE_REP2"/>
   </Match>
+  <Match>
+    <Class name="io.servicetalk.concurrent.internal.AbstractCloseableIterable"/>
+    <Method name="closeIterator"/>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.concurrent.internal.AbstractCloseableIterable$1"/>
+    <Method name="close"/>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.concurrent.internal.AutoClosableUtils"/>
+    <Method name="closeAndReThrowUnchecked"/>
+    <Bug pattern="THROWS_METHOD_THROWS_RUNTIMEEXCEPTION"/>
+  </Match>
+  <Match>
+    <Or>
+      <Class name="io.servicetalk.concurrent.internal.BlockingIterables$1"/>
+      <Class name="io.servicetalk.concurrent.internal.BlockingIterables$2"/>
+    </Or>
+    <Method name="close"/>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
 </FindBugsFilter>

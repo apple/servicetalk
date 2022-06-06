@@ -94,7 +94,7 @@ public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<
     SingleAddressHttpClientBuilder<U, R> protocols(HttpProtocolConfig... protocols);
 
     /**
-     * Configures automatically setting {@code Host} headers by inferring from the address or {@link HttpMetaData}.
+     * Configures automatically setting {@code Host} headers by inferring from the address.
      * <p>
      * When {@code false} is passed, this setting disables the default filter such that no {@code Host} header will be
      * manipulated.

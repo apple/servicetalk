@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021-2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,6 @@ import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnError;
-import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
 import static io.servicetalk.http.api.DefaultHttpExecutionStrategy.OFFLOAD_RECEIVE_META_STRATEGY;
 import static io.servicetalk.http.api.DefaultPayloadInfo.forTransportReceive;
 import static io.servicetalk.http.api.HeaderUtils.hasContentLength;
@@ -154,12 +153,18 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
 
     @Override
     public Completable closeAsync() {
-        return blockingToCompletable(original::close);
+        return Completable.fromCallable(() -> {
+            original.close();
+            return null;
+        });
     }
 
     @Override
     public Completable closeAsyncGracefully() {
-        return blockingToCompletable(original::closeGracefully);
+        return Completable.fromCallable(() -> {
+            original.closeGracefully();
+            return null;
+        });
     }
 
     private static final class BufferHttpPayloadWriter implements HttpPayloadWriter<Buffer> {

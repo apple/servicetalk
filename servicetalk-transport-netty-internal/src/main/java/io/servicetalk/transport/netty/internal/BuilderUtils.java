@@ -39,7 +39,6 @@ import io.netty.channel.unix.DomainSocketAddress;
 import io.netty.incubator.channel.uring.IOUringDatagramChannel;
 import io.netty.incubator.channel.uring.IOUringServerSocketChannel;
 import io.netty.incubator.channel.uring.IOUringSocketChannel;
-import io.netty.util.NetUtil;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -51,6 +50,7 @@ import java.net.UnknownHostException;
 import javax.annotation.Nullable;
 
 import static io.netty.util.NetUtil.createByteArrayFromIpAddressString;
+import static io.netty.util.NetUtil.toAddressString;
 import static io.servicetalk.transport.netty.internal.NativeTransportUtils.useEpoll;
 import static io.servicetalk.transport.netty.internal.NativeTransportUtils.useIoUring;
 import static io.servicetalk.transport.netty.internal.NativeTransportUtils.useKQueue;
@@ -203,9 +203,9 @@ public final class BuilderUtils {
             if (inetAddress == null) {
                 return address.toString();
             } else if (inetAddress instanceof Inet6Address) {
-                return '[' + NetUtil.toAddressString(inetAddress) + "]:" + inetSocketAddress.getPort();
+                return '[' + toAddressString(inetAddress) + "]:" + inetSocketAddress.getPort();
             } else {
-                return NetUtil.toAddressString(inetAddress) + ':' + inetSocketAddress.getPort();
+                return toAddressString(inetAddress) + ':' + inetSocketAddress.getPort();
             }
         }
         return address.toString();

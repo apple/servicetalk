@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+  ~ Copyright © 2018, 2022 Apple Inc. and the ServiceTalk project authors
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -53,5 +53,82 @@
   <Match>
     <Class name="io.servicetalk.http.netty.RetryingHttpRequesterFilter$HttpResponseException"/>
     <Bug pattern="EI_EXPOSE_REP2"/>
+  </Match>
+
+  <Match>
+    <Class name="io.servicetalk.http.netty.AlpnChannelSingle$AlpnChannelHandler"/>
+    <Method name="handlerAdded"/>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.netty.DefaultPartitionedHttpClientBuilder$NoopPartitionClient"/>
+    <Bug pattern="THROWS_METHOD_THROWS_RUNTIMEEXCEPTION"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.netty.H2ClientParentConnectionContext$DefaultH2ClientParentConnection"/>
+    <Or>
+      <Method name="lambda$null$0"/>
+      <Method name="lambda$childChannelActive$2"/>
+      <Method name="lambda$cleanupErrorBeforeOpen$0"/>
+      <Method name="lambda$cleanupErrorBeforeOpen$1"/>
+    </Or>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.netty.H2ClientParentConnectionContext$DefaultH2ClientParentConnection$1"/>
+    <Method name="lambda$handleSubscribe$1"/>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.netty.H2ServerParentConnectionContext$1$1"/>
+    <Method name="initChannel"/>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.netty.HeaderUtils$1"/>
+    <Method name="mapOnError"/>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_THROWABLE"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.netty.HttpObjectDecoder"/>
+    <Or>
+      <Method name="decodeLast"/>
+      <Method name="lambda$static$0"/>
+      <Method name="lambda$static$1"/>
+      <Method name="lambda$static$2"/>
+      <Method name="lambda$static$3"/>
+      <Method name="lambda$static$4"/>
+      <Method name="userEventTriggered"/>
+    </Or>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
+  <Match>
+    <Or>
+      <Class name="io.servicetalk.http.netty.HttpRequestDecoder"/>
+      <Class name="io.servicetalk.http.netty.HttpResponseDecoder"/>
+    </Or>
+    <Method name="lambda$static$0"/>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.netty.KeepAliveManager"/>
+    <Or>
+      <Method name="lambda$null$10"/>
+      <Method name="lambda$null$2"/>
+      <Method name="lambda$close0$10"/>
+      <Method name="lambda$close0$11"/>
+      <Method name="lambda$doCloseAsyncGracefully0$8"/>
+      <Method name="lambda$doShutdownOutput$12"/>
+      <Method name="lambda$gracefulCloseWriteSecondGoAway$9"/>
+      <Method name="lambda$new$2"/>
+      <Method name="lambda$new$4"/>
+      <Method name="lambda$trackActiveStream$5"/>
+    </Or>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.netty.SniCompleteChannelSingle$SniCompleteChannelHandler"/>
+    <Method name="handlerAdded"/>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
   </Match>
 </FindBugsFilter>

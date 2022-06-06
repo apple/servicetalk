@@ -16,6 +16,9 @@
 package io.servicetalk.concurrent.internal;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
+
+import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 
 /**
  * Utilities for {@link AutoCloseable}.
@@ -28,12 +31,28 @@ public final class AutoClosableUtils {
     /**
      * Call {@link AutoCloseable#close()} and re-throw any exceptions as an unchecked exception.
      * @param closeable The object to close.
+     * @deprecated Use {@link #closeAndReThrow(AutoCloseable)}.
      */
+    @Deprecated
     public static void closeAndReThrowUnchecked(AutoCloseable closeable) {
         try {
             closeable.close();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         } catch (Exception e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Call {@link AutoCloseable#close()} and re-throw any exception.
+     * @param closeable The object to close.
+     */
+    public static void closeAndReThrow(AutoCloseable closeable) {
+        try {
+            closeable.close();
+        } catch (Exception e) {
+            throwException(e);
         }
     }
 

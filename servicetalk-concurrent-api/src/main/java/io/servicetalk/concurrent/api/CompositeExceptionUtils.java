@@ -17,6 +17,8 @@ package io.servicetalk.concurrent.api;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
+import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
+
 final class CompositeExceptionUtils {
     /**
      * Default to {@code 1} so {@link Throwable#addSuppressed(Throwable)} will not be used by default.
@@ -33,7 +35,7 @@ final class CompositeExceptionUtils {
         if (newSize < 0) {
             updater.set(owner, Integer.MAX_VALUE);
         } else if (newSize < maxDelayedErrors && original != causeToAdd) {
-            original.addSuppressed(causeToAdd);
+            addSuppressed(original, causeToAdd);
         } else {
             updater.decrementAndGet(owner);
         }

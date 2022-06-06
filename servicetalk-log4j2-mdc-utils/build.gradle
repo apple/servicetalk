@@ -17,23 +17,29 @@
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
+  api platform(project(":servicetalk-dependencies"))
+  testImplementation enforcedPlatform(project(":servicetalk-dependencies"))
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
+  testFixturesImplementation platform(project(":servicetalk-dependencies"))
 
-  api "org.apache.logging.log4j:log4j-core:$log4jVersion"
+  api "org.apache.logging.log4j:log4j-api"
 
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-concurrent-api")
   implementation project(":servicetalk-concurrent-internal")
-  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
+  implementation "com.google.code.findbugs:jsr305"
+  implementation "org.apache.logging.log4j:log4j-core"
 
   testImplementation project(":servicetalk-test-resources")
   testImplementation "org.junit.jupiter:junit-jupiter-api"
-  testImplementation "org.slf4j:slf4j-api:$slf4jVersion"
-  testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
+  testImplementation "org.slf4j:slf4j-api"
+  testImplementation "org.hamcrest:hamcrest"
 
-  testFixturesImplementation "com.google.code.findbugs:jsr305:$jsr305Version"
-  testFixturesImplementation "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
-  testFixturesImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
+  testFixturesImplementation "com.google.code.findbugs:jsr305"
+  testFixturesImplementation "org.apache.logging.log4j:log4j-core"
+  testFixturesImplementation "org.hamcrest:hamcrest"
+  testFixturesImplementation "org.slf4j:slf4j-api"
+  testFixturesRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl"
 }
 
 test {

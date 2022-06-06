@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Iterator;
 import java.util.concurrent.TimeoutException;
 
-import static io.servicetalk.concurrent.internal.AutoClosableUtils.closeAndReThrowUnchecked;
+import static io.servicetalk.concurrent.internal.AutoClosableUtils.closeAndReThrow;
 import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
@@ -33,8 +33,15 @@ final class FromIterablePublisher<T> extends AbstractSynchronousPublisher<T> {
 
     private final Iterable<? extends T> iterable;
 
-    FromIterablePublisher(Iterable<? extends T> iterable) {
+    private FromIterablePublisher(Iterable<? extends T> iterable) {
         this.iterable = requireNonNull(iterable);
+    }
+
+    @SuppressWarnings("unchecked")
+    static <T> Publisher<T> fromIterable0(Iterable<? extends T> iterable) {
+        // Unwrap and grab the Publisher directly if possible to avoid conversion layers.
+        return iterable instanceof PublisherAsBlockingIterable ? ((PublisherAsBlockingIterable<T>) iterable).original :
+                new FromIterablePublisher<>(iterable);
     }
 
     @Override
@@ -106,7 +113,7 @@ final class FromIterablePublisher<T> extends AbstractSynchronousPublisher<T> {
         public final void cancel() {
             cleanupForCancel();
             if (iterator instanceof AutoCloseable) {
-                closeAndReThrowUnchecked((AutoCloseable) iterator);
+                closeAndReThrow((AutoCloseable) iterator);
             }
         }
 

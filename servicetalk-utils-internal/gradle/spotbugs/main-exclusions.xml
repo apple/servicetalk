@@ -21,4 +21,22 @@
     <Method name="standardCharsets"/>
     <Bug pattern="MS_EXPOSE_REP"/>
   </Match>
+  <Match>
+    <Class name="io.servicetalk.utils.internal.PlatformDependent"/>
+    <Method name="throwException0"/>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_THROWABLE"/>
+  </Match>
+  <Match>
+    <Or>
+      <Class name="io.servicetalk.utils.internal.PlatformDependent0"/>
+      <Class name="io.servicetalk.utils.internal.ReflectionUtils"/>
+      <Class name="io.servicetalk.utils.internal.ReflectionUtils$MethodHandleFunction"/>
+    </Or>
+    <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_THROWABLE"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.utils.internal.ReflectionUtils"/>
+    <Method name="handleInaccessibleObjectException"/>
+    <Bug pattern="THROWS_METHOD_THROWS_RUNTIMEEXCEPTION"/>
+  </Match>
 </FindBugsFilter>

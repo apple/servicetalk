@@ -17,8 +17,10 @@
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
-  implementation platform("io.netty:netty-bom:$nettyVersion")
+  implementation platform(project(":servicetalk-dependencies"))
+  testImplementation enforcedPlatform(project(":servicetalk-dependencies"))
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
+  testFixturesImplementation platform(project(":servicetalk-dependencies"))
 
   api project(":servicetalk-concurrent-api")
   api project(":servicetalk-logging-api")
@@ -36,10 +38,10 @@ dependencies {
   implementation project(":servicetalk-transport-netty")
   implementation project(":servicetalk-transport-netty-internal")
   implementation project(":servicetalk-utils-internal")
-  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
+  implementation "com.google.code.findbugs:jsr305"
   implementation "io.netty:netty-codec-http"
   implementation "io.netty:netty-codec-http2"
-  implementation "org.slf4j:slf4j-api:$slf4jVersion"
+  implementation "org.slf4j:slf4j-api"
 
   testImplementation testFixtures(project(":servicetalk-buffer-api"))
   testImplementation testFixtures(project(":servicetalk-concurrent-api"))
@@ -68,4 +70,5 @@ dependencies {
   testFixturesImplementation project(":servicetalk-http-utils")
   testFixturesImplementation project(":servicetalk-test-resources")
   testFixturesImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
+  testFixturesRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
 }

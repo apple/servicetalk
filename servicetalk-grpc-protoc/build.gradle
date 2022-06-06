@@ -22,19 +22,20 @@ plugins {
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
+  implementation platform(project(":servicetalk-dependencies"))
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
 
   implementation project(":servicetalk-annotations")
 
-  // runtimeOnly is enough for this module in isolation, but we want transitive modules to include at compile time too.
+  // Needed for the generated classes
   api project(":servicetalk-data-protobuf")
 
-  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
-  implementation "com.google.protobuf:protobuf-java:$protobufVersion"
-  implementation "com.squareup:javapoet:$javaPoetVersion"
+  compileOnly "com.google.code.findbugs:jsr305"
+  compileOnly "com.squareup:javapoet:$javaPoetVersion"
 
   testImplementation project(":servicetalk-grpc-api")
   testImplementation project(":servicetalk-grpc-protobuf")
+  testImplementation "com.squareup:javapoet:$javaPoetVersion"
   testImplementation "org.junit.jupiter:junit-jupiter-api"
   testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
 }
@@ -48,6 +49,8 @@ jar {
 }
 
 shadowJar {
+  // includes javaPoet and Google protobufs
+  configurations = [project.configurations.compileClasspath]
   archiveBaseName = project.name
   classifier = 'all'
 }

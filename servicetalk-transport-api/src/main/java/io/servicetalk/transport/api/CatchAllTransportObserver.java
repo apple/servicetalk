@@ -37,6 +37,7 @@ import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
+import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -103,6 +104,12 @@ final class CatchAllTransportObserver implements TransportObserver {
             return safeReport(() -> observer.multiplexedConnectionEstablished(info), observer,
                     "multiplexed connection established",
                     CatchAllMultiplexedObserver::new, NoopMultiplexedObserver.INSTANCE);
+        }
+
+        @Override
+        public void connectionWritabilityChanged(final boolean isWritable) {
+            safeReport(() -> observer.connectionWritabilityChanged(isWritable), observer,
+                    "connection writability changed");
         }
 
         @Override
@@ -307,7 +314,7 @@ final class CatchAllTransportObserver implements TransportObserver {
         try {
             runnable.run();
         } catch (Throwable unexpected) {
-            unexpected.addSuppressed(original);
+            addSuppressed(unexpected, original);
             LOGGER.warn("Unexpected exception from {} while reporting a {} event", observer, eventName, unexpected);
         }
     }

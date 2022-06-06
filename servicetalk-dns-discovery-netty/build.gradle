@@ -17,7 +17,7 @@
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
-  implementation platform("io.netty:netty-bom:$nettyVersion")
+  implementation platform(project(":servicetalk-dependencies"))
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
 
   api project(":servicetalk-client-api")
@@ -29,9 +29,9 @@ dependencies {
   implementation project(":servicetalk-transport-netty")
   implementation project(":servicetalk-transport-netty-internal")
   implementation project(":servicetalk-utils-internal")
-  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
+  implementation "com.google.code.findbugs:jsr305"
   implementation "io.netty:netty-resolver-dns"
-  implementation "org.slf4j:slf4j-api:$slf4jVersion"
+  implementation "org.slf4j:slf4j-api"
 
   runtimeOnly( group:"io.netty", name:"netty-resolver-dns-native-macos", classifier:"osx-x86_64")
   runtimeOnly( group:"io.netty", name:"netty-resolver-dns-native-macos", classifier:"osx-aarch_64")

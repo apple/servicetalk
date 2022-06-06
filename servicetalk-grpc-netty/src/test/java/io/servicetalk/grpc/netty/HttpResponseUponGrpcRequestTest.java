@@ -49,7 +49,7 @@ final class HttpResponseUponGrpcRequestTest {
         ServerContext serverContext = HttpServers.forAddress(localAddress(0))
                 .protocols(h2Default())
                 .listenAndAwait((ctx, request, responseFactory) ->
-                        succeeded(responseFactory.badRequest().payloadBody(responsePayload, textSerializerUtf8())));
+                        succeeded(responseFactory.ok().payloadBody(responsePayload, textSerializerUtf8())));
 
         client = GrpcClients.forAddress(serverHostAndPort(serverContext))
                 .buildBlocking(new TesterProto.Tester.ClientFactory());
@@ -111,7 +111,7 @@ final class HttpResponseUponGrpcRequestTest {
     }
 
     private static void assertGrpcStatusException(GrpcStatusException grpcStatusException) {
-        assertThat(grpcStatusException.status().code(), is(GrpcStatusCode.INTERNAL));
+        assertThat(grpcStatusException.status().code(), is(GrpcStatusCode.UNKNOWN));
         String description = grpcStatusException.status().description();
         assertThat(description, notNullValue());
         assertThat(description, containsString("invalid content-type: text/plain;"));

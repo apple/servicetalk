@@ -27,6 +27,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.SubscriberApiUtils.unwrapNullUnchecked;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateSubscription;
+import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
 
 abstract class AbstractPubToSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
     private final Publisher<T> source;
@@ -110,7 +111,7 @@ abstract class AbstractPubToSingle<T> extends AbstractNoHandleSubscribeSingle<T>
                     subscriber.onSubscribe(IGNORE_CANCEL);
                 } catch (Throwable t) {
                     if (terminal instanceof Throwable) {
-                        ((Throwable) terminal).addSuppressed(t);
+                        addSuppressed((Throwable) terminal, t);
                     } else {
                         LOGGER.warn("Unexpected exception from onSubscribe from subscriber {}. Discarding result {}.",
                                 subscriber, terminal, t);

@@ -134,7 +134,7 @@ final class FormUrlEncodedSerializer implements SerializerDeserializer<Map<Strin
         try {
             return URLEncoder.encode(value, charset.name()).getBytes(charset);
         } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
+            throw new IllegalStateException("URLDecoder failed to find Charset: " + charset, e);
         }
     }
 }

@@ -35,6 +35,7 @@ import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseFactory;
 import io.servicetalk.http.api.HttpResponseMetaData;
+import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpSerializer;
 import io.servicetalk.http.api.StatelessTrailersTransformer;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -77,7 +78,11 @@ import static io.servicetalk.grpc.api.GrpcHeaderValues.GRPC_CONTENT_TYPE_PROTO_S
 import static io.servicetalk.grpc.api.GrpcHeaderValues.SERVICETALK_USER_AGENT;
 import static io.servicetalk.grpc.api.GrpcStatusCode.CANCELLED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.DEADLINE_EXCEEDED;
-import static io.servicetalk.grpc.api.GrpcStatusCode.INTERNAL;
+import static io.servicetalk.grpc.api.GrpcStatusCode.FAILED_PRECONDITION;
+import static io.servicetalk.grpc.api.GrpcStatusCode.INVALID_ARGUMENT;
+import static io.servicetalk.grpc.api.GrpcStatusCode.PERMISSION_DENIED;
+import static io.servicetalk.grpc.api.GrpcStatusCode.UNAUTHENTICATED;
+import static io.servicetalk.grpc.api.GrpcStatusCode.UNAVAILABLE;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNIMPLEMENTED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNKNOWN;
 import static io.servicetalk.grpc.api.GrpcStatusCode.fromHttp2ErrorCode;
@@ -89,6 +94,19 @@ import static io.servicetalk.http.api.HttpHeaderNames.TE;
 import static io.servicetalk.http.api.HttpHeaderNames.USER_AGENT;
 import static io.servicetalk.http.api.HttpHeaderValues.TRAILERS;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
+import static io.servicetalk.http.api.HttpResponseStatus.BAD_GATEWAY;
+import static io.servicetalk.http.api.HttpResponseStatus.EXPECTATION_FAILED;
+import static io.servicetalk.http.api.HttpResponseStatus.FORBIDDEN;
+import static io.servicetalk.http.api.HttpResponseStatus.GATEWAY_TIMEOUT;
+import static io.servicetalk.http.api.HttpResponseStatus.NOT_FOUND;
+import static io.servicetalk.http.api.HttpResponseStatus.NOT_IMPLEMENTED;
+import static io.servicetalk.http.api.HttpResponseStatus.OK;
+import static io.servicetalk.http.api.HttpResponseStatus.PRECONDITION_FAILED;
+import static io.servicetalk.http.api.HttpResponseStatus.REQUEST_TIMEOUT;
+import static io.servicetalk.http.api.HttpResponseStatus.SERVICE_UNAVAILABLE;
+import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.CLIENT_ERROR_4XX;
+import static io.servicetalk.http.api.HttpResponseStatus.TOO_MANY_REQUESTS;
+import static io.servicetalk.http.api.HttpResponseStatus.UNAUTHORIZED;
 import static java.lang.String.valueOf;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
@@ -263,10 +281,39 @@ final class GrpcUtils {
                 : new GrpcStatusException(toGrpcStatus(cause), () -> null);
     }
 
+    private static void validateStatusCode(HttpResponseStatus status) {
+        final int statusCode = status.code();
+        if (statusCode == OK.code()) {
+            return;
+        }
+        final GrpcStatusCode grpcStatusCode;
+        if (statusCode == BAD_GATEWAY.code() || statusCode == SERVICE_UNAVAILABLE.code() ||
+                statusCode == GATEWAY_TIMEOUT.code() || statusCode == TOO_MANY_REQUESTS.code()) {
+            grpcStatusCode = UNAVAILABLE;
+        } else if (statusCode == UNAUTHORIZED.code()) {
+            grpcStatusCode = UNAUTHENTICATED;
+        } else if (statusCode == FORBIDDEN.code()) {
+            grpcStatusCode = PERMISSION_DENIED;
+        } else if (statusCode == NOT_FOUND.code() || statusCode == NOT_IMPLEMENTED.code()) {
+            grpcStatusCode = UNIMPLEMENTED;
+        } else if (statusCode == REQUEST_TIMEOUT.code()) {
+            grpcStatusCode = DEADLINE_EXCEEDED;
+        } else if (statusCode == PRECONDITION_FAILED.code() || statusCode == EXPECTATION_FAILED.code()) {
+            grpcStatusCode = FAILED_PRECONDITION;
+        } else if (CLIENT_ERROR_4XX.contains(statusCode)) {
+            grpcStatusCode = INVALID_ARGUMENT;
+        } else {
+            grpcStatusCode = UNKNOWN;
+        }
+        throw GrpcStatusException.of(Status.newBuilder().setCode(grpcStatusCode.value())
+                .setMessage("HTTP status code: " + status).build());
+    }
+
     static <Resp> Publisher<Resp> validateResponseAndGetPayload(final StreamingHttpResponse response,
                                                                 final CharSequence expectedContentType,
                                                                 final BufferAllocator allocator,
                                                                 final GrpcStreamingDeserializer<Resp> deserializer) {
+        validateStatusCode(response.status()); // gRPC protocol requires 200, don't look further if this check fails.
         // In case of an empty response, gRPC-server may return only one HEADER frame with endStream=true. Our
         // HTTP1-based implementation translates them into response headers so we need to look for a grpc-status in both
         // headers and trailers. Since this is streaming response and we have the headers now, we check for the
@@ -293,6 +340,7 @@ final class GrpcUtils {
                                                      final CharSequence expectedContentType,
                                                      final BufferAllocator allocator,
                                                      final GrpcDeserializer<Resp> deserializer) {
+        validateStatusCode(response.status()); // gRPC protocol requires 200, don't look further if this check fails.
         // In case of an empty response, gRPC-server may return only one HEADER frame with endStream=true. Our
         // HTTP1-based implementation translates them into response headers so we need to look for a grpc-status in both
         // headers and trailers.
@@ -320,7 +368,7 @@ final class GrpcUtils {
         if (!contentEqualsIgnoreCase(requestContentType, expectedContentType) &&
                 (requestContentType == null ||
                     !regionMatches(requestContentType, true, 0, APPLICATION_GRPC, 0, APPLICATION_GRPC.length()))) {
-            throw GrpcStatusException.of(Status.newBuilder().setCode(INTERNAL.value())
+            throw GrpcStatusException.of(Status.newBuilder().setCode(UNKNOWN.value())
                     .setMessage("invalid content-type: " + requestContentType).build());
         }
     }

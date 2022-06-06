@@ -78,6 +78,10 @@ final class NoopTransportObserver implements TransportObserver {
         }
 
         @Override
+        public void connectionWritabilityChanged(final boolean isWritable) {
+        }
+
+        @Override
         public void connectionClosed(final Throwable error) {
         }
 

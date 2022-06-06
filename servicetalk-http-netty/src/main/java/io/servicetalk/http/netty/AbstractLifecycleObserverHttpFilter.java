@@ -49,6 +49,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.context.api.ContextMap.Key.newKey;
+import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
 import static java.util.Objects.requireNonNull;
 
 abstract class AbstractLifecycleObserverHttpFilter implements HttpExecutionStrategyInfluencer {
@@ -103,7 +104,9 @@ abstract class AbstractLifecycleObserverHttpFilter implements HttpExecutionStrat
                                 return NoopSubscriber.INSTANCE;
                             });
                         }
-                        return p.beforeOnNext(item -> {
+                        return p.beforeRequest(n -> safeReport(onRequest::onRequestDataRequested, n, onRequest,
+                                "onRequestDataRequested"))
+                        .beforeOnNext(item -> {
                             if (item instanceof Buffer) {
                                 safeReport(onRequest::onRequestData, (Buffer) item, onRequest, "onRequestData");
                             } else if (item instanceof HttpHeaders) {
@@ -150,7 +153,9 @@ abstract class AbstractLifecycleObserverHttpFilter implements HttpExecutionStrat
                     // needs to be applied last.
                     .map(resp -> {
                         exchangeContext.onResponse(resp);
-                        return resp.transformMessageBody(p -> p.beforeOnNext(exchangeContext::onResponseBody));
+                        return resp.transformMessageBody(p -> p
+                                .beforeRequest(exchangeContext::onResponseDataRequested)
+                                .beforeOnNext(exchangeContext::onResponseBody));
                     }).shareContextOnSubscribe();
         });
     }
@@ -189,6 +194,11 @@ abstract class AbstractLifecycleObserverHttpFilter implements HttpExecutionStrat
         void onResponse(HttpResponseMetaData responseMetaData) {
             this.onResponse = safeReport(onExchange::onResponse, responseMetaData, onExchange, "onResponse",
                     NoopHttpLifecycleObserver.NoopHttpResponseObserver.INSTANCE);
+        }
+
+        void onResponseDataRequested(final long n) {
+            assert onResponse != null;
+            safeReport(onResponse::onResponseDataRequested, n, onResponse, "onResponseDataRequested");
         }
 
         void onResponseBody(final Object item) {
@@ -288,7 +298,7 @@ abstract class AbstractLifecycleObserverHttpFilter implements HttpExecutionStrat
         try {
             onError.accept(t);
         } catch (Throwable unexpected) {
-            unexpected.addSuppressed(t);
+            addSuppressed(unexpected, t);
             LOGGER.warn("Unexpected exception from {} while reporting a '{}' event", observer, eventName, unexpected);
         }
     }

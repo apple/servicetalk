@@ -79,6 +79,10 @@ final class NoopHttpLifecycleObserver implements HttpLifecycleObserver {
         }
 
         @Override
+        public void onRequestDataRequested(final long n) {
+        }
+
+        @Override
         public void onRequestData(final Buffer data) {
         }
 
@@ -105,6 +109,10 @@ final class NoopHttpLifecycleObserver implements HttpLifecycleObserver {
 
         private NoopHttpResponseObserver() {
             // Singleton
+        }
+
+        @Override
+        public void onResponseDataRequested(final long n) {
         }
 
         @Override

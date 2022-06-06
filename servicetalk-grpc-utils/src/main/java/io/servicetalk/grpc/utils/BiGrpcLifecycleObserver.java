@@ -129,6 +129,15 @@ final class BiGrpcLifecycleObserver implements GrpcLifecycleObserver {
         }
 
         @Override
+        public void onRequestDataRequested(final long n) {
+            try {
+                first.onRequestDataRequested(n);
+            } finally {
+                second.onRequestDataRequested(n);
+            }
+        }
+
+        @Override
         public void onRequestData(final Buffer data) {
             try {
                 first.onRequestData(data);
@@ -182,6 +191,15 @@ final class BiGrpcLifecycleObserver implements GrpcLifecycleObserver {
         private BiGrpcResponseObserver(final GrpcResponseObserver first, final GrpcResponseObserver second) {
             this.first = requireNonNull(first);
             this.second = requireNonNull(second);
+        }
+
+        @Override
+        public void onResponseDataRequested(final long n) {
+            try {
+                first.onResponseDataRequested(n);
+            } finally {
+                second.onResponseDataRequested(n);
+            }
         }
 
         @Override

@@ -30,6 +30,7 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
+import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -173,10 +174,10 @@ public final class TestPublisher<T> extends Publisher<T> implements PublisherSou
 
     private Subscriber<? super T> checkSubscriberAndExceptions() {
         if (!exceptions.isEmpty()) {
-            final RuntimeException exception = new RuntimeException("Unexpected exception(s) encountered",
+            final AssertionError exception = new AssertionError("Unexpected exception(s) encountered",
                     exceptions.get(0));
             for (int i = 1; i < exceptions.size(); i++) {
-                exception.addSuppressed(exceptions.get(i));
+                addSuppressed(exception, exceptions.get(i));
             }
             throw exception;
         }
@@ -421,7 +422,7 @@ public final class TestPublisher<T> extends Publisher<T> implements PublisherSou
                 Thread.currentThread().interrupt();
                 return throwException(e);
             } catch (ExecutionException e) {
-                throw new RuntimeException(e);
+                return throwException(e);
             }
         }
     }

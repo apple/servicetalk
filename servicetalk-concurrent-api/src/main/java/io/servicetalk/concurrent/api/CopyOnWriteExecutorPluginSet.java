@@ -175,7 +175,7 @@ final class CopyOnWriteExecutorPluginSet implements ExecutorPlugin {
                     case 2:
                         return new TwoExecutorPluginSet(plugins[0], plugins[1]);
                     default:
-                        throw new RuntimeException("programming error. i: " + i);
+                        throw new IllegalStateException("programming error. i: " + i);
                 }
             }
             ExecutorPlugin[] newArray = new ExecutorPlugin[plugins.length - 1];

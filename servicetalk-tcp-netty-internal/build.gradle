@@ -17,9 +17,11 @@
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
-  testImplementation enforcedPlatform("io.netty:netty-bom:$nettyVersion")
+  implementation platform(project(":servicetalk-dependencies"))
+
+  testImplementation enforcedPlatform(project(":servicetalk-dependencies"))
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
-  testFixturesImplementation platform("io.netty:netty-bom:$nettyVersion")
+  testFixturesImplementation platform(project(":servicetalk-dependencies"))
   testFixturesImplementation platform("org.junit:junit-bom:$junit5Version")
 
   api project(":servicetalk-client-api")
@@ -32,8 +34,8 @@ dependencies {
   implementation project(":servicetalk-concurrent-internal")
   implementation project(":servicetalk-logging-slf4j-internal")
   implementation project(":servicetalk-transport-netty")
-  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
-  implementation "org.slf4j:slf4j-api:$slf4jVersion"
+  implementation "com.google.code.findbugs:jsr305"
+  implementation "org.slf4j:slf4j-api"
 
   testImplementation testFixtures(project(":servicetalk-concurrent-api"))
   testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
@@ -46,7 +48,7 @@ dependencies {
 
   testFixturesImplementation testFixtures(project(":servicetalk-concurrent-api"))
   testFixturesImplementation testFixtures(project(":servicetalk-transport-netty-internal"))
-  testFixturesImplementation "com.google.code.findbugs:jsr305:$jsr305Version"
+  testFixturesImplementation "com.google.code.findbugs:jsr305"
   testFixturesImplementation "io.netty:netty-transport-native-epoll"
   testFixturesRuntimeOnly( group:"io.netty", name:"netty-transport-native-epoll", classifier:"linux-x86_64")
   testFixturesRuntimeOnly( group:"io.netty", name:"netty-transport-native-epoll", classifier:"linux-aarch_64")
@@ -56,5 +58,5 @@ dependencies {
   testFixturesImplementation "org.junit.jupiter:junit-jupiter-api"
   testFixturesImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
   testFixturesImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
-  testFixturesImplementation "org.slf4j:slf4j-api:$slf4jVersion"
+  testFixturesImplementation "org.slf4j:slf4j-api"
 }

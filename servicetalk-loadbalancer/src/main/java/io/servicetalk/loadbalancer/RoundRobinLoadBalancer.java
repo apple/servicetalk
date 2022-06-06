@@ -25,6 +25,7 @@ import io.servicetalk.concurrent.PublisherSource.Processor;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.AsyncCloseable;
+import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Executor;
@@ -579,7 +580,7 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
                     final ActiveState nextState = previousState.forNextFailedConnection();
                     if (connStateUpdater.compareAndSet(this, previous,
                             new ConnState(previous.connections, nextState))) {
-                        LOGGER.info("Load balancer for {}: failed to open a new connection to the host on address {}" +
+                        LOGGER.debug("Load balancer for {}: failed to open a new connection to the host on address {}" +
                                         " {} time(s) ({} consecutive failures will trigger health-checking).",
                                 targetResource, address, nextState.failedConnections,
                                 healthCheckConfig.failedThreshold, cause);
@@ -592,7 +593,7 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
                 final HealthCheck<Addr, C> healthCheck = new HealthCheck<>(connectionFactory, this, cause);
                 final ConnState nextState = new ConnState(previous.connections, healthCheck);
                 if (connStateUpdater.compareAndSet(this, previous, nextState)) {
-                    LOGGER.warn("Load balancer for {}: failed to open a new connection to the host on address {} " +
+                    LOGGER.info("Load balancer for {}: failed to open a new connection to the host on address {} " +
                                     "{} time(s) in a row. Error counting threshold reached, marking this host as " +
                                     "UNHEALTHY for the selection algorithm and triggering background health-checking.",
                             targetResource, address, healthCheckConfig.failedThreshold, cause);
@@ -777,6 +778,8 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
                                 host.healthCheckConfig.healthCheckInterval,
                                 host.healthCheckConfig.executor)
                                 .apply(0, originalCause)
+                                // Remove any state from async context
+                                .beforeOnSubscribe(__ -> AsyncContext.clear())
                                 .concat(connectionFactory.newConnection(host.address, null, null)
                                         // There is no risk for StackOverflowError because result of each connection
                                         // attempt will be invoked on IoExecutor as a new task.

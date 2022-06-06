@@ -35,7 +35,7 @@ import java.util.Map;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 
-import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
+import static io.servicetalk.concurrent.api.internal.BlockingUtils.blockingInvocation;
 
 /**
  * A builder for building HTTP Servers.

@@ -22,6 +22,7 @@ import io.servicetalk.context.api.ContextMap;
 
 import javax.annotation.Nullable;
 
+import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -104,8 +105,7 @@ final class RetryWhenSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
             try {
                 retryDecider = requireNonNull(retrySingle.shouldRetry.apply(++retryCount, t));
             } catch (Throwable cause) {
-                cause.addSuppressed(t);
-                target.onError(cause);
+                target.onError(addSuppressed(cause, t));
                 return;
             }
 

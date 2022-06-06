@@ -46,6 +46,7 @@ import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
+import io.servicetalk.http.utils.HostHeaderHttpRequesterFilter;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ClientSslConfig;
 import io.servicetalk.transport.api.ExecutionStrategy;
@@ -69,6 +70,8 @@ import static io.netty.util.NetUtil.toSocketAddressString;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoffDeltaJitter;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.netty.AlpnIds.HTTP_2;
@@ -242,6 +245,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                 connectionFactoryStrategy = connectionFactoryStrategy.merge(proxy.requiredOffloads());
             }
 
+            final HttpExecutionStrategy builderStrategy = executionContext.executionStrategy();
             // closed by the LoadBalancer
             final ConnectionFactory<R, LoadBalancedStreamingHttpConnection> connectionFactory;
             final StreamingHttpRequestResponseFactory reqRespFactory = defaultReqRespFactory(roConfig,
@@ -302,8 +306,19 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                     currClientFilterFactory.create(lbClient, lb.eventStream(), ctx.sdStatus) :
                     lbClient;
 
-            LOGGER.debug("Client for {} created with base strategy {} → computed strategy {}",
-                    targetAddress(ctx), builderExecutionContext.executionStrategy(), computedStrategy);
+            if (builderStrategy != defaultStrategy() &&
+                    builderStrategy.missing(computedStrategy) != offloadNone()) {
+                LOGGER.info("Client for {} created with the builder strategy {} but resulting computed strategy is " +
+                                "{}. One of the filters enforces additional offloading. To find out what filter is " +
+                                "it, enable debug level logging for {}.", targetAddress(ctx), builderStrategy,
+                        computedStrategy, ClientStrategyInfluencerChainBuilder.class);
+            } else if (builderStrategy == computedStrategy) {
+                LOGGER.debug("Client for {} created with the execution strategy {}.",
+                        targetAddress(ctx), computedStrategy);
+            } else {
+                LOGGER.debug("Client for {} created with the builder strategy {}, resulting computed strategy is {}.",
+                        targetAddress(ctx), builderStrategy, computedStrategy);
+            }
             return new FilterableClientToClient(wrappedClient, executionContext);
         } catch (final Throwable t) {
             closeOnException.closeAsync().subscribe();
@@ -457,13 +472,22 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         requireNonNull(factory);
         connectionFilterFactory = appendConnectionFilter(connectionFilterFactory, factory);
         strategyComputation.add(factory);
+        ifHostHeaderHttpRequesterFilter(factory);
         return this;
     }
 
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> appendConnectionFilter(
             final Predicate<StreamingHttpRequest> predicate, final StreamingHttpConnectionFilterFactory factory) {
-        return appendConnectionFilter(toConditionalConnectionFilterFactory(predicate, factory));
+        appendConnectionFilter(toConditionalConnectionFilterFactory(predicate, factory));
+        ifHostHeaderHttpRequesterFilter(factory);
+        return this;
+    }
+
+    private void ifHostHeaderHttpRequesterFilter(final Object filter) {
+        if (filter instanceof HostHeaderHttpRequesterFilter) {
+            addHostHeaderFallbackFilter = false;
+        }
     }
 
     // Use another method to keep final references and avoid StackOverflowError
@@ -500,7 +524,9 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
             ensureSingleRetryFilter();
             retryingHttpRequesterFilter = (RetryingHttpRequesterFilter) factory;
         }
-        return appendClientFilter(toConditionalClientFilterFactory(predicate, factory));
+        appendClientFilter(toConditionalClientFilterFactory(predicate, factory));
+        ifHostHeaderHttpRequesterFilter(factory);
+        return this;
     }
 
     private void ensureSingleRetryFilter() {
@@ -527,6 +553,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         }
         clientFilterFactory = appendFilter(clientFilterFactory, factory);
         strategyComputation.add(factory);
+        ifHostHeaderHttpRequesterFilter(factory);
         return this;
     }
 

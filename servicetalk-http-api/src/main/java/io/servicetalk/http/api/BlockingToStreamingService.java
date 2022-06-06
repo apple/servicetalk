@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 
 import static io.servicetalk.concurrent.api.Single.fromCallable;
-import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
 import static io.servicetalk.http.api.DefaultHttpExecutionStrategy.OFFLOAD_RECEIVE_DATA_STRATEGY;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static java.util.Objects.requireNonNull;
@@ -43,11 +42,17 @@ final class BlockingToStreamingService extends AbstractServiceAdapterHolder {
 
     @Override
     public Completable closeAsync() {
-        return blockingToCompletable(original::close);
+        return Completable.fromCallable(() -> {
+            original.close();
+            return null;
+        });
     }
 
     @Override
     public Completable closeAsyncGracefully() {
-        return blockingToCompletable(original::closeGracefully);
+        return Completable.fromCallable(() -> {
+            original.closeGracefully();
+            return null;
+        });
     }
 }

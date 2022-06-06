@@ -39,6 +39,7 @@ import static io.servicetalk.concurrent.api.SubscriberApiUtils.unwrapNullUncheck
 import static io.servicetalk.concurrent.api.SubscriberApiUtils.wrapNull;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.concurrent.internal.TerminalNotification.error;
+import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.lang.Math.min;
 import static java.lang.Thread.currentThread;
 import static java.util.Objects.requireNonNull;
@@ -49,7 +50,7 @@ import static java.util.Objects.requireNonNull;
  * @param <T> Type of items emitted by the {@link Publisher} from which this {@link BlockingIterable} is created.
  */
 final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
-    private final Publisher<T> original;
+    final Publisher<T> original;
     private final int queueCapacityHint;
 
     PublisherAsBlockingIterable(final Publisher<T> original) {
@@ -255,10 +256,7 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
                 if (cause == null) {
                     throw new NoSuchElementException();
                 }
-                if (cause instanceof RuntimeException) {
-                    throw (RuntimeException) cause;
-                }
-                throw new RuntimeException(cause);
+                throwException(cause);
             }
             return unwrapNullUnchecked(signal);
         }

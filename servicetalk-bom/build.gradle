@@ -17,9 +17,12 @@
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-core"
 apply plugin: "java-platform"
 
-rootProject.subprojects.findAll { !it.name.contains("bom") && !it.name.contains("examples") &&
+description="ServiceTalk BOM that includes all modules"
+
+rootProject.subprojects.findAll { !it.name.endsWith("-bom") && !it.name.endsWith("-dependencies") &&
+                                            !it.name.contains("examples") &&
                                           !it.name.equals("grpc") && !it.name.equals("http") }.each {
-  dependencies.constraints.add("api", it)
+    dependencies.constraints.add(it.name.endsWith("-internal") ? "runtime" : "api", it )
 }
 
 // Keep publishing and signing configuration in sync with ServiceTalkLibraryPlugin.groovy from
@@ -31,7 +34,7 @@ publishing {
       from components.javaPlatform
       pom {
         name = project.name
-        description = 'A networking framework that evolves with your application'
+        description = project.description
         url = 'https://servicetalk.io'
         licenses {
           license {
