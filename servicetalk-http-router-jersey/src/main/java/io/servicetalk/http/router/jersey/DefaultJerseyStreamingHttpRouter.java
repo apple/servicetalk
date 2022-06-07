@@ -22,6 +22,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
+import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpServiceContext;
@@ -65,6 +66,7 @@ import static io.servicetalk.concurrent.api.Completable.failed;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnError;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadAll;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
@@ -170,6 +172,18 @@ final class DefaultJerseyStreamingHttpRouter implements StreamingHttpService {
                 return failed(t);
             }
         });
+    }
+
+    /**
+     * {@inheritDoc}
+     * @return {@link HttpExecutionStrategies#offloadAll()} as default safe behavior. Apps
+     * will typically use {@link HttpExecutionStrategies#offloadNone()} as
+     * {@link io.servicetalk.http.api.HttpServerBuilder#executionStrategy(HttpExecutionStrategy)} to override if either
+     * no offloading is required or diverse strategies are needed for various routes.
+     */
+    @Override
+    public HttpExecutionStrategy requiredOffloads() {
+        return offloadAll();
     }
 
     @Override
