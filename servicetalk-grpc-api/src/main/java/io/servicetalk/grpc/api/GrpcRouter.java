@@ -164,7 +164,6 @@ final class GrpcRouter {
                 return closeable.closeAsyncGracefully();
             }
 
-
             /**
              * {@inheritDoc}
              * @return {@link HttpExecutionStrategies#offloadAll()} as default safe behavior for predicates and routes.
