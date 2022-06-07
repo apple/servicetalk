@@ -17,6 +17,7 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.context.api.ContextMap;
+import io.servicetalk.encoding.api.ContentCodec;
 
 import java.io.OutputStream;
 
@@ -49,7 +50,12 @@ public interface BlockingStreamingHttpServerResponse extends HttpResponseMetaDat
      * @deprecated Use {@link #sendMetaData(HttpStreamingSerializer)}.
      */
     @Deprecated
-    <T> HttpPayloadWriter<T> sendMetaData(HttpSerializer<T> serializer);
+    default <T> HttpPayloadWriter<T> sendMetaData(HttpSerializer<T> serializer) {
+        throw new UnsupportedOperationException("BlockingStreamingHttpServerResponse#sendMetaData(HttpSerializer) " +
+                "is not supported by " + getClass() + ". This method is deprecated, consider migrating to " +
+                "BlockingStreamingHttpServerResponse#sendMetaData(HttpStreamingSerializer) or implement this " +
+                "method if it's required temporarily.");
+    }
 
     /**
      * Sends the {@link HttpResponseMetaData} to the client and returns an {@link HttpPayloadWriter} of type {@link T}
@@ -80,6 +86,13 @@ public interface BlockingStreamingHttpServerResponse extends HttpResponseMetaDat
 
     @Override
     BlockingStreamingHttpServerResponse status(HttpResponseStatus status);
+
+    @Override
+    default BlockingStreamingHttpServerResponse encoding(ContentCodec encoding) {
+        throw new UnsupportedOperationException("BlockingStreamingHttpServerResponse#encoding(ContentCodec) is not " +
+                "supported by " + getClass() + ". This method is deprecated, consider migrating to provided " +
+                "alternatives or implement this method if it's required temporarily.");
+    }
 
     @Override
     default BlockingStreamingHttpServerResponse addHeader(final CharSequence name, final CharSequence value) {

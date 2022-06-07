@@ -52,6 +52,13 @@
     <Bug pattern="NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE"/>
   </Match>
 
+  <!-- False positive -->
+  <Match>
+    <Class name="io.servicetalk.http.api.ContentCodingHttpServiceFilter"/>
+    <Method name="codingForResponse"/>
+    <Bug pattern="RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE"/>
+  </Match>
+
   <!-- Intentional reference comparison to avoid re-parsing if no value -->
   <Match>
     <Class name="io.servicetalk.http.api.Uri3986"/>

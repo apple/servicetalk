@@ -17,6 +17,7 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.context.api.ContextMap;
+import io.servicetalk.encoding.api.ContentCodec;
 
 /**
  * An HTTP response. The payload is represented as a single {@link Object}.
@@ -67,7 +68,12 @@ public interface HttpResponse extends HttpResponseMetaData, TrailersHolder {
      * @deprecated Use {@link #payloadBody(Object, HttpSerializer2)}.
      */
     @Deprecated
-    <T> HttpResponse payloadBody(T pojo, HttpSerializer<T> serializer);
+    default <T> HttpResponse payloadBody(T pojo, HttpSerializer<T> serializer) {
+        throw new UnsupportedOperationException("HttpResponse#payloadBody(Object, HttpSerializer) " +
+                "is not supported by " + getClass() + ". This method is deprecated, consider migrating to " +
+                "HttpResponse#payloadBody(Object, HttpSerializer2) or implement this method if it's required " +
+                "temporarily.");
+    }
 
     /**
      * Returns an {@link HttpResponse} with its underlying payload set to the results of serialization of {@code pojo}.
@@ -98,6 +104,13 @@ public interface HttpResponse extends HttpResponseMetaData, TrailersHolder {
 
     @Override
     HttpResponse status(HttpResponseStatus status);
+
+    @Override
+    default HttpResponse encoding(ContentCodec encoding) {
+        throw new UnsupportedOperationException("HttpResponse#encoding(ContentCodec) is not supported by " +
+                getClass() + ". This method is deprecated, consider migrating to provided alternatives or implement " +
+                "this method if it's required temporarily.");
+    }
 
     @Override
     default HttpResponse addHeader(final CharSequence name, final CharSequence value) {
