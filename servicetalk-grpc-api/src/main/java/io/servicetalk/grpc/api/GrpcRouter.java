@@ -93,6 +93,7 @@ import static io.servicetalk.grpc.api.GrpcUtils.setStatusOk;
 import static io.servicetalk.grpc.api.GrpcUtils.validateContentType;
 import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadAll;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.unmodifiableMap;
@@ -161,6 +162,19 @@ final class GrpcRouter {
             @Override
             public Completable closeAsyncGracefully() {
                 return closeable.closeAsyncGracefully();
+            }
+
+            /**
+             * {@inheritDoc}
+             * @return {@link HttpExecutionStrategies#offloadAll()} as default safe behavior for predicates and routes.
+             * Apps will typically use {@link HttpExecutionStrategies#offloadNone()} with
+             * {@link io.servicetalk.http.api.HttpServerBuilder#executionStrategy(HttpExecutionStrategy)} in
+             * {@link io.servicetalk.grpc.api.GrpcServerBuilder#initializeHttp(GrpcServerBuilder.HttpInitializer)} to
+             * override if either no offloading is required or diverse strategies are needed for various routes.
+             */
+            @Override
+            public HttpExecutionStrategy requiredOffloads() {
+                return offloadAll();
             }
         }).map(httpServerContext -> new DefaultGrpcServerContext(httpServerContext, executionContext));
     }
