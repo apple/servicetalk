@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpExecutionContext;
+import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -31,6 +32,7 @@ import io.servicetalk.transport.api.IoThreadFactory;
 import java.util.List;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadAll;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -78,6 +80,18 @@ final class InOrderRouter implements StreamingHttpService {
             }
         }
         return fallbackService.handle(ctx, request, factory);
+    }
+
+    /**
+     * {@inheritDoc}
+     * @return {@link HttpExecutionStrategies#offloadAll()} as default safe behavior for predicates and routes. Apps
+     * will typically use {@link HttpExecutionStrategies#offloadNone()} as
+     * {@link io.servicetalk.http.api.HttpServerBuilder#executionStrategy(HttpExecutionStrategy)} to override if either
+     * no offloading is required or diverse strategies are needed for various routes.
+     */
+    @Override
+    public HttpExecutionStrategy requiredOffloads() {
+        return offloadAll();
     }
 
     @Override
