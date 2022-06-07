@@ -96,7 +96,12 @@ public interface StreamingHttpResponse extends HttpResponseMetaData {
      * @deprecated Use {@link #payloadBody(Publisher, HttpStreamingSerializer)}.
      */
     @Deprecated
-    <T> StreamingHttpResponse payloadBody(Publisher<T> payloadBody, HttpSerializer<T> serializer);
+    default <T> StreamingHttpResponse payloadBody(Publisher<T> payloadBody, HttpSerializer<T> serializer) {
+        throw new UnsupportedOperationException("StreamingHttpResponse#payloadBody(Publisher, HttpSerializer) " +
+                "is not supported by " + getClass() + ". This method is deprecated, consider migrating to " +
+                "StreamingHttpResponse#payloadBody(Publisher, HttpStreamingSerializer) or implement this " +
+                "method if it's required temporarily.");
+    }
 
     /**
      * Returns a {@link StreamingHttpResponse} with its underlying payload set to the result of serialization.
@@ -125,8 +130,13 @@ public interface StreamingHttpResponse extends HttpResponseMetaData {
      * @deprecated Use {@link #transformPayloadBody(Function, HttpStreamingSerializer)}.
      */
     @Deprecated
-    <T> StreamingHttpResponse transformPayloadBody(Function<Publisher<Buffer>, Publisher<T>> transformer,
-                                                   HttpSerializer<T> serializer);
+    default <T> StreamingHttpResponse transformPayloadBody(Function<Publisher<Buffer>, Publisher<T>> transformer,
+                                                   HttpSerializer<T> serializer) {
+        throw new UnsupportedOperationException("StreamingHttpResponse#transformPayloadBody(Function, HttpSerializer)" +
+                " is not supported by " + getClass() + ". This method is deprecated, consider migrating to " +
+                "StreamingHttpResponse#transformPayloadBody(Function, HttpStreamingSerializer) or implement this " +
+                "method if it's required temporarily.");
+    }
 
     /**
      * Returns a {@link StreamingHttpResponse} with its underlying payload transformed to the result of serialization.
@@ -238,7 +248,11 @@ public interface StreamingHttpResponse extends HttpResponseMetaData {
 
     @Deprecated
     @Override
-    StreamingHttpResponse encoding(ContentCodec encoding);
+    default StreamingHttpResponse encoding(ContentCodec encoding) {
+        throw new UnsupportedOperationException("StreamingHttpResponse#encoding(ContentCodec) is not supported by " +
+                getClass() + ". This method is deprecated, consider migrating to provided alternatives or implement " +
+                "this method if it's required temporarily.");
+    }
 
     @Override
     default StreamingHttpResponse addHeader(final CharSequence name, final CharSequence value) {

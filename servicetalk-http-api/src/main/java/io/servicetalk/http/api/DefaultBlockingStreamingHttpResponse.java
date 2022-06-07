@@ -120,6 +120,7 @@ final class DefaultBlockingStreamingHttpResponse extends AbstractDelegatingHttpR
         return this;
     }
 
+    @Deprecated
     @Override
     public BlockingStreamingHttpResponse transformPayloadBody(
             final UnaryOperator<BlockingIterable<Buffer>> transformer) {

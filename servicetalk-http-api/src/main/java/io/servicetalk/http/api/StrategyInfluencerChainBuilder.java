@@ -28,7 +28,7 @@ import static java.util.Objects.requireNonNull;
  *
  * @deprecated Merge {@link io.servicetalk.transport.api.ExecutionStrategy} directly instead.
  */
-@Deprecated
+@Deprecated // FIXME: 0.43 - remove deprecated class
 public final class StrategyInfluencerChainBuilder implements ExecutionStrategyInfluencer<HttpExecutionStrategy> {
 
     private final Deque<ExecutionStrategyInfluencer<?>> influencers;

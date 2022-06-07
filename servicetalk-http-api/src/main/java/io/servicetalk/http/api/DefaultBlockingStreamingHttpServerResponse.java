@@ -18,6 +18,7 @@ package io.servicetalk.http.api;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.context.api.ContextMap;
+import io.servicetalk.encoding.api.ContentCodec;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Consumer;
@@ -57,6 +58,14 @@ final class DefaultBlockingStreamingHttpServerResponse extends DefaultHttpRespon
     public BlockingStreamingHttpServerResponse status(final HttpResponseStatus status) {
         checkSent();
         super.status(status);
+        return this;
+    }
+
+    @Deprecated
+    @Override
+    public BlockingStreamingHttpServerResponse encoding(final ContentCodec encoding) {
+        checkSent();
+        super.encoding(encoding);
         return this;
     }
 

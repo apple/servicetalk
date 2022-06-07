@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.CloseableIteratorBufferAsInputStream;
 import io.servicetalk.context.api.ContextMap;
+import io.servicetalk.encoding.api.ContentCodec;
 
 import java.io.InputStream;
 import java.util.function.Function;
@@ -129,7 +130,12 @@ public interface BlockingStreamingHttpResponse extends HttpResponseMetaData {
      * @deprecated Use {@link #payloadBody(Iterable, HttpStreamingSerializer)}.
      */
     @Deprecated
-    <T> BlockingStreamingHttpResponse payloadBody(Iterable<T> payloadBody, HttpSerializer<T> serializer);
+    default <T> BlockingStreamingHttpResponse payloadBody(Iterable<T> payloadBody, HttpSerializer<T> serializer) {
+        throw new UnsupportedOperationException("BlockingStreamingHttpResponse#payloadBody(Iterable, HttpSerializer) " +
+                "is not supported by " + getClass() + ". This method is deprecated, consider migrating to " +
+                "BlockingStreamingHttpResponse#payloadBody(Iterable, HttpStreamingSerializer) or implement this " +
+                "method if it's required temporarily.");
+    }
 
     /**
      * Returns a {@link BlockingStreamingHttpResponse} with its underlying payload set to the result of serialization.
@@ -170,8 +176,13 @@ public interface BlockingStreamingHttpResponse extends HttpResponseMetaData {
      * {@link #payloadBody(Iterable, HttpStreamingSerializer)}.
      */
     @Deprecated
-    <T> BlockingStreamingHttpResponse transformPayloadBody(
-            Function<BlockingIterable<Buffer>, BlockingIterable<T>> transformer, HttpSerializer<T> serializer);
+    default <T> BlockingStreamingHttpResponse transformPayloadBody(
+            Function<BlockingIterable<Buffer>, BlockingIterable<T>> transformer, HttpSerializer<T> serializer) {
+        throw new UnsupportedOperationException(
+                "BlockingStreamingHttpResponse#transformPayloadBody(Function, HttpSerializer) is not supported by " +
+                        getClass() + ". This method is deprecated, consider migrating to alternative methods or " +
+                        "implement this method if it's required temporarily.");
+    }
 
     /**
      * Returns a {@link BlockingStreamingHttpResponse} with its underlying payload transformed to the result of
@@ -204,7 +215,12 @@ public interface BlockingStreamingHttpResponse extends HttpResponseMetaData {
      * @deprecated Use {@link #payloadBody()} and {@link #payloadBody(Iterable)}.
      */
     @Deprecated
-    BlockingStreamingHttpResponse transformPayloadBody(UnaryOperator<BlockingIterable<Buffer>> transformer);
+    default BlockingStreamingHttpResponse transformPayloadBody(UnaryOperator<BlockingIterable<Buffer>> transformer) {
+        throw new UnsupportedOperationException(
+                "BlockingStreamingHttpResponse#transformPayloadBody(UnaryOperator) is not supported by " + getClass() +
+                        ". This method is deprecated, consider migrating to alternative methods or implement this " +
+                        "method if it's required temporarily.");
+    }
 
     /**
      * Returns a {@link BlockingStreamingHttpResponse} with its underlying payload transformed to {@link Buffer}s,
@@ -215,7 +231,12 @@ public interface BlockingStreamingHttpResponse extends HttpResponseMetaData {
      * @deprecated Use {@link #messageBody()} and {@link #messageBody(HttpMessageBodyIterable)}.
      */
     @Deprecated
-    <T> BlockingStreamingHttpResponse transform(TrailersTransformer<T, Buffer> trailersTransformer);
+    default <T> BlockingStreamingHttpResponse transform(TrailersTransformer<T, Buffer> trailersTransformer) {
+        throw new UnsupportedOperationException(
+                "BlockingStreamingHttpResponse#transform(TrailersTransformer) is not supported by " + getClass() +
+                        ". This method is deprecated, consider migrating to alternative methods or implement this " +
+                        "method if it's required temporarily.");
+    }
 
     /**
      * Translates this {@link BlockingStreamingHttpResponse} to a {@link HttpResponse}.
@@ -235,6 +256,14 @@ public interface BlockingStreamingHttpResponse extends HttpResponseMetaData {
 
     @Override
     BlockingStreamingHttpResponse status(HttpResponseStatus status);
+
+    @Deprecated
+    @Override
+    default BlockingStreamingHttpResponse encoding(ContentCodec encoding) {
+        throw new UnsupportedOperationException("BlockingStreamingHttpResponse#encoding(ContentCodec) is not " +
+                "supported by " + getClass() + ". This method is deprecated, consider migrating to provided " +
+                "alternatives or implement this method if it's required temporarily.");
+    }
 
     @Override
     default BlockingStreamingHttpResponse addHeader(final CharSequence name, final CharSequence value) {

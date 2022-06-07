@@ -72,7 +72,12 @@ public interface HttpRequest extends HttpRequestMetaData, TrailersHolder {
      * @deprecated Use {@link #payloadBody(Object, HttpSerializer2)}.
      */
     @Deprecated
-    <T> HttpRequest payloadBody(T pojo, HttpSerializer<T> serializer);
+    default <T> HttpRequest payloadBody(T pojo, HttpSerializer<T> serializer) {
+        throw new UnsupportedOperationException("HttpRequest#payloadBody(Object, HttpSerializer) " +
+                "is not supported by " + getClass() + ". This method is deprecated, consider migrating to " +
+                "HttpRequest#payloadBody(Object, HttpSerializer2) or implement this method if it's required " +
+                "temporarily.");
+    }
 
     /**
      * Returns an {@link HttpRequest} with its underlying payload set to the results of serialization of {@code pojo}.
@@ -136,7 +141,11 @@ public interface HttpRequest extends HttpRequestMetaData, TrailersHolder {
 
     @Deprecated
     @Override
-    HttpRequest encoding(ContentCodec encoding);
+    default HttpRequest encoding(ContentCodec encoding) {
+        throw new UnsupportedOperationException("HttpRequest#encoding(ContentCodec) is not supported by " +
+                getClass() + ". This method is deprecated, consider migrating to provided alternatives or implement " +
+                "this method if it's required temporarily.");
+    }
 
     @Override
     HttpRequest contentEncoding(@Nullable BufferEncoder encoder);

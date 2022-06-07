@@ -133,7 +133,12 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
      * @deprecated Use {@link #payloadBody(Iterable, HttpStreamingSerializer)}.
      */
     @Deprecated
-    <T> BlockingStreamingHttpRequest payloadBody(Iterable<T> payloadBody, HttpSerializer<T> serializer);
+    default <T> BlockingStreamingHttpRequest payloadBody(Iterable<T> payloadBody, HttpSerializer<T> serializer) {
+        throw new UnsupportedOperationException("BlockingStreamingHttpRequest#payloadBody(Iterable, HttpSerializer) " +
+                "is not supported by " + getClass() + ". This method is deprecated, consider migrating to " +
+                "BlockingStreamingHttpRequest#payloadBody(Iterable, HttpStreamingSerializer) or implement this " +
+                "method if it's required temporarily.");
+    }
 
     /**
      * Returns a {@link BlockingStreamingHttpRequest} with its underlying payload set to the result of serialization.
@@ -174,8 +179,13 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
      * {@link #payloadBody(Iterable, HttpStreamingSerializer)}.
      */
     @Deprecated
-    <T> BlockingStreamingHttpRequest transformPayloadBody(
-            Function<BlockingIterable<Buffer>, BlockingIterable<T>> transformer, HttpSerializer<T> serializer);
+    default <T> BlockingStreamingHttpRequest transformPayloadBody(
+            Function<BlockingIterable<Buffer>, BlockingIterable<T>> transformer, HttpSerializer<T> serializer) {
+        throw new UnsupportedOperationException(
+                "BlockingStreamingHttpRequest#transformPayloadBody(Function, HttpSerializer) is not supported by " +
+                        getClass() + ". This method is deprecated, consider migrating to alternative methods or " +
+                        "implement this method if it's required temporarily.");
+    }
 
     /**
      * Returns a {@link BlockingStreamingHttpRequest} with its underlying payload transformed to the result of
@@ -208,7 +218,12 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
      * @deprecated Use {@link #payloadBody()} and {@link #payloadBody(Iterable)}.
      */
     @Deprecated
-    BlockingStreamingHttpRequest transformPayloadBody(UnaryOperator<BlockingIterable<Buffer>> transformer);
+    default BlockingStreamingHttpRequest transformPayloadBody(UnaryOperator<BlockingIterable<Buffer>> transformer) {
+        throw new UnsupportedOperationException(
+                "BlockingStreamingHttpRequest#transformPayloadBody(UnaryOperator) is not supported by " + getClass() +
+                        ". This method is deprecated, consider migrating to alternative methods or implement this " +
+                        "method if it's required temporarily.");
+    }
 
     /**
      * Returns a {@link BlockingStreamingHttpRequest} with its underlying payload transformed to {@link Buffer}s,
@@ -219,7 +234,12 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
      * @deprecated Use {@link #messageBody()} and {@link #messageBody(HttpMessageBodyIterable)}.
      */
     @Deprecated
-    <T> BlockingStreamingHttpRequest transform(TrailersTransformer<T, Buffer> trailersTransformer);
+    default <T> BlockingStreamingHttpRequest transform(TrailersTransformer<T, Buffer> trailersTransformer) {
+        throw new UnsupportedOperationException(
+                "BlockingStreamingHttpRequest#transform(TrailersTransformer) is not supported by " + getClass() +
+                        ". This method is deprecated, consider migrating to alternative methods or implement this " +
+                        "method if it's required temporarily.");
+    }
 
     /**
      * Translates this {@link BlockingStreamingHttpRequest} to a {@link HttpRequest}.
@@ -272,7 +292,11 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
 
     @Deprecated
     @Override
-    BlockingStreamingHttpRequest encoding(ContentCodec encoding);
+    default BlockingStreamingHttpRequest encoding(ContentCodec encoding) {
+        throw new UnsupportedOperationException("BlockingStreamingHttpRequest#encoding(ContentCodec) is not " +
+                "supported by " + getClass() + ". This method is deprecated, consider migrating to provided " +
+                "alternatives or implement this method if it's required temporarily.");
+    }
 
     @Override
     BlockingStreamingHttpRequest contentEncoding(@Nullable BufferEncoder encoder);

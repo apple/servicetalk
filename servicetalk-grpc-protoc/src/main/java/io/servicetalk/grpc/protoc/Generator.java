@@ -889,7 +889,7 @@ final class Generator {
                     .addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(INTERFACE, CLIENT),
                             printJavaDocs, (methodName, b) -> {
                                 ClassName inClass = messageTypesMap.get(clientMetaData.methodProto.getInputType());
-                                b.addModifiers(ABSTRACT).addParameter(clientMetaData.className, metadata)
+                                b.addModifiers(DEFAULT).addParameter(clientMetaData.className, metadata)
                                 .addAnnotation(Deprecated.class);
                                 if (printJavaDocs) {
                                     extractJavaDocComments(state, methodIndex, b);
@@ -899,7 +899,9 @@ final class Generator {
                                     .addJavadoc(JAVADOC_PARAM + metadata +
                                             " the metadata associated with this client call." + lineSeparator());
                                 }
-                                return b;
+                                return b.addStatement("throw new UnsupportedOperationException(\"This method is not " +
+                                        "implemented by \" + getClass() + \". Consider migrating to an alternative " +
+                                        "method or implement this method if it's required temporarily.\")");
                             }))
                     .addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(INTERFACE, CLIENT),
                             printJavaDocs, (methodName, b) -> {
@@ -925,7 +927,7 @@ final class Generator {
                     .addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(BLOCKING, INTERFACE, CLIENT),
                             printJavaDocs, (methodName, b) -> {
                                 ClassName inClass = messageTypesMap.get(clientMetaData.methodProto.getInputType());
-                                b.addModifiers(ABSTRACT).addParameter(clientMetaData.className, metadata)
+                                b.addModifiers(DEFAULT).addParameter(clientMetaData.className, metadata)
                                 .addAnnotation(Deprecated.class);
                                 if (printJavaDocs) {
                                     extractJavaDocComments(state, methodIndex, b);
@@ -935,7 +937,9 @@ final class Generator {
                                     .addJavadoc(JAVADOC_PARAM + metadata +
                                             " the metadata associated with this client call." + lineSeparator());
                                 }
-                                return b;
+                                return b.addStatement("throw new UnsupportedOperationException(\"This method is not " +
+                                        "implemented by \" + getClass() + \". Consider migrating to an alternative " +
+                                        "method or implement this method if it's required temporarily.\")");
                             }))
                     .addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(BLOCKING, INTERFACE, CLIENT),
                             printJavaDocs, (methodName, b) -> {

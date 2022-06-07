@@ -64,20 +64,32 @@ public interface HttpMetaData extends ContextMapHolder {
      * @param encoding The {@link ContentCodec} used for the encoding of the payload.
      * @return {@code this}.
      * @see <a href="https://tools.ietf.org/html/rfc7231#section-3.1.2.2">Content-Encoding</a>
-     * @deprecated Use {@link HttpRequestMetaData#contentEncoding(BufferEncoder)}.
+     * @deprecated Use {@link HttpRequestMetaData#contentEncoding(BufferEncoder)} for requests and
+     * {@link ContentEncodingHttpServiceFilter} for responses. An example can be found
+     * <a href="https://apple.github.io/servicetalk//servicetalk-examples/0.42/http/index.html#Compression">here</a>.
      */
     @Deprecated
-    HttpMetaData encoding(ContentCodec encoding);
+    default HttpMetaData encoding(ContentCodec encoding) {
+        throw new UnsupportedOperationException("HttpMetaData#encoding(ContentCodec) is not supported by " +
+                getClass() + ". This method is deprecated, consider migrating to provided alternatives or implement " +
+                "this method if it's required temporarily.");
+    }
 
     /**
      * Returns the {@link ContentCodec} used to encode the payload of a request or a response.
      * @return The {@link ContentCodec} used for the encoding of the payload.
      * @see <a href="https://tools.ietf.org/html/rfc7231#section-3.1.2.2">Content-Encoding</a>
-     * @deprecated Use {@link HttpRequestMetaData#contentEncoding()}.
+     * @deprecated Use {@link HttpRequestMetaData#contentEncoding()} for requests and
+     * {@link ContentEncodingHttpServiceFilter} for responses. An example can be found
+     * <a href="https://apple.github.io/servicetalk//servicetalk-examples/0.42/http/index.html#Compression">here</a>.
      */
     @Deprecated
     @Nullable
-    ContentCodec encoding();
+    default ContentCodec encoding() {
+        throw new UnsupportedOperationException("HttpMetaData#encoding() is not supported by " + getClass() +
+                ". This method is deprecated, consider migrating to provided alternatives or implement " +
+                "this method if it's required temporarily.");
+    }
 
     /**
      * Adds a new header with the specified {@code name} and {@code value}.
