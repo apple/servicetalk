@@ -39,6 +39,7 @@ public final class HttpApiConversions {
      * @return The conversion result.
      * @deprecated Use overload with {@link HttpExecutionStrategy} rather than {@link HttpExecutionStrategyInfluencer}
      */
+    // FIXME: 0.43 - remove deprecated method
     @Deprecated
     public static ReservedHttpConnection toReservedConnection(ReservedStreamingHttpConnection original,
                                                               HttpExecutionStrategyInfluencer influencer) {
@@ -66,6 +67,7 @@ public final class HttpApiConversions {
      * @return The conversion result.
      * @deprecated Use overload with {@link HttpExecutionStrategy} rather than {@link HttpExecutionStrategyInfluencer}
      */
+    // FIXME: 0.43 - remove deprecated method
     @Deprecated
     public static ReservedBlockingHttpConnection toReservedBlockingConnection(
             ReservedStreamingHttpConnection original, HttpExecutionStrategyInfluencer influencer) {
@@ -94,6 +96,7 @@ public final class HttpApiConversions {
      * @return The conversion result.
      * @deprecated Use overload with {@link HttpExecutionStrategy} rather than {@link HttpExecutionStrategyInfluencer}
      */
+    // FIXME: 0.43 - remove deprecated method
     @Deprecated
     public static ReservedBlockingStreamingHttpConnection toReservedBlockingStreamingConnection(
             ReservedStreamingHttpConnection original, HttpExecutionStrategyInfluencer influencer) {
@@ -122,6 +125,7 @@ public final class HttpApiConversions {
      * @return The conversion result.
      * @deprecated Use overload with {@link HttpExecutionStrategy} rather than {@link HttpExecutionStrategyInfluencer}
      */
+    // FIXME: 0.43 - remove deprecated method
     @Deprecated
     public static HttpConnection toConnection(StreamingHttpConnection original,
                                               HttpExecutionStrategyInfluencer influencer) {
@@ -148,6 +152,7 @@ public final class HttpApiConversions {
      * @return The conversion result.
      * @deprecated Use overload with {@link HttpExecutionStrategy} rather than {@link HttpExecutionStrategyInfluencer}
      */
+    // FIXME: 0.43 - remove deprecated method
     @Deprecated
     public static BlockingHttpConnection toBlockingConnection(StreamingHttpConnection original,
                                                               HttpExecutionStrategyInfluencer influencer) {
@@ -175,6 +180,7 @@ public final class HttpApiConversions {
      * @return The conversion result.
      * @deprecated Use overload with {@link HttpExecutionStrategy} rather than {@link HttpExecutionStrategyInfluencer}
      */
+    // FIXME: 0.43 - remove deprecated method
     @Deprecated
     public static BlockingStreamingHttpConnection toBlockingStreamingConnection(
             StreamingHttpConnection original, HttpExecutionStrategyInfluencer influencer) {
@@ -203,6 +209,7 @@ public final class HttpApiConversions {
      * @return The conversion result.
      * @deprecated Use overload with {@link HttpExecutionStrategy} rather than {@link HttpExecutionStrategyInfluencer}
      */
+    // FIXME: 0.43 - remove deprecated method
     @Deprecated
     public static HttpClient toClient(StreamingHttpClient original, HttpExecutionStrategyInfluencer influencer) {
         return toClient(original, influencer.requiredOffloads());
@@ -228,6 +235,7 @@ public final class HttpApiConversions {
      * @return The conversion result.
      * @deprecated Use overload with {@link HttpExecutionStrategy} rather than {@link HttpExecutionStrategyInfluencer}
      */
+    // FIXME: 0.43 - remove deprecated method
     @Deprecated
     public static BlockingHttpClient toBlockingClient(StreamingHttpClient original,
                                                       HttpExecutionStrategyInfluencer influencer) {
@@ -254,6 +262,7 @@ public final class HttpApiConversions {
      * @return The conversion result.
      * @deprecated Use overload with {@link HttpExecutionStrategy} rather than {@link HttpExecutionStrategyInfluencer}
      */
+    // FIXME: 0.43 - remove deprecated method
     @Deprecated
     public static BlockingStreamingHttpClient toBlockingStreamingClient(StreamingHttpClient original,
                                                                         HttpExecutionStrategyInfluencer influencer) {
@@ -281,6 +290,7 @@ public final class HttpApiConversions {
      * @return {@link ServiceAdapterHolder} containing the service adapted to the streaming programming model.
      * @deprecated Use overload with {@link HttpExecutionStrategy} rather than {@link HttpExecutionStrategyInfluencer}
      */
+    // FIXME: 0.43 - remove deprecated method
     @Deprecated
     public static ServiceAdapterHolder toStreamingHttpService(HttpService service,
                                                               HttpExecutionStrategyInfluencer influencer) {
@@ -307,6 +317,7 @@ public final class HttpApiConversions {
      * @return {@link ServiceAdapterHolder} containing the service adapted to the streaming programming model.
      * @deprecated Use overload with {@link HttpExecutionStrategy} rather than {@link HttpExecutionStrategyInfluencer}
      */
+    // FIXME: 0.43 - remove deprecated method
     @Deprecated
     public static ServiceAdapterHolder toStreamingHttpService(BlockingStreamingHttpService service,
                                                               HttpExecutionStrategyInfluencer influencer) {
@@ -334,6 +345,7 @@ public final class HttpApiConversions {
      * @return {@link ServiceAdapterHolder} containing the service adapted to the streaming programming model.
      * @deprecated Use overload with {@link HttpExecutionStrategy} rather than {@link HttpExecutionStrategyInfluencer}
      */
+    // FIXME: 0.43 - remove deprecated method
     @Deprecated
     public static ServiceAdapterHolder toStreamingHttpService(BlockingHttpService service,
                                                               HttpExecutionStrategyInfluencer influencer) {
