@@ -30,6 +30,7 @@ import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
+import io.servicetalk.http.api.DelegatingHttpExecutionContext;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionContext;
@@ -211,7 +212,15 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
 
     private static <U, R> StreamingHttpClient buildStreaming(final HttpClientBuildContext<U, R> ctx) {
         final ReadOnlyHttpClientConfig roConfig = ctx.httpConfig().asReadOnly();
-        final HttpExecutionContext executionContext = ctx.builder.executionContextBuilder.build();
+        final HttpExecutionContext builderExecutionContext = ctx.builder.executionContextBuilder.build();
+        final HttpExecutionStrategy computedStrategy =
+                ctx.builder.strategyComputation.buildForClient(builderExecutionContext.executionStrategy());
+        final HttpExecutionContext executionContext = new DelegatingHttpExecutionContext(builderExecutionContext) {
+            @Override
+            public HttpExecutionStrategy executionStrategy() {
+                return computedStrategy;
+            }
+        };
         if (roConfig.h2Config() != null && roConfig.hasProxy()) {
             throw new IllegalStateException("Proxying is not yet supported with HTTP/2");
         }
@@ -293,7 +302,10 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                 currClientFilterFactory = appendFilter(currClientFilterFactory,
                         ctx.builder.retryingHttpRequesterFilter);
             }
-            HttpExecutionStrategy computedStrategy = ctx.builder.strategyComputation.buildForClient(builderStrategy);
+            FilterableStreamingHttpClient wrappedClient = currClientFilterFactory != null ?
+                    currClientFilterFactory.create(lbClient, lb.eventStream(), ctx.sdStatus) :
+                    lbClient;
+
             if (builderStrategy != defaultStrategy() &&
                     builderStrategy.missing(computedStrategy) != offloadNone()) {
                 LOGGER.info("Client for {} created with the builder strategy {} but resulting computed strategy is " +
@@ -307,9 +319,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                 LOGGER.debug("Client for {} created with the builder strategy {}, resulting computed strategy is {}.",
                         targetAddress(ctx), builderStrategy, computedStrategy);
             }
-            return new FilterableClientToClient(currClientFilterFactory != null ?
-                    currClientFilterFactory.create(lbClient, lb.eventStream(), ctx.sdStatus) :
-                        lbClient, computedStrategy);
+            return new FilterableClientToClient(wrappedClient, executionContext);
         } catch (final Throwable t) {
             closeOnException.closeAsync().subscribe();
             throw t;

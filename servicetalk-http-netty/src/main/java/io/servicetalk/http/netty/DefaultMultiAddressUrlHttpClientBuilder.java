@@ -121,7 +121,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
                     new RedirectingHttpRequesterFilter(redirectConfig).create(urlClient);
 
             LOGGER.debug("Multi-address client created with base strategy {}", executionContext.executionStrategy());
-            return new FilterableClientToClient(urlClient, executionContext.executionStrategy());
+            return new FilterableClientToClient(urlClient, executionContext);
         } catch (final Throwable t) {
             closeables.closeAsync().subscribe();
             throw t;

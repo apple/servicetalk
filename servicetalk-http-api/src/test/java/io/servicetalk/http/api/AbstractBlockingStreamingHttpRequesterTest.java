@@ -36,6 +36,7 @@ import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static java.nio.charset.StandardCharsets.US_ASCII;
@@ -75,6 +76,7 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
     void setup() {
         MockitoAnnotations.initMocks(this);
         when(mockExecutionCtx.executor()).thenReturn(immediate());
+        when(mockExecutionCtx.executionStrategy()).thenReturn(defaultStrategy());
         when(mockCtx.executionContext()).thenReturn(mockExecutionCtx);
         when(mockIterable.iterator()).thenReturn(mockIterator);
     }
