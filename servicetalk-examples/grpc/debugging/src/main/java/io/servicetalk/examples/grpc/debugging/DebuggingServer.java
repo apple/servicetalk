@@ -24,6 +24,7 @@ import io.grpc.examples.debugging.HelloReply;
 
 import java.util.function.BooleanSupplier;
 
+import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
 import static io.servicetalk.logging.api.LogLevel.TRACE;
 
 /**
@@ -148,7 +149,7 @@ public final class DebuggingServer {
                              * Be sure to also enable the logger in your logging config file,
                              * {@code log4j2.xml} for this example.
                              */
-                            .protocols(HttpProtocolConfigs.h2()
+                            .protocols(h1Default(), HttpProtocolConfigs.h2()
                                     .enableFrameLogging(
                                             "servicetalk-examples-h2-frame-logger", TRACE, LOG_USER_DATA)
                                     .build());

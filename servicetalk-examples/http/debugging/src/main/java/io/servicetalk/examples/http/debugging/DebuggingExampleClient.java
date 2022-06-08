@@ -27,6 +27,7 @@ import io.servicetalk.logging.api.LogLevel;
 import java.util.function.BooleanSupplier;
 
 import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
+import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
 import static io.servicetalk.logging.api.LogLevel.TRACE;
 
 /**
@@ -175,7 +176,7 @@ public final class DebuggingExampleClient {
                  * 4. Enables detailed logging of HTTP2 frames.
                  * Be sure to also enable the logger in your logging config file (log4j2.xml for this example).
                  */
-                .protocols(HttpProtocolConfigs.h2()
+                .protocols(h1Default(), HttpProtocolConfigs.h2()
                         .enableFrameLogging("servicetalk-examples-h2-frame-logger", TRACE, LOG_USER_DATA)
                         .build())
                 .build()) {
