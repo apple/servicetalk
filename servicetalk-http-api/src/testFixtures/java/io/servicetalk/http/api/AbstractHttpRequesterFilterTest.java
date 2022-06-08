@@ -44,6 +44,7 @@ import static io.servicetalk.http.api.AbstractHttpRequesterFilterTest.SecurityTy
 import static io.servicetalk.http.api.AbstractHttpRequesterFilterTest.SecurityType.Secure;
 import static io.servicetalk.http.api.FilterFactoryUtils.appendClientFilterFactory;
 import static io.servicetalk.http.api.FilterFactoryUtils.appendConnectionFilterFactory;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
@@ -90,6 +91,7 @@ public abstract class AbstractHttpRequesterFilterTest {
     }
 
     protected void setUp(SecurityType security) {
+        lenient().when(mockExecutionContext.executionStrategy()).thenReturn(defaultStrategy());
         lenient().when(mockConnectionContext.sslSession()).thenAnswer(__ -> {
             switch (security) {
                 case Secure:

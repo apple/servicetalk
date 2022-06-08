@@ -132,7 +132,7 @@ final class DefaultPartitionedHttpClientBuilder<U, R> implements PartitionedHttp
                         executionContext, partitionMapFactory);
 
         LOGGER.debug("Partitioned client created with base strategy {}", executionContext.executionStrategy());
-        return new FilterableClientToClient(partitionedClient, executionContext.executionStrategy());
+        return new FilterableClientToClient(partitionedClient, executionContext);
     }
 
     private static final class DefaultPartitionedStreamingHttpClientFilter<U, R> implements

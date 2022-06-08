@@ -47,32 +47,32 @@ import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KE
 
 final class FilterableClientToClient implements StreamingHttpClient {
     private final FilterableStreamingHttpClient client;
-    private final HttpExecutionStrategy strategy;
+    private final HttpExecutionContext executionContext;
 
-    FilterableClientToClient(FilterableStreamingHttpClient filteredClient, HttpExecutionStrategy strategy) {
+    FilterableClientToClient(FilterableStreamingHttpClient filteredClient, HttpExecutionContext executionContext) {
         client = filteredClient;
-        this.strategy = strategy;
+        this.executionContext = executionContext;
     }
 
     @Override
     public HttpClient asClient() {
-        return toClient(this, strategy);
+        return toClient(this, executionContext.executionStrategy());
     }
 
     @Override
     public BlockingStreamingHttpClient asBlockingStreamingClient() {
-        return toBlockingStreamingClient(this, strategy);
+        return toBlockingStreamingClient(this, executionContext.executionStrategy());
     }
 
     @Override
     public BlockingHttpClient asBlockingClient() {
-        return toBlockingClient(this, strategy);
+        return toBlockingClient(this, executionContext.executionStrategy());
     }
 
     @Override
     public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
         return Single.defer(() -> {
-            request.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, strategy);
+            request.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, executionContext().executionStrategy());
             return client.request(request).shareContextOnSubscribe();
         });
     }
@@ -80,21 +80,22 @@ final class FilterableClientToClient implements StreamingHttpClient {
     @Override
     public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpRequestMetaData metaData) {
         return Single.defer(() -> {
-            metaData.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, strategy);
+            HttpExecutionStrategy clientstrategy = executionContext().executionStrategy();
+            metaData.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, clientstrategy);
             return client.reserveConnection(metaData).map(rc -> new ReservedStreamingHttpConnection() {
                 @Override
                 public ReservedHttpConnection asConnection() {
-                    return toReservedConnection(this, strategy);
+                    return toReservedConnection(this, clientstrategy);
                 }
 
                 @Override
                 public ReservedBlockingStreamingHttpConnection asBlockingStreamingConnection() {
-                    return toReservedBlockingStreamingConnection(this, strategy);
+                    return toReservedBlockingStreamingConnection(this, clientstrategy);
                 }
 
                 @Override
                 public ReservedBlockingHttpConnection asBlockingConnection() {
-                    return toReservedBlockingConnection(this, strategy);
+                    return toReservedBlockingConnection(this, clientstrategy);
                 }
 
                 @Override
@@ -108,8 +109,7 @@ final class FilterableClientToClient implements StreamingHttpClient {
                     // created and hence could have an incorrect default strategy. Doing this makes sure we never call
                     // the method without strategy just as we do for the regular connection.
                     return Single.defer(() -> {
-                        request.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY,
-                                FilterableClientToClient.this.strategy);
+                        request.context().putIfAbsent(HTTP_EXECUTION_STRATEGY_KEY, clientstrategy);
                         return rc.request(request).shareContextOnSubscribe();
                     });
                 }
@@ -159,7 +159,7 @@ final class FilterableClientToClient implements StreamingHttpClient {
 
     @Override
     public HttpExecutionContext executionContext() {
-        return client.executionContext();
+        return executionContext;
     }
 
     @Override

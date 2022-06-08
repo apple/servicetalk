@@ -30,7 +30,7 @@ import io.servicetalk.transport.api.IoExecutor;
 interface HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> {
 
     /**
-     * Sets the {@link Executor} for all connections created from this builder.
+     * Sets the {@link Executor} for all clients created from this builder.
      *
      * @param executor {@link IoExecutor} to use.
      * @return {@code this}.
@@ -38,7 +38,7 @@ interface HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> {
     HttpClientBuilder<U, R, SDE> executor(Executor executor);
 
     /**
-     * Sets the {@link IoExecutor} for all connections created from this builder.
+     * Sets the {@link IoExecutor} for all clients created from this builder.
      *
      * @param ioExecutor {@link IoExecutor} to use.
      * @return {@code this}.
@@ -46,7 +46,7 @@ interface HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> {
     HttpClientBuilder<U, R, SDE> ioExecutor(IoExecutor ioExecutor);
 
     /**
-     * Sets the {@link BufferAllocator} for all connections created from this builder.
+     * Sets the {@link BufferAllocator} for all clients created from this builder.
      *
      * @param allocator {@link BufferAllocator} to use.
      * @return {@code this}.
@@ -54,9 +54,12 @@ interface HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> {
     HttpClientBuilder<U, R, SDE> bufferAllocator(BufferAllocator allocator);
 
     /**
-     * Sets the {@link HttpExecutionStrategy} for all connections created from this builder.
+     * Sets the {@link HttpExecutionStrategy} to be used for client callbacks when executing client requests for all
+     * clients created from this builder.
      *
-     * @param strategy {@link HttpExecutionStrategy} to use.
+     * @param strategy {@link HttpExecutionStrategy} to use. If callbacks to the application code may block then those
+     * callbacks must request to be offloaded.
+     *
      * @return {@code this}.
      * @see HttpExecutionStrategies
      */
