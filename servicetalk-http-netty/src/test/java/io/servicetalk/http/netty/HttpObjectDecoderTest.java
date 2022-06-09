@@ -86,6 +86,8 @@ abstract class HttpObjectDecoderTest {
 
     abstract EmbeddedChannel channelSpecException();
 
+    abstract boolean isDecodingRequest();
+
     abstract String startLine();
 
     abstract HttpMetaData assertStartLine(EmbeddedChannel channel);
@@ -255,11 +257,11 @@ abstract class HttpObjectDecoderTest {
         return wrappedBuffer(content);
     }
 
-    private EmbeddedChannel channel(boolean crlf) {
+    EmbeddedChannel channel(boolean crlf) {
         return crlf ? channel() : channelSpecException();
     }
 
-    private static String br(boolean crlf) {
+    static String br(boolean crlf) {
         return crlf ? "\r\n" : "\n";
     }
 
@@ -822,7 +824,7 @@ abstract class HttpObjectDecoderTest {
         // https://tools.ietf.org/html/rfc7230#section-3.3
         DecoderException e = assertThrows(DecoderException.class,
                 () -> writeMsg("TrailerStatus: good" + br + br, channel));
-        assertThat(e.getMessage(), startsWith("Invalid start-line"));
+        assertThat(e.getMessage(), startsWith(isDecodingRequest() ? "Invalid start-line" : "Invalid HTTP version"));
         assertThat(channel.inboundMessages(), is(not(empty())));
     }
 
@@ -851,7 +853,7 @@ abstract class HttpObjectDecoderTest {
                         "Smuggled: " + startLine() + br + br + "Content-Length: 0" + br :
                         "Content-Length: 0" + br + "Smuggled: " + startLine() + br + br) +
                 "Connection: keep-alive" + br + br, channel));
-        assertThat(e.getMessage(), startsWith("Invalid start-line"));
+        assertThat(e.getMessage(), startsWith(isDecodingRequest() ? "Invalid start-line" : "Invalid HTTP version"));
 
         HttpMetaData metaData = assertStartLine(channel);
         assertSingleHeaderValue(metaData.headers(), HOST, "servicetalk.io");

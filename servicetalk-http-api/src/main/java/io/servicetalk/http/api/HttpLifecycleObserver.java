@@ -177,7 +177,8 @@ public interface HttpLifecycleObserver {
          *
          * @param n number of requested items
          */
-        void onResponseDataRequested(long n);   // FIXME: 0.43 - consider removing default impl
+        default void onResponseDataRequested(long n) {  // FIXME: 0.43 - consider removing default impl
+        }
 
         /**
          * Callback when the response payload body data chunk was observed.

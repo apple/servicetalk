@@ -69,6 +69,11 @@ class HttpRequestDecoderTest extends HttpObjectDecoderTest {
     }
 
     @Override
+    boolean isDecodingRequest() {
+        return true;
+    }
+
+    @Override
     String startLine() {
         return "GET / HTTP/1.1";
     }
