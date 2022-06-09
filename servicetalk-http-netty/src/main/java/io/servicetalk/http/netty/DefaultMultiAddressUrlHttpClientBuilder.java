@@ -292,8 +292,11 @@ final class DefaultMultiAddressUrlHttpClientBuilder
                                         defaultStrategy() == singleStrategy || !singleStrategy.hasOffloads() ?
                                                 // single client is default or has no *additional* offloads
                                                 requestStrategy :
-                                                // add single client offloads to existing strategy
-                                                requestStrategy.merge(singleStrategy);
+                                                requestStrategy.hasOffloads() ?
+                                                        // add single client offloads to existing strategy
+                                                        requestStrategy.merge(singleStrategy) :
+                                                        // Ignore single client offloads to preserve no-offloads
+                                                        requestStrategy;
 
                         if (useStrategy != requestStrategy) {
                             LOGGER.debug("Request strategy {} changes to {}. SingleAddressClient strategy: {}",
@@ -347,7 +350,11 @@ final class DefaultMultiAddressUrlHttpClientBuilder
                     HttpExecutionStrategy clientStrategy = singleClient.executionContext().executionStrategy();
                     HttpExecutionStrategy useStrategy = defaultStrategy() == clientStrategy ?
                             requestStrategy :
-                            clientStrategy.merge(offloadNever() == requestStrategy ? offloadNone() : requestStrategy);
+                            requestStrategy.hasOffloads() ?
+                                    // add single client offloads to existing strategy
+                                    clientStrategy.merge(requestStrategy) :
+                                    // IGNORE single client offloads to preserve offloadNone()
+                                    requestStrategy;
                     if (requestStrategy != useStrategy) {
                         // single client overrides request strategy;
                         metaData.context().put(HTTP_EXECUTION_STRATEGY_KEY, useStrategy);
