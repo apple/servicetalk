@@ -263,7 +263,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                 }
 
                 final int bStart = aEnd + 1;    // Expect a single WS
-                final int bEnd;
+                int bEnd;
                 try {
                     bEnd = buffer.forEachByte(bStart, nonControlIndex - bStart + 1,
                             isDecodingRequest() ? FIND_VCHAR_END : FIND_WS);
@@ -271,8 +271,18 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                     throw new StacklessDecoderException(
                             "Invalid start-line: HTTP request-target contains an illegal character", cause);
                 }
-                if (bEnd < 0 || bEnd == bStart) {
-                    throw newStartLineError("second");
+                if (bEnd < 0) {
+                    if (isDecodingRequest()) {
+                        throw newStartLineError("second");
+                    } else {    // Response can be without a reason-phrase: "HTTP/1.1 200\r\n"
+                        bEnd = nonControlIndex + 1;
+                    }
+                }
+                if (bEnd == bStart) {   // Happens when there are two SP next to each other
+                    throw new DecoderException("Invalid start-line: incorrect number of components, cannot find the " +
+                            (isDecodingRequest() ? "request-target" : "status-code") + ", expected: " +
+                            (isDecodingRequest() ? "method SP request-target SP HTTP-version" :
+                                    "HTTP-version SP status-code SP reason-phrase"));
                 }
 
                 final int cStart = bEnd + 1;    // Expect a single WS
@@ -908,7 +918,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
     }
 
     private DecoderException newStartLineError(final String place) {
-        throw new DecoderException("Invalid start-line: incorrect number of components, cannot find the " + place +
+        return new DecoderException("Invalid start-line: incorrect number of components, cannot find the " + place +
                 " SP, expected: " + (isDecodingRequest() ? "method SP request-target SP HTTP-version" :
                 "HTTP-version SP status-code SP reason-phrase"));
     }

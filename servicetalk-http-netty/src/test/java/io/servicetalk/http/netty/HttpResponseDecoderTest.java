@@ -42,6 +42,8 @@ import io.servicetalk.http.netty.HttpResponseDecoder.Signal;
 
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -105,6 +107,11 @@ class HttpResponseDecoderTest extends HttpObjectDecoderTest {
     }
 
     @Override
+    boolean isDecodingRequest() {
+        return false;
+    }
+
+    @Override
     String startLine() {
         return "HTTP/1.1 204 No Content";
     }
@@ -131,17 +138,12 @@ class HttpResponseDecoderTest extends HttpObjectDecoderTest {
 
     @Test
     void noVersion() {
-        assertDecoderException("200 OK" + "\r\n", "Invalid start-line");
+        assertDecoderException("200 OK" + "\r\n", "Invalid HTTP version");
     }
 
     @Test
     void noStatusCode() {
         assertDecoderException("HTTP/1.1 OK" + "\r\n", "Invalid start-line");
-    }
-
-    @Test
-    void noSpAfterStatusCode() {
-        assertDecoderException("HTTP/1.1 200" + "\r\n", "Invalid start-line");
     }
 
     @Test
@@ -220,6 +222,18 @@ class HttpResponseDecoderTest extends HttpObjectDecoderTest {
     void validStartLineWithCustomHttpVersion() {
         writeMsg("HTTP/1.9 204 No Content" + "\r\n" + "\r\n");
         assertResponseLine(HttpProtocolVersion.of(1, 9), NO_CONTENT);
+        assertEmptyTrailers(channel);
+        assertFalse(channel.finishAndReleaseAll());
+    }
+
+    @ParameterizedTest(name = "statusCode={0}, crlf={1}")
+    @CsvSource({"200,true", "200,false", "299,true", "299,false"})
+    void noSpAfterStatusCodeNoReasonPhrase(int statusCode, boolean crlf) {
+        HttpResponseStatus status = HttpResponseStatus.of(statusCode, "");
+        EmbeddedChannel channel = channel(crlf);
+        String br = br(crlf);
+        writeMsg("HTTP/1.1 " + status.code() /* no SP */ + br + br, channel);
+        assertResponseLine(HTTP_1_1, status, channel);
         assertEmptyTrailers(channel);
         assertFalse(channel.finishAndReleaseAll());
     }
