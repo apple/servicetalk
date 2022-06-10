@@ -185,7 +185,7 @@ public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<
      *     strategy to avoid blocking the event-loop and filters added via
      *     {@link #appendClientFilter(StreamingHttpClientFilterFactory)},
      *     {@link #appendConnectionFilter(StreamingHttpConnectionFilterFactory)}, or
-     *     {@link #appendConnectionFactoryFilter(ConnectionFactoryFilter)}</p>, etc. may also require offloading.
+     *     {@link #appendConnectionFactoryFilter(ConnectionFactoryFilter)}, etc. may also require offloading.
      *     The execution strategy for execution of client requests will be computed based on the client API in use and
      *     {@link HttpExecutionStrategyInfluencer#requiredOffloads()} of added the filters.
      *

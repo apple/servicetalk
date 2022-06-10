@@ -115,12 +115,12 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         final CompositeCloseable closeables = newCompositeCloseable();
         try {
             final HttpExecutionContext executionContext = executionContextBuilder.build();
-            final ClientFactory clientFactory = new ClientFactory(builderFactory, executionContext,
-                    singleAddressInitializer);
+            final ClientFactory clientFactory =
+                    new ClientFactory(builderFactory, executionContext, singleAddressInitializer);
             final CachingKeyFactory keyFactory = closeables.prepend(new CachingKeyFactory());
             final HttpHeadersFactory headersFactory = this.headersFactory;
             FilterableStreamingHttpClient urlClient = closeables.prepend(
-                    new StreamingUrlHttpClient(executionContext, clientFactory, keyFactory,
+                    new StreamingUrlHttpClient(executionContext, keyFactory, clientFactory,
                             new DefaultStreamingHttpRequestResponseFactory(executionContext.bufferAllocator(),
                                     headersFactory != null ? headersFactory : DefaultHttpHeadersFactory.INSTANCE,
                                     HTTP_1_1)));
@@ -318,8 +318,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         private final ListenableAsyncCloseable closeable;
 
         StreamingUrlHttpClient(final HttpExecutionContext executionContext,
-                               final Function<UrlKey, FilterableStreamingHttpClient> clientFactory,
-                               final CachingKeyFactory keyFactory,
+                               final CachingKeyFactory keyFactory, final ClientFactory clientFactory,
                                final StreamingHttpRequestResponseFactory reqRespFactory) {
             this.reqRespFactory = requireNonNull(reqRespFactory);
             this.group = ClientGroup.from(clientFactory);
