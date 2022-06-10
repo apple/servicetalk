@@ -560,7 +560,7 @@ class ClientEffectiveStrategyTest {
 
         public void verifyOffloads(ClientApi clientApi, HttpExecutionStrategy clientStrategy, String apiStrategy) {
             assertNoAsyncErrors("API=" + clientApi + ", apiStrategy=" + apiStrategy +
-                    ", clientStrategy=" + clientStrategy  +
+                    ", clientStrategy=" + clientStrategy +
                     ", expectedStrategy=" + expectedStrategy + ". Async Errors! See suppressed", errors);
             assertThat("Unexpected offload points recorded. " + invokingThreads,
                     invokingThreads.size(), Matchers.is(ClientOffloadPoint.values().length));
