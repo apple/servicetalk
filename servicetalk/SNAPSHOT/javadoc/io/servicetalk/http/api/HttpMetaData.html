@@ -143,18 +143,20 @@ extends <a href="../../context/api/ContextMapHolder.html" title="interface in io
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">Sets a context for this <a href="HttpMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpMetaData</code></a>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code><a href="../../encoding/api/ContentCodec.html" title="interface in io.servicetalk.encoding.api">ContentCodec</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code><a href="#encoding()" class="member-name-link">encoding</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6"><code>default <a href="../../encoding/api/ContentCodec.html" title="interface in io.servicetalk.encoding.api">ContentCodec</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6"><code><a href="#encoding()" class="member-name-link">encoding</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6">
 <div class="block"><span class="deprecated-label">Deprecated.</span>
-<div class="deprecation-comment">Use <a href="HttpRequestMetaData.html#contentEncoding()"><code>HttpRequestMetaData.contentEncoding()</code></a>.</div>
+<div class="deprecation-comment">Use <a href="HttpRequestMetaData.html#contentEncoding()"><code>HttpRequestMetaData.contentEncoding()</code></a> for requests and
+ <a href="ContentEncodingHttpServiceFilter.html" title="class in io.servicetalk.http.api"><code>ContentEncodingHttpServiceFilter</code></a> for responses.</div>
 </div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code><a href="HttpMetaData.html" title="interface in io.servicetalk.http.api">HttpMetaData</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code><a href="#encoding(io.servicetalk.encoding.api.ContentCodec)" class="member-name-link">encoding</a><wbr>(<a href="../../encoding/api/ContentCodec.html" title="interface in io.servicetalk.encoding.api">ContentCodec</a>&nbsp;encoding)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6"><code>default <a href="HttpMetaData.html" title="interface in io.servicetalk.http.api">HttpMetaData</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6"><code><a href="#encoding(io.servicetalk.encoding.api.ContentCodec)" class="member-name-link">encoding</a><wbr>(<a href="../../encoding/api/ContentCodec.html" title="interface in io.servicetalk.encoding.api">ContentCodec</a>&nbsp;encoding)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6">
 <div class="block"><span class="deprecated-label">Deprecated.</span>
-<div class="deprecation-comment">Use <a href="HttpRequestMetaData.html#contentEncoding(io.servicetalk.encoding.api.BufferEncoder)"><code>HttpRequestMetaData.contentEncoding(BufferEncoder)</code></a>.</div>
+<div class="deprecation-comment">Use <a href="HttpRequestMetaData.html#contentEncoding(io.servicetalk.encoding.api.BufferEncoder)"><code>HttpRequestMetaData.contentEncoding(BufferEncoder)</code></a> for requests and
+ <a href="ContentEncodingHttpServiceFilter.html" title="class in io.servicetalk.http.api"><code>ContentEncodingHttpServiceFilter</code></a> for responses.</div>
 </div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></code></div>
@@ -246,9 +248,11 @@ extends <a href="../../context/api/ContextMapHolder.html" title="interface in io
 <section class="detail" id="encoding(io.servicetalk.encoding.api.ContentCodec)">
 <h3>encoding</h3>
 <div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
-</span><span class="return-type"><a href="HttpMetaData.html" title="interface in io.servicetalk.http.api">HttpMetaData</a></span>&nbsp;<span class="element-name">encoding</span><wbr><span class="parameters">(<a href="../../encoding/api/ContentCodec.html" title="interface in io.servicetalk.encoding.api">ContentCodec</a>&nbsp;encoding)</span></div>
+</span><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="HttpMetaData.html" title="interface in io.servicetalk.http.api">HttpMetaData</a></span>&nbsp;<span class="element-name">encoding</span><wbr><span class="parameters">(<a href="../../encoding/api/ContentCodec.html" title="interface in io.servicetalk.encoding.api">ContentCodec</a>&nbsp;encoding)</span></div>
 <div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
-<div class="deprecation-comment">Use <a href="HttpRequestMetaData.html#contentEncoding(io.servicetalk.encoding.api.BufferEncoder)"><code>HttpRequestMetaData.contentEncoding(BufferEncoder)</code></a>.</div>
+<div class="deprecation-comment">Use <a href="HttpRequestMetaData.html#contentEncoding(io.servicetalk.encoding.api.BufferEncoder)"><code>HttpRequestMetaData.contentEncoding(BufferEncoder)</code></a> for requests and
+ <a href="ContentEncodingHttpServiceFilter.html" title="class in io.servicetalk.http.api"><code>ContentEncodingHttpServiceFilter</code></a> for responses. An example can be found
+ <a href="https://apple.github.io/servicetalk//servicetalk-examples/0.42/http/index.html#Compression">here</a>.</div>
 </div>
 <div class="block">The <a href="../../encoding/api/ContentCodec.html" title="interface in io.servicetalk.encoding.api"><code>ContentCodec</code></a> used to encode the payload of a request or a response.
  If the endpoint is setup with <a href="ContentCodingHttpServiceFilter.html" title="class in io.servicetalk.http.api"><code>ContentCodingHttpServiceFilter</code></a>, the server will
@@ -275,9 +279,11 @@ extends <a href="../../context/api/ContextMapHolder.html" title="interface in io
 <h3>encoding</h3>
 <div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
 @Nullable
-</span><span class="return-type"><a href="../../encoding/api/ContentCodec.html" title="interface in io.servicetalk.encoding.api">ContentCodec</a></span>&nbsp;<span class="element-name">encoding</span>()</div>
+</span><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="../../encoding/api/ContentCodec.html" title="interface in io.servicetalk.encoding.api">ContentCodec</a></span>&nbsp;<span class="element-name">encoding</span>()</div>
 <div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
-<div class="deprecation-comment">Use <a href="HttpRequestMetaData.html#contentEncoding()"><code>HttpRequestMetaData.contentEncoding()</code></a>.</div>
+<div class="deprecation-comment">Use <a href="HttpRequestMetaData.html#contentEncoding()"><code>HttpRequestMetaData.contentEncoding()</code></a> for requests and
+ <a href="ContentEncodingHttpServiceFilter.html" title="class in io.servicetalk.http.api"><code>ContentEncodingHttpServiceFilter</code></a> for responses. An example can be found
+ <a href="https://apple.github.io/servicetalk//servicetalk-examples/0.42/http/index.html#Compression">here</a>.</div>
 </div>
 <div class="block">Returns the <a href="../../encoding/api/ContentCodec.html" title="interface in io.servicetalk.encoding.api"><code>ContentCodec</code></a> used to encode the payload of a request or a response.</div>
 <dl class="notes">

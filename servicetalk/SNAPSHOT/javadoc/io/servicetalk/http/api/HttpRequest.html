@@ -172,9 +172,9 @@ extends <a href="HttpRequestMetaData.html" title="interface in io.servicetalk.ht
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">Sets a context for this <a href="HttpMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpMetaData</code></a>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code><a href="HttpRequest.html" title="interface in io.servicetalk.http.api">HttpRequest</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code><a href="#encoding(io.servicetalk.encoding.api.ContentCodec)" class="member-name-link">encoding</a><wbr>(<a href="../../encoding/api/ContentCodec.html" title="interface in io.servicetalk.encoding.api">ContentCodec</a>&nbsp;encoding)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6"><code>default <a href="HttpRequest.html" title="interface in io.servicetalk.http.api">HttpRequest</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6"><code><a href="#encoding(io.servicetalk.encoding.api.ContentCodec)" class="member-name-link">encoding</a><wbr>(<a href="../../encoding/api/ContentCodec.html" title="interface in io.servicetalk.encoding.api">ContentCodec</a>&nbsp;encoding)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6">
 <div class="block"><span class="deprecated-label">Deprecated.</span></div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="HttpRequest.html" title="interface in io.servicetalk.http.api">HttpRequest</a></code></div>
@@ -211,10 +211,10 @@ extends <a href="HttpRequestMetaData.html" title="interface in io.servicetalk.ht
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">Gets and deserializes the payload body.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code>&lt;T&gt;&nbsp;<a href="HttpRequest.html" title="interface in io.servicetalk.http.api">HttpRequest</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code><a href="#payloadBody(T,io.servicetalk.http.api.HttpSerializer)" class="member-name-link">payloadBody</a><wbr>(T&nbsp;pojo,
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6"><code>default &lt;T&gt;&nbsp;<a href="HttpRequest.html" title="interface in io.servicetalk.http.api">HttpRequest</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6"><code><a href="#payloadBody(T,io.servicetalk.http.api.HttpSerializer)" class="member-name-link">payloadBody</a><wbr>(T&nbsp;pojo,
  <a href="HttpSerializer.html" title="interface in io.servicetalk.http.api">HttpSerializer</a>&lt;T&gt;&nbsp;serializer)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6">
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6">
 <div class="block"><span class="deprecated-label">Deprecated.</span>
 <div class="deprecation-comment">Use <a href="#payloadBody(T,io.servicetalk.http.api.HttpSerializer2)"><code>payloadBody(Object, HttpSerializer2)</code></a>.</div>
 </div>
@@ -392,7 +392,7 @@ extends <a href="HttpRequestMetaData.html" title="interface in io.servicetalk.ht
 <section class="detail" id="payloadBody(T,io.servicetalk.http.api.HttpSerializer)">
 <h3 id="payloadBody(java.lang.Object,io.servicetalk.http.api.HttpSerializer)">payloadBody</h3>
 <div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
-</span><span class="type-parameters">&lt;T&gt;</span>&nbsp;<span class="return-type"><a href="HttpRequest.html" title="interface in io.servicetalk.http.api">HttpRequest</a></span>&nbsp;<span class="element-name">payloadBody</span><wbr><span class="parameters">(T&nbsp;pojo,
+</span><span class="modifiers">default</span>&nbsp;<span class="type-parameters">&lt;T&gt;</span>&nbsp;<span class="return-type"><a href="HttpRequest.html" title="interface in io.servicetalk.http.api">HttpRequest</a></span>&nbsp;<span class="element-name">payloadBody</span><wbr><span class="parameters">(T&nbsp;pojo,
  <a href="HttpSerializer.html" title="interface in io.servicetalk.http.api">HttpSerializer</a>&lt;T&gt;&nbsp;serializer)</span></div>
 <div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
 <div class="deprecation-comment">Use <a href="#payloadBody(T,io.servicetalk.http.api.HttpSerializer2)"><code>payloadBody(Object, HttpSerializer2)</code></a>.</div>
@@ -710,7 +710,7 @@ extends <a href="HttpRequestMetaData.html" title="interface in io.servicetalk.ht
 <section class="detail" id="encoding(io.servicetalk.encoding.api.ContentCodec)">
 <h3>encoding</h3>
 <div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
-</span><span class="return-type"><a href="HttpRequest.html" title="interface in io.servicetalk.http.api">HttpRequest</a></span>&nbsp;<span class="element-name">encoding</span><wbr><span class="parameters">(<a href="../../encoding/api/ContentCodec.html" title="interface in io.servicetalk.encoding.api">ContentCodec</a>&nbsp;encoding)</span></div>
+</span><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="HttpRequest.html" title="interface in io.servicetalk.http.api">HttpRequest</a></span>&nbsp;<span class="element-name">encoding</span><wbr><span class="parameters">(<a href="../../encoding/api/ContentCodec.html" title="interface in io.servicetalk.encoding.api">ContentCodec</a>&nbsp;encoding)</span></div>
 <div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="HttpMetaData.html#encoding(io.servicetalk.encoding.api.ContentCodec)">HttpMetaData</a></code></span></div>
 <div class="block">The <a href="../../encoding/api/ContentCodec.html" title="interface in io.servicetalk.encoding.api"><code>ContentCodec</code></a> used to encode the payload of a request or a response.

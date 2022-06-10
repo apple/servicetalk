@@ -193,7 +193,7 @@ implements <a href="SingleAddressHttpClientBuilder.html" title="interface in io.
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="DelegatingSingleAddressHttpClientBuilder.html" title="type parameter in DelegatingSingleAddressHttpClientBuilder">U</a>,<wbr><a href="DelegatingSingleAddressHttpClientBuilder.html" title="type parameter in DelegatingSingleAddressHttpClientBuilder">R</a>&gt;</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#hostHeaderFallback(boolean)" class="member-name-link">hostHeaderFallback</a><wbr>(boolean&nbsp;enable)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Configures automatically setting <code>Host</code> headers by inferring from the address or <a href="HttpMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpMetaData</code></a>.</div>
+<div class="block">Configures automatically setting <code>Host</code> headers by inferring from the address.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="DelegatingSingleAddressHttpClientBuilder.html" title="type parameter in DelegatingSingleAddressHttpClientBuilder">U</a>,<wbr><a href="DelegatingSingleAddressHttpClientBuilder.html" title="type parameter in DelegatingSingleAddressHttpClientBuilder">R</a>&gt;</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#inferPeerHost(boolean)" class="member-name-link">inferPeerHost</a><wbr>(boolean&nbsp;shouldInfer)</code></div>
@@ -407,7 +407,7 @@ implements <a href="SingleAddressHttpClientBuilder.html" title="interface in io.
 <h3>hostHeaderFallback</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="DelegatingSingleAddressHttpClientBuilder.html" title="type parameter in DelegatingSingleAddressHttpClientBuilder">U</a>,<wbr><a href="DelegatingSingleAddressHttpClientBuilder.html" title="type parameter in DelegatingSingleAddressHttpClientBuilder">R</a>&gt;</span>&nbsp;<span class="element-name">hostHeaderFallback</span><wbr><span class="parameters">(boolean&nbsp;enable)</span></div>
 <div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="SingleAddressHttpClientBuilder.html#hostHeaderFallback(boolean)">SingleAddressHttpClientBuilder</a></code></span></div>
-<div class="block">Configures automatically setting <code>Host</code> headers by inferring from the address or <a href="HttpMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpMetaData</code></a>.
+<div class="block">Configures automatically setting <code>Host</code> headers by inferring from the address.
  <p>
  When <code>false</code> is passed, this setting disables the default filter such that no <code>Host</code> header will be
  manipulated.</div>

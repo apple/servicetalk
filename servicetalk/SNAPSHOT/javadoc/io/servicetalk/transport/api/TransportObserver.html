@@ -78,7 +78,14 @@ loadScripts(document, 'script');</script>
 </dl>
 <hr>
 <div class="type-signature"><span class="modifiers">public interface </span><span class="element-name type-name-label">TransportObserver</span></div>
-<div class="block">An observer interface that provides visibility into transport events.</div>
+<div class="block">An observer interface that provides visibility into transport events.
+ <p>
+ In order to deliver events at accurate time, callbacks on this interface can be invoked from the <a href="IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a>.
+ Implementation of this observer <b>must</b> be non-blocking. If the consumer of events may block (uses a blocking
+ library or <a href="https://logging.apache.org/log4j/2.x/manual/async.html">logger configuration is not async</a>),
+ it has to offload publications to another <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> <b>after</b> capturing timing of events. If blocking code
+ is executed inside callbacks without offloading, it will negatively impact <a href="IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a> and overall performance
+ of the application.</div>
 </section>
 <section class="summary">
 <ul class="summary-list">

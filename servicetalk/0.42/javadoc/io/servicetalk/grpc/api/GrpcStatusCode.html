@@ -156,7 +156,7 @@ loadScripts(document, 'script');</script>
 </div>
 <div class="col-first even-row-color"><code><a href="#OUT_OF_RANGE" class="member-name-link">OUT_OF_RANGE</a></code></div>
 <div class="col-last even-row-color">
-<div class="block">Used for range errors.</div>
+<div class="block">Used for range errors (e.g.</div>
 </div>
 <div class="col-first odd-row-color"><code><a href="#PERMISSION_DENIED" class="member-name-link">PERMISSION_DENIED</a></code></div>
 <div class="col-last odd-row-color">
@@ -176,7 +176,7 @@ loadScripts(document, 'script');</script>
 </div>
 <div class="col-first odd-row-color"><code><a href="#UNIMPLEMENTED" class="member-name-link">UNIMPLEMENTED</a></code></div>
 <div class="col-last odd-row-color">
-<div class="block">Unimplemented action.</div>
+<div class="block">The method/operation is not implemented/supported.</div>
 </div>
 <div class="col-first even-row-color"><code><a href="#UNKNOWN" class="member-name-link">UNKNOWN</a></code></div>
 <div class="col-last even-row-color">
@@ -305,7 +305,11 @@ the order they are declared.</div>
 <section class="detail" id="PERMISSION_DENIED">
 <h3>PERMISSION_DENIED</h3>
 <div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="GrpcStatusCode.html" title="enum class in io.servicetalk.grpc.api">GrpcStatusCode</a></span>&nbsp;<span class="element-name">PERMISSION_DENIED</span></div>
-<div class="block">Permission denied for a particular client. Different from <a href="#UNAUTHENTICATED"><code>UNAUTHENTICATED</code></a>.</div>
+<div class="block">Permission denied for a particular client. Must not be used for the following cases:
+ <ul>
+     <li>rejections caused by exhausting some resource (use <a href="#RESOURCE_EXHAUSTED"><code>RESOURCE_EXHAUSTED</code></a> instead)</li>
+     <li>the caller cannot be identified (use <a href="#UNAUTHENTICATED"><code>UNAUTHENTICATED</code></a> instead)</li>
+ </ul></div>
 </section>
 </li>
 <li>
@@ -319,28 +323,37 @@ the order they are declared.</div>
 <section class="detail" id="FAILED_PRECONDITION">
 <h3>FAILED_PRECONDITION</h3>
 <div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="GrpcStatusCode.html" title="enum class in io.servicetalk.grpc.api">GrpcStatusCode</a></span>&nbsp;<span class="element-name">FAILED_PRECONDITION</span></div>
-<div class="block">The action cannot be executed on the current system state. Client should not retry..</div>
+<div class="block">The action cannot be executed on the current system state. Client should not retry.</div>
 </section>
 </li>
 <li>
 <section class="detail" id="ABORTED">
 <h3>ABORTED</h3>
 <div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="GrpcStatusCode.html" title="enum class in io.servicetalk.grpc.api">GrpcStatusCode</a></span>&nbsp;<span class="element-name">ABORTED</span></div>
-<div class="block">Aborted, typically due to a concurrency issue (think CAS). Client may retry the whole sequence..</div>
+<div class="block">Aborted, typically due to a concurrency issue (think CAS). Client may retry the whole sequence.</div>
 </section>
 </li>
 <li>
 <section class="detail" id="OUT_OF_RANGE">
 <h3>OUT_OF_RANGE</h3>
 <div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="GrpcStatusCode.html" title="enum class in io.servicetalk.grpc.api">GrpcStatusCode</a></span>&nbsp;<span class="element-name">OUT_OF_RANGE</span></div>
-<div class="block">Used for range errors.</div>
+<div class="block">Used for range errors (e.g. seeking or reading past end of file.)
+ <p>
+ Unlike <a href="#INVALID_ARGUMENT"><code>INVALID_ARGUMENT</code></a>, this error indicates a problem that may be fixed if the system state changes.
+ For example, a 32-bit file system will generate <a href="#INVALID_ARGUMENT"><code>INVALID_ARGUMENT</code></a> if asked to read at an offset that is
+ not in the range [0,2^32-1], but it will generate OUT_OF_RANGE if asked to read from an offset past the current
+ file size.
+ <p>
+ There is a fair bit of overlap with <a href="#FAILED_PRECONDITION"><code>FAILED_PRECONDITION</code></a>. This error is more specific and recommended
+ in scenarios when callers who are iterating through a space can easily look for an OUT_OF_RANGE error to detect
+ when they are done.</div>
 </section>
 </li>
 <li>
 <section class="detail" id="UNIMPLEMENTED">
 <h3>UNIMPLEMENTED</h3>
 <div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="GrpcStatusCode.html" title="enum class in io.servicetalk.grpc.api">GrpcStatusCode</a></span>&nbsp;<span class="element-name">UNIMPLEMENTED</span></div>
-<div class="block">Unimplemented action.</div>
+<div class="block">The method/operation is not implemented/supported.</div>
 </section>
 </li>
 <li>

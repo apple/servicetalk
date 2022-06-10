@@ -89,30 +89,34 @@ loadScripts(document, 'script');</script>
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Class</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="CloseableIteratorBufferAsInputStream.html" title="class in io.servicetalk.concurrent.api.internal">CloseableIteratorBufferAsInputStream</a></div>
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="BlockingUtils.html" title="class in io.servicetalk.concurrent.api.internal">BlockingUtils</a></div>
 <div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="block">Common utility functions to unwrap <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/ExecutionException.html" title="class or interface in java.util.concurrent" class="external-link"><code>ExecutionException</code></a> from async operations.</div>
+</div>
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="CloseableIteratorBufferAsInputStream.html" title="class in io.servicetalk.concurrent.api.internal">CloseableIteratorBufferAsInputStream</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">Conversion from a <a href="../../CloseableIterator.html" title="interface in io.servicetalk.concurrent"><code>CloseableIterator</code></a> of <a href="../../../buffer/api/Buffer.html" title="interface in io.servicetalk.buffer.api"><code>Buffer</code></a>s to a <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/InputStream.html" title="class or interface in java.io" class="external-link"><code>InputStream</code></a>.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="ConnectableBufferOutputStream.html" title="class in io.servicetalk.concurrent.api.internal">ConnectableBufferOutputStream</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="ConnectableBufferOutputStream.html" title="class in io.servicetalk.concurrent.api.internal">ConnectableBufferOutputStream</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">An <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/OutputStream.html" title="class or interface in java.io" class="external-link"><code>OutputStream</code></a> that can be connected to a sink such that any data written on the <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/OutputStream.html" title="class or interface in java.io" class="external-link"><code>OutputStream</code></a> is
  eventually emitted to the connected <a href="../Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> <a href="../../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a>.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="ConnectablePayloadWriter.html" title="class in io.servicetalk.concurrent.api.internal">ConnectablePayloadWriter</a>&lt;T&gt;</div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="ConnectablePayloadWriter.html" title="class in io.servicetalk.concurrent.api.internal">ConnectablePayloadWriter</a>&lt;T&gt;</div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">A <a href="../../../oio/api/PayloadWriter.html" title="interface in io.servicetalk.oio.api"><code>PayloadWriter</code></a> that can be <a href="ConnectablePayloadWriter.html#connect()"><code>connected</code></a> to a sink such that any data written on the
  <a href="../../../oio/api/PayloadWriter.html" title="interface in io.servicetalk.oio.api"><code>PayloadWriter</code></a> is eventually emitted to the connected <a href="../Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> <a href="../../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a>.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="SubscribableCompletable.html" title="class in io.servicetalk.concurrent.api.internal">SubscribableCompletable</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="SubscribableCompletable.html" title="class in io.servicetalk.concurrent.api.internal">SubscribableCompletable</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">A <a href="../Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that is also a <a href="../../CompletableSource.html" title="interface in io.servicetalk.concurrent"><code>CompletableSource</code></a> and hence can be subscribed.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="SubscribablePublisher.html" title="class in io.servicetalk.concurrent.api.internal">SubscribablePublisher</a>&lt;T&gt;</div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="SubscribablePublisher.html" title="class in io.servicetalk.concurrent.api.internal">SubscribablePublisher</a>&lt;T&gt;</div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">A <a href="../Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> that is also a <a href="../../PublisherSource.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource</code></a> and hence can be subscribed.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="SubscribableSingle.html" title="class in io.servicetalk.concurrent.api.internal">SubscribableSingle</a>&lt;T&gt;</div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="SubscribableSingle.html" title="class in io.servicetalk.concurrent.api.internal">SubscribableSingle</a>&lt;T&gt;</div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">A <a href="../Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> that is also a <a href="../../SingleSource.html" title="interface in io.servicetalk.concurrent"><code>SingleSource</code></a> and hence can be subscribed.</div>
 </div>
 </div>

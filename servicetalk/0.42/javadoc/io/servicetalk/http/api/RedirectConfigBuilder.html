@@ -341,8 +341,8 @@ loadScripts(document, 'script');</script>
  <p>
  <b>Note:</b> This option expects that the redirected <a href="StreamingHttpRequest.html" title="interface in io.servicetalk.http.api"><code>requests</code></a> have a
  <a href="StreamingHttpRequest.html#payloadBody()"><code>payload body</code></a> that is
- <a href="http://reactivex.io/documentation/operators/replay.html">replayable</a>, i.e. multiple subscribes to the
- payload <a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> observe the same data. <a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>s that do not emit any data or which are
+ <a href="https://reactivex.io/documentation/operators/replay.html">replayable</a>, i.e. multiple subscribes to
+ the payload <a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> observe the same data. <a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>s that do not emit any data or which are
  created from in-memory data are typically replayable.</div>
 <dl class="notes">
 <dt>Parameters:</dt>

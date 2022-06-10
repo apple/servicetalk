@@ -331,249 +331,255 @@ loadScripts(document, 'script');</script>
 <div class="block">Creates a realized failed <code>Completable</code>.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#fromFuture(java.util.concurrent.Future)" class="member-name-link">fromFuture</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/Future.html" title="class or interface in java.util.concurrent" class="external-link">Future</a>&lt;?&gt;&nbsp;future)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#fromCallable(java.util.concurrent.Callable)" class="member-name-link">fromCallable</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/Callable.html" title="class or interface in java.util.concurrent" class="external-link">Callable</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Void.html" title="class or interface in java.lang" class="external-link">Void</a>&gt;&nbsp;callable)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
-<div class="block">Convert from a <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/Future.html" title="class or interface in java.util.concurrent" class="external-link"><code>Future</code></a> to a <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> via <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/Future.html#get()" title="class or interface in java.util.concurrent" class="external-link"><code>Future.get()</code></a>.</div>
+<div class="block">Creates a <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> which when subscribed will invoke <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/Callable.html#call()" title="class or interface in java.util.concurrent" class="external-link"><code>Callable.call()</code></a> on the passed
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/Callable.html" title="class or interface in java.util.concurrent" class="external-link"><code>Callable</code></a> and emit the value returned by that invocation from the returned <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a>.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#fromRunnable(java.lang.Runnable)" class="member-name-link">fromRunnable</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Runnable.html" title="class or interface in java.lang" class="external-link">Runnable</a>&nbsp;runnable)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#fromFuture(java.util.concurrent.Future)" class="member-name-link">fromFuture</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/Future.html" title="class or interface in java.util.concurrent" class="external-link">Future</a>&lt;?&gt;&nbsp;future)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">Convert from a <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/Future.html" title="class or interface in java.util.concurrent" class="external-link"><code>Future</code></a> to a <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> via <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/Future.html#get()" title="class or interface in java.util.concurrent" class="external-link"><code>Future.get()</code></a>.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#fromRunnable(java.lang.Runnable)" class="member-name-link">fromRunnable</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Runnable.html" title="class or interface in java.lang" class="external-link">Runnable</a>&nbsp;runnable)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Creates a <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> which when subscribed will invoke <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Runnable.html#run()" title="class or interface in java.lang" class="external-link"><code>Runnable.run()</code></a> on the passed
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Runnable.html" title="class or interface in java.lang" class="external-link"><code>Runnable</code></a> and emit the value returned by that invocation from the returned <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#fromStage(java.util.concurrent.CompletionStage)" class="member-name-link">fromStage</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletionStage.html" title="class or interface in java.util.concurrent" class="external-link">CompletionStage</a>&lt;?&gt;&nbsp;stage)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#fromStage(java.util.concurrent.CompletionStage)" class="member-name-link">fromStage</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletionStage.html" title="class or interface in java.util.concurrent" class="external-link">CompletionStage</a>&lt;?&gt;&nbsp;stage)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Convert from a <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletionStage.html" title="class or interface in java.util.concurrent" class="external-link"><code>CompletionStage</code></a> to a <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>protected abstract void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#handleSubscribe(io.servicetalk.concurrent.CompletableSource.Subscriber)" class="member-name-link">handleSubscribe</a><wbr>(<a href="../CompletableSource.Subscriber.html" title="interface in io.servicetalk.concurrent">CompletableSource.Subscriber</a>&nbsp;subscriber)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>protected abstract void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#handleSubscribe(io.servicetalk.concurrent.CompletableSource.Subscriber)" class="member-name-link">handleSubscribe</a><wbr>(<a href="../CompletableSource.Subscriber.html" title="interface in io.servicetalk.concurrent">CompletableSource.Subscriber</a>&nbsp;subscriber)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">Handles a subscriber to this <code>Completable</code>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#liftAsync(io.servicetalk.concurrent.api.CompletableOperator)" class="member-name-link">liftAsync</a><wbr>(<a href="CompletableOperator.html" title="interface in io.servicetalk.concurrent.api">CompletableOperator</a>&nbsp;operator)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block"><strong>This method requires advanced knowledge of building operators.</div>
-</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#liftSync(io.servicetalk.concurrent.api.CompletableOperator)" class="member-name-link">liftSync</a><wbr>(<a href="CompletableOperator.html" title="interface in io.servicetalk.concurrent.api">CompletableOperator</a>&nbsp;operator)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#liftAsync(io.servicetalk.concurrent.api.CompletableOperator)" class="member-name-link">liftAsync</a><wbr>(<a href="CompletableOperator.html" title="interface in io.servicetalk.concurrent.api">CompletableOperator</a>&nbsp;operator)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block"><strong>This method requires advanced knowledge of building operators.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#merge(io.servicetalk.concurrent.api.Completable)" class="member-name-link">merge</a><wbr>(<a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>&nbsp;other)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#liftSync(io.servicetalk.concurrent.api.CompletableOperator)" class="member-name-link">liftSync</a><wbr>(<a href="CompletableOperator.html" title="interface in io.servicetalk.concurrent.api">CompletableOperator</a>&nbsp;operator)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block"><strong>This method requires advanced knowledge of building operators.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#merge(io.servicetalk.concurrent.api.Completable)" class="member-name-link">merge</a><wbr>(<a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>&nbsp;other)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Merges this <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> with the <code>other</code> <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> so that the resulting
  <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> terminates successfully when both of these complete or either terminates with an error.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#merge(io.servicetalk.concurrent.api.Completable...)" class="member-name-link">merge</a><wbr>(<a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>...&nbsp;other)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#merge(io.servicetalk.concurrent.api.Completable...)" class="member-name-link">merge</a><wbr>(<a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>...&nbsp;other)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Merges this <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> with the <code>other</code> <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a>s so that the resulting
  <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> terminates successfully when all of these complete or any one terminates with an error.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final &lt;T&gt;&nbsp;<a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;T&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#merge(io.servicetalk.concurrent.api.Publisher)" class="member-name-link">merge</a><wbr>(<a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;? extends T&gt;&nbsp;mergeWith)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final &lt;T&gt;&nbsp;<a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;T&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#merge(io.servicetalk.concurrent.api.Publisher)" class="member-name-link">merge</a><wbr>(<a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;? extends T&gt;&nbsp;mergeWith)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Merges the passed <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> with this <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#merge(java.lang.Iterable)" class="member-name-link">merge</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link">Iterable</a>&lt;? extends <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>&gt;&nbsp;other)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#merge(java.lang.Iterable)" class="member-name-link">merge</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link">Iterable</a>&lt;? extends <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>&gt;&nbsp;other)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Merges this <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> with the <code>other</code> <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a>s so that the resulting
  <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> terminates successfully when all of these complete or terminates with an error when any one
  terminates with an error.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#mergeAll(int,io.servicetalk.concurrent.api.Completable...)" class="member-name-link">mergeAll</a><wbr>(int&nbsp;maxConcurrency,
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#mergeAll(int,io.servicetalk.concurrent.api.Completable...)" class="member-name-link">mergeAll</a><wbr>(int&nbsp;maxConcurrency,
  <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>...&nbsp;completables)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
-<div class="block">Returns a <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that terminates when all the passed <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> terminate.</div>
-</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#mergeAll(io.servicetalk.concurrent.api.Completable...)" class="member-name-link">mergeAll</a><wbr>(<a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>...&nbsp;completables)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Returns a <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that terminates when all the passed <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> terminate.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#mergeAll(java.lang.Iterable)" class="member-name-link">mergeAll</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link">Iterable</a>&lt;? extends <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>&gt;&nbsp;completables)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#mergeAll(io.servicetalk.concurrent.api.Completable...)" class="member-name-link">mergeAll</a><wbr>(<a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>...&nbsp;completables)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Returns a <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that terminates when all the passed <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> terminate.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#mergeAll(java.lang.Iterable,int)" class="member-name-link">mergeAll</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link">Iterable</a>&lt;? extends <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>&gt;&nbsp;completables,
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#mergeAll(java.lang.Iterable)" class="member-name-link">mergeAll</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link">Iterable</a>&lt;? extends <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>&gt;&nbsp;completables)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">Returns a <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that terminates when all the passed <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> terminate.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#mergeAll(java.lang.Iterable,int)" class="member-name-link">mergeAll</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link">Iterable</a>&lt;? extends <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>&gt;&nbsp;completables,
  int&nbsp;maxConcurrency)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Returns a <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that terminates when all the passed <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> terminate.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#mergeAllDelayError(int,io.servicetalk.concurrent.api.Completable...)" class="member-name-link">mergeAllDelayError</a><wbr>(int&nbsp;maxConcurrency,
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#mergeAllDelayError(int,io.servicetalk.concurrent.api.Completable...)" class="member-name-link">mergeAllDelayError</a><wbr>(int&nbsp;maxConcurrency,
  <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>...&nbsp;completables)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
-<div class="block">Returns a <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that terminates when all the passed <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> terminate.</div>
-</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#mergeAllDelayError(io.servicetalk.concurrent.api.Completable...)" class="member-name-link">mergeAllDelayError</a><wbr>(<a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>...&nbsp;completables)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Returns a <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that terminates when all the passed <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> terminate.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#mergeAllDelayError(java.lang.Iterable)" class="member-name-link">mergeAllDelayError</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link">Iterable</a>&lt;? extends <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>&gt;&nbsp;completables)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#mergeAllDelayError(io.servicetalk.concurrent.api.Completable...)" class="member-name-link">mergeAllDelayError</a><wbr>(<a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>...&nbsp;completables)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Returns a <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that terminates when all the passed <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> terminate.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#mergeAllDelayError(java.lang.Iterable,int)" class="member-name-link">mergeAllDelayError</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link">Iterable</a>&lt;? extends <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>&gt;&nbsp;completables,
- int&nbsp;maxConcurrency)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#mergeAllDelayError(java.lang.Iterable)" class="member-name-link">mergeAllDelayError</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link">Iterable</a>&lt;? extends <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>&gt;&nbsp;completables)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Returns a <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that terminates when all the passed <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> terminate.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#mergeDelayError(io.servicetalk.concurrent.api.Completable)" class="member-name-link">mergeDelayError</a><wbr>(<a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>&nbsp;other)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#mergeAllDelayError(java.lang.Iterable,int)" class="member-name-link">mergeAllDelayError</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link">Iterable</a>&lt;? extends <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>&gt;&nbsp;completables,
+ int&nbsp;maxConcurrency)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">Returns a <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that terminates when all the passed <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> terminate.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#mergeDelayError(io.servicetalk.concurrent.api.Completable)" class="member-name-link">mergeDelayError</a><wbr>(<a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>&nbsp;other)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Merges this <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> with the <code>other</code> <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a>, and delays error notification until
  all involved <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a>s terminate.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#mergeDelayError(io.servicetalk.concurrent.api.Completable...)" class="member-name-link">mergeDelayError</a><wbr>(<a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>...&nbsp;other)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#mergeDelayError(io.servicetalk.concurrent.api.Completable...)" class="member-name-link">mergeDelayError</a><wbr>(<a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>...&nbsp;other)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Merges this <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> with the <code>other</code> <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a>s, and delays error notification until
  all involved <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a>s terminate.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final &lt;T&gt;&nbsp;<a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;T&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#mergeDelayError(io.servicetalk.concurrent.api.Publisher)" class="member-name-link">mergeDelayError</a><wbr>(<a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;? extends T&gt;&nbsp;mergeWith)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final &lt;T&gt;&nbsp;<a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;T&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#mergeDelayError(io.servicetalk.concurrent.api.Publisher)" class="member-name-link">mergeDelayError</a><wbr>(<a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;? extends T&gt;&nbsp;mergeWith)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Merges the passed <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> with this <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#mergeDelayError(java.lang.Iterable)" class="member-name-link">mergeDelayError</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link">Iterable</a>&lt;? extends <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>&gt;&nbsp;other)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#mergeDelayError(java.lang.Iterable)" class="member-name-link">mergeDelayError</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link">Iterable</a>&lt;? extends <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>&gt;&nbsp;other)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Merges this <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> with the <code>other</code> <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a>s, and delays error notification until
  all involved <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a>s terminate.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#never()" class="member-name-link">never</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#never()" class="member-name-link">never</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Creates a <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that never terminates.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onErrorComplete()" class="member-name-link">onErrorComplete</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onErrorComplete()" class="member-name-link">onErrorComplete</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Transform errors emitted on this <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> into a <a href="../CompletableSource.Subscriber.html#onComplete()"><code>CompletableSource.Subscriber.onComplete()</code></a> signal
  (e.g.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final &lt;E extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&gt;<br><a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onErrorComplete(java.lang.Class)" class="member-name-link">onErrorComplete</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;E&gt;&nbsp;type)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final &lt;E extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&gt;<br><a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onErrorComplete(java.lang.Class)" class="member-name-link">onErrorComplete</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;E&gt;&nbsp;type)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Transform errors emitted on this <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> which match <code>type</code> into a
  <a href="../CompletableSource.Subscriber.html#onComplete()"><code>CompletableSource.Subscriber.onComplete()</code></a> signal (e.g.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onErrorComplete(java.util.function.Predicate)" class="member-name-link">onErrorComplete</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Predicate.html" title="class or interface in java.util.function" class="external-link">Predicate</a>&lt;? super <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&gt;&nbsp;predicate)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onErrorComplete(java.util.function.Predicate)" class="member-name-link">onErrorComplete</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Predicate.html" title="class or interface in java.util.function" class="external-link">Predicate</a>&lt;? super <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&gt;&nbsp;predicate)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Transform errors emitted on this <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> which match <code>predicate</code> into a
  <a href="../CompletableSource.Subscriber.html#onComplete()"><code>CompletableSource.Subscriber.onComplete()</code></a> signal (e.g.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final &lt;E extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&gt;<br><a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onErrorMap(java.lang.Class,java.util.function.Function)" class="member-name-link">onErrorMap</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;E&gt;&nbsp;type,
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final &lt;E extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&gt;<br><a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onErrorMap(java.lang.Class,java.util.function.Function)" class="member-name-link">onErrorMap</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;E&gt;&nbsp;type,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Function.html" title="class or interface in java.util.function" class="external-link">Function</a>&lt;? super E,<wbr>? extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&gt;&nbsp;mapper)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Transform errors emitted on this <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> which match <code>type</code> into a different error.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onErrorMap(java.util.function.Function)" class="member-name-link">onErrorMap</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Function.html" title="class or interface in java.util.function" class="external-link">Function</a>&lt;? super <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>,<wbr>? extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&gt;&nbsp;mapper)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onErrorMap(java.util.function.Function)" class="member-name-link">onErrorMap</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Function.html" title="class or interface in java.util.function" class="external-link">Function</a>&lt;? super <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>,<wbr>? extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&gt;&nbsp;mapper)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Transform errors emitted on this <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> into a different error.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onErrorMap(java.util.function.Predicate,java.util.function.Function)" class="member-name-link">onErrorMap</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Predicate.html" title="class or interface in java.util.function" class="external-link">Predicate</a>&lt;? super <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&gt;&nbsp;predicate,
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onErrorMap(java.util.function.Predicate,java.util.function.Function)" class="member-name-link">onErrorMap</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Predicate.html" title="class or interface in java.util.function" class="external-link">Predicate</a>&lt;? super <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&gt;&nbsp;predicate,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Function.html" title="class or interface in java.util.function" class="external-link">Function</a>&lt;? super <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>,<wbr>? extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&gt;&nbsp;mapper)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Transform errors emitted on this <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> which match <code>predicate</code> into a different error.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final &lt;E extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&gt;<br><a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onErrorResume(java.lang.Class,java.util.function.Function)" class="member-name-link">onErrorResume</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;E&gt;&nbsp;type,
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final &lt;E extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&gt;<br><a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onErrorResume(java.lang.Class,java.util.function.Function)" class="member-name-link">onErrorResume</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Class.html" title="class or interface in java.lang" class="external-link">Class</a>&lt;E&gt;&nbsp;type,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Function.html" title="class or interface in java.util.function" class="external-link">Function</a>&lt;? super E,<wbr>? extends <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>&gt;&nbsp;nextFactory)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Recover from errors emitted by this <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> which match <code>type</code> by using another
  <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> provided by the passed <code>nextFactory</code>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onErrorResume(java.util.function.Function)" class="member-name-link">onErrorResume</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Function.html" title="class or interface in java.util.function" class="external-link">Function</a>&lt;? super <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>,<wbr>? extends <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>&gt;&nbsp;nextFactory)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onErrorResume(java.util.function.Function)" class="member-name-link">onErrorResume</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Function.html" title="class or interface in java.util.function" class="external-link">Function</a>&lt;? super <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>,<wbr>? extends <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>&gt;&nbsp;nextFactory)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Recover from any error emitted by this <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> by using another <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> provided by the
  passed <code>nextFactory</code>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onErrorResume(java.util.function.Predicate,java.util.function.Function)" class="member-name-link">onErrorResume</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Predicate.html" title="class or interface in java.util.function" class="external-link">Predicate</a>&lt;? super <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&gt;&nbsp;predicate,
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onErrorResume(java.util.function.Predicate,java.util.function.Function)" class="member-name-link">onErrorResume</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Predicate.html" title="class or interface in java.util.function" class="external-link">Predicate</a>&lt;? super <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&gt;&nbsp;predicate,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Function.html" title="class or interface in java.util.function" class="external-link">Function</a>&lt;? super <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>,<wbr>? extends <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>&gt;&nbsp;nextFactory)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Recover from errors emitted by this <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> which match <code>predicate</code> by using another
  <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> provided by the passed <code>nextFactory</code>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#publishOn(io.servicetalk.concurrent.Executor)" class="member-name-link">publishOn</a><wbr>(<a href="../Executor.html" title="interface in io.servicetalk.concurrent">Executor</a>&nbsp;executor)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#publishOn(io.servicetalk.concurrent.Executor)" class="member-name-link">publishOn</a><wbr>(<a href="../Executor.html" title="interface in io.servicetalk.concurrent">Executor</a>&nbsp;executor)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Creates a new <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that will use the passed <a href="../Executor.html" title="interface in io.servicetalk.concurrent"><code>Executor</code></a> to invoke
  all <a href="../CompletableSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>CompletableSource.Subscriber</code></a> methods.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#publishOn(io.servicetalk.concurrent.Executor,java.util.function.BooleanSupplier)" class="member-name-link">publishOn</a><wbr>(<a href="../Executor.html" title="interface in io.servicetalk.concurrent">Executor</a>&nbsp;executor,
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#publishOn(io.servicetalk.concurrent.Executor,java.util.function.BooleanSupplier)" class="member-name-link">publishOn</a><wbr>(<a href="../Executor.html" title="interface in io.servicetalk.concurrent">Executor</a>&nbsp;executor,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/BooleanSupplier.html" title="class or interface in java.util.function" class="external-link">BooleanSupplier</a>&nbsp;shouldOffload)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Creates a new <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that may use the passed <a href="../Executor.html" title="interface in io.servicetalk.concurrent"><code>Executor</code></a> to invoke
  all <a href="../CompletableSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>CompletableSource.Subscriber</code></a> methods.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Void.html" title="class or interface in java.lang" class="external-link">Void</a>&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#repeat(java.util.function.IntPredicate)" class="member-name-link">repeat</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/IntPredicate.html" title="class or interface in java.util.function" class="external-link">IntPredicate</a>&nbsp;shouldRepeat)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Void.html" title="class or interface in java.lang" class="external-link">Void</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#repeat(java.util.function.IntPredicate)" class="member-name-link">repeat</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/IntPredicate.html" title="class or interface in java.util.function" class="external-link">IntPredicate</a>&nbsp;shouldRepeat)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Re-subscribes to this <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> when it completes and the passed <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/IntPredicate.html" title="class or interface in java.util.function" class="external-link"><code>IntPredicate</code></a> returns
  <code>true</code>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Void.html" title="class or interface in java.lang" class="external-link">Void</a>&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#repeatWhen(java.util.function.IntFunction)" class="member-name-link">repeatWhen</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/IntFunction.html" title="class or interface in java.util.function" class="external-link">IntFunction</a>&lt;? extends <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>&gt;&nbsp;repeatWhen)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Void.html" title="class or interface in java.lang" class="external-link">Void</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#repeatWhen(java.util.function.IntFunction)" class="member-name-link">repeatWhen</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/IntFunction.html" title="class or interface in java.util.function" class="external-link">IntFunction</a>&lt;? extends <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>&gt;&nbsp;repeatWhen)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Re-subscribes to this <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> when it completes and the <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> returned by the supplied
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/IntFunction.html" title="class or interface in java.util.function" class="external-link"><code>IntFunction</code></a> completes successfully.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#retry(io.servicetalk.concurrent.api.BiIntPredicate)" class="member-name-link">retry</a><wbr>(<a href="BiIntPredicate.html" title="interface in io.servicetalk.concurrent.api">BiIntPredicate</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&gt;&nbsp;shouldRetry)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#retry(io.servicetalk.concurrent.api.BiIntPredicate)" class="member-name-link">retry</a><wbr>(<a href="BiIntPredicate.html" title="interface in io.servicetalk.concurrent.api">BiIntPredicate</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&gt;&nbsp;shouldRetry)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Re-subscribes to this <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> if an error is emitted and the passed <a href="BiIntPredicate.html" title="interface in io.servicetalk.concurrent.api"><code>BiIntPredicate</code></a> returns
  <code>true</code>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#retryWhen(io.servicetalk.concurrent.api.BiIntFunction)" class="member-name-link">retryWhen</a><wbr>(<a href="BiIntFunction.html" title="interface in io.servicetalk.concurrent.api">BiIntFunction</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>,<wbr>? extends <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>&gt;&nbsp;retryWhen)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#retryWhen(io.servicetalk.concurrent.api.BiIntFunction)" class="member-name-link">retryWhen</a><wbr>(<a href="BiIntFunction.html" title="interface in io.servicetalk.concurrent.api">BiIntFunction</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>,<wbr>? extends <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>&gt;&nbsp;retryWhen)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Re-subscribes to this <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> if an error is emitted and the <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> returned by the
  supplied <a href="BiIntFunction.html" title="interface in io.servicetalk.concurrent.api"><code>BiIntFunction</code></a> completes successfully.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#shareContextOnSubscribe()" class="member-name-link">shareContextOnSubscribe</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#shareContextOnSubscribe()" class="member-name-link">shareContextOnSubscribe</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Signifies that when the returned <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> is subscribed to, the <a href="AsyncContext.html" title="class in io.servicetalk.concurrent.api"><code>AsyncContext</code></a> will be shared
  instead of making a <a href="../../context/api/ContextMap.html#copy()"><code>copy</code></a>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="../Cancellable.html" title="interface in io.servicetalk.concurrent">Cancellable</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#subscribe()" class="member-name-link">subscribe</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Subscribe to this <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> and log any <a href="../CompletableSource.Subscriber.html#onError(java.lang.Throwable)"><code>CompletableSource.Subscriber.onError(Throwable)</code></a>.</div>
-</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="../Cancellable.html" title="interface in io.servicetalk.concurrent">Cancellable</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#subscribe(java.lang.Runnable)" class="member-name-link">subscribe</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Runnable.html" title="class or interface in java.lang" class="external-link">Runnable</a>&nbsp;onComplete)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#subscribe()" class="member-name-link">subscribe</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Subscribe to this <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> and log any <a href="../CompletableSource.Subscriber.html#onError(java.lang.Throwable)"><code>CompletableSource.Subscriber.onError(Throwable)</code></a>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>protected final void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#subscribeInternal(io.servicetalk.concurrent.CompletableSource.Subscriber)" class="member-name-link">subscribeInternal</a><wbr>(<a href="../CompletableSource.Subscriber.html" title="interface in io.servicetalk.concurrent">CompletableSource.Subscriber</a>&nbsp;subscriber)</code></div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="../Cancellable.html" title="interface in io.servicetalk.concurrent">Cancellable</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#subscribe(java.lang.Runnable)" class="member-name-link">subscribe</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Runnable.html" title="class or interface in java.lang" class="external-link">Runnable</a>&nbsp;onComplete)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Subscribe to this <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> and log any <a href="../CompletableSource.Subscriber.html#onError(java.lang.Throwable)"><code>CompletableSource.Subscriber.onError(Throwable)</code></a>.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>protected final void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#subscribeInternal(io.servicetalk.concurrent.CompletableSource.Subscriber)" class="member-name-link">subscribeInternal</a><wbr>(<a href="../CompletableSource.Subscriber.html" title="interface in io.servicetalk.concurrent">CompletableSource.Subscriber</a>&nbsp;subscriber)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">A internal subscribe method similar to <a href="../CompletableSource.html#subscribe(io.servicetalk.concurrent.CompletableSource.Subscriber)"><code>CompletableSource.subscribe(Subscriber)</code></a> which can be used by
  different implementations to subscribe.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#subscribeOn(io.servicetalk.concurrent.Executor)" class="member-name-link">subscribeOn</a><wbr>(<a href="../Executor.html" title="interface in io.servicetalk.concurrent">Executor</a>&nbsp;executor)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#subscribeOn(io.servicetalk.concurrent.Executor)" class="member-name-link">subscribeOn</a><wbr>(<a href="../Executor.html" title="interface in io.servicetalk.concurrent">Executor</a>&nbsp;executor)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Creates a new <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that will use the passed <a href="../Executor.html" title="interface in io.servicetalk.concurrent"><code>Executor</code></a> to invoke
  the following methods:
  
@@ -583,10 +589,10 @@ loadScripts(document, 'script');</script>
  This method does <strong>not</strong> override preceding <a href="../Executor.html" title="interface in io.servicetalk.concurrent"><code>Executor</code></a>s, if any,
  specified for <code>this</code> <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#subscribeOn(io.servicetalk.concurrent.Executor,java.util.function.BooleanSupplier)" class="member-name-link">subscribeOn</a><wbr>(<a href="../Executor.html" title="interface in io.servicetalk.concurrent">Executor</a>&nbsp;executor,
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#subscribeOn(io.servicetalk.concurrent.Executor,java.util.function.BooleanSupplier)" class="member-name-link">subscribeOn</a><wbr>(<a href="../Executor.html" title="interface in io.servicetalk.concurrent">Executor</a>&nbsp;executor,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/BooleanSupplier.html" title="class or interface in java.util.function" class="external-link">BooleanSupplier</a>&nbsp;shouldOffload)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Creates a new <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that may use the passed <a href="../Executor.html" title="interface in io.servicetalk.concurrent"><code>Executor</code></a> to invoke
  the following methods:
  
@@ -596,63 +602,63 @@ loadScripts(document, 'script');</script>
  This method does <strong>not</strong> override preceding <a href="../Executor.html" title="interface in io.servicetalk.concurrent"><code>Executor</code></a>s, if any,
  specified for <code>this</code> <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#timeout(long,java.util.concurrent.TimeUnit)" class="member-name-link">timeout</a><wbr>(long&nbsp;duration,
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#timeout(long,java.util.concurrent.TimeUnit)" class="member-name-link">timeout</a><wbr>(long&nbsp;duration,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/TimeUnit.html" title="class or interface in java.util.concurrent" class="external-link">TimeUnit</a>&nbsp;unit)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Creates a new <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that will mimic the signals of this <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> but will terminate
  with a <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/TimeoutException.html" title="class or interface in java.util.concurrent" class="external-link"><code>TimeoutException</code></a> if time <code>duration</code> elapses between subscribe and termination.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#timeout(long,java.util.concurrent.TimeUnit,io.servicetalk.concurrent.Executor)" class="member-name-link">timeout</a><wbr>(long&nbsp;duration,
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#timeout(long,java.util.concurrent.TimeUnit,io.servicetalk.concurrent.Executor)" class="member-name-link">timeout</a><wbr>(long&nbsp;duration,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/TimeUnit.html" title="class or interface in java.util.concurrent" class="external-link">TimeUnit</a>&nbsp;unit,
  <a href="../Executor.html" title="interface in io.servicetalk.concurrent">Executor</a>&nbsp;timeoutExecutor)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Creates a new <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that will mimic the signals of this <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> but will terminate
- with a <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/TimeoutException.html" title="class or interface in java.util.concurrent" class="external-link"><code>TimeoutException</code></a> if time <code>duration</code> elapses between subscribe and termination.</div>
-</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#timeout(java.time.Duration)" class="member-name-link">timeout</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;duration)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Creates a new <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that will mimic the signals of this <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> but will terminate
  with a <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/TimeoutException.html" title="class or interface in java.util.concurrent" class="external-link"><code>TimeoutException</code></a> if time <code>duration</code> elapses between subscribe and termination.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#timeout(java.time.Duration,io.servicetalk.concurrent.Executor)" class="member-name-link">timeout</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;duration,
- <a href="../Executor.html" title="interface in io.servicetalk.concurrent">Executor</a>&nbsp;timeoutExecutor)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#timeout(java.time.Duration)" class="member-name-link">timeout</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;duration)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Creates a new <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that will mimic the signals of this <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> but will terminate
  with a <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/TimeoutException.html" title="class or interface in java.util.concurrent" class="external-link"><code>TimeoutException</code></a> if time <code>duration</code> elapses between subscribe and termination.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletionStage.html" title="class or interface in java.util.concurrent" class="external-link">CompletionStage</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Void.html" title="class or interface in java.lang" class="external-link">Void</a>&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toCompletionStage()" class="member-name-link">toCompletionStage</a>()</code></div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#timeout(java.time.Duration,io.servicetalk.concurrent.Executor)" class="member-name-link">timeout</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;duration,
+ <a href="../Executor.html" title="interface in io.servicetalk.concurrent">Executor</a>&nbsp;timeoutExecutor)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Creates a new <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that will mimic the signals of this <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> but will terminate
+ with a <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/TimeoutException.html" title="class or interface in java.util.concurrent" class="external-link"><code>TimeoutException</code></a> if time <code>duration</code> elapses between subscribe and termination.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletionStage.html" title="class or interface in java.util.concurrent" class="external-link">CompletionStage</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Void.html" title="class or interface in java.lang" class="external-link">Void</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toCompletionStage()" class="member-name-link">toCompletionStage</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Converts this <code>Completable</code> to a <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletionStage.html" title="class or interface in java.util.concurrent" class="external-link"><code>CompletionStage</code></a>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/Future.html" title="class or interface in java.util.concurrent" class="external-link">Future</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Void.html" title="class or interface in java.lang" class="external-link">Void</a>&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toFuture()" class="member-name-link">toFuture</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/Future.html" title="class or interface in java.util.concurrent" class="external-link">Future</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Void.html" title="class or interface in java.lang" class="external-link">Void</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toFuture()" class="member-name-link">toFuture</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Converts this <code>Completable</code> to a <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/Future.html" title="class or interface in java.util.concurrent" class="external-link"><code>Future</code></a>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final &lt;T&gt;&nbsp;<a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;T&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toPublisher()" class="member-name-link">toPublisher</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final &lt;T&gt;&nbsp;<a href="Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;T&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toPublisher()" class="member-name-link">toPublisher</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Converts this <code>Completable</code> to a <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Void.html" title="class or interface in java.lang" class="external-link">Void</a>&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toSingle()" class="member-name-link">toSingle</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Void.html" title="class or interface in java.lang" class="external-link">Void</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toSingle()" class="member-name-link">toSingle</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Converts this <code>Completable</code> to a <a href="Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#whenCancel(java.lang.Runnable)" class="member-name-link">whenCancel</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Runnable.html" title="class or interface in java.lang" class="external-link">Runnable</a>&nbsp;onCancel)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#whenCancel(java.lang.Runnable)" class="member-name-link">whenCancel</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Runnable.html" title="class or interface in java.lang" class="external-link">Runnable</a>&nbsp;onCancel)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Invokes the <code>onCancel</code> <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Runnable.html" title="class or interface in java.lang" class="external-link"><code>Runnable</code></a> argument when <a href="../Cancellable.html#cancel()"><code>Cancellable.cancel()</code></a> is called for
  Subscriptions of the returned <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#whenFinally(io.servicetalk.concurrent.api.TerminalSignalConsumer)" class="member-name-link">whenFinally</a><wbr>(<a href="TerminalSignalConsumer.html" title="interface in io.servicetalk.concurrent.api">TerminalSignalConsumer</a>&nbsp;doFinally)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#whenFinally(io.servicetalk.concurrent.api.TerminalSignalConsumer)" class="member-name-link">whenFinally</a><wbr>(<a href="TerminalSignalConsumer.html" title="interface in io.servicetalk.concurrent.api">TerminalSignalConsumer</a>&nbsp;doFinally)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Invokes the corresponding method on <code>whenFinally</code> <a href="TerminalSignalConsumer.html" title="interface in io.servicetalk.concurrent.api"><code>TerminalSignalConsumer</code></a> argument when any of the
  following terminal methods are called:
  
@@ -662,9 +668,9 @@ loadScripts(document, 'script');</script>
  
  for Subscriptions/<a href="../CompletableSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>CompletableSource.Subscriber</code></a>s of the returned <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#whenFinally(java.lang.Runnable)" class="member-name-link">whenFinally</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Runnable.html" title="class or interface in java.lang" class="external-link">Runnable</a>&nbsp;doFinally)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#whenFinally(java.lang.Runnable)" class="member-name-link">whenFinally</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Runnable.html" title="class or interface in java.lang" class="external-link">Runnable</a>&nbsp;doFinally)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Invokes the <code>whenFinally</code> <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Runnable.html" title="class or interface in java.lang" class="external-link"><code>Runnable</code></a> argument exactly once, when any of the following terminal
  methods are called:
  
@@ -674,28 +680,28 @@ loadScripts(document, 'script');</script>
  
  for Subscriptions/<a href="../CompletableSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>CompletableSource.Subscriber</code></a>s of the returned <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#whenOnComplete(java.lang.Runnable)" class="member-name-link">whenOnComplete</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Runnable.html" title="class or interface in java.lang" class="external-link">Runnable</a>&nbsp;onComplete)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#whenOnComplete(java.lang.Runnable)" class="member-name-link">whenOnComplete</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Runnable.html" title="class or interface in java.lang" class="external-link">Runnable</a>&nbsp;onComplete)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Invokes the <code>onComplete</code> <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Runnable.html" title="class or interface in java.lang" class="external-link"><code>Runnable</code></a> argument when <a href="../CompletableSource.Subscriber.html#onComplete()"><code>CompletableSource.Subscriber.onComplete()</code></a> is called for
  <a href="../CompletableSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>CompletableSource.Subscriber</code></a>s of the returned <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#whenOnError(java.util.function.Consumer)" class="member-name-link">whenOnError</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Consumer.html" title="class or interface in java.util.function" class="external-link">Consumer</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&gt;&nbsp;onError)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#whenOnError(java.util.function.Consumer)" class="member-name-link">whenOnError</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Consumer.html" title="class or interface in java.util.function" class="external-link">Consumer</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&gt;&nbsp;onError)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Invokes the <code>onError</code> <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Consumer.html" title="class or interface in java.util.function" class="external-link"><code>Consumer</code></a> argument when <a href="../CompletableSource.Subscriber.html#onError(java.lang.Throwable)"><code>CompletableSource.Subscriber.onError(Throwable)</code></a> is called for
  <a href="../CompletableSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>CompletableSource.Subscriber</code></a>s of the returned <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#whenOnSubscribe(java.util.function.Consumer)" class="member-name-link">whenOnSubscribe</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Consumer.html" title="class or interface in java.util.function" class="external-link">Consumer</a>&lt;<a href="../Cancellable.html" title="interface in io.servicetalk.concurrent">Cancellable</a>&gt;&nbsp;onSubscribe)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#whenOnSubscribe(java.util.function.Consumer)" class="member-name-link">whenOnSubscribe</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Consumer.html" title="class or interface in java.util.function" class="external-link">Consumer</a>&lt;<a href="../Cancellable.html" title="interface in io.servicetalk.concurrent">Cancellable</a>&gt;&nbsp;onSubscribe)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Invokes the <code>onSubscribe</code> <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Consumer.html" title="class or interface in java.util.function" class="external-link"><code>Consumer</code></a> argument when
  <a href="../CompletableSource.Subscriber.html#onSubscribe(io.servicetalk.concurrent.Cancellable)"><code>CompletableSource.Subscriber.onSubscribe(Cancellable)</code></a> is called for <a href="../CompletableSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>CompletableSource.Subscriber</code></a>s of the returned
  <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#whenSubscriber(java.util.function.Supplier)" class="member-name-link">whenSubscriber</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Supplier.html" title="class or interface in java.util.function" class="external-link">Supplier</a>&lt;? extends <a href="../CompletableSource.Subscriber.html" title="interface in io.servicetalk.concurrent">CompletableSource.Subscriber</a>&gt;&nbsp;subscriberSupplier)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#whenSubscriber(java.util.function.Supplier)" class="member-name-link">whenSubscriber</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Supplier.html" title="class or interface in java.util.function" class="external-link">Supplier</a>&lt;? extends <a href="../CompletableSource.Subscriber.html" title="interface in io.servicetalk.concurrent">CompletableSource.Subscriber</a>&gt;&nbsp;subscriberSupplier)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Creates a new <a href="../CompletableSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>CompletableSource.Subscriber</code></a> (via the <code>subscriberSupplier</code> argument) for each new subscribe and
  invokes methods on that <a href="../CompletableSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>CompletableSource.Subscriber</code></a> when the corresponding methods are called for <a href="../CompletableSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>CompletableSource.Subscriber</code></a>s of
  the returned <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>.</div>
@@ -754,7 +760,7 @@ loadScripts(document, 'script');</script>
 <dt>See Also:</dt>
 <dd>
 <ul class="see-list">
-<li><a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a></li>
+<li><a href="https://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a></li>
 </ul>
 </dd>
 </dl>
@@ -788,7 +794,7 @@ loadScripts(document, 'script');</script>
 <dt>See Also:</dt>
 <dd>
 <ul class="see-list">
-<li><a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a></li>
+<li><a href="https://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a></li>
 </ul>
 </dd>
 </dl>
@@ -821,7 +827,7 @@ loadScripts(document, 'script');</script>
 <dt>See Also:</dt>
 <dd>
 <ul class="see-list">
-<li><a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a></li>
+<li><a href="https://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a></li>
 </ul>
 </dd>
 </dl>
@@ -849,7 +855,7 @@ loadScripts(document, 'script');</script>
 <dt>See Also:</dt>
 <dd>
 <ul class="see-list">
-<li><a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a></li>
+<li><a href="https://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a></li>
 </ul>
 </dd>
 </dl>
@@ -885,7 +891,7 @@ loadScripts(document, 'script');</script>
 <dt>See Also:</dt>
 <dd>
 <ul class="see-list">
-<li><a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a></li>
+<li><a href="https://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a></li>
 </ul>
 </dd>
 </dl>
@@ -920,7 +926,7 @@ loadScripts(document, 'script');</script>
 <dt>See Also:</dt>
 <dd>
 <ul class="see-list">
-<li><a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a></li>
+<li><a href="https://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a></li>
 </ul>
 </dd>
 </dl>
@@ -984,7 +990,7 @@ loadScripts(document, 'script');</script>
 <dt>See Also:</dt>
 <dd>
 <ul class="see-list">
-<li><a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a></li>
+<li><a href="https://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a></li>
 </ul>
 </dd>
 </dl>
@@ -1022,7 +1028,7 @@ loadScripts(document, 'script');</script>
 <dt>See Also:</dt>
 <dd>
 <ul class="see-list">
-<li><a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a></li>
+<li><a href="https://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a></li>
 </ul>
 </dd>
 </dl>
@@ -1239,7 +1245,7 @@ loadScripts(document, 'script');</script>
 <dt>See Also:</dt>
 <dd>
 <ul class="see-list">
-<li><a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a></li>
+<li><a href="https://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a></li>
 </ul>
 </dd>
 </dl>
@@ -1270,7 +1276,7 @@ loadScripts(document, 'script');</script>
 <dt>See Also:</dt>
 <dd>
 <ul class="see-list">
-<li><a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a></li>
+<li><a href="https://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a></li>
 </ul>
 </dd>
 </dl>
@@ -1296,7 +1302,7 @@ loadScripts(document, 'script');</script>
 <dt>See Also:</dt>
 <dd>
 <ul class="see-list">
-<li><a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a></li>
+<li><a href="https://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a></li>
 </ul>
 </dd>
 </dl>
@@ -1325,7 +1331,7 @@ loadScripts(document, 'script');</script>
 <dt>See Also:</dt>
 <dd>
 <ul class="see-list">
-<li><a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a></li>
+<li><a href="https://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a></li>
 </ul>
 </dd>
 </dl>
@@ -1555,7 +1561,7 @@ loadScripts(document, 'script');</script>
 <dt>See Also:</dt>
 <dd>
 <ul class="see-list">
-<li><a href="http://reactivex.io/documentation/operators/merge.html">ReactiveX merge operator.</a></li>
+<li><a href="https://reactivex.io/documentation/operators/merge.html">ReactiveX merge operator.</a></li>
 </ul>
 </dd>
 </dl>
@@ -1602,7 +1608,7 @@ loadScripts(document, 'script');</script>
 <dt>See Also:</dt>
 <dd>
 <ul class="see-list">
-<li><a href="http://reactivex.io/documentation/operators/merge.html">ReactiveX merge operator.</a></li>
+<li><a href="https://reactivex.io/documentation/operators/merge.html">ReactiveX merge operator.</a></li>
 </ul>
 </dd>
 </dl>
@@ -1779,7 +1785,7 @@ loadScripts(document, 'script');</script>
 <dt>See Also:</dt>
 <dd>
 <ul class="see-list">
-<li><a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a></li>
+<li><a href="https://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a></li>
 </ul>
 </dd>
 </dl>
@@ -1829,7 +1835,7 @@ loadScripts(document, 'script');</script>
 <dt>See Also:</dt>
 <dd>
 <ul class="see-list">
-<li><a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a></li>
+<li><a href="https://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a></li>
 </ul>
 </dd>
 </dl>
@@ -1863,7 +1869,7 @@ loadScripts(document, 'script');</script>
 <dt>See Also:</dt>
 <dd>
 <ul class="see-list">
-<li><a href="http://reactivex.io/documentation/operators/repeat.html">ReactiveX repeat operator.</a></li>
+<li><a href="https://reactivex.io/documentation/operators/repeat.html">ReactiveX repeat operator.</a></li>
 </ul>
 </dd>
 </dl>
@@ -1904,7 +1910,7 @@ loadScripts(document, 'script');</script>
 <dt>See Also:</dt>
 <dd>
 <ul class="see-list">
-<li><a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a></li>
+<li><a href="https://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a></li>
 </ul>
 </dd>
 </dl>
@@ -2166,7 +2172,7 @@ loadScripts(document, 'script');</script>
 <dt>See Also:</dt>
 <dd>
 <ul class="see-list">
-<li><a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a></li>
+<li><a href="https://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a></li>
 </ul>
 </dd>
 </dl>
@@ -2206,7 +2212,7 @@ loadScripts(document, 'script');</script>
 <dt>See Also:</dt>
 <dd>
 <ul class="see-list">
-<li><a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a></li>
+<li><a href="https://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a></li>
 </ul>
 </dd>
 </dl>
@@ -2370,7 +2376,7 @@ loadScripts(document, 'script');</script>
 <dt>See Also:</dt>
 <dd>
 <ul class="see-list">
-<li><a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a></li>
+<li><a href="https://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a></li>
 </ul>
 </dd>
 </dl>
@@ -2410,7 +2416,7 @@ loadScripts(document, 'script');</script>
 <dt>See Also:</dt>
 <dd>
 <ul class="see-list">
-<li><a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a></li>
+<li><a href="https://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a></li>
 </ul>
 </dd>
 </dl>
@@ -2697,7 +2703,7 @@ loadScripts(document, 'script');</script>
 <dt>See Also:</dt>
 <dd>
 <ul class="see-list">
-<li><a href="http://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a></li>
+<li><a href="https://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a></li>
 </ul>
 </dd>
 </dl>
@@ -2831,6 +2837,26 @@ loadScripts(document, 'script');</script>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>runnable</code> - <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Runnable.html" title="class or interface in java.lang" class="external-link"><code>Runnable</code></a> which is invoked before completion.</dd>
+<dt>Returns:</dt>
+<dd>A new <code>Completable</code>.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="fromCallable(java.util.concurrent.Callable)">
+<h3>fromCallable</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></span>&nbsp;<span class="element-name">fromCallable</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/Callable.html" title="class or interface in java.util.concurrent" class="external-link">Callable</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Void.html" title="class or interface in java.lang" class="external-link">Void</a>&gt;&nbsp;callable)</span></div>
+<div class="block">Creates a <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> which when subscribed will invoke <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/Callable.html#call()" title="class or interface in java.util.concurrent" class="external-link"><code>Callable.call()</code></a> on the passed
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/Callable.html" title="class or interface in java.util.concurrent" class="external-link"><code>Callable</code></a> and emit the value returned by that invocation from the returned <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a>. Any error
+ emitted by the <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/Callable.html" title="class or interface in java.util.concurrent" class="external-link"><code>Callable</code></a> will terminate the returned <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> with the same error.
+ <p>
+ Blocking inside <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/Callable.html#call()" title="class or interface in java.util.concurrent" class="external-link"><code>Callable.call()</code></a> will in turn block the subscribe call to the returned
+ <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a>.
+ If this behavior is undesirable then the returned <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> should be offloaded using
+ <a href="#subscribeOn(io.servicetalk.concurrent.Executor)"><code>subscribeOn(io.servicetalk.concurrent.Executor)</code></a> which offloads the subscribe call.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>callable</code> - <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/Callable.html" title="class or interface in java.util.concurrent" class="external-link"><code>Callable</code></a> which is invoked before completion.</dd>
 <dt>Returns:</dt>
 <dd>A new <code>Completable</code>.</dd>
 </dl>
@@ -3211,7 +3237,7 @@ loadScripts(document, 'script');</script>
 <dt>See Also:</dt>
 <dd>
 <ul class="see-list">
-<li><a href="http://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a></li>
+<li><a href="https://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a></li>
 </ul>
 </dd>
 </dl>
@@ -3242,7 +3268,7 @@ loadScripts(document, 'script');</script>
 <dt>See Also:</dt>
 <dd>
 <ul class="see-list">
-<li><a href="http://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a></li>
+<li><a href="https://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a></li>
 </ul>
 </dd>
 </dl>
@@ -3271,7 +3297,7 @@ loadScripts(document, 'script');</script>
 <dt>See Also:</dt>
 <dd>
 <ul class="see-list">
-<li><a href="http://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a></li>
+<li><a href="https://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a></li>
 </ul>
 </dd>
 </dl>
@@ -3301,7 +3327,7 @@ loadScripts(document, 'script');</script>
 <dt>See Also:</dt>
 <dd>
 <ul class="see-list">
-<li><a href="http://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a></li>
+<li><a href="https://reactivex.io/documentation/operators/amb.html">ReactiveX amb operator.</a></li>
 </ul>
 </dd>
 </dl>

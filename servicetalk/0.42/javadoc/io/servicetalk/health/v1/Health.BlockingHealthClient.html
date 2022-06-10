@@ -105,10 +105,10 @@ extends <a href="../../grpc/api/BlockingGrpcClient.html" title="interface in io.
   If the requested service is unknown, the call will fail with status
   NOT_FOUND.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code><a href="HealthCheckResponse.html" title="class in io.servicetalk.health.v1">HealthCheckResponse</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code><a href="#check(io.servicetalk.health.v1.Health.CheckMetadata,io.servicetalk.health.v1.HealthCheckRequest)" class="member-name-link">check</a><wbr>(<a href="Health.CheckMetadata.html" title="class in io.servicetalk.health.v1">Health.CheckMetadata</a>&nbsp;metadata,
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6"><code>default <a href="HealthCheckResponse.html" title="class in io.servicetalk.health.v1">HealthCheckResponse</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6"><code><a href="#check(io.servicetalk.health.v1.Health.CheckMetadata,io.servicetalk.health.v1.HealthCheckRequest)" class="member-name-link">check</a><wbr>(<a href="Health.CheckMetadata.html" title="class in io.servicetalk.health.v1">Health.CheckMetadata</a>&nbsp;metadata,
  <a href="HealthCheckRequest.html" title="class in io.servicetalk.health.v1">HealthCheckRequest</a>&nbsp;request)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6">
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6">
 <div class="block"><span class="deprecated-label">Deprecated.</span>
 <div class="deprecation-comment">Use <a href="#check(io.servicetalk.grpc.api.GrpcClientMetadata,io.servicetalk.health.v1.HealthCheckRequest)"><code>check(GrpcClientMetadata,HealthCheckRequest)</code></a>.</div>
 </div>
@@ -127,10 +127,10 @@ extends <a href="../../grpc/api/BlockingGrpcClient.html" title="interface in io.
 <div class="block">
   Performs a watch for the serving status of the requested service.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code><a href="../../concurrent/BlockingIterable.html" title="interface in io.servicetalk.concurrent">BlockingIterable</a>&lt;<a href="HealthCheckResponse.html" title="class in io.servicetalk.health.v1">HealthCheckResponse</a>&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code><a href="#watch(io.servicetalk.health.v1.Health.WatchMetadata,io.servicetalk.health.v1.HealthCheckRequest)" class="member-name-link">watch</a><wbr>(<a href="Health.WatchMetadata.html" title="class in io.servicetalk.health.v1">Health.WatchMetadata</a>&nbsp;metadata,
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6"><code>default <a href="../../concurrent/BlockingIterable.html" title="interface in io.servicetalk.concurrent">BlockingIterable</a>&lt;<a href="HealthCheckResponse.html" title="class in io.servicetalk.health.v1">HealthCheckResponse</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6"><code><a href="#watch(io.servicetalk.health.v1.Health.WatchMetadata,io.servicetalk.health.v1.HealthCheckRequest)" class="member-name-link">watch</a><wbr>(<a href="Health.WatchMetadata.html" title="class in io.servicetalk.health.v1">Health.WatchMetadata</a>&nbsp;metadata,
  <a href="HealthCheckRequest.html" title="class in io.servicetalk.health.v1">HealthCheckRequest</a>&nbsp;request)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6">
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6">
 <div class="block"><span class="deprecated-label">Deprecated.</span>
 <div class="deprecation-comment">Use <a href="#watch(io.servicetalk.grpc.api.GrpcClientMetadata,io.servicetalk.health.v1.HealthCheckRequest)"><code>watch(GrpcClientMetadata,HealthCheckRequest)</code></a>.</div>
 </div>
@@ -188,9 +188,9 @@ extends <a href="../../grpc/api/BlockingGrpcClient.html" title="interface in io.
 <section class="detail" id="check(io.servicetalk.health.v1.Health.CheckMetadata,io.servicetalk.health.v1.HealthCheckRequest)">
 <h3>check</h3>
 <div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
-</span><span class="return-type"><a href="HealthCheckResponse.html" title="class in io.servicetalk.health.v1">HealthCheckResponse</a></span>&nbsp;<span class="element-name">check</span><wbr><span class="parameters">(<a href="Health.CheckMetadata.html" title="class in io.servicetalk.health.v1">Health.CheckMetadata</a>&nbsp;metadata,
+</span><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="HealthCheckResponse.html" title="class in io.servicetalk.health.v1">HealthCheckResponse</a></span>&nbsp;<span class="element-name">check</span><wbr><span class="parameters">(<a href="Health.CheckMetadata.html" title="class in io.servicetalk.health.v1">Health.CheckMetadata</a>&nbsp;metadata,
  <a href="HealthCheckRequest.html" title="class in io.servicetalk.health.v1">HealthCheckRequest</a>&nbsp;request)</span>
-                   throws <span class="exceptions"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Exception.html" title="class or interface in java.lang" class="external-link">Exception</a></span></div>
+                           throws <span class="exceptions"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Exception.html" title="class or interface in java.lang" class="external-link">Exception</a></span></div>
 <div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
 <div class="deprecation-comment">Use <a href="#check(io.servicetalk.grpc.api.GrpcClientMetadata,io.servicetalk.health.v1.HealthCheckRequest)"><code>check(GrpcClientMetadata,HealthCheckRequest)</code></a>.</div>
 </div>
@@ -269,9 +269,9 @@ extends <a href="../../grpc/api/BlockingGrpcClient.html" title="interface in io.
 <section class="detail" id="watch(io.servicetalk.health.v1.Health.WatchMetadata,io.servicetalk.health.v1.HealthCheckRequest)">
 <h3>watch</h3>
 <div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
-</span><span class="return-type"><a href="../../concurrent/BlockingIterable.html" title="interface in io.servicetalk.concurrent">BlockingIterable</a>&lt;<a href="HealthCheckResponse.html" title="class in io.servicetalk.health.v1">HealthCheckResponse</a>&gt;</span>&nbsp;<span class="element-name">watch</span><wbr><span class="parameters">(<a href="Health.WatchMetadata.html" title="class in io.servicetalk.health.v1">Health.WatchMetadata</a>&nbsp;metadata,
+</span><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="../../concurrent/BlockingIterable.html" title="interface in io.servicetalk.concurrent">BlockingIterable</a>&lt;<a href="HealthCheckResponse.html" title="class in io.servicetalk.health.v1">HealthCheckResponse</a>&gt;</span>&nbsp;<span class="element-name">watch</span><wbr><span class="parameters">(<a href="Health.WatchMetadata.html" title="class in io.servicetalk.health.v1">Health.WatchMetadata</a>&nbsp;metadata,
  <a href="HealthCheckRequest.html" title="class in io.servicetalk.health.v1">HealthCheckRequest</a>&nbsp;request)</span>
-                                     throws <span class="exceptions"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Exception.html" title="class or interface in java.lang" class="external-link">Exception</a></span></div>
+                                             throws <span class="exceptions"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Exception.html" title="class or interface in java.lang" class="external-link">Exception</a></span></div>
 <div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
 <div class="deprecation-comment">Use <a href="#watch(io.servicetalk.grpc.api.GrpcClientMetadata,io.servicetalk.health.v1.HealthCheckRequest)"><code>watch(GrpcClientMetadata,HealthCheckRequest)</code></a>.</div>
 </div>

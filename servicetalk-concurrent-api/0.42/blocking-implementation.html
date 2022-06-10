@@ -77,7 +77,10 @@
     <a class="nav-link" href="../../servicetalk-examples/0.42/http/index.html#Timeout">Timeout</a>
   </li>
   <li class="nav-item" data-depth="3">
-    <a class="nav-link" href="../../servicetalk-examples/0.42/http/index.html#Serialization">Serialization</a>
+    <a class="nav-link" href="../../servicetalk-examples/0.42/http/index.html#SerializationJson">Serialization: JSON</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/0.42/http/index.html#SerializationProtobuf">Serialization: Protobuf</a>
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/0.42/http/index.html#JAXRS">JAX-RS</a>
@@ -101,6 +104,9 @@
     <a class="nav-link" href="../../servicetalk-examples/0.42/http/index.html#Redirects">Redirects</a>
   </li>
   <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/0.42/http/index.html#Retries">Retries</a>
+  </li>
+  <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/0.42/http/index.html#uds">Unix Domain Sockets</a>
   </li>
   <li class="nav-item" data-depth="3">
@@ -122,7 +128,13 @@
     <a class="nav-link" href="../../servicetalk-examples/0.42/grpc/index.html#Deadlines">Deadlines</a>
   </li>
   <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/0.42/grpc/index.html#KeepAlive">Keep Alive</a>
+  </li>
+  <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/0.42/grpc/index.html#Observer">Observer</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/0.42/grpc/index.html#Health">Health Checking</a>
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/0.42/grpc/index.html#errors">Application Errors</a>
@@ -158,6 +170,9 @@
   </li>
   <li class="nav-item" data-depth="2">
     <a class="nav-link" href="async-context.html">Async Context</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="pitfalls.html">Concurrency Pitfalls</a>
   </li>
 </ul>
   </li>
@@ -1048,9 +1063,10 @@
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>As described <a href="blocking-safe-by-default.html" class="page">here</a>, ServiceTalk by default
-allows users to write blocking code when interacting with ServiceTalk. This document describes the details of the
-implementation and is addressed to audiences who intend to know the internals of how this is achieved.</p>
+<p>As described in the section
+<a href="blocking-safe-by-default.html" class="page">Blocking Safe By Default</a>,
+ServiceTalk, by default, allows users to write blocking code when interacting with ServiceTalk. This document describes
+the details of the implementation and is addressed to audiences who intend to know the internals of how this is achieved.</p>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -1073,8 +1089,8 @@ It is not required to read this document if you just want to use ServiceTalk.
 <p>Everything inside ServiceTalk is somehow connected to one of the three asynchronous sources, viz., <code>Publisher</code>, <code>Single</code>
 and <code>Completable</code>. Since these sources are the building blocks for program control flow if they provide safety
 guarantees for blocking code execution these guarantees apply outside the scope of preventing blocking code from
-executing on event loop thread. This approach is designed to make the task of ensuring we don&#8217;t block the event loop
-threads less error prone, and also allows for certain optimizations around thread context propagation and re-use.</p>
+executing on an EventLoop thread. This approach is designed to make the task of ensuring we don&#8217;t block the EventLoop
+threads less error-prone, and also allows for certain optimizations around thread context propagation and re-use.</p>
 </div>
 </div>
 </div>
@@ -1082,131 +1098,77 @@ threads less error prone, and also allows for certain optimizations around threa
 <h2 id="threads-and-asynchronous-sources"><a class="anchor" href="#threads-and-asynchronous-sources"></a><a class="link" href="#threads-and-asynchronous-sources">Threads and asynchronous sources</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>An asynchronous source has to decide at two points about which thread will be used:</p>
+<p>An asynchronous source has two important decisions to make about thread usage:</p>
 </div>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p>Thread which is used to do the actual work related to a source. eg: for an HTTP client, the work is to send an HTTP
-request and read the HTTP response.</p>
+<p>Which thread or executor will be used to do the actual task related to a source. eg: for an HTTP client, the task
+is to send an HTTP request and read the HTTP response.</p>
 </li>
 <li>
-<p>Thread which is used to interact with the <code>Subscriber</code> corresponding to its `Subscription`s.</p>
+<p>Which thread or executor will be used to interact with the <code>Subscriber</code> corresponding to its `Subscription`s.</p>
 </li>
 </ol>
 </div>
 <div class="paragraph">
 <p>Part 1. above is not governed by the
 <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#specification">ReactiveStreams specification</a>
-and hence sources are free to use any thread. ServiceTalk typically will use Netty&#8217;s <code>EventLoop</code> to do the actual work.
-Part 2. defines all the interactions using the ReactiveStreams specifications, i.e. all methods in <code>Publisher</code>,
-<code>Subscriber</code> and <code>Subscription</code>.</p>
+and hence sources are free to use any thread. ServiceTalk typically will use Netty&#8217;s <code>EventLoop</code> to perform the actual
+task.</p>
 </div>
 <div class="paragraph">
-<p>ServiceTalk concurrency APIs defines which thread will be used by any asynchronous source for Part 2.</p>
+<p>Part 2. defines all the interactions using the ReactiveStreams specifications, i.e. all methods in <code>Publisher</code>,
+<code>Subscriber</code> and <code>Subscription</code>. The ReactiveStreams specification requires that signals are not delivered
+<a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#1.3">concurrently</a>,
+but doesn&#8217;t have any restrictions about which threads are used. This means the same thread maybe used for all signal
+deliveries for a given <code>Subscriber</code>, but it is also valid to use any thread (as long as no concurrency is introduced).
+ServiceTalk concurrency APIs are used to define which executor will be used for an asynchronous source for Part 2,
+which is typically an application <code>Executor</code>.</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="executor-and-asynchronous-sources"><a class="anchor" href="#executor-and-asynchronous-sources"></a><a class="link" href="#executor-and-asynchronous-sources">Executor and asynchronous sources</a></h2>
+<h2 id="offloading-and-asynchronous-sources"><a class="anchor" href="#offloading-and-asynchronous-sources"></a><a class="link" href="#offloading-and-asynchronous-sources">Offloading and asynchronous sources</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>ServiceTalk enforces that each asynchronous source <strong>MUST</strong> be associated with an <code>Executor</code> which is used to interact
-with its <code>Subscriber</code>. The below diagram illustrates the interaction between an asynchronous source, its <code>Subscriber</code>,
-its operators, and the <code>Executor</code>.</p>
+<p>ServiceTalk uses the <code><a href="https://github.com/apple/servicetalk/blob/0.42.10/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Executor.java">Executor</a></code>
+abstraction to specify the source of threads to be used for the delivery of signals from an asynchronous source. The
+default signal offloading, if any, used by an asynchronous source is determined by the source. For example, the HTTP
+sources, in addition to allowing for specification of an offloading executor, provide both direct control of the
+offloading via
+<code><a href="../../servicetalk/0.42/blocking-safe-by-default.html#execution-strategy" class="page">ExecutionStrategy</a></code>
+and may also influenced by the
+<a href="../../servicetalk/0.42/blocking-safe-by-default.html#influencing-offloading-decisions" class="page">computed execution strategy</a>.</p>
+</div>
+<div class="paragraph">
+<p>Applications with asynchronous, blocking, or computationally expensive tasks can also offload those tasks to specific
+<code>Executor</code>. The <code>subscribeOn(Executor)</code> and <code>publishOn(Executor)</code> operators will cause offloading execution from the
+default signal delivery thread to a thread from the provided <code>Executor</code>. The below diagram illustrates the interaction
+between an asynchronous source, its <code>Subscriber</code>, its operators, and the <code>Executor</code>.</p>
+</div>
+<div class="paragraph">
+<p>During <code>Subscriber</code> method execution, the result publication and termination signals, the <code>Executor</code> active at the
+source is inherited by all operators unless there is a reason to switch to a different <code>Executor</code>. The switch to another
+executor, offloading, is done for a couple of reasons; unless configured to not offload ServiceTalk will offload from
+the Netty <code>EventLoop</code> thread as necessary in order to allow user code to block.</p>
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="_images/executor-thread-selection.png" alt="Executor inference">
+<img src="_images/offloading.svg" alt="Offloading">
 </div>
 </div>
 <div class="paragraph">
-<p>The above interaction provides all operators and the source an opportunity to piggy-back on the same <code>Executor</code> for all
-interactions with the <code>Subscriber</code>. Any operator in a chain has two options while accepting a <code>Subscriber</code>:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Wrap the <code>Subscriber</code> such that all <code>Subscriber</code> and <code>Subscription</code> method calls are offloaded to a chosen
-<code>Executor</code>. This mode is for operators that process signals from the original <code>Publisher</code> asynchronously.</p>
-</li>
-<li>
-<p>Do not wrap the <code>Subscriber</code> and forward all <code>Subscriber</code> and <code>Subscription</code> methods directly on the calling thread to
-avoid the overhead of wrapping each and every <code>Subscriber</code> and <code>Subscription</code> in a chain. This mode is for operators
-that process signals from the original <code>Publisher</code> synchronously.</p>
-</li>
-</ul>
+<p>During <code>subscribe()</code> the execution will offload at the <code>subscribeOn()</code> operator and transition execution from the
+subscribing thread to an <code>Exeuctor</code> thread. The subscribing thread will be able to continue while the subscribe
+operation asynchronously continues on an <code>Executor</code> thread.</p>
 </div>
 <div class="paragraph">
-<p>Taking the same example from <a href="blocking-safe-by-default.html" class="page">here</a></p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java"> client.request() <i class="conum" data-value="1"></i><b>(1)</b>
-       .map(resp -&gt; {
-            return resp.toString(); <i class="conum" data-value="2"></i><b>(2)</b>
-       })
-       .flatMap(stringResp -&gt; { <i class="conum" data-value="3"></i><b>(3)</b>
-            return client2.request(stringResp);
-       })
-       .filter(stringResp -&gt; {
-            stringResp.equals("Hello World");  <i class="conum" data-value="4"></i><b>(4)</b>
-       });</code></pre>
-</div>
-</div>
-<div class="colist arabic">
-<table>
-<tr>
-<td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>A hypothetical client which provides a <code>request()</code> method that returns a <code>Single&lt;Response&gt;</code>.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="2"></i><b>2</b></td>
-<td>Converting the response to a <code>String</code>.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="3"></i><b>3</b></td>
-<td>Call another <code>client2</code> that provides a new <code>Single</code> which is returned from <code>flatMap</code>.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="4"></i><b>4</b></td>
-<td>Only allow "Hello World" messages to be emitted.</td>
-</tr>
-</table>
-</div>
-<div class="paragraph">
-<p>In the above example the operators <code>map</code> and <code>filter</code> will not wrap <code>Subscriber</code> and <code>Subscription</code> since they do not do
-any asynchronous work. However, <code>flatmap</code> will wrap <code>Subscriber</code> and <code>Subscription</code> to offload the calls to the chosen
-<code>Executor</code>.</p>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="why-should-we-wrap-subscriber-and-subscription"><a class="anchor" href="#why-should-we-wrap-subscriber-and-subscription"></a><a class="link" href="#why-should-we-wrap-subscriber-and-subscription">Why should we wrap <code>Subscriber</code> and <code>Subscription</code>?</a></h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>There are two places we would wrap <code>Subscriber</code> and <code>Subscription</code>:</p>
-</div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>Original asynchronous sources.</p>
-</li>
-<li>
-<p>Asynchronous operators. eg: <code>flatMap</code></p>
-</li>
-</ol>
-</div>
-<div class="paragraph">
-<p>Since every asynchronous source is associated with an <code>Executor</code>, it is required to use the <code>Executor</code> for interacting
-with <code>Subscriber</code> and <code>Subscription</code>.</p>
-</div>
-<div class="paragraph">
-<p>If we do not wrap for asynchronous operators then in the above example, operator <code>filter</code> (4) will be invoked in the
-<code>Executor</code> defined by <code>client2</code> inside the <code>flatmap</code>. This may lead to inadvertent and not initially obvious
-blocking of an event loop thread. Consider a scenario where <code>client2</code> executes user code on an event loop thread, but
-the original <code>client</code> executes user code on an application thread (which allows blocking). In this scenario it may look
-like blocking code is OK at point (4) above, but that will actually result in blocking `client2&#8217;s event loop thread.</p>
+<p>The diagram shows a typical case, when a result is available at the source it will begin publication on the receiving
+Netty EventLoop thread. Assuming that the default ServiceTalk offloading has been disabled, then offloading will only
+happen at the <code>publishOn()</code> operator during <code>Subscriber</code> signals and will transition execution from the EventLoop thread
+to an <code>Executor</code> thread. Once the <code>Subscriber</code> signal is offloaded the EventLoop thread will be available again for
+executing other I/O tasks while the response is asynchronously processed on the <code>Executor</code> thread.</p>
 </div>
 </div>
 </div>

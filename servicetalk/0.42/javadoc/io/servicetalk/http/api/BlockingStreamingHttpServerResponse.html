@@ -142,50 +142,55 @@ extends <a href="HttpResponseMetaData.html" title="interface in io.servicetalk.h
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">Sets a context for this <a href="HttpMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpMetaData</code></a>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="HttpPayloadWriter.html" title="interface in io.servicetalk.http.api">HttpPayloadWriter</a>&lt;<a href="../../buffer/api/Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a>&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#sendMetaData()" class="member-name-link">sendMetaData</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="BlockingStreamingHttpServerResponse.html" title="interface in io.servicetalk.http.api">BlockingStreamingHttpServerResponse</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#encoding(io.servicetalk.encoding.api.ContentCodec)" class="member-name-link">encoding</a><wbr>(<a href="../../encoding/api/ContentCodec.html" title="interface in io.servicetalk.encoding.api">ContentCodec</a>&nbsp;encoding)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
+<div class="block">The <a href="../../encoding/api/ContentCodec.html" title="interface in io.servicetalk.encoding.api"><code>ContentCodec</code></a> used to encode the payload of a request or a response.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="HttpPayloadWriter.html" title="interface in io.servicetalk.http.api">HttpPayloadWriter</a>&lt;<a href="../../buffer/api/Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#sendMetaData()" class="member-name-link">sendMetaData</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">Sends the <a href="HttpResponseMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpResponseMetaData</code></a> and returns an <a href="HttpPayloadWriter.html" title="interface in io.servicetalk.http.api"><code>HttpPayloadWriter</code></a> to continue writing the payload
  body.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code>&lt;T&gt;&nbsp;<a href="HttpPayloadWriter.html" title="interface in io.servicetalk.http.api">HttpPayloadWriter</a>&lt;T&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code><a href="#sendMetaData(io.servicetalk.http.api.HttpSerializer)" class="member-name-link">sendMetaData</a><wbr>(<a href="HttpSerializer.html" title="interface in io.servicetalk.http.api">HttpSerializer</a>&lt;T&gt;&nbsp;serializer)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6"><code>default &lt;T&gt;&nbsp;<a href="HttpPayloadWriter.html" title="interface in io.servicetalk.http.api">HttpPayloadWriter</a>&lt;T&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6"><code><a href="#sendMetaData(io.servicetalk.http.api.HttpSerializer)" class="member-name-link">sendMetaData</a><wbr>(<a href="HttpSerializer.html" title="interface in io.servicetalk.http.api">HttpSerializer</a>&lt;T&gt;&nbsp;serializer)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6">
 <div class="block"><span class="deprecated-label">Deprecated.</span>
 <div class="deprecation-comment">Use <a href="#sendMetaData(io.servicetalk.http.api.HttpStreamingSerializer)"><code>sendMetaData(HttpStreamingSerializer)</code></a>.</div>
 </div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>&lt;T&gt;&nbsp;<a href="HttpPayloadWriter.html" title="interface in io.servicetalk.http.api">HttpPayloadWriter</a>&lt;T&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#sendMetaData(io.servicetalk.http.api.HttpStreamingSerializer)" class="member-name-link">sendMetaData</a><wbr>(<a href="HttpStreamingSerializer.html" title="interface in io.servicetalk.http.api">HttpStreamingSerializer</a>&lt;T&gt;&nbsp;serializer)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>&lt;T&gt;&nbsp;<a href="HttpPayloadWriter.html" title="interface in io.servicetalk.http.api">HttpPayloadWriter</a>&lt;T&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#sendMetaData(io.servicetalk.http.api.HttpStreamingSerializer)" class="member-name-link">sendMetaData</a><wbr>(<a href="HttpStreamingSerializer.html" title="interface in io.servicetalk.http.api">HttpStreamingSerializer</a>&lt;T&gt;&nbsp;serializer)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">Sends the <a href="HttpResponseMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpResponseMetaData</code></a> to the client and returns an <a href="HttpPayloadWriter.html" title="interface in io.servicetalk.http.api"><code>HttpPayloadWriter</code></a> of type <a href="BlockingStreamingHttpServerResponse.html" title="interface in io.servicetalk.http.api"><code>BlockingStreamingHttpServerResponse</code></a>
  to continue writing a payload body.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="HttpOutputStream.html" title="class in io.servicetalk.http.api">HttpOutputStream</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#sendMetaDataOutputStream()" class="member-name-link">sendMetaDataOutputStream</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="HttpOutputStream.html" title="class in io.servicetalk.http.api">HttpOutputStream</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#sendMetaDataOutputStream()" class="member-name-link">sendMetaDataOutputStream</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">Sends the <a href="HttpResponseMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpResponseMetaData</code></a> to the client and returns an <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/OutputStream.html" title="class or interface in java.io" class="external-link"><code>OutputStream</code></a> to continue writing a
  payload body.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="BlockingStreamingHttpServerResponse.html" title="interface in io.servicetalk.http.api">BlockingStreamingHttpServerResponse</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#setHeader(java.lang.CharSequence,java.lang.CharSequence)" class="member-name-link">setHeader</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name,
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="BlockingStreamingHttpServerResponse.html" title="interface in io.servicetalk.http.api">BlockingStreamingHttpServerResponse</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#setHeader(java.lang.CharSequence,java.lang.CharSequence)" class="member-name-link">setHeader</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;value)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
 <div class="block">Sets a header with the specified <code>name</code> and <code>value</code>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="BlockingStreamingHttpServerResponse.html" title="interface in io.servicetalk.http.api">BlockingStreamingHttpServerResponse</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#setHeaders(io.servicetalk.http.api.HttpHeaders)" class="member-name-link">setHeaders</a><wbr>(<a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a>&nbsp;headers)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="BlockingStreamingHttpServerResponse.html" title="interface in io.servicetalk.http.api">BlockingStreamingHttpServerResponse</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#setHeaders(io.servicetalk.http.api.HttpHeaders)" class="member-name-link">setHeaders</a><wbr>(<a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a>&nbsp;headers)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
 <div class="block">Clears the current header entries and copies all header entries of the specified <code>headers</code> object.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="BlockingStreamingHttpServerResponse.html" title="interface in io.servicetalk.http.api">BlockingStreamingHttpServerResponse</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#status(io.servicetalk.http.api.HttpResponseStatus)" class="member-name-link">status</a><wbr>(<a href="HttpResponseStatus.html" title="class in io.servicetalk.http.api">HttpResponseStatus</a>&nbsp;status)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="BlockingStreamingHttpServerResponse.html" title="interface in io.servicetalk.http.api">BlockingStreamingHttpServerResponse</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#status(io.servicetalk.http.api.HttpResponseStatus)" class="member-name-link">status</a><wbr>(<a href="HttpResponseStatus.html" title="class in io.servicetalk.http.api">HttpResponseStatus</a>&nbsp;status)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">Set the status of this <a href="StreamingHttpResponse.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpResponse</code></a>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="BlockingStreamingHttpServerResponse.html" title="interface in io.servicetalk.http.api">BlockingStreamingHttpServerResponse</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#version(io.servicetalk.http.api.HttpProtocolVersion)" class="member-name-link">version</a><wbr>(<a href="HttpProtocolVersion.html" title="class in io.servicetalk.http.api">HttpProtocolVersion</a>&nbsp;version)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="BlockingStreamingHttpServerResponse.html" title="interface in io.servicetalk.http.api">BlockingStreamingHttpServerResponse</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#version(io.servicetalk.http.api.HttpProtocolVersion)" class="member-name-link">version</a><wbr>(<a href="HttpProtocolVersion.html" title="class in io.servicetalk.http.api">HttpProtocolVersion</a>&nbsp;version)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">Set the protocol version of this <a href="HttpMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpMetaData</code></a>.</div>
 </div>
 </div>
@@ -193,7 +198,7 @@ extends <a href="HttpResponseMetaData.html" title="interface in io.servicetalk.h
 </div>
 <div class="inherited-list">
 <h3 id="methods-inherited-from-class-io.servicetalk.http.api.HttpMetaData">Methods inherited from interface&nbsp;io.servicetalk.http.api.<a href="HttpMetaData.html" title="interface in io.servicetalk.http.api">HttpMetaData</a></h3>
-<code><a href="HttpMetaData.html#context()">context</a>, <a href="HttpMetaData.html#encoding()">encoding</a>, <a href="HttpMetaData.html#encoding(io.servicetalk.encoding.api.ContentCodec)">encoding</a>, <a href="HttpMetaData.html#headers()">headers</a>, <a href="HttpMetaData.html#toString()">toString</a>, <a href="HttpMetaData.html#toString(java.util.function.BiFunction)">toString</a>, <a href="HttpMetaData.html#version()">version</a></code></div>
+<code><a href="HttpMetaData.html#context()">context</a>, <a href="HttpMetaData.html#encoding()">encoding</a>, <a href="HttpMetaData.html#headers()">headers</a>, <a href="HttpMetaData.html#toString()">toString</a>, <a href="HttpMetaData.html#toString(java.util.function.BiFunction)">toString</a>, <a href="HttpMetaData.html#version()">version</a></code></div>
 <div class="inherited-list">
 <h3 id="methods-inherited-from-class-io.servicetalk.http.api.HttpResponseMetaData">Methods inherited from interface&nbsp;io.servicetalk.http.api.<a href="HttpResponseMetaData.html" title="interface in io.servicetalk.http.api">HttpResponseMetaData</a></h3>
 <code><a href="HttpResponseMetaData.html#status()">status</a></code></div>
@@ -228,7 +233,7 @@ extends <a href="HttpResponseMetaData.html" title="interface in io.servicetalk.h
 <section class="detail" id="sendMetaData(io.servicetalk.http.api.HttpSerializer)">
 <h3>sendMetaData</h3>
 <div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
-</span><span class="type-parameters">&lt;T&gt;</span>&nbsp;<span class="return-type"><a href="HttpPayloadWriter.html" title="interface in io.servicetalk.http.api">HttpPayloadWriter</a>&lt;T&gt;</span>&nbsp;<span class="element-name">sendMetaData</span><wbr><span class="parameters">(<a href="HttpSerializer.html" title="interface in io.servicetalk.http.api">HttpSerializer</a>&lt;T&gt;&nbsp;serializer)</span></div>
+</span><span class="modifiers">default</span>&nbsp;<span class="type-parameters">&lt;T&gt;</span>&nbsp;<span class="return-type"><a href="HttpPayloadWriter.html" title="interface in io.servicetalk.http.api">HttpPayloadWriter</a>&lt;T&gt;</span>&nbsp;<span class="element-name">sendMetaData</span><wbr><span class="parameters">(<a href="HttpSerializer.html" title="interface in io.servicetalk.http.api">HttpSerializer</a>&lt;T&gt;&nbsp;serializer)</span></div>
 <div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
 <div class="deprecation-comment">Use <a href="#sendMetaData(io.servicetalk.http.api.HttpStreamingSerializer)"><code>sendMetaData(HttpStreamingSerializer)</code></a>.</div>
 </div>
@@ -315,6 +320,33 @@ extends <a href="HttpResponseMetaData.html" title="interface in io.servicetalk.h
 <dd><code>status</code> - The <a href="HttpResponseStatus.html" title="class in io.servicetalk.http.api"><code>HttpResponseStatus</code></a> to set.</dd>
 <dt>Returns:</dt>
 <dd><code>this</code>.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="encoding(io.servicetalk.encoding.api.ContentCodec)">
+<h3>encoding</h3>
+<div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="BlockingStreamingHttpServerResponse.html" title="interface in io.servicetalk.http.api">BlockingStreamingHttpServerResponse</a></span>&nbsp;<span class="element-name">encoding</span><wbr><span class="parameters">(<a href="../../encoding/api/ContentCodec.html" title="interface in io.servicetalk.encoding.api">ContentCodec</a>&nbsp;encoding)</span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="HttpMetaData.html#encoding(io.servicetalk.encoding.api.ContentCodec)">HttpMetaData</a></code></span></div>
+<div class="block">The <a href="../../encoding/api/ContentCodec.html" title="interface in io.servicetalk.encoding.api"><code>ContentCodec</code></a> used to encode the payload of a request or a response.
+ If the endpoint is setup with <a href="ContentCodingHttpServiceFilter.html" title="class in io.servicetalk.http.api"><code>ContentCodingHttpServiceFilter</code></a>, the server will
+ auto-establish the accepted encoding for the response, unless the caller provides a specific encoding
+ by calling this method.
+ Any encoding passed here, takes precedence. In other words, a compressed response, can
+ be disabled by passing <a href="../../encoding/api/Identity.html#identity()"><code>Identity.identity()</code></a>.</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="HttpMetaData.html#encoding(io.servicetalk.encoding.api.ContentCodec)">encoding</a></code>&nbsp;in interface&nbsp;<code><a href="HttpMetaData.html" title="interface in io.servicetalk.http.api">HttpMetaData</a></code></dd>
+<dt>Parameters:</dt>
+<dd><code>encoding</code> - The <a href="../../encoding/api/ContentCodec.html" title="interface in io.servicetalk.encoding.api"><code>ContentCodec</code></a> used for the encoding of the payload.</dd>
+<dt>Returns:</dt>
+<dd><code>this</code>.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list">
+<li><a href="https://tools.ietf.org/html/rfc7231#section-3.1.2.2">Content-Encoding</a></li>
+</ul>
+</dd>
 </dl>
 </section>
 </li>

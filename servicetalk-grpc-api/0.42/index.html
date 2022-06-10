@@ -77,7 +77,10 @@
     <a class="nav-link" href="../../servicetalk-examples/0.42/http/index.html#Timeout">Timeout</a>
   </li>
   <li class="nav-item" data-depth="3">
-    <a class="nav-link" href="../../servicetalk-examples/0.42/http/index.html#Serialization">Serialization</a>
+    <a class="nav-link" href="../../servicetalk-examples/0.42/http/index.html#SerializationJson">Serialization: JSON</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/0.42/http/index.html#SerializationProtobuf">Serialization: Protobuf</a>
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/0.42/http/index.html#JAXRS">JAX-RS</a>
@@ -101,6 +104,9 @@
     <a class="nav-link" href="../../servicetalk-examples/0.42/http/index.html#Redirects">Redirects</a>
   </li>
   <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/0.42/http/index.html#Retries">Retries</a>
+  </li>
+  <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/0.42/http/index.html#uds">Unix Domain Sockets</a>
   </li>
   <li class="nav-item" data-depth="3">
@@ -122,7 +128,13 @@
     <a class="nav-link" href="../../servicetalk-examples/0.42/grpc/index.html#Deadlines">Deadlines</a>
   </li>
   <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/0.42/grpc/index.html#KeepAlive">Keep Alive</a>
+  </li>
+  <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/0.42/grpc/index.html#Observer">Observer</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/0.42/grpc/index.html#Health">Health Checking</a>
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/0.42/grpc/index.html#errors">Application Errors</a>
@@ -158,6 +170,9 @@
   </li>
   <li class="nav-item" data-depth="2">
     <a class="nav-link" href="../../servicetalk-concurrent-api/0.42/async-context.html">Async Context</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../../servicetalk-concurrent-api/0.42/pitfalls.html">Concurrency Pitfalls</a>
   </li>
 </ul>
   </li>
@@ -1081,7 +1096,7 @@ Here is a quick start example of the
 </div>
 <div class="paragraph">
 <p>See
-<a href="https://github.com/apple/servicetalk/blob/0.42.2/servicetalk-examples/grpc/helloworld/src/main/java/io/servicetalk/examples/grpc/helloworld/blocking/BlockingHelloWorldClient.java">BlockingHelloWorldClient</a>.</p>
+<a href="https://github.com/apple/servicetalk/blob/0.42.10/servicetalk-examples/grpc/helloworld/src/main/java/io/servicetalk/examples/grpc/helloworld/blocking/BlockingHelloWorldClient.java">BlockingHelloWorldClient</a>.</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -1097,7 +1112,7 @@ Here is a quick start example of the
 </div>
 <div class="paragraph">
 <p>See
-<a href="https://github.com/apple/servicetalk/blob/0.42.2/servicetalk-examples/grpc/helloworld/src/main/java/io/servicetalk/examples/grpc/helloworld/blocking/BlockingHelloWorldServer.java">BlockingHelloWorldServer</a>.</p>
+<a href="https://github.com/apple/servicetalk/blob/0.42.10/servicetalk-examples/grpc/helloworld/src/main/java/io/servicetalk/examples/grpc/helloworld/blocking/BlockingHelloWorldServer.java">BlockingHelloWorldServer</a>.</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -1141,9 +1156,9 @@ transport for gRPC. The flow of data from the socket to the gRPC <code>Service</
 </div>
 <div class="paragraph">
 <p>Each <code>Service</code> has access to a
-<a href="https://github.com/apple/servicetalk/blob/0.42.2/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcServiceContext.java">GrpcServiceContext</a>
+<a href="https://github.com/apple/servicetalk/blob/0.42.10/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcServiceContext.java">GrpcServiceContext</a>
 which provides additional context
-(via <a href="https://github.com/apple/servicetalk/blob/0.42.2/servicetalk-transport-api/src/main/java/io/servicetalk/transport/api/ConnectionContext.java">ConnectionContext</a>)
+(via <a href="https://github.com/apple/servicetalk/blob/0.42.10/servicetalk-transport-api/src/main/java/io/servicetalk/transport/api/ConnectionContext.java">ConnectionContext</a>)
 into the <code>Connection</code>/transport details for each request/response. This means that a <code>GrpcService</code> method may be invoked
 for multiple connections, from different threads, and even concurrently.</p>
 </div>
@@ -1174,7 +1189,7 @@ if decoded protos are required.
 <div class="paragraph">
 <p>In addition to HTTP filters, gRPC users can also add gRPC filters which follow the same interface definition as the
 service and can be composed using the generated
-<a href="https://github.com/apple/servicetalk/blob/0.42.2/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcServiceFactory.java">GrpcServiceFactory</a>
+<a href="https://github.com/apple/servicetalk/blob/0.42.10/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcServiceFactory.java">GrpcServiceFactory</a>
 for a particular service definition.</p>
 </div>
 </div>
@@ -1185,7 +1200,7 @@ for a particular service definition.</p>
 <div class="sectionbody">
 <div class="paragraph">
 <p>A <code>Client</code> is created via the
-<a href="https://github.com/apple/servicetalk/blob/0.42.2/servicetalk-grpc-netty/src/main/java/io/servicetalk/grpc/netty/GrpcClients.java">GrpcClients</a> static
+<a href="https://github.com/apple/servicetalk/blob/0.42.10/servicetalk-grpc-netty/src/main/java/io/servicetalk/grpc/netty/GrpcClients.java">GrpcClients</a> static
 factory. It manages multiple <code>Connections</code> via a <a href="../../servicetalk-loadbalancer/0.42/index.html" class="page">LoadBalancer</a>.
 The control flow of a request/response can be visualized in the below diagram:</p>
 </div>
@@ -1235,7 +1250,7 @@ service definition if decoded protos are required.
 <div class="paragraph">
 <p>In addition to HTTP filters, gRPC users can also add gRPC filters which follow the same interface definition as the
 service and can be composed using the generated
-<a href="https://github.com/apple/servicetalk/blob/0.42.2/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcClientFactory.java">GrpcClientFactory</a>
+<a href="https://github.com/apple/servicetalk/blob/0.42.10/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcClientFactory.java">GrpcClientFactory</a>
 for a particular service definition.</p>
 </div>
 </div>

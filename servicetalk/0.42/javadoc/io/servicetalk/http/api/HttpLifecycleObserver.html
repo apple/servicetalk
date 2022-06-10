@@ -86,11 +86,11 @@ loadScripts(document, 'script');</script>
 <div class="block">An observer interface that provides visibility into HTTP lifecycle events.
  <p>
  In order to deliver events at accurate time, callbacks on this interface can be invoked from the <a href="../../transport/api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a>.
- Implementation of this observer <b>must</b> be non-blocking. If the
- consumer of events may block (uses a blocking library or
- <a href="https://logging.apache.org/log4j/2.x/manual/async.html">logger configuration is not async</a>), it has to
- offload publications to another <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> <b>after</b> capturing timing of events. If blocking code is
- executed inside callbacks without offloading, it will negatively impact <a href="../../transport/api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a>.
+ Implementation of this observer <b>must</b> be non-blocking. If the consumer of events may block (uses a blocking
+ library or <a href="https://logging.apache.org/log4j/2.x/manual/async.html">logger configuration is not async</a>),
+ it has to offload publications to another <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> <b>after</b> capturing timing of events. If blocking code
+ is executed inside callbacks without offloading, it will negatively impact <a href="../../transport/api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a> and overall performance
+ of the application.
  <p>
  To install this observer for the server use <a href="HttpServerBuilder.html#lifecycleObserver(io.servicetalk.http.api.HttpLifecycleObserver)"><code>HttpServerBuilder.lifecycleObserver(HttpLifecycleObserver)</code></a>, for
  the client use <a href="SingleAddressHttpClientBuilder.html#appendClientFilter(io.servicetalk.http.api.StreamingHttpClientFilterFactory)"><code>SingleAddressHttpClientBuilder.appendClientFilter(StreamingHttpClientFilterFactory)</code></a> with

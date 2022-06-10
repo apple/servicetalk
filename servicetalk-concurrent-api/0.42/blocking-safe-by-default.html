@@ -77,7 +77,10 @@
     <a class="nav-link" href="../../servicetalk-examples/0.42/http/index.html#Timeout">Timeout</a>
   </li>
   <li class="nav-item" data-depth="3">
-    <a class="nav-link" href="../../servicetalk-examples/0.42/http/index.html#Serialization">Serialization</a>
+    <a class="nav-link" href="../../servicetalk-examples/0.42/http/index.html#SerializationJson">Serialization: JSON</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/0.42/http/index.html#SerializationProtobuf">Serialization: Protobuf</a>
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/0.42/http/index.html#JAXRS">JAX-RS</a>
@@ -101,6 +104,9 @@
     <a class="nav-link" href="../../servicetalk-examples/0.42/http/index.html#Redirects">Redirects</a>
   </li>
   <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/0.42/http/index.html#Retries">Retries</a>
+  </li>
+  <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/0.42/http/index.html#uds">Unix Domain Sockets</a>
   </li>
   <li class="nav-item" data-depth="3">
@@ -122,7 +128,13 @@
     <a class="nav-link" href="../../servicetalk-examples/0.42/grpc/index.html#Deadlines">Deadlines</a>
   </li>
   <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/0.42/grpc/index.html#KeepAlive">Keep Alive</a>
+  </li>
+  <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/0.42/grpc/index.html#Observer">Observer</a>
+  </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/0.42/grpc/index.html#Health">Health Checking</a>
   </li>
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/0.42/grpc/index.html#errors">Application Errors</a>
@@ -158,6 +170,9 @@
   </li>
   <li class="nav-item" data-depth="2">
     <a class="nav-link" href="async-context.html">Async Context</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="pitfalls.html">Concurrency Pitfalls</a>
   </li>
 </ul>
   </li>
@@ -1064,13 +1079,13 @@ called an execution chain.</p>
 <h3 id="data-and-control-flow-in-an-execution-chain"><a class="anchor" href="#data-and-control-flow-in-an-execution-chain"></a><a class="link" href="#data-and-control-flow-in-an-execution-chain">Data and control flow in an execution chain</a></h3>
 <div class="paragraph">
 <p>The image below details the flow of data (<code>Subscriber</code> methods) and control (<code>Publisher</code> and <code>Subscription</code> methods)
-messages. Invocations in either direction may be executed on an event loop thread and hence needs to be protected. In
+messages. Invocations in either direction may be executed on an EventLoop thread and hence needs to be protected. In
 case new asynchronous sources are generated/received inside operators, they follow the same model and hence are removed
 for brevity.</p>
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="_images/blocking-scenarios.png" alt="Data and control flow in an execution chain">
+<img src="_images/blocking-scenarios.svg" alt="Data and control flow in an execution chain">
 </div>
 </div>
 <div class="paragraph">
@@ -1080,8 +1095,8 @@ execution chain and these
 in parallel.</p>
 </div>
 <div class="paragraph">
-<p><strong>By default, in ServiceTalk, signals are not executed on an event loop thread, but instead executed using an
-<a href="https://github.com/apple/servicetalk/blob/0.42.2/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Executor.java">Executor</a>
+<p><strong>By default, in ServiceTalk, signals are not executed on an EventLoop thread, but instead executed using an
+<a href="https://github.com/apple/servicetalk/blob/0.42.10/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Executor.java">Executor</a>
 provided by the application in the order they are received.</strong></p>
 </div>
 <div class="sect3">
@@ -1093,201 +1108,416 @@ provided by the application in the order they are received.</strong></p>
 <p><strong>Users can execute blocking code inside an execution chain, provided they are not waiting for another data or control
 message in the same execution chain.</strong></p>
 </div>
-<div class="paragraph">
-<p>Look at <a href="#pitfalls">Pitfalls</a> section for examples elaborating this implication.</p>
-</div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="executor-affinity"><a class="anchor" href="#executor-affinity"></a><a class="link" href="#executor-affinity">Executor Affinity</a></h3>
-<div class="paragraph">
-<p>In ServiceTalk different protocols will provide request processing by means of an asynchronous source, eg: <code>Single</code>.
-In such cases, this processing will be expressed as a chain of operators on the asynchronous source. Configuring limits
-on resources such as a thread pool can be challenging if <strong>each</strong> operator in the chain may run on different threads.
-This would mean applying limits to such a thread pool would be sensitive to program&#8217;s execution flow and may change over
-time. In order to make thread pool configuration easier, ServiceTalk provides executor affinity for all asynchronous
-sources.</p>
-</div>
-<div class="sect3">
-<h4 id="affinity-for-an-asynchronous-source"><a class="anchor" href="#affinity-for-an-asynchronous-source"></a><a class="link" href="#affinity-for-an-asynchronous-source">Affinity for an asynchronous source</a></h4>
-<div class="paragraph">
-<p>Let us assume that following expresses request processing:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java"> client.request() <i class="conum" data-value="1"></i><b>(1)</b>
-       .map(resp -&gt; {
-            return doSomeBlockingWorkAndConvertToString(resp); <i class="conum" data-value="2"></i><b>(2)</b>
-       })
-       .filter(stringResp -&gt; {
-            doMoreBlockingWorkToFilterString(stringResp); <i class="conum" data-value="3"></i><b>(3)</b>
-       });</code></pre>
-</div>
-</div>
-<div class="colist arabic">
-<table>
-<tr>
-<td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>A hypothetical client which provides a <code>request()</code> method that returns a <code>Single&lt;Response&gt;</code>.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="2"></i><b>2</b></td>
-<td>Some blocking work done inside <code>map()</code> operator by this function, which provides a String as a response.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="3"></i><b>3</b></td>
-<td>Some more blocking work inside <code>filter()</code> operator.</td>
-</tr>
-</table>
-</div>
-<div class="paragraph">
-<p>In the above example user provided functions inside both <code>map()</code> and <code>filter()</code> will be invoked using the specified
-<code>Executor</code>.</p>
-</div>
-</div>
-<div class="sect3">
-<h4 id="affinity-across-asynchronous-sources"><a class="anchor" href="#affinity-across-asynchronous-sources"></a><a class="link" href="#affinity-across-asynchronous-sources">Affinity across asynchronous sources</a></h4>
-<div class="paragraph">
-<p><code>Executor</code> affinity across asynchronous sources is not guaranteed <strong>even if they are part of the same processing chain</strong>.</p>
-</div>
-<div class="paragraph">
-<p>Let us assume that following expresses request processing:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java"> client.request() <i class="conum" data-value="1"></i><b>(1)</b>
-       .map(resp -&gt; {
-            return doSomeBlockingWorkAndConvertToString(resp); <i class="conum" data-value="2"></i><b>(2)</b>
-       })
-       .flatMap(stringResp -&gt; {
-            return client2.request(stringResp) <i class="conum" data-value="3"></i><b>(3)</b>
-                          .map(resp -&gt; {
-                            doSomeBlockingWorkAgain(); <i class="conum" data-value="4"></i><b>(4)</b>
-                          });
-       })
-       .filter(stringResp -&gt; {
-            doMoreBlockingWorkToFilterString(stringResp); <i class="conum" data-value="5"></i><b>(5)</b>
-       });</code></pre>
-</div>
-</div>
-<div class="colist arabic">
-<table>
-<tr>
-<td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>A hypothetical client which provides a <code>request()</code> method that returns a <code>Single&lt;Response&gt;</code>.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="2"></i><b>2</b></td>
-<td>Some blocking work done inside <code>map()</code> operator by this function, which provides a String as a response.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="3"></i><b>3</b></td>
-<td>Call another <code>client2</code> that provides a new <code>Single</code> which is returned from <code>flatmap</code>.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="4"></i><b>4</b></td>
-<td>Do some blocking work inside <code>map()</code> operator for the nested <code>Single</code> returned by Step (3).</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="5"></i><b>5</b></td>
-<td>Some more blocking work inside <code>filter()</code> operator.</td>
-</tr>
-</table>
-</div>
-<div class="paragraph">
-<p>In the above example (2), (3) and (5) will run on one <code>Executor</code> whereas (4) will run on a different <code>Executor</code>.</p>
-</div>
 </div>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="pitfalls"><a class="anchor" href="#pitfalls"></a><a class="link" href="#pitfalls">Pitfalls</a></h2>
+<h2 id="task-offloading"><a class="anchor" href="#task-offloading"></a><a class="link" href="#task-offloading">Task Offloading</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>As defined in <a href="#execution-chain">Execution chain</a>, ServiceTalk sequences events in data and control path of processing as if they were
-done on the same thread. Since, data and control events may happen in parallel, there is always a chance for user code
-to deadlock if they are executed in sequence.</p>
+<p>ServiceTalk uses Netty for network I/O and Netty uses a fixed number of EventLoop threads for executing I/O operations.
+The number of EventLoop threads correlates to the number of CPU cores and <strong>not</strong> to the number of requests. This is
+because in many cases threads typically sit idle while waiting for I/O to complete. Sharing threads helps minimize
+resource consumption and improves scalability. However, sharing threads for different requests means all control flow
+for a single request will impact all other requests that share the same thread. If the control flow blocks the current
+thread for a longer time period (aka "blocks the thread") (e.g. external I/O) this may negatively impact latency and
+throughput. One approach to ensure I/O thread availability is to carefully limit the scope of work done by I/O threads
+and, whenever practical, delegate all other necessary tasks that are not related to I/O to some other thread. Moving
+tasks from I/O threads to other threads is called “offloading” and is a core technique used by ServiceTalk.</p>
+</div>
+<div class="paragraph">
+<p>Offloading is used for two purposes within ServiceTalk; firstly for the
+execution needed for the handling of asynchronous events, aka
+<a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#glossary">Signals</a>,
+and secondly when handling asynchronous events, protecting scarce resources from being monopolized by blocking,
+untrusted or expensive application code. Asynchronous execution requires offloading – the initiating calling thread
+is not available. The use of protective offloading, where offloading is used for avoid resource monopolization, is a
+practical consideration, but just as necessary for reliable and predictable operation.</p>
+</div>
+<div class="paragraph">
+<p>ServiceTalk will, by default, execute most application code on threads other than the Netty I/O threads.
+For most invocations of application code, if the application developer knows that their code cannot block and always
+executes quickly in near constant time they can request that ServiceTalk not offload their code. This will improve
+application performance by reducing latency and overhead. Requests to not offload will be honored by ServiceTalk if all
+the other components in the same execution path have also opted out of offloading. See
+<a href="../../servicetalk/0.42/blocking-safe-by-default.html#execution-strategy" class="page">Execution Strategy</a>
+for more information on how components may specify their offloading requirements. As a last resort, tasks may also be
+queued to be performed as threads are available.</p>
+</div>
+<div class="paragraph">
+<p>ServiceTalk is designed to be fully asynchronous except where the API provides explicit blocking behavior <a href="../../servicetalk/0.42/programming-paradigms.html" class="page">as a convenience</a>.</p>
+</div>
+<div class="paragraph">
+<p>ServiceTalk uses a task based approach for offloading, using <code>Executor</code> in the standard "fire-and-forget" way to run the
+offloaded tasks. Often the <code>Executor</code> has a pool of threads, possibly unbounded, and tasks are run using whatever thread
+is available. In particular, different threads may be used for each task executed and code running in tasks cannot
+depend upon a consistent thread being used for invoking program logic. This approach is generally the most scalable
+because it makes the best utilization of threads. If it is necessary to share state between tasks then
+`<a href="https://github.com/apple/servicetalk/blob/0.42.10/servicetalk-context-api/src/main/java/io/servicetalk/context/api/ContextMap.java">ContextMap</a>`s
+can be used.</p>
+</div>
+<div class="paragraph">
+<p>If the default ServiceTalk offloading has been disabled then user code may still wish to offload execution to a
+different <code>Executor</code> in specific cases. ServiceTalk provides reactive operators for explicitly offloading both
+<code>subscribe</code> and <code>Subscriber</code> via the <code>subscribeOn(executor)</code> operator as well as the <code>Subscription</code> methods via the
+<code>publishOn(executor)</code> operator. These operators will unconditionally offload to the specified <code>Executor</code>. Additional,
+conditional offloading operators; <code>subscribeOn(executor, predicate)</code> and <code>publishOn(executor, predicate)</code> are also
+available.</p>
+</div>
+<div class="sect2">
+<h3 id="publishon-example"><a class="anchor" href="#publishon-example"></a><a class="link" href="#publishon-example"><code>publishOn()</code> Example</a></h3>
+<div class="paragraph">
+<p>Using the <code>publishOn(executor)</code> operator allows processing of signals related to the source content on a different
+thread than is generating the content. It is the most common form of offloading used as it relates to the data path,
+specifically the <code>Subscription</code> methods.</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">    CountDownLatch latch = new CountDownLatch(1); <i class="conum" data-value="1"></i><b>(1)</b>
-    Publisher.from(1, 2, 3, 4)
-            .afterOnNext(integer -&gt; {
-                latch.countDown();  <i class="conum" data-value="2"></i><b>(2)</b>
-            })
-            .beforeRequest(requestN -&gt; {
-                latch.await(); <i class="conum" data-value="3"></i><b>(3)</b>
-            });</code></pre>
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">Collection&lt;Integer&gt; result = Publisher.range(1, 10) <i class="conum" data-value="2"></i><b>(2)</b> <i class="conum" data-value="5"></i><b>(5)</b>
+        .map(element -&gt; element)  // non-offloaded NO-OP
+        .publishOn(publishExecutor)  <i class="conum" data-value="4"></i><b>(4)</b>
+        .map(element -&gt; element)  // offloaded NO-OP
+        .toFuture()  <i class="conum" data-value="3"></i><b>(3)</b>
+        .get();  <i class="conum" data-value="1"></i><b>(1)</b> <i class="conum" data-value="6"></i><b>(6)</b></code></pre>
 </div>
 </div>
 <div class="colist arabic">
 <table>
 <tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>Hypothetical synchronization point. In real life it may be due to the code waiting for an event to happen externally.</td>
+<td><code>toFuture()</code> begins by calling <code>subscribe(Subscriber)</code>. Executing on the calling thread, execution flows up
+the operator chain towards the source; <code>map</code> &#8594; <code>publishOn</code> &#8594; <code>map</code> &#8594; <code>Publisher.range(1, 10)</code>.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="2"></i><b>2</b></td>
-<td>Trigger the external event (hypothetical synchronization point of <code>CountDownLatch</code>) <strong>after</strong> receiving the item.</td>
+<td>Still executing on the calling thread, <code>Range</code> will call <code>Subscriber.onSubscribe(Subscription)</code> on the
+<code>Subscriber</code>. This flows back down the operator chain, <code>Range</code> &#8594; <code>map</code> &#8594; <code>publishOn</code> (offloads on to <code>publishExecutor</code>
+thread) &#8594; <code>map</code> &#8594; <code>toFuture</code>.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="3"></i><b>3</b></td>
-<td>Wait for the external event to happen (hypothetical synchronization point of <code>CountDownLatch</code>) <strong>before</strong> sending
-<code>requestN</code> to the <code>Publisher</code>.</td>
+<td>The <code>onSubscribe(Subscription)</code> method of <code>toFuture()</code>&#xfeff;'s <code>Subscriber</code> will call
+<code>Subscription.request(Long.MAX_VALUE)</code>. Execution flows up the operator chain towards the source;
+<code>map</code> &#8594; <code>publishOn</code> &#8594; <code>map</code> &#8594; <code>Range</code>. <code>Range</code> will publish synchronously via <code>onNext(element)</code> nine items, the
+integers &#8220;1&#8221; through &#8220;9&#8221;.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>Each <code>onNext</code> flows down the operator chain, <code>Range</code> &#8594; <code>map</code> &#8594; <code>publishOn</code> (offloads on to <code>publishExecutor</code>
+thread) &#8594; <code>map</code> &#8594; <code>toFuture</code> where the element is collected for the result. For each offloaded item a thread of
+<code>publishExecutor</code> will be used for executing the second <code>map</code> operator and final collect operation.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td>After all items, <code>Range</code> sends the terminal <code>onComplete()</code> signal synchronously which flows down the operator chain,
+<code>Range</code> &#8594; <code>map &#8594; `publishOn</code> (offloads on to <code>publishExecutor</code> thread) &#8594; <code>map</code> &#8594; <code>toFuture</code> and will complete the
+<code>Future</code> with the integer collection result.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="6"></i><b>6</b></td>
+<td>The calling thread will wait at <code>get()</code> for the <code>Future</code> result to be asynchronously completed.</td>
 </tr>
 </table>
 </div>
-<div class="paragraph">
-<p>As per ReactiveStreams <a href="https://github.com/reactive-streams/reactive-streams-jvm#1.1">rule 1.1</a>, request for items
-<strong>MUST</strong> happen before the items are delivered. In the above code, we are waiting for an item to be emitted before
-sending a request to the <code>Publisher</code>. This results in a deadlock as an item can not be emitted by the source without a
-request being received and user code making sure that the request is not sent before an item is emitted.</p>
 </div>
+<div class="sect2">
+<h3 id="subscribeon-example"><a class="anchor" href="#subscribeon-example"></a><a class="link" href="#subscribeon-example"><code>subscribeOn()</code> Example</a></h3>
 <div class="paragraph">
-<p>In order to avoid such scenarios, it is handy to follow certain best practices while writing blocking code in operators:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Avoid co-ordination between two operators on the same source.</p>
-</li>
-<li>
-<p>If such co-ordination is required, try limiting such coordination in either data or control path but not
-inter-dependent on each other.</p>
-</li>
-<li>
-<p>If co-ordination is required between data and control path, be aware of ReactiveStreams semantics and how the two
-paths interact with each other.</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>If these rules are followed the above example can be modified to:</p>
+<p>Using the <code>subscribeOn(executor)</code> operator allows processing of the subscription and demand on a specific thread. Using
+the <code>subscribeOn(executor)</code> operator is necessary if the thread doing the <code>subscribe</code> or interacting with the
+<code>Subscription</code> is sensitive to blocking, for example, an EventLoop thread.</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">    CountDownLatch latch = new CountDownLatch(1);
-    Publisher.from(1, 2, 3, 4)
-            .afterOnNext(integer -&gt; {
-                latch.countDown();
-            })
-            .afterRequest(requestN -&gt; { <i class="conum" data-value="1"></i><b>(1)</b>
-                latch.await();
-            });</code></pre>
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">Collection&lt;Integer&gt; result = Publisher.range(1, 10) <i class="conum" data-value="2"></i><b>(2)</b> <i class="conum" data-value="4"></i><b>(4)</b>
+        .map(element -&gt; element)  // NO-OP
+        .subscribeOn(subscribeExecutor)
+        .toFuture() <i class="conum" data-value="1"></i><b>(1)</b> <i class="conum" data-value="3"></i><b>(3)</b> <i class="conum" data-value="5"></i><b>(5)</b>
+        .get(); <i class="conum" data-value="6"></i><b>(6)</b></code></pre>
 </div>
 </div>
 <div class="colist arabic">
 <table>
 <tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>Use <code>afterRequest</code> which happens <strong>after</strong> <code>requestN</code> is delivered to the source.</td>
+<td><code>toFuture()</code> will do a <code>subscribe(Subscriber)</code>. This flows up the operator chain toward the source;
+<code>subscribeOn</code> (offload onto <code>subscribeExecutor</code> thread) &#8594; <code>map</code> &#8594; <code>Range</code>.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Still on a thread from <code>subscribeExecutor</code> <code>Range</code> will call <code>Subscriber.onSubscribe(Subscription)</code> on the
+<code>Subscriber</code>. This flows back down the operator chain, <code>Range</code> &#8594; <code>map</code> &#8594; <code>subscribeOn</code> &#8594; <code>toFuture</code>.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>Still on the`subscribeExecutor` thread, <code>toFuture()&#8217;s `onSubscribe(Subscription)</code> call
+<code>Subscription.request(Long.MAX_VALUE)</code>. This flows up the operator chain, <code>subscribeOn</code> (offloads again onto another
+<code>subscribeExecutor</code> thread) &#8594; <code>map</code> &#8594; <code>Range</code>.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>Still on thread from the second offload to <code>subscribeExecutor</code>, <code>Range</code> ` will publish synchronously via
+<code>onNext(element)</code> nine items, the integers &#8220;1&#8221; through &#8220;9&#8221;. Each <code>onNext</code> flows back down the operator chain,
+<code>Range</code> &#8594; <code>map</code> &#8594; <code>subscribeOn</code> &#8594; <code>toFuture</code> where the element is collected for the result.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td>Still on thread from the second offload to <code>subscribeExecutor</code>, after all items, <code>Range</code> will call <code>onComplete</code>.
+When the <code>toFuture()</code> <code>Subscriber</code> receives the <code>onComplete()</code> signal it will complete the <code>Future</code> with the integer
+collection result.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="6"></i><b>6</b></td>
+<td>The calling thread will wait at <code>get()</code> for the <code>Future</code> result to be asynchronously completed.</td>
 </tr>
 </table>
 </div>
+</div>
+<div class="sect2">
+<h3 id="publishonsubscribeon-detailed-example"><a class="anchor" href="#publishonsubscribeon-detailed-example"></a><a class="link" href="#publishonsubscribeon-detailed-example">publishOn()/subscribeOn() Detailed Example</a></h3>
 <div class="paragraph">
-<p>In this modified example, since we now use <code>afterRequest</code>, instead of <code>beforeRequest</code>, we do not block <code>requestN</code> to
-go to the source and this code is safe.</p>
+<p>These examples can be expanded to demonstrate the offloading behavior directly. The expanded example extends the NO-OP
+<code>map</code> implementations to reveal the active thread during their execution. To show the active thread at the other
+points described in the callouts the expanded example also adds <code>whenOnSubscribe</code>, <code>whenRequest</code>, <code>liftSync</code> and
+<code>whenFinally</code> operations in the operator chain. The output of the example shows the thread used for executing each of
+the operators, while the specialized operators provide examples of how you might use them to debug your own programs.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">Collection&lt;?&gt; result = Publisher.range(1, 3)
+        .map(element -&gt; {
+            System.out.println("\nPublish starts on " + Thread.currentThread() + " Received : " + element);
+            return element;
+        })
+        .whenOnSubscribe(subscription -&gt; {
+            System.out.println("\nonSubscribe starts on " + Thread.currentThread());
+        })
+        .publishOn(publishExecutor)
+        .map(element -&gt; {
+            System.out.println("\nPublish offloaded to " + Thread.currentThread() + " Received : " + element);
+            return element;
+        })
+        .whenRequest(request -&gt; {
+            System.out.println("\nrequest(" + request + ") offloaded to " + Thread.currentThread());
+        })
+        .liftSync(subscriber -&gt; {
+            System.out.println("\nSubscribe offloaded to " + Thread.currentThread());
+            return subscriber;
+        })
+        .subscribeOn(subscribeExecutor)
+        .liftSync(subscriber -&gt; {
+            System.out.println("\nSubscribe begins on " + Thread.currentThread());
+            return subscriber;
+        })
+        .whenOnSubscribe(subscription -&gt; {
+            System.out.println("\nonSubscribe offloaded to " + Thread.currentThread());
+        })
+        .whenRequest(request -&gt; {
+            System.out.println("\nrequest(" + request + ") starts on " + Thread.currentThread());
+        })
+        .whenFinally(new TerminalSignalConsumer() {
+            @Override
+            public void onComplete() {
+                System.out.println("\ncomplete on " + Thread.currentThread());
+            }
+
+            @Override
+            public void onError(final Throwable throwable) {
+                System.out.println("\nerror (" + throwable + ") on " + Thread.currentThread());
+            }
+
+            @Override
+            public void cancel() {
+                System.out.println("\ncancel on " + Thread.currentThread());
+            }
+        })
+        .toFuture()
+        .get();</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If the default ServiceTalk offloading has been disabled then user code may still wish to offload execution to a
+different <code>Executor</code> in specific cases. ServiceTalk provides reactive operators for explicitly offloading both
+<code>subscribe</code> and <code>Subscriber</code> via the <code>subscribeOn(executor)</code> operator as well as the <code>Subscription</code> methods via the
+<code>publishOn(executor)</code> operator. These operators will unconditionally offload to the specified <code>Executor</code>. Additional,
+conditional offloading operators; <code>subscribeOn(executor, predicate)</code> and <code>publishOn(executor, predicate)</code> are also
+available.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="publishon-example-2"><a class="anchor" href="#publishon-example-2"></a><a class="link" href="#publishon-example-2"><code>publishOn()</code> Example</a></h3>
+<div class="paragraph">
+<p>Using the <code>publishOn(executor)</code> operator allows processing of signals related to the source content on a different
+thread than is generating the content. It is the most common form of offloading used as it relates to the data path,
+specifically the <code>Subscription</code> methods.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">Collection&lt;Integer&gt; result = Publisher.range(1, 10) <i class="conum" data-value="2"></i><b>(2)</b> <i class="conum" data-value="5"></i><b>(5)</b>
+        .map(element -&gt; element)  // non-offloaded NO-OP
+        .publishOn(publishExecutor)  <i class="conum" data-value="4"></i><b>(4)</b>
+        .map(element -&gt; element)  // offloaded NO-OP
+        .toFuture()  <i class="conum" data-value="3"></i><b>(3)</b>
+        .get();  <i class="conum" data-value="1"></i><b>(1)</b> <i class="conum" data-value="6"></i><b>(6)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td><code>toFuture()</code> begins by calling <code>subscribe(Subscriber)</code>. Executing on the calling thread, execution flows up
+the operator chain towards the source; <code>map</code> &#8594; <code>publishOn</code> &#8594; <code>map</code> &#8594; <code>Publisher.range(1, 10)</code>.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Still executing on the calling thread, <code>Range</code> will call <code>Subscriber.onSubscribe(Subscription)</code> on the
+<code>Subscriber</code>. This flows back down the operator chain, <code>Range</code> &#8594; <code>map</code> &#8594; <code>publishOn</code> (offloads on to <code>publishExecutor</code>
+thread) &#8594; <code>map</code> &#8594; <code>toFuture</code>.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>The <code>onSubscribe(Subscription)</code> method of <code>toFuture()</code>&#xfeff;'s <code>Subscriber</code> will call
+<code>Subscription.request(Long.MAX_VALUE)</code>. Execution flows up the operator chain towards the source;
+<code>map</code> &#8594; <code>publishOn</code> &#8594; <code>map</code> &#8594; <code>Range</code>. <code>Range</code> will publish synchronously via <code>onNext(element)</code> nine items, the
+integers &#8220;1&#8221; through &#8220;9&#8221;.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>Each <code>onNext</code> flows down the operator chain, <code>Range</code> &#8594; <code>map</code> &#8594; <code>publishOn</code> (offloads on to <code>publishExecutor</code>
+thread) &#8594; <code>map</code> &#8594; <code>toFuture</code> where the element is collected for the result. For each offloaded item a thread of
+<code>publishExecutor</code> will be used for executing the second <code>map</code> operator and final collect operation.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td>After all items, <code>Range</code> sends the terminal <code>onComplete()</code> signal synchronously which flows down the operator chain,
+<code>Range</code> &#8594; <code>map &#8594; `publishOn</code> (offloads on to <code>publishExecutor</code> thread) &#8594; <code>map</code> &#8594; <code>toFuture</code> and will complete the
+<code>Future</code> with the integer collection result.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="6"></i><b>6</b></td>
+<td>The calling thread will wait at <code>get()</code> for the <code>Future</code> result to be asynchronously completed.</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="subscribeon-example-2"><a class="anchor" href="#subscribeon-example-2"></a><a class="link" href="#subscribeon-example-2"><code>subscribeOn()</code> Example</a></h3>
+<div class="paragraph">
+<p>Using the <code>subscribeOn(executor)</code> operator allows processing of the subscription and demand on a specific thread. Using
+the <code>subscribeOn(executor)</code> operator generally requires an understanding of the behavior of the source; using a
+different source may change the need for offloading. <code>subscribeOn(executor)</code> is used less frequently than
+<code>publishOn(executor)</code> but is useful when it is necessary to offload the control path; the <code>subscribe</code> method or
+<code>Subscription</code> methods.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">Collection&lt;Integer&gt; result = Publisher.range(1, 10) <i class="conum" data-value="2"></i><b>(2)</b> <i class="conum" data-value="4"></i><b>(4)</b>
+        .map(element -&gt; element)  // NO-OP
+        .subscribeOn(subscribeExecutor)
+        .toFuture() <i class="conum" data-value="1"></i><b>(1)</b> <i class="conum" data-value="3"></i><b>(3)</b> <i class="conum" data-value="5"></i><b>(5)</b>
+        .get(); <i class="conum" data-value="6"></i><b>(6)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td><code>toFuture()</code> will do a <code>subscribe(Subscriber)</code>. This flows up the operator chain toward the source;
+<code>subscribeOn</code> (offload onto <code>subscribeExecutor</code> thread) &#8594; <code>map</code> &#8594; <code>Range</code>.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Still on a thread from <code>subscribeExecutor</code> <code>Range</code> will call <code>Subscriber.onSubscribe(Subscription)</code> on the
+<code>Subscriber</code>. This flows back down the operator chain, <code>Range</code> &#8594; <code>map</code> &#8594; <code>subscribeOn</code> &#8594; <code>toFuture</code>.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>Still on the`subscribeExecutor` thread, <code>toFuture()&#8217;s `onSubscribe(Subscription)</code> call
+<code>Subscription.request(Long.MAX_VALUE)</code>. This flows up the operator chain, <code>subscribeOn</code> (offloads again onto another
+<code>subscribeExecutor</code> thread) &#8594; <code>map</code> &#8594; <code>Range</code>.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>Still on thread from the second offload to <code>subscribeExecutor</code>, <code>Range</code> ` will publish synchronously via
+<code>onNext(element)</code> nine items, the integers &#8220;1&#8221; through &#8220;9&#8221;. Each <code>onNext</code> flows back down the operator chain,
+<code>Range</code> &#8594; <code>map</code> &#8594; <code>subscribeOn</code> &#8594; <code>toFuture</code> where the element is collected for the result.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td>Still on thread from the second offload to <code>subscribeExecutor</code>, after all items, <code>Range</code> will call <code>onComplete</code>.
+When the <code>toFuture()</code> <code>Subscriber</code> receives the <code>onComplete()</code> signal it will complete the <code>Future</code> with the integer
+collection result.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="6"></i><b>6</b></td>
+<td>The calling thread will wait at <code>get()</code> for the <code>Future</code> result to be asynchronously completed.</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="publishonsubscribeon-detailed-example-2"><a class="anchor" href="#publishonsubscribeon-detailed-example-2"></a><a class="link" href="#publishonsubscribeon-detailed-example-2">publishOn()/subscribeOn() Detailed Example</a></h3>
+<div class="paragraph">
+<p>These examples can be expanded to demonstrate the offloading behavior directly. The expanded example extends the NO-OP
+<code>map</code> implementations to reveal the active thread during their execution. To show the active thread at the other
+points described in the callouts the expanded example also adds <code>whenOnSubscribe</code>, <code>whenRequest</code>, <code>liftSync</code> and
+<code>whenFinally</code> operations in the operator chain. The output of the example shows the thread used for executing each of
+the operators, while the specialized operators provide examples of how you might use them to debug your own programs.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">Collection&lt;?&gt; result = Publisher.range(1, 3)
+        .map(element -&gt; {
+            System.out.println("\nPublish starts on " + Thread.currentThread() + " Received : " + element);
+            return element;
+        })
+        .whenOnSubscribe(subscription -&gt; {
+            System.out.println("\nonSubscribe starts on " + Thread.currentThread());
+        })
+        .publishOn(publishExecutor)
+        .map(element -&gt; {
+            System.out.println("\nPublish offloaded to " + Thread.currentThread() + " Received : " + element);
+            return element;
+        })
+        .whenRequest(request -&gt; {
+            System.out.println("\nrequest(" + request + ") offloaded to " + Thread.currentThread());
+        })
+        .liftSync(subscriber -&gt; {
+            System.out.println("\nSubscribe offloaded to " + Thread.currentThread());
+            return subscriber;
+        })
+        .subscribeOn(subscribeExecutor)
+        .liftSync(subscriber -&gt; {
+            System.out.println("\nSubscribe begins on " + Thread.currentThread());
+            return subscriber;
+        })
+        .whenOnSubscribe(subscription -&gt; {
+            System.out.println("\nonSubscribe offloaded to " + Thread.currentThread());
+        })
+        .whenRequest(request -&gt; {
+            System.out.println("\nrequest(" + request + ") starts on " + Thread.currentThread());
+        })
+        .whenFinally(new TerminalSignalConsumer() {
+            @Override
+            public void onComplete() {
+                System.out.println("\ncomplete on " + Thread.currentThread());
+            }
+
+            @Override
+            public void onError(final Throwable throwable) {
+                System.out.println("\nerror (" + throwable + ") on " + Thread.currentThread());
+            }
+
+            @Override
+            public void cancel() {
+                System.out.println("\ncancel on " + Thread.currentThread());
+            }
+        })
+        .toFuture()
+        .get();</code></pre>
+</div>
+</div>
 </div>
 </div>
 </div>
