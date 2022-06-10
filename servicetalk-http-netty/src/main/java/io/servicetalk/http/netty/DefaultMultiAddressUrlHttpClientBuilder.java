@@ -71,7 +71,6 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverComplete
 import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadAll;
-import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNever;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.setExecutionContext;
@@ -286,17 +285,16 @@ final class DefaultMultiAddressUrlHttpClientBuilder
                         HttpExecutionStrategy singleStrategy = client.executionContext().executionStrategy();
                         HttpExecutionStrategy requestStrategy =
                                 request.context().getOrDefault(HTTP_EXECUTION_STRATEGY_KEY, defaultStrategy());
-                        HttpExecutionStrategy useStrategy =
-                                null == requestStrategy || defaultStrategy() == requestStrategy ?
-                                        offloadAll() :
-                                        defaultStrategy() == singleStrategy || !singleStrategy.hasOffloads() ?
-                                                // single client is default or has no *additional* offloads
-                                                requestStrategy :
-                                                requestStrategy.hasOffloads() ?
-                                                        // add single client offloads to existing strategy
-                                                        requestStrategy.merge(singleStrategy) :
-                                                        // Ignore single client offloads to preserve no-offloads
-                                                        requestStrategy;
+                        HttpExecutionStrategy useStrategy = defaultStrategy() == requestStrategy ?
+                                offloadAll() :
+                                defaultStrategy() == singleStrategy || !singleStrategy.hasOffloads() ?
+                                        // single client is default or has no *additional* offloads
+                                        requestStrategy :
+                                        requestStrategy.hasOffloads() ?
+                                                // add single client offloads to existing strategy
+                                                requestStrategy.merge(singleStrategy) :
+                                                // IGNORE single client offloads to preserve no-offloads
+                                                requestStrategy;
 
                         if (useStrategy != requestStrategy) {
                             LOGGER.debug("Request strategy {} changes to {}. SingleAddressClient strategy: {}",
@@ -347,14 +345,18 @@ final class DefaultMultiAddressUrlHttpClientBuilder
                 try {
                     FilterableStreamingHttpClient singleClient = selectClient(metaData);
                     HttpExecutionStrategy requestStrategy = metaData.context().get(HTTP_EXECUTION_STRATEGY_KEY);
-                    HttpExecutionStrategy clientStrategy = singleClient.executionContext().executionStrategy();
-                    HttpExecutionStrategy useStrategy = defaultStrategy() == clientStrategy ?
-                            requestStrategy :
-                            requestStrategy.hasOffloads() ?
-                                    // add single client offloads to existing strategy
-                                    clientStrategy.merge(requestStrategy) :
-                                    // IGNORE single client offloads to preserve offloadNone()
-                                    requestStrategy;
+                    HttpExecutionStrategy singleStrategy = singleClient.executionContext().executionStrategy();
+                    HttpExecutionStrategy useStrategy = defaultStrategy() == requestStrategy ?
+                            offloadAll() :
+                            defaultStrategy() == singleStrategy || !singleStrategy.hasOffloads() ?
+                                    // single client is default or has no *additional* offloads
+                                    requestStrategy :
+                                    requestStrategy.hasOffloads() ?
+                                            // add single client offloads to existing strategy
+                                            requestStrategy.merge(singleStrategy) :
+                                            // IGNORE single client offloads to preserve no-offloads
+                                            requestStrategy;
+
                     if (requestStrategy != useStrategy) {
                         // single client overrides request strategy;
                         metaData.context().put(HTTP_EXECUTION_STRATEGY_KEY, useStrategy);
@@ -372,10 +374,17 @@ final class DefaultMultiAddressUrlHttpClientBuilder
                 try {
                     FilterableStreamingHttpClient singleClient = selectClient(request);
                     HttpExecutionStrategy requestStrategy = request.context().get(HTTP_EXECUTION_STRATEGY_KEY);
-                    HttpExecutionStrategy clientStrategy = singleClient.executionContext().executionStrategy();
-                    HttpExecutionStrategy useStrategy = defaultStrategy() == clientStrategy ?
-                            requestStrategy :
-                            clientStrategy.merge(offloadNever() == requestStrategy ? offloadNone() : requestStrategy);
+                    HttpExecutionStrategy singleStrategy = singleClient.executionContext().executionStrategy();
+                    HttpExecutionStrategy useStrategy = defaultStrategy() == requestStrategy ?
+                            offloadAll() :
+                            defaultStrategy() == singleStrategy || !singleStrategy.hasOffloads() ?
+                                    // single client is default or has no *additional* offloads
+                                    requestStrategy :
+                                    requestStrategy.hasOffloads() ?
+                                            // add single client offloads to existing strategy
+                                            requestStrategy.merge(singleStrategy) :
+                                            // IGNORE single client offloads to preserve no-offloads
+                                            requestStrategy;
                     if (requestStrategy != useStrategy) {
                         // single client overrides request strategy;
                         request.context().put(HTTP_EXECUTION_STRATEGY_KEY, useStrategy);

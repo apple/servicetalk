@@ -95,7 +95,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.not;
 
-@Execution(ExecutionMode.CONCURRENT)
+@Execution(ExecutionMode.SAME_THREAD)
 class ClientEffectiveStrategyTest {
 
     @RegisterExtension
@@ -306,8 +306,7 @@ class ClientEffectiveStrategyTest {
                 if (BuilderType.MULTI_BUILDER == builderType && null != builderStrategy) {
                     multiClientBuilder.executionStrategy(builderStrategy);
                 }
-                if (BuilderType.MULTI_OFFLOAD_NONE_SINGLE_BUILDER == builderType &&
-                        null != builderStrategy) {
+                if (BuilderType.MULTI_OFFLOAD_NONE_SINGLE_BUILDER == builderType && null != builderStrategy) {
                     // This is expected to ALWAYS be overridden in initializer.
                     multiClientBuilder.executionStrategy(offloadNone());
                 }
@@ -387,15 +386,15 @@ class ClientEffectiveStrategyTest {
                 return defaultStrategy() == merged ? clientApi.strategy() : merged;
             case MULTI_BUILDER:
                 return null == builder || defaultStrategy() == builder ?
-                    defaultStrategy() == merged ? offloadAll() : clientApi.strategy().merge(merged) :
-                    merged;
+                    clientApi.strategy().merge(merged) :
+                    builder.hasOffloads() ? merged : builder;
             case MULTI_DEFAULT_STRATEGY_SINGLE_BUILDER:
                     if (defaultStrategy() == merged || (null != builder && !builder.hasOffloads())) {
                         merged = offloadNone();
                     }
                     return clientApi.strategy().merge(merged);
             case MULTI_OFFLOAD_NONE_SINGLE_BUILDER:
-                return merged;
+                return offloadNone();
             default:
                 throw new AssertionError("Unexpected builder type: " + builderType);
         }
@@ -479,24 +478,26 @@ class ClientEffectiveStrategyTest {
     private static final class ClientInvokingThreadRecorder implements StreamingHttpClientFilterFactory {
 
         private Thread applicationThread = Thread.currentThread();
+        private HttpExecutionStrategy expectedStrategy;
         private final EnumSet<ClientOffloadPoint> offloadPoints = EnumSet.noneOf(ClientOffloadPoint.class);
         private final ConcurrentMap<ClientOffloadPoint, String> invokingThreads = new ConcurrentHashMap<>();
         private final Queue<Throwable> errors = new LinkedBlockingQueue<>();
 
-        void reset(HttpExecutionStrategy streamingAsyncStrategy) {
+        void reset(HttpExecutionStrategy expectedStrategy) {
             invokingThreads.clear();
             errors.clear();
             offloadPoints.clear();
             applicationThread = Thread.currentThread();
 
+            this.expectedStrategy = expectedStrategy;
             // adjust expected offloads for specific execution strategy
-            if (streamingAsyncStrategy.isSendOffloaded()) {
+            if (expectedStrategy.isSendOffloaded()) {
                 offloadPoints.add(Send);
             }
-            if (streamingAsyncStrategy.isMetadataReceiveOffloaded()) {
+            if (expectedStrategy.isMetadataReceiveOffloaded()) {
                 offloadPoints.add(ReceiveMeta);
             }
-            if (streamingAsyncStrategy.isDataReceiveOffloaded()) {
+            if (expectedStrategy.isDataReceiveOffloaded()) {
                 offloadPoints.add(ReceiveData);
             }
         }
@@ -546,7 +547,8 @@ class ClientEffectiveStrategyTest {
                             final AssertionError e = new AssertionError("Expected IoThread or " +
                                     applicationThread.getName() + " at " + offloadPoint +
                                     ", but was running on an offloading executor thread: " + current.getName() +
-                                    ". clientStrategy=" + clientStrategy + ", requestStrategy=" + requestStrategy);
+                                    ". clientStrategy=" + clientStrategy + ", expectedStrategy=" + expectedStrategy
+                                    + ", requestStrategy=" + requestStrategy);
                             errors.add(e);
                         }
                     }
@@ -556,8 +558,9 @@ class ClientEffectiveStrategyTest {
         }
 
         public void verifyOffloads(ClientApi clientApi, HttpExecutionStrategy clientStrategy, String apiStrategy) {
-            assertNoAsyncErrors("API=" + clientApi + ", clientStrategy=" + clientStrategy + ", apiStrategy=" +
-                    apiStrategy + ". Async Errors! See suppressed", errors);
+            assertNoAsyncErrors("API=" + clientApi + ", apiStrategy=" + apiStrategy +
+                    ", clientStrategy=" + clientStrategy  +
+                    ", expectedStrategy=" + expectedStrategy + ". Async Errors! See suppressed", errors);
             assertThat("Unexpected offload points recorded. " + invokingThreads,
                     invokingThreads.size(), Matchers.is(ClientOffloadPoint.values().length));
         }
