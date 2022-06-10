@@ -290,11 +290,8 @@ final class DefaultMultiAddressUrlHttpClientBuilder
                                 defaultStrategy() == singleStrategy || !singleStrategy.hasOffloads() ?
                                         // single client is default or has no *additional* offloads
                                         requestStrategy :
-                                        requestStrategy.hasOffloads() ?
-                                                // add single client offloads to existing strategy
-                                                requestStrategy.merge(singleStrategy) :
-                                                // IGNORE single client offloads to preserve no-offloads
-                                                requestStrategy;
+                                        // add single client offloads to existing strategy
+                                        requestStrategy.merge(singleStrategy);
 
                         if (useStrategy != requestStrategy) {
                             LOGGER.debug("Request strategy {} changes to {}. SingleAddressClient strategy: {}",
@@ -351,11 +348,8 @@ final class DefaultMultiAddressUrlHttpClientBuilder
                             defaultStrategy() == singleStrategy || !singleStrategy.hasOffloads() ?
                                     // single client is default or has no *additional* offloads
                                     requestStrategy :
-                                    requestStrategy.hasOffloads() ?
-                                            // add single client offloads to existing strategy
-                                            requestStrategy.merge(singleStrategy) :
-                                            // IGNORE single client offloads to preserve no-offloads
-                                            requestStrategy;
+                                    // add single client offloads to existing strategy
+                                    requestStrategy.merge(singleStrategy);
 
                     if (requestStrategy != useStrategy) {
                         // single client overrides request strategy;
@@ -380,11 +374,8 @@ final class DefaultMultiAddressUrlHttpClientBuilder
                             defaultStrategy() == singleStrategy || !singleStrategy.hasOffloads() ?
                                     // single client is default or has no *additional* offloads
                                     requestStrategy :
-                                    requestStrategy.hasOffloads() ?
-                                            // add single client offloads to existing strategy
-                                            requestStrategy.merge(singleStrategy) :
-                                            // IGNORE single client offloads to preserve no-offloads
-                                            requestStrategy;
+                                    // add single client offloads to existing strategy
+                                    requestStrategy.merge(singleStrategy);
                     if (requestStrategy != useStrategy) {
                         // single client overrides request strategy;
                         request.context().put(HTTP_EXECUTION_STRATEGY_KEY, useStrategy);

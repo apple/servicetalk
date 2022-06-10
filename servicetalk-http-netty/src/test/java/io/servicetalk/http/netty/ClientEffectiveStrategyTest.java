@@ -394,7 +394,8 @@ class ClientEffectiveStrategyTest {
                     }
                     return clientApi.strategy().merge(merged);
             case MULTI_OFFLOAD_NONE_SINGLE_BUILDER:
-                return offloadNone();
+                return builder == null ?
+                        offloadNone() : defaultStrategy() == merged ? offloadNone() : merged;
             default:
                 throw new AssertionError("Unexpected builder type: " + builderType);
         }

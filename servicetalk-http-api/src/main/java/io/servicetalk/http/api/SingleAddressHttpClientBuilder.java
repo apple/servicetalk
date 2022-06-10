@@ -175,29 +175,34 @@ public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<
     /**
      * {@inheritDoc}
      *
-     * <p>Specifying an execution strategy affects the offloading used during execution of client requests. The
-     * offloading to applied is computed using the provided strategy, the strategies required by any filters
-     * which have been added and the strategy required by the client API variant (async/blocking streaming/aggregate).
-     * Each client API variant (async/blocking streaming/aggregate) requires a specific execution strategy to avoid
-     * blocking the event-loop. Filters added via
-     * {@link #appendClientFilter(StreamingHttpClientFilterFactory)},
-     * {@link #appendConnectionFilter(StreamingHttpConnectionFilterFactory)}, or
-     * {@link #appendConnectionFactoryFilter(ConnectionFactoryFilter)}, etc. may specify via
-     * {@link HttpExecutionStrategyInfluencer#requiredOffloads()} that require offloading.
+     * <p>Specifying an execution strategy affects the offloading used during execution of client requests:
      *
      * <dl>
      *     <dt>Unspecified or {@link HttpExecutionStrategies#defaultStrategy()}
      *     <dd>Execution of client requests will use a safe (non-blocking) execution strategy appropriate for the
      *     client API used and the filters added. Blocking is always safe as all potentially blocking paths are
-     *     offloaded.
+     *     offloaded. Each client API variant (async/blocking streaming/aggregate) requires a specific execution
+     *     strategy to avoid blocking the event-loop and filters added via
+     *     {@link #appendClientFilter(StreamingHttpClientFilterFactory)},
+     *     {@link #appendConnectionFilter(StreamingHttpConnectionFilterFactory)}, or
+     *     {@link #appendConnectionFactoryFilter(ConnectionFactoryFilter)}</p>, etc. may also require offloading.
+     *     The execution strategy for execution of client requests will be computed based on the client API in use and
+     *     {@link HttpExecutionStrategyInfluencer#requiredOffloads()} of added the filters.
      *
-     *     <dt>Any other execution strategy
-     *     <dd>Similar to the default case, client request execution will be completed using a computed execution
-     *     strategy. The computed execution strategy will use the specified execution strategy rather than the
-     *     client API's default safe strategy but will still combine with the required execution strategy of any added
-     *     filters. Filters and  asynchronous callbacks <strong style="text-transform: uppercase;">MAY</strong> block
-     *     only during the offloaded portions of the client request execution. Blocking
-     *     <strong style="text-transform: uppercase;">MUST NOT</strong> be used during other callbacks.
+     *     <dt>{@link HttpExecutionStrategies#offloadNone()}
+     *     (or deprecated {@link HttpExecutionStrategies#offloadNever()})
+     *     <dd>No offloading will be used during execution of client requests regardless of the client API used or the
+     *     influence of added filters. Filters and asynchronous callbacks
+     *     <strong style="text-transform: uppercase;">must not</strong> ever block during the execution of client
+     *     requests.
+     *
+     *     <dt>A custom execution strategy ({@link HttpExecutionStrategies#customStrategyBuilder()}) or
+     *     {@link HttpExecutionStrategies#offloadAll()}
+     *     <dd>The specified execution strategy will be used for executing client requests rather than the client
+     *     API's default safe strategy. Like with the default strategy, the actual execution strategy used is computed
+     *     from the provided strategy and the execution strategies required by added filters. Filters and asynchronous
+     *     callbacks <strong style="text-transform: uppercase;">MAY</strong> only block during the offloaded portions of
+     *     the client request execution.
      * </dl>
      *
      * @param strategy {@inheritDoc}
