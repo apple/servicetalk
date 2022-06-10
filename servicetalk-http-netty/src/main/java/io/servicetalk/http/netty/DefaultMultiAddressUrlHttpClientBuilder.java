@@ -365,21 +365,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
             return defer(() -> {
                 try {
-                    FilterableStreamingHttpClient singleClient = selectClient(request);
-                    HttpExecutionStrategy requestStrategy = request.context().get(HTTP_EXECUTION_STRATEGY_KEY);
-                    HttpExecutionStrategy singleStrategy = singleClient.executionContext().executionStrategy();
-                    HttpExecutionStrategy useStrategy = defaultStrategy() == requestStrategy ?
-                            offloadAll() :
-                            defaultStrategy() == singleStrategy || !singleStrategy.hasOffloads() ?
-                                    // single client is default or has no *additional* offloads
-                                    requestStrategy :
-                                    // add single client offloads to existing strategy
-                                    requestStrategy.merge(singleStrategy);
-                    if (requestStrategy != useStrategy) {
-                        // single client overrides request strategy;
-                        request.context().put(HTTP_EXECUTION_STRATEGY_KEY, useStrategy);
-                    }
-                    return singleClient.request(request).shareContextOnSubscribe();
+                    return selectClient(request).request(request).shareContextOnSubscribe();
                 } catch (Throwable t) {
                     return Single.<StreamingHttpResponse>failed(t).shareContextOnSubscribe();
                 }
