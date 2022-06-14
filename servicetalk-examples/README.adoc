@@ -3,8 +3,7 @@
 This repository is a collection of examples on how to use different facets of ServiceTalk.
 See the https://docs.servicetalk.io/[ServiceTalk docs] for more information.
 
-Note that these projects use direct references to other ServiceTalk projects,
-as shown here:
+Note that these projects use direct references to other ServiceTalk projects, as shown here:
 
 [source,groovy]
 ----
@@ -13,15 +12,16 @@ implementation project(":servicetalk-http-netty")
 implementation project(":servicetalk-http-utils")
 ----
 
-In actual user projects, ServiceTalk modules would be referenced via standard artifacts coordinates,
-with the versions managed thanks to the provided BOM, as demonstrated here:
+Standalone projects using ServiceTalk will reference the ServiceTalk modules using standard artifacts coordinates as
+shown below. A separate https://github.com/servicetalk/examples[ServiceTalk examples repository] demonstrates how to
+reference ServiceTalk modules in typical projects.
 
 [source,groovy]
 ----
-// `servicetalk-bom` brings consistent versions of ServiceTalk modules.
-implementation platform("io.servicetalk:servicetalk-bom:$serviceTalkVersion")
+// `servicetalk-dependencies` brings consistent versions of ServiceTalk modules and required external dependencies
+implementation platform("io.servicetalk:servicetalk-dependencies:$serviceTalkVersion")
 
-// The version for all ServiceTalk dependencies will be resolved based on information in `servicetalk-bom`.
+// The version for all ServiceTalk dependencies will be resolved based on information in `servicetalk-dependencies`.
 implementation "io.servicetalk:servicetalk-annotations"
 implementation "io.servicetalk:servicetalk-http-netty"
 implementation "io.servicetalk:servicetalk-http-utils"
