@@ -32,8 +32,6 @@ final class StreamingHttpClientToBlockingStreamingHttpClient implements Blocking
 
     StreamingHttpClientToBlockingStreamingHttpClient(final StreamingHttpClient client,
                                                      final HttpExecutionStrategy strategy) {
-        assert client.executionContext().executionStrategy().hasOffloads() || !strategy.hasOffloads() :
-                "Incompatible client strategy : " + strategy;
         this.strategy = defaultStrategy() == strategy ? DEFAULT_BLOCKING_STREAMING_CONNECTION_STRATEGY : strategy;
         this.client = client;
         context = new DelegatingHttpExecutionContext(client.executionContext()) {

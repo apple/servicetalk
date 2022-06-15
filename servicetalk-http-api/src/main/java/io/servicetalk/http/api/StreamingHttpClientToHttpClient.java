@@ -32,8 +32,6 @@ final class StreamingHttpClientToHttpClient implements HttpClient {
     private final HttpRequestResponseFactory reqRespFactory;
 
     StreamingHttpClientToHttpClient(final StreamingHttpClient client, final HttpExecutionStrategy strategy) {
-        assert client.executionContext().executionStrategy().hasOffloads() || !strategy.hasOffloads() :
-                "Incompatible client strategy : " + strategy;
         this.strategy = defaultStrategy() == strategy ? DEFAULT_ASYNC_CONNECTION_STRATEGY : strategy;
         this.client = client;
         context = new DelegatingHttpExecutionContext(client.executionContext()) {
