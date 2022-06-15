@@ -37,6 +37,10 @@ final class OptimizedHttp2FrameCodecBuilder extends Http2FrameCodecBuilder {
      */
     OptimizedHttp2FrameCodecBuilder(final boolean server) {
         this.server = server;
+        // We manage flushes at ST level and don't want netty to flush the preface & settings only. Instead, we write
+        // headers or entire message and flush them all together. Netty changed the default flush behavior starting from
+        // 4.1.78.Final. For context, see https://github.com/netty/netty/pull/12349.
+        flushPreface(false);
     }
 
     @Override
