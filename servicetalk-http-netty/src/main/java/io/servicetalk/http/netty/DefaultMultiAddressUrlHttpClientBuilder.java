@@ -24,6 +24,7 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.FilterableReservedStreamingHttpConnection;
@@ -259,6 +260,26 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         }
     }
 
+    private static void singleClientStrategyUpdate(ContextMap context, HttpExecutionStrategy singleStrategy) {
+        HttpExecutionStrategy requestStrategy = context.getOrDefault(HTTP_EXECUTION_STRATEGY_KEY, defaultStrategy());
+        assert null != requestStrategy : "Request strategy unexpectedly null";
+        HttpExecutionStrategy useStrategy = defaultStrategy() == requestStrategy ?
+                // For all apis except async streaming default conversion has already been done.
+                // This is the default to required strategy resolution for the async streaming client.
+                offloadAll() :
+                defaultStrategy() == singleStrategy || !singleStrategy.hasOffloads() ?
+                        // single client is default or has no *additional* offloads
+                        requestStrategy :
+                        // add single client offloads to existing strategy
+                        requestStrategy.merge(singleStrategy);
+
+        if (useStrategy != requestStrategy) {
+            LOGGER.debug("Request strategy {} changes to {}. SingleAddressClient strategy: {}",
+                    requestStrategy, useStrategy, singleStrategy);
+            context.put(HTTP_EXECUTION_STRATEGY_KEY, useStrategy);
+        }
+    }
+
     /**
      * When request transitions from the multi-address level to the single-address level, this filter will make sure
      * that any missing offloading required by the selected single-address client will be applied for the request
@@ -282,22 +303,8 @@ final class DefaultMultiAddressUrlHttpClientBuilder
                 protected Single<StreamingHttpResponse> request(
                         final StreamingHttpRequester delegate, final StreamingHttpRequest request) {
                     return defer(() -> {
-                        HttpExecutionStrategy singleStrategy = client.executionContext().executionStrategy();
-                        HttpExecutionStrategy requestStrategy =
-                                request.context().getOrDefault(HTTP_EXECUTION_STRATEGY_KEY, defaultStrategy());
-                        HttpExecutionStrategy useStrategy = defaultStrategy() == requestStrategy ?
-                                offloadAll() :
-                                defaultStrategy() == singleStrategy || !singleStrategy.hasOffloads() ?
-                                        // single client is default or has no *additional* offloads
-                                        requestStrategy :
-                                        // add single client offloads to existing strategy
-                                        requestStrategy.merge(singleStrategy);
+                        singleClientStrategyUpdate(request.context(), client.executionContext().executionStrategy());
 
-                        if (useStrategy != requestStrategy) {
-                            LOGGER.debug("Request strategy {} changes to {}. SingleAddressClient strategy: {}",
-                                    requestStrategy, useStrategy, singleStrategy);
-                            request.context().put(HTTP_EXECUTION_STRATEGY_KEY, useStrategy);
-                        }
                         return delegate.request(request);
                     });
                 }
@@ -340,20 +347,8 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             return defer(() -> {
                 try {
                     FilterableStreamingHttpClient singleClient = selectClient(metaData);
-                    HttpExecutionStrategy requestStrategy = metaData.context().get(HTTP_EXECUTION_STRATEGY_KEY);
-                    HttpExecutionStrategy singleStrategy = singleClient.executionContext().executionStrategy();
-                    HttpExecutionStrategy useStrategy = defaultStrategy() == requestStrategy ?
-                            offloadAll() :
-                            defaultStrategy() == singleStrategy || !singleStrategy.hasOffloads() ?
-                                    // single client is default or has no *additional* offloads
-                                    requestStrategy :
-                                    // add single client offloads to existing strategy
-                                    requestStrategy.merge(singleStrategy);
+                    singleClientStrategyUpdate(metaData.context(), singleClient.executionContext().executionStrategy());
 
-                    if (requestStrategy != useStrategy) {
-                        // single client overrides request strategy;
-                        metaData.context().put(HTTP_EXECUTION_STRATEGY_KEY, useStrategy);
-                    }
                     return singleClient.reserveConnection(metaData).shareContextOnSubscribe();
                 } catch (Throwable t) {
                     return Single.<FilterableReservedStreamingHttpConnection>failed(t).shareContextOnSubscribe();

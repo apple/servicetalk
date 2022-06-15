@@ -85,27 +85,21 @@ public interface MultiAddressHttpClientBuilder<U, R> extends HttpClientBuilder<U
      * <dl>
      *     <dt>Unspecified or {@link HttpExecutionStrategies#defaultStrategy()}
      *     <dd>The resulting client instances will use the default safe strategy for each API variant and
-     *     {@link SingleAddressHttpClientBuilder} instances generated will also have
-     *     default strategy. The computed strategy <strong style="text-transform: uppercase;">MAY NOT</strong> reduce
-     *     the offloads used for client request execution from the client API safe default.
+     *     {@link SingleAddressHttpClientBuilder} instances generated will also have default strategy.
      *
      *     <dt>{@link HttpExecutionStrategies#offloadNone()}
      *     (or deprecated {@link HttpExecutionStrategies#offloadNever()})
-     *     <dd>{@link SingleAddressHttpClientBuilder} instances created by the client will have a default strategy of
-     *     {@link HttpExecutionStrategies#offloadNone()}. An
-     *     {@link #initializer(SingleAddressInitializer) initializer} may override to add offloads using
-     *     {@link SingleAddressHttpClientBuilder#executionStrategy(HttpExecutionStrategy)}. Overriding the execution
-     *     strategy to require offloads will also allowed filters added to influence the computed execution strategy.
-     *     If not overridden by initializer, the resulting computed {@link HttpExecutionStrategies#offloadNone()}
-     *     execution strategy requires that filters
-     *     and asynchronous callbacks <strong style="text-transform: uppercase;">must not</strong> ever block during
-     *     the execution of client requests.
+     *     <dd>{@link SingleAddressHttpClientBuilder} instances created by the client will have a strategy of
+     *     {@link HttpExecutionStrategies#offloadNone()}. {@link HttpExecutionStrategies#offloadNone()} execution
+     *     strategy requires that filters and asynchronous callbacks
+     *     <strong style="text-transform: uppercase;">must not</strong> ever block during the execution of client
+     *     requests. An {@link #initializer(SingleAddressInitializer) initializer} may override to add offloads using
+     *     {@link SingleAddressHttpClientBuilder#executionStrategy(HttpExecutionStrategy)}.
      *
      *     <dt>A custom execution strategy ({@link HttpExecutionStrategies#customStrategyBuilder()}) or
      *     {@link HttpExecutionStrategies#offloadAll()}
-     *     <dd>{@link SingleAddressHttpClientBuilder} instances created by the client will have a default strategy of
-     *     the provided strategy and must result in a computed execution strategy with at least the same offloads as the
-     *     provided.
+     *     <dd>{@link SingleAddressHttpClientBuilder} instances created by the client will start with the provided
+     *     strategy and may add additional offloading as required by added filters.
      * </dl>
      *
      * @param strategy {@inheritDoc}
