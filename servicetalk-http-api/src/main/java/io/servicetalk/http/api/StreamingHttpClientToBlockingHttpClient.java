@@ -31,8 +31,7 @@ final class StreamingHttpClientToBlockingHttpClient implements BlockingHttpClien
     private final HttpRequestResponseFactory reqRespFactory;
 
     StreamingHttpClientToBlockingHttpClient(final StreamingHttpClient client, final HttpExecutionStrategy strategy) {
-        this.strategy = defaultStrategy() == strategy ?
-                DEFAULT_BLOCKING_CONNECTION_STRATEGY : strategy;
+        this.strategy = defaultStrategy() == strategy ? DEFAULT_BLOCKING_CONNECTION_STRATEGY : strategy;
         this.client = client;
         context = new DelegatingHttpExecutionContext(client.executionContext()) {
             @Override

@@ -95,7 +95,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.not;
 
-@Execution(ExecutionMode.CONCURRENT)
+@Execution(ExecutionMode.SAME_THREAD)
 class ClientEffectiveStrategyTest {
 
     @RegisterExtension
@@ -121,7 +121,30 @@ class ClientEffectiveStrategyTest {
          */
         SINGLE_BUILDER,
 
-        /* MULTI_BUILDER strategies are currently broken, see https://github.com/apple/servicetalk/pull/2166 */
+        /**
+         * Test execution strategy applied to multi client builder,
+         * {@link MultiAddressHttpClientBuilder#executionStrategy(HttpExecutionStrategy)}.
+         * Single client builder inherits multi client execution context strategy.
+         */
+        MULTI_BUILDER,
+
+        /**
+         * Multi client builder uses default strategy ({@link HttpExecutionStrategies#defaultStrategy()}).
+         * Single client builder inherits multi client builder execution context strategy,
+         * {@link HttpExecutionStrategies#defaultStrategy()}.
+         * Test execution strategy applied to single client builder,
+         * {@link SingleAddressHttpClientBuilder#executionStrategy(HttpExecutionStrategy)}.
+         */
+        MULTI_DEFAULT_STRATEGY_SINGLE_BUILDER,
+
+        /**
+         * Multi client builder uses {@link HttpExecutionStrategies#offloadNone()} strategy.
+         * Single client builder inherits multi client builder execution context strategy,
+         * {@link HttpExecutionStrategies#offloadNone()}.
+         * Test execution strategy applied to single client builder,
+         * {@link SingleAddressHttpClientBuilder#executionStrategy(HttpExecutionStrategy)}.
+         */
+        MULTI_OFFLOAD_NONE_SINGLE_BUILDER
     }
 
     private static final HttpExecutionStrategy[] BUILDER_STRATEGIES = {
@@ -183,6 +206,11 @@ class ClientEffectiveStrategyTest {
         List<Arguments> arguments = new ArrayList<>();
         for (BuilderType builderType : BuilderType.values()) {
             for (HttpExecutionStrategy builderStrategy : BUILDER_STRATEGIES) {
+                if (BuilderType.MULTI_OFFLOAD_NONE_SINGLE_BUILDER == builderType &&
+                        null == builderStrategy) {
+                    // null builderStrategy won't actually override, so skip.
+                    continue;
+                }
                 for (HttpExecutionStrategy filterStrategy : FILTER_STRATEGIES) {
                     for (HttpExecutionStrategy lbStrategy : LB_STRATEGIES) {
                         for (HttpExecutionStrategy cfStrategy : CF_STRATEGIES) {
@@ -249,7 +277,7 @@ class ClientEffectiveStrategyTest {
                         });
                     }
 
-                    if (null != builderStrategy) {
+                    if (builderType != BuilderType.MULTI_BUILDER && null != builderStrategy) {
                         clientBuilder.executionStrategy(builderStrategy);
                     }
                 };
@@ -265,6 +293,24 @@ class ClientEffectiveStrategyTest {
                 // apply initializer immediately
                 initializer.initialize(SCHEME, serverHostAndPort(context), singleClientBuilder);
                 clientBuilder = singleClientBuilder::buildStreaming;
+                break;
+            case MULTI_BUILDER:
+            case MULTI_DEFAULT_STRATEGY_SINGLE_BUILDER:
+            case MULTI_OFFLOAD_NONE_SINGLE_BUILDER:
+                requestTarget = SCHEME + "://" + serverHostAndPort(context) + PATH;
+                MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> multiClientBuilder =
+                        HttpClients.forMultiAddressUrl()
+                                .initializer(initializer)
+                                .ioExecutor(CLIENT_CTX.ioExecutor())
+                                .executor(CLIENT_CTX.executor());
+                if (BuilderType.MULTI_BUILDER == builderType && null != builderStrategy) {
+                    multiClientBuilder.executionStrategy(builderStrategy);
+                }
+                if (BuilderType.MULTI_OFFLOAD_NONE_SINGLE_BUILDER == builderType && null != builderStrategy) {
+                    // This is expected to ALWAYS be overridden in initializer.
+                    multiClientBuilder.executionStrategy(offloadNone());
+                }
+                clientBuilder = multiClientBuilder::buildStreaming;
                 break;
             default:
                 throw new AssertionError("Unexpected clientType");
@@ -338,6 +384,18 @@ class ClientEffectiveStrategyTest {
         switch (builderType) {
             case SINGLE_BUILDER:
                 return defaultStrategy() == merged ? clientApi.strategy() : merged;
+            case MULTI_BUILDER:
+                return null == builder || defaultStrategy() == builder ?
+                    clientApi.strategy().merge(merged) :
+                    builder.hasOffloads() ? merged : builder;
+            case MULTI_DEFAULT_STRATEGY_SINGLE_BUILDER:
+                    if (defaultStrategy() == merged || (null != builder && !builder.hasOffloads())) {
+                        merged = offloadNone();
+                    }
+                    return clientApi.strategy().merge(merged);
+            case MULTI_OFFLOAD_NONE_SINGLE_BUILDER:
+                return builder == null ?
+                        offloadNone() : defaultStrategy() == merged ? offloadNone() : merged;
             default:
                 throw new AssertionError("Unexpected builder type: " + builderType);
         }
@@ -421,24 +479,26 @@ class ClientEffectiveStrategyTest {
     private static final class ClientInvokingThreadRecorder implements StreamingHttpClientFilterFactory {
 
         private Thread applicationThread = Thread.currentThread();
+        private HttpExecutionStrategy expectedStrategy;
         private final EnumSet<ClientOffloadPoint> offloadPoints = EnumSet.noneOf(ClientOffloadPoint.class);
         private final ConcurrentMap<ClientOffloadPoint, String> invokingThreads = new ConcurrentHashMap<>();
         private final Queue<Throwable> errors = new LinkedBlockingQueue<>();
 
-        void reset(HttpExecutionStrategy streamingAsyncStrategy) {
+        void reset(HttpExecutionStrategy expectedStrategy) {
             invokingThreads.clear();
             errors.clear();
             offloadPoints.clear();
             applicationThread = Thread.currentThread();
 
+            this.expectedStrategy = expectedStrategy;
             // adjust expected offloads for specific execution strategy
-            if (streamingAsyncStrategy.isSendOffloaded()) {
+            if (expectedStrategy.isSendOffloaded()) {
                 offloadPoints.add(Send);
             }
-            if (streamingAsyncStrategy.isMetadataReceiveOffloaded()) {
+            if (expectedStrategy.isMetadataReceiveOffloaded()) {
                 offloadPoints.add(ReceiveMeta);
             }
-            if (streamingAsyncStrategy.isDataReceiveOffloaded()) {
+            if (expectedStrategy.isDataReceiveOffloaded()) {
                 offloadPoints.add(ReceiveData);
             }
         }
@@ -488,7 +548,8 @@ class ClientEffectiveStrategyTest {
                             final AssertionError e = new AssertionError("Expected IoThread or " +
                                     applicationThread.getName() + " at " + offloadPoint +
                                     ", but was running on an offloading executor thread: " + current.getName() +
-                                    ". clientStrategy=" + clientStrategy + ", requestStrategy=" + requestStrategy);
+                                    ". clientStrategy=" + clientStrategy + ", expectedStrategy=" + expectedStrategy
+                                    + ", requestStrategy=" + requestStrategy);
                             errors.add(e);
                         }
                     }
@@ -498,8 +559,9 @@ class ClientEffectiveStrategyTest {
         }
 
         public void verifyOffloads(ClientApi clientApi, HttpExecutionStrategy clientStrategy, String apiStrategy) {
-            assertNoAsyncErrors("API=" + clientApi + ", clientStrategy=" + clientStrategy + ", apiStrategy=" +
-                    apiStrategy + ". Async Errors! See suppressed", errors);
+            assertNoAsyncErrors("API=" + clientApi + ", apiStrategy=" + apiStrategy +
+                    ", clientStrategy=" + clientStrategy +
+                    ", expectedStrategy=" + expectedStrategy + ". Async Errors! See suppressed", errors);
             assertThat("Unexpected offload points recorded. " + invokingThreads,
                     invokingThreads.size(), Matchers.is(ClientOffloadPoint.values().length));
         }

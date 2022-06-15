@@ -24,11 +24,14 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.FilterableReservedStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
+import io.servicetalk.http.api.HttpContextKeys;
 import io.servicetalk.http.api.HttpExecutionContext;
+import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpRequestMetaData;
@@ -37,8 +40,11 @@ import io.servicetalk.http.api.MultiAddressHttpClientBuilder;
 import io.servicetalk.http.api.RedirectConfig;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpClient;
+import io.servicetalk.http.api.StreamingHttpClientFilter;
+import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
+import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.utils.RedirectingHttpRequesterFilter;
@@ -63,6 +69,10 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseabl
 import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverCompleteFromSource;
+import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadAll;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.setExecutionContext;
 import static java.util.Objects.requireNonNull;
@@ -106,12 +116,12 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         final CompositeCloseable closeables = newCompositeCloseable();
         try {
             final HttpExecutionContext executionContext = executionContextBuilder.build();
-            final ClientFactory clientFactory = new ClientFactory(builderFactory, executionContext,
-                    singleAddressInitializer);
+            final ClientFactory clientFactory =
+                    new ClientFactory(builderFactory, executionContext, singleAddressInitializer);
             final CachingKeyFactory keyFactory = closeables.prepend(new CachingKeyFactory());
             final HttpHeadersFactory headersFactory = this.headersFactory;
             FilterableStreamingHttpClient urlClient = closeables.prepend(
-                    new StreamingUrlHttpClient(executionContext, clientFactory, keyFactory,
+                    new StreamingUrlHttpClient(executionContext, keyFactory, clientFactory,
                             new DefaultStreamingHttpRequestResponseFactory(executionContext.bufferAllocator(),
                                     headersFactory != null ? headersFactory : DefaultHttpHeadersFactory.INSTANCE,
                                     HTTP_1_1)));
@@ -240,11 +250,70 @@ final class DefaultMultiAddressUrlHttpClientBuilder
                 builder.sslConfig(DEFAULT_CLIENT_SSL_CONFIG);
             }
 
+            builder.appendClientFilter(HttpExecutionStrategyUpdater.INSTANCE);
+
             if (singleAddressInitializer != null) {
                 singleAddressInitializer.initialize(urlKey.scheme, urlKey.hostAndPort, builder);
             }
 
             return builder.buildStreaming();
+        }
+    }
+
+    private static void singleClientStrategyUpdate(ContextMap context, HttpExecutionStrategy singleStrategy) {
+        HttpExecutionStrategy requestStrategy = context.getOrDefault(HTTP_EXECUTION_STRATEGY_KEY, defaultStrategy());
+        assert null != requestStrategy : "Request strategy unexpectedly null";
+        HttpExecutionStrategy useStrategy = defaultStrategy() == requestStrategy ?
+                // For all apis except async streaming default conversion has already been done.
+                // This is the default to required strategy resolution for the async streaming client.
+                offloadAll() :
+                defaultStrategy() == singleStrategy || !singleStrategy.hasOffloads() ?
+                        // single client is default or has no *additional* offloads
+                        requestStrategy :
+                        // add single client offloads to existing strategy
+                        requestStrategy.merge(singleStrategy);
+
+        if (useStrategy != requestStrategy) {
+            LOGGER.debug("Request strategy {} changes to {}. SingleAddressClient strategy: {}",
+                    requestStrategy, useStrategy, singleStrategy);
+            context.put(HTTP_EXECUTION_STRATEGY_KEY, useStrategy);
+        }
+    }
+
+    /**
+     * When request transitions from the multi-address level to the single-address level, this filter will make sure
+     * that any missing offloading required by the selected single-address client will be applied for the request
+     * execution. This filter never reduces offloading, it can only add missing offloading flags. Users who want to
+     * execute a request without offloading must specify {@link HttpExecutionStrategies#offloadNone()} strategy at the
+     * {@link MultiAddressHttpClientBuilder} or explicitly set the required strategy at request context with
+     * {@link HttpContextKeys#HTTP_EXECUTION_STRATEGY_KEY}.
+     */
+    private static final class HttpExecutionStrategyUpdater implements StreamingHttpClientFilterFactory {
+
+        static final StreamingHttpClientFilterFactory INSTANCE = new HttpExecutionStrategyUpdater();
+
+        private HttpExecutionStrategyUpdater() {
+            // Singleton
+        }
+
+        @Override
+        public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {
+            return new StreamingHttpClientFilter(client) {
+                @Override
+                protected Single<StreamingHttpResponse> request(
+                        final StreamingHttpRequester delegate, final StreamingHttpRequest request) {
+                    return defer(() -> {
+                        singleClientStrategyUpdate(request.context(), client.executionContext().executionStrategy());
+
+                        return delegate.request(request);
+                    });
+                }
+            };
+        }
+
+        @Override
+        public HttpExecutionStrategy requiredOffloads() {
+            return offloadNone();
         }
     }
 
@@ -256,8 +325,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         private final ListenableAsyncCloseable closeable;
 
         StreamingUrlHttpClient(final HttpExecutionContext executionContext,
-                               final Function<UrlKey, FilterableStreamingHttpClient> clientFactory,
-                               final CachingKeyFactory keyFactory,
+                               final CachingKeyFactory keyFactory, final ClientFactory clientFactory,
                                final StreamingHttpRequestResponseFactory reqRespFactory) {
             this.reqRespFactory = requireNonNull(reqRespFactory);
             this.group = ClientGroup.from(clientFactory);
@@ -278,7 +346,10 @@ final class DefaultMultiAddressUrlHttpClientBuilder
                 final HttpRequestMetaData metaData) {
             return defer(() -> {
                 try {
-                    return selectClient(metaData).reserveConnection(metaData).shareContextOnSubscribe();
+                    FilterableStreamingHttpClient singleClient = selectClient(metaData);
+                    singleClientStrategyUpdate(metaData.context(), singleClient.executionContext().executionStrategy());
+
+                    return singleClient.reserveConnection(metaData).shareContextOnSubscribe();
                 } catch (Throwable t) {
                     return Single.<FilterableReservedStreamingHttpConnection>failed(t).shareContextOnSubscribe();
                 }
