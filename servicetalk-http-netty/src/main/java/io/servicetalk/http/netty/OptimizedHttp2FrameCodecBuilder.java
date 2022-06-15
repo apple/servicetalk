@@ -97,18 +97,17 @@ final class OptimizedHttp2FrameCodecBuilder extends Http2FrameCodecBuilder {
      * @return {@link Http2FrameCodecBuilder} or {@code null} if {@code flushPrefaceMethod == null}
      * @see <a href="https://github.com/netty/netty/pull/12349">Netty PR#12349</a>
      */
-    @Nullable
     private static Http2FrameCodecBuilder disableFlushPreface(@Nullable final MethodHandle flushPrefaceMethod,
                                                               final Http2FrameCodecBuilder builderInstance) {
         if (flushPrefaceMethod == null) {
-            return null;
+            return builderInstance;
         }
         try {
             // invokeExact requires return type cast to match the type signature
             return (Http2FrameCodecBuilder) flushPrefaceMethod.invokeExact(builderInstance, false);
         } catch (Throwable t) {
             throwException(t);
-            return null;
+            return builderInstance;
         }
     }
 }
