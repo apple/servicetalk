@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,11 +28,11 @@ import io.servicetalk.concurrent.internal.DelayedSubscription;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.netty.H2ClientParentConnectionContext.StacklessCancellationException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.BiFunction;
 import javax.annotation.Nonnull;
@@ -41,7 +41,6 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.internal.EmptySubscriptions.EMPTY_SUBSCRIPTION;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateSubscription;
-import static io.servicetalk.concurrent.internal.ThrowableUtils.unknownStackTrace;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -80,9 +79,7 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> implements Pub
                 maybePayloadSubUpdater = AtomicReferenceFieldUpdater.newUpdater(SplicingSubscriber.class,
                 Object.class, "maybePayloadSub");
 
-        private static final Throwable CANCELED =
-                unknownStackTrace(new CancellationException("Canceled prematurely from Data"),
-                        SplicingSubscriber.class, "cancelData(..)");
+        private static final String CANCELED = "CANCELED";
         private static final String PENDING = "PENDING";
         private static final String EMPTY_COMPLETED = "EMPTY_COMPLETED";
         private static final String EMPTY_COMPLETED_DELIVERED = "EMPTY_COMPLETED_DELIVERED";
@@ -91,7 +88,7 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> implements Pub
          * A field that assumes various types and states depending on the state of the operator.
          * <p>
          * One of <ul>
-         *     <li>{@link null} – initial pending state before the {@link Single} is completed</li>
+         *     <li>{@code null} – initial pending state before the {@link Single} is completed</li>
          *     <li>{@link PublisherSource.Subscriber}&lt;{@link Payload}&gt; - when subscribed to the payload</li>
          *     <li>{@link #CANCELED} - when the {@link Single} is canceled prematurely</li>
          *     <li>{@link #PENDING} - when the {@link Single} will complete and {@link Payload} pending subscribe</li>
@@ -203,9 +200,9 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> implements Pub
                 metaSeenInOnNext = true;
                 final Data data;
                 try {
-                    data = parent.packer.apply(meta,
-                            maybePayloadSubUpdater.compareAndSet(this, null, PENDING) ?
-                                    newPayloadPublisher() : Publisher.failed(CANCELED));
+                    data = parent.packer.apply(meta, maybePayloadSubUpdater.compareAndSet(this, null, PENDING) ?
+                            newPayloadPublisher() : Publisher.failed(StacklessCancellationException.newInstance(
+                                    "Canceled prematurely from Data", SplicingSubscriber.class, "cancelData(..)")));
                 } catch (Throwable t) {
                     assert rawSubscription != null;
                     // We know that there is nothing else that can happen on this stream as we are not sending the

@@ -268,8 +268,8 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                             } else {
                                 // The request is already cancelled and the cancel signal will eventually propagate
                                 // here. No need to try to open a stream, we can just fail fast:
-                                final Throwable cause = StacklessCancellationException.newInstance(this.getClass(),
-                                        "handleSubscribe");
+                                final Throwable cause = StacklessCancellationException.newInstance(
+                                        "The request was cancelled", this.getClass(), "handleSubscribe");
                                 observer.streamClosed(cause);
                                 deliverErrorFromSource(subscriber, cause);
                                 return;
@@ -530,10 +530,12 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
         }
     }
 
-    private static final class StacklessCancellationException extends CancellationException {
+    static final class StacklessCancellationException extends CancellationException {
         private static final long serialVersionUID = 3235852873427231209L;
 
-        private StacklessCancellationException() { }
+        private StacklessCancellationException(String message) {
+            super(message);
+        }
 
         // Override fillInStackTrace() so we not populate the backtrace via a native call and so leak the
         // Classloader.
@@ -542,8 +544,8 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
             return this;
         }
 
-        static StacklessCancellationException newInstance(Class<?> clazz, String method) {
-            return ThrowableUtils.unknownStackTrace(new StacklessCancellationException(), clazz, method);
+        static StacklessCancellationException newInstance(String message, Class<?> clazz, String method) {
+            return ThrowableUtils.unknownStackTrace(new StacklessCancellationException(message), clazz, method);
         }
     }
 }
