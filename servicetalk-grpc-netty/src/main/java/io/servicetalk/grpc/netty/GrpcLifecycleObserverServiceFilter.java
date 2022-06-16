@@ -69,6 +69,8 @@ import java.util.function.UnaryOperator;
  *     {@link HttpServerBuilder#appendNonOffloadingServiceFilter(Predicate, StreamingHttpServiceFilterFactory)} or
  *     {@link HttpServerBuilder#appendServiceFilter(Predicate, StreamingHttpServiceFilterFactory)} if the observer
  *     should be applied conditionally.</li>
+ *     <li>As the last {@link HttpServerBuilder#appendServiceFilter(StreamingHttpServiceFilterFactory)} if only service
+ *     business logic should be observed without accounting for work of any other filters.</li>
  * </ul>
  * An alternative way to install an {@link GrpcLifecycleObserver} is to use
  * {@link GrpcServerBuilder#lifecycleObserver(GrpcLifecycleObserver)}.

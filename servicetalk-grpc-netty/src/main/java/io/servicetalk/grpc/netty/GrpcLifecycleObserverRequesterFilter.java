@@ -51,6 +51,9 @@ import java.util.function.UnaryOperator;
  *     <li>As a {@link SingleAddressHttpClientBuilder#appendConnectionFilter(StreamingHttpConnectionFilterFactory)
  *     connection filter} if no user-defined {@link RetryingHttpRequesterFilter} is appended manually but the default
  *     auto-retries should be observed as an independent {@link GrpcExchangeObserver exchange}.</li>
+ *     <li>As the last
+ *     {@link SingleAddressHttpClientBuilder#appendConnectionFilter(StreamingHttpConnectionFilterFactory) connection
+ *     filter} if only network interactions should be observed without accounting for work of any other filters.</li>
  *     <li>After {@link TimeoutHttpRequesterFilter} if the timeout event should be observed as
  *     {@link GrpcExchangeObserver#onResponseCancel() cancellation} instead of an
  *     {@link GrpcExchangeObserver#onResponseError(Throwable) error}.</li>
