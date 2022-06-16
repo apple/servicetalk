@@ -15,12 +15,13 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpExceptionMapperServiceFilter;
 import io.servicetalk.http.api.HttpLifecycleObserver;
-import io.servicetalk.http.api.HttpLifecycleObserver.HttpResponseObserver;
+import io.servicetalk.http.api.HttpLifecycleObserver.HttpExchangeObserver;
+import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponseMetaData;
-import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -29,23 +30,53 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
-import io.servicetalk.http.utils.TimeoutHttpServiceFilter;
+import io.servicetalk.http.utils.TimeoutHttpRequesterFilter;
+import io.servicetalk.http.utils.auth.BasicAuthHttpServiceFilter;
+import io.servicetalk.transport.api.IoExecutor;
+
+import org.slf4j.MDC;
+
+import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
 
 /**
  * An HTTP service filter that tracks events during request/response lifecycle.
  * <p>
- * When this filter is used the result of the observed behavior will depend on the position of the filter in the
- * execution chain. Moving it before or after other filters, such as {@link TimeoutHttpServiceFilter}, may result in
- * different {@link HttpLifecycleObserver} callbacks being triggered
- * (seeing {@link HttpResponseObserver#onResponseCancel()} vs {@link  HttpResponseObserver#onResponseError(Throwable)}).
- * If any of the prior filters short circuit the request processing or modify {@link HttpResponseMetaData}, those won't
- * be observed. Presence of the tracing or MDC information also depends on position of this filter compare to filters
- * that populate context.
- * <p>
- * If observing the real {@link HttpResponseStatus} returned from the server is desired, consider using
- * {@link HttpServerBuilder#lifecycleObserver(HttpLifecycleObserver)} instead or place
- * {@link HttpExceptionMapperServiceFilter} right after this filter to make sure all {@link Throwable}(s) are mapped
- * into an HTTP response.
+ * The result of the observed behavior will depend on the position of this filter in the execution chain.
+ * This filter is recommended to be appended as one of the first filters using
+ * {@link HttpServerBuilder#appendNonOffloadingServiceFilter(StreamingHttpServiceFilterFactory)} method to account for
+ * all work done by other filters and offloading of the requests processing. It can be appended at another position,
+ * considering the following:
+ * <ul>
+ *     <li>After a tracing filter or any other filter that populates
+ *     {@link HttpRequestMetaData#context() request context}, {@link AsyncContext}, {@link MDC}, or alters
+ *     {@link HttpRequestMetaData} if that information has to be available for {@link HttpExchangeObserver}.</li>
+ *     <li>After {@link TimeoutHttpRequesterFilter} if the timeout event should be observed as
+ *     {@link HttpExchangeObserver#onResponseCancel() cancellation} instead of an
+ *     {@link HttpExchangeObserver#onResponseError(Throwable) error}.</li>
+ *     <li>After any filter that can reject requests, like {@link BasicAuthHttpServiceFilter}, if only allowed requests
+ *     should be observed.</li>
+ *     <li>Before any filter that can reject requests, like {@link BasicAuthHttpServiceFilter}, if all incoming requests
+ *     have to be observed.</li>
+ *     <li>Before any filter that populates {@link HttpResponseMetaData#context() response context} or alters
+ *     {@link HttpResponseMetaData} if that information has to be available for {@link HttpExchangeObserver}.</li>
+ *     <li>Before any filter that maps/translates {@link HttpResponseMetaData} into an {@link Throwable exception} or
+ *     throws an exception during {@link StreamingHttpResponse#transformPayloadBody(UnaryOperator) response payload body
+ *     transformation} if that exception has to be observed by {@link HttpExchangeObserver}.</li>
+ *     <li>Before any exception mapping filter that maps an {@link Throwable exception} into a valid response, like
+ *     {@link HttpExceptionMapperServiceFilter}, if the {@link HttpExchangeObserver} should see what status code is
+ *     returned to the client.</li>
+ *     <li>Using {@link HttpServerBuilder#appendServiceFilter(StreamingHttpServiceFilterFactory)} if an exchange
+ *     should be observed after it's offloaded from an {@link IoExecutor} (if offloading is enabled).</li>
+ *     <li>Using
+ *     {@link HttpServerBuilder#appendNonOffloadingServiceFilter(Predicate, StreamingHttpServiceFilterFactory)} or
+ *     {@link HttpServerBuilder#appendServiceFilter(Predicate, StreamingHttpServiceFilterFactory)} if the observer
+ *     should be applied conditionally.</li>
+ * </ul>
+ * An alternative way to install an {@link HttpLifecycleObserver} is to use
+ * {@link HttpServerBuilder#lifecycleObserver(HttpLifecycleObserver)}.
+ *
+ * @see HttpServerBuilder#lifecycleObserver(HttpLifecycleObserver)
  */
 public class HttpLifecycleObserverServiceFilter extends AbstractLifecycleObserverHttpFilter implements
             StreamingHttpServiceFilterFactory {
