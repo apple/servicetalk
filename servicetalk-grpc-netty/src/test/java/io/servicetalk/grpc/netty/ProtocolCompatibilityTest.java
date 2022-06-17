@@ -1196,7 +1196,7 @@ class ProtocolCompatibilityTest {
         }
         BufferDecoderGroupBuilder builder = new BufferDecoderGroupBuilder(2);
         if (compression.contentEquals(NettyBufferEncoders.gzipDefault().encodingName())) {
-            builder.add(NettyBufferEncoders.gzipDefault(), true);
+            builder.add(NettyBufferEncoders.gzipDefault());
         } else if (compression.contentEquals(Identity.identityEncoder().encodingName())) {
             builder.add(Identity.identityEncoder(), false);
         }

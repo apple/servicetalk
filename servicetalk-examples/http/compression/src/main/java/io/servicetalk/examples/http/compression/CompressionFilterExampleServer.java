@@ -35,8 +35,8 @@ public final class CompressionFilterExampleServer {
                 .appendServiceFilter(new ContentEncodingHttpServiceFilter(
                         asList(gzipDefault(), deflateDefault(), identityEncoder()),
                         new BufferDecoderGroupBuilder()
-                                .add(gzipDefault(), true)
-                                .add(deflateDefault(), true)
+                                .add(gzipDefault())
+                                .add(deflateDefault())
                                 .add(identityEncoder(), false).build()))
                 .listenAndAwait((ctx, request, responseFactory) -> {
                         String who = request.payloadBody(textSerializerUtf8());
