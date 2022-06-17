@@ -121,17 +121,17 @@ abstract class BaseContentEncodingTest {
 
     protected enum Decoders {
         DEFAULT(EmptyBufferDecoderGroup.INSTANCE),
-        GZIP_ONLY(new BufferDecoderGroupBuilder().add(gzipDefault(), true).build()),
-        GZIP_ID(new BufferDecoderGroupBuilder().add(gzipDefault(), true).add(identityEncoder(), false).build()),
-        GZIP_DEFLATE_ID(new BufferDecoderGroupBuilder().add(gzipDefault(), true).add(deflateDefault(), true)
+        GZIP_ONLY(new BufferDecoderGroupBuilder().add(gzipDefault()).build()),
+        GZIP_ID(new BufferDecoderGroupBuilder().add(gzipDefault()).add(identityEncoder(), false).build()),
+        GZIP_DEFLATE_ID(new BufferDecoderGroupBuilder().add(gzipDefault()).add(deflateDefault())
                 .add(identityEncoder(), false).build()),
-        ID_ONLY(new BufferDecoderGroupBuilder().add(identityEncoder(), true).build()),
-        ID_GZIP(new BufferDecoderGroupBuilder().add(identityEncoder(), false).add(gzipDefault(), true).build()),
-        ID_DEFLATE(new BufferDecoderGroupBuilder().add(identityEncoder(), false).add(deflateDefault(), true).build()),
-        ID_DEFLATE_GZIP(new BufferDecoderGroupBuilder().add(identityEncoder(), false).add(deflateDefault(), true)
-                .add(gzipDefault(), true).build()),
-        DEFLATE_ONLY(new BufferDecoderGroupBuilder().add(deflateDefault(), true).build()),
-        DEFLATE_ID(new BufferDecoderGroupBuilder().add(deflateDefault(), true).add(identityEncoder(), false).build());
+        ID_ONLY(new BufferDecoderGroupBuilder().add(identityEncoder()).build()),
+        ID_GZIP(new BufferDecoderGroupBuilder().add(identityEncoder(), false).add(gzipDefault()).build()),
+        ID_DEFLATE(new BufferDecoderGroupBuilder().add(identityEncoder(), false).add(deflateDefault()).build()),
+        ID_DEFLATE_GZIP(new BufferDecoderGroupBuilder().add(identityEncoder(), false).add(deflateDefault())
+                .add(gzipDefault()).build()),
+        DEFLATE_ONLY(new BufferDecoderGroupBuilder().add(deflateDefault()).build()),
+        DEFLATE_ID(new BufferDecoderGroupBuilder().add(deflateDefault()).add(identityEncoder(), false).build());
 
         final BufferDecoderGroup group;
 

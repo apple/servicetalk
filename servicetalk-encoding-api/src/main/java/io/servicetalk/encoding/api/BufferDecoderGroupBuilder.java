@@ -50,8 +50,21 @@ public final class BufferDecoderGroupBuilder {
     /**
      * Add a new {@link BufferDecoder} to the {@link BufferDecoderGroup} built by this builder.
      * @param decoder The decoder to add.
+     * @return {@code this}.
+     */
+    public BufferDecoderGroupBuilder add(BufferDecoder decoder) {
+        return add(decoder, true);
+    }
+
+    /**
+     * Add a new {@link BufferDecoder} to the {@link BufferDecoderGroup} built by this builder.
+     * @param decoder The decoder to add.
      * @param advertised {@code true} if the decoder should be included in
-     * {@link BufferDecoderGroup#advertisedMessageEncoding()}.
+     * {@link BufferDecoderGroup#advertisedMessageEncoding()}. {@code false} means the value will be excluded from
+     * {@link BufferDecoderGroup#advertisedMessageEncoding()} and therefore won't be included in {@code Accept-Encoding}
+     * (or equivalent) metadata headers and the peer won't explicitly be told this decoder is supported. {@code false}
+     * is commonly used to discourage usage of "identity" decoders in favor of other more preferred options, but still
+     * support it in case there are no common decoders.
      * @return {@code this}.
      */
     public BufferDecoderGroupBuilder add(BufferDecoder decoder, boolean advertised) {

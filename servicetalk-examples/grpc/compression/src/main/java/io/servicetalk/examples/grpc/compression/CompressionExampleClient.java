@@ -38,8 +38,8 @@ public final class CompressionExampleClient {
                         // For the purposes of this example we disable GZip compression and use the
                         // server's second choice (deflate) to demonstrate that negotiation of compression algorithm is
                         // handled correctly.
-                        // .add(NettyBufferEncoders.gzipDefault(), true)
-                        .add(deflateDefault(), true)
+                        // .add(NettyBufferEncoders.gzipDefault())
+                        .add(deflateDefault())
                         .add(identityEncoder(), false).build()))) {
             // This request is sent with the request being uncompressed. The response may
             // be compressed because the ClientFactory will include the encodings we

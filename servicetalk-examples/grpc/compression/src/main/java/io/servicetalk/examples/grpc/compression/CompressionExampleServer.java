@@ -37,8 +37,8 @@ public final class CompressionExampleServer {
         GrpcServers.forPort(8080)
                 .listenAndAwait(new Greeter.ServiceFactory.Builder()
                         .bufferDecoderGroup(new BufferDecoderGroupBuilder()
-                                .add(gzipDefault(), true)
-                                .add(deflateDefault(), true)
+                                .add(gzipDefault())
+                                .add(deflateDefault())
                                 .add(identityEncoder(), false).build())
                         .bufferEncoders(asList(gzipDefault(), deflateDefault(), identityEncoder()))
                         .addService((GreeterService) (ctx, request) ->

@@ -30,9 +30,11 @@ public interface BufferDecoderGroup {
 
     /**
      * Get the combined encoding to advertise. This is typically a combination of
-     * {@link BufferDecoder#encodingName()} contained in this group.
+     * {@link BufferDecoder#encodingName()} contained in this group. This value is commonly used in
+     * {@code Accept-Encoding} (or equivalent) metadata to advertise/communicate the supported algorithms.
      * @return the combined encoding to advertise. This is typically a combination of
-     * {@link BufferDecoder#encodingName()} contained in this group.
+     * {@link BufferDecoder#encodingName()} contained in this group. This value is commonly used in
+     * {@code Accept-Encoding} (or equivalent) metadata to advertise/communicate the supported algorithms.
      */
     @Nullable
     CharSequence advertisedMessageEncoding();
