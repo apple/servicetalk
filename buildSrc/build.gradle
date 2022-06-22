@@ -33,11 +33,9 @@ sourceSets {
   main {
     groovy {
       srcDir "../servicetalk-gradle-plugin-internal/src/main/groovy"
-      srcDir "../servicetalk-grpc-gradle-plugin/src/main/groovy"
     }
     resources {
       srcDir "../servicetalk-gradle-plugin-internal/src/main/resources"
-      srcDir "../servicetalk-grpc-gradle-plugin/src/main/resources"
     }
   }
 }
