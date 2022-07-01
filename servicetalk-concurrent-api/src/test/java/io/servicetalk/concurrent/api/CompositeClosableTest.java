@@ -34,7 +34,7 @@ final class CompositeClosableTest {
     void sameOperationDoesNotSOE(boolean merge, boolean gracefully) throws Exception {
         AsyncCloseable mockClosable = newMock("asyncCloseable");
         CompositeCloseable compositeCloseable = newCompositeCloseable();
-        for (int i = 0; i < 10000; ++i) {
+        for (int i = 0; i < 100000; ++i) {
             if (merge) {
                 compositeCloseable.merge(mockClosable);
             } else {
@@ -54,7 +54,7 @@ final class CompositeClosableTest {
     void alternatingOperationSOE(boolean gracefully) {
         AsyncCloseable mockClosable = newMock("asyncCloseable");
         CompositeCloseable compositeCloseable = newCompositeCloseable();
-        for (int i = 0; i < 10000; ++i) {
+        for (int i = 0; i < 100000; ++i) {
             if ((i & 1) == 0) {
                 compositeCloseable.merge(mockClosable);
             } else {
