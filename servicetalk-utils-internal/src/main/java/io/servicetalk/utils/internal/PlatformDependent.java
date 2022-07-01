@@ -316,9 +316,9 @@ public final class PlatformDependent {
         }
 
         static <T> Queue<T> newUnboundedMpscQueue(final int initialCapacity) {
-            return USE_UNSAFE_QUEUES ? new MpscUnboundedUnpaddedArrayQueue<>(max(MIN_ALLOWED_MPSC_CHUNK_SIZE, initialCapacity))
-                                     : new MpscUnboundedAtomicArrayQueue<>(
-                                             max(MIN_ALLOWED_MPSC_CHUNK_SIZE, initialCapacity));
+            return USE_UNSAFE_QUEUES ?
+                    new MpscUnboundedUnpaddedArrayQueue<>(max(MIN_ALLOWED_MPSC_CHUNK_SIZE, initialCapacity)) :
+                    new MpscUnboundedAtomicArrayQueue<>(max(MIN_ALLOWED_MPSC_CHUNK_SIZE, initialCapacity));
         }
 
         static <T> Queue<T> newUnboundedLinkedMpscQueue() {
