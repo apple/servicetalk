@@ -30,12 +30,12 @@
  */
 package io.servicetalk.utils.internal;
 
-import org.jctools.queues.MpscChunkedArrayQueue;
 import org.jctools.queues.atomic.MpscGrowableAtomicArrayQueue;
 import org.jctools.queues.atomic.MpscLinkedAtomicQueue;
 import org.jctools.queues.atomic.MpscUnboundedAtomicArrayQueue;
 import org.jctools.queues.atomic.SpscGrowableAtomicArrayQueue;
 import org.jctools.queues.atomic.SpscUnboundedAtomicArrayQueue;
+import org.jctools.queues.ea.unpadded.MpscChunkedUnpaddedArrayQueue;
 import org.jctools.queues.ea.unpadded.MpscLinkedUnpaddedQueue;
 import org.jctools.queues.ea.unpadded.MpscUnboundedUnpaddedArrayQueue;
 import org.jctools.queues.ea.unpadded.SpscChunkedUnpaddedArrayQueue;
@@ -311,7 +311,7 @@ public final class PlatformDependent {
             // up to the next power of two and so will overflow otherwise.
             final int initialCap = max(MIN_ALLOWED_MPSC_CHUNK_SIZE, initialCapacity);
             final int capacity = max(min(maxCapacity, MAX_ALLOWED_QUEUE_CAPACITY), MIN_MAX_MPSC_CAPACITY);
-            return USE_UNSAFE_QUEUES ? new MpscChunkedArrayQueue<>(initialCap, capacity)
+            return USE_UNSAFE_QUEUES ? new MpscChunkedUnpaddedArrayQueue<>(initialCap, capacity)
                                      : new MpscGrowableAtomicArrayQueue<>(initialCap, capacity);
         }
 
