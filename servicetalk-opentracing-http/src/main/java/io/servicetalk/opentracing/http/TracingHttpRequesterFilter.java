@@ -124,7 +124,6 @@ public class TracingHttpRequesterFilter extends AbstractTracingHttpFilter
 
     @Override
     public HttpExecutionStrategy requiredOffloads() {
-        // No influence since we do not block.
         return HttpExecutionStrategies.offloadNone();
     }
 

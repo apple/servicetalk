@@ -17,6 +17,7 @@ package io.servicetalk.opentracing.http;
 
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponseMetaData;
@@ -42,6 +43,7 @@ import static io.opentracing.tag.Tags.HTTP_METHOD;
 import static io.opentracing.tag.Tags.HTTP_URL;
 import static io.opentracing.tag.Tags.SPAN_KIND;
 import static io.opentracing.tag.Tags.SPAN_KIND_SERVER;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 
 /**
  * A {@link StreamingHttpService} that supports open tracing.
@@ -104,6 +106,11 @@ public class TracingHttpServiceFilter extends AbstractTracingHttpFilter implemen
                 return trackRequest(delegate(), ctx, request, responseFactory);
             }
         };
+    }
+
+    @Override
+    public HttpExecutionStrategy requiredOffloads() {
+        return offloadNone();
     }
 
     private Single<StreamingHttpResponse> trackRequest(final StreamingHttpService delegate,
