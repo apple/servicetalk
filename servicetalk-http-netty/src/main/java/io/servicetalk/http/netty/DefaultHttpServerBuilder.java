@@ -41,6 +41,7 @@ import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ConnectionAcceptorFactory;
+import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerSslConfig;
@@ -118,12 +119,14 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
         return current;
     }
 
-    private static <T> T checkNonOffloading(String desc, HttpExecutionStrategy assumeStrategy, T obj) {
-        HttpExecutionStrategy requires = obj instanceof ExecutionStrategyInfluencer ?
-                HttpExecutionStrategy.from(((ExecutionStrategyInfluencer<?>) obj).requiredOffloads()) :
-                assumeStrategy;
+    private static <T> T checkNonOffloading(String what, ExecutionStrategy fallbackValue, T obj) {
+        ExecutionStrategy requires = obj instanceof ExecutionStrategyInfluencer ?
+                ((ExecutionStrategyInfluencer<?>) obj).requiredOffloads() :
+                fallbackValue;
         if (requires.hasOffloads()) {
-            throw new IllegalArgumentException(desc + " required offloading : " + requires);
+            throw new IllegalArgumentException(what + " '" + obj.getClass().getName() + "' requires offloading: " +
+                    requires + ". Therefore, it cannot be used with 'appendNonOffloadingServiceFilter(...)', " +
+                    "use 'appendServiceFilter(...)' instead.");
         }
         return obj;
     }
@@ -146,15 +149,15 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
 
     @Override
     public HttpServerBuilder appendNonOffloadingServiceFilter(final StreamingHttpServiceFilterFactory factory) {
-        noOffloadServiceFilters.add(checkNonOffloading("Non-offloading filter", defaultStrategy(), factory));
+        noOffloadServiceFilters.add(checkNonOffloading("Filter", defaultStrategy(), factory));
         return this;
     }
 
     @Override
     public HttpServerBuilder appendNonOffloadingServiceFilter(final Predicate<StreamingHttpRequest> predicate,
                                                               final StreamingHttpServiceFilterFactory factory) {
-        checkNonOffloading("Non-offloading predicate", offloadNone(), predicate);
-        checkNonOffloading("Non-offloading filter", defaultStrategy(), factory);
+        checkNonOffloading("Predicate", offloadNone(), predicate);
+        checkNonOffloading("Filter", defaultStrategy(), factory);
         noOffloadServiceFilters.add(toConditionalServiceFilterFactory(predicate, factory));
         return this;
     }
