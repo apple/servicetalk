@@ -74,7 +74,7 @@ final class SingleFlatMapPublisher<T, R> extends AbstractNoHandleSubscribePublis
         public void onSuccess(@Nullable T result) {
             final Publisher<? extends R> next;
             try {
-                next = requireNonNull(nextFactory.apply(result));
+                next = requireNonNull(nextFactory.apply(result), () -> "Mapper " + nextFactory + " returned null");
             } catch (Throwable cause) {
                 subscriber.onError(cause);
                 return;

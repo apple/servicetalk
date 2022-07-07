@@ -49,7 +49,8 @@ final class FilterPublisher<T> extends AbstractSynchronousPublisherOperator<T, T
         return new Subscriber<T>() {
             @Nullable
             private Subscription subscription;
-            private final Predicate<? super T> predicate = requireNonNull(filterSupplier.get());
+            private final Predicate<? super T> predicate = requireNonNull(filterSupplier.get(),
+                    () -> "Supplier " + filterSupplier + " returned null");
 
             @Override
             public void onSubscribe(Subscription s) {

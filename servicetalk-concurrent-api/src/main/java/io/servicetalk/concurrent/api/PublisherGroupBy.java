@@ -57,7 +57,7 @@ final class PublisherGroupBy<Key, T> extends AbstractPublisherGroupBy<Key, T> {
 
         @Override
         public void onNext(@Nullable final T t) {
-            onNext(requireNonNull(keySelector.apply(t)), t);
+            onNext(requireNonNull(keySelector.apply(t), () -> "Selector " + keySelector + " returned null"), t);
         }
     }
 }

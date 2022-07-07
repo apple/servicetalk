@@ -176,7 +176,8 @@ final class RepeatWhenSingle<T> extends AbstractNoHandleSubscribePublisher<T> {
                 final Completable completable;
                 try {
                     subscriber.onNext(result);
-                    completable = requireNonNull(outer.repeater.apply(++repeatCount, result));
+                    completable = requireNonNull(outer.repeater.apply(++repeatCount, result),
+                            () -> "Repeat decider " + outer.repeater + " returned null");
                 } catch (Throwable cause) {
                     onErrorInternal(cause);
                     return;

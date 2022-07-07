@@ -140,7 +140,8 @@ final class RedoWhenPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
         private void redoIfRequired(TerminalNotification terminalNotification) {
             final Completable redoDecider;
             try {
-                redoDecider = requireNonNull(redoPublisher.shouldRedo.apply(++redoCount, terminalNotification));
+                redoDecider = requireNonNull(redoPublisher.shouldRedo.apply(++redoCount, terminalNotification),
+                        () -> "Redo decider " + redoPublisher.shouldRedo + " returned null");
             } catch (Throwable cause) {
                 Throwable originalCause = terminalNotification.cause();
                 if (originalCause != null) {

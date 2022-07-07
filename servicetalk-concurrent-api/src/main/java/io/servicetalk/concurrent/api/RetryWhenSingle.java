@@ -103,7 +103,8 @@ final class RetryWhenSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
         public void onError(Throwable t) {
             final Completable retryDecider;
             try {
-                retryDecider = requireNonNull(retrySingle.shouldRetry.apply(++retryCount, t));
+                retryDecider = requireNonNull(retrySingle.shouldRetry.apply(++retryCount, t),
+                        () -> "Retry decider " + retrySingle.shouldRetry + " returned null");
             } catch (Throwable cause) {
                 target.onError(addSuppressed(cause, t));
                 return;

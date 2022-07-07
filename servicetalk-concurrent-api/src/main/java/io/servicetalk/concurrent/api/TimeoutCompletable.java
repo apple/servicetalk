@@ -102,7 +102,8 @@ final class TimeoutCompletable extends AbstractNoHandleSubscribeCompletable {
                 // it enabled for the Subscriber, however the user explicitly specifies the Executor with this operator
                 // so they can wrap the Executor in this case.
                 localTimerCancellable = requireNonNull(
-                        parent.timeoutExecutor.schedule(s::timerFires, parent.durationNs, NANOSECONDS));
+                        parent.timeoutExecutor.schedule(s::timerFires, parent.durationNs, NANOSECONDS),
+                        () -> "Executor " + parent.timeoutExecutor + " returned null");
             } catch (Throwable cause) {
                 localTimerCancellable = IGNORE_CANCEL;
                 // We must set this to ignore so there are no further interactions with Subscriber in the future.

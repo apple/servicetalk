@@ -69,7 +69,7 @@ final class SingleFlatMapSingle<T, R> extends AbstractAsynchronousSingleOperator
             // new object.
             final Single<? extends R> next;
             try {
-                next = requireNonNull(nextFactory.apply(result));
+                next = requireNonNull(nextFactory.apply(result), () -> "Mapper " + nextFactory + " returned null");
             } catch (Throwable cause) {
                 subscriber.onError(cause);
                 return;

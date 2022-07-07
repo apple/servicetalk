@@ -38,7 +38,7 @@ final class PublisherDefer<T> extends Publisher<T> implements PublisherSource<T>
     protected void handleSubscribe(Subscriber<? super T> subscriber) {
         final Publisher<? extends T> publisher;
         try {
-            publisher = requireNonNull(publisherFactory.get());
+            publisher = requireNonNull(publisherFactory.get(), () -> "Factory " + publisherFactory + " returned null");
         } catch (Throwable cause) {
             deliverErrorFromSource(subscriber, cause);
             return;

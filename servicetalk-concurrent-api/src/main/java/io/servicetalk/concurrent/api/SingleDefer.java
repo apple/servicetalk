@@ -38,7 +38,7 @@ final class SingleDefer<T> extends Single<T> implements SingleSource<T> {
     protected void handleSubscribe(Subscriber<? super T> subscriber) {
         final Single<? extends T> single;
         try {
-            single = requireNonNull(singleFactory.get());
+            single = requireNonNull(singleFactory.get(), () -> "Factory " + singleFactory + " returned null");
         } catch (Throwable cause) {
             deliverErrorFromSource(subscriber, cause);
             return;

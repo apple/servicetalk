@@ -59,7 +59,8 @@ final class PublisherGroupToMany<Key, T> extends AbstractPublisherGroupBy<Key, T
 
         @Override
         public void onNext(@Nullable final T t) {
-            final Iterator<? extends Key> keys = requireNonNull(keySelector.apply(t));
+            final Iterator<? extends Key> keys = requireNonNull(keySelector.apply(t),
+                    () -> "Selector " + keySelector + " returned null");
             keys.forEachRemaining(key -> onNext(key, t));
         }
     }

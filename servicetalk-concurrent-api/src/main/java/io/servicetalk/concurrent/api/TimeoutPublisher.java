@@ -233,7 +233,8 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
                     final Cancellable nextTimerCancellable;
                     try {
                         nextTimerCancellable = requireNonNull(
-                                parent.timeoutExecutor.schedule(this::timerFires, nextTimeoutNs, NANOSECONDS));
+                                parent.timeoutExecutor.schedule(this::timerFires, nextTimeoutNs, NANOSECONDS),
+                                () -> "Executor " + parent.timeoutExecutor + " returned null");
                     } catch (Throwable cause) {
                         offloadTimeout(cause);
                         return;
