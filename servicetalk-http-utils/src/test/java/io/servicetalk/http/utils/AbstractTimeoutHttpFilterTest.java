@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021-2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,7 +66,9 @@ import static java.time.Duration.ofSeconds;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 abstract class AbstractTimeoutHttpFilterTest {
 
@@ -95,7 +97,7 @@ abstract class AbstractTimeoutHttpFilterTest {
         assertThrows(IllegalArgumentException.class, () -> newFilter(ofNanos(1L).negated()));
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{index}: fullRequestResponse={0}")
     @ValueSource(booleans = {false, true})
     void responseTimeout(boolean fullRequestResponse) {
         TestSingle<StreamingHttpResponse> responseSingle = new TestSingle<>();
@@ -105,13 +107,13 @@ abstract class AbstractTimeoutHttpFilterTest {
         assertThat("No subscribe for response single", responseSingle.isSubscribed(), is(true));
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{index}: fullRequestResponse={0}")
     @ValueSource(booleans = {false, true})
     void responseWithZeroTimeout(boolean fullRequestResponse) {
         responseWithNonPositiveTimeout(ZERO, fullRequestResponse);
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{index}: fullRequestResponse={0}")
     @ValueSource(booleans = {false, true})
     void responseWithNegativeTimeout(boolean fullRequestResponse) {
         responseWithNonPositiveTimeout(ofNanos(1L).negated(), fullRequestResponse);
@@ -125,13 +127,17 @@ abstract class AbstractTimeoutHttpFilterTest {
         assertThat("No subscribe for payload body", responseSingle.isSubscribed(), is(true));
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{index}: fullRequestResponse={0}")
     @ValueSource(booleans = {false, true})
     void responseCompletesBeforeTimeout(boolean fullRequestResponse) {
         TestSingle<StreamingHttpResponse> responseSingle = new TestSingle<>();
         StepVerifiers.create(applyFilter(ofSeconds(DEFAULT_TIMEOUT_SECONDS / 2),
                         fullRequestResponse, defaultStrategy(), responseSingle))
-                .then(() -> immediate().schedule(() -> responseSingle.onSuccess(mock(StreamingHttpResponse.class)),
+                .then(() -> immediate().schedule(() -> {
+                            StreamingHttpResponse response = mock(StreamingHttpResponse.class);
+                            when(response.transformMessageBody(any())).thenReturn(response);
+                            responseSingle.onSuccess(response);
+                        },
                         ofMillis(50L)))
                 .expectSuccess()
                 .verify();
@@ -144,7 +150,7 @@ abstract class AbstractTimeoutHttpFilterTest {
                 defaultStrategy(), offloadAll());
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{index}: strategy={0}")
     @MethodSource("executionStrategies")
     void payloadBodyTimeout(HttpExecutionStrategy strategy) {
         TestPublisher<Buffer> payloadBody = new TestPublisher<>();

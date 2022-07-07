@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021-2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -158,11 +158,8 @@ public final class TimeoutHttpServiceFilter extends AbstractTimeoutHttpFilter
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                         final StreamingHttpRequest request,
                                                         final StreamingHttpResponseFactory responseFactory) {
-                HttpExecutionContext executionContext = ctx.executionContext();
                 return TimeoutHttpServiceFilter.this.withTimeout(request,
-                        r -> delegate().handle(ctx, r, responseFactory),
-                        executionContext.executionStrategy().hasOffloads() ?
-                                executionContext.executor() : executionContext.ioExecutor());
+                        r -> delegate().handle(ctx, r, responseFactory), ctx.executionContext());
             }
         };
     }

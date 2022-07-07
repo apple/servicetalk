@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021-2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.transport.api.ExecutionContext;
 
 import java.time.Duration;
 import java.util.concurrent.TimeoutException;
@@ -98,17 +99,16 @@ abstract class AbstractTimeoutHttpFilter implements HttpExecutionStrategyInfluen
      *
      * @param request The request requiring a response.
      * @param responseFunction Function which generates the response.
-     * @param contextExecutor Executor from the request/connection context to be used for the timeout terminal signal if
-     * no specific timeout executor is defined for filter.
+     * @param context {@link ExecutionContext} to extract fallback {@link Executor} to be used for the timeout terminal
+     * signal if no specific timeout executor is defined for the filter.
      * @return response single
      */
     final Single<StreamingHttpResponse> withTimeout(final StreamingHttpRequest request,
             final Function<StreamingHttpRequest, Single<StreamingHttpResponse>> responseFunction,
-            final Executor contextExecutor) {
-
-        final Executor useForTimeout = null != this.timeoutExecutor ? this.timeoutExecutor : contextExecutor;
-
+            final ExecutionContext<HttpExecutionStrategy> context) {
         return Single.defer(() -> {
+            final Executor useForTimeout = null != this.timeoutExecutor ?
+                    this.timeoutExecutor : contextExecutor(context);
             final Duration timeout = timeoutForRequest.apply(request, useForTimeout);
             Single<StreamingHttpResponse> response = responseFunction.apply(request);
             if (null != timeout) {
@@ -118,7 +118,7 @@ abstract class AbstractTimeoutHttpFilter implements HttpExecutionStrategyInfluen
                     final long deadline = useForTimeout.currentTime(NANOSECONDS) + timeout.toNanos();
                     response = timeoutResponse.map(resp -> resp.transformMessageBody(body -> defer(() -> {
                         final Duration remaining = ofNanos(deadline - useForTimeout.currentTime(NANOSECONDS));
-                        return (body.timeoutTerminal(remaining, useForTimeout))
+                        return body.timeoutTerminal(remaining, useForTimeout)
                                 .onErrorMap(TimeoutException.class, t ->
                                         new MappedTimeoutException("message body timeout after " + timeout.toMillis() +
                                                 "ms", t))
@@ -131,6 +131,10 @@ abstract class AbstractTimeoutHttpFilter implements HttpExecutionStrategyInfluen
 
             return response.shareContextOnSubscribe();
         });
+    }
+
+    private static Executor contextExecutor(ExecutionContext<HttpExecutionStrategy> context) {
+        return context.executionStrategy().hasOffloads() ? context.executor() : context.ioExecutor();
     }
 
     private static final class MappedTimeoutException extends TimeoutException {

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019, 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021-2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package io.servicetalk.http.utils;
 import io.servicetalk.concurrent.TimeSource;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.TerminalSignalConsumer;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionContext;
@@ -161,10 +162,7 @@ public final class TimeoutHttpRequesterFilter extends AbstractTimeoutHttpFilter
             @Override
             protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                             final StreamingHttpRequest request) {
-                HttpExecutionContext executionContext = client.executionContext();
-                return TimeoutHttpRequesterFilter.this.withTimeout(request, delegate::request,
-                        executionContext.executionStrategy().hasOffloads() ?
-                                executionContext.executor() : executionContext.ioExecutor());
+                return TimeoutHttpRequesterFilter.this.withTimeout(request, delegate::request, executionContext());
             }
         };
     }
@@ -174,10 +172,37 @@ public final class TimeoutHttpRequesterFilter extends AbstractTimeoutHttpFilter
         return new StreamingHttpConnectionFilter(connection) {
             @Override
             public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-                HttpExecutionContext executionContext = connection.executionContext();
-                return TimeoutHttpRequesterFilter.this.withTimeout(request, r -> delegate().request(r),
-                        executionContext.executionStrategy().hasOffloads() ?
-                                executionContext.executor() : executionContext.ioExecutor());
+                final FilterableStreamingHttpConnection delegate = delegate();
+                return TimeoutHttpRequesterFilter.this.withTimeout(request,
+                        delegate.connectionContext().protocol().major() > 1 ? delegate::request :
+                                r -> delegate.request(r).liftSync(new BeforeFinallyHttpOperator(
+                                        new TerminalSignalConsumer() {
+                                            @Override
+                                            public void onComplete() {
+                                                // noop
+                                            }
+
+                                            @Override
+                                            public void onError(final Throwable throwable) {
+                                                // noop
+                                            }
+
+                                            @Override
+                                            public void cancel() {
+                                                // In alignment with cancellation processing in
+                                                // LoadBalancedStreamingHttpClient, we need to close the HTTP/1.x
+                                                // connection when this filter is applied at connection level.
+                                                // Otherwise, a connection will be marked as "free" and can be selected
+                                                // for another request, racing with closure.
+                                                delegate.closeAsync().subscribe();
+                                                // Not necessary to do anything for HTTP/2 at this level because
+                                                // NettyChannelPublisher#cancel0 will be scheduled on the EventLoop
+                                                // prior marking the request as finished. Therefore, any new attempt to
+                                                // open a stream on the same h2-connection will see the current stream
+                                                // as already cancelled and won't result in "max-concurrent-streams"
+                                                // error.
+                                            }
+                                        })), executionContext());
             }
         };
     }
