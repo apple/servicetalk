@@ -32,6 +32,9 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.time.Duration;
 import java.util.function.BiFunction;
 
@@ -52,6 +55,8 @@ import java.util.function.BiFunction;
  */
 public final class TimeoutHttpRequesterFilter extends AbstractTimeoutHttpFilter
         implements StreamingHttpClientFilterFactory, StreamingHttpConnectionFilterFactory {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(TimeoutHttpRequesterFilter.class);
 
     /**
      * Creates a new instance which requires only that the response metadata be received before the timeout.
@@ -174,7 +179,7 @@ public final class TimeoutHttpRequesterFilter extends AbstractTimeoutHttpFilter
             public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
                 final FilterableStreamingHttpConnection delegate = delegate();
                 return TimeoutHttpRequesterFilter.this.withTimeout(request,
-                        delegate.connectionContext().protocol().major() > 1 ? delegate::request :
+                        delegate.connectionContext().protocol().major() >= 2 ? delegate::request :
                                 r -> delegate.request(r).liftSync(new BeforeFinallyHttpOperator(
                                         new TerminalSignalConsumer() {
                                             @Override
@@ -194,6 +199,8 @@ public final class TimeoutHttpRequesterFilter extends AbstractTimeoutHttpFilter
                                                 // connection when this filter is applied at connection level.
                                                 // Otherwise, a connection will be marked as "free" and can be selected
                                                 // for another request, racing with closure.
+                                                LOGGER.debug("{} closing this {} connection due to cancellation",
+                                                        delegate, delegate.connectionContext().protocol());
                                                 delegate.closeAsync().subscribe();
                                                 // Not necessary to do anything for HTTP/2 at this level because
                                                 // NettyChannelPublisher#cancel0 will be scheduled on the EventLoop

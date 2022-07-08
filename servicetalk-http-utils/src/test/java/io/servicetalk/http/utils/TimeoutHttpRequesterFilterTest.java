@@ -27,8 +27,6 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
-import org.junit.jupiter.api.Timeout;
-
 import java.time.Duration;
 import java.util.function.BiFunction;
 
@@ -39,7 +37,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@Timeout(3)
 public class TimeoutHttpRequesterFilterTest extends AbstractTimeoutHttpFilterTest {
 
     @Override
