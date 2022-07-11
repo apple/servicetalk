@@ -156,8 +156,7 @@ class ResponseCancelTest {
         Processor<StreamingHttpResponse, StreamingHttpResponse> serverResp = serverResponses.take();
         assertActiveConnectionsCount(1);
         cancellable.cancel();
-        // wait for cancel to be observed but don't send cancel to the transport so that transport does not close the
-        // connection which will then be ambiguous.
+        // wait for cancel to be observed, then send it to the transport so that transport closes the connection.
         delayedClientCancels.take();
         // We do not let cancel propagate to the transport so the concurrency controller should close the connection
         // and hence fail the response.

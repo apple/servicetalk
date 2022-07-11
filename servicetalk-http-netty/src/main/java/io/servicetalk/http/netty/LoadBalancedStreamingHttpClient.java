@@ -100,26 +100,16 @@ final class LoadBalancedStreamingHttpClient implements FilterableStreamingHttpCl
 
                             @Override
                             public void cancel() {
-                                // If the request gets cancelled, we pessimistically assume that the transport will
-                                // close the connection since the Subscriber did not read the entire response and
-                                // cancelled. This reduces the time window during which a connection is eligible for
-                                // selection by the load balancer post cancel and the connection being closed by the
-                                // transport.
-                                // Transport MAY not close the connection if cancel raced with completion and completion
-                                // was seen by the transport before cancel. We have no way of knowing at this layer
-                                // if this indeed happen.
-                                //
                                 // For H2 and above, connection are multiplexed and use virtual streams for each
                                 // request-response exchange. Because we don't have access to the stream at this level
-                                // we cannot close it. Instead, we use a Runnable which will be registered for the
-                                // stream and executed when it closes. However, cancellation can happen before transport
-                                // created a stream. We check the ownership of the Runnable and if it was not owned by
-                                // the transport, we mark request as finished immediately.
-                                if (ownedRunnable == null) {
-                                    c.closeAsync().subscribe();
-                                } else if (ownedRunnable.own()) {
+                                // we cannot cancel/close it immediately. Instead, we use an OwnedRunnable which will be
+                                // registered for the stream and executed when the stream closes. However, cancellation
+                                // can happen before transport created a stream. We check the ownership of the Runnable
+                                // and if it was not owned by the transport, we mark request as finished immediately.
+                                if (ownedRunnable != null && ownedRunnable.own()) {
                                     c.requestFinished();
                                 }
+                                // Cancellation of HTTP/1.x requests is handled inside PipelinedStreamingHttpConnection.
                             }
                         }))
                         // shareContextOnSubscribe is used because otherwise the AsyncContext modified during response

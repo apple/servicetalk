@@ -39,6 +39,7 @@ final class NonPipelinedStreamingHttpConnection
     @Override
     protected Publisher<Object> writeAndRead(final Publisher<Object> requestStream,
                                              @Nullable final FlushStrategy flushStrategy) {
+        assert connectionContext().protocol().major() >= 2 : "Unexpected protocol version";
         if (flushStrategy == null) {
             return connection.write(requestStream).mergeDelayError(connection.read());
         } else {
