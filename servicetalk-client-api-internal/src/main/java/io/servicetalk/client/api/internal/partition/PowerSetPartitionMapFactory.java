@@ -15,6 +15,7 @@
  */
 package io.servicetalk.client.api.internal.partition;
 
+import io.servicetalk.client.api.ClientGroup;
 import io.servicetalk.client.api.partition.PartitionAttributes;
 import io.servicetalk.client.api.partition.PartitionMap;
 import io.servicetalk.client.api.partition.PartitionMapFactory;
@@ -24,7 +25,12 @@ import java.util.function.Function;
 
 /**
  * A {@link PartitionMapFactory} that generates {@link PowerSetPartitionMap} type objects.
+ *
+ * @deprecated We are unaware of anyone using "partition" feature and plan to remove it in future releases.
+ * If you depend on it, consider using {@link ClientGroup} as an alternative or reach out to the maintainers describing
+ * the use-case.
  */
+@Deprecated
 public final class PowerSetPartitionMapFactory implements PartitionMapFactory {
     /**
      * Singleton instance.

@@ -15,6 +15,7 @@
  */
 package io.servicetalk.client.api.internal.partition;
 
+import io.servicetalk.client.api.ClientGroup;
 import io.servicetalk.client.api.partition.PartitionAttributes;
 import io.servicetalk.client.api.partition.PartitionAttributesBuilder;
 import io.servicetalk.client.api.partition.PartitionMap;
@@ -42,8 +43,13 @@ import static java.util.Objects.requireNonNull;
 /**
  * A {@link PartitionMap} that creates the full power set using the individual attributes in
  * {@link PartitionAttributes}es to create partitions for each {@link #add(PartitionAttributes)}.
+ *
  * @param <T> The partition type.
+ * @deprecated We are unaware of anyone using "partition" feature and plan to remove it in future releases.
+ * If you depend on it, consider using {@link ClientGroup} as an alternative or reach out to the maintainers describing
+ * the use-case.
  */
+@Deprecated
 public final class PowerSetPartitionMap<T extends AsyncCloseable> implements PartitionMap<T> {
     private static final byte CLOSED_GRACEFULLY = 1;
     private static final byte HARD_CLOSE = 2;
