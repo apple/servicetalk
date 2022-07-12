@@ -15,6 +15,7 @@
  */
 package io.servicetalk.client.api.internal.partition;
 
+import io.servicetalk.client.api.ClientGroup;
 import io.servicetalk.client.api.partition.DuplicateAttributeException;
 import io.servicetalk.client.api.partition.PartitionAttributes;
 import io.servicetalk.client.api.partition.PartitionAttributes.Key;
@@ -35,7 +36,12 @@ import static java.util.Arrays.copyOf;
  * {@link PartitionAttributes}. The goals are to provide fast {@link Object#equals(Object)} and
  * {@link Object#hashCode()} which do not require intermediate object allocation and pointer traversal
  * (e.g. {@link Iterator}).
+ *
+ * @deprecated We are unaware of anyone using "partition" feature and plan to remove it in future releases.
+ * If you depend on it, consider using {@link ClientGroup} as an alternative or reach out to the maintainers describing
+ * the use-case.
  */
+@Deprecated
 public final class DefaultPartitionAttributesBuilder implements PartitionAttributesBuilder {
     private static final int PARENT_MASK = ~0x1;
     private Object[] keyValueArray;
