@@ -198,7 +198,8 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
 
         @Override
         public void onNext(@Nullable final T t) {
-            final Publisher<? extends R> publisher = requireNonNull(source.mapper.apply(t));
+            final Publisher<? extends R> publisher = requireNonNull(source.mapper.apply(t),
+                    () -> "Mapper " + source.mapper + " returned null");
             FlatMapPublisherSubscriber<T, R> subscriber = new FlatMapPublisherSubscriber<>(this);
             if (cancellableSet.add(subscriber) && activeMappedSourcesUpdater.incrementAndGet(this) > 0) {
                 publisher.subscribeInternal(subscriber);

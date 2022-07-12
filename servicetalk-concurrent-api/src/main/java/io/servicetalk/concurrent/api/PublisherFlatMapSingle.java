@@ -184,7 +184,8 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
 
         @Override
         public void onNext(T t) {
-            final Single<? extends R> next = requireNonNull(source.mapper.apply(t));
+            final Single<? extends R> next = requireNonNull(source.mapper.apply(t),
+                    () -> "Mapper " + source.mapper + " returned null");
             if (activeMappedSourcesUpdater.incrementAndGet(this) > 0) {
                 next.subscribeInternal(new FlatMapSingleSubscriber());
             }

@@ -98,7 +98,8 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
         public void onNext(T u) {
             // If Function.apply(...) throws we just propagate it to the caller which is responsible to terminate
             // its subscriber and cancel the subscription.
-            currentIterator = requireNonNull(mapper.apply(u).iterator());
+            currentIterator = requireNonNull(mapper.apply(u).iterator(),
+                    () -> "Iterator from mapper " + mapper + " is null");
             tryDrainIterator(ErrorHandlingStrategyInDrain.Throw);
         }
 

@@ -36,7 +36,8 @@ final class CompletableDefer extends Completable implements CompletableSource {
     protected void handleSubscribe(Subscriber subscriber) {
         final Completable completable;
         try {
-            completable = requireNonNull(completableFactory.get());
+            completable = requireNonNull(completableFactory.get(),
+                    () -> "Factory " + completableFactory + "returned null");
         } catch (Throwable cause) {
             deliverErrorFromSource(subscriber, cause);
             return;
