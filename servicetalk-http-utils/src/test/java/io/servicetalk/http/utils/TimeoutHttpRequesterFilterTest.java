@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021-2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,8 @@ import java.time.Duration;
 import java.util.function.BiFunction;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
+import static io.servicetalk.concurrent.api.Completable.completed;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -67,9 +69,12 @@ public class TimeoutHttpRequesterFilterTest extends AbstractTimeoutHttpFilterTes
 
         HttpConnectionContext connectionContext = mock(HttpConnectionContext.class);
         when(connectionContext.executionContext()).thenReturn(executionContext);
+        when(connectionContext.protocol()).thenReturn(HTTP_1_1);
         FilterableStreamingHttpConnection connection = mock(FilterableStreamingHttpConnection.class);
+        when(connection.connectionContext()).thenReturn(connectionContext);
         when(connection.executionContext()).thenReturn(executionContext);
         when(connection.request(any())).thenReturn(responseSingle);
+        when(connection.closeAsync()).thenReturn(completed());
 
         StreamingHttpRequester requester = filterFactory.create(connection);
         return requester.request(mock(StreamingHttpRequest.class));
