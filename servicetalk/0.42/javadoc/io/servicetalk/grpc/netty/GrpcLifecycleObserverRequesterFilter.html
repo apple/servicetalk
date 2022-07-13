@@ -86,13 +86,35 @@ loadScripts(document, 'script');</script>
 <span class="extends-implements">extends <a href="../../http/netty/HttpLifecycleObserverRequesterFilter.html" title="class in io.servicetalk.http.netty">HttpLifecycleObserverRequesterFilter</a></span></div>
 <div class="block">An HTTP requester filter that tracks events during gRPC request/response lifecycle.
  <p>
- This filter is recommended to be appended as the first filter at the
- <a href="../../http/api/SingleAddressHttpClientBuilder.html#appendClientFilter(io.servicetalk.http.api.StreamingHttpClientFilterFactory)"><code>client builder</code></a>
- (which can be configured using <a href="../api/GrpcClientBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcClientBuilder.HttpInitializer)"><code>GrpcClientBuilder.initializeHttp(GrpcClientBuilder.HttpInitializer)</code></a>)
- to account for all work done by other filters. If it's preferred to get visibility in all retried or redirected
- requests, consider adding it after <a href="../../http/netty/RetryingHttpRequesterFilter.html" title="class in io.servicetalk.http.netty"><code>RetryingHttpRequesterFilter</code></a> or <a href="../../http/utils/RedirectingHttpRequesterFilter.html" title="class in io.servicetalk.http.utils"><code>RedirectingHttpRequesterFilter</code></a>.
- If it's preferred to get visibility to information populated by other filters (like tracing keys), it can be appended
- after those filters.</div>
+ The result of the observed behavior will depend on the position of this filter in the execution chain.
+ This filter is recommended to be appended as the <b>first</b>
+ <a href="../../http/api/SingleAddressHttpClientBuilder.html#appendClientFilter(io.servicetalk.http.api.StreamingHttpClientFilterFactory)"><code>client filter</code></a> using
+ <a href="../api/GrpcClientBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcClientBuilder.HttpInitializer)"><code>GrpcClientBuilder.initializeHttp(GrpcClientBuilder.HttpInitializer)</code></a> to account for all work done by other
+ filters. It can be appended at another position, considering the following:
+ <ul>
+     <li>After a tracing filter or any other filter that populates
+     <a href="../../http/api/HttpMetaData.html#context()"><code>request context</code></a>, <a href="../../concurrent/api/AsyncContext.html" title="class in io.servicetalk.concurrent.api"><code>AsyncContext</code></a>, <code>MDC</code>, or alters
+     <a href="../../http/api/HttpRequestMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpRequestMetaData</code></a> if that information has to be available for <a href="../api/GrpcLifecycleObserver.GrpcExchangeObserver.html" title="interface in io.servicetalk.grpc.api"><code>GrpcLifecycleObserver.GrpcExchangeObserver</code></a>.</li>
+     <li>After <a href="../../http/netty/RetryingHttpRequesterFilter.html" title="class in io.servicetalk.http.netty"><code>RetryingHttpRequesterFilter</code></a> if each retry attempt should be observed as an independent
+     <a href="../api/GrpcLifecycleObserver.GrpcExchangeObserver.html" title="interface in io.servicetalk.grpc.api"><code>exchange</code></a>.</li>
+     <li>As a <a href="../../http/api/SingleAddressHttpClientBuilder.html#appendConnectionFilter(io.servicetalk.http.api.StreamingHttpConnectionFilterFactory)"><code>connection filter</code></a> if no user-defined <a href="../../http/netty/RetryingHttpRequesterFilter.html" title="class in io.servicetalk.http.netty"><code>RetryingHttpRequesterFilter</code></a> is appended manually but the default
+     auto-retries should be observed as an independent <a href="../api/GrpcLifecycleObserver.GrpcExchangeObserver.html" title="interface in io.servicetalk.grpc.api"><code>exchange</code></a>.</li>
+     <li>As the last
+     <a href="../../http/api/SingleAddressHttpClientBuilder.html#appendConnectionFilter(io.servicetalk.http.api.StreamingHttpConnectionFilterFactory)"><code>connection
+     filter</code></a> if only network interactions should be observed without accounting for work of any other filters.</li>
+     <li>After <a href="../../http/utils/TimeoutHttpRequesterFilter.html" title="class in io.servicetalk.http.utils"><code>TimeoutHttpRequesterFilter</code></a> if the timeout event should be observed as
+     <a href="../../http/api/HttpLifecycleObserver.HttpExchangeObserver.html#onResponseCancel()"><code>cancellation</code></a> instead of an
+     <a href="../../http/api/HttpLifecycleObserver.HttpExchangeObserver.html#onResponseError(java.lang.Throwable)"><code>error</code></a>.</li>
+     <li>Before any filter that populates <a href="../../http/api/HttpMetaData.html#context()"><code>response context</code></a> or alters
+     <a href="../../http/api/HttpResponseMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpResponseMetaData</code></a> if that information has to be available for <a href="../api/GrpcLifecycleObserver.GrpcExchangeObserver.html" title="interface in io.servicetalk.grpc.api"><code>GrpcLifecycleObserver.GrpcExchangeObserver</code></a>.</li>
+     <li>Before any filter that maps/translates <a href="../../http/api/HttpResponseMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpResponseMetaData</code></a> into an <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link"><code>exception</code></a> or
+     throws an exception during <a href="../../http/api/StreamingHttpResponse.html#transformPayloadBody(java.util.function.UnaryOperator)"><code>response payload body
+     transformation</code></a> if that exception has to be observed by <a href="../api/GrpcLifecycleObserver.GrpcExchangeObserver.html" title="interface in io.servicetalk.grpc.api"><code>GrpcLifecycleObserver.GrpcExchangeObserver</code></a>.</li>
+     <li>Using
+     <a href="../../http/api/SingleAddressHttpClientBuilder.html#appendClientFilter(java.util.function.Predicate,io.servicetalk.http.api.StreamingHttpClientFilterFactory)"><code>SingleAddressHttpClientBuilder.appendClientFilter(Predicate, StreamingHttpClientFilterFactory)</code></a> or
+     <a href="../../http/api/SingleAddressHttpClientBuilder.html#appendConnectionFilter(java.util.function.Predicate,io.servicetalk.http.api.StreamingHttpConnectionFilterFactory)"><code>SingleAddressHttpClientBuilder.appendConnectionFilter(Predicate, StreamingHttpConnectionFilterFactory)</code></a> if
+     the observer should be applied conditionally.</li>
+ </ul></div>
 </section>
 <section class="summary">
 <ul class="summary-list">

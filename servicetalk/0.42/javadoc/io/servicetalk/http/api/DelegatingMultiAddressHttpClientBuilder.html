@@ -149,7 +149,7 @@ implements <a href="MultiAddressHttpClientBuilder.html" title="interface in io.s
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="DelegatingMultiAddressHttpClientBuilder.html" title="type parameter in DelegatingMultiAddressHttpClientBuilder">U</a>,<wbr><a href="DelegatingMultiAddressHttpClientBuilder.html" title="type parameter in DelegatingMultiAddressHttpClientBuilder">R</a>&gt;</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#executionStrategy(io.servicetalk.http.api.HttpExecutionStrategy)" class="member-name-link">executionStrategy</a><wbr>(<a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategy</a>&nbsp;strategy)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"></div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="DelegatingMultiAddressHttpClientBuilder.html" title="type parameter in DelegatingMultiAddressHttpClientBuilder">U</a>,<wbr><a href="DelegatingMultiAddressHttpClientBuilder.html" title="type parameter in DelegatingMultiAddressHttpClientBuilder">R</a>&gt;</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#executor(io.servicetalk.concurrent.api.Executor)" class="member-name-link">executor</a><wbr>(<a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;executor)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
@@ -255,9 +255,44 @@ implements <a href="MultiAddressHttpClientBuilder.html" title="interface in io.s
 <section class="detail" id="executionStrategy(io.servicetalk.http.api.HttpExecutionStrategy)">
 <h3>executionStrategy</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="DelegatingMultiAddressHttpClientBuilder.html" title="type parameter in DelegatingMultiAddressHttpClientBuilder">U</a>,<wbr><a href="DelegatingMultiAddressHttpClientBuilder.html" title="type parameter in DelegatingMultiAddressHttpClientBuilder">R</a>&gt;</span>&nbsp;<span class="element-name">executionStrategy</span><wbr><span class="parameters">(<a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategy</a>&nbsp;strategy)</span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="MultiAddressHttpClientBuilder.html#executionStrategy(io.servicetalk.http.api.HttpExecutionStrategy)">MultiAddressHttpClientBuilder</a></code></span></div>
+<div class="block">
+
+ <p>Provides the base execution strategy for all clients created from this builder and the default strategy for
+ the <a href="SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api"><code>SingleAddressHttpClientBuilder</code></a> used to construct client instances. The
+ <a href="MultiAddressHttpClientBuilder.html#initializer(io.servicetalk.http.api.MultiAddressHttpClientBuilder.SingleAddressInitializer)"><code>MultiAddressHttpClientBuilder.initializer(SingleAddressInitializer)</code></a> may be used for some customization of the execution strategy for a
+ specific single address client instance, but may not reduce the offloading to be performed. Specifically, the
+ initializer may introduce additional offloading via
+ <a href="SingleAddressHttpClientBuilder.html#executionStrategy(io.servicetalk.http.api.HttpExecutionStrategy)"><code>SingleAddressHttpClientBuilder.executionStrategy(HttpExecutionStrategy)</code></a> and may add filters which
+ influence the computed execution strategy.
+
+ <p>Specifying an execution strategy will affect the offloading used during the execution of client requests:
+
+ <dl>
+     <dt>Unspecified or <a href="HttpExecutionStrategies.html#defaultStrategy()"><code>HttpExecutionStrategies.defaultStrategy()</code></a>
+     <dd>The resulting client instances will use the default safe strategy for each API variant and
+     <a href="SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api"><code>SingleAddressHttpClientBuilder</code></a> instances generated will also have default strategy.
+
+     <dt><a href="HttpExecutionStrategies.html#offloadNone()"><code>HttpExecutionStrategies.offloadNone()</code></a>
+     (or deprecated <a href="HttpExecutionStrategies.html#offloadNever()"><code>HttpExecutionStrategies.offloadNever()</code></a>)
+     <dd><a href="SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api"><code>SingleAddressHttpClientBuilder</code></a> instances created by the client will have a strategy of
+     <a href="HttpExecutionStrategies.html#offloadNone()"><code>HttpExecutionStrategies.offloadNone()</code></a>. <a href="HttpExecutionStrategies.html#offloadNone()"><code>HttpExecutionStrategies.offloadNone()</code></a> execution
+     strategy requires that filters and asynchronous callbacks
+     <strong style="text-transform: uppercase;">must not</strong> ever block during the execution of client
+     requests. An <a href="MultiAddressHttpClientBuilder.html#initializer(io.servicetalk.http.api.MultiAddressHttpClientBuilder.SingleAddressInitializer)"><code>initializer</code></a> may override to add offloads using
+     <a href="SingleAddressHttpClientBuilder.html#executionStrategy(io.servicetalk.http.api.HttpExecutionStrategy)"><code>SingleAddressHttpClientBuilder.executionStrategy(HttpExecutionStrategy)</code></a>.
+
+     <dt>A custom execution strategy (<a href="HttpExecutionStrategies.html#customStrategyBuilder()"><code>HttpExecutionStrategies.customStrategyBuilder()</code></a>) or
+     <a href="HttpExecutionStrategies.html#offloadAll()"><code>HttpExecutionStrategies.offloadAll()</code></a>
+     <dd><a href="SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api"><code>SingleAddressHttpClientBuilder</code></a> instances created by the client will start with the provided
+     strategy and may add additional offloading as required by added filters.
+ </dl></div>
 <dl class="notes">
 <dt>Specified by:</dt>
 <dd><code><a href="MultiAddressHttpClientBuilder.html#executionStrategy(io.servicetalk.http.api.HttpExecutionStrategy)">executionStrategy</a></code>&nbsp;in interface&nbsp;<code><a href="MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="DelegatingMultiAddressHttpClientBuilder.html" title="type parameter in DelegatingMultiAddressHttpClientBuilder">U</a>,<wbr><a href="DelegatingMultiAddressHttpClientBuilder.html" title="type parameter in DelegatingMultiAddressHttpClientBuilder">R</a>&gt;</code></dd>
+<dt>Parameters:</dt>
+<dd><code>strategy</code> - </dd>
+<dt>Returns:</dt>
 </dl>
 </section>
 </li>
@@ -298,7 +333,9 @@ implements <a href="MultiAddressHttpClientBuilder.html" title="interface in io.s
 <dd><code><a href="MultiAddressHttpClientBuilder.html#initializer(io.servicetalk.http.api.MultiAddressHttpClientBuilder.SingleAddressInitializer)">initializer</a></code>&nbsp;in interface&nbsp;<code><a href="MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="DelegatingMultiAddressHttpClientBuilder.html" title="type parameter in DelegatingMultiAddressHttpClientBuilder">U</a>,<wbr><a href="DelegatingMultiAddressHttpClientBuilder.html" title="type parameter in DelegatingMultiAddressHttpClientBuilder">R</a>&gt;</code></dd>
 <dt>Parameters:</dt>
 <dd><code>initializer</code> - Initializes the <a href="SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api"><code>SingleAddressHttpClientBuilder</code></a> used to build new
- <a href="StreamingHttpClient.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpClient</code></a>s.</dd>
+ <a href="StreamingHttpClient.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpClient</code></a>s. See <a href="MultiAddressHttpClientBuilder.html#executionStrategy(io.servicetalk.http.api.HttpExecutionStrategy)"><code>MultiAddressHttpClientBuilder.executionStrategy(HttpExecutionStrategy)</code></a> for discussion of
+ restrictions on the use of <a href="SingleAddressHttpClientBuilder.html#executionStrategy(io.servicetalk.http.api.HttpExecutionStrategy)"><code>SingleAddressHttpClientBuilder.executionStrategy(HttpExecutionStrategy)</code></a>
+ within an initializer.</dd>
 <dt>Returns:</dt>
 <dd><code>this</code></dd>
 </dl>

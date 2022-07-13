@@ -175,13 +175,15 @@ implements <a href="BufferDecoderGroup.html" title="interface in io.servicetalk.
 </span><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a></span>&nbsp;<span class="element-name">advertisedMessageEncoding</span>()</div>
 <div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="BufferDecoderGroup.html#advertisedMessageEncoding()">BufferDecoderGroup</a></code></span></div>
 <div class="block">Get the combined encoding to advertise. This is typically a combination of
- <a href="BufferDecoder.html#encodingName()"><code>BufferDecoder.encodingName()</code></a> contained in this group.</div>
+ <a href="BufferDecoder.html#encodingName()"><code>BufferDecoder.encodingName()</code></a> contained in this group. This value is commonly used in
+ <code>Accept-Encoding</code> (or equivalent) metadata to advertise/communicate the supported algorithms.</div>
 <dl class="notes">
 <dt>Specified by:</dt>
 <dd><code><a href="BufferDecoderGroup.html#advertisedMessageEncoding()">advertisedMessageEncoding</a></code>&nbsp;in interface&nbsp;<code><a href="BufferDecoderGroup.html" title="interface in io.servicetalk.encoding.api">BufferDecoderGroup</a></code></dd>
 <dt>Returns:</dt>
 <dd>the combined encoding to advertise. This is typically a combination of
- <a href="BufferDecoder.html#encodingName()"><code>BufferDecoder.encodingName()</code></a> contained in this group.</dd>
+ <a href="BufferDecoder.html#encodingName()"><code>BufferDecoder.encodingName()</code></a> contained in this group. This value is commonly used in
+ <code>Accept-Encoding</code> (or equivalent) metadata to advertise/communicate the supported algorithms.</dd>
 </dl>
 </section>
 </li>

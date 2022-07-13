@@ -86,16 +86,49 @@ loadScripts(document, 'script');</script>
 <span class="extends-implements">extends <a href="../../http/netty/HttpLifecycleObserverServiceFilter.html" title="class in io.servicetalk.http.netty">HttpLifecycleObserverServiceFilter</a></span></div>
 <div class="block">An HTTP service filter that tracks events during gRPC request/response lifecycle.
  <p>
- The recommended approach is to use <a href="../api/GrpcServerBuilder.html#lifecycleObserver(io.servicetalk.grpc.api.GrpcLifecycleObserver)"><code>GrpcServerBuilder.lifecycleObserver(GrpcLifecycleObserver)</code></a> to configure
- an observer that captures entire state of the request processing. In cases when an observer should be moved down in
- a filter chain or applied conditionally, this filter can be used.
- <p>
- This filter is recommended to be appended as the first filter at the
- <a href="../../http/api/HttpServerBuilder.html#appendNonOffloadingServiceFilter(io.servicetalk.http.api.StreamingHttpServiceFilterFactory)"><code>HttpServerBuilder.appendNonOffloadingServiceFilter(StreamingHttpServiceFilterFactory)</code></a>
- or <a href="../../http/api/HttpServerBuilder.html#appendServiceFilter(io.servicetalk.http.api.StreamingHttpServiceFilterFactory)"><code>HttpServerBuilder.appendServiceFilter(StreamingHttpServiceFilterFactory)</code></a>
- (which can be configured using <a href="../api/GrpcServerBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>GrpcServerBuilder.initializeHttp(GrpcServerBuilder.HttpInitializer)</code></a>)
- to account for all work done by other filters. If it's preferred to get visibility to information populated by other
- filters (like tracing keys), it can be appended after those filters.</div>
+ The result of the observed behavior will depend on the position of this filter in the execution chain.
+ This filter is recommended to be appended as one of the first filters using
+ <a href="../../http/api/HttpServerBuilder.html#appendNonOffloadingServiceFilter(io.servicetalk.http.api.StreamingHttpServiceFilterFactory)"><code>HttpServerBuilder.appendNonOffloadingServiceFilter(StreamingHttpServiceFilterFactory)</code></a> method via
+ <a href="../api/GrpcServerBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>GrpcServerBuilder.initializeHttp(GrpcServerBuilder.HttpInitializer)</code></a> to account for all work done by other
+ filters and offloading of the requests processing. It can be appended at another position, considering the following:
+ <ul>
+     <li>After a tracing filter or any other filter that populates
+     <a href="../../http/api/HttpMetaData.html#context()"><code>request context</code></a>, <a href="../../concurrent/api/AsyncContext.html" title="class in io.servicetalk.concurrent.api"><code>AsyncContext</code></a>, <code>MDC</code>, or alters
+     <a href="../../http/api/HttpRequestMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpRequestMetaData</code></a> if that information has to be available for <a href="../api/GrpcLifecycleObserver.GrpcExchangeObserver.html" title="interface in io.servicetalk.grpc.api"><code>GrpcLifecycleObserver.GrpcExchangeObserver</code></a>.</li>
+     <li>After <a href="../../http/utils/TimeoutHttpRequesterFilter.html" title="class in io.servicetalk.http.utils"><code>TimeoutHttpRequesterFilter</code></a> if the timeout event should be observed as
+     <a href="../../http/api/HttpLifecycleObserver.HttpExchangeObserver.html#onResponseCancel()"><code>cancellation</code></a> instead of an
+     <a href="../../http/api/HttpLifecycleObserver.HttpExchangeObserver.html#onResponseError(java.lang.Throwable)"><code>error</code></a>.</li>
+     <li>After any filter that can reject requests, like <a href="../../http/utils/auth/BasicAuthHttpServiceFilter.html" title="class in io.servicetalk.http.utils.auth"><code>BasicAuthHttpServiceFilter</code></a>, if only allowed requests
+     should be observed.</li>
+     <li>Before any filter that can reject requests, like <a href="../../http/utils/auth/BasicAuthHttpServiceFilter.html" title="class in io.servicetalk.http.utils.auth"><code>BasicAuthHttpServiceFilter</code></a>, if all incoming requests
+     have to be observed.</li>
+     <li>Before any filter that populates <a href="../../http/api/HttpMetaData.html#context()"><code>response context</code></a> or alters
+     <a href="../../http/api/HttpResponseMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpResponseMetaData</code></a> if that information has to be available for <a href="../api/GrpcLifecycleObserver.GrpcExchangeObserver.html" title="interface in io.servicetalk.grpc.api"><code>GrpcLifecycleObserver.GrpcExchangeObserver</code></a>.</li>
+     <li>Before any filter that maps/translates <a href="../../http/api/HttpResponseMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpResponseMetaData</code></a> into an <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link"><code>exception</code></a> or
+     throws an exception during <a href="../../http/api/StreamingHttpResponse.html#transformPayloadBody(java.util.function.UnaryOperator)"><code>response payload body
+     transformation</code></a> if that exception has to be observed by <a href="../api/GrpcLifecycleObserver.GrpcExchangeObserver.html" title="interface in io.servicetalk.grpc.api"><code>GrpcLifecycleObserver.GrpcExchangeObserver</code></a>.</li>
+     <li>Before any exception mapping filter that maps an <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link"><code>exception</code></a> into a valid response, like
+     <a href="../api/GrpcExceptionMapperServiceFilter.html" title="class in io.servicetalk.grpc.api"><code>GrpcExceptionMapperServiceFilter</code></a>, if the <a href="../api/GrpcLifecycleObserver.GrpcExchangeObserver.html" title="interface in io.servicetalk.grpc.api"><code>GrpcLifecycleObserver.GrpcExchangeObserver</code></a> should see what <a href="../api/GrpcStatus.html" title="class in io.servicetalk.grpc.api"><code>GrpcStatus</code></a>
+     is returned to the client.</li>
+     <li>Using <a href="../../http/api/HttpServerBuilder.html#appendServiceFilter(io.servicetalk.http.api.StreamingHttpServiceFilterFactory)"><code>HttpServerBuilder.appendServiceFilter(StreamingHttpServiceFilterFactory)</code></a> if an exchange
+     should be observed after it's offloaded from an <a href="../../transport/api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a> (if offloading is enabled).</li>
+     <li>Using
+     <a href="../../http/api/HttpServerBuilder.html#appendNonOffloadingServiceFilter(java.util.function.Predicate,io.servicetalk.http.api.StreamingHttpServiceFilterFactory)"><code>HttpServerBuilder.appendNonOffloadingServiceFilter(Predicate, StreamingHttpServiceFilterFactory)</code></a> or
+     <a href="../../http/api/HttpServerBuilder.html#appendServiceFilter(java.util.function.Predicate,io.servicetalk.http.api.StreamingHttpServiceFilterFactory)"><code>HttpServerBuilder.appendServiceFilter(Predicate, StreamingHttpServiceFilterFactory)</code></a> if the observer
+     should be applied conditionally.</li>
+     <li>As the last <a href="../../http/api/HttpServerBuilder.html#appendServiceFilter(io.servicetalk.http.api.StreamingHttpServiceFilterFactory)"><code>HttpServerBuilder.appendServiceFilter(StreamingHttpServiceFilterFactory)</code></a> if only service
+     business logic should be observed without accounting for work of any other filters.</li>
+ </ul>
+ An alternative way to install an <a href="../api/GrpcLifecycleObserver.html" title="interface in io.servicetalk.grpc.api"><code>GrpcLifecycleObserver</code></a> is to use
+ <a href="../api/GrpcServerBuilder.html#lifecycleObserver(io.servicetalk.grpc.api.GrpcLifecycleObserver)"><code>GrpcServerBuilder.lifecycleObserver(GrpcLifecycleObserver)</code></a>.</div>
+<dl class="notes">
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="../api/GrpcServerBuilder.html#lifecycleObserver(io.servicetalk.grpc.api.GrpcLifecycleObserver)"><code>GrpcServerBuilder.lifecycleObserver(GrpcLifecycleObserver)</code></a></li>
+</ul>
+</dd>
+</dl>
 </section>
 <section class="summary">
 <ul class="summary-list">

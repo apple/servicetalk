@@ -80,9 +80,15 @@ loadScripts(document, 'script');</script>
 <dd><code><a href="../../partition/PartitionMapFactory.html" title="interface in io.servicetalk.client.api.partition">PartitionMapFactory</a></code></dd>
 </dl>
 <hr>
-<div class="type-signature"><span class="modifiers">public final class </span><span class="element-name type-name-label">PowerSetPartitionMapFactory</span>
+<div class="type-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">public final class </span><span class="element-name type-name-label">PowerSetPartitionMapFactory</span>
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>
 implements <a href="../../partition/PartitionMapFactory.html" title="interface in io.servicetalk.client.api.partition">PartitionMapFactory</a></span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">We are unaware of anyone using "partition" feature and plan to remove it in future releases.
+ If you depend on it, consider using <a href="../../ClientGroup.html" title="interface in io.servicetalk.client.api"><code>ClientGroup</code></a> as an alternative or reach out to the maintainers describing
+ the use-case.</div>
+</div>
 <div class="block">A <a href="../../partition/PartitionMapFactory.html" title="interface in io.servicetalk.client.api.partition"><code>PartitionMapFactory</code></a> that generates <a href="PowerSetPartitionMap.html" title="class in io.servicetalk.client.api.internal.partition"><code>PowerSetPartitionMap</code></a> type objects.</div>
 </section>
 <section class="summary">
@@ -99,6 +105,7 @@ implements <a href="../../partition/PartitionMapFactory.html" title="interface i
 <div class="col-first even-row-color"><code>static final <a href="../../partition/PartitionMapFactory.html" title="interface in io.servicetalk.client.api.partition">PartitionMapFactory</a></code></div>
 <div class="col-second even-row-color"><code><a href="#INSTANCE" class="member-name-link">INSTANCE</a></code></div>
 <div class="col-last even-row-color">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Singleton instance.</div>
 </div>
 </div>
@@ -109,15 +116,16 @@ implements <a href="../../partition/PartitionMapFactory.html" title="interface i
 <section class="method-summary" id="method-summary">
 <h2>Method Summary</h2>
 <div id="method-summary-table">
-<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button></div>
+<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button><button id="method-summary-table-tab6" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab6', 3)" class="table-tab">Deprecated Methods</button></div>
 <div id="method-summary-table.tabpanel" role="tabpanel">
 <div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>&lt;T extends <a href="../../../../concurrent/api/AsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">AsyncCloseable</a>&gt;<br><a href="../../partition/PartitionMap.html" title="interface in io.servicetalk.client.api.partition">PartitionMap</a>&lt;T&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#newPartitionMap(java.util.function.Function)" class="member-name-link">newPartitionMap</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Function.html" title="class or interface in java.util.function" class="external-link">Function</a>&lt;<a href="../../partition/PartitionAttributes.html" title="interface in io.servicetalk.client.api.partition">PartitionAttributes</a>,<wbr>T&gt;&nbsp;valueFactory)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code>&lt;T extends <a href="../../../../concurrent/api/AsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">AsyncCloseable</a>&gt;<br><a href="../../partition/PartitionMap.html" title="interface in io.servicetalk.client.api.partition">PartitionMap</a>&lt;T&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#newPartitionMap(java.util.function.Function)" class="member-name-link">newPartitionMap</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Function.html" title="class or interface in java.util.function" class="external-link">Function</a>&lt;<a href="../../partition/PartitionAttributes.html" title="interface in io.servicetalk.client.api.partition">PartitionAttributes</a>,<wbr>T&gt;&nbsp;valueFactory)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Create a new <a href="../../partition/PartitionMap.html" title="interface in io.servicetalk.client.api.partition"><code>PartitionMap</code></a> object.</div>
 </div>
 </div>
@@ -141,6 +149,7 @@ implements <a href="../../partition/PartitionMapFactory.html" title="interface i
 <section class="detail" id="INSTANCE">
 <h3>INSTANCE</h3>
 <div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="../../partition/PartitionMapFactory.html" title="interface in io.servicetalk.client.api.partition">PartitionMapFactory</a></span>&nbsp;<span class="element-name">INSTANCE</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Singleton instance.</div>
 </section>
 </li>
@@ -156,6 +165,7 @@ implements <a href="../../partition/PartitionMapFactory.html" title="interface i
 <section class="detail" id="newPartitionMap(java.util.function.Function)">
 <h3>newPartitionMap</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="type-parameters">&lt;T extends <a href="../../../../concurrent/api/AsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">AsyncCloseable</a>&gt;</span>&nbsp;<span class="return-type"><a href="../../partition/PartitionMap.html" title="interface in io.servicetalk.client.api.partition">PartitionMap</a>&lt;T&gt;</span>&nbsp;<span class="element-name">newPartitionMap</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Function.html" title="class or interface in java.util.function" class="external-link">Function</a>&lt;<a href="../../partition/PartitionAttributes.html" title="interface in io.servicetalk.client.api.partition">PartitionAttributes</a>,<wbr>T&gt;&nbsp;valueFactory)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="../../partition/PartitionMapFactory.html#newPartitionMap(java.util.function.Function)">PartitionMapFactory</a></code></span></div>
 <div class="block">Create a new <a href="../../partition/PartitionMap.html" title="interface in io.servicetalk.client.api.partition"><code>PartitionMap</code></a> object.</div>
 <dl class="notes">

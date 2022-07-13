@@ -172,7 +172,7 @@ loadScripts(document, 'script');</script>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">U</a>,<wbr><a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">R</a>&gt;</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#executionStrategy(io.servicetalk.http.api.HttpExecutionStrategy)" class="member-name-link">executionStrategy</a><wbr>(<a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategy</a>&nbsp;strategy)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">&nbsp;</div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"></div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">U</a>,<wbr><a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">R</a>&gt;</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#executor(io.servicetalk.concurrent.api.Executor)" class="member-name-link">executor</a><wbr>(<a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;executor)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">&nbsp;</div>
@@ -447,6 +447,42 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="executionStrategy(io.servicetalk.http.api.HttpExecutionStrategy)">
 <h3>executionStrategy</h3>
 <div class="member-signature"><span class="return-type"><a href="SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">U</a>,<wbr><a href="SingleAddressHttpClientBuilder.html" title="type parameter in SingleAddressHttpClientBuilder">R</a>&gt;</span>&nbsp;<span class="element-name">executionStrategy</span><wbr><span class="parameters">(<a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategy</a>&nbsp;strategy)</span></div>
+<div class="block">
+
+ <p>Specifying an execution strategy affects the offloading used during execution of client requests:
+
+ <dl>
+     <dt>Unspecified or <a href="HttpExecutionStrategies.html#defaultStrategy()"><code>HttpExecutionStrategies.defaultStrategy()</code></a>
+     <dd>Execution of client requests will use a safe (non-blocking) execution strategy appropriate for the
+     client API used and the filters added. Blocking is always safe as all potentially blocking paths are
+     offloaded. Each client API variant (async/blocking streaming/aggregate) requires a specific execution
+     strategy to avoid blocking the event-loop and filters added via
+     <a href="#appendClientFilter(io.servicetalk.http.api.StreamingHttpClientFilterFactory)"><code>appendClientFilter(StreamingHttpClientFilterFactory)</code></a>,
+     <a href="#appendConnectionFilter(io.servicetalk.http.api.StreamingHttpConnectionFilterFactory)"><code>appendConnectionFilter(StreamingHttpConnectionFilterFactory)</code></a>, or
+     <a href="#appendConnectionFactoryFilter(io.servicetalk.client.api.ConnectionFactoryFilter)"><code>appendConnectionFactoryFilter(ConnectionFactoryFilter)</code></a>, etc. may also require offloading.
+     The execution strategy for execution of client requests will be computed based on the client API in use and
+     <a href="HttpExecutionStrategyInfluencer.html#requiredOffloads()"><code>HttpExecutionStrategyInfluencer.requiredOffloads()</code></a> of added the filters.
+
+     <dt><a href="HttpExecutionStrategies.html#offloadNone()"><code>HttpExecutionStrategies.offloadNone()</code></a>
+     (or deprecated <a href="HttpExecutionStrategies.html#offloadNever()"><code>HttpExecutionStrategies.offloadNever()</code></a>)
+     <dd>No offloading will be used during execution of client requests regardless of the client API used or the
+     influence of added filters. Filters and asynchronous callbacks
+     <strong style="text-transform: uppercase;">must not</strong> ever block during the execution of client
+     requests.
+
+     <dt>A custom execution strategy (<a href="HttpExecutionStrategies.html#customStrategyBuilder()"><code>HttpExecutionStrategies.customStrategyBuilder()</code></a>) or
+     <a href="HttpExecutionStrategies.html#offloadAll()"><code>HttpExecutionStrategies.offloadAll()</code></a>
+     <dd>The specified execution strategy will be used for executing client requests rather than the client
+     API's default safe strategy. Like with the default strategy, the actual execution strategy used is computed
+     from the provided strategy and the execution strategies required by added filters. Filters and asynchronous
+     callbacks <strong style="text-transform: uppercase;">MAY</strong> only block during the offloaded portions of
+     the client request execution.
+ </dl></div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>strategy</code> - </dd>
+<dt>Returns:</dt>
+</dl>
 </section>
 </li>
 <li>

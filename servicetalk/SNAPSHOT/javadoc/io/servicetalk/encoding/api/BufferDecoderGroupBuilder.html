@@ -113,14 +113,19 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="BufferDecoderGroupBuilder.html" title="class in io.servicetalk.encoding.api">BufferDecoderGroupBuilder</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#add(io.servicetalk.encoding.api.BufferDecoder,boolean)" class="member-name-link">add</a><wbr>(<a href="BufferDecoder.html" title="interface in io.servicetalk.encoding.api">BufferDecoder</a>&nbsp;decoder,
- boolean&nbsp;advertised)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#add(io.servicetalk.encoding.api.BufferDecoder)" class="member-name-link">add</a><wbr>(<a href="BufferDecoder.html" title="interface in io.servicetalk.encoding.api">BufferDecoder</a>&nbsp;decoder)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Add a new <a href="BufferDecoder.html" title="interface in io.servicetalk.encoding.api"><code>BufferDecoder</code></a> to the <a href="BufferDecoderGroup.html" title="interface in io.servicetalk.encoding.api"><code>BufferDecoderGroup</code></a> built by this builder.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="BufferDecoderGroup.html" title="interface in io.servicetalk.encoding.api">BufferDecoderGroup</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#build()" class="member-name-link">build</a>()</code></div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="BufferDecoderGroupBuilder.html" title="class in io.servicetalk.encoding.api">BufferDecoderGroupBuilder</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#add(io.servicetalk.encoding.api.BufferDecoder,boolean)" class="member-name-link">add</a><wbr>(<a href="BufferDecoder.html" title="interface in io.servicetalk.encoding.api">BufferDecoder</a>&nbsp;decoder,
+ boolean&nbsp;advertised)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Add a new <a href="BufferDecoder.html" title="interface in io.servicetalk.encoding.api"><code>BufferDecoder</code></a> to the <a href="BufferDecoderGroup.html" title="interface in io.servicetalk.encoding.api"><code>BufferDecoderGroup</code></a> built by this builder.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="BufferDecoderGroup.html" title="interface in io.servicetalk.encoding.api">BufferDecoderGroup</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#build()" class="member-name-link">build</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Build a new <a href="BufferDecoderGroup.html" title="interface in io.servicetalk.encoding.api"><code>BufferDecoderGroup</code></a>.</div>
 </div>
 </div>
@@ -168,6 +173,19 @@ loadScripts(document, 'script');</script>
 <h2>Method Details</h2>
 <ul class="member-list">
 <li>
+<section class="detail" id="add(io.servicetalk.encoding.api.BufferDecoder)">
+<h3>add</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="BufferDecoderGroupBuilder.html" title="class in io.servicetalk.encoding.api">BufferDecoderGroupBuilder</a></span>&nbsp;<span class="element-name">add</span><wbr><span class="parameters">(<a href="BufferDecoder.html" title="interface in io.servicetalk.encoding.api">BufferDecoder</a>&nbsp;decoder)</span></div>
+<div class="block">Add a new <a href="BufferDecoder.html" title="interface in io.servicetalk.encoding.api"><code>BufferDecoder</code></a> to the <a href="BufferDecoderGroup.html" title="interface in io.servicetalk.encoding.api"><code>BufferDecoderGroup</code></a> built by this builder.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>decoder</code> - The decoder to add.</dd>
+<dt>Returns:</dt>
+<dd><code>this</code>.</dd>
+</dl>
+</section>
+</li>
+<li>
 <section class="detail" id="add(io.servicetalk.encoding.api.BufferDecoder,boolean)">
 <h3>add</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="BufferDecoderGroupBuilder.html" title="class in io.servicetalk.encoding.api">BufferDecoderGroupBuilder</a></span>&nbsp;<span class="element-name">add</span><wbr><span class="parameters">(<a href="BufferDecoder.html" title="interface in io.servicetalk.encoding.api">BufferDecoder</a>&nbsp;decoder,
@@ -176,8 +194,15 @@ loadScripts(document, 'script');</script>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>decoder</code> - The decoder to add.</dd>
-<dd><code>advertised</code> - <code>true</code> if the decoder should be included in
- <a href="BufferDecoderGroup.html#advertisedMessageEncoding()"><code>BufferDecoderGroup.advertisedMessageEncoding()</code></a>.</dd>
+<dd><code>advertised</code> - <ul>
+     <li><code>true</code> - the decoder should be included in
+     <a href="BufferDecoderGroup.html#advertisedMessageEncoding()"><code>BufferDecoderGroup.advertisedMessageEncoding()</code></a></li>
+     <li><code>false</code> -the decoder is excluded from
+     <a href="BufferDecoderGroup.html#advertisedMessageEncoding()"><code>BufferDecoderGroup.advertisedMessageEncoding()</code></a> and therefore won't be included in
+     <code>Accept-Encoding</code> (or equivalent) metadata headers. In this case the peer won't be explicitly be told
+     this decoder is supported. Commonly used to discourage usage of <code>identity</code> decoders in favor of other
+     more preferred options, but still support it as a fallback if there are no common decoders.</li>
+ </ul></dd>
 <dt>Returns:</dt>
 <dd><code>this</code>.</dd>
 </dl>
