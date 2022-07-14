@@ -16,6 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.TransportObserverConnectionFactoryFilter;
+import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.DelegatingHttpServerBuilder;
 import io.servicetalk.http.api.DelegatingMultiAddressHttpClientBuilder;
@@ -29,7 +30,12 @@ import io.servicetalk.http.api.HttpServerContext;
 import io.servicetalk.http.api.MultiAddressHttpClientBuilder;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpClient;
+import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
+import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpService;
+import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
+import io.servicetalk.http.utils.TimeoutHttpRequesterFilter;
+import io.servicetalk.http.utils.TimeoutHttpServiceFilter;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.TransportObserver;
@@ -45,11 +51,13 @@ import java.net.SocketAddress;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
 
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_ECHO;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
+import static java.time.Duration.ofSeconds;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.parallel.ExecutionMode.SAME_THREAD;
@@ -78,6 +86,7 @@ class HttpProvidersTest {
             HttpResponse response = client.request(client.get(SVC_ECHO));
             assertThat(response.status(), is(OK));
         }
+        assertThat(TestHttpServerBuilderProvider.FILTER_COUNTER.get(), is(0));
         assertThat(TestHttpServerBuilderProvider.BUILD_COUNTER.get(), is(0));
         assertThat(TestHttpServerBuilderProvider.CONNECTION_COUNTER.get(), is(0));
         assertThat(TestSingleAddressHttpClientBuilderProvider.BUILD_COUNTER.get(), is(0));
@@ -89,7 +98,10 @@ class HttpProvidersTest {
         final InetSocketAddress serverAddress = localAddress(0);
         TestHttpServerBuilderProvider.MODIFY_FOR_ADDRESS.set(serverAddress);
         try (ServerContext serverContext = HttpServers.forAddress(serverAddress)
+                // Invoke the variant with Predicate:
+                .appendServiceFilter(__ -> true, new TimeoutHttpServiceFilter(ofSeconds(3)))
                 .listenStreamingAndAwait(new TestServiceStreaming())) {
+            assertThat(TestHttpServerBuilderProvider.FILTER_COUNTER.get(), is(1));
             assertThat(TestHttpServerBuilderProvider.BUILD_COUNTER.get(), is(1));
             try (BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
                     .buildBlocking()) {
@@ -106,7 +118,11 @@ class HttpProvidersTest {
                 .listenStreamingAndAwait(new TestServiceStreaming())) {
             HostAndPort serverAddress = serverHostAndPort(serverContext);
             TestSingleAddressHttpClientBuilderProvider.MODIFY_FOR_ADDRESS.set(serverAddress);
-            try (BlockingHttpClient client = HttpClients.forSingleAddress(serverAddress).buildBlocking()) {
+            try (BlockingHttpClient client = HttpClients.forSingleAddress(serverAddress)
+                    // Invoke the variant with Predicate:
+                    .appendClientFilter(__ -> true, new TimeoutHttpRequesterFilter(ofSeconds(3)))
+                    .buildBlocking()) {
+                assertThat(TestSingleAddressHttpClientBuilderProvider.FILTER_COUNTER.get(), is(1));
                 assertThat(TestSingleAddressHttpClientBuilderProvider.BUILD_COUNTER.get(), is(1));
                 HttpResponse response = client.request(client.get(SVC_ECHO));
                 assertThat(response.status(), is(OK));
@@ -149,11 +165,13 @@ class HttpProvidersTest {
     public static final class TestHttpServerBuilderProvider implements HttpServerBuilderProvider {
 
         static final AtomicReference<SocketAddress> MODIFY_FOR_ADDRESS = new AtomicReference<>();
+        static final AtomicInteger FILTER_COUNTER = new AtomicInteger();
         static final AtomicInteger BUILD_COUNTER = new AtomicInteger();
         static final AtomicInteger CONNECTION_COUNTER = new AtomicInteger();
 
         static void reset() {
             MODIFY_FOR_ADDRESS.set(null);
+            FILTER_COUNTER.set(0);
             BUILD_COUNTER.set(0);
             CONNECTION_COUNTER.set(0);
         }
@@ -163,6 +181,32 @@ class HttpProvidersTest {
             if (address.equals(MODIFY_FOR_ADDRESS.get())) {
                 return new DelegatingHttpServerBuilder(
                         builder.transportObserver(transportObserver(CONNECTION_COUNTER))) {
+
+                    // Implement both overloads to make sure we do not double count the same filter, bcz the one with a
+                    // Predicate may invoke the other one:
+                    @Override
+                    public HttpServerBuilder appendServiceFilter(StreamingHttpServiceFilterFactory factory) {
+                        FILTER_COUNTER.incrementAndGet();
+                        delegate().appendServiceFilter(factory);
+                        // It's important to return `this` instead of the result from delegate to avoid escaping from
+                        // the provider wrapper.
+                        return this;
+                    }
+
+                    @Override
+                    public HttpServerBuilder appendServiceFilter(Predicate<StreamingHttpRequest> predicate,
+                                                                 StreamingHttpServiceFilterFactory factory) {
+                        FILTER_COUNTER.incrementAndGet();
+                        delegate().appendServiceFilter(predicate, factory);
+                        return this;
+                    }
+
+                    // Implement both async and sync variants to make sure we do not double count, bcz the sync invokes
+                    // async and applies blocking:
+                    @Override
+                    public Single<HttpServerContext> listenStreaming(StreamingHttpService service) {
+                        return delegate().listenStreaming(service).whenOnSuccess(__ -> BUILD_COUNTER.incrementAndGet());
+                    }
 
                     @Override
                     public HttpServerContext listenStreamingAndAwait(StreamingHttpService service)
@@ -180,11 +224,13 @@ class HttpProvidersTest {
             implements SingleAddressHttpClientBuilderProvider {
 
         static final AtomicReference<Object> MODIFY_FOR_ADDRESS = new AtomicReference<>();
+        static final AtomicInteger FILTER_COUNTER = new AtomicInteger();
         static final AtomicInteger BUILD_COUNTER = new AtomicInteger();
         static final AtomicInteger CONNECTION_COUNTER = new AtomicInteger();
 
         static void reset() {
             MODIFY_FOR_ADDRESS.set(null);
+            FILTER_COUNTER.set(0);
             BUILD_COUNTER.set(0);
             CONNECTION_COUNTER.set(0);
         }
@@ -197,17 +243,38 @@ class HttpProvidersTest {
                 return new DelegatingSingleAddressHttpClientBuilder<U, R>(builder.appendConnectionFactoryFilter(
                         new TransportObserverConnectionFactoryFilter<>(transportObserver(CONNECTION_COUNTER)))) {
 
+                    // Implement both overloads to make sure we do not double count the same filter, bcz the one with a
+                    // Predicate may invoke the other one:
+                    @Override
+                    public SingleAddressHttpClientBuilder<U, R> appendClientFilter(
+                            StreamingHttpClientFilterFactory factory) {
+                        FILTER_COUNTER.incrementAndGet();
+                        delegate().appendClientFilter(factory);
+                        // It's important to return `this` instead of the result from delegate to avoid escaping from
+                        // the provider wrapper.
+                        return this;
+                    }
+
+                    @Override
+                    public SingleAddressHttpClientBuilder<U, R> appendClientFilter(
+                            Predicate<StreamingHttpRequest> predicate, StreamingHttpClientFilterFactory factory) {
+                        FILTER_COUNTER.incrementAndGet();
+                        delegate().appendClientFilter(predicate, factory);
+                        return this;
+                    }
+
                     @Override
                     public BlockingHttpClient buildBlocking() {
                         BUILD_COUNTER.incrementAndGet();
-                        return super.buildBlocking();
+                        return delegate().buildBlocking();
                     }
 
-                    // multi-address and partitioned client builders uses this method:
+                    // Multi-address and partitioned client builders use only buildStreaming(). Implementing both build*
+                    // variants also helps to make sure we do not double count when buildBlocking() is used.
                     @Override
                     public StreamingHttpClient buildStreaming() {
                         BUILD_COUNTER.incrementAndGet();
-                        return super.buildStreaming();
+                        return delegate().buildStreaming();
                     }
                 };
             }
