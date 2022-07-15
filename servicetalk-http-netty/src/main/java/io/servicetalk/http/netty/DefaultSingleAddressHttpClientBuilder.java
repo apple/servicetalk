@@ -233,16 +233,16 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
 
             ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> connectionFactoryFilter =
                     ctx.builder.connectionFactoryFilter;
-            ExecutionStrategy connectionFactoryStrategy =
+            final ExecutionStrategy connectionFactoryStrategy =
                     ctx.builder.strategyComputation.buildForConnectionFactory();
 
             final SslContext sslContext = roConfig.tcpConfig().sslContext();
             if (roConfig.hasProxy() && sslContext != null) {
                 assert roConfig.connectAddress() != null;
-                ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> proxy =
+                final ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> proxy =
                         new ProxyConnectConnectionFactoryFilter<>(roConfig.connectAddress());
+                assert !proxy.requiredOffloads().hasOffloads();
                 connectionFactoryFilter = proxy.append(connectionFactoryFilter);
-                connectionFactoryStrategy = connectionFactoryStrategy.merge(proxy.requiredOffloads());
             }
 
             final HttpExecutionStrategy builderStrategy = executionContext.executionStrategy();
