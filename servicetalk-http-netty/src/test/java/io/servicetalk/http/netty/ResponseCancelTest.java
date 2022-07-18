@@ -54,13 +54,11 @@ import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
-import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.http.netty.HttpServers.forAddress;
@@ -68,8 +66,8 @@ import static io.servicetalk.logging.api.LogLevel.TRACE;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
 
 class ResponseCancelTest {
 
@@ -87,9 +85,8 @@ class ResponseCancelTest {
     private final BlockingQueue<ClientTerminationSignal> delayedClientTermination;
     private final ServerContext ctx;
     private final HttpClient client;
-    private final AtomicInteger connectionCount = new AtomicInteger();
-    private final CountDownLatch clientConnectionClosed = new CountDownLatch(1);
-    private final CountDownLatch serverConnectionClosed = new CountDownLatch(1);
+    private final BlockingQueue<CountDownLatch> clientConnectionsClosedStates = new LinkedBlockingQueue<>();
+    private final BlockingQueue<CountDownLatch> serverConnectionsClosedStates = new LinkedBlockingQueue<>();
 
     ResponseCancelTest() throws Exception {
         serverResponses = new LinkedBlockingQueue<>();
@@ -102,6 +99,8 @@ class ResponseCancelTest {
                 .appendConnectionAcceptorFilter(original -> new DelegatingConnectionAcceptor(original) {
                     @Override
                     public Completable accept(final ConnectionContext context) {
+                        CountDownLatch serverConnectionClosed = new CountDownLatch(1);
+                        serverConnectionsClosedStates.add(serverConnectionClosed);
                         context.onClose().whenFinally(serverConnectionClosed::countDown).subscribe();
                         return completed();
                     }
@@ -138,7 +137,7 @@ class ResponseCancelTest {
                     }
                 })
                 .appendConnectionFactoryFilter(ConnectionFactoryFilter.withStrategy(
-                        original -> new CountingConnectionFactory(original, connectionCount, clientConnectionClosed),
+                        original -> new CountingConnectionFactory(original, clientConnectionsClosedStates),
                         HttpExecutionStrategies.offloadNone()))
                 .build();
     }
@@ -155,7 +154,7 @@ class ResponseCancelTest {
         Cancellable cancellable = sendRequest(client, latch1);
         // wait for server to receive request.
         Processor<StreamingHttpResponse, StreamingHttpResponse> serverResp = serverResponses.take();
-        assertThat("Unexpected connections count.", connectionCount.get(), is(1));
+        assertActiveConnectionsCount(1);
         cancellable.cancel();
         // wait for cancel to be observed but don't send cancel to the transport so that transport does not close the
         // connection which will then be ambiguous.
@@ -164,10 +163,10 @@ class ResponseCancelTest {
         // and hence fail the response.
         ClientTerminationSignal.resumeExpectFailure(delayedClientTermination, latch1,
                 instanceOf(ClosedChannelException.class));
-        clientConnectionClosed.await();
+        clientConnectionsClosedStates.take().await();
         // Let the server write the response to fail the write and close the connection
         serverResp.onSuccess(client.asStreamingClient().httpResponseFactory().ok());
-        serverConnectionClosed.await();
+        serverConnectionsClosedStates.take().await();
 
         sendSecondRequest();
     }
@@ -178,7 +177,7 @@ class ResponseCancelTest {
         Cancellable cancellable = sendRequest(client, latch1);
         // wait for server to receive request.
         Processor<StreamingHttpResponse, StreamingHttpResponse> serverResp = serverResponses.take();
-        assertThat("Unexpected connections count.", connectionCount.get(), is(1));
+        assertActiveConnectionsCount(1);
 
         serverResp.onSuccess(client.asStreamingClient().httpResponseFactory().ok());
         cancellable.cancel();
@@ -189,8 +188,8 @@ class ResponseCancelTest {
         // any termination.
         delayedClientTermination.take().resume();
         latch1.await();
-        clientConnectionClosed.await();
-        serverConnectionClosed.await();
+        clientConnectionsClosedStates.take().await();
+        serverConnectionsClosedStates.take().await();
 
         sendSecondRequest();
     }
@@ -201,15 +200,15 @@ class ResponseCancelTest {
         Cancellable cancellable = sendRequest(connection, null);
         // wait for server to receive request.
         Processor<StreamingHttpResponse, StreamingHttpResponse> serverResp = serverResponses.take();
-        assertThat("Unexpected connections count.", connectionCount.get(), is(1));
+        assertActiveConnectionsCount(1);
         cancellable.cancel();
         // wait for cancel to be observed and propagate it to the transport to initiate connection closure.
         delayedClientCancels.take().cancel();
         // Transport should close the connection, the response terminal signal is not guaranteed after cancellation.
-        clientConnectionClosed.await();
+        clientConnectionsClosedStates.take().await();
         // Let the server write the response to fail the write and close the connection
         serverResp.onSuccess(client.asStreamingClient().httpResponseFactory().ok());
-        serverConnectionClosed.await();
+        serverConnectionsClosedStates.take().await();
 
         sendSecondRequest();
     }
@@ -226,7 +225,7 @@ class ResponseCancelTest {
                         .subscribe(__ -> { });
         // wait for server to receive request.
         Processor<StreamingHttpResponse, StreamingHttpResponse> serverResp = serverResponses.take();
-        assertThat("Unexpected connections count.", connectionCount.get(), is(1));
+        assertActiveConnectionsCount(1);
 
         TestPublisher<Buffer> payload = new TestPublisher<>();
         serverResp.onSuccess(connection.asStreamingConnection().httpResponseFactory().ok()
@@ -236,21 +235,22 @@ class ResponseCancelTest {
         // cancel payload body.
         cancellable.cancel();
         // Transport should close the connection, the response terminal signal is not guaranteed after cancellation.
-        clientConnectionClosed.await();
+        clientConnectionsClosedStates.take().await();
         // Finish server response to let server close the connection
         payload.onComplete();
-        serverConnectionClosed.await();
+        serverConnectionsClosedStates.take().await();
 
         sendSecondRequest();
     }
 
     private void sendSecondRequest() throws Throwable {
+        assertActiveConnectionsCount(0);
         // Validate client can still communicate with a server using a new connection.
         CountDownLatch latch2 = new CountDownLatch(1);
         sendRequest(client, latch2);
         serverResponses.take().onSuccess(client.asStreamingClient().httpResponseFactory().ok());
         ClientTerminationSignal.resume(delayedClientTermination, latch2);
-        assertThat("Unexpected connections count.", connectionCount.get(), is(2));
+        assertActiveConnectionsCount(1);
     }
 
     private static Cancellable sendRequest(final HttpRequester requester, @Nullable final CountDownLatch latch) {
@@ -261,29 +261,31 @@ class ResponseCancelTest {
         ).subscribe(__ -> { });
     }
 
+    private void assertActiveConnectionsCount(int expected) {
+        assertThat("Unexpected client connections count.", clientConnectionsClosedStates, hasSize(expected));
+        assertThat("Unexpected server connections count.", serverConnectionsClosedStates, hasSize(expected));
+    }
+
     private static class CountingConnectionFactory
             extends DelegatingConnectionFactory<InetSocketAddress, FilterableStreamingHttpConnection> {
-        private final AtomicInteger connectionCount;
-        private final CountDownLatch clientConnectionClosed;
+
+        private final BlockingQueue<CountDownLatch> clientConnectionsClosedStates;
 
         CountingConnectionFactory(
                 final ConnectionFactory<InetSocketAddress, FilterableStreamingHttpConnection> delegate,
-                final AtomicInteger connectionCount,
-                final CountDownLatch clientConnectionClosed) {
+                final BlockingQueue<CountDownLatch> clientConnectionsClosedStates) {
             super(delegate);
-            this.connectionCount = connectionCount;
-            this.clientConnectionClosed = clientConnectionClosed;
+            this.clientConnectionsClosedStates = clientConnectionsClosedStates;
         }
 
         @Override
         public Single<FilterableStreamingHttpConnection> newConnection(final InetSocketAddress inetSocketAddress,
                                                                        @Nullable final ContextMap context,
                                                                        @Nullable final TransportObserver observer) {
-            return defer(() -> {
-                connectionCount.incrementAndGet();
-                return delegate().newConnection(inetSocketAddress, context, observer).whenOnSuccess(c -> {
-                    c.onClose().whenFinally(clientConnectionClosed::countDown).subscribe();
-                });
+            return delegate().newConnection(inetSocketAddress, context, observer).whenOnSuccess(c -> {
+                CountDownLatch clientConnectionClosed = new CountDownLatch(1);
+                clientConnectionsClosedStates.add(clientConnectionClosed);
+                c.onClose().whenFinally(clientConnectionClosed::countDown).subscribe();
             });
         }
     }
