@@ -17,7 +17,7 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.ConsumableEvent;
-import io.servicetalk.client.api.internal.ReservableRequestConcurrencyController;
+import io.servicetalk.client.api.ReservableRequestConcurrencyController;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
@@ -29,7 +29,7 @@ import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.TransportObserver;
 
-import java.util.function.Function;
+import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.client.api.internal.ReservableRequestConcurrencyControllers.newController;
@@ -43,7 +43,7 @@ final class PipelinedLBHttpConnectionFactory<ResolvedAddress> extends AbstractLB
             final StreamingHttpRequestResponseFactory reqRespFactory,
             final ExecutionStrategy connectStrategy,
             final ConnectionFactoryFilter<ResolvedAddress, FilterableStreamingHttpConnection> connectionFactoryFilter,
-            final Function<FilterableStreamingHttpConnection,
+            final BiFunction<FilterableStreamingHttpConnection, ReservableRequestConcurrencyController,
                     FilterableStreamingHttpLoadBalancedConnection> protocolBinding) {
         super(config, executionContext, version -> reqRespFactory, connectStrategy, connectionFactoryFilter,
                 connectionFilterFunction, protocolBinding);

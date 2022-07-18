@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package io.servicetalk.http.netty;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.ConsumableEvent;
-import io.servicetalk.client.api.internal.ReservableRequestConcurrencyController;
+import io.servicetalk.client.api.ReservableRequestConcurrencyController;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
@@ -38,6 +38,7 @@ import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver;
 
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
@@ -47,7 +48,7 @@ import static io.servicetalk.transport.api.TransportObservers.asSafeObserver;
 import static java.util.Objects.requireNonNull;
 
 abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
-        implements ConnectionFactory<ResolvedAddress, LoadBalancedStreamingHttpConnection> {
+        implements ConnectionFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> {
 
     @Nullable
     private final StreamingHttpConnectionFilterFactory connectionFilterFunction;
@@ -55,7 +56,7 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
     final HttpExecutionContext executionContext;
     final Function<HttpProtocolVersion, StreamingHttpRequestResponseFactory> reqRespFactoryFunc;
     private final ConnectionFactory<ResolvedAddress, FilterableStreamingHttpConnection> filterableConnectionFactory;
-    private final Function<FilterableStreamingHttpConnection,
+    private final BiFunction<FilterableStreamingHttpConnection, ReservableRequestConcurrencyController,
             FilterableStreamingHttpLoadBalancedConnection> protocolBinding;
 
     AbstractLBHttpConnectionFactory(
@@ -64,8 +65,8 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
             final ExecutionStrategy connectStrategy,
             final ConnectionFactoryFilter<ResolvedAddress, FilterableStreamingHttpConnection> connectionFactoryFilter,
             @Nullable final StreamingHttpConnectionFilterFactory connectionFilterFunction,
-            final Function<FilterableStreamingHttpConnection, FilterableStreamingHttpLoadBalancedConnection>
-                    protocolBinding) {
+            final BiFunction<FilterableStreamingHttpConnection, ReservableRequestConcurrencyController,
+                    FilterableStreamingHttpLoadBalancedConnection> protocolBinding) {
         this.connectionFilterFunction = connectionFilterFunction;
         this.config = requireNonNull(config);
         this.executionContext = requireNonNull(executionContext);
@@ -109,29 +110,32 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
     }
 
     @Override
-    public final Single<LoadBalancedStreamingHttpConnection> newConnection(
+    public final Single<FilterableStreamingHttpLoadBalancedConnection> newConnection(
             final ResolvedAddress resolvedAddress, @Nullable final ContextMap context,
             @Nullable final TransportObserver observer) {
         return filterableConnectionFactory.newConnection(resolvedAddress, context, observer)
                 .map(conn -> {
+                    // Apply connection filters:
                     FilterableStreamingHttpConnection filteredConnection =
                             connectionFilterFunction != null ? connectionFilterFunction.create(conn) : conn;
-                    ConnectionContext ctx = filteredConnection.connectionContext();
-                    Completable onClosing;
-                    if (ctx instanceof NettyConnectionContext) {
-                        // bondolo - I don't believe this is necessary, always the same as filteredConnection.onClose()
-                        // perhaps this is only needed for testing where the mock doesn't implement onClose()?
-                        onClosing = ((NettyConnectionContext) ctx).onClosing();
-                    } else {
-                        onClosing = filteredConnection.onClose();
-                    }
-                    final Publisher<? extends ConsumableEvent<Integer>> maxConcurrency =
-                            filteredConnection.transportEventStream(MAX_CONCURRENCY);
-                    final ReservableRequestConcurrencyController concurrencyController =
-                            newConcurrencyController(maxConcurrency, onClosing);
-                    return new LoadBalancedStreamingHttpConnection(protocolBinding.apply(filteredConnection),
-                            concurrencyController);
+                    return protocolBinding.apply(filteredConnection,
+                            newConcurrencyController(filteredConnection.transportEventStream(MAX_CONCURRENCY),
+                                    onClosing(filteredConnection)));
                 });
+    }
+
+    /**
+     * Extract {@link Completable} that notifies when connection is preparing to close. This helps to receive an earlier
+     * notification for the concurrency controller.
+     *
+     * @param connection {@link FilterableStreamingHttpConnection}
+     * @return {@link Completable} that notifies when connection is preparing to close
+     */
+    private static Completable onClosing(final FilterableStreamingHttpConnection connection) {
+        ConnectionContext ctx = connection.connectionContext();
+        return ctx instanceof NettyConnectionContext ? ((NettyConnectionContext) ctx).onClosing() :
+                // Fallback to onClose callback
+                connection.onClose();
     }
 
     /**

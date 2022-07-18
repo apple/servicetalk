@@ -19,6 +19,8 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.transport.api.IoExecutor;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * An implementation of {@link HttpExecutionContext} that delegates all method calls to another
  * {@link HttpExecutionContext}.
@@ -32,7 +34,16 @@ public class DelegatingHttpExecutionContext implements HttpExecutionContext {
      * @param delegate {@link HttpExecutionContext} to delegate all calls.
      */
     public DelegatingHttpExecutionContext(final HttpExecutionContext delegate) {
-        this.delegate = delegate;
+        this.delegate = requireNonNull(delegate);
+    }
+
+    /**
+     * Get the {@link HttpExecutionContext} that this class delegates to.
+     *
+     * @return the {@link HttpExecutionContext} that this class delegates to.
+     */
+    protected final HttpExecutionContext delegate() {
+        return delegate;
     }
 
     @Override

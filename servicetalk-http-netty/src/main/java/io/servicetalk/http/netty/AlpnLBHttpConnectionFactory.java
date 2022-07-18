@@ -17,7 +17,7 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.ConsumableEvent;
-import io.servicetalk.client.api.internal.ReservableRequestConcurrencyController;
+import io.servicetalk.client.api.ReservableRequestConcurrencyController;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
@@ -37,6 +37,7 @@ import io.servicetalk.transport.api.TransportObserver;
 
 import io.netty.channel.Channel;
 
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
@@ -54,7 +55,7 @@ final class AlpnLBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpC
             final Function<HttpProtocolVersion, StreamingHttpRequestResponseFactory> reqRespFactoryFunc,
             final ExecutionStrategy connectStrategy,
             final ConnectionFactoryFilter<ResolvedAddress, FilterableStreamingHttpConnection> connectionFactoryFilter,
-            final Function<FilterableStreamingHttpConnection,
+            final BiFunction<FilterableStreamingHttpConnection, ReservableRequestConcurrencyController,
                     FilterableStreamingHttpLoadBalancedConnection> protocolBinding) {
         super(config, executionContext, reqRespFactoryFunc,
                 connectStrategy, connectionFactoryFilter, connectionFilterFunction,
