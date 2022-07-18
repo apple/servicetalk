@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.CompositeBuffer;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
@@ -25,6 +26,7 @@ import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpClient;
@@ -43,7 +45,6 @@ import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -70,7 +71,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 
-@Timeout(3)
 class ResponseCancelTest {
 
     @RegisterExtension
@@ -154,7 +154,7 @@ class ResponseCancelTest {
         CountDownLatch latch1 = new CountDownLatch(1);
         Cancellable cancellable = sendRequest(client, latch1);
         // wait for server to receive request.
-        serverResponses.take();
+        Processor<StreamingHttpResponse, StreamingHttpResponse> serverResp = serverResponses.take();
         assertThat("Unexpected connections count.", connectionCount.get(), is(1));
         cancellable.cancel();
         // wait for cancel to be observed but don't send cancel to the transport so that transport does not close the
@@ -165,7 +165,9 @@ class ResponseCancelTest {
         ClientTerminationSignal.resumeExpectFailure(delayedClientTermination, latch1,
                 instanceOf(ClosedChannelException.class));
         clientConnectionClosed.await();
-        // serverConnectionClosed.await();  server doesn't close the connection bcz it hasn't finished the response yet
+        // Let the server write the response to fail the write and close the connection
+        serverResp.onSuccess(client.asStreamingClient().httpResponseFactory().ok());
+        serverConnectionClosed.await();
 
         sendSecondRequest();
     }
@@ -198,14 +200,16 @@ class ResponseCancelTest {
         HttpConnection connection = client.reserveConnection(client.get("/")).toFuture().get();
         Cancellable cancellable = sendRequest(connection, null);
         // wait for server to receive request.
-        serverResponses.take();
+        Processor<StreamingHttpResponse, StreamingHttpResponse> serverResp = serverResponses.take();
         assertThat("Unexpected connections count.", connectionCount.get(), is(1));
         cancellable.cancel();
         // wait for cancel to be observed and propagate it to the transport to initiate connection closure.
         delayedClientCancels.take().cancel();
         // Transport should close the connection, the response terminal signal is not guaranteed after cancellation.
         clientConnectionClosed.await();
-        // serverConnectionClosed.await();  server doesn't close the connection bcz it hasn't finished the response yet
+        // Let the server write the response to fail the write and close the connection
+        serverResp.onSuccess(client.asStreamingClient().httpResponseFactory().ok());
+        serverConnectionClosed.await();
 
         sendSecondRequest();
     }
@@ -224,15 +228,18 @@ class ResponseCancelTest {
         Processor<StreamingHttpResponse, StreamingHttpResponse> serverResp = serverResponses.take();
         assertThat("Unexpected connections count.", connectionCount.get(), is(1));
 
+        TestPublisher<Buffer> payload = new TestPublisher<>();
         serverResp.onSuccess(connection.asStreamingConnection().httpResponseFactory().ok()
-                .payloadBody(Publisher.never()));
+                .payloadBody(payload));
         // wait for response meta-data to be received.
         delayedClientTermination.take().resume();
         // cancel payload body.
         cancellable.cancel();
         // Transport should close the connection, the response terminal signal is not guaranteed after cancellation.
         clientConnectionClosed.await();
-        // serverConnectionClosed.await();  server doesn't close the connection bcz it hasn't finished the response yet
+        // Finish server response to let server close the connection
+        payload.onComplete();
+        serverConnectionClosed.await();
 
         sendSecondRequest();
     }
