@@ -61,6 +61,8 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -97,6 +99,8 @@ import static org.hamcrest.Matchers.not;
 
 @Execution(ExecutionMode.SAME_THREAD)
 class ClientEffectiveStrategyTest {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ClientEffectiveStrategyTest.class);
 
     @RegisterExtension
     static final ExecutionContextExtension SERVER_CTX =
@@ -542,6 +546,8 @@ class ClientEffectiveStrategyTest {
                                     ", but was running on " + current.getName() + ". clientStrategy=" + clientStrategy +
                                     ", requestStrategy=" + requestStrategy);
                             errors.add(e);
+                            LOGGER.error("Unexpectedly not offloaded", e);
+                            throw e;
                         }
                     } else {
                         if (!ioThread) {
@@ -551,6 +557,8 @@ class ClientEffectiveStrategyTest {
                                     ". clientStrategy=" + clientStrategy + ", expectedStrategy=" + expectedStrategy
                                     + ", requestStrategy=" + requestStrategy);
                             errors.add(e);
+                            LOGGER.error("Unexpected offloading", e);
+                            throw e;
                         }
                     }
                 }

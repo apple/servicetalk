@@ -91,6 +91,8 @@ abstract class TaskBasedAsyncCompletableOperator extends AbstractNoHandleSubscri
         private volatile int state = STATE_INIT;
         private boolean hasOffloaded;
 
+        protected final Throwable offloadingSubscribe = new Throwable("subscribe stack trace");
+
         AbstractOffloadedSingleValueSubscriber(final BooleanSupplier shouldOffload,
                                                final io.servicetalk.concurrent.Executor executor) {
             this.shouldOffload = shouldOffload;
@@ -257,6 +259,7 @@ abstract class TaskBasedAsyncCompletableOperator extends AbstractNoHandleSubscri
 
         @Override
         void terminateOnEnqueueFailure(final Throwable cause) {
+            cause.addSuppressed(offloadingSubscribe);
             LOGGER.warn("Failed to execute task on the executor {}. " +
                             "Invoking Subscriber (onError()) in the caller thread. Subscriber {}.",
                     executor, subscriber, cause);
@@ -266,6 +269,7 @@ abstract class TaskBasedAsyncCompletableOperator extends AbstractNoHandleSubscri
         @Override
         void deliverTerminalToSubscriber(final Object terminal) {
             if (terminal instanceof Throwable) {
+                ((Throwable) terminal).addSuppressed(offloadingSubscribe);
                 safeOnError(subscriber, (Throwable) terminal);
             } else {
                 assert COMPLETED == terminal : "Unexpected terminal " + terminal;
@@ -279,6 +283,7 @@ abstract class TaskBasedAsyncCompletableOperator extends AbstractNoHandleSubscri
                 subscriber.onSubscribe(cancellable);
             } catch (Throwable t) {
                 onSubscribeFailed();
+                t.addSuppressed(offloadingSubscribe);
                 safeOnError(subscriber, t);
                 safeCancel(cancellable);
             }

@@ -113,6 +113,8 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractNoHandleSubscr
         private Subscription subscription;
         private boolean hasOffloaded;
 
+        private final Throwable offloadingSubscribe = new Throwable("subscribe stack trace");
+
         OffloadedSubscriber(final Subscriber<? super T> target,
                             final BooleanSupplier shouldOffload,
                             final io.servicetalk.concurrent.Executor executor) {
@@ -178,6 +180,7 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractNoHandleSubscr
                             target.onSubscribe(subscription);
                         } catch (Throwable t) {
                             clearSignalsFromExecutorThread();
+                            t.addSuppressed(offloadingSubscribe);
                             safeOnError(target, t);
                             safeCancel(subscription);
                             return; // We can't interact with the queue any more because we terminated, so bail.
@@ -186,6 +189,7 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractNoHandleSubscr
                         state = STATE_TERMINATED;
                         Throwable cause = ((TerminalNotification) signal).cause();
                         if (cause != null) {
+                            cause.addSuppressed(offloadingSubscribe);
                             safeOnError(target, cause);
                         } else {
                             safeOnComplete(target);
@@ -198,6 +202,7 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractNoHandleSubscr
                             target.onNext(t);
                         } catch (Throwable th) {
                             clearSignalsFromExecutorThread();
+                            th.addSuppressed(offloadingSubscribe);
                             safeOnError(target, th);
                             assert subscription != null;
                             safeCancel(subscription);
@@ -280,6 +285,7 @@ abstract class TaskBasedAsyncPublisherOperator<T> extends AbstractNoHandleSubscr
                         target.onSubscribe(EMPTY_SUBSCRIPTION);
                     }
                 } finally {
+                    t.addSuppressed(offloadingSubscribe);
                     safeOnError(target, t);
                 }
                 // This is an SPSC queue; at this point we are sure that there is no other consumer of the queue

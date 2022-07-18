@@ -104,6 +104,7 @@ abstract class TaskBasedAsyncSingleOperator<T> extends AbstractNoHandleSubscribe
 
         @Override
         void terminateOnEnqueueFailure(final Throwable cause) {
+            cause.addSuppressed(offloadingSubscribe);
             LOGGER.warn("Failed to execute task on the executor {}. " +
                     "Invoking Subscriber (onError()) in the caller thread. Subscriber {}.", executor, target, cause);
             target.onError(cause);
@@ -114,6 +115,7 @@ abstract class TaskBasedAsyncSingleOperator<T> extends AbstractNoHandleSubscribe
             if (terminal instanceof TerminalNotification) {
                 final Throwable error = ((TerminalNotification) terminal).cause();
                 assert error != null;
+                error.addSuppressed(offloadingSubscribe);
                 safeOnError(target, error);
             } else {
                 safeOnSuccess(target, uncheckCast(terminal));
@@ -126,6 +128,7 @@ abstract class TaskBasedAsyncSingleOperator<T> extends AbstractNoHandleSubscribe
                 target.onSubscribe(cancellable);
             } catch (Throwable t) {
                 onSubscribeFailed();
+                t.addSuppressed(offloadingSubscribe);
                 safeOnError(target, t);
                 safeCancel(cancellable);
             }
