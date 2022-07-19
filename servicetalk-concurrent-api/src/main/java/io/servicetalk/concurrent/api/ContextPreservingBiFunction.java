@@ -27,6 +27,8 @@ final class ContextPreservingBiFunction<T, U, V> implements BiFunction<T, U, V> 
     private final ContextMap saved;
     private final BiFunction<T, U, V> delegate;
 
+    private final Throwable creator = new Throwable("BiFunction creator");
+
     ContextPreservingBiFunction(BiFunction<T, U, V> delegate, ContextMap contextMap) {
         this.saved = requireNonNull(contextMap);
         this.delegate = requireNonNull(delegate);
@@ -41,6 +43,9 @@ final class ContextPreservingBiFunction<T, U, V> implements BiFunction<T, U, V> 
             try {
                 asyncContextMapHolder.context(saved);
                 return delegate.apply(t, u);
+            } catch (Throwable all) {
+                all.addSuppressed(creator);
+                throw all;
             } finally {
                 asyncContextMapHolder.context(prev);
             }

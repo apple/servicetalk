@@ -27,6 +27,8 @@ final class ContextPreservingFunction<T, U> implements Function<T, U> {
     private final ContextMap saved;
     private final Function<T, U> delegate;
 
+    private final Throwable creator = new Throwable("Function creator");
+
     ContextPreservingFunction(Function<T, U> delegate, ContextMap contextMap) {
         this.saved = requireNonNull(contextMap);
         this.delegate = requireNonNull(delegate);
@@ -41,6 +43,9 @@ final class ContextPreservingFunction<T, U> implements Function<T, U> {
             try {
                 asyncContextMapHolder.context(saved);
                 return delegate.apply(t);
+            } catch (Throwable all) {
+                all.addSuppressed(creator);
+                throw all;
             } finally {
                 asyncContextMapHolder.context(prev);
             }

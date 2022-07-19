@@ -27,6 +27,8 @@ final class ContextPreservingConsumer<T> implements Consumer<T> {
     private final ContextMap saved;
     private final Consumer<T> delegate;
 
+    private final Throwable creator = new Throwable("Consumer creator");
+
     ContextPreservingConsumer(Consumer<T> delegate, ContextMap current) {
         this.saved = requireNonNull(current);
         this.delegate = requireNonNull(delegate);
@@ -41,6 +43,9 @@ final class ContextPreservingConsumer<T> implements Consumer<T> {
             try {
                 asyncContextMapHolder.context(saved);
                 delegate.accept(t);
+            } catch (Throwable all) {
+                all.addSuppressed(creator);
+                throw all;
             } finally {
                 asyncContextMapHolder.context(prev);
             }

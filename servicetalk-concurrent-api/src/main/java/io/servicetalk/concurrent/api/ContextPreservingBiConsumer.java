@@ -27,6 +27,8 @@ final class ContextPreservingBiConsumer<T, U> implements BiConsumer<T, U> {
     private final ContextMap saved;
     private final BiConsumer<T, U> delegate;
 
+    private final Throwable creator = new Throwable("BiConsumer creator");
+
     ContextPreservingBiConsumer(BiConsumer<T, U> delegate, ContextMap contextMap) {
         this.saved = requireNonNull(contextMap);
         this.delegate = requireNonNull(delegate);
@@ -41,6 +43,9 @@ final class ContextPreservingBiConsumer<T, U> implements BiConsumer<T, U> {
             try {
                 asyncContextMapHolder.context(saved);
                 delegate.accept(t, u);
+            } catch (Throwable all) {
+                all.addSuppressed(creator);
+                throw all;
             } finally {
                 asyncContextMapHolder.context(prev);
             }

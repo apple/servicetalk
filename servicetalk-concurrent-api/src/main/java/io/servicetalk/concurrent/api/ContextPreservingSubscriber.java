@@ -27,6 +27,8 @@ class ContextPreservingSubscriber<T> implements Subscriber<T> {
     final ContextMap saved;
     final Subscriber<T> subscriber;
 
+    final Throwable creator = new Throwable("Subscriber Creator");
+
     ContextPreservingSubscriber(Subscriber<T> subscriber, ContextMap current) {
         this.subscriber = requireNonNull(subscriber);
         this.saved = requireNonNull(current);
@@ -45,6 +47,9 @@ class ContextPreservingSubscriber<T> implements Subscriber<T> {
             try {
                 asyncContextMapHolder.context(saved);
                 invokeOnSubscribe(s);
+            } catch (Throwable all) {
+                all.addSuppressed(creator);
+                throw all;
             } finally {
                 asyncContextMapHolder.context(prev);
             }

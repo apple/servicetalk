@@ -27,6 +27,8 @@ class ContextPreservingCompletableSubscriber implements Subscriber {
     final ContextMap saved;
     final Subscriber subscriber;
 
+    private final Throwable creator = new Throwable("Subscriber creator");
+
     ContextPreservingCompletableSubscriber(Subscriber subscriber, ContextMap current) {
         this.subscriber = requireNonNull(subscriber);
         this.saved = requireNonNull(current);
@@ -45,6 +47,9 @@ class ContextPreservingCompletableSubscriber implements Subscriber {
             try {
                 asyncContextMapHolder.context(saved);
                 invokeOnSubscribe(cancellable);
+            } catch (Throwable all) {
+                all.addSuppressed(creator);
+                throw all;
             } finally {
                 asyncContextMapHolder.context(prev);
             }

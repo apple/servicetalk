@@ -26,6 +26,8 @@ final class ContextPreservingCancellable implements Cancellable {
     private final ContextMap saved;
     private final Cancellable delegate;
 
+    private final Throwable creator = new Throwable("Cancellable creator");
+
     private ContextPreservingCancellable(Cancellable delegate, ContextMap current) {
         this.saved = requireNonNull(current);
         this.delegate = requireNonNull(delegate);
@@ -48,6 +50,9 @@ final class ContextPreservingCancellable implements Cancellable {
             try {
                 asyncContextMapHolder.context(saved);
                 delegate.cancel();
+            } catch (Throwable all) {
+                all.addSuppressed(creator);
+                throw all;
             } finally {
                 asyncContextMapHolder.context(prev);
             }

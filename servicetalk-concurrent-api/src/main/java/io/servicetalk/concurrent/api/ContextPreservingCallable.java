@@ -28,6 +28,8 @@ final class ContextPreservingCallable<V> implements Callable<V> {
     private final ContextMap saved;
     private final Callable<V> delegate;
 
+    private final Throwable creator = new Throwable("Callable creator");
+
     ContextPreservingCallable(Callable<V> delegate) {
         this(delegate, INSTANCE.context());
     }
@@ -46,6 +48,9 @@ final class ContextPreservingCallable<V> implements Callable<V> {
             try {
                 asyncContextMapHolder.context(saved);
                 return delegate.call();
+            } catch (Throwable all) {
+                all.addSuppressed(creator);
+                throw all;
             } finally {
                 asyncContextMapHolder.context(prev);
             }

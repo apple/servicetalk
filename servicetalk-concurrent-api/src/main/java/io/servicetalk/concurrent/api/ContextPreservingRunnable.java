@@ -26,6 +26,8 @@ final class ContextPreservingRunnable implements Runnable {
     private final ContextMap saved;
     private final Runnable delegate;
 
+    private final Throwable creator = new Throwable("Runnable creator");
+
     ContextPreservingRunnable(Runnable delegate) {
         this(delegate, INSTANCE.context());
     }
@@ -44,6 +46,9 @@ final class ContextPreservingRunnable implements Runnable {
             try {
                 asyncContextMapHolder.context(saved);
                 delegate.run();
+            } catch (Throwable all) {
+                all.addSuppressed(creator);
+                throw all;
             } finally {
                 asyncContextMapHolder.context(prev);
             }

@@ -26,6 +26,8 @@ final class ContextPreservingSubscription implements Subscription {
     private final ContextMap saved;
     private final Subscription subscription;
 
+    private final Throwable creator = new Throwable("Subscription creator");
+
     private ContextPreservingSubscription(Subscription subscription, ContextMap current) {
         this.subscription = requireNonNull(subscription);
         this.saved = requireNonNull(current);
@@ -46,6 +48,9 @@ final class ContextPreservingSubscription implements Subscription {
             try {
                 asyncContextMapHolder.context(saved);
                 subscription.request(l);
+            } catch (Throwable all) {
+                all.addSuppressed(creator);
+                throw all;
             } finally {
                 asyncContextMapHolder.context(prev);
             }
