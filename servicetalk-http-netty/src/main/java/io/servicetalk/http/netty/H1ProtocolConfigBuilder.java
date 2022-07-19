@@ -211,5 +211,19 @@ public final class H1ProtocolConfigBuilder {
         public H1SpecExceptions specExceptions() {
             return specExceptions;
         }
+
+        @Override
+        public String toString() {
+            return "DefaultH1ProtocolConfig{" +
+                    "alpnId=" + alpnId() +
+                    ", headersFactory=" + headersFactory +
+                    ", maxPipelinedRequests=" + maxPipelinedRequests +
+                    ", maxStartLineLength=" + maxStartLineLength +
+                    ", maxHeaderFieldLength=" + maxHeaderFieldLength +
+                    ", headersEncodedSizeEstimate=" + headersEncodedSizeEstimate +
+                    ", trailersEncodedSizeEstimate=" + trailersEncodedSizeEstimate +
+                    ", specExceptions=" + specExceptions +
+                    '}';
+        }
     }
 }

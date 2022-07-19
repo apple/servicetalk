@@ -54,6 +54,14 @@ public final class H1SpecExceptions {
         return allowLFWithoutCR;
     }
 
+    @Override
+    public String toString() {
+        return "H1SpecExceptions{" +
+                "allowPrematureClosureBeforePayloadBody=" + allowPrematureClosureBeforePayloadBody +
+                ", allowLFWithoutCR=" + allowLFWithoutCR +
+                '}';
+    }
+
     /**
      * Builder for {@link H1SpecExceptions}.
      */

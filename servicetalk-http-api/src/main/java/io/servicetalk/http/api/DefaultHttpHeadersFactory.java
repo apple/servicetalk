@@ -85,4 +85,15 @@ public final class DefaultHttpHeadersFactory implements HttpHeadersFactory {
     public boolean validateValues() {
         return validateValues;
     }
+
+    @Override
+    public String toString() {
+        return "DefaultHttpHeadersFactory{" +
+                "validateNames=" + validateNames +
+                ", validateCookies=" + validateCookies +
+                ", validateValues=" + validateValues +
+                ", headersArraySizeHint=" + headersArraySizeHint +
+                ", trailersArraySizeHint=" + trailersArraySizeHint +
+                '}';
+    }
 }

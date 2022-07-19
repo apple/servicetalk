@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020, 2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,5 +45,14 @@ final class DefaultKeepAlivePolicy implements KeepAlivePolicy {
     @Override
     public boolean withoutActiveStreams() {
         return withoutActiveStreams;
+    }
+
+    @Override
+    public String toString() {
+        return "DefaultKeepAlivePolicy{" +
+                "idleDuration=" + idleDuration +
+                ", ackTimeout=" + ackTimeout +
+                ", withoutActiveStreams=" + withoutActiveStreams +
+                '}';
     }
 }
