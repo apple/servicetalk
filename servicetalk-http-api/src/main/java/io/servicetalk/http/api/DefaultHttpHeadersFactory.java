@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2021-2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -88,8 +88,8 @@ public final class DefaultHttpHeadersFactory implements HttpHeadersFactory {
 
     @Override
     public String toString() {
-        return "DefaultHttpHeadersFactory{" +
-                "validateNames=" + validateNames +
+        return getClass().getSimpleName() +
+                "{validateNames=" + validateNames +
                 ", validateCookies=" + validateCookies +
                 ", validateValues=" + validateValues +
                 ", headersArraySizeHint=" + headersArraySizeHint +

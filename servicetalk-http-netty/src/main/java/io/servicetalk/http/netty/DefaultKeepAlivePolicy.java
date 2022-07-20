@@ -49,8 +49,8 @@ final class DefaultKeepAlivePolicy implements KeepAlivePolicy {
 
     @Override
     public String toString() {
-        return "DefaultKeepAlivePolicy{" +
-                "idleDuration=" + idleDuration +
+        return getClass().getSimpleName() +
+                "{idleDuration=" + idleDuration +
                 ", ackTimeout=" + ackTimeout +
                 ", withoutActiveStreams=" + withoutActiveStreams +
                 '}';

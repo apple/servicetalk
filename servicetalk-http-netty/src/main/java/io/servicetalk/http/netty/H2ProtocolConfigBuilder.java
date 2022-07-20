@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -156,8 +156,8 @@ public final class H2ProtocolConfigBuilder {
 
         @Override
         public String toString() {
-            return "DefaultH2ProtocolConfig{" +
-                    "alpnId=" + alpnId() +
+            return getClass().getSimpleName() +
+                    "{alpnId=" + alpnId() +
                     ", headersFactory=" + headersFactory +
                     ", headersSensitivityDetector=" + (headersSensitivityDetector == DEFAULT_SENSITIVITY_DETECTOR ?
                             "DEFAULT_SENSITIVITY_DETECTOR" : headersSensitivityDetector.toString()) +
