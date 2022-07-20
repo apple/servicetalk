@@ -182,7 +182,7 @@ if [[ "$BRANCH_NAME" == "$DEFAULT_BRANCH" ]]; then
 fi
 
 $git commit -a -m "Preparing for $nextVersion development"
-$git push -u ${remote_name} "$BRANCH_NAME"
+$git push ${remote_name} "$BRANCH_NAME"
 # Push tag after branch otherwise, CodeQL GH Action will fail.
 $git push ${remote_name} "$version"
 
