@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,6 @@ import java.util.function.BiPredicate;
 import java.util.function.BooleanSupplier;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.http.netty.H2HeadersFactory.DEFAULT_SENSITIVITY_DETECTOR;
 import static io.servicetalk.http.netty.H2KeepAlivePolicies.DISABLE_KEEP_ALIVE;
 import static java.util.Objects.requireNonNull;
 
@@ -36,6 +35,8 @@ import static java.util.Objects.requireNonNull;
  * @see HttpProtocolConfigs#h2()
  */
 public final class H2ProtocolConfigBuilder {
+
+    private static final BiPredicate<CharSequence, CharSequence> DEFAULT_SENSITIVITY_DETECTOR = (name, value) -> false;
 
     private HttpHeadersFactory headersFactory = H2HeadersFactory.INSTANCE;
     private BiPredicate<CharSequence, CharSequence> headersSensitivityDetector = DEFAULT_SENSITIVITY_DETECTOR;
@@ -151,6 +152,18 @@ public final class H2ProtocolConfigBuilder {
         @Override
         public KeepAlivePolicy keepAlivePolicy() {
             return keepAlivePolicy;
+        }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName() +
+                    "{alpnId=" + alpnId() +
+                    ", headersFactory=" + headersFactory +
+                    ", headersSensitivityDetector=" + (headersSensitivityDetector == DEFAULT_SENSITIVITY_DETECTOR ?
+                            "DEFAULT_SENSITIVITY_DETECTOR" : headersSensitivityDetector.toString()) +
+                    ", frameLoggerConfig=" + frameLoggerConfig +
+                    ", keepAlivePolicy=" + keepAlivePolicy +
+                    '}';
         }
     }
 }
