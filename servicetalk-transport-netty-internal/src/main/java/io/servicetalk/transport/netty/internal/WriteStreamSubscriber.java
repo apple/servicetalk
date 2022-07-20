@@ -189,26 +189,35 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
     public void onError(Throwable cause) {
         requireNonNull(cause);
         if (enqueueWrites || !eventLoop.inEventLoop()) {
-            eventLoop.execute(() -> promise.sourceTerminated(cause));
+            scheduleSourceTerminated(cause);
         } else {
-            promise.sourceTerminated(cause);
+            promise.sourceTerminated(cause, true);
         }
     }
 
     @Override
     public void onComplete() {
         if (enqueueWrites || !eventLoop.inEventLoop()) {
-            eventLoop.execute(() -> promise.sourceTerminated(null));
+            scheduleSourceTerminated(null);
         } else {
-            promise.sourceTerminated(null);
+            promise.sourceTerminated(null, true);
         }
+    }
+
+    private void scheduleSourceTerminated(@Nullable Throwable cause) {
+        // To mitigate a race between the caller and EventLoop threads, mark current subscription as `CANCELLED` to
+        // prevent any further interactions with it, like propagating `cancel` from `channelClosed(Throwable)` or
+        // `request(MAX_VALUE)` from `channelOutboundClosed()`.
+        // See https://github.com/reactive-streams/reactive-streams-jvm#2.4
+        this.subscription = CANCELLED;
+        eventLoop.execute(() -> promise.sourceTerminated(cause, false));
     }
 
     @Override
     public void channelWritable() {
         assert eventLoop.inEventLoop();
         final Subscription subscription = this.subscription;
-        if (isClient && subscription != null && !promise.written) {
+        if (isClient && subscription != null && subscription != CANCELLED && !promise.written) {
             // If nothing was written, make initial requestN
             initialRequestN(subscription);
         } else {
@@ -237,7 +246,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
             // we may deadlock if we don't request enough onNext signals to see the terminal signal.
             sub.request(Long.MAX_VALUE);
         }
-        promise.sourceTerminated(null);
+        promise.sourceTerminated(null, true);
     }
 
     @Override
@@ -246,7 +255,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
         // Terminate the source only if it awaits continuation.
         if (shouldWaitFlag) {
             assert promise.activeWrites == 0;   // We never start sending payload body until we receive 100 (Continue)
-            promise.sourceTerminated(null);
+            promise.sourceTerminated(null, true);
         }
     }
 
@@ -408,7 +417,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
             }
         }
 
-        void sourceTerminated(@Nullable Throwable cause) {
+        void sourceTerminated(@Nullable Throwable cause, boolean markCancelled) {
             assert eventLoop.inEventLoop();
             if (isAnySet(state, SUBSCRIBER_OR_SOURCE_TERMINATED)) {
                 // We have terminated prematurely perhaps due to write failure.
@@ -416,9 +425,13 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
             }
             this.failureCause = cause;
             state = set(state, SOURCE_TERMINATED);
-            // Mark the subscription as CANCELLED to prevent propagating cancel from channelClosed. At this point we
-            // always have a non-null subscription because this is reachable only if publisher emitted some signals.
-            WriteStreamSubscriber.this.subscription = CANCELLED;
+            if (markCancelled) {
+                // When we know that the source is effectively terminated and won't emit any new items, mark the
+                // subscription as CANCELLED to prevent any further interactions with it, like propagating `cancel` from
+                // `channelClosed(Throwable)` or `request(MAX_VALUE)` from `channelOutboundClosed()`. At this point we
+                // always have a non-null subscription because this is reachable only if publisher emitted some signals.
+                WriteStreamSubscriber.this.subscription = CANCELLED;
+            }
             if (activeWrites == 0) {
                 try {
                     state = set(state, SUBSCRIBER_TERMINATED);
