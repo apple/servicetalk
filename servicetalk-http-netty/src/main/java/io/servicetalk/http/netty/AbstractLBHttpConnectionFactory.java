@@ -38,7 +38,6 @@ import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver;
 
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
@@ -56,8 +55,7 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
     final HttpExecutionContext executionContext;
     final Function<HttpProtocolVersion, StreamingHttpRequestResponseFactory> reqRespFactoryFunc;
     private final ConnectionFactory<ResolvedAddress, FilterableStreamingHttpConnection> filterableConnectionFactory;
-    private final BiFunction<FilterableStreamingHttpConnection, ReservableRequestConcurrencyController,
-            FilterableStreamingHttpLoadBalancedConnection> protocolBinding;
+    private final ProtocolBinding protocolBinding;
 
     AbstractLBHttpConnectionFactory(
             final ReadOnlyHttpClientConfig config, final HttpExecutionContext executionContext,
@@ -65,8 +63,7 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
             final ExecutionStrategy connectStrategy,
             final ConnectionFactoryFilter<ResolvedAddress, FilterableStreamingHttpConnection> connectionFactoryFilter,
             @Nullable final StreamingHttpConnectionFilterFactory connectionFilterFunction,
-            final BiFunction<FilterableStreamingHttpConnection, ReservableRequestConcurrencyController,
-                    FilterableStreamingHttpLoadBalancedConnection> protocolBinding) {
+            final ProtocolBinding protocolBinding) {
         this.connectionFilterFunction = connectionFilterFunction;
         this.config = requireNonNull(config);
         this.executionContext = requireNonNull(executionContext);
@@ -118,9 +115,9 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
                     // Apply connection filters:
                     FilterableStreamingHttpConnection filteredConnection =
                             connectionFilterFunction != null ? connectionFilterFunction.create(conn) : conn;
-                    return protocolBinding.apply(filteredConnection,
+                    return protocolBinding.bind(filteredConnection,
                             newConcurrencyController(filteredConnection.transportEventStream(MAX_CONCURRENCY),
-                                    onClosing(filteredConnection)));
+                                    onClosing(filteredConnection)), context);
                 });
     }
 
@@ -164,5 +161,13 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
     @Override
     public final Completable closeAsyncGracefully() {
         return filterableConnectionFactory.closeAsyncGracefully();
+    }
+
+    @FunctionalInterface
+    interface ProtocolBinding {
+        FilterableStreamingHttpLoadBalancedConnection bind(
+                FilterableStreamingHttpConnection connection,
+                ReservableRequestConcurrencyController concurrencyController,
+                @Nullable ContextMap context);
     }
 }

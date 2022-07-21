@@ -21,8 +21,10 @@ import io.servicetalk.client.api.ScoreSupplier;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.context.api.ContextMap;
 
 import java.lang.reflect.Method;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.HttpApiConversions.toReservedBlockingConnection;
 import static io.servicetalk.http.api.HttpApiConversions.toReservedBlockingStreamingConnection;
@@ -46,7 +48,7 @@ public interface HttpLoadBalancerFactory<ResolvedAddress>
      * @return {@link FilterableStreamingHttpLoadBalancedConnection} for the passed
      * {@link FilterableStreamingHttpConnection}
      * @deprecated Implement and use {@link #toLoadBalancedConnection(FilterableStreamingHttpConnection,
-     * ReservableRequestConcurrencyController)}
+     * ReservableRequestConcurrencyController, ContextMap)}
      */
     @Deprecated // FIXME: 0.43 - remove deprecated method
     default FilterableStreamingHttpLoadBalancedConnection toLoadBalancedConnection(
@@ -64,12 +66,18 @@ public interface HttpLoadBalancerFactory<ResolvedAddress>
      *
      * @param connection {@link FilterableStreamingHttpConnection} to convert
      * @param concurrencyController {@link ReservableRequestConcurrencyController} to control access to the connection
+     * @param context A {@link ContextMap context} of the caller (e.g. request/LB context) or {@code null} if no context
      * @return {@link FilterableStreamingHttpLoadBalancedConnection} for the passed
      * {@link FilterableStreamingHttpConnection}
+     * provided
      */
     default FilterableStreamingHttpLoadBalancedConnection toLoadBalancedConnection(
             FilterableStreamingHttpConnection connection,
-            ReservableRequestConcurrencyController concurrencyController) {
+            ReservableRequestConcurrencyController concurrencyController,
+            @Nullable ContextMap context) {
+        // FIXME: 0.43 - simplify default impl, skip invocation of the deprecated overload
+        // Existing implementations always implement toLoadBalancedConnection(FilterableStreamingHttpConnection). Try
+        // to invoke it and apply concurrency controller on top of it to preserve pre-existing behavior:
         boolean defaultOriginalMethod;
         try {
             Method originalMethod = this.getClass().getMethod("toLoadBalancedConnection",

@@ -22,7 +22,6 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
-import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
@@ -37,7 +36,6 @@ import io.servicetalk.transport.api.TransportObserver;
 
 import io.netty.channel.Channel;
 
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
@@ -55,11 +53,9 @@ final class AlpnLBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpC
             final Function<HttpProtocolVersion, StreamingHttpRequestResponseFactory> reqRespFactoryFunc,
             final ExecutionStrategy connectStrategy,
             final ConnectionFactoryFilter<ResolvedAddress, FilterableStreamingHttpConnection> connectionFactoryFilter,
-            final BiFunction<FilterableStreamingHttpConnection, ReservableRequestConcurrencyController,
-                    FilterableStreamingHttpLoadBalancedConnection> protocolBinding) {
-        super(config, executionContext, reqRespFactoryFunc,
-                connectStrategy, connectionFactoryFilter, connectionFilterFunction,
-                protocolBinding);
+            final ProtocolBinding protocolBinding) {
+        super(config, executionContext, reqRespFactoryFunc, connectStrategy, connectionFactoryFilter,
+                connectionFilterFunction, protocolBinding);
         assert config.h1Config() != null && config.h2Config() != null;
     }
 
