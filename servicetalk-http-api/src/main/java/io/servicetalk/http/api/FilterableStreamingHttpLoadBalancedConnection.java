@@ -16,15 +16,16 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.client.api.LoadBalancedConnection;
-import io.servicetalk.client.api.ReservableRequestConcurrencyController;
 import io.servicetalk.concurrent.api.Completable;
+
+import static io.servicetalk.concurrent.api.Completable.failed;
 
 /**
  * A {@link FilterableStreamingHttpConnection} that supported filtering and implements the {@link
  * LoadBalancedConnection} contract.
  */
 public interface FilterableStreamingHttpLoadBalancedConnection extends FilterableStreamingHttpConnection,
-        LoadBalancedConnection, ReservedStreamingHttpConnection, ReservableRequestConcurrencyController {
+        LoadBalancedConnection, ReservedStreamingHttpConnection {
 
     // FIXME: 0.43 - consider removing default implementations
     @Override
@@ -48,26 +49,8 @@ public interface FilterableStreamingHttpLoadBalancedConnection extends Filterabl
     }
 
     @Override
-    default Result tryRequest() {
-        throw new UnsupportedOperationException(
-                "FilterableStreamingHttpLoadBalancedConnection#tryRequest() is not supported by " + getClass());
-    }
-
-    @Override
-    default void requestFinished() {
-        throw new UnsupportedOperationException(
-                "FilterableStreamingHttpLoadBalancedConnection#requestFinished() is not supported by " + getClass());
-    }
-
-    @Override
-    default boolean tryReserve() {
-        throw new UnsupportedOperationException(
-                "FilterableStreamingHttpLoadBalancedConnection#tryReserve() is not supported by " + getClass());
-    }
-
-    @Override
     default Completable releaseAsync() {
-        return Completable.failed(new UnsupportedOperationException(
+        return failed(new UnsupportedOperationException(
                 "FilterableStreamingHttpLoadBalancedConnection#releaseAsync() is not supported by " + getClass()));
     }
 }
