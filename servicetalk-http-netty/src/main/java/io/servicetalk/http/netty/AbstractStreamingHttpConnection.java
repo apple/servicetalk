@@ -20,6 +20,7 @@ import io.servicetalk.client.api.internal.IgnoreConsumedEvent;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.TerminalSignalConsumer;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpConnectionContext;
 import io.servicetalk.http.api.HttpEventKey;
@@ -34,9 +35,13 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
+import io.servicetalk.http.netty.LoadBalancedStreamingHttpClient.OnStreamClosedRunnable;
 import io.servicetalk.transport.api.IoThreadFactory;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
@@ -61,6 +66,8 @@ import static java.util.Objects.requireNonNull;
 
 abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext>
         implements FilterableStreamingHttpConnection {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractStreamingHttpConnection.class);
     private static final IgnoreConsumedEvent<Integer> ZERO_MAX_CONCURRENCY_EVENT = new IgnoreConsumedEvent<>(0);
 
     final CC connection;
@@ -100,10 +107,64 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
                 failed(new IllegalArgumentException("Unknown key: " + eventKey));
     }
 
-    private Single<StreamingHttpResponse> makeRequest(final Publisher<Object> flattenedRequest,
+    private Single<StreamingHttpResponse> makeRequest(final HttpRequestMetaData requestMetaData,
+                                                      final Publisher<Object> flattenedRequest,
                                                       @Nullable final FlushStrategy flushStrategy) {
-        return writeAndRead(flattenedRequest, flushStrategy).liftSyncToSingle(new SpliceFlatStreamToMetaSingle<>(
-                this::newSplicedResponse));
+        @Nullable
+        final OnStreamClosedRunnable onStreamClosed = requestMetaData.context().get(OnStreamClosedRunnable.KEY);
+        return writeAndRead(flattenedRequest, flushStrategy)
+                // Handle cancellation for LoadBalancedStreamingHttpClient. We do it here for several reasons:
+                //  1. Intercepting cancel next to the transport layer (after all user-defined filters and internal HTTP
+                //     logic) helps to capture all possible sources of cancellation.
+                //  2. Intercepting cancel on the caller thread before jumping to the event-loop thread helps to notify
+                //     concurrency controller that the channel is going to close before potentially delivering a
+                //     terminal event back to the response Subscriber (e.g. TimeoutHttpRequesterFilter emits "onError"
+                //     right after propagating "cancel").
+                //  3. Doing it before SpliceFlatStreamToMetaSingle helps to avoid the need for
+                //     BeforeFinallyHttpOperator.
+                //  4. Doing it before offloading of terminal signals helps to reduce the risk of closing a connection
+                //     after response terminates.
+                // We use beforeFinally instead of beforeCancel to avoid closing connection after response terminates.
+                .beforeFinally(new TerminalSignalConsumer() {
+                    @Override
+                    public void onComplete() {
+                        // noop
+                    }
+
+                    @Override
+                    public void onError(final Throwable throwable) {
+                        // noop
+                    }
+
+                    @Override
+                    public void cancel() {
+                        // If the request gets cancelled before termination, we pessimistically assume that the
+                        // transport will close the connection since the Subscriber did not read the entire response and
+                        // cancelled. This reduces the time window during which a connection is eligible for selection
+                        // by the load balancer post cancel and the connection being closed by the transport.
+                        // Transport MAY not close the connection if cancel raced with completion and completion was
+                        // seen by the transport before cancel. We have no way of knowing at this layer if this indeed
+                        // happen.
+                        //
+                        // For H2 and above, connection are multiplexed and use virtual streams for each
+                        // request-response exchange. Because we don't have access to the stream at this level
+                        // we cannot close it. Instead, we use a OnStreamClosedRunnable which will be registered for the
+                        // stream and executed when it closes. However, cancellation can happen before transport
+                        // creates a stream. We check the ownership of the OnStreamClosedRunnable and if it was not
+                        // owned by the transport, we mark request as finished immediately bcz
+                        // H2ClientParentConnectionContext won't even try to open a new stream without owning the
+                        // OnStreamClosedRunnable.
+                        if (onStreamClosed == null) {
+                            LOGGER.debug("{} {} request was cancelled before receiving the full response, " +
+                                            "closing this {} connection to stop receiving more data",
+                                    connectionContext, requestMetaData, connectionContext.protocol());
+                            closeAsync().subscribe();
+                        } else if (onStreamClosed.own()) {
+                            onStreamClosed.run();
+                        }
+                    }
+                })
+                .liftSyncToSingle(new SpliceFlatStreamToMetaSingle<>(this::newSplicedResponse));
     }
 
     @Override
@@ -133,7 +194,9 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
                 flatRequest = flatRequest.subscribeOn(connectionContext.executionContext().executor(),
                         IoThreadFactory.IoThread::currentThreadIsIoThread);
             }
-            Single<StreamingHttpResponse> resp = makeRequest(flatRequest, determineFlushStrategyForApi(request));
+            Single<StreamingHttpResponse> resp = makeRequest(request, flatRequest,
+                    determineFlushStrategyForApi(request));
+
             if (strategy.isMetadataReceiveOffloaded()) {
                 resp = resp.publishOn(
                         connectionContext.executionContext().executor(),

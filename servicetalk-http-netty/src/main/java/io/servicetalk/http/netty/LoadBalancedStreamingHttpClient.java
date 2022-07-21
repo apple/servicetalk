@@ -19,7 +19,9 @@ import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TerminalSignalConsumer;
+import io.servicetalk.context.api.ContextMap.Key;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
+import io.servicetalk.http.api.HttpConnectionContext;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequestMetaData;
@@ -38,8 +40,10 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import static io.servicetalk.client.api.internal.RequestConcurrencyController.Result.Accepted;
+import static io.servicetalk.context.api.ContextMap.Key.newKey;
 import static io.servicetalk.http.netty.AbstractLifecycleObserverHttpFilter.ON_CONNECTION_SELECTED_CONSUMER;
 import static io.servicetalk.http.netty.AbstractStreamingHttpConnection.requestExecutionStrategy;
+import static io.servicetalk.http.netty.LoadBalancedStreamingHttpClient.OnStreamClosedRunnable.areStreamsSupported;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 import static java.util.function.Function.identity;
@@ -72,44 +76,37 @@ final class LoadBalancedStreamingHttpClient implements FilterableStreamingHttpCl
         // following the LoadBalancer API which this Client depends upon to ensure the concurrent request count state is
         // correct.
         return loadBalancer.selectConnection(SELECTOR_FOR_REQUEST, request.context()).flatMap(c -> {
-                // Do not remove ON_CONNECTION_SELECTED_CONSUMER from the context to track new connection selections for
-                // retries and redirects.
-                final Consumer<ConnectionInfo> onConnectionSelected = request.context()
-                        .get(ON_CONNECTION_SELECTED_CONSUMER);
-                if (onConnectionSelected != null) {
-                    onConnectionSelected.accept(c.connectionContext());
+            notifyConnectionSelected(request, c);
+            final OnStreamClosedRunnable onStreamClosed = areStreamsSupported(c.connectionContext()) ?
+                        new OnStreamClosedRunnable(c::requestFinished) : null;
+                if (onStreamClosed != null) {
+                    request.context().put(OnStreamClosedRunnable.KEY, onStreamClosed);
                 }
-                final OwnedRunnable ownedRunnable = c.connectionContext().protocol().major() <= 1 ? null :
-                        new OwnedRunnable(c::requestFinished);
-                return c.request(ownedRunnable == null ? request :
-                                new StreamingHttpRequestWithContext(request, ownedRunnable))
+                return c.request(request)
                         .liftSync(new BeforeFinallyHttpOperator(new TerminalSignalConsumer() {
+                            // Still check ownership of the `onStreamClosed` inside all terminal events to mitigate
+                            // scenarios when users didn't let it propagate down to HTTP/2 layer (cleared the request
+                            // context or incorrectly wrapped the request).
                             @Override
                             public void onComplete() {
-                                if (ownedRunnable == null || ownedRunnable.own()) {
+                                if (onStreamClosed == null || onStreamClosed.own()) {
                                     c.requestFinished();
                                 }
                             }
 
                             @Override
                             public void onError(final Throwable throwable) {
-                                if (ownedRunnable == null || ownedRunnable.own()) {
+                                if (onStreamClosed == null || onStreamClosed.own()) {
                                     c.requestFinished();
                                 }
                             }
 
                             @Override
                             public void cancel() {
-                                // For H2 and above, connection are multiplexed and use virtual streams for each
-                                // request-response exchange. Because we don't have access to the stream at this level
-                                // we cannot cancel/close it immediately. Instead, we use an OwnedRunnable which will be
-                                // registered for the stream and executed when the stream closes. However, cancellation
-                                // can happen before transport created a stream. We check the ownership of the Runnable
-                                // and if it was not owned by the transport, we mark request as finished immediately.
-                                if (ownedRunnable != null && ownedRunnable.own()) {
+                                // Cancellation is handled in AbstractStreamingHttpConnection, check only onStreamClosed
+                                if (onStreamClosed != null && onStreamClosed.own()) {
                                     c.requestFinished();
                                 }
-                                // Cancellation of HTTP/1.x requests is handled inside PipelinedStreamingHttpConnection.
                             }
                         }))
                         // shareContextOnSubscribe is used because otherwise the AsyncContext modified during response
@@ -117,6 +114,17 @@ final class LoadBalancedStreamingHttpClient implements FilterableStreamingHttpCl
                         // ConnectionFilters (it already is visible on ClientFilters).
                         .shareContextOnSubscribe();
             });
+    }
+
+    private static void notifyConnectionSelected(final HttpRequestMetaData requestMetaData,
+                                                 final LoadBalancedStreamingHttpConnection c) {
+        // Do not remove ON_CONNECTION_SELECTED_CONSUMER from the context to let it observe new connection selections
+        // for retries and redirects.
+        final Consumer<ConnectionInfo> onConnectionSelected = requestMetaData.context()
+                .get(ON_CONNECTION_SELECTED_CONSUMER);
+        if (onConnectionSelected != null) {
+            onConnectionSelected.accept(c.connectionContext());
+        }
     }
 
     @Override
@@ -162,15 +170,23 @@ final class LoadBalancedStreamingHttpClient implements FilterableStreamingHttpCl
         return reqRespFactory.newRequest(method, requestTarget);
     }
 
-    static final class OwnedRunnable implements Runnable {
-        private static final AtomicIntegerFieldUpdater<OwnedRunnable> ownedUpdater =
-                newUpdater(OwnedRunnable.class, "owned");
+    /**
+     * Special {@link Runnable} to correctly handle cancellation of HTTP/2 streams without closing the entire TCP
+     * connection.
+     */
+    static final class OnStreamClosedRunnable implements Runnable {
+
+        static final Key<OnStreamClosedRunnable> KEY = newKey(OnStreamClosedRunnable.class.getName(),
+                OnStreamClosedRunnable.class);
+
+        private static final AtomicIntegerFieldUpdater<OnStreamClosedRunnable> ownedUpdater =
+                newUpdater(OnStreamClosedRunnable.class, "owned");
         @SuppressWarnings("unused")
         private volatile int owned;
 
         private final Runnable runnable;
 
-        OwnedRunnable(final Runnable runnable) {
+        OnStreamClosedRunnable(final Runnable runnable) {
             this.runnable = runnable;
         }
 
@@ -179,8 +195,23 @@ final class LoadBalancedStreamingHttpClient implements FilterableStreamingHttpCl
             runnable.run();
         }
 
+        /**
+         * Owns execution of this {@link Runnable}.
+         *
+         * @return {@code true} if the caller is allowed to invoke {@link #run()} method, {@code false} otherwise
+         */
         boolean own() {
             return ownedUpdater.compareAndSet(this, 0, 1);
+        }
+
+        /**
+         * Verified if the current connection supports streams or not.
+         *
+         * @param ctx {@link HttpExecutionContext} to verify
+         * @return {@code true} if the current connection supports streams, {@code false} otherwise
+         */
+        static boolean areStreamsSupported(final HttpConnectionContext ctx) {
+            return ctx.protocol().major() >= 2;
         }
     }
 }

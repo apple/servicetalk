@@ -17,7 +17,6 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.TerminalSignalConsumer;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
@@ -41,40 +40,16 @@ final class PipelinedStreamingHttpConnection
     @Override
     protected Publisher<Object> writeAndRead(Publisher<Object> requestStream,
                                              @Nullable final FlushStrategy flushStrategy) {
-        assert connectionContext().protocol().major() <= 1 : "Unexpected protocol version";
-        return (flushStrategy == null ? connection.write(requestStream) :
-            Publisher.defer(() -> {
+        if (flushStrategy == null) {
+            return connection.write(requestStream);
+        } else {
+            // TODO(scott): if we can remove the flush state on the connection we can simplify the control flow here.
+            return Publisher.defer(() -> {
                 final Cancellable resetFlushStrategy = connection.updateFlushStrategy(
                         (prev, isOriginal) -> isOriginal ? flushStrategy : prev);
                 return connection.write(requestStream, connection::defaultFlushStrategy,
                         WriteDemandEstimators::newDefaultEstimator).afterFinally(resetFlushStrategy::cancel);
-            })).beforeFinally(new TerminalSignalConsumer() {
-                @Override
-                public void onComplete() {
-                    // noop
-                }
-
-                @Override
-                public void onError(final Throwable throwable) {
-                    // noop
-                }
-
-                @Override
-                public void cancel() {
-                    // If the HTTP/1.x request gets cancelled, we pessimistically assume that the transport will close
-                    // the connection since the Subscriber did not read the entire response and cancelled. This reduces
-                    // the time window during which a connection is eligible for selection by the load balancer post
-                    // cancel and the connection being closed by the transport.
-                    // Transport MAY not close the connection if cancel raced with completion and completion was seen by
-                    // the transport before cancel. We have no way of knowing at this layer if this indeed happen.
-                    closeAsync().subscribe();
-                    // Not necessary to do anything for HTTP/2 at the similar level
-                    // (NonPipelinedStreamingHttpConnection) because NettyChannelPublisher#cancel0 will be scheduled on
-                    // the EventLoop prior marking the request as finished. Therefore, any new attempt to open a stream
-                    // on the same h2-connection will see the current stream as already cancelled and won't result in
-                    // "max-concurrent-streams" error.
-                    // For all other cases, LoadBalancedStreamingHttpClient already has logic to handle streams.
-                }
             });
+        }
     }
 }
