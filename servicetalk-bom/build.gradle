@@ -19,10 +19,12 @@ apply plugin: "java-platform"
 
 description="ServiceTalk BOM that includes all modules"
 
-rootProject.subprojects.findAll { !it.name.endsWith("-bom") && !it.name.endsWith("-dependencies") &&
-                                            !it.name.contains("examples") &&
-                                          !it.name.equals("grpc") && !it.name.equals("http") }.each {
-    dependencies.constraints.add(it.name.endsWith("-internal") ? "runtime" : "api", it )
+rootProject.subprojects.findAll { !it.name.endsWith("-bom") &&
+                                  !it.name.endsWith("-dependencies") &&
+                                  !it.name.contains("examples") &&
+                                  !it.name.equals("grpc") &&
+                                  !it.name.equals("http") }.each {
+    dependencies.constraints.add("api", it)
 }
 
 // Keep publishing and signing configuration in sync with ServiceTalkLibraryPlugin.groovy from
