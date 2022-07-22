@@ -899,9 +899,11 @@ final class Generator {
                                     .addJavadoc(JAVADOC_PARAM + metadata +
                                             " the metadata associated with this client call." + lineSeparator());
                                 }
-                                return b.addStatement("throw new UnsupportedOperationException(\"This method is not " +
-                                        "implemented by \" + getClass() + \". Consider migrating to an alternative " +
-                                        "method or implement this method if it's required temporarily.\")");
+                                return b.addStatement("return $T.failed(new UnsupportedOperationException(\"" +
+                                        "This method is not implemented by \" + getClass() + \". Consider migrating " +
+                                        "to an alternative method or implement this method if it's required " +
+                                        "temporarily.\"))", clientMetaData.methodProto.getServerStreaming() ?
+                                        Publisher : Single);
                             }))
                     .addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(INTERFACE, CLIENT),
                             printJavaDocs, (methodName, b) -> {
@@ -1050,7 +1052,7 @@ final class Generator {
 
     private static MethodSpec newRpcMethodSpec(
             final ClassName inClass, final ClassName outClass, final String methodName,
-            final boolean clientSteaming, final boolean serverStreaming,
+            final boolean clientStreaming, final boolean serverStreaming,
             final EnumSet<NewRpcMethodFlag> flags, final boolean printJavaDocs,
             final BiFunction<String, MethodSpec.Builder, MethodSpec.Builder> methodBuilderCustomizer) {
         final MethodSpec.Builder methodSpecBuilder = methodBuilderCustomizer.apply(methodName,
@@ -1059,7 +1061,7 @@ final class Generator {
         final Modifier[] mods = flags.contains(INTERFACE) ? new Modifier[0] : new Modifier[]{FINAL};
 
         if (flags.contains(BLOCKING)) {
-            if (clientSteaming) {
+            if (clientStreaming) {
                 if (flags.contains(CLIENT)) {
                     methodSpecBuilder.addParameter(ParameterizedTypeName.get(Types.Iterable, inClass), request, mods);
                     if (printJavaDocs) {
@@ -1116,7 +1118,7 @@ final class Generator {
                                 "propagated to the peer.", GrpcStatusException);
             }
         } else {
-            if (clientSteaming) {
+            if (clientStreaming) {
                 methodSpecBuilder.addParameter(ParameterizedTypeName.get(Publisher, inClass), request, mods);
                 if (printJavaDocs) {
                     methodSpecBuilder.addJavadoc(JAVADOC_PARAM + request +
