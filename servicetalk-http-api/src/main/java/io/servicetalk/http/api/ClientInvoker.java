@@ -25,9 +25,12 @@ import javax.annotation.Nullable;
  * trailers, for the passed {@link StreamingHttpRequest} returns a {@link Single}.
  *
  * @param <State> The {@code state} type to use.
+ * @deprecated There is no use of this interface in our codebase, it will be removed in the future releases. If you
+ * depend on it, consider replicating a similar interface in your codebase.
  */
+@Deprecated
 @FunctionalInterface
-public interface ClientInvoker<State> {
+public interface ClientInvoker<State> { // FIXME: 0.43 - remove deprecated interface
 
     /**
      * Invokes the client.
