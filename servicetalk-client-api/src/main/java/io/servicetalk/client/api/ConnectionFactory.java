@@ -24,6 +24,7 @@ import io.servicetalk.transport.api.TransportObserver;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.client.api.DeprecatedToNewConnectionFactoryFilter.CONNECTION_FACTORY_CONTEXT_MAP_KEY;
+import static io.servicetalk.concurrent.api.Single.failed;
 
 /**
  * A factory for creating new connections.
@@ -46,8 +47,9 @@ public interface ConnectionFactory<ResolvedAddress, C extends ListenableAsyncClo
      */
     @Deprecated // FIXME: 0.43 - remove deprecated method
     default Single<C> newConnection(ResolvedAddress address, @Nullable TransportObserver observer) {
-        throw new UnsupportedOperationException("ConnectionFactory#newConnection(ResolvedAddress, TransportObserver) " +
-                "is not supported by " + getClass());
+        return failed(new UnsupportedOperationException(
+                "ConnectionFactory#newConnection(ResolvedAddress, TransportObserver) is not supported by " +
+                        getClass()));
     }
 
     /**
