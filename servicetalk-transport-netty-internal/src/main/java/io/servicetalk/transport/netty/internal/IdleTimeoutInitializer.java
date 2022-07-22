@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Initializes the channel with idle timeout handling.
  */
-public class IdleTimeoutInitializer implements ChannelInitializer {
+public class IdleTimeoutInitializer implements ChannelInitializer { // FIXME: 0.43 - make this class final
 
     private static final Logger LOGGER = LoggerFactory.getLogger(IdleTimeoutInitializer.class);
 
@@ -60,7 +60,7 @@ public class IdleTimeoutInitializer implements ChannelInitializer {
 
     @Override
     public void init(Channel channel) {
-        LOGGER.debug("Channel idle timeout is {}ms.", timeoutMs);
+        LOGGER.debug("{} Connection idle timeout is set to {}ms.", channel, timeoutMs);
         channel.pipeline().addLast(new IdleStateHandler(0, 0, timeoutMs, TimeUnit.MILLISECONDS) {
             @Override
             protected void channelIdle(ChannelHandlerContext ctx, IdleStateEvent evt) {
@@ -69,7 +69,7 @@ public class IdleTimeoutInitializer implements ChannelInitializer {
                     // and we don't want the idle timeout to fire again during this process.
                     ctx.pipeline().remove(this);
                     if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug("Closing channel {} after {}ms of inactivity.", ctx.channel(), timeoutMs);
+                        LOGGER.debug("{} Closing idle connection after {}ms of inactivity.", ctx.channel(), timeoutMs);
                     }
                     // Fire the event through the pipeline so protocols can prepare for the close event.
                     ctx.fireUserEventTriggered(evt);
