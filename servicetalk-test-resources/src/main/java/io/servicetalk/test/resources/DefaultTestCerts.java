@@ -44,7 +44,6 @@ public final class DefaultTestCerts {
         return DefaultTestCerts.class.getResourceAsStream("localhost_server.pem");
     }
 
-
     /**
      * Load the server certificate PKCS#12 keystore file.
      *
