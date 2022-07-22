@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021-2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,11 @@ package io.servicetalk.client.api;
 
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.context.api.ContextMap;
+
+import javax.annotation.Nullable;
+
+import static io.servicetalk.concurrent.api.Single.failed;
 
 /**
  * An address managed by a {@link LoadBalancer}.
@@ -34,8 +39,23 @@ public interface LoadBalancedAddress<C extends LoadBalancedConnection>
      * Creates and asynchronously returns a connection for this address.
      *
      * @return {@link Single} that emits the created {@link LoadBalancedConnection}.
+     * @deprecated Implement and use {@link #newConnection(ContextMap)}.
      */
-    Single<C> newConnection();
+    @Deprecated
+    default Single<C> newConnection() { // FIXME: 0.43 - remove deprecated method
+        return failed(new UnsupportedOperationException(
+                "LoadBalancer#selectConnection(Predicate) is not implemented by " + getClass()));
+    }
+
+    /**
+     * Creates and asynchronously returns a connection for this address.
+     * @param context A {@link ContextMap context} of the caller (e.g. request context) or {@code null} if no context
+     * provided.
+     * @return {@link Single} that emits the created {@link LoadBalancedConnection}.
+     */
+    default Single<C> newConnection(@Nullable ContextMap context) {
+        return newConnection(); // FIXME: 0.43 - remove default impl
+    }
 
     /**
      * Enables addresses scoring to be influenced by a weight factor.
