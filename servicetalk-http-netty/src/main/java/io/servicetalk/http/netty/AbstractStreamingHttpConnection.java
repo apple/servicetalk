@@ -20,7 +20,6 @@ import io.servicetalk.client.api.internal.IgnoreConsumedEvent;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.ClientInvoker;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpConnectionContext;
 import io.servicetalk.http.api.HttpEventKey;
@@ -61,7 +60,7 @@ import static io.servicetalk.transport.netty.internal.FlushStrategies.flushOnEnd
 import static java.util.Objects.requireNonNull;
 
 abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext>
-        implements FilterableStreamingHttpConnection, ClientInvoker<FlushStrategy> {
+        implements FilterableStreamingHttpConnection {
     private static final IgnoreConsumedEvent<Integer> ZERO_MAX_CONCURRENCY_EVENT = new IgnoreConsumedEvent<>(0);
 
     final CC connection;
@@ -101,9 +100,8 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
                 failed(new IllegalArgumentException("Unknown key: " + eventKey));
     }
 
-    @Override
-    public final Single<StreamingHttpResponse> invokeClient(final Publisher<Object> flattenedRequest,
-                                                            @Nullable final FlushStrategy flushStrategy) {
+    private Single<StreamingHttpResponse> makeRequest(final Publisher<Object> flattenedRequest,
+                                                      @Nullable final FlushStrategy flushStrategy) {
         return writeAndRead(flattenedRequest, flushStrategy).liftSyncToSingle(new SpliceFlatStreamToMetaSingle<>(
                 this::newSplicedResponse));
     }
@@ -135,7 +133,7 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
                 flatRequest = flatRequest.subscribeOn(connectionContext.executionContext().executor(),
                         IoThreadFactory.IoThread::currentThreadIsIoThread);
             }
-            Single<StreamingHttpResponse> resp = invokeClient(flatRequest, determineFlushStrategyForApi(request));
+            Single<StreamingHttpResponse> resp = makeRequest(flatRequest, determineFlushStrategyForApi(request));
             if (strategy.isMetadataReceiveOffloaded()) {
                 resp = resp.publishOn(
                         connectionContext.executionContext().executor(),
