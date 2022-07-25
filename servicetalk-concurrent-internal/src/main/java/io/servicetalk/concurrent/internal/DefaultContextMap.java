@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.internal;
 
 import io.servicetalk.context.api.ContextMap;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiPredicate;
@@ -32,17 +33,17 @@ import static java.util.Objects.requireNonNull;
  */
 public final class DefaultContextMap implements ContextMap {
 
-    private final HashMap<Key<?>, Object> theMap;
+    private final Map<Key<?>, Object> theMap;
 
     /**
      * Creates a new instance.
      */
     public DefaultContextMap() {
-        theMap = new HashMap<>(4); // start with a smaller table
+        theMap = Collections.synchronizedMap(new HashMap<>(4)); // start with a smaller table
     }
 
     private DefaultContextMap(DefaultContextMap other) {
-        theMap = new HashMap<>(other.theMap);
+        theMap = Collections.synchronizedMap(new HashMap<>(other.theMap));
     }
 
     @Override
