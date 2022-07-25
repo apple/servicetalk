@@ -54,36 +54,96 @@ public final class DefaultContextMap implements ContextMap {
 
     @Override
     public int size() {
-        return theMap.size();
+        if (!lock.tryLock()) {
+            throw racer = new AssertionError("Race on context map lock : loser");
+        }
+        try {
+            return theMap.size();
+        } finally {
+            lock.unlock();
+            if (null != racer) {
+                throw new AssertionError("Race on context map lock : winner");
+            }
+        }
     }
 
     @Override
     public boolean isEmpty() {
-        return theMap.isEmpty();
+        if (!lock.tryLock()) {
+            throw racer = new AssertionError("Race on context map lock : loser");
+        }
+        try {
+            return theMap.isEmpty();
+        } finally {
+            lock.unlock();
+            if (null != racer) {
+                throw new AssertionError("Race on context map lock : winner");
+            }
+        }
     }
 
     @Override
     public boolean containsKey(final Key<?> key) {
-        return theMap.containsKey(requireNonNull(key, "key"));
+        if (!lock.tryLock()) {
+            throw racer = new AssertionError("Race on context map lock : loser");
+        }
+        try {
+            return theMap.containsKey(requireNonNull(key, "key"));
+        } finally {
+            lock.unlock();
+            if (null != racer) {
+                throw new AssertionError("Race on context map lock : winner");
+            }
+        }
     }
 
     @Override
     public boolean containsValue(@Nullable final Object value) {
-        return theMap.containsValue(value);
+        if (!lock.tryLock()) {
+            throw racer = new AssertionError("Race on context map lock : loser");
+        }
+        try {
+            return theMap.containsValue(value);
+        } finally {
+            lock.unlock();
+            if (null != racer) {
+                throw new AssertionError("Race on context map lock : winner");
+            }
+        }
     }
 
     @Nullable
     @Override
     @SuppressWarnings("unchecked")
     public <T> T get(final Key<T> key) {
-        return (T) theMap.get(requireNonNull(key, "key"));
+        if (!lock.tryLock()) {
+            throw racer = new AssertionError("Race on context map lock : loser");
+        }
+        try {
+            return (T) theMap.get(requireNonNull(key, "key"));
+        } finally {
+            lock.unlock();
+            if (null != racer) {
+                throw new AssertionError("Race on context map lock : winner");
+            }
+        }
     }
 
     @Nullable
     @Override
     @SuppressWarnings("unchecked")
     public <T> T getOrDefault(final Key<T> key, final T defaultValue) {
-        return (T) theMap.getOrDefault(requireNonNull(key, "key"), defaultValue);
+        if (!lock.tryLock()) {
+            throw racer = new AssertionError("Race on context map lock : loser");
+        }
+        try {
+            return (T) theMap.getOrDefault(requireNonNull(key, "key"), defaultValue);
+        } finally {
+            lock.unlock();
+            if (null != racer) {
+                throw new AssertionError("Race on context map lock : winner");
+            }
+        }
     }
 
     @Nullable
@@ -208,12 +268,22 @@ public final class DefaultContextMap implements ContextMap {
     @Nullable
     @Override
     public Key<?> forEach(final BiPredicate<Key<?>, Object> consumer) {
-        for (Map.Entry<Key<?>, Object> entry : theMap.entrySet()) {
-            if (!consumer.test(entry.getKey(), entry.getValue())) {
-                return entry.getKey();
+        if (!lock.tryLock()) {
+            throw racer = new AssertionError("Race on context map lock : loser");
+        }
+        try {
+            for (Map.Entry<Key<?>, Object> entry : theMap.entrySet()) {
+                if (!consumer.test(entry.getKey(), entry.getValue())) {
+                    return entry.getKey();
+                }
+            }
+            return null;
+        } finally {
+            lock.unlock();
+            if (null != racer) {
+                throw new AssertionError("Race on context map lock : winner");
             }
         }
-        return null;
     }
 
     @Override
@@ -223,21 +293,41 @@ public final class DefaultContextMap implements ContextMap {
 
     @Override
     public int hashCode() {
-        return theMap.hashCode();
+        if (!lock.tryLock()) {
+            throw racer = new AssertionError("Race on context map lock : loser");
+        }
+        try {
+            return theMap.hashCode();
+        } finally {
+            lock.unlock();
+            if (null != racer) {
+                throw new AssertionError("Race on context map lock : winner");
+            }
+        }
     }
 
     @Override
     public boolean equals(final Object o) {
-        if (this == o) {
-            return true;
+        if (!lock.tryLock()) {
+            throw racer = new AssertionError("Race on context map lock : loser");
         }
-        if (!(o instanceof ContextMap)) {
-            return false;
+        try {
+            if (this == o) {
+                return true;
+            }
+            if (!(o instanceof ContextMap)) {
+                return false;
+            }
+            if (o instanceof DefaultContextMap) {
+                return theMap.equals(((DefaultContextMap) o).theMap);
+            }
+            return ContextMapUtils.equals(this, (ContextMap) o);
+        } finally {
+            lock.unlock();
+            if (null != racer) {
+                throw new AssertionError("Race on context map lock : winner");
+            }
         }
-        if (o instanceof DefaultContextMap) {
-            return theMap.equals(((DefaultContextMap) o).theMap);
-        }
-        return ContextMapUtils.equals(this, (ContextMap) o);
     }
 
     @Override
