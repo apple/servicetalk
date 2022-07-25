@@ -15,7 +15,6 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
@@ -42,6 +41,7 @@ import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.internal.EmptySubscriptions.newEmptySubscription;
 import static io.servicetalk.transport.netty.internal.ByteMaskUtils.isAllSet;
 import static io.servicetalk.transport.netty.internal.ByteMaskUtils.isAnySet;
@@ -77,7 +77,7 @@ import static java.util.Objects.requireNonNull;
  * If the capacity determined above is positive then invoke {@link WriteDemandEstimator} to determine number of items
  * required to fill that capacity.
  */
-final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>, ChannelOutboundListener, Cancellable {
+final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>, ChannelOutboundListener {
     private static final Logger LOGGER = LoggerFactory.getLogger(WriteStreamSubscriber.class);
     @SuppressWarnings("rawtypes")
     private static final GenericFutureListener WRITE_BOUNDARY = future -> { };
@@ -289,8 +289,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
         promise.close(closedException, closeOutboundIfIdle);
     }
 
-    @Override
-    public void cancel() {
+    void cancel() {  // Visible only for tests.
         // In order to prevent concurrent access to the subscription, we use the EventLoop. The alternative would be
         // some additional protection around calling subscription.request and subscription.cancel, but since this method
         // is expected to happen with low frequency and subscription.request is expected to high frequency we avoid
