@@ -17,9 +17,10 @@ package io.servicetalk.concurrent.internal;
 
 import io.servicetalk.context.api.ContextMap;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import javax.annotation.Nullable;
@@ -33,17 +34,22 @@ import static java.util.Objects.requireNonNull;
  */
 public final class DefaultContextMap implements ContextMap {
 
+    private final Lock lock = new ReentrantLock();
+
     private final Map<Key<?>, Object> theMap;
+
+    @Nullable
+    private volatile AssertionError racer;
 
     /**
      * Creates a new instance.
      */
     public DefaultContextMap() {
-        theMap = Collections.synchronizedMap(new HashMap<>(4)); // start with a smaller table
+        theMap = new HashMap<>(4); // start with a smaller table
     }
 
     private DefaultContextMap(DefaultContextMap other) {
-        theMap = Collections.synchronizedMap(new HashMap<>(other.theMap));
+        theMap = new HashMap<>(other.theMap);
     }
 
     @Override
@@ -84,49 +90,119 @@ public final class DefaultContextMap implements ContextMap {
     @Override
     @SuppressWarnings("unchecked")
     public <T> T put(final Key<T> key, @Nullable final T value) {
-        return (T) theMap.put(requireNonNull(key, "key"), value);
+        if (!lock.tryLock()) {
+            throw racer = new AssertionError("Race on context map lock : loser");
+        }
+        try {
+            return (T) theMap.put(requireNonNull(key, "key"), value);
+        } finally {
+            lock.unlock();
+            if (null != racer) {
+                throw new AssertionError("Race on context map lock : winner");
+            }
+        }
     }
 
     @Nullable
     @Override
     @SuppressWarnings("unchecked")
     public <T> T putIfAbsent(final Key<T> key, @Nullable final T value) {
-        return (T) theMap.putIfAbsent(requireNonNull(key, "key"), value);
+        if (!lock.tryLock()) {
+            throw racer = new AssertionError("Race on context map lock : loser");
+        }
+        try {
+            return (T) theMap.putIfAbsent(requireNonNull(key, "key"), value);
+        } finally {
+            lock.unlock();
+            if (null != racer) {
+                throw new AssertionError("Race on context map lock : winner");
+            }
+        }
     }
 
     @Nullable
     @Override
     @SuppressWarnings("unchecked")
     public <T> T computeIfAbsent(final Key<T> key, final Function<Key<T>, T> computeFunction) {
-        return (T) theMap.computeIfAbsent(requireNonNull(key, "key"), k -> computeFunction.apply((Key<T>) k));
+        if (!lock.tryLock()) {
+            throw racer = new AssertionError("Race on context map lock : loser");
+        }
+        try {
+            return (T) theMap.computeIfAbsent(requireNonNull(key, "key"), k -> computeFunction.apply((Key<T>) k));
+        } finally {
+            lock.unlock();
+            if (null != racer) {
+                throw new AssertionError("Race on context map lock : winner");
+            }
+        }
     }
 
     @Override
     public void putAll(final ContextMap map) {
-        if (map instanceof DefaultContextMap) {
-            final DefaultContextMap dcm = (DefaultContextMap) map;
-            theMap.putAll(dcm.theMap);
-        } else {
-            ContextMap.super.putAll(map);
+        if (!lock.tryLock()) {
+            throw racer = new AssertionError("Race on context map lock : loser");
+        }
+        try {
+            if (map instanceof DefaultContextMap) {
+                final DefaultContextMap dcm = (DefaultContextMap) map;
+                theMap.putAll(dcm.theMap);
+            } else {
+                ContextMap.super.putAll(map);
+            }
+        } finally {
+            lock.unlock();
+            if (null != racer) {
+                throw new AssertionError("Race on context map lock : winner");
+            }
         }
     }
 
     @Override
     public void putAll(final Map<Key<?>, Object> map) {
         map.forEach(ContextMapUtils::ensureType);
-        theMap.putAll(map);
+        if (!lock.tryLock()) {
+            throw racer = new AssertionError("Race on context map lock : loser");
+        }
+        try {
+            theMap.putAll(map);
+        } finally {
+            lock.unlock();
+            if (null != racer) {
+                throw new AssertionError("Race on context map lock : winner");
+            }
+        }
     }
 
     @Nullable
     @Override
     @SuppressWarnings("unchecked")
     public <T> T remove(final Key<T> key) {
-        return (T) theMap.remove(requireNonNull(key, "key"));
+        if (!lock.tryLock()) {
+            throw racer = new AssertionError("Race on context map lock : loser");
+        }
+        try {
+            return (T) theMap.remove(requireNonNull(key, "key"));
+        } finally {
+            lock.unlock();
+            if (null != racer) {
+                throw new AssertionError("Race on context map lock : winner");
+            }
+        }
     }
 
     @Override
     public void clear() {
-        theMap.clear();
+        if (!lock.tryLock()) {
+            throw racer = new AssertionError("Race on context map lock : loser");
+        }
+        try {
+            theMap.clear();
+        } finally {
+            lock.unlock();
+            if (null != racer) {
+                throw new AssertionError("Race on context map lock : winner");
+            }
+        }
     }
 
     @Nullable
