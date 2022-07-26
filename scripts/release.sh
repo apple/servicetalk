@@ -103,6 +103,8 @@ if [[ "$oldVersion" == "$JAPICMP_SKIP_VERSION" ]]; then
 else
   echo "Running japicmp of local artifacts (which will be released as $version) against old version $oldVersion..."
   ./scripts/japicmp.sh $oldVersion
+  echo "Inspect logs, then press enter to continue or Ctrl+C to interrupt the release."
+  read
 fi
 
 echo "Releasing version $version"
@@ -120,8 +122,8 @@ else
     echo "DRYRUN mode is enabled, any further changes won't be committed."
 fi
 
-$git fetch -p
-$git pull
+$git fetch -p ${remote_name}
+$git pull ${remote_name} "$BRANCH_NAME"
 $git log -n1
 
 # No need to clean, it has been done above
@@ -182,7 +184,7 @@ if [[ "$BRANCH_NAME" == "$DEFAULT_BRANCH" ]]; then
 fi
 
 $git commit -a -m "Preparing for $nextVersion development"
-$git push -u ${remote_name} "$BRANCH_NAME"
+$git push ${remote_name} "$BRANCH_NAME"
 # Push tag after branch otherwise, CodeQL GH Action will fail.
 $git push ${remote_name} "$version"
 

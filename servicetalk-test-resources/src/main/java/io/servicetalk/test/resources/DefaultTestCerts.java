@@ -45,6 +45,15 @@ public final class DefaultTestCerts {
     }
 
     /**
+     * Load the server certificate PKCS#12 keystore file.
+     *
+     * @return an {@link InputStream} from the server key/certificate keystore file.
+     */
+    public static InputStream loadServerP12() {
+        return DefaultTestCerts.class.getResourceAsStream("localhost_server.p12");
+    }
+
+    /**
      * Get the hostname contained within {@link #loadServerPem()} which should match for client hostname verification.
      * @return hostname contained within {@link #loadServerPem()} which should match for client hostname verification.
      */
@@ -88,5 +97,23 @@ public final class DefaultTestCerts {
      */
     public static InputStream loadClientCAPem() {
         return DefaultTestCerts.class.getResourceAsStream("client_ca.pem");
+    }
+
+    /**
+     * Load the client certificate PKCS#12 keystore file.
+     *
+     * @return an {@link InputStream} from the client key/certificate keystore file.
+     */
+    public static InputStream loadClientP12() {
+        return DefaultTestCerts.class.getResourceAsStream("localhost_client.p12");
+    }
+
+    /**
+     * Load the PKCS#12 truststore file.
+     *
+     * @return an {@link InputStream} from the truststore file.
+     */
+    public static InputStream loadTruststoreP12() {
+        return DefaultTestCerts.class.getResourceAsStream("truststore.p12");
     }
 }

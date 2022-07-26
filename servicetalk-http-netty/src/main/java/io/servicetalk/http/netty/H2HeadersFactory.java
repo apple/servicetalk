@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2021-2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,6 @@ import io.servicetalk.http.api.HttpHeadersFactory;
 
 import io.netty.handler.codec.http2.DefaultHttp2Headers;
 
-import java.util.function.BiPredicate;
-
 /**
  * A {@link HttpHeadersFactory} optimized for HTTP/2.
  */
@@ -29,8 +27,6 @@ public final class H2HeadersFactory implements HttpHeadersFactory {
 
     private static final boolean DEFAULT_VALIDATE_VALUES = false;
     public static final HttpHeadersFactory INSTANCE = new H2HeadersFactory(true, true, DEFAULT_VALIDATE_VALUES);
-
-    static final BiPredicate<CharSequence, CharSequence> DEFAULT_SENSITIVITY_DETECTOR = (name, value) -> false;
 
     private final boolean validateNames;
     private final boolean validateCookies;
@@ -95,5 +91,16 @@ public final class H2HeadersFactory implements HttpHeadersFactory {
     @Override
     public boolean validateValues() {
         return validateValues;
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() +
+                "{validateNames=" + validateNames +
+                ", validateCookies=" + validateCookies +
+                ", validateValues=" + validateValues +
+                ", headersArraySizeHint=" + headersArraySizeHint +
+                ", trailersArraySizeHint=" + trailersArraySizeHint +
+                '}';
     }
 }

@@ -25,6 +25,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.Single.failed;
+
 /**
  * Given multiple {@link SocketAddress}es select the most desired {@link SocketAddress} to use. This is typically used
  * to determine which connection to issue a request to.
@@ -48,8 +50,8 @@ public interface LoadBalancer<C extends LoadBalancedConnection> extends Listenab
      */
     @Deprecated
     default Single<C> selectConnection(Predicate<C> selector) { // FIXME: 0.43 - remove deprecated method
-        throw new UnsupportedOperationException("LoadBalancer#selectConnection(Predicate) is not supported by " +
-                getClass());
+        return failed(new UnsupportedOperationException(
+                "LoadBalancer#selectConnection(Predicate) is not supported by " + getClass()));
     }
 
     /**

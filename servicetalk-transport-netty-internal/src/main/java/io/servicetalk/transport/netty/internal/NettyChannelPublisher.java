@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2020-2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -260,9 +260,12 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
         if (target != null) {
             emitError(target, cause);
         } else {
-            LOGGER.debug("caught unexpected exception, closing channel {}", channel, cause);
+            // This branch executes only when an error is originated by the current Subscriber: either an unexpected
+            // exception is thrown from Subscriber.onComplete() or cancellation.
             // If an incomplete subscriber is cancelled then close channel. A subscriber can cancel after getting
-            // complete, which should not close the channel.
+            // complete, which should not close the channel (won't reach this point, returns earlier).
+            // Use outbound/inbound closure instead of channel.close() to register CHANNEL_CLOSED_OUTBOUND event.
+            closeChannelOutbound();
             closeChannelInbound();
         }
     }
@@ -282,6 +285,8 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
         try {
             target.associatedSub.onComplete();
         } catch (Throwable cause) {
+            LOGGER.debug("Caught unexpected exception from Subscriber {}, closing channel {}",
+                    target.associatedSub, channel, cause);
             emitCatchError(null, cause, false);
         }
     }
@@ -308,11 +313,18 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
 
         // If a cancel occurs with a valid subscription we need to clear any pending data and set a fatalError so that
         // any future Subscribers don't get partial data delivered from the queue.
+        // We don't need to terminate the subscriber because cancellation is originated by the subscriber, pass null.
         emitCatchError(null, StacklessClosedChannelException.newInstance(NettyChannelPublisher.class, "cancel"), true);
     }
 
+    // For cases when an error occurred in netty pipeline
     private void closeChannelInbound() {
         closeHandler.closeChannelInbound(channel);
+    }
+
+    // For cases with an error occurred in subscriber or a result of cancellation
+    private void closeChannelOutbound() {
+        closeHandler.closeChannelOutbound(channel);
     }
 
     private void resetSubscription() {

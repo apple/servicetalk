@@ -33,37 +33,55 @@ class DefaultTestCertsTest {
     @Test
     void loadServerKey() throws Exception {
         String contents = readFully(DefaultTestCerts.loadServerKey());
-        assertEquals(1707, contents.length());
+        assertEquals(2483, contents.length());
     }
 
     @Test
     void loadServerPem() throws Exception {
         String contents = readFully(DefaultTestCerts.loadServerPem());
-        assertEquals(992, contents.length());
+        assertEquals(1337, contents.length());
     }
 
     @Test
     void loadServerCAPem() throws Exception {
         String contents = readFully(DefaultTestCerts.loadServerCAPem());
-        assertEquals(1020, contents.length());
+        assertEquals(1366, contents.length());
+    }
+
+    @Test
+    void loadServerP12() throws Exception {
+        String contents = readFully(DefaultTestCerts.loadServerP12());
+        assertEquals(4262, contents.length());
     }
 
     @Test
     void loadClientKey() throws Exception {
         String contents = readFully(DefaultTestCerts.loadClientKey());
-        assertEquals(1707, contents.length());
+        assertEquals(2483, contents.length());
     }
 
     @Test
     void loadClientPem() throws Exception {
         String contents = readFully(DefaultTestCerts.loadClientPem());
-        assertEquals(992, contents.length());
+        assertEquals(1337, contents.length());
     }
 
     @Test
     void loadClientCAPem() throws Exception {
         String contents = readFully(DefaultTestCerts.loadClientCAPem());
-        assertEquals(1020, contents.length());
+        assertEquals(1366, contents.length());
+    }
+
+    @Test
+    void loadClientP12() throws Exception {
+        String contents = readFully(DefaultTestCerts.loadClientP12());
+        assertEquals(4262, contents.length());
+    }
+
+    @Test
+    void loadTrustP12() throws Exception {
+        String contents = readFully(DefaultTestCerts.loadTruststoreP12());
+        assertEquals(2422, contents.length());
     }
 
     private String readFully(final InputStream inputStream) throws IOException {
