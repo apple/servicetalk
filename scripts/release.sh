@@ -120,8 +120,8 @@ else
     echo "DRYRUN mode is enabled, any further changes won't be committed."
 fi
 
-$git fetch -p
-$git pull
+$git fetch -p ${remote_name}
+$git pull ${remote_name} "$BRANCH_NAME"
 $git log -n1
 
 # No need to clean, it has been done above
