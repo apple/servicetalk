@@ -103,6 +103,8 @@ if [[ "$oldVersion" == "$JAPICMP_SKIP_VERSION" ]]; then
 else
   echo "Running japicmp of local artifacts (which will be released as $version) against old version $oldVersion..."
   ./scripts/japicmp.sh $oldVersion
+  echo "Inspect logs, then press enter to continue or Ctrl+C to interrupt the release."
+  read
 fi
 
 echo "Releasing version $version"
