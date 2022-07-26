@@ -125,7 +125,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
 
         @Override
         public HttpExecutionStrategy merge(final HttpExecutionStrategy other) {
-            return null;
+            return other;
         }
     };
 
