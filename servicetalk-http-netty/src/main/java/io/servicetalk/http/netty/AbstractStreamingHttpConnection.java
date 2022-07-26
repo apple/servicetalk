@@ -110,8 +110,6 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
     private Single<StreamingHttpResponse> makeRequest(final HttpRequestMetaData requestMetaData,
                                                       final Publisher<Object> flattenedRequest,
                                                       @Nullable final FlushStrategy flushStrategy) {
-        @Nullable
-        final OnStreamClosedRunnable onStreamClosed = requestMetaData.context().get(OnStreamClosedRunnable.KEY);
         return writeAndRead(flattenedRequest, flushStrategy)
                 // Handle cancellation for LoadBalancedStreamingHttpClient. We do it here for several reasons:
                 //  1. Intercepting cancel next to the transport layer (after all user-defined filters and internal HTTP
@@ -154,12 +152,17 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
                         // owned by the transport, we mark request as finished immediately bcz
                         // H2ClientParentConnectionContext won't even try to open a new stream without owning the
                         // OnStreamClosedRunnable.
+                        @Nullable
+                        final OnStreamClosedRunnable onStreamClosed =
+                                requestMetaData.context().get(OnStreamClosedRunnable.KEY);
                         if (onStreamClosed == null) {
                             LOGGER.debug("{} {} request was cancelled before receiving the full response, " +
                                             "closing this {} connection to stop receiving more data",
                                     connectionContext, requestMetaData, connectionContext.protocol());
                             closeAsync().subscribe();
                         } else if (onStreamClosed.own()) {
+                            LOGGER.debug("{} request was cancelled before a stream is created, stream won't be open",
+                                    connectionContext);
                             onStreamClosed.run();
                         }
                     }

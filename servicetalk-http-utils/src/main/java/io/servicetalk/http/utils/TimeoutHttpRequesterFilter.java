@@ -31,9 +31,6 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.time.Duration;
 import java.util.function.BiFunction;
 
@@ -54,8 +51,6 @@ import java.util.function.BiFunction;
  */
 public final class TimeoutHttpRequesterFilter extends AbstractTimeoutHttpFilter
         implements StreamingHttpClientFilterFactory, StreamingHttpConnectionFilterFactory {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(TimeoutHttpRequesterFilter.class);
 
     /**
      * Creates a new instance which requires only that the response metadata be received before the timeout.
