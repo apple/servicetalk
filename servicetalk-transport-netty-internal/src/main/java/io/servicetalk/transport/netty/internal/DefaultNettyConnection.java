@@ -196,12 +196,10 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             // Users may depend on onClosing to be notified for all kinds of closures and not just graceful close.
             // So, we should make sure that onClosing at least terminates with the channel.
             // Since, onClose is guaranteed to be notified for any kind of closures, we cascade it to onClosing.
-            // An alternative would be to intercept channelInactive() in the pipeline but adding a pipeline handler
-            // in the pipeline may race with closure as we have already created the channel. If that happens, we may
-            // miss channelInactive event.
-            // If we do offload subscribe, we will hold up a thread for the lifetime of the connection.
-            // As we do offload "publish" for "onClosing", we can avoid offloading of "onClose" as we know
-            // Subscriber end of CompletableProcessor (onClosing) will not block.
+            // An alternative would be to intercept channelInactive() or close() in the pipeline but adding a pipeline
+            // handler in the pipeline may race with closure as we have already created the channel. If that happens,
+            // we may miss a pipeline event.
+            // "onClosing" is an internal API. Therefore, it does not require offloading.
             toSource(onCloseNoOffload())
                     .subscribe(onClosing);
         } else {

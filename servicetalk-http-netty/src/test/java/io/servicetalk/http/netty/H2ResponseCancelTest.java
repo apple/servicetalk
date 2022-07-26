@@ -38,6 +38,7 @@ import io.servicetalk.transport.api.TransportObserver;
 import org.junit.jupiter.api.Test;
 
 import java.net.InetSocketAddress;
+import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -175,7 +176,9 @@ class H2ResponseCancelTest extends AbstractNettyHttpServerTest {
                 })
                 // FIXME: use thenCancel() after await() instead of cancelling from inside then(...) + expectError()
                 // https://github.com/apple/servicetalk/issues/1492
-                .expectError(IllegalStateException.class)   // should never happen
+                // We can get a channel exception if cancel closes the stream before request payload terminates.
+                // Terminal signal is not guaranteed after cancel.
+                .expectError(ClosedChannelException.class)
                 .verify();
 
         assertThat("Unexpected responses", responses, is(empty()));

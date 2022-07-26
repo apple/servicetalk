@@ -75,6 +75,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.atMost;
 import static org.mockito.Mockito.atMostOnce;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
@@ -319,7 +320,9 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
             // wait for cancellation to close the connection:
             connection.onClose().toFuture().get();
         }
-        // try to write server content to trigger write failure and close the server-side connection:
+        // try to write server content to trigger write failure and close the server-side connection. depending on the
+        // OS, transport may observe write failure only on the 2nd write:
+        serverResponsePayload.onNext(CONTENT.duplicate());
         serverResponsePayload.onNext(CONTENT.duplicate());
 
         bothTerminate.await();
@@ -343,7 +346,7 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
         serverInOrder.verify(serverExchangeObserver).onRequest(any(StreamingHttpRequest.class));
         serverInOrder.verify(serverExchangeObserver).onResponse(any(StreamingHttpResponse.class));
         verify(serverResponseObserver, atMostOnce()).onResponseDataRequested(anyLong());
-        verify(serverResponseObserver, atMostOnce()).onResponseData(any(Buffer.class));
+        verify(serverResponseObserver, atMost(2)).onResponseData(any(Buffer.class));
         serverInOrder.verify(serverResponseObserver).onResponseCancel();
         serverRequestInOrder.verify(serverRequestObserver, atLeastOnce()).onRequestDataRequested(anyLong());
         serverRequestInOrder.verify(serverRequestObserver).onRequestData(any(Buffer.class));

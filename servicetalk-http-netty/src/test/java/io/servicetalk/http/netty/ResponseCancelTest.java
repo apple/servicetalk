@@ -24,7 +24,6 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource.Processor;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.context.api.ContextMap;
@@ -42,7 +41,6 @@ import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
-import org.hamcrest.Matcher;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -50,7 +48,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.net.InetSocketAddress;
-import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -59,6 +56,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
+import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.http.netty.HttpServers.forAddress;
@@ -67,7 +65,6 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.instanceOf;
 
 class ResponseCancelTest {
 
@@ -150,48 +147,43 @@ class ResponseCancelTest {
 
     @Test
     void clientCancel() throws Throwable {
-        CountDownLatch latch1 = new CountDownLatch(1);
-        Cancellable cancellable = sendRequest(client, latch1);
+        Cancellable cancellable = sendRequest(client, null);
         // wait for server to receive request.
         Processor<StreamingHttpResponse, StreamingHttpResponse> serverResp = serverResponses.take();
         assertActiveConnectionsCount(1);
         cancellable.cancel();
-        // wait for cancel to be observed but don't send cancel to the transport so that transport does not close the
-        // connection which will then be ambiguous.
-        delayedClientCancels.take();
-        // We do not let cancel propagate to the transport so the concurrency controller should close the connection
-        // and hence fail the response.
-        ClientTerminationSignal.resumeExpectFailure(delayedClientTermination, latch1,
-                instanceOf(ClosedChannelException.class));
+        // wait for cancel to be observed, then send it to the transport so that transport and/or concurrency controller
+        // inside AbstractStreamingHttpConnection closes the connection.
+        delayedClientCancels.take().cancel();
+        // The response terminal signal is not guaranteed after cancellation, just wait for the connection to close.
         clientConnectionsClosedStates.take().await();
         // Let the server write the response to fail the write and close the connection
         serverResp.onSuccess(client.asStreamingClient().httpResponseFactory().ok());
         serverConnectionsClosedStates.take().await();
 
-        sendSecondRequest();
+        sendSecondRequestUsingClient();
     }
 
     @Test
     void clientCancelAfterSuccessOnTransport() throws Throwable {
-        CountDownLatch latch1 = new CountDownLatch(1);
-        Cancellable cancellable = sendRequest(client, latch1);
+        Cancellable cancellable = sendRequest(client, null);
         // wait for server to receive request.
         Processor<StreamingHttpResponse, StreamingHttpResponse> serverResp = serverResponses.take();
         assertActiveConnectionsCount(1);
 
-        serverResp.onSuccess(client.asStreamingClient().httpResponseFactory().ok());
-        cancellable.cancel();
-        // wait for cancel to be observed but don't send cancel to the transport so that transport does not close the
-        // connection which will then be ambiguous.
-        delayedClientCancels.take();
-        // As there is a race between completion and cancellation, we may get a success or failure, so just wait for
-        // any termination.
+        TestPublisher<Buffer> payload = new TestPublisher<>();
+        serverResp.onSuccess(client.asStreamingClient().httpResponseFactory().ok().payloadBody(payload));
+        // wait for response meta-data to be received.
         delayedClientTermination.take().resume();
-        latch1.await();
+        // cancel payload body.
+        cancellable.cancel();
+        // The response terminal signal is not guaranteed after cancellation, just wait for the connection to close.
         clientConnectionsClosedStates.take().await();
+        // Finish server response to let server close the connection too.
+        payload.onComplete();
         serverConnectionsClosedStates.take().await();
 
-        sendSecondRequest();
+        sendSecondRequestUsingClient();
     }
 
     @Test
@@ -204,13 +196,13 @@ class ResponseCancelTest {
         cancellable.cancel();
         // wait for cancel to be observed and propagate it to the transport to initiate connection closure.
         delayedClientCancels.take().cancel();
-        // Transport should close the connection, the response terminal signal is not guaranteed after cancellation.
+        // The response terminal signal is not guaranteed after cancellation, just wait for the connection to close.
         clientConnectionsClosedStates.take().await();
-        // Let the server write the response to fail the write and close the connection
+        // Let the server write the response to fail the write and close the connection too.
         serverResp.onSuccess(client.asStreamingClient().httpResponseFactory().ok());
         serverConnectionsClosedStates.take().await();
 
-        sendSecondRequest();
+        sendSecondRequestUsingClient();
     }
 
     @ParameterizedTest
@@ -219,7 +211,7 @@ class ResponseCancelTest {
         HttpConnection connection = client.reserveConnection(client.get("/")).toFuture().get();
         Cancellable cancellable = finishRequest ? sendRequest(connection, null) :
                 connection.asStreamingConnection().request(connection.asStreamingConnection().post("/")
-                                .payloadBody(Publisher.never())).flatMapPublisher(StreamingHttpResponse::payloadBody)
+                                .payloadBody(never())).flatMapPublisher(StreamingHttpResponse::payloadBody)
                         .collect(() -> connection.executionContext().bufferAllocator().newCompositeBuffer(),
                                 CompositeBuffer::addBuffer)
                         .subscribe(__ -> { });
@@ -234,22 +226,22 @@ class ResponseCancelTest {
         delayedClientTermination.take().resume();
         // cancel payload body.
         cancellable.cancel();
-        // Transport should close the connection, the response terminal signal is not guaranteed after cancellation.
+        // The response terminal signal is not guaranteed after cancellation, just wait for the connection to close.
         clientConnectionsClosedStates.take().await();
-        // Finish server response to let server close the connection
+        // Finish server response to let server close the connection too.
         payload.onComplete();
         serverConnectionsClosedStates.take().await();
 
-        sendSecondRequest();
+        sendSecondRequestUsingClient();
     }
 
-    private void sendSecondRequest() throws Throwable {
+    private void sendSecondRequestUsingClient() throws Throwable {
         assertActiveConnectionsCount(0);
         // Validate client can still communicate with a server using a new connection.
-        CountDownLatch latch2 = new CountDownLatch(1);
-        sendRequest(client, latch2);
+        CountDownLatch latch = new CountDownLatch(1);
+        sendRequest(client, latch);
         serverResponses.take().onSuccess(client.asStreamingClient().httpResponseFactory().ok());
-        ClientTerminationSignal.resume(delayedClientTermination, latch2);
+        ClientTerminationSignal.resume(delayedClientTermination, latch);
         assertActiveConnectionsCount(1);
     }
 
@@ -329,23 +321,6 @@ class ResponseCancelTest {
                 throw signal.err;
             } else {
                 signal.subscriber.onSuccess(signal.response);
-            }
-            latch.await();
-        }
-
-        @SuppressWarnings("unchecked")
-        static void resumeExpectFailure(BlockingQueue<ClientTerminationSignal> signals,
-                                        final CountDownLatch latch,
-                                        final Matcher<Throwable> exceptionMatcher) throws Throwable {
-            ClientTerminationSignal signal = signals.take();
-            if (signal.err != null) {
-                signal.subscriber.onError(signal.err);
-                if (!exceptionMatcher.matches(signal.err)) {
-                    throw signal.err;
-                }
-            } else {
-                signal.subscriber.onSuccess(signal.response);
-                assertThat("Unexpected response success.", null, exceptionMatcher);
             }
             latch.await();
         }

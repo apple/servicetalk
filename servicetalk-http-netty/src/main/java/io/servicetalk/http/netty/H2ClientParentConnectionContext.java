@@ -39,7 +39,7 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
-import io.servicetalk.http.netty.LoadBalancedStreamingHttpClient.OwnedRunnable;
+import io.servicetalk.http.netty.LoadBalancedStreamingHttpClient.OnStreamClosedRunnable;
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ConnectionObserver.MultiplexedObserver;
 import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
@@ -245,10 +245,9 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                 @Override
                 protected void handleSubscribe(final Subscriber<? super StreamingHttpResponse> subscriber) {
                     final StreamObserver observer = multiplexedObserver.onNewStream();
-                    final StreamingHttpRequest originalReq;
                     final Promise<Http2StreamChannel> promise;
                     final SequentialCancellable sequentialCancellable;
-                    Runnable ownedRunnable = null;
+                    OnStreamClosedRunnable ownedRunnable = null;
                     try {
                         final EventExecutor e = parentContext.nettyChannel().eventLoop();
                         promise = e.newPromise();
@@ -257,12 +256,9 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                         // LoadBalancedStreamingHttpClient may prematurely mark the request as finished before netty
                         // marks the stream as inactive. This code is responsible for running this Runnable in case of
                         // any errors or stream closure.
-                        if (StreamingHttpRequestWithContext.class.equals(request.getClass())) {
-                            final StreamingHttpRequestWithContext wrappedRequest =
-                                    (StreamingHttpRequestWithContext) request;
-                            // Unwrap the original request to let the following transformations access the PayloadInfo
-                            originalReq = wrappedRequest.unwrap();
-                            OwnedRunnable runnable = wrappedRequest.runnable();
+                        // See LoadBalancedStreamingHttpClient and AbstractStreamingHttpConnection.
+                        final OnStreamClosedRunnable runnable = request.context().get(OnStreamClosedRunnable.KEY);
+                        if (runnable != null) {
                             if (runnable.own()) {
                                 ownedRunnable = runnable;
                             } else {
@@ -274,11 +270,10 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                                 deliverErrorFromSource(subscriber, cause);
                                 return;
                             }
-                        } else {
-                            // User wrapped the original request object at the connection level
-                            // (after LoadBalancedStreamingHttpClient) => Runnable will always be owned by originator
-                            originalReq = request;
                         }
+                        // If OwnedRunnable is null, it means a user wiped/modified the request context after
+                        // LoadBalancedStreamingHttpClient => as a fallback, OwnedRunnable will always be owned by
+                        // originator.
                         bs.open(promise);
                         sequentialCancellable = new SequentialCancellable(() -> promise.cancel(true));
                     } catch (Throwable cause) {
@@ -297,11 +292,11 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
 
                     final Runnable onCloseRunnable = ownedRunnable;
                     if (promise.isDone()) {
-                        childChannelActive(promise, subscriber, sequentialCancellable, originalReq, observer,
+                        childChannelActive(promise, subscriber, sequentialCancellable, request, observer,
                                 allowDropTrailersReadFromTransport, onCloseRunnable);
                     } else {
                         promise.addListener((FutureListener<Http2StreamChannel>) future -> childChannelActive(
-                                future, subscriber, sequentialCancellable, originalReq, observer,
+                                future, subscriber, sequentialCancellable, request, observer,
                                 allowDropTrailersReadFromTransport, onCloseRunnable));
                     }
                 }
