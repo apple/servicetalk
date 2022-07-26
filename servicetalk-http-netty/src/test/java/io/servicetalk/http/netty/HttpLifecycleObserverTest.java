@@ -75,6 +75,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.atMost;
 import static org.mockito.Mockito.atMostOnce;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
@@ -345,7 +346,7 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
         serverInOrder.verify(serverExchangeObserver).onRequest(any(StreamingHttpRequest.class));
         serverInOrder.verify(serverExchangeObserver).onResponse(any(StreamingHttpResponse.class));
         verify(serverResponseObserver, atMostOnce()).onResponseDataRequested(anyLong());
-        verify(serverResponseObserver, atLeastOnce()).onResponseData(any(Buffer.class));
+        verify(serverResponseObserver, atMost(2)).onResponseData(any(Buffer.class));
         serverInOrder.verify(serverResponseObserver).onResponseCancel();
         serverRequestInOrder.verify(serverRequestObserver, atLeastOnce()).onRequestDataRequested(anyLong());
         serverRequestInOrder.verify(serverRequestObserver).onRequestData(any(Buffer.class));
