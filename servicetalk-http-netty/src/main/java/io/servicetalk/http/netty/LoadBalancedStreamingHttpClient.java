@@ -118,7 +118,7 @@ final class LoadBalancedStreamingHttpClient implements FilterableStreamingHttpCl
     }
 
     private static void notifyConnectionSelected(final HttpRequestMetaData requestMetaData,
-                                                 final LoadBalancedStreamingHttpConnection c) {
+                                                 final FilterableStreamingHttpLoadBalancedConnection c) {
         // Do not remove ON_CONNECTION_SELECTED_CONSUMER from the context to let it observe new connection selections
         // for retries and redirects.
         final Consumer<ConnectionInfo> onConnectionSelected = requestMetaData.context()
