@@ -1062,7 +1062,7 @@
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>The <a href="https://github.com/apple/servicetalk/blob/0.42.11/servicetalk-examples/grpc"><code>grpc</code></a> folder contains examples for
+<p>The <a href="https://github.com/apple/servicetalk/blob/0.42.12/servicetalk-examples/grpc"><code>grpc</code></a> folder contains examples for
 <a href="https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md">the gRPC application protocol</a>. We provide
 implementations for the examples proto services provided by
 <a href="https://github.com/grpc/grpc/tree/master/examples/protos">gRPC</a>.</p>
@@ -1079,18 +1079,18 @@ implementations for the examples proto services provided by
 <h3 id="asynchronous"><a class="anchor" href="#asynchronous"></a><a class="link" href="#asynchronous">Asynchronous</a></h3>
 <div class="paragraph">
 <p>This example demonstrates asynchronous request processing for the hello world API using the
-<a href="https://github.com/apple/servicetalk/blob/0.42.11/servicetalk-examples/grpc/helloworld/src/main/java/io/servicetalk/examples/grpc/helloworld/async/HelloWorldServer.java">HelloWorldServer</a>
+<a href="https://github.com/apple/servicetalk/blob/0.42.12/servicetalk-examples/grpc/helloworld/src/main/java/io/servicetalk/examples/grpc/helloworld/async/HelloWorldServer.java">HelloWorldServer</a>
 and a
-<a href="https://github.com/apple/servicetalk/blob/0.42.11/servicetalk-examples/grpc/helloworld/src/main/java/io/servicetalk/examples/grpc/helloworld/async/HelloWorldClient.java">HelloWorldClient</a></p>
+<a href="https://github.com/apple/servicetalk/blob/0.42.12/servicetalk-examples/grpc/helloworld/src/main/java/io/servicetalk/examples/grpc/helloworld/async/HelloWorldClient.java">HelloWorldClient</a></p>
 </div>
 </div>
 <div class="sect2">
 <h3 id="blocking"><a class="anchor" href="#blocking"></a><a class="link" href="#blocking">Blocking</a></h3>
 <div class="paragraph">
 <p>This example demonstrates blocking request processing for the hello world API using the
-<a href="https://github.com/apple/servicetalk/blob/0.42.11/servicetalk-examples/grpc/helloworld/src/main/java/io/servicetalk/examples/grpc/helloworld/blocking/BlockingHelloWorldServer.java">BlockingHelloWorldServer</a>
+<a href="https://github.com/apple/servicetalk/blob/0.42.12/servicetalk-examples/grpc/helloworld/src/main/java/io/servicetalk/examples/grpc/helloworld/blocking/BlockingHelloWorldServer.java">BlockingHelloWorldServer</a>
 and a
-<a href="https://github.com/apple/servicetalk/blob/0.42.11/servicetalk-examples/grpc/helloworld/src/main/java/io/servicetalk/examples/grpc/helloworld/blocking/BlockingHelloWorldClient.java">BlockingHelloWorldClient</a></p>
+<a href="https://github.com/apple/servicetalk/blob/0.42.12/servicetalk-examples/grpc/helloworld/src/main/java/io/servicetalk/examples/grpc/helloworld/blocking/BlockingHelloWorldClient.java">BlockingHelloWorldClient</a></p>
 </div>
 </div>
 </div>
@@ -1105,28 +1105,28 @@ and a
 <h3 id="asynchronous-2"><a class="anchor" href="#asynchronous-2"></a><a class="link" href="#asynchronous-2">Asynchronous</a></h3>
 <div class="paragraph">
 <p>Asynchronous processing for different APIs in the <a href="https://github.com/grpc/grpc/blob/master/examples/protos/route_guide.proto">route guide service</a>
-are demonstrated using the <a href="https://github.com/apple/servicetalk/blob/0.42.11/servicetalk-examples/grpc/routeguide/src/main/java/io/servicetalk/examples/grpc/routeguide/async/RouteGuideServer.java">RouteGuideServer</a>
+are demonstrated using the <a href="https://github.com/apple/servicetalk/blob/0.42.12/servicetalk-examples/grpc/routeguide/src/main/java/io/servicetalk/examples/grpc/routeguide/async/RouteGuideServer.java">RouteGuideServer</a>
 and the following clients:</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/0.42.11/servicetalk-examples/grpc/routeguide/src/main/java/io/servicetalk/examples/grpc/routeguide/async/RouteGuideClient.java">RouteGuideClient</a> -
+<p><a href="https://github.com/apple/servicetalk/blob/0.42.12/servicetalk-examples/grpc/routeguide/src/main/java/io/servicetalk/examples/grpc/routeguide/async/RouteGuideClient.java">RouteGuideClient</a> -
 <code>getFeature</code> API that uses the
 <a href="../../../servicetalk/0.42/programming-paradigms.html#asynchronous-and-aggregated" class="page">aggregated programming paradigm</a>.</p>
 </li>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/0.42.11/servicetalk-examples/grpc/routeguide/src/main/java/io/servicetalk/examples/grpc/routeguide/async/streaming/RouteGuideRequestStreamingClient.java">RouteGuideRequestStreamingClient</a> -
+<p><a href="https://github.com/apple/servicetalk/blob/0.42.12/servicetalk-examples/grpc/routeguide/src/main/java/io/servicetalk/examples/grpc/routeguide/async/streaming/RouteGuideRequestStreamingClient.java">RouteGuideRequestStreamingClient</a> -
 <code>recordRoute</code> API that uses the
 <a href="../../../servicetalk/0.42/programming-paradigms.html#asynchronous-and-streaming" class="page">request streaming programming paradigm</a>.</p>
 </li>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/0.42.11/servicetalk-examples/grpc/routeguide/src/main/java/io/servicetalk/examples/grpc/routeguide/async/streaming/RouteGuideResponseStreamingClient.java">RouteGuideResponseStreamingClient</a> -
+<p><a href="https://github.com/apple/servicetalk/blob/0.42.12/servicetalk-examples/grpc/routeguide/src/main/java/io/servicetalk/examples/grpc/routeguide/async/streaming/RouteGuideResponseStreamingClient.java">RouteGuideResponseStreamingClient</a> -
 <code>recordRoute</code> API that uses the
 <a href="../../../servicetalk/0.42/programming-paradigms.html#asynchronous-and-streaming" class="page">response streaming programming paradigm</a>.</p>
 </li>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/0.42.11/servicetalk-examples/grpc/routeguide/src/main/java/io/servicetalk/examples/grpc/routeguide/async/streaming/RouteGuideStreamingClient.java">RouteGuideStreamingClient</a> -
+<p><a href="https://github.com/apple/servicetalk/blob/0.42.12/servicetalk-examples/grpc/routeguide/src/main/java/io/servicetalk/examples/grpc/routeguide/async/streaming/RouteGuideStreamingClient.java">RouteGuideStreamingClient</a> -
 <code>recordRoute</code> API that uses the
 <a href="../../../servicetalk/0.42/programming-paradigms.html#asynchronous-and-streaming" class="page">bi-directional streaming programming paradigm</a>.</p>
 </li>
@@ -1137,28 +1137,28 @@ and the following clients:</p>
 <h3 id="blocking-2"><a class="anchor" href="#blocking-2"></a><a class="link" href="#blocking-2">Blocking</a></h3>
 <div class="paragraph">
 <p>Blocking processing for different APIs in the <a href="https://github.com/grpc/grpc/blob/master/examples/protos/route_guide.proto">route guide service</a>
-are demonstrated using the <a href="https://github.com/apple/servicetalk/blob/0.42.11/servicetalk-examples/grpc/routeguide/src/main/java/io/servicetalk/examples/grpc/routeguide/blocking/BlockingRouteGuideServer.java">BlockingRouteGuideServer</a>
+are demonstrated using the <a href="https://github.com/apple/servicetalk/blob/0.42.12/servicetalk-examples/grpc/routeguide/src/main/java/io/servicetalk/examples/grpc/routeguide/blocking/BlockingRouteGuideServer.java">BlockingRouteGuideServer</a>
 and the following clients:</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/0.42.11/servicetalk-examples/grpc/routeguide/src/main/java/io/servicetalk/examples/grpc/routeguide/blocking/BlockingRouteGuideClient.java">BlockingRouteGuideClient</a> -
+<p><a href="https://github.com/apple/servicetalk/blob/0.42.12/servicetalk-examples/grpc/routeguide/src/main/java/io/servicetalk/examples/grpc/routeguide/blocking/BlockingRouteGuideClient.java">BlockingRouteGuideClient</a> -
 <code>getFeature</code> API that uses the
 <a href="../../../servicetalk/0.42/programming-paradigms.html#asynchronous-and-aggregated" class="page">aggregated programming paradigm</a>.</p>
 </li>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/0.42.11/servicetalk-examples/grpc/routeguide/src/main/java/io/servicetalk/examples/grpc/routeguide/blocking/streaming/BlockingRouteGuideRequestStreamingClient.java">BlockingRouteGuideRequestStreamingClient</a> -
+<p><a href="https://github.com/apple/servicetalk/blob/0.42.12/servicetalk-examples/grpc/routeguide/src/main/java/io/servicetalk/examples/grpc/routeguide/blocking/streaming/BlockingRouteGuideRequestStreamingClient.java">BlockingRouteGuideRequestStreamingClient</a> -
 <code>recordRoute</code> API that uses the
 <a href="../../../servicetalk/0.42/programming-paradigms.html#asynchronous-and-streaming" class="page">request streaming programming paradigm</a>.</p>
 </li>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/0.42.11/servicetalk-examples/grpc/routeguide/src/main/java/io/servicetalk/examples/grpc/routeguide/blocking/streaming/BlockingRouteGuideResponseStreamingClient.java">BlockingRouteGuideResponseStreamingClient</a> -
+<p><a href="https://github.com/apple/servicetalk/blob/0.42.12/servicetalk-examples/grpc/routeguide/src/main/java/io/servicetalk/examples/grpc/routeguide/blocking/streaming/BlockingRouteGuideResponseStreamingClient.java">BlockingRouteGuideResponseStreamingClient</a> -
 <code>recordRoute</code> API that uses the
 <a href="../../../servicetalk/0.42/programming-paradigms.html#asynchronous-and-streaming" class="page">response streaming programming paradigm</a>.</p>
 </li>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/0.42.11/servicetalk-examples/grpc/routeguide/src/main/java/io/servicetalk/examples/grpc/routeguide/blocking/streaming/BlockingRouteGuideStreamingClient.java">BlockingRouteGuideStreamingClient</a> -
+<p><a href="https://github.com/apple/servicetalk/blob/0.42.12/servicetalk-examples/grpc/routeguide/src/main/java/io/servicetalk/examples/grpc/routeguide/blocking/streaming/BlockingRouteGuideStreamingClient.java">BlockingRouteGuideStreamingClient</a> -
 <code>recordRoute</code> API that uses the
 <a href="../../../servicetalk/0.42/programming-paradigms.html#asynchronous-and-streaming" class="page">bi-directional streaming programming paradigm</a>.</p>
 </li>
@@ -1176,10 +1176,10 @@ and the following clients:</p>
 <div class="ulist">
 <ul>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/0.42.11/servicetalk-examples/grpc/compression/src/main/java/io/servicetalk/examples/grpc/compression/CompressionExampleServer.java">CompressionExampleServer</a> - Waits for hello request from the client and responds with a compressed greeting response.</p>
+<p><a href="https://github.com/apple/servicetalk/blob/0.42.12/servicetalk-examples/grpc/compression/src/main/java/io/servicetalk/examples/grpc/compression/CompressionExampleServer.java">CompressionExampleServer</a> - Waits for hello request from the client and responds with a compressed greeting response.</p>
 </li>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/0.42.11/servicetalk-examples/grpc/compression/src/main/java/io/servicetalk/examples/grpc/compression/CompressionExampleClient.java">CompressionExampleClient</a> - Sends a hello request to the server and receives a
+<p><a href="https://github.com/apple/servicetalk/blob/0.42.12/servicetalk-examples/grpc/compression/src/main/java/io/servicetalk/examples/grpc/compression/CompressionExampleClient.java">CompressionExampleClient</a> - Sends a hello request to the server and receives a
 compressed greeting response.</p>
 </li>
 </ul>
@@ -1196,11 +1196,11 @@ compressed greeting response.</p>
 <div class="ulist">
 <ul>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/0.42.11/servicetalk-examples/grpc/deadline/src/main/java/io/servicetalk/examples/grpc/deadline/DeadlineServer.java">DeadlineServer</a>
+<p><a href="https://github.com/apple/servicetalk/blob/0.42.12/servicetalk-examples/grpc/deadline/src/main/java/io/servicetalk/examples/grpc/deadline/DeadlineServer.java">DeadlineServer</a>
 – Waits for hello request from the client and, after 5 seconds of delay, responds with a greeting response.</p>
 </li>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/0.42.11/servicetalk-examples/grpc/deadline/src/main/java/io/servicetalk/examples/grpc/deadline/DeadlineClient.java">DeadlineClient</a>
+<p><a href="https://github.com/apple/servicetalk/blob/0.42.12/servicetalk-examples/grpc/deadline/src/main/java/io/servicetalk/examples/grpc/deadline/DeadlineClient.java">DeadlineClient</a>
 – Sends hello requests to the server with 1 minute deadline and 3 second deadline and receives a greeting response
 within that time or cancels the request.</p>
 </li>
@@ -1213,9 +1213,9 @@ within that time or cancels the request.</p>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Demonstrates how to use HTTP/2 keep alive for gRPC
-<a href="https://github.com/apple/servicetalk/blob/0.42.11/servicetalk-examples/grpc/keepalive/src/main/java/io/servicetalk/examples/grpc/keepalive/KeepAliveServer.java">server</a>
+<a href="https://github.com/apple/servicetalk/blob/0.42.12/servicetalk-examples/grpc/keepalive/src/main/java/io/servicetalk/examples/grpc/keepalive/KeepAliveServer.java">server</a>
 and
-<a href="https://github.com/apple/servicetalk/blob/0.42.11/servicetalk-examples/grpc/keepalive/src/main/java/io/servicetalk/examples/grpc/keepalive/KeepAliveClient.java">client</a>.
+<a href="https://github.com/apple/servicetalk/blob/0.42.12/servicetalk-examples/grpc/keepalive/src/main/java/io/servicetalk/examples/grpc/keepalive/KeepAliveClient.java">client</a>.
 Keep alive uses transport control frames to ensure the peer is still able to read and write to open connections. If the
 peer is not able to respond to the control frame within the configured amount of time, the connection is closed. This
 is useful if your environment doesn&#8217;t provide other forms of connection keep alive (e.g.
@@ -1235,11 +1235,11 @@ your application is able to read/write). Keep alive can be helpful to detect sce
 <div class="ulist">
 <ul>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/0.42.11/servicetalk-examples/grpc/debugging/src/main/java/io/servicetalk/examples/grpc/debugging/DebuggingServer.java">DebuggingServer</a>
+<p><a href="https://github.com/apple/servicetalk/blob/0.42.12/servicetalk-examples/grpc/debugging/src/main/java/io/servicetalk/examples/grpc/debugging/DebuggingServer.java">DebuggingServer</a>
 – Waits for hello request from the client and responds with a greeting response.</p>
 </li>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/0.42.11/servicetalk-examples/grpc/debugging/src/main/java/io/servicetalk/examples/grpc/debugging/DebuggingClient.java">DebuggingClient</a>
+<p><a href="https://github.com/apple/servicetalk/blob/0.42.12/servicetalk-examples/grpc/debugging/src/main/java/io/servicetalk/examples/grpc/debugging/DebuggingClient.java">DebuggingClient</a>
 – Sends hello requests to the server and receives a greeting response.</p>
 </li>
 </ul>
@@ -1252,7 +1252,7 @@ your application is able to read/write). Keep alive can be helpful to detect sce
 <div class="paragraph">
 <p>This example demonstrates the following:
 - Use of
-<a href="https://github.com/apple/servicetalk/blob/0.42.11/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcLifecycleObserver.java">GrpcLifecycleObserver</a> to log a summary of each request/response.</p>
+<a href="https://github.com/apple/servicetalk/blob/0.42.12/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcLifecycleObserver.java">GrpcLifecycleObserver</a> to log a summary of each request/response.</p>
 </div>
 <div class="paragraph">
 <p>Using the following classes:</p>
@@ -1260,13 +1260,13 @@ your application is able to read/write). Keep alive can be helpful to detect sce
 <div class="ulist">
 <ul>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/0.42.11/servicetalk-examples/grpc/observer/src/main/java/io/servicetalk/examples/grpc/observer/LifecycleObserverServer.java">LifecycleObserverServer</a> - A server that installs a
-<a href="https://github.com/apple/servicetalk/blob/0.42.11/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcLifecycleObserver.java">GrpcLifecycleObserver</a>
+<p><a href="https://github.com/apple/servicetalk/blob/0.42.12/servicetalk-examples/grpc/observer/src/main/java/io/servicetalk/examples/grpc/observer/LifecycleObserverServer.java">LifecycleObserverServer</a> - A server that installs a
+<a href="https://github.com/apple/servicetalk/blob/0.42.12/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcLifecycleObserver.java">GrpcLifecycleObserver</a>
 on the server builder.</p>
 </li>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/0.42.11/servicetalk-examples/grpc/observer/src/main/java/io/servicetalk/examples/grpc/observer/LifecycleObserverClient.java">LifecycleObserverClient</a> - A client that installs a
-<a href="https://github.com/apple/servicetalk/blob/0.42.11/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcLifecycleObserver.java">GrpcLifecycleObserver</a>
+<p><a href="https://github.com/apple/servicetalk/blob/0.42.12/servicetalk-examples/grpc/observer/src/main/java/io/servicetalk/examples/grpc/observer/LifecycleObserverClient.java">LifecycleObserverClient</a> - A client that installs a
+<a href="https://github.com/apple/servicetalk/blob/0.42.12/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcLifecycleObserver.java">GrpcLifecycleObserver</a>
 on via a client filter on the client builder.</p>
 </li>
 </ul>
@@ -1279,15 +1279,15 @@ on via a client filter on the client builder.</p>
 <div class="paragraph">
 <p>This example demonstrates the following:
 - Use of
-<a href="https://github.com/apple/servicetalk/blob/0.42.11/servicetalk-grpc-health/src/main/java/io/servicetalk/grpc/health/DefaultHealthService.java">DefaultHealthService</a>
+<a href="https://github.com/apple/servicetalk/blob/0.42.12/servicetalk-grpc-health/src/main/java/io/servicetalk/grpc/health/DefaultHealthService.java">DefaultHealthService</a>
 which implements <a href="https://github.com/grpc/grpc/blob/master/doc/health-checking.md">gRPC health checking</a> paired with a simple "hello world" service.</p>
 </div>
 <div class="paragraph">
 <p>Using the following classes:
-* <a href="https://github.com/apple/servicetalk/blob/0.42.11/servicetalk-examples/grpc/health/src/main/java/io/servicetalk/examples/grpc/health/HealthServerExample.java">HealthServerExample</a> a server
-that installs <a href="https://github.com/apple/servicetalk/blob/0.42.11/servicetalk-grpc-health/src/main/java/io/servicetalk/grpc/health/DefaultHealthService.java">DefaultHealthService</a> in addition to
+* <a href="https://github.com/apple/servicetalk/blob/0.42.12/servicetalk-examples/grpc/health/src/main/java/io/servicetalk/examples/grpc/health/HealthServerExample.java">HealthServerExample</a> a server
+that installs <a href="https://github.com/apple/servicetalk/blob/0.42.12/servicetalk-grpc-health/src/main/java/io/servicetalk/grpc/health/DefaultHealthService.java">DefaultHealthService</a> in addition to
 a simple "hello world" service.
-* <a href="https://github.com/apple/servicetalk/blob/0.42.11/servicetalk-examples/grpc/health/src/main/java/io/servicetalk/examples/grpc/health/HealthClientExample.java">HealthClientExample</a> a client
+* <a href="https://github.com/apple/servicetalk/blob/0.42.12/servicetalk-examples/grpc/health/src/main/java/io/servicetalk/examples/grpc/health/HealthClientExample.java">HealthClientExample</a> a client
 that calls the "hello world" server, the "health check" server, and prints results.</p>
 </div>
 </div>
@@ -1306,11 +1306,11 @@ could be any protobuf object.</p>
 <div class="ulist">
 <ul>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/0.42.11/servicetalk-examples/grpc/errors/src/main/java/io/servicetalk/examples/grpc/errors/ErrorExampleServer.java">ErrorExampleServer</a> - Requires each request has a non-empty <code>token</code> field or else returns an
+<p><a href="https://github.com/apple/servicetalk/blob/0.42.12/servicetalk-examples/grpc/errors/src/main/java/io/servicetalk/examples/grpc/errors/ErrorExampleServer.java">ErrorExampleServer</a> - Requires each request has a non-empty <code>token</code> field or else returns an
 error.</p>
 </li>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/0.42.11/servicetalk-examples/grpc/errors/src/main/java/io/servicetalk/examples/grpc/errors/ErrorExampleClient.java">ErrorExampleClient</a> - Sends a request with missing <code>token</code> field to simulate an error
+<p><a href="https://github.com/apple/servicetalk/blob/0.42.12/servicetalk-examples/grpc/errors/src/main/java/io/servicetalk/examples/grpc/errors/ErrorExampleClient.java">ErrorExampleClient</a> - Sends a request with missing <code>token</code> field to simulate an error
 condition on the server.</p>
 </li>
 </ul>
@@ -1329,10 +1329,10 @@ condition on the server.</p>
 <div class="ulist">
 <ul>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/0.42.11/servicetalk-examples/grpc/execution-strategy/src/main/java/io/servicetalk/examples/grpc/strategies/ExecutionStrategyServer.java">ExecutionStrategyServer</a> - Starts multiple servers configured using a variety of modes and techniques to specify the execution strategy to be used.</p>
+<p><a href="https://github.com/apple/servicetalk/blob/0.42.12/servicetalk-examples/grpc/execution-strategy/src/main/java/io/servicetalk/examples/grpc/strategies/ExecutionStrategyServer.java">ExecutionStrategyServer</a> - Starts multiple servers configured using a variety of modes and techniques to specify the execution strategy to be used.</p>
 </li>
 <li>
-<p><a href="https://github.com/apple/servicetalk/blob/0.42.11/servicetalk-examples/grpc/execution-strategy/src/main/java/io/servicetalk/examples/grpc/strategies/ExecutionStrategyClient.java">ExecutionStrategyClient</a> - Sends requests to each of the differently configured servers and reports execution details.</p>
+<p><a href="https://github.com/apple/servicetalk/blob/0.42.12/servicetalk-examples/grpc/execution-strategy/src/main/java/io/servicetalk/examples/grpc/strategies/ExecutionStrategyClient.java">ExecutionStrategyClient</a> - Sends requests to each of the differently configured servers and reports execution details.</p>
 </li>
 </ul>
 </div>
@@ -1343,7 +1343,7 @@ condition on the server.</p>
 <div class="sectionbody">
 <div class="paragraph">
 <p>This example demonstrates how options for the servicetalk-grpc-protoc plugin can be used. See
-<a href="https://github.com/apple/servicetalk/blob/0.42.11/servicetalk-examples/grpc/protoc-options">protoc-options</a> for more details.</p>
+<a href="https://github.com/apple/servicetalk/blob/0.42.12/servicetalk-examples/grpc/protoc-options">protoc-options</a> for more details.</p>
 </div>
 </div>
 </div>

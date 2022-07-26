@@ -81,8 +81,13 @@ loadScripts(document, 'script');</script>
 <dd>This is a functional interface and can therefore be used as the assignment target for a lambda expression or method reference.</dd>
 </dl>
 <hr>
-<div class="type-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/FunctionalInterface.html" title="class or interface in java.lang" class="external-link">@FunctionalInterface</a>
+<div class="type-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/FunctionalInterface.html" title="class or interface in java.lang" class="external-link">@FunctionalInterface</a>
 </span><span class="modifiers">public interface </span><span class="element-name type-name-label">ClientInvoker&lt;State&gt;</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">There is no use of this interface in our codebase, it will be removed in the future releases. If you
+ depend on it, consider replicating a similar interface in your codebase.</div>
+</div>
 <div class="block">A function that given flattened stream of <a href="HttpRequestMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpRequestMetaData</code></a>, payload and
  trailers, for the passed <a href="StreamingHttpRequest.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpRequest</code></a> returns a <a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>.</div>
 </section>
@@ -93,16 +98,17 @@ loadScripts(document, 'script');</script>
 <section class="method-summary" id="method-summary">
 <h2>Method Summary</h2>
 <div id="method-summary-table">
-<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab3" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab3', 3)" class="table-tab">Abstract Methods</button></div>
+<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab3" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab3', 3)" class="table-tab">Abstract Methods</button><button id="method-summary-table-tab6" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab6', 3)" class="table-tab">Deprecated Methods</button></div>
 <div id="method-summary-table.tabpanel" role="tabpanel">
 <div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="StreamingHttpResponse.html" title="interface in io.servicetalk.http.api">StreamingHttpResponse</a>&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#invokeClient(io.servicetalk.concurrent.api.Publisher,State)" class="member-name-link">invokeClient</a><wbr>(<a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&gt;&nbsp;objectPublisher,
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code><a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="StreamingHttpResponse.html" title="interface in io.servicetalk.http.api">StreamingHttpResponse</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code><a href="#invokeClient(io.servicetalk.concurrent.api.Publisher,State)" class="member-name-link">invokeClient</a><wbr>(<a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&gt;&nbsp;objectPublisher,
  <a href="ClientInvoker.html" title="type parameter in ClientInvoker">State</a>&nbsp;state)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Invokes the client.</div>
 </div>
 </div>
@@ -125,6 +131,7 @@ loadScripts(document, 'script');</script>
 <div class="member-signature"><span class="return-type"><a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="StreamingHttpResponse.html" title="interface in io.servicetalk.http.api">StreamingHttpResponse</a>&gt;</span>&nbsp;<span class="element-name">invokeClient</span><wbr><span class="parameters">(<a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&gt;&nbsp;objectPublisher,
  @Nullable
  <a href="ClientInvoker.html" title="type parameter in ClientInvoker">State</a>&nbsp;state)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Invokes the client.</div>
 <dl class="notes">
 <dt>Parameters:</dt>

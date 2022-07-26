@@ -3168,8 +3168,10 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/http/api/ClientInvoker.html" class="type-name-link" title="interface in io.servicetalk.http.api">ClientInvoker</a>&lt;<a href="io/servicetalk/http/api/ClientInvoker.html" title="type parameter in ClientInvoker">State</a>&gt; - Interface in <a href="io/servicetalk/http/api/package-summary.html">io.servicetalk.http.api</a></dt>
 <dd>
-<div class="block">A function that given flattened stream of <a href="io/servicetalk/http/api/HttpRequestMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpRequestMetaData</code></a>, payload and
- trailers, for the passed <a href="io/servicetalk/http/api/StreamingHttpRequest.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpRequest</code></a> returns a <a href="io/servicetalk/concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>.</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">There is no use of this interface in our codebase, it will be removed in the future releases. If you
+ depend on it, consider replicating a similar interface in your codebase.</div>
+</div>
 </dd>
 <dt><a href="io/servicetalk/transport/api/ClientSslConfig.html" class="type-name-link" title="interface in io.servicetalk.transport.api">ClientSslConfig</a> - Interface in <a href="io/servicetalk/transport/api/package-summary.html">io.servicetalk.transport.api</a></dt>
 <dd>
@@ -10079,6 +10081,7 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/http/api/ClientInvoker.html#invokeClient(io.servicetalk.concurrent.api.Publisher,State)" class="member-name-link">invokeClient(Publisher&lt;Object&gt;, State)</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/ClientInvoker.html" title="interface in io.servicetalk.http.api">ClientInvoker</a></dt>
 <dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Invokes the client.</div>
 </dd>
 <dt><a href="io/servicetalk/annotations/package-summary.html">io.servicetalk.annotations</a> - package io.servicetalk.annotations</dt>
@@ -11093,6 +11096,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Load the client private key.</div>
 </dd>
+<dt><a href="io/servicetalk/test/resources/DefaultTestCerts.html#loadClientP12()" class="member-name-link">loadClientP12()</a> - Static method in class io.servicetalk.test.resources.<a href="io/servicetalk/test/resources/DefaultTestCerts.html" title="class in io.servicetalk.test.resources">DefaultTestCerts</a></dt>
+<dd>
+<div class="block">Load the client certificate PKCS#12 keystore file.</div>
+</dd>
 <dt><a href="io/servicetalk/test/resources/DefaultTestCerts.html#loadClientPem()" class="member-name-link">loadClientPem()</a> - Static method in class io.servicetalk.test.resources.<a href="io/servicetalk/test/resources/DefaultTestCerts.html" title="class in io.servicetalk.test.resources">DefaultTestCerts</a></dt>
 <dd>
 <div class="block">Load the client certificate chain file.</div>
@@ -11109,9 +11116,17 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Load the server private key.</div>
 </dd>
+<dt><a href="io/servicetalk/test/resources/DefaultTestCerts.html#loadServerP12()" class="member-name-link">loadServerP12()</a> - Static method in class io.servicetalk.test.resources.<a href="io/servicetalk/test/resources/DefaultTestCerts.html" title="class in io.servicetalk.test.resources">DefaultTestCerts</a></dt>
+<dd>
+<div class="block">Load the server certificate PKCS#12 keystore file.</div>
+</dd>
 <dt><a href="io/servicetalk/test/resources/DefaultTestCerts.html#loadServerPem()" class="member-name-link">loadServerPem()</a> - Static method in class io.servicetalk.test.resources.<a href="io/servicetalk/test/resources/DefaultTestCerts.html" title="class in io.servicetalk.test.resources">DefaultTestCerts</a></dt>
 <dd>
 <div class="block">Load the server certificate chain file.</div>
+</dd>
+<dt><a href="io/servicetalk/test/resources/DefaultTestCerts.html#loadTruststoreP12()" class="member-name-link">loadTruststoreP12()</a> - Static method in class io.servicetalk.test.resources.<a href="io/servicetalk/test/resources/DefaultTestCerts.html" title="class in io.servicetalk.test.resources">DefaultTestCerts</a></dt>
+<dd>
+<div class="block">Load the PKCS#12 truststore file.</div>
 </dd>
 <dt><a href="io/servicetalk/http/api/DelegatingHttpServiceContext.html#localAddress()" class="member-name-link">localAddress()</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/DelegatingHttpServiceContext.html" title="class in io.servicetalk.http.api">DelegatingHttpServiceContext</a></dt>
 <dd>&nbsp;</dd>
@@ -12196,6 +12211,12 @@ loadScripts(document, 'script');</script>
 <div class="block">Creates a new <a href="io/servicetalk/concurrent/api/CompositeCloseable.html" title="interface in io.servicetalk.concurrent.api"><code>CompositeCloseable</code></a>.</div>
 </dd>
 <dt><a href="io/servicetalk/client/api/LoadBalancedAddress.html#newConnection()" class="member-name-link">newConnection()</a> - Method in interface io.servicetalk.client.api.<a href="io/servicetalk/client/api/LoadBalancedAddress.html" title="interface in io.servicetalk.client.api">LoadBalancedAddress</a></dt>
+<dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Implement and use <a href="io/servicetalk/client/api/LoadBalancedAddress.html#newConnection(io.servicetalk.context.api.ContextMap)"><code>LoadBalancedAddress.newConnection(ContextMap)</code></a>.</div>
+</div>
+</dd>
+<dt><a href="io/servicetalk/client/api/LoadBalancedAddress.html#newConnection(io.servicetalk.context.api.ContextMap)" class="member-name-link">newConnection(ContextMap)</a> - Method in interface io.servicetalk.client.api.<a href="io/servicetalk/client/api/LoadBalancedAddress.html" title="interface in io.servicetalk.client.api">LoadBalancedAddress</a></dt>
 <dd>
 <div class="block">Creates and asynchronously returns a connection for this address.</div>
 </dd>
@@ -19349,6 +19370,8 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/api/DefaultHttpCookiePair.html#toString()" class="member-name-link">toString()</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/DefaultHttpCookiePair.html" title="class in io.servicetalk.http.api">DefaultHttpCookiePair</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/http/api/DefaultHttpHeadersFactory.html#toString()" class="member-name-link">toString()</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/DefaultHttpHeadersFactory.html" title="class in io.servicetalk.http.api">DefaultHttpHeadersFactory</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/api/DefaultHttpSetCookie.html#toString()" class="member-name-link">toString()</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/DefaultHttpSetCookie.html" title="class in io.servicetalk.http.api">DefaultHttpSetCookie</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/api/DelegatingHttpServerBuilder.html#toString()" class="member-name-link">toString()</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/DelegatingHttpServerBuilder.html" title="class in io.servicetalk.http.api">DelegatingHttpServerBuilder</a></dt>
@@ -19384,6 +19407,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/http/api/StreamingHttpClientFilter.html#toString()" class="member-name-link">toString()</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/StreamingHttpClientFilter.html" title="class in io.servicetalk.http.api">StreamingHttpClientFilter</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/api/StreamingHttpConnectionFilter.html#toString()" class="member-name-link">toString()</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/StreamingHttpConnectionFilter.html" title="class in io.servicetalk.http.api">StreamingHttpConnectionFilter</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/http/netty/H1SpecExceptions.html#toString()" class="member-name-link">toString()</a> - Method in class io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/H1SpecExceptions.html" title="class in io.servicetalk.http.netty">H1SpecExceptions</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/http/netty/H2HeadersFactory.html#toString()" class="member-name-link">toString()</a> - Method in class io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/H2HeadersFactory.html" title="class in io.servicetalk.http.netty">H2HeadersFactory</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/netty/ProxyResponseException.html#toString()" class="member-name-link">toString()</a> - Method in exception io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/ProxyResponseException.html" title="class in io.servicetalk.http.netty">ProxyResponseException</a></dt>
 <dd>&nbsp;</dd>

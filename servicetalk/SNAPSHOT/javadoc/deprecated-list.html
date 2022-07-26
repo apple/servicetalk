@@ -118,44 +118,49 @@ loadScripts(document, 'script');</script>
  upon the <code>builder</code> obtained using <a href="io/servicetalk/grpc/api/GrpcServerBuilder.html#initializeHttp(io.servicetalk.grpc.api.GrpcServerBuilder.HttpInitializer)"><code>GrpcServerBuilder.initializeHttp(GrpcServerBuilder.HttpInitializer)</code></a>
  if HTTP filters are acceptable in your use case.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/HttpDeserializer.html" title="interface in io.servicetalk.http.api">io.servicetalk.http.api.HttpDeserializer</a></div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/ClientInvoker.html" title="interface in io.servicetalk.http.api">io.servicetalk.http.api.ClientInvoker</a></div>
 <div class="col-last odd-row-color">
+<div class="deprecation-comment">There is no use of this interface in our codebase, it will be removed in the future releases. If you
+ depend on it, consider replicating a similar interface in your codebase.</div>
+</div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/HttpDeserializer.html" title="interface in io.servicetalk.http.api">io.servicetalk.http.api.HttpDeserializer</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/http/api/HttpDeserializer2.html" title="interface in io.servicetalk.http.api"><code>HttpDeserializer2</code></a> or <a href="io/servicetalk/http/api/HttpStreamingDeserializer.html" title="interface in io.servicetalk.http.api"><code>HttpStreamingDeserializer</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/HttpSerializationProvider.html" title="interface in io.servicetalk.http.api">io.servicetalk.http.api.HttpSerializationProvider</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/HttpSerializationProvider.html" title="interface in io.servicetalk.http.api">io.servicetalk.http.api.HttpSerializationProvider</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/http/api/HttpSerializers.html" title="class in io.servicetalk.http.api"><code>HttpSerializers</code></a>, <a href="io/servicetalk/http/api/HttpSerializer2.html" title="interface in io.servicetalk.http.api"><code>HttpSerializer2</code></a>, <a href="io/servicetalk/http/api/HttpDeserializer2.html" title="interface in io.servicetalk.http.api"><code>HttpDeserializer2</code></a>,
  <a href="io/servicetalk/http/api/HttpStreamingSerializer.html" title="interface in io.servicetalk.http.api"><code>HttpStreamingSerializer</code></a>, and <a href="io/servicetalk/http/api/HttpStreamingDeserializer.html" title="interface in io.servicetalk.http.api"><code>HttpStreamingDeserializer</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/HttpSerializer.html" title="interface in io.servicetalk.http.api">io.servicetalk.http.api.HttpSerializer</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/HttpSerializer.html" title="interface in io.servicetalk.http.api">io.servicetalk.http.api.HttpSerializer</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/http/api/HttpSerializer2.html" title="interface in io.servicetalk.http.api"><code>HttpSerializer2</code></a> or <a href="io/servicetalk/http/api/HttpStreamingSerializer.html" title="interface in io.servicetalk.http.api"><code>HttpStreamingSerializer</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/PartitionedHttpClientBuilder.html" title="interface in io.servicetalk.http.api">io.servicetalk.http.api.PartitionedHttpClientBuilder</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/PartitionedHttpClientBuilder.html" title="interface in io.servicetalk.http.api">io.servicetalk.http.api.PartitionedHttpClientBuilder</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">We are unaware of anyone using "partition" feature and plan to remove it in future releases.
  If you depend on it, consider using <a href="io/servicetalk/client/api/ClientGroup.html" title="interface in io.servicetalk.client.api"><code>ClientGroup</code></a> as an alternative or reach out to the maintainers describing
  the use-case.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/PartitionHttpClientBuilderConfigurator.html" title="interface in io.servicetalk.http.api">io.servicetalk.http.api.PartitionHttpClientBuilderConfigurator</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/PartitionHttpClientBuilderConfigurator.html" title="interface in io.servicetalk.http.api">io.servicetalk.http.api.PartitionHttpClientBuilderConfigurator</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/http/api/PartitionedHttpClientBuilder.SingleAddressInitializer.html" title="interface in io.servicetalk.http.api"><code>PartitionedHttpClientBuilder.SingleAddressInitializer</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/utils/TimeoutFromRequest.html" title="interface in io.servicetalk.http.utils">io.servicetalk.http.utils.TimeoutFromRequest</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/utils/TimeoutFromRequest.html" title="interface in io.servicetalk.http.utils">io.servicetalk.http.utils.TimeoutFromRequest</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">In areas which require <a href="io/servicetalk/http/utils/TimeoutFromRequest.html" title="interface in io.servicetalk.http.utils"><code>TimeoutFromRequest</code></a> use variants that accept
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/BiFunction.html" title="class or interface in java.util.function" class="external-link"><code>BiFunction</code></a>&lt;<a href="io/servicetalk/http/api/HttpRequestMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpRequestMetaData</code></a>, <a href="io/servicetalk/concurrent/TimeSource.html" title="interface in io.servicetalk.concurrent"><code>TimeSource</code></a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link"><code>Duration</code></a>&gt;.
  E.g.:
  <a href="io/servicetalk/http/utils/TimeoutHttpRequesterFilter.html#%3Cinit%3E(java.util.function.BiFunction,boolean)"><code>TimeoutHttpRequesterFilter(BiFunction, boolean)</code></a>,
  <a href="io/servicetalk/http/utils/TimeoutHttpServiceFilter.html#%3Cinit%3E(java.util.function.BiFunction,boolean)"><code>TimeoutHttpServiceFilter(BiFunction, boolean)</code></a> for filters.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/serialization/api/SerializationProvider.html" title="interface in io.servicetalk.serialization.api">io.servicetalk.serialization.api.SerializationProvider</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/serialization/api/SerializationProvider.html" title="interface in io.servicetalk.serialization.api">io.servicetalk.serialization.api.SerializationProvider</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">General <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/reflect/Type.html" title="class or interface in java.lang.reflect" class="external-link"><code>Type</code></a> serialization is not supported by all serializers. Defer
  to your specific <a href="io/servicetalk/serializer/api/Serializer.html" title="interface in io.servicetalk.serializer.api"><code>Serializer</code></a> implementation.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/serialization/api/Serializer.html" title="interface in io.servicetalk.serialization.api">io.servicetalk.serialization.api.Serializer</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/serialization/api/Serializer.html" title="interface in io.servicetalk.serialization.api">io.servicetalk.serialization.api.Serializer</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use the following types:
  <ul>
      <li><a href="io/servicetalk/serializer/api/Serializer.html" title="interface in io.servicetalk.serializer.api"><code>Serializer</code></a></li>
@@ -164,12 +169,12 @@ loadScripts(document, 'script');</script>
      <li><a href="io/servicetalk/serializer/api/StreamingDeserializer.html" title="interface in io.servicetalk.serializer.api"><code>StreamingDeserializer</code></a></li>
  </ul></div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/serialization/api/StreamingDeserializer.html" title="interface in io.servicetalk.serialization.api">io.servicetalk.serialization.api.StreamingDeserializer</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/serialization/api/StreamingDeserializer.html" title="interface in io.servicetalk.serialization.api">io.servicetalk.serialization.api.StreamingDeserializer</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/serializer/api/StreamingDeserializer.html" title="interface in io.servicetalk.serializer.api"><code>StreamingDeserializer</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/serialization/api/StreamingSerializer.html" title="interface in io.servicetalk.serialization.api">io.servicetalk.serialization.api.StreamingSerializer</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/serialization/api/StreamingSerializer.html" title="interface in io.servicetalk.serialization.api">io.servicetalk.serialization.api.StreamingSerializer</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/serializer/api/StreamingSerializer.html" title="interface in io.servicetalk.serializer.api"><code>StreamingSerializer</code></a>.</div>
 </div>
 </div>
@@ -385,416 +390,420 @@ loadScripts(document, 'script');</script>
 </div>
 <div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/client/api/DelegatingConnectionFactory.html#newConnection(ResolvedAddress,io.servicetalk.transport.api.TransportObserver)">io.servicetalk.client.api.DelegatingConnectionFactory.newConnection<wbr>(ResolvedAddress, TransportObserver)</a></div>
 <div class="col-last odd-row-color"></div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/client/api/LoadBalancer.html#selectConnection(java.util.function.Predicate)">io.servicetalk.client.api.LoadBalancer.selectConnection<wbr>(Predicate&lt;C&gt;)</a></div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/client/api/LoadBalancedAddress.html#newConnection()">io.servicetalk.client.api.LoadBalancedAddress.newConnection()</a></div>
 <div class="col-last even-row-color">
+<div class="deprecation-comment">Implement and use <a href="io/servicetalk/client/api/LoadBalancedAddress.html#newConnection(io.servicetalk.context.api.ContextMap)"><code>LoadBalancedAddress.newConnection(ContextMap)</code></a>.</div>
+</div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/client/api/LoadBalancer.html#selectConnection(java.util.function.Predicate)">io.servicetalk.client.api.LoadBalancer.selectConnection<wbr>(Predicate&lt;C&gt;)</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/client/api/LoadBalancer.html#selectConnection(java.util.function.Predicate,io.servicetalk.context.api.ContextMap)"><code>LoadBalancer.selectConnection(Predicate, ContextMap)</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/client/api/LoadBalancerFactory.html#newLoadBalancer(io.servicetalk.concurrent.api.Publisher,io.servicetalk.client.api.ConnectionFactory)">io.servicetalk.client.api.LoadBalancerFactory.newLoadBalancer<wbr>(Publisher&lt;? extends ServiceDiscovererEvent&lt;ResolvedAddress&gt;&gt;, ConnectionFactory&lt;ResolvedAddress, T&gt;)</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/client/api/LoadBalancerFactory.html#newLoadBalancer(io.servicetalk.concurrent.api.Publisher,io.servicetalk.client.api.ConnectionFactory)">io.servicetalk.client.api.LoadBalancerFactory.newLoadBalancer<wbr>(Publisher&lt;? extends ServiceDiscovererEvent&lt;ResolvedAddress&gt;&gt;, ConnectionFactory&lt;ResolvedAddress, T&gt;)</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">In the future only <a href="io/servicetalk/client/api/LoadBalancerFactory.html#newLoadBalancer(java.lang.String,io.servicetalk.concurrent.api.Publisher,io.servicetalk.client.api.ConnectionFactory)"><code>LoadBalancerFactory.newLoadBalancer(String, Publisher, ConnectionFactory)</code></a> will remain,
  please use that method instead.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/concurrent/api/AsyncContext.html#forEachEntry(java.util.function.BiPredicate)">io.servicetalk.concurrent.api.AsyncContext.forEachEntry<wbr>(BiPredicate&lt;ContextMap.Key&lt;?&gt;, Object&gt;)</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/concurrent/api/AsyncContext.html#forEachEntry(java.util.function.BiPredicate)">io.servicetalk.concurrent.api.AsyncContext.forEachEntry<wbr>(BiPredicate&lt;ContextMap.Key&lt;?&gt;, Object&gt;)</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/concurrent/api/AsyncContext.html#forEach(java.util.function.BiPredicate)"><code>AsyncContext.forEach(BiPredicate)</code></a></div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/concurrent/api/AsyncContext.html#putAllFromMap(java.util.Map)">io.servicetalk.concurrent.api.AsyncContext.putAllFromMap<wbr>(Map&lt;ContextMap.Key&lt;?&gt;, Object&gt;)</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/concurrent/api/AsyncContext.html#putAllFromMap(java.util.Map)">io.servicetalk.concurrent.api.AsyncContext.putAllFromMap<wbr>(Map&lt;ContextMap.Key&lt;?&gt;, Object&gt;)</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/concurrent/api/AsyncContext.html#putAll(java.util.Map)"><code>AsyncContext.putAll(Map)</code></a></div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/concurrent/api/AsyncContext.html#removeAllEntries(java.lang.Iterable)">io.servicetalk.concurrent.api.AsyncContext.removeAllEntries<wbr>(Iterable&lt;ContextMap.Key&lt;?&gt;&gt;)</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/concurrent/api/AsyncContext.html#removeAllEntries(java.lang.Iterable)">io.servicetalk.concurrent.api.AsyncContext.removeAllEntries<wbr>(Iterable&lt;ContextMap.Key&lt;?&gt;&gt;)</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/concurrent/api/AsyncContext.html#removeAll(java.lang.Iterable)"><code>AsyncContext.removeAll(Iterable)</code></a></div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/concurrent/api/Publisher.html#multicastToExactly(int)">io.servicetalk.concurrent.api.Publisher.multicastToExactly<wbr>(int)</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/concurrent/api/Publisher.html#multicastToExactly(int)">io.servicetalk.concurrent.api.Publisher.multicastToExactly<wbr>(int)</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/concurrent/api/Publisher.html#multicast(int)"><code>Publisher.multicast(int)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/concurrent/api/Publisher.html#multicastToExactly(int,int)">io.servicetalk.concurrent.api.Publisher.multicastToExactly<wbr>(int, int)</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/concurrent/api/Publisher.html#multicastToExactly(int,int)">io.servicetalk.concurrent.api.Publisher.multicastToExactly<wbr>(int, int)</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/concurrent/api/Publisher.html#multicast(int,int)"><code>Publisher.multicast(int, int)</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/concurrent/internal/AutoClosableUtils.html#closeAndReThrowUnchecked(java.lang.AutoCloseable)">io.servicetalk.concurrent.internal.AutoClosableUtils.closeAndReThrowUnchecked<wbr>(AutoCloseable)</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/concurrent/internal/AutoClosableUtils.html#closeAndReThrowUnchecked(java.lang.AutoCloseable)">io.servicetalk.concurrent.internal.AutoClosableUtils.closeAndReThrowUnchecked<wbr>(AutoCloseable)</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/concurrent/internal/AutoClosableUtils.html#closeAndReThrow(java.lang.AutoCloseable)"><code>AutoClosableUtils.closeAndReThrow(AutoCloseable)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/data/jackson/jersey/ServiceTalkJacksonSerializerFeature.html#contextResolverFor(com.fasterxml.jackson.databind.ObjectMapper)">io.servicetalk.data.jackson.jersey.ServiceTalkJacksonSerializerFeature.contextResolverFor<wbr>(ObjectMapper)</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/data/jackson/jersey/ServiceTalkJacksonSerializerFeature.html#contextResolverFor(com.fasterxml.jackson.databind.ObjectMapper)">io.servicetalk.data.jackson.jersey.ServiceTalkJacksonSerializerFeature.contextResolverFor<wbr>(ObjectMapper)</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/data/jackson/jersey/ServiceTalkJacksonSerializerFeature.html#newContextResolver(com.fasterxml.jackson.databind.ObjectMapper)"><code>ServiceTalkJacksonSerializerFeature.newContextResolver(ObjectMapper)</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/data/jackson/jersey/ServiceTalkJacksonSerializerFeature.html#contextResolverFor(io.servicetalk.data.jackson.JacksonSerializationProvider)">io.servicetalk.data.jackson.jersey.ServiceTalkJacksonSerializerFeature.contextResolverFor<wbr>(JacksonSerializationProvider)</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/data/jackson/jersey/ServiceTalkJacksonSerializerFeature.html#contextResolverFor(io.servicetalk.data.jackson.JacksonSerializationProvider)">io.servicetalk.data.jackson.jersey.ServiceTalkJacksonSerializerFeature.contextResolverFor<wbr>(JacksonSerializationProvider)</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/data/jackson/jersey/ServiceTalkJacksonSerializerFeature.html#newContextResolver(io.servicetalk.data.jackson.JacksonSerializerFactory)"><code>ServiceTalkJacksonSerializerFeature.newContextResolver(JacksonSerializerFactory)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/encoding/api/Identity.html#identity()">io.servicetalk.encoding.api.Identity.identity()</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/encoding/api/Identity.html#identity()">io.servicetalk.encoding.api.Identity.identity()</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/encoding/api/Identity.html#identityEncoder()"><code>Identity.identityEncoder()</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/encoding/api/internal/HeaderUtils.html#encodingFor(java.util.Collection,java.lang.CharSequence)">io.servicetalk.encoding.api.internal.HeaderUtils.encodingFor<wbr>(Collection&lt;ContentCodec&gt;, CharSequence)</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/encoding/api/internal/HeaderUtils.html#encodingFor(java.util.Collection,java.lang.CharSequence)">io.servicetalk.encoding.api.internal.HeaderUtils.encodingFor<wbr>(Collection&lt;ContentCodec&gt;, CharSequence)</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/encoding/api/internal/HeaderUtils.html#encodingForRaw(java.util.List,java.util.function.Function,java.lang.CharSequence)"><code>HeaderUtils.encodingForRaw(List, Function, CharSequence)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/encoding/api/internal/HeaderUtils.html#negotiateAcceptedEncoding(java.lang.CharSequence,java.util.List)">io.servicetalk.encoding.api.internal.HeaderUtils.negotiateAcceptedEncoding<wbr>(CharSequence, List&lt;ContentCodec&gt;)</a></div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/encoding/api/internal/HeaderUtils.html#negotiateAcceptedEncoding(java.lang.CharSequence,java.util.List)">io.servicetalk.encoding.api.internal.HeaderUtils.negotiateAcceptedEncoding<wbr>(CharSequence, List&lt;ContentCodec&gt;)</a></div>
+<div class="col-last odd-row-color">
+<div class="deprecation-comment">Use <a href="io/servicetalk/encoding/api/internal/HeaderUtils.html#negotiateAcceptedEncodingRaw(java.lang.CharSequence,java.util.List,java.util.function.Function)"><code>HeaderUtils.negotiateAcceptedEncodingRaw(CharSequence, List, Function)</code></a>.</div>
+</div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/encoding/api/internal/HeaderUtils.html#negotiateAcceptedEncoding(java.util.List,java.util.List)">io.servicetalk.encoding.api.internal.HeaderUtils.negotiateAcceptedEncoding<wbr>(List&lt;ContentCodec&gt;, List&lt;ContentCodec&gt;)</a></div>
 <div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/encoding/api/internal/HeaderUtils.html#negotiateAcceptedEncodingRaw(java.lang.CharSequence,java.util.List,java.util.function.Function)"><code>HeaderUtils.negotiateAcceptedEncodingRaw(CharSequence, List, Function)</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/encoding/api/internal/HeaderUtils.html#negotiateAcceptedEncoding(java.util.List,java.util.List)">io.servicetalk.encoding.api.internal.HeaderUtils.negotiateAcceptedEncoding<wbr>(List&lt;ContentCodec&gt;, List&lt;ContentCodec&gt;)</a></div>
-<div class="col-last odd-row-color">
-<div class="deprecation-comment">Use <a href="io/servicetalk/encoding/api/internal/HeaderUtils.html#negotiateAcceptedEncodingRaw(java.lang.CharSequence,java.util.List,java.util.function.Function)"><code>HeaderUtils.negotiateAcceptedEncodingRaw(CharSequence, List, Function)</code></a>.</div>
-</div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/DefaultGrpcClientMetadata.html#requestEncoding()">io.servicetalk.grpc.api.DefaultGrpcClientMetadata.requestEncoding()</a></div>
-<div class="col-last even-row-color"></div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcClientCallFactory.html#newBlockingCall(io.servicetalk.grpc.api.GrpcSerializationProvider,java.lang.Class,java.lang.Class)">io.servicetalk.grpc.api.GrpcClientCallFactory.newBlockingCall<wbr>(GrpcSerializationProvider, Class&lt;Req&gt;, Class&lt;Resp&gt;)</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/DefaultGrpcClientMetadata.html#requestEncoding()">io.servicetalk.grpc.api.DefaultGrpcClientMetadata.requestEncoding()</a></div>
+<div class="col-last odd-row-color"></div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcClientCallFactory.html#newBlockingCall(io.servicetalk.grpc.api.GrpcSerializationProvider,java.lang.Class,java.lang.Class)">io.servicetalk.grpc.api.GrpcClientCallFactory.newBlockingCall<wbr>(GrpcSerializationProvider, Class&lt;Req&gt;, Class&lt;Resp&gt;)</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">use <a href="io/servicetalk/grpc/api/GrpcClientCallFactory.html#newBlockingCall(io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup)"><code>GrpcClientCallFactory.newBlockingCall(MethodDescriptor, BufferDecoderGroup)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcClientCallFactory.html#newBlockingRequestStreamingCall(io.servicetalk.grpc.api.GrpcSerializationProvider,java.lang.Class,java.lang.Class)">io.servicetalk.grpc.api.GrpcClientCallFactory.newBlockingRequestStreamingCall<wbr>(GrpcSerializationProvider, Class&lt;Req&gt;, Class&lt;Resp&gt;)</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcClientCallFactory.html#newBlockingRequestStreamingCall(io.servicetalk.grpc.api.GrpcSerializationProvider,java.lang.Class,java.lang.Class)">io.servicetalk.grpc.api.GrpcClientCallFactory.newBlockingRequestStreamingCall<wbr>(GrpcSerializationProvider, Class&lt;Req&gt;, Class&lt;Resp&gt;)</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/grpc/api/GrpcClientCallFactory.html#newBlockingRequestStreamingCall(io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup)"><code>GrpcClientCallFactory.newBlockingRequestStreamingCall(MethodDescriptor, BufferDecoderGroup)</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcClientCallFactory.html#newBlockingResponseStreamingCall(io.servicetalk.grpc.api.GrpcSerializationProvider,java.lang.Class,java.lang.Class)">io.servicetalk.grpc.api.GrpcClientCallFactory.newBlockingResponseStreamingCall<wbr>(GrpcSerializationProvider, Class&lt;Req&gt;, Class&lt;Resp&gt;)</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcClientCallFactory.html#newBlockingResponseStreamingCall(io.servicetalk.grpc.api.GrpcSerializationProvider,java.lang.Class,java.lang.Class)">io.servicetalk.grpc.api.GrpcClientCallFactory.newBlockingResponseStreamingCall<wbr>(GrpcSerializationProvider, Class&lt;Req&gt;, Class&lt;Resp&gt;)</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/grpc/api/GrpcClientCallFactory.html#newBlockingResponseStreamingCall(io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup)"><code>GrpcClientCallFactory.newBlockingResponseStreamingCall(MethodDescriptor, BufferDecoderGroup)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcClientCallFactory.html#newBlockingStreamingCall(io.servicetalk.grpc.api.GrpcSerializationProvider,java.lang.Class,java.lang.Class)">io.servicetalk.grpc.api.GrpcClientCallFactory.newBlockingStreamingCall<wbr>(GrpcSerializationProvider, Class&lt;Req&gt;, Class&lt;Resp&gt;)</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcClientCallFactory.html#newBlockingStreamingCall(io.servicetalk.grpc.api.GrpcSerializationProvider,java.lang.Class,java.lang.Class)">io.servicetalk.grpc.api.GrpcClientCallFactory.newBlockingStreamingCall<wbr>(GrpcSerializationProvider, Class&lt;Req&gt;, Class&lt;Resp&gt;)</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/grpc/api/GrpcClientCallFactory.html#newBlockingStreamingCall(io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup)"><code>GrpcClientCallFactory.newBlockingStreamingCall(MethodDescriptor, BufferDecoderGroup)</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcClientCallFactory.html#newCall(io.servicetalk.grpc.api.GrpcSerializationProvider,java.lang.Class,java.lang.Class)">io.servicetalk.grpc.api.GrpcClientCallFactory.newCall<wbr>(GrpcSerializationProvider, Class&lt;Req&gt;, Class&lt;Resp&gt;)</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcClientCallFactory.html#newCall(io.servicetalk.grpc.api.GrpcSerializationProvider,java.lang.Class,java.lang.Class)">io.servicetalk.grpc.api.GrpcClientCallFactory.newCall<wbr>(GrpcSerializationProvider, Class&lt;Req&gt;, Class&lt;Resp&gt;)</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/grpc/api/GrpcClientCallFactory.html#newCall(io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup)"><code>GrpcClientCallFactory.newCall(MethodDescriptor, BufferDecoderGroup)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcClientCallFactory.html#newRequestStreamingCall(io.servicetalk.grpc.api.GrpcSerializationProvider,java.lang.Class,java.lang.Class)">io.servicetalk.grpc.api.GrpcClientCallFactory.newRequestStreamingCall<wbr>(GrpcSerializationProvider, Class&lt;Req&gt;, Class&lt;Resp&gt;)</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcClientCallFactory.html#newRequestStreamingCall(io.servicetalk.grpc.api.GrpcSerializationProvider,java.lang.Class,java.lang.Class)">io.servicetalk.grpc.api.GrpcClientCallFactory.newRequestStreamingCall<wbr>(GrpcSerializationProvider, Class&lt;Req&gt;, Class&lt;Resp&gt;)</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/grpc/api/GrpcClientCallFactory.html#newRequestStreamingCall(io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup)"><code>GrpcClientCallFactory.newRequestStreamingCall(MethodDescriptor, BufferDecoderGroup)</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcClientCallFactory.html#newResponseStreamingCall(io.servicetalk.grpc.api.GrpcSerializationProvider,java.lang.Class,java.lang.Class)">io.servicetalk.grpc.api.GrpcClientCallFactory.newResponseStreamingCall<wbr>(GrpcSerializationProvider, Class&lt;Req&gt;, Class&lt;Resp&gt;)</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcClientCallFactory.html#newResponseStreamingCall(io.servicetalk.grpc.api.GrpcSerializationProvider,java.lang.Class,java.lang.Class)">io.servicetalk.grpc.api.GrpcClientCallFactory.newResponseStreamingCall<wbr>(GrpcSerializationProvider, Class&lt;Req&gt;, Class&lt;Resp&gt;)</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/grpc/api/GrpcClientCallFactory.html#newResponseStreamingCall(io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup)"><code>GrpcClientCallFactory.newResponseStreamingCall(MethodDescriptor, BufferDecoderGroup)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcClientCallFactory.html#newStreamingCall(io.servicetalk.grpc.api.GrpcSerializationProvider,java.lang.Class,java.lang.Class)">io.servicetalk.grpc.api.GrpcClientCallFactory.newStreamingCall<wbr>(GrpcSerializationProvider, Class&lt;Req&gt;, Class&lt;Resp&gt;)</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcClientCallFactory.html#newStreamingCall(io.servicetalk.grpc.api.GrpcSerializationProvider,java.lang.Class,java.lang.Class)">io.servicetalk.grpc.api.GrpcClientCallFactory.newStreamingCall<wbr>(GrpcSerializationProvider, Class&lt;Req&gt;, Class&lt;Resp&gt;)</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/grpc/api/GrpcClientCallFactory.html#newStreamingCall(io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup)"><code>GrpcClientCallFactory.newStreamingCall(MethodDescriptor, BufferDecoderGroup)</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcClientFactory.html#supportedMessageCodings()">io.servicetalk.grpc.api.GrpcClientFactory.supportedMessageCodings()</a></div>
-<div class="col-last odd-row-color">
-<div class="deprecation-comment">Use generated code methods targeting <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link"><code>List</code></a> of
- <a href="io/servicetalk/encoding/api/BufferEncoder.html" title="interface in io.servicetalk.encoding.api"><code>BufferEncoder</code></a>s and <a href="io/servicetalk/encoding/api/BufferDecoderGroup.html" title="interface in io.servicetalk.encoding.api"><code>BufferDecoderGroup</code></a>.</div>
-</div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcClientFactory.html#supportedMessageCodings(java.util.List)">io.servicetalk.grpc.api.GrpcClientFactory.supportedMessageCodings<wbr>(List&lt;ContentCodec&gt;)</a></div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcClientFactory.html#supportedMessageCodings()">io.servicetalk.grpc.api.GrpcClientFactory.supportedMessageCodings()</a></div>
 <div class="col-last even-row-color">
 <div class="deprecation-comment">Use generated code methods targeting <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link"><code>List</code></a> of
  <a href="io/servicetalk/encoding/api/BufferEncoder.html" title="interface in io.servicetalk.encoding.api"><code>BufferEncoder</code></a>s and <a href="io/servicetalk/encoding/api/BufferDecoderGroup.html" title="interface in io.servicetalk.encoding.api"><code>BufferDecoderGroup</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcClientMetadata.html#requestEncoding()">io.servicetalk.grpc.api.GrpcClientMetadata.requestEncoding()</a></div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcClientFactory.html#supportedMessageCodings(java.util.List)">io.servicetalk.grpc.api.GrpcClientFactory.supportedMessageCodings<wbr>(List&lt;ContentCodec&gt;)</a></div>
 <div class="col-last odd-row-color">
+<div class="deprecation-comment">Use generated code methods targeting <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link"><code>List</code></a> of
+ <a href="io/servicetalk/encoding/api/BufferEncoder.html" title="interface in io.servicetalk.encoding.api"><code>BufferEncoder</code></a>s and <a href="io/servicetalk/encoding/api/BufferDecoderGroup.html" title="interface in io.servicetalk.encoding.api"><code>BufferDecoderGroup</code></a>.</div>
+</div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcClientMetadata.html#requestEncoding()">io.servicetalk.grpc.api.GrpcClientMetadata.requestEncoding()</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/grpc/api/GrpcClientMetadata.html#requestCompressor()"><code>GrpcClientMetadata.requestCompressor()</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcExecutionStrategies.html#offloadNever()">io.servicetalk.grpc.api.GrpcExecutionStrategies.offloadNever()</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcExecutionStrategies.html#offloadNever()">io.servicetalk.grpc.api.GrpcExecutionStrategies.offloadNever()</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use a custom strategy with no offloads instead;
  <code>GrpcExecutionStrategies.customStrategyBuilder().offloadNone().build()</code></div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcMetadata.html#path()">io.servicetalk.grpc.api.GrpcMetadata.path()</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcMetadata.html#path()">io.servicetalk.grpc.api.GrpcMetadata.path()</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/grpc/api/MethodDescriptor.html#httpPath()"><code>MethodDescriptor.httpPath()</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addBlockingRequestStreamingRoute(java.lang.String,io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.grpc.api.GrpcRoutes.BlockingRequestStreamingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addBlockingRequestStreamingRoute<wbr>(String, GrpcExecutionStrategy, GrpcRoutes.BlockingRequestStreamingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addBlockingRequestStreamingRoute(java.lang.String,io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.grpc.api.GrpcRoutes.BlockingRequestStreamingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addBlockingRequestStreamingRoute<wbr>(String, GrpcExecutionStrategy, GrpcRoutes.BlockingRequestStreamingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use
  <a href="io/servicetalk/grpc/api/GrpcRoutes.html#addBlockingRequestStreamingRoute(io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup,java.util.List,io.servicetalk.grpc.api.GrpcRoutes.BlockingRequestStreamingRoute)"><code>GrpcRoutes.addBlockingRequestStreamingRoute(GrpcExecutionStrategy, MethodDescriptor, BufferDecoderGroup, List, BlockingRequestStreamingRoute)</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addBlockingRequestStreamingRoute(java.lang.String,java.lang.Class,java.lang.String,io.servicetalk.grpc.api.GrpcRoutes.BlockingRequestStreamingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addBlockingRequestStreamingRoute<wbr>(String, Class&lt;?&gt;, String, GrpcRoutes.BlockingRequestStreamingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addBlockingRequestStreamingRoute(java.lang.String,java.lang.Class,java.lang.String,io.servicetalk.grpc.api.GrpcRoutes.BlockingRequestStreamingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addBlockingRequestStreamingRoute<wbr>(String, Class&lt;?&gt;, String, GrpcRoutes.BlockingRequestStreamingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use
  <a href="io/servicetalk/grpc/api/GrpcRoutes.html#addBlockingStreamingRoute(java.lang.Class,io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup,java.util.List,io.servicetalk.grpc.api.GrpcRoutes.BlockingStreamingRoute)"><code>GrpcRoutes.addBlockingStreamingRoute(Class, MethodDescriptor, BufferDecoderGroup, List, BlockingStreamingRoute)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addBlockingResponseStreamingRoute(java.lang.String,io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.grpc.api.GrpcRoutes.BlockingResponseStreamingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addBlockingResponseStreamingRoute<wbr>(String, GrpcExecutionStrategy, GrpcRoutes.BlockingResponseStreamingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addBlockingResponseStreamingRoute(java.lang.String,io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.grpc.api.GrpcRoutes.BlockingResponseStreamingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addBlockingResponseStreamingRoute<wbr>(String, GrpcExecutionStrategy, GrpcRoutes.BlockingResponseStreamingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use
  <a href="io/servicetalk/grpc/api/GrpcRoutes.html#addBlockingResponseStreamingRoute(io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup,java.util.List,io.servicetalk.grpc.api.GrpcRoutes.BlockingResponseStreamingRoute)"><code>GrpcRoutes.addBlockingResponseStreamingRoute(GrpcExecutionStrategy, MethodDescriptor, BufferDecoderGroup, List, BlockingResponseStreamingRoute)</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addBlockingResponseStreamingRoute(java.lang.String,java.lang.Class,java.lang.String,io.servicetalk.grpc.api.GrpcRoutes.BlockingResponseStreamingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addBlockingResponseStreamingRoute<wbr>(String, Class&lt;?&gt;, String, GrpcRoutes.BlockingResponseStreamingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addBlockingResponseStreamingRoute(java.lang.String,java.lang.Class,java.lang.String,io.servicetalk.grpc.api.GrpcRoutes.BlockingResponseStreamingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addBlockingResponseStreamingRoute<wbr>(String, Class&lt;?&gt;, String, GrpcRoutes.BlockingResponseStreamingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use
  <a href="io/servicetalk/grpc/api/GrpcRoutes.html#addBlockingResponseStreamingRoute(java.lang.Class,io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup,java.util.List,io.servicetalk.grpc.api.GrpcRoutes.BlockingResponseStreamingRoute)"><code>GrpcRoutes.addBlockingResponseStreamingRoute(Class, MethodDescriptor, BufferDecoderGroup, List, BlockingResponseStreamingRoute)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addBlockingRoute(java.lang.String,io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.grpc.api.GrpcRoutes.BlockingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addBlockingRoute<wbr>(String, GrpcExecutionStrategy, GrpcRoutes.BlockingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addBlockingRoute(java.lang.String,io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.grpc.api.GrpcRoutes.BlockingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addBlockingRoute<wbr>(String, GrpcExecutionStrategy, GrpcRoutes.BlockingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/grpc/api/GrpcRoutes.html#addBlockingRoute(io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup,java.util.List,io.servicetalk.grpc.api.GrpcRoutes.BlockingRoute)"><code>GrpcRoutes.addBlockingRoute(GrpcExecutionStrategy, MethodDescriptor, BufferDecoderGroup, List, BlockingRoute)</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addBlockingRoute(java.lang.String,java.lang.Class,java.lang.String,io.servicetalk.grpc.api.GrpcRoutes.BlockingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addBlockingRoute<wbr>(String, Class&lt;?&gt;, String, GrpcRoutes.BlockingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addBlockingRoute(java.lang.String,java.lang.Class,java.lang.String,io.servicetalk.grpc.api.GrpcRoutes.BlockingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addBlockingRoute<wbr>(String, Class&lt;?&gt;, String, GrpcRoutes.BlockingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/grpc/api/GrpcRoutes.html#addBlockingRoute(java.lang.Class,io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup,java.util.List,io.servicetalk.grpc.api.GrpcRoutes.BlockingRoute)"><code>GrpcRoutes.addBlockingRoute(Class, MethodDescriptor, BufferDecoderGroup, List, BlockingRoute)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addBlockingStreamingRoute(java.lang.String,io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.grpc.api.GrpcRoutes.BlockingStreamingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addBlockingStreamingRoute<wbr>(String, GrpcExecutionStrategy, GrpcRoutes.BlockingStreamingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addBlockingStreamingRoute(java.lang.String,io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.grpc.api.GrpcRoutes.BlockingStreamingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addBlockingStreamingRoute<wbr>(String, GrpcExecutionStrategy, GrpcRoutes.BlockingStreamingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use
  <a href="io/servicetalk/grpc/api/GrpcRoutes.html#addBlockingStreamingRoute(io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup,java.util.List,io.servicetalk.grpc.api.GrpcRoutes.BlockingStreamingRoute)"><code>GrpcRoutes.addBlockingStreamingRoute(GrpcExecutionStrategy, MethodDescriptor, BufferDecoderGroup, List, BlockingStreamingRoute)</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addBlockingStreamingRoute(java.lang.String,java.lang.Class,java.lang.String,io.servicetalk.grpc.api.GrpcRoutes.BlockingStreamingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addBlockingStreamingRoute<wbr>(String, Class&lt;?&gt;, String, GrpcRoutes.BlockingStreamingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addBlockingStreamingRoute(java.lang.String,java.lang.Class,java.lang.String,io.servicetalk.grpc.api.GrpcRoutes.BlockingStreamingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addBlockingStreamingRoute<wbr>(String, Class&lt;?&gt;, String, GrpcRoutes.BlockingStreamingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use
  <a href="io/servicetalk/grpc/api/GrpcRoutes.html#addBlockingStreamingRoute(java.lang.Class,io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup,java.util.List,io.servicetalk.grpc.api.GrpcRoutes.BlockingStreamingRoute)"><code>GrpcRoutes.addBlockingStreamingRoute(Class, MethodDescriptor, BufferDecoderGroup, List, BlockingStreamingRoute)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addRequestStreamingRoute(java.lang.String,io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.grpc.api.GrpcRoutes.RequestStreamingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addRequestStreamingRoute<wbr>(String, GrpcExecutionStrategy, GrpcRoutes.RequestStreamingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addRequestStreamingRoute(java.lang.String,io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.grpc.api.GrpcRoutes.RequestStreamingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addRequestStreamingRoute<wbr>(String, GrpcExecutionStrategy, GrpcRoutes.RequestStreamingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use
  <a href="io/servicetalk/grpc/api/GrpcRoutes.html#addRequestStreamingRoute(io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup,java.util.List,io.servicetalk.grpc.api.GrpcRoutes.RequestStreamingRoute)"><code>GrpcRoutes.addRequestStreamingRoute(GrpcExecutionStrategy, MethodDescriptor, BufferDecoderGroup, List, RequestStreamingRoute)</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addRequestStreamingRoute(java.lang.String,java.lang.Class,java.lang.String,io.servicetalk.grpc.api.GrpcRoutes.RequestStreamingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addRequestStreamingRoute<wbr>(String, Class&lt;?&gt;, String, GrpcRoutes.RequestStreamingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addRequestStreamingRoute(java.lang.String,java.lang.Class,java.lang.String,io.servicetalk.grpc.api.GrpcRoutes.RequestStreamingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addRequestStreamingRoute<wbr>(String, Class&lt;?&gt;, String, GrpcRoutes.RequestStreamingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use
  <a href="io/servicetalk/grpc/api/GrpcRoutes.html#addRequestStreamingRoute(java.lang.Class,io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup,java.util.List,io.servicetalk.grpc.api.GrpcRoutes.RequestStreamingRoute)"><code>GrpcRoutes.addRequestStreamingRoute(Class, MethodDescriptor, BufferDecoderGroup, List, RequestStreamingRoute)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addResponseStreamingRoute(java.lang.String,io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.grpc.api.GrpcRoutes.ResponseStreamingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addResponseStreamingRoute<wbr>(String, GrpcExecutionStrategy, GrpcRoutes.ResponseStreamingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addResponseStreamingRoute(java.lang.String,io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.grpc.api.GrpcRoutes.ResponseStreamingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addResponseStreamingRoute<wbr>(String, GrpcExecutionStrategy, GrpcRoutes.ResponseStreamingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use
  <a href="io/servicetalk/grpc/api/GrpcRoutes.html#addResponseStreamingRoute(io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup,java.util.List,io.servicetalk.grpc.api.GrpcRoutes.ResponseStreamingRoute)"><code>GrpcRoutes.addResponseStreamingRoute(GrpcExecutionStrategy, MethodDescriptor, BufferDecoderGroup, List, ResponseStreamingRoute)</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addResponseStreamingRoute(java.lang.String,java.lang.Class,java.lang.String,io.servicetalk.grpc.api.GrpcRoutes.ResponseStreamingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addResponseStreamingRoute<wbr>(String, Class&lt;?&gt;, String, GrpcRoutes.ResponseStreamingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addResponseStreamingRoute(java.lang.String,java.lang.Class,java.lang.String,io.servicetalk.grpc.api.GrpcRoutes.ResponseStreamingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addResponseStreamingRoute<wbr>(String, Class&lt;?&gt;, String, GrpcRoutes.ResponseStreamingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use
  <a href="io/servicetalk/grpc/api/GrpcRoutes.html#addResponseStreamingRoute(java.lang.Class,io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup,java.util.List,io.servicetalk.grpc.api.GrpcRoutes.ResponseStreamingRoute)"><code>GrpcRoutes.addResponseStreamingRoute(Class, MethodDescriptor, BufferDecoderGroup, List, ResponseStreamingRoute)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addRoute(java.lang.String,io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.grpc.api.GrpcRoutes.Route,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addRoute<wbr>(String, GrpcExecutionStrategy, GrpcRoutes.Route&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addRoute(java.lang.String,io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.grpc.api.GrpcRoutes.Route,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addRoute<wbr>(String, GrpcExecutionStrategy, GrpcRoutes.Route&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/grpc/api/GrpcRoutes.html#addRoute(io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup,java.util.List,io.servicetalk.grpc.api.GrpcRoutes.Route)"><code>GrpcRoutes.addRoute(GrpcExecutionStrategy, MethodDescriptor, BufferDecoderGroup, List, Route)</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addRoute(java.lang.String,java.lang.Class,java.lang.String,io.servicetalk.grpc.api.GrpcRoutes.Route,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addRoute<wbr>(String, Class&lt;?&gt;, String, GrpcRoutes.Route&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addRoute(java.lang.String,java.lang.Class,java.lang.String,io.servicetalk.grpc.api.GrpcRoutes.Route,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addRoute<wbr>(String, Class&lt;?&gt;, String, GrpcRoutes.Route&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/grpc/api/GrpcRoutes.html#addRoute(java.lang.Class,io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup,java.util.List,io.servicetalk.grpc.api.GrpcRoutes.Route)"><code>GrpcRoutes.addRoute(Class, MethodDescriptor, BufferDecoderGroup, List, Route)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addStreamingRoute(java.lang.String,io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.grpc.api.GrpcRoutes.StreamingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addStreamingRoute<wbr>(String, GrpcExecutionStrategy, GrpcRoutes.StreamingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addStreamingRoute(java.lang.String,io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.grpc.api.GrpcRoutes.StreamingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addStreamingRoute<wbr>(String, GrpcExecutionStrategy, GrpcRoutes.StreamingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/grpc/api/GrpcRoutes.html#addStreamingRoute(io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup,java.util.List,io.servicetalk.grpc.api.GrpcRoutes.StreamingRoute)"><code>GrpcRoutes.addStreamingRoute(GrpcExecutionStrategy, MethodDescriptor, BufferDecoderGroup, List, StreamingRoute)</code></a></div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addStreamingRoute(java.lang.String,java.lang.Class,java.lang.String,io.servicetalk.grpc.api.GrpcRoutes.StreamingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addStreamingRoute<wbr>(String, Class&lt;?&gt;, String, GrpcRoutes.StreamingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcRoutes.html#addStreamingRoute(java.lang.String,java.lang.Class,java.lang.String,io.servicetalk.grpc.api.GrpcRoutes.StreamingRoute,java.lang.Class,java.lang.Class,io.servicetalk.grpc.api.GrpcSerializationProvider)">io.servicetalk.grpc.api.GrpcRoutes.addStreamingRoute<wbr>(String, Class&lt;?&gt;, String, GrpcRoutes.StreamingRoute&lt;Req, Resp&gt;, Class&lt;Req&gt;, Class&lt;Resp&gt;, GrpcSerializationProvider)</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/grpc/api/GrpcRoutes.html#addStreamingRoute(java.lang.Class,io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup,java.util.List,io.servicetalk.grpc.api.GrpcRoutes.StreamingRoute)"><code>GrpcRoutes.addStreamingRoute(Class, MethodDescriptor, BufferDecoderGroup, List, StreamingRoute)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/grpc/api/GrpcServiceContext.html#supportedMessageCodings()">io.servicetalk.grpc.api.GrpcServiceContext.supportedMessageCodings()</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/grpc/api/GrpcServiceContext.html#supportedMessageCodings()">io.servicetalk.grpc.api.GrpcServiceContext.supportedMessageCodings()</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Will be removed along with <a href="io/servicetalk/encoding/api/ContentCodec.html" title="interface in io.servicetalk.encoding.api"><code>ContentCodec</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/health/v1/Health.BlockingHealthClient.html#check(io.servicetalk.health.v1.Health.CheckMetadata,io.servicetalk.health.v1.HealthCheckRequest)">io.servicetalk.health.v1.Health.BlockingHealthClient.check<wbr>(Health.CheckMetadata, HealthCheckRequest)</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/health/v1/Health.BlockingHealthClient.html#check(io.servicetalk.health.v1.Health.CheckMetadata,io.servicetalk.health.v1.HealthCheckRequest)">io.servicetalk.health.v1.Health.BlockingHealthClient.check<wbr>(Health.CheckMetadata, HealthCheckRequest)</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/health/v1/Health.BlockingHealthClient.html#check(io.servicetalk.grpc.api.GrpcClientMetadata,io.servicetalk.health.v1.HealthCheckRequest)"><code>Health.BlockingHealthClient.check(GrpcClientMetadata,HealthCheckRequest)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/health/v1/Health.BlockingHealthClient.html#watch(io.servicetalk.health.v1.Health.WatchMetadata,io.servicetalk.health.v1.HealthCheckRequest)">io.servicetalk.health.v1.Health.BlockingHealthClient.watch<wbr>(Health.WatchMetadata, HealthCheckRequest)</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/health/v1/Health.BlockingHealthClient.html#watch(io.servicetalk.health.v1.Health.WatchMetadata,io.servicetalk.health.v1.HealthCheckRequest)">io.servicetalk.health.v1.Health.BlockingHealthClient.watch<wbr>(Health.WatchMetadata, HealthCheckRequest)</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/health/v1/Health.BlockingHealthClient.html#watch(io.servicetalk.grpc.api.GrpcClientMetadata,io.servicetalk.health.v1.HealthCheckRequest)"><code>Health.BlockingHealthClient.watch(GrpcClientMetadata,HealthCheckRequest)</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/health/v1/Health.HealthClient.html#check(io.servicetalk.health.v1.Health.CheckMetadata,io.servicetalk.health.v1.HealthCheckRequest)">io.servicetalk.health.v1.Health.HealthClient.check<wbr>(Health.CheckMetadata, HealthCheckRequest)</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/health/v1/Health.HealthClient.html#check(io.servicetalk.health.v1.Health.CheckMetadata,io.servicetalk.health.v1.HealthCheckRequest)">io.servicetalk.health.v1.Health.HealthClient.check<wbr>(Health.CheckMetadata, HealthCheckRequest)</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/health/v1/Health.HealthClient.html#check(io.servicetalk.grpc.api.GrpcClientMetadata,io.servicetalk.health.v1.HealthCheckRequest)"><code>Health.HealthClient.check(GrpcClientMetadata,HealthCheckRequest)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/health/v1/Health.HealthClient.html#watch(io.servicetalk.health.v1.Health.WatchMetadata,io.servicetalk.health.v1.HealthCheckRequest)">io.servicetalk.health.v1.Health.HealthClient.watch<wbr>(Health.WatchMetadata, HealthCheckRequest)</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/health/v1/Health.HealthClient.html#watch(io.servicetalk.health.v1.Health.WatchMetadata,io.servicetalk.health.v1.HealthCheckRequest)">io.servicetalk.health.v1.Health.HealthClient.watch<wbr>(Health.WatchMetadata, HealthCheckRequest)</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/health/v1/Health.HealthClient.html#watch(io.servicetalk.grpc.api.GrpcClientMetadata,io.servicetalk.health.v1.HealthCheckRequest)"><code>Health.HealthClient.watch(GrpcClientMetadata,HealthCheckRequest)</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/health/v1/Health.ServiceFactory.Builder.html#addService(io.servicetalk.health.v1.Health.BlockingHealthService)">io.servicetalk.health.v1.Health.ServiceFactory.Builder.addService<wbr>(Health.BlockingHealthService)</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/health/v1/Health.ServiceFactory.Builder.html#addService(io.servicetalk.health.v1.Health.BlockingHealthService)">io.servicetalk.health.v1.Health.ServiceFactory.Builder.addService<wbr>(Health.BlockingHealthService)</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/health/v1/Health.ServiceFactory.Builder.html#addBlockingService(io.servicetalk.health.v1.Health.BlockingHealthService)"><code>Health.ServiceFactory.Builder.addBlockingService(io.servicetalk.health.v1.Health.BlockingHealthService)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/health/v1/HealthCheckResponse.ServingStatus.html#valueOf(int)">io.servicetalk.health.v1.HealthCheckResponse.ServingStatus.valueOf<wbr>(int)</a></div>
-<div class="col-last even-row-color"></div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/BlockingStreamingHttpRequest.html#encoding(io.servicetalk.encoding.api.ContentCodec)">io.servicetalk.http.api.BlockingStreamingHttpRequest.encoding<wbr>(ContentCodec)</a></div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/health/v1/HealthCheckResponse.ServingStatus.html#valueOf(int)">io.servicetalk.health.v1.HealthCheckResponse.ServingStatus.valueOf<wbr>(int)</a></div>
 <div class="col-last odd-row-color"></div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/BlockingStreamingHttpRequest.html#payloadBody(io.servicetalk.http.api.HttpDeserializer)">io.servicetalk.http.api.BlockingStreamingHttpRequest.payloadBody<wbr>(HttpDeserializer&lt;T&gt;)</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/BlockingStreamingHttpRequest.html#encoding(io.servicetalk.encoding.api.ContentCodec)">io.servicetalk.http.api.BlockingStreamingHttpRequest.encoding<wbr>(ContentCodec)</a></div>
+<div class="col-last even-row-color"></div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/BlockingStreamingHttpRequest.html#payloadBody(io.servicetalk.http.api.HttpDeserializer)">io.servicetalk.http.api.BlockingStreamingHttpRequest.payloadBody<wbr>(HttpDeserializer&lt;T&gt;)</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/http/api/BlockingStreamingHttpRequest.html#payloadBody(io.servicetalk.http.api.HttpStreamingDeserializer)"><code>BlockingStreamingHttpRequest.payloadBody(HttpStreamingDeserializer)</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/BlockingStreamingHttpRequest.html#payloadBody(java.lang.Iterable,io.servicetalk.http.api.HttpSerializer)">io.servicetalk.http.api.BlockingStreamingHttpRequest.payloadBody<wbr>(Iterable&lt;T&gt;, HttpSerializer&lt;T&gt;)</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/BlockingStreamingHttpRequest.html#payloadBody(java.lang.Iterable,io.servicetalk.http.api.HttpSerializer)">io.servicetalk.http.api.BlockingStreamingHttpRequest.payloadBody<wbr>(Iterable&lt;T&gt;, HttpSerializer&lt;T&gt;)</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/http/api/BlockingStreamingHttpRequest.html#payloadBody(java.lang.Iterable,io.servicetalk.http.api.HttpStreamingSerializer)"><code>BlockingStreamingHttpRequest.payloadBody(Iterable, HttpStreamingSerializer)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/BlockingStreamingHttpRequest.html#transform(io.servicetalk.http.api.TrailersTransformer)">io.servicetalk.http.api.BlockingStreamingHttpRequest.transform<wbr>(TrailersTransformer&lt;T, Buffer&gt;)</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/BlockingStreamingHttpRequest.html#transform(io.servicetalk.http.api.TrailersTransformer)">io.servicetalk.http.api.BlockingStreamingHttpRequest.transform<wbr>(TrailersTransformer&lt;T, Buffer&gt;)</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/http/api/BlockingStreamingHttpRequest.html#messageBody()"><code>BlockingStreamingHttpRequest.messageBody()</code></a> and <a href="io/servicetalk/http/api/BlockingStreamingHttpRequest.html#messageBody(io.servicetalk.http.api.HttpMessageBodyIterable)"><code>BlockingStreamingHttpRequest.messageBody(HttpMessageBodyIterable)</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/BlockingStreamingHttpRequest.html#transformPayloadBody(java.util.function.Function,io.servicetalk.http.api.HttpSerializer)">io.servicetalk.http.api.BlockingStreamingHttpRequest.transformPayloadBody<wbr>(Function&lt;BlockingIterable&lt;Buffer&gt;, BlockingIterable&lt;T&gt;&gt;, HttpSerializer&lt;T&gt;)</a></div>
-<div class="col-last odd-row-color">
-<div class="deprecation-comment">Use <a href="io/servicetalk/http/api/BlockingStreamingHttpRequest.html#payloadBody(io.servicetalk.http.api.HttpStreamingDeserializer)"><code>BlockingStreamingHttpRequest.payloadBody(HttpStreamingDeserializer)</code></a> and
- <a href="io/servicetalk/http/api/BlockingStreamingHttpRequest.html#payloadBody(java.lang.Iterable,io.servicetalk.http.api.HttpStreamingSerializer)"><code>BlockingStreamingHttpRequest.payloadBody(Iterable, HttpStreamingSerializer)</code></a>.</div>
-</div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/BlockingStreamingHttpRequest.html#transformPayloadBody(java.util.function.Function,io.servicetalk.http.api.HttpDeserializer,io.servicetalk.http.api.HttpSerializer)">io.servicetalk.http.api.BlockingStreamingHttpRequest.transformPayloadBody<wbr>(Function&lt;BlockingIterable&lt;T&gt;, BlockingIterable&lt;R&gt;&gt;, HttpDeserializer&lt;T&gt;, HttpSerializer&lt;R&gt;)</a></div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/BlockingStreamingHttpRequest.html#transformPayloadBody(java.util.function.Function,io.servicetalk.http.api.HttpSerializer)">io.servicetalk.http.api.BlockingStreamingHttpRequest.transformPayloadBody<wbr>(Function&lt;BlockingIterable&lt;Buffer&gt;, BlockingIterable&lt;T&gt;&gt;, HttpSerializer&lt;T&gt;)</a></div>
 <div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/http/api/BlockingStreamingHttpRequest.html#payloadBody(io.servicetalk.http.api.HttpStreamingDeserializer)"><code>BlockingStreamingHttpRequest.payloadBody(HttpStreamingDeserializer)</code></a> and
  <a href="io/servicetalk/http/api/BlockingStreamingHttpRequest.html#payloadBody(java.lang.Iterable,io.servicetalk.http.api.HttpStreamingSerializer)"><code>BlockingStreamingHttpRequest.payloadBody(Iterable, HttpStreamingSerializer)</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/BlockingStreamingHttpRequest.html#transformPayloadBody(java.util.function.UnaryOperator)">io.servicetalk.http.api.BlockingStreamingHttpRequest.transformPayloadBody<wbr>(UnaryOperator&lt;BlockingIterable&lt;Buffer&gt;&gt;)</a></div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/BlockingStreamingHttpRequest.html#transformPayloadBody(java.util.function.Function,io.servicetalk.http.api.HttpDeserializer,io.servicetalk.http.api.HttpSerializer)">io.servicetalk.http.api.BlockingStreamingHttpRequest.transformPayloadBody<wbr>(Function&lt;BlockingIterable&lt;T&gt;, BlockingIterable&lt;R&gt;&gt;, HttpDeserializer&lt;T&gt;, HttpSerializer&lt;R&gt;)</a></div>
 <div class="col-last odd-row-color">
+<div class="deprecation-comment">Use <a href="io/servicetalk/http/api/BlockingStreamingHttpRequest.html#payloadBody(io.servicetalk.http.api.HttpStreamingDeserializer)"><code>BlockingStreamingHttpRequest.payloadBody(HttpStreamingDeserializer)</code></a> and
+ <a href="io/servicetalk/http/api/BlockingStreamingHttpRequest.html#payloadBody(java.lang.Iterable,io.servicetalk.http.api.HttpStreamingSerializer)"><code>BlockingStreamingHttpRequest.payloadBody(Iterable, HttpStreamingSerializer)</code></a>.</div>
+</div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/BlockingStreamingHttpRequest.html#transformPayloadBody(java.util.function.UnaryOperator)">io.servicetalk.http.api.BlockingStreamingHttpRequest.transformPayloadBody<wbr>(UnaryOperator&lt;BlockingIterable&lt;Buffer&gt;&gt;)</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/http/api/BlockingStreamingHttpRequest.html#payloadBody()"><code>BlockingStreamingHttpRequest.payloadBody()</code></a> and <a href="io/servicetalk/http/api/BlockingStreamingHttpRequest.html#payloadBody(java.lang.Iterable)"><code>BlockingStreamingHttpRequest.payloadBody(Iterable)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/BlockingStreamingHttpResponse.html#encoding(io.servicetalk.encoding.api.ContentCodec)">io.servicetalk.http.api.BlockingStreamingHttpResponse.encoding<wbr>(ContentCodec)</a></div>
-<div class="col-last even-row-color"></div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/BlockingStreamingHttpResponse.html#payloadBody(io.servicetalk.http.api.HttpDeserializer)">io.servicetalk.http.api.BlockingStreamingHttpResponse.payloadBody<wbr>(HttpDeserializer&lt;T&gt;)</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/BlockingStreamingHttpResponse.html#encoding(io.servicetalk.encoding.api.ContentCodec)">io.servicetalk.http.api.BlockingStreamingHttpResponse.encoding<wbr>(ContentCodec)</a></div>
+<div class="col-last odd-row-color"></div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/BlockingStreamingHttpResponse.html#payloadBody(io.servicetalk.http.api.HttpDeserializer)">io.servicetalk.http.api.BlockingStreamingHttpResponse.payloadBody<wbr>(HttpDeserializer&lt;T&gt;)</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/http/api/BlockingStreamingHttpResponse.html#payloadBody(io.servicetalk.http.api.HttpStreamingDeserializer)"><code>BlockingStreamingHttpResponse.payloadBody(HttpStreamingDeserializer)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/BlockingStreamingHttpResponse.html#payloadBody(java.lang.Iterable,io.servicetalk.http.api.HttpSerializer)">io.servicetalk.http.api.BlockingStreamingHttpResponse.payloadBody<wbr>(Iterable&lt;T&gt;, HttpSerializer&lt;T&gt;)</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/BlockingStreamingHttpResponse.html#payloadBody(java.lang.Iterable,io.servicetalk.http.api.HttpSerializer)">io.servicetalk.http.api.BlockingStreamingHttpResponse.payloadBody<wbr>(Iterable&lt;T&gt;, HttpSerializer&lt;T&gt;)</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/http/api/BlockingStreamingHttpResponse.html#payloadBody(java.lang.Iterable,io.servicetalk.http.api.HttpStreamingSerializer)"><code>BlockingStreamingHttpResponse.payloadBody(Iterable, HttpStreamingSerializer)</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/BlockingStreamingHttpResponse.html#transform(io.servicetalk.http.api.TrailersTransformer)">io.servicetalk.http.api.BlockingStreamingHttpResponse.transform<wbr>(TrailersTransformer&lt;T, Buffer&gt;)</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/BlockingStreamingHttpResponse.html#transform(io.servicetalk.http.api.TrailersTransformer)">io.servicetalk.http.api.BlockingStreamingHttpResponse.transform<wbr>(TrailersTransformer&lt;T, Buffer&gt;)</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/http/api/BlockingStreamingHttpResponse.html#messageBody()"><code>BlockingStreamingHttpResponse.messageBody()</code></a> and <a href="io/servicetalk/http/api/BlockingStreamingHttpResponse.html#messageBody(io.servicetalk.http.api.HttpMessageBodyIterable)"><code>BlockingStreamingHttpResponse.messageBody(HttpMessageBodyIterable)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/BlockingStreamingHttpResponse.html#transformPayloadBody(java.util.function.Function,io.servicetalk.http.api.HttpSerializer)">io.servicetalk.http.api.BlockingStreamingHttpResponse.transformPayloadBody<wbr>(Function&lt;BlockingIterable&lt;Buffer&gt;, BlockingIterable&lt;T&gt;&gt;, HttpSerializer&lt;T&gt;)</a></div>
-<div class="col-last even-row-color">
-<div class="deprecation-comment">Use <a href="io/servicetalk/http/api/BlockingStreamingHttpResponse.html#payloadBody(io.servicetalk.http.api.HttpStreamingDeserializer)"><code>BlockingStreamingHttpResponse.payloadBody(HttpStreamingDeserializer)</code></a> and
- <a href="io/servicetalk/http/api/BlockingStreamingHttpResponse.html#payloadBody(java.lang.Iterable,io.servicetalk.http.api.HttpStreamingSerializer)"><code>BlockingStreamingHttpResponse.payloadBody(Iterable, HttpStreamingSerializer)</code></a>.</div>
-</div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/BlockingStreamingHttpResponse.html#transformPayloadBody(java.util.function.Function,io.servicetalk.http.api.HttpDeserializer,io.servicetalk.http.api.HttpSerializer)">io.servicetalk.http.api.BlockingStreamingHttpResponse.transformPayloadBody<wbr>(Function&lt;BlockingIterable&lt;T&gt;, BlockingIterable&lt;R&gt;&gt;, HttpDeserializer&lt;T&gt;, HttpSerializer&lt;R&gt;)</a></div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/BlockingStreamingHttpResponse.html#transformPayloadBody(java.util.function.Function,io.servicetalk.http.api.HttpSerializer)">io.servicetalk.http.api.BlockingStreamingHttpResponse.transformPayloadBody<wbr>(Function&lt;BlockingIterable&lt;Buffer&gt;, BlockingIterable&lt;T&gt;&gt;, HttpSerializer&lt;T&gt;)</a></div>
 <div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/http/api/BlockingStreamingHttpResponse.html#payloadBody(io.servicetalk.http.api.HttpStreamingDeserializer)"><code>BlockingStreamingHttpResponse.payloadBody(HttpStreamingDeserializer)</code></a> and
  <a href="io/servicetalk/http/api/BlockingStreamingHttpResponse.html#payloadBody(java.lang.Iterable,io.servicetalk.http.api.HttpStreamingSerializer)"><code>BlockingStreamingHttpResponse.payloadBody(Iterable, HttpStreamingSerializer)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/BlockingStreamingHttpResponse.html#transformPayloadBody(java.util.function.UnaryOperator)">io.servicetalk.http.api.BlockingStreamingHttpResponse.transformPayloadBody<wbr>(UnaryOperator&lt;BlockingIterable&lt;Buffer&gt;&gt;)</a></div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/BlockingStreamingHttpResponse.html#transformPayloadBody(java.util.function.Function,io.servicetalk.http.api.HttpDeserializer,io.servicetalk.http.api.HttpSerializer)">io.servicetalk.http.api.BlockingStreamingHttpResponse.transformPayloadBody<wbr>(Function&lt;BlockingIterable&lt;T&gt;, BlockingIterable&lt;R&gt;&gt;, HttpDeserializer&lt;T&gt;, HttpSerializer&lt;R&gt;)</a></div>
 <div class="col-last even-row-color">
+<div class="deprecation-comment">Use <a href="io/servicetalk/http/api/BlockingStreamingHttpResponse.html#payloadBody(io.servicetalk.http.api.HttpStreamingDeserializer)"><code>BlockingStreamingHttpResponse.payloadBody(HttpStreamingDeserializer)</code></a> and
+ <a href="io/servicetalk/http/api/BlockingStreamingHttpResponse.html#payloadBody(java.lang.Iterable,io.servicetalk.http.api.HttpStreamingSerializer)"><code>BlockingStreamingHttpResponse.payloadBody(Iterable, HttpStreamingSerializer)</code></a>.</div>
+</div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/BlockingStreamingHttpResponse.html#transformPayloadBody(java.util.function.UnaryOperator)">io.servicetalk.http.api.BlockingStreamingHttpResponse.transformPayloadBody<wbr>(UnaryOperator&lt;BlockingIterable&lt;Buffer&gt;&gt;)</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/http/api/BlockingStreamingHttpResponse.html#payloadBody()"><code>BlockingStreamingHttpResponse.payloadBody()</code></a> and <a href="io/servicetalk/http/api/BlockingStreamingHttpResponse.html#payloadBody(java.lang.Iterable)"><code>BlockingStreamingHttpResponse.payloadBody(Iterable)</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/BlockingStreamingHttpServerResponse.html#sendMetaData(io.servicetalk.http.api.HttpSerializer)">io.servicetalk.http.api.BlockingStreamingHttpServerResponse.sendMetaData<wbr>(HttpSerializer&lt;T&gt;)</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/BlockingStreamingHttpServerResponse.html#sendMetaData(io.servicetalk.http.api.HttpSerializer)">io.servicetalk.http.api.BlockingStreamingHttpServerResponse.sendMetaData<wbr>(HttpSerializer&lt;T&gt;)</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/http/api/BlockingStreamingHttpServerResponse.html#sendMetaData(io.servicetalk.http.api.HttpStreamingSerializer)"><code>BlockingStreamingHttpServerResponse.sendMetaData(HttpStreamingSerializer)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/HttpApiConversions.html#toBlockingClient(io.servicetalk.http.api.StreamingHttpClient,io.servicetalk.http.api.HttpExecutionStrategyInfluencer)">io.servicetalk.http.api.HttpApiConversions.toBlockingClient<wbr>(StreamingHttpClient, HttpExecutionStrategyInfluencer)</a></div>
-<div class="col-last even-row-color">
-<div class="deprecation-comment">Use overload with <a href="io/servicetalk/http/api/HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> rather than <a href="io/servicetalk/http/api/HttpExecutionStrategyInfluencer.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategyInfluencer</code></a></div>
-</div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/HttpApiConversions.html#toBlockingConnection(io.servicetalk.http.api.StreamingHttpConnection,io.servicetalk.http.api.HttpExecutionStrategyInfluencer)">io.servicetalk.http.api.HttpApiConversions.toBlockingConnection<wbr>(StreamingHttpConnection, HttpExecutionStrategyInfluencer)</a></div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/HttpApiConversions.html#toBlockingClient(io.servicetalk.http.api.StreamingHttpClient,io.servicetalk.http.api.HttpExecutionStrategyInfluencer)">io.servicetalk.http.api.HttpApiConversions.toBlockingClient<wbr>(StreamingHttpClient, HttpExecutionStrategyInfluencer)</a></div>
 <div class="col-last odd-row-color">
 <div class="deprecation-comment">Use overload with <a href="io/servicetalk/http/api/HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> rather than <a href="io/servicetalk/http/api/HttpExecutionStrategyInfluencer.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategyInfluencer</code></a></div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/HttpApiConversions.html#toBlockingStreamingClient(io.servicetalk.http.api.StreamingHttpClient,io.servicetalk.http.api.HttpExecutionStrategyInfluencer)">io.servicetalk.http.api.HttpApiConversions.toBlockingStreamingClient<wbr>(StreamingHttpClient, HttpExecutionStrategyInfluencer)</a></div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/HttpApiConversions.html#toBlockingConnection(io.servicetalk.http.api.StreamingHttpConnection,io.servicetalk.http.api.HttpExecutionStrategyInfluencer)">io.servicetalk.http.api.HttpApiConversions.toBlockingConnection<wbr>(StreamingHttpConnection, HttpExecutionStrategyInfluencer)</a></div>
 <div class="col-last even-row-color">
 <div class="deprecation-comment">Use overload with <a href="io/servicetalk/http/api/HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> rather than <a href="io/servicetalk/http/api/HttpExecutionStrategyInfluencer.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategyInfluencer</code></a></div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/HttpApiConversions.html#toBlockingStreamingConnection(io.servicetalk.http.api.StreamingHttpConnection,io.servicetalk.http.api.HttpExecutionStrategyInfluencer)">io.servicetalk.http.api.HttpApiConversions.toBlockingStreamingConnection<wbr>(StreamingHttpConnection, HttpExecutionStrategyInfluencer)</a></div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/HttpApiConversions.html#toBlockingStreamingClient(io.servicetalk.http.api.StreamingHttpClient,io.servicetalk.http.api.HttpExecutionStrategyInfluencer)">io.servicetalk.http.api.HttpApiConversions.toBlockingStreamingClient<wbr>(StreamingHttpClient, HttpExecutionStrategyInfluencer)</a></div>
 <div class="col-last odd-row-color">
 <div class="deprecation-comment">Use overload with <a href="io/servicetalk/http/api/HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> rather than <a href="io/servicetalk/http/api/HttpExecutionStrategyInfluencer.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategyInfluencer</code></a></div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/HttpApiConversions.html#toClient(io.servicetalk.http.api.StreamingHttpClient,io.servicetalk.http.api.HttpExecutionStrategyInfluencer)">io.servicetalk.http.api.HttpApiConversions.toClient<wbr>(StreamingHttpClient, HttpExecutionStrategyInfluencer)</a></div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/HttpApiConversions.html#toBlockingStreamingConnection(io.servicetalk.http.api.StreamingHttpConnection,io.servicetalk.http.api.HttpExecutionStrategyInfluencer)">io.servicetalk.http.api.HttpApiConversions.toBlockingStreamingConnection<wbr>(StreamingHttpConnection, HttpExecutionStrategyInfluencer)</a></div>
 <div class="col-last even-row-color">
 <div class="deprecation-comment">Use overload with <a href="io/servicetalk/http/api/HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> rather than <a href="io/servicetalk/http/api/HttpExecutionStrategyInfluencer.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategyInfluencer</code></a></div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/HttpApiConversions.html#toConnection(io.servicetalk.http.api.StreamingHttpConnection,io.servicetalk.http.api.HttpExecutionStrategyInfluencer)">io.servicetalk.http.api.HttpApiConversions.toConnection<wbr>(StreamingHttpConnection, HttpExecutionStrategyInfluencer)</a></div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/HttpApiConversions.html#toClient(io.servicetalk.http.api.StreamingHttpClient,io.servicetalk.http.api.HttpExecutionStrategyInfluencer)">io.servicetalk.http.api.HttpApiConversions.toClient<wbr>(StreamingHttpClient, HttpExecutionStrategyInfluencer)</a></div>
 <div class="col-last odd-row-color">
 <div class="deprecation-comment">Use overload with <a href="io/servicetalk/http/api/HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> rather than <a href="io/servicetalk/http/api/HttpExecutionStrategyInfluencer.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategyInfluencer</code></a></div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/HttpApiConversions.html#toReservedBlockingConnection(io.servicetalk.http.api.ReservedStreamingHttpConnection,io.servicetalk.http.api.HttpExecutionStrategyInfluencer)">io.servicetalk.http.api.HttpApiConversions.toReservedBlockingConnection<wbr>(ReservedStreamingHttpConnection, HttpExecutionStrategyInfluencer)</a></div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/HttpApiConversions.html#toConnection(io.servicetalk.http.api.StreamingHttpConnection,io.servicetalk.http.api.HttpExecutionStrategyInfluencer)">io.servicetalk.http.api.HttpApiConversions.toConnection<wbr>(StreamingHttpConnection, HttpExecutionStrategyInfluencer)</a></div>
 <div class="col-last even-row-color">
 <div class="deprecation-comment">Use overload with <a href="io/servicetalk/http/api/HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> rather than <a href="io/servicetalk/http/api/HttpExecutionStrategyInfluencer.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategyInfluencer</code></a></div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/HttpApiConversions.html#toReservedBlockingStreamingConnection(io.servicetalk.http.api.ReservedStreamingHttpConnection,io.servicetalk.http.api.HttpExecutionStrategyInfluencer)">io.servicetalk.http.api.HttpApiConversions.toReservedBlockingStreamingConnection<wbr>(ReservedStreamingHttpConnection, HttpExecutionStrategyInfluencer)</a></div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/HttpApiConversions.html#toReservedBlockingConnection(io.servicetalk.http.api.ReservedStreamingHttpConnection,io.servicetalk.http.api.HttpExecutionStrategyInfluencer)">io.servicetalk.http.api.HttpApiConversions.toReservedBlockingConnection<wbr>(ReservedStreamingHttpConnection, HttpExecutionStrategyInfluencer)</a></div>
 <div class="col-last odd-row-color">
 <div class="deprecation-comment">Use overload with <a href="io/servicetalk/http/api/HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> rather than <a href="io/servicetalk/http/api/HttpExecutionStrategyInfluencer.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategyInfluencer</code></a></div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/HttpApiConversions.html#toReservedConnection(io.servicetalk.http.api.ReservedStreamingHttpConnection,io.servicetalk.http.api.HttpExecutionStrategyInfluencer)">io.servicetalk.http.api.HttpApiConversions.toReservedConnection<wbr>(ReservedStreamingHttpConnection, HttpExecutionStrategyInfluencer)</a></div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/HttpApiConversions.html#toReservedBlockingStreamingConnection(io.servicetalk.http.api.ReservedStreamingHttpConnection,io.servicetalk.http.api.HttpExecutionStrategyInfluencer)">io.servicetalk.http.api.HttpApiConversions.toReservedBlockingStreamingConnection<wbr>(ReservedStreamingHttpConnection, HttpExecutionStrategyInfluencer)</a></div>
 <div class="col-last even-row-color">
 <div class="deprecation-comment">Use overload with <a href="io/servicetalk/http/api/HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> rather than <a href="io/servicetalk/http/api/HttpExecutionStrategyInfluencer.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategyInfluencer</code></a></div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/HttpApiConversions.html#toStreamingHttpService(io.servicetalk.http.api.BlockingHttpService,io.servicetalk.http.api.HttpExecutionStrategyInfluencer)">io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService<wbr>(BlockingHttpService, HttpExecutionStrategyInfluencer)</a></div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/HttpApiConversions.html#toReservedConnection(io.servicetalk.http.api.ReservedStreamingHttpConnection,io.servicetalk.http.api.HttpExecutionStrategyInfluencer)">io.servicetalk.http.api.HttpApiConversions.toReservedConnection<wbr>(ReservedStreamingHttpConnection, HttpExecutionStrategyInfluencer)</a></div>
 <div class="col-last odd-row-color">
 <div class="deprecation-comment">Use overload with <a href="io/servicetalk/http/api/HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> rather than <a href="io/servicetalk/http/api/HttpExecutionStrategyInfluencer.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategyInfluencer</code></a></div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/HttpApiConversions.html#toStreamingHttpService(io.servicetalk.http.api.BlockingStreamingHttpService,io.servicetalk.http.api.HttpExecutionStrategyInfluencer)">io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService<wbr>(BlockingStreamingHttpService, HttpExecutionStrategyInfluencer)</a></div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/HttpApiConversions.html#toStreamingHttpService(io.servicetalk.http.api.BlockingHttpService,io.servicetalk.http.api.HttpExecutionStrategyInfluencer)">io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService<wbr>(BlockingHttpService, HttpExecutionStrategyInfluencer)</a></div>
 <div class="col-last even-row-color">
 <div class="deprecation-comment">Use overload with <a href="io/servicetalk/http/api/HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> rather than <a href="io/servicetalk/http/api/HttpExecutionStrategyInfluencer.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategyInfluencer</code></a></div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/HttpApiConversions.html#toStreamingHttpService(io.servicetalk.http.api.HttpService,io.servicetalk.http.api.HttpExecutionStrategyInfluencer)">io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService<wbr>(HttpService, HttpExecutionStrategyInfluencer)</a></div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/HttpApiConversions.html#toStreamingHttpService(io.servicetalk.http.api.BlockingStreamingHttpService,io.servicetalk.http.api.HttpExecutionStrategyInfluencer)">io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService<wbr>(BlockingStreamingHttpService, HttpExecutionStrategyInfluencer)</a></div>
 <div class="col-last odd-row-color">
 <div class="deprecation-comment">Use overload with <a href="io/servicetalk/http/api/HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> rather than <a href="io/servicetalk/http/api/HttpExecutionStrategyInfluencer.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategyInfluencer</code></a></div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/HttpExecutionStrategies.html#offloadNever()">io.servicetalk.http.api.HttpExecutionStrategies.offloadNever()</a></div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/HttpApiConversions.html#toStreamingHttpService(io.servicetalk.http.api.HttpService,io.servicetalk.http.api.HttpExecutionStrategyInfluencer)">io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService<wbr>(HttpService, HttpExecutionStrategyInfluencer)</a></div>
 <div class="col-last even-row-color">
+<div class="deprecation-comment">Use overload with <a href="io/servicetalk/http/api/HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> rather than <a href="io/servicetalk/http/api/HttpExecutionStrategyInfluencer.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategyInfluencer</code></a></div>
+</div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/HttpExecutionStrategies.html#offloadNever()">io.servicetalk.http.api.HttpExecutionStrategies.offloadNever()</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/http/api/HttpExecutionStrategies.html#offloadNone()"><code>HttpExecutionStrategies.offloadNone()</code></a> instead.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/HttpExecutionStrategyInfluencer.html#defaultStreamingInfluencer()">io.servicetalk.http.api.HttpExecutionStrategyInfluencer.defaultStreamingInfluencer()</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/HttpExecutionStrategyInfluencer.html#defaultStreamingInfluencer()">io.servicetalk.http.api.HttpExecutionStrategyInfluencer.defaultStreamingInfluencer()</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">This method is not useful anymore and will be removed in future releases.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/HttpExecutionStrategyInfluencer.html#influenceStrategy(io.servicetalk.http.api.HttpExecutionStrategy)">io.servicetalk.http.api.HttpExecutionStrategyInfluencer.influenceStrategy<wbr>(HttpExecutionStrategy)</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/HttpExecutionStrategyInfluencer.html#influenceStrategy(io.servicetalk.http.api.HttpExecutionStrategy)">io.servicetalk.http.api.HttpExecutionStrategyInfluencer.influenceStrategy<wbr>(HttpExecutionStrategy)</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Implement <a href="io/servicetalk/http/api/HttpExecutionStrategyInfluencer.html#requiredOffloads()"><code>HttpExecutionStrategyInfluencer.requiredOffloads()</code></a> instead.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/HttpMetaData.html#encoding()">io.servicetalk.http.api.HttpMetaData.encoding()</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/HttpMetaData.html#encoding()">io.servicetalk.http.api.HttpMetaData.encoding()</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/http/api/HttpRequestMetaData.html#contentEncoding()"><code>HttpRequestMetaData.contentEncoding()</code></a> for requests and
  <a href="io/servicetalk/http/api/ContentEncodingHttpServiceFilter.html" title="class in io.servicetalk.http.api"><code>ContentEncodingHttpServiceFilter</code></a> for responses. An example can be found
  <a href="https://apple.github.io/servicetalk//servicetalk-examples/0.42/http/index.html#Compression">here</a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/HttpMetaData.html#encoding(io.servicetalk.encoding.api.ContentCodec)">io.servicetalk.http.api.HttpMetaData.encoding<wbr>(ContentCodec)</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/HttpMetaData.html#encoding(io.servicetalk.encoding.api.ContentCodec)">io.servicetalk.http.api.HttpMetaData.encoding<wbr>(ContentCodec)</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/http/api/HttpRequestMetaData.html#contentEncoding(io.servicetalk.encoding.api.BufferEncoder)"><code>HttpRequestMetaData.contentEncoding(BufferEncoder)</code></a> for requests and
  <a href="io/servicetalk/http/api/ContentEncodingHttpServiceFilter.html" title="class in io.servicetalk.http.api"><code>ContentEncodingHttpServiceFilter</code></a> for responses. An example can be found
  <a href="https://apple.github.io/servicetalk//servicetalk-examples/0.42/http/index.html#Compression">here</a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/HttpRequest.html#encoding(io.servicetalk.encoding.api.ContentCodec)">io.servicetalk.http.api.HttpRequest.encoding<wbr>(ContentCodec)</a></div>
-<div class="col-last odd-row-color"></div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/HttpRequest.html#payloadBody(io.servicetalk.http.api.HttpDeserializer)">io.servicetalk.http.api.HttpRequest.payloadBody<wbr>(HttpDeserializer&lt;T&gt;)</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/HttpRequest.html#encoding(io.servicetalk.encoding.api.ContentCodec)">io.servicetalk.http.api.HttpRequest.encoding<wbr>(ContentCodec)</a></div>
+<div class="col-last even-row-color"></div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/HttpRequest.html#payloadBody(io.servicetalk.http.api.HttpDeserializer)">io.servicetalk.http.api.HttpRequest.payloadBody<wbr>(HttpDeserializer&lt;T&gt;)</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/http/api/HttpRequest.html#payloadBody(io.servicetalk.http.api.HttpDeserializer2)"><code>HttpRequest.payloadBody(HttpDeserializer2)</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/HttpRequest.html#payloadBody(T,io.servicetalk.http.api.HttpSerializer)">io.servicetalk.http.api.HttpRequest.payloadBody<wbr>(T, HttpSerializer&lt;T&gt;)</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/HttpRequest.html#payloadBody(T,io.servicetalk.http.api.HttpSerializer)">io.servicetalk.http.api.HttpRequest.payloadBody<wbr>(T, HttpSerializer&lt;T&gt;)</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/http/api/HttpRequest.html#payloadBody(T,io.servicetalk.http.api.HttpSerializer2)"><code>HttpRequest.payloadBody(Object, HttpSerializer2)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/HttpResponse.html#payloadBody(io.servicetalk.http.api.HttpDeserializer)">io.servicetalk.http.api.HttpResponse.payloadBody<wbr>(HttpDeserializer&lt;T&gt;)</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/HttpResponse.html#payloadBody(io.servicetalk.http.api.HttpDeserializer)">io.servicetalk.http.api.HttpResponse.payloadBody<wbr>(HttpDeserializer&lt;T&gt;)</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/http/api/HttpResponse.html#payloadBody(io.servicetalk.http.api.HttpDeserializer2)"><code>HttpResponse.payloadBody(HttpDeserializer2)</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/HttpResponse.html#payloadBody(T,io.servicetalk.http.api.HttpSerializer)">io.servicetalk.http.api.HttpResponse.payloadBody<wbr>(T, HttpSerializer&lt;T&gt;)</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/HttpResponse.html#payloadBody(T,io.servicetalk.http.api.HttpSerializer)">io.servicetalk.http.api.HttpResponse.payloadBody<wbr>(T, HttpSerializer&lt;T&gt;)</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/http/api/HttpResponse.html#payloadBody(T,io.servicetalk.http.api.HttpSerializer2)"><code>HttpResponse.payloadBody(Object, HttpSerializer2)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/HttpSerializationProviders.html#formUrlEncodedDeserializer()">io.servicetalk.http.api.HttpSerializationProviders.formUrlEncodedDeserializer()</a></div>
-<div class="col-last even-row-color">
-<div class="deprecation-comment">Use <a href="io/servicetalk/http/api/HttpSerializers.html#formUrlEncodedSerializer()"><code>HttpSerializers.formUrlEncodedSerializer()</code></a>.</div>
-</div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/HttpSerializationProviders.html#formUrlEncodedDeserializer(java.nio.charset.Charset)">io.servicetalk.http.api.HttpSerializationProviders.formUrlEncodedDeserializer<wbr>(Charset)</a></div>
-<div class="col-last odd-row-color">
-<div class="deprecation-comment">Use <a href="io/servicetalk/http/api/HttpSerializers.html#formUrlEncodedSerializer(java.nio.charset.Charset)"><code>HttpSerializers.formUrlEncodedSerializer(Charset)</code></a>.</div>
-</div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/HttpSerializationProviders.html#formUrlEncodedDeserializer(java.nio.charset.Charset,java.util.function.Predicate)">io.servicetalk.http.api.HttpSerializationProviders.formUrlEncodedDeserializer<wbr>(Charset, Predicate&lt;HttpHeaders&gt;)</a></div>
-<div class="col-last even-row-color">
-<div class="deprecation-comment">Use <a href="io/servicetalk/http/api/HttpSerializers.html#formUrlEncodedSerializer(java.nio.charset.Charset)"><code>HttpSerializers.formUrlEncodedSerializer(Charset)</code></a>.</div>
-</div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/HttpSerializationProviders.html#formUrlEncodedSerializer()">io.servicetalk.http.api.HttpSerializationProviders.formUrlEncodedSerializer()</a></div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/HttpSerializationProviders.html#formUrlEncodedDeserializer()">io.servicetalk.http.api.HttpSerializationProviders.formUrlEncodedDeserializer()</a></div>
 <div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/http/api/HttpSerializers.html#formUrlEncodedSerializer()"><code>HttpSerializers.formUrlEncodedSerializer()</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/HttpSerializationProviders.html#formUrlEncodedSerializer(java.nio.charset.Charset)">io.servicetalk.http.api.HttpSerializationProviders.formUrlEncodedSerializer<wbr>(Charset)</a></div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/HttpSerializationProviders.html#formUrlEncodedDeserializer(java.nio.charset.Charset)">io.servicetalk.http.api.HttpSerializationProviders.formUrlEncodedDeserializer<wbr>(Charset)</a></div>
 <div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/http/api/HttpSerializers.html#formUrlEncodedSerializer(java.nio.charset.Charset)"><code>HttpSerializers.formUrlEncodedSerializer(Charset)</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/HttpSerializationProviders.html#formUrlEncodedSerializer(java.nio.charset.Charset,java.util.function.Consumer)">io.servicetalk.http.api.HttpSerializationProviders.formUrlEncodedSerializer<wbr>(Charset, Consumer&lt;HttpHeaders&gt;)</a></div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/HttpSerializationProviders.html#formUrlEncodedDeserializer(java.nio.charset.Charset,java.util.function.Predicate)">io.servicetalk.http.api.HttpSerializationProviders.formUrlEncodedDeserializer<wbr>(Charset, Predicate&lt;HttpHeaders&gt;)</a></div>
 <div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/http/api/HttpSerializers.html#formUrlEncodedSerializer(java.nio.charset.Charset)"><code>HttpSerializers.formUrlEncodedSerializer(Charset)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/HttpSerializationProviders.html#jsonSerializer(io.servicetalk.serialization.api.SerializationProvider)">io.servicetalk.http.api.HttpSerializationProviders.jsonSerializer<wbr>(SerializationProvider)</a></div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/HttpSerializationProviders.html#formUrlEncodedSerializer()">io.servicetalk.http.api.HttpSerializationProviders.formUrlEncodedSerializer()</a></div>
 <div class="col-last even-row-color">
-<div class="deprecation-comment">Use <a href="io/servicetalk/http/api/HttpSerializers.html#jsonSerializer(io.servicetalk.serializer.api.SerializerDeserializer)"><code>HttpSerializers.jsonSerializer(SerializerDeserializer)</code></a> or
- <a href="io/servicetalk/http/api/HttpSerializers.html#jsonStreamingSerializer(io.servicetalk.serializer.api.StreamingSerializerDeserializer)"><code>HttpSerializers.jsonStreamingSerializer(StreamingSerializerDeserializer)</code></a>.</div>
+<div class="deprecation-comment">Use <a href="io/servicetalk/http/api/HttpSerializers.html#formUrlEncodedSerializer()"><code>HttpSerializers.formUrlEncodedSerializer()</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/HttpSerializationProviders.html#jsonSerializer(io.servicetalk.serialization.api.Serializer)">io.servicetalk.http.api.HttpSerializationProviders.jsonSerializer<wbr>(Serializer)</a></div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/HttpSerializationProviders.html#formUrlEncodedSerializer(java.nio.charset.Charset)">io.servicetalk.http.api.HttpSerializationProviders.formUrlEncodedSerializer<wbr>(Charset)</a></div>
+<div class="col-last odd-row-color">
+<div class="deprecation-comment">Use <a href="io/servicetalk/http/api/HttpSerializers.html#formUrlEncodedSerializer(java.nio.charset.Charset)"><code>HttpSerializers.formUrlEncodedSerializer(Charset)</code></a>.</div>
+</div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/HttpSerializationProviders.html#formUrlEncodedSerializer(java.nio.charset.Charset,java.util.function.Consumer)">io.servicetalk.http.api.HttpSerializationProviders.formUrlEncodedSerializer<wbr>(Charset, Consumer&lt;HttpHeaders&gt;)</a></div>
+<div class="col-last even-row-color">
+<div class="deprecation-comment">Use <a href="io/servicetalk/http/api/HttpSerializers.html#formUrlEncodedSerializer(java.nio.charset.Charset)"><code>HttpSerializers.formUrlEncodedSerializer(Charset)</code></a>.</div>
+</div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/HttpSerializationProviders.html#jsonSerializer(io.servicetalk.serialization.api.SerializationProvider)">io.servicetalk.http.api.HttpSerializationProviders.jsonSerializer<wbr>(SerializationProvider)</a></div>
 <div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/http/api/HttpSerializers.html#jsonSerializer(io.servicetalk.serializer.api.SerializerDeserializer)"><code>HttpSerializers.jsonSerializer(SerializerDeserializer)</code></a> or
  <a href="io/servicetalk/http/api/HttpSerializers.html#jsonStreamingSerializer(io.servicetalk.serializer.api.StreamingSerializerDeserializer)"><code>HttpSerializers.jsonStreamingSerializer(StreamingSerializerDeserializer)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/HttpSerializationProviders.html#serializationProvider(io.servicetalk.serialization.api.SerializationProvider,java.util.function.Consumer,java.util.function.Predicate)">io.servicetalk.http.api.HttpSerializationProviders.serializationProvider<wbr>(SerializationProvider, Consumer&lt;HttpHeaders&gt;, Predicate&lt;HttpHeaders&gt;)</a></div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/HttpSerializationProviders.html#jsonSerializer(io.servicetalk.serialization.api.Serializer)">io.servicetalk.http.api.HttpSerializationProviders.jsonSerializer<wbr>(Serializer)</a></div>
 <div class="col-last even-row-color">
-<div class="deprecation-comment">Use <a href="io/servicetalk/http/api/HttpSerializers.html" title="class in io.servicetalk.http.api"><code>HttpSerializers</code></a>, <a href="io/servicetalk/http/api/HttpSerializer2.html" title="interface in io.servicetalk.http.api"><code>HttpSerializer2</code></a>, <a href="io/servicetalk/http/api/HttpDeserializer2.html" title="interface in io.servicetalk.http.api"><code>HttpDeserializer2</code></a>,
- <a href="io/servicetalk/http/api/HttpStreamingSerializer.html" title="interface in io.servicetalk.http.api"><code>HttpStreamingSerializer</code></a>, and <a href="io/servicetalk/http/api/HttpStreamingDeserializer.html" title="interface in io.servicetalk.http.api"><code>HttpStreamingDeserializer</code></a>.</div>
+<div class="deprecation-comment">Use <a href="io/servicetalk/http/api/HttpSerializers.html#jsonSerializer(io.servicetalk.serializer.api.SerializerDeserializer)"><code>HttpSerializers.jsonSerializer(SerializerDeserializer)</code></a> or
+ <a href="io/servicetalk/http/api/HttpSerializers.html#jsonStreamingSerializer(io.servicetalk.serializer.api.StreamingSerializerDeserializer)"><code>HttpSerializers.jsonStreamingSerializer(StreamingSerializerDeserializer)</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/HttpSerializationProviders.html#serializationProvider(io.servicetalk.serialization.api.Serializer,java.util.function.Consumer,java.util.function.Predicate)">io.servicetalk.http.api.HttpSerializationProviders.serializationProvider<wbr>(Serializer, Consumer&lt;HttpHeaders&gt;, Predicate&lt;HttpHeaders&gt;)</a></div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/HttpSerializationProviders.html#serializationProvider(io.servicetalk.serialization.api.SerializationProvider,java.util.function.Consumer,java.util.function.Predicate)">io.servicetalk.http.api.HttpSerializationProviders.serializationProvider<wbr>(SerializationProvider, Consumer&lt;HttpHeaders&gt;, Predicate&lt;HttpHeaders&gt;)</a></div>
 <div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/http/api/HttpSerializers.html" title="class in io.servicetalk.http.api"><code>HttpSerializers</code></a>, <a href="io/servicetalk/http/api/HttpSerializer2.html" title="interface in io.servicetalk.http.api"><code>HttpSerializer2</code></a>, <a href="io/servicetalk/http/api/HttpDeserializer2.html" title="interface in io.servicetalk.http.api"><code>HttpDeserializer2</code></a>,
  <a href="io/servicetalk/http/api/HttpStreamingSerializer.html" title="interface in io.servicetalk.http.api"><code>HttpStreamingSerializer</code></a>, and <a href="io/servicetalk/http/api/HttpStreamingDeserializer.html" title="interface in io.servicetalk.http.api"><code>HttpStreamingDeserializer</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/HttpSerializationProviders.html#textDeserializer()">io.servicetalk.http.api.HttpSerializationProviders.textDeserializer()</a></div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/HttpSerializationProviders.html#serializationProvider(io.servicetalk.serialization.api.Serializer,java.util.function.Consumer,java.util.function.Predicate)">io.servicetalk.http.api.HttpSerializationProviders.serializationProvider<wbr>(Serializer, Consumer&lt;HttpHeaders&gt;, Predicate&lt;HttpHeaders&gt;)</a></div>
 <div class="col-last even-row-color">
+<div class="deprecation-comment">Use <a href="io/servicetalk/http/api/HttpSerializers.html" title="class in io.servicetalk.http.api"><code>HttpSerializers</code></a>, <a href="io/servicetalk/http/api/HttpSerializer2.html" title="interface in io.servicetalk.http.api"><code>HttpSerializer2</code></a>, <a href="io/servicetalk/http/api/HttpDeserializer2.html" title="interface in io.servicetalk.http.api"><code>HttpDeserializer2</code></a>,
+ <a href="io/servicetalk/http/api/HttpStreamingSerializer.html" title="interface in io.servicetalk.http.api"><code>HttpStreamingSerializer</code></a>, and <a href="io/servicetalk/http/api/HttpStreamingDeserializer.html" title="interface in io.servicetalk.http.api"><code>HttpStreamingDeserializer</code></a>.</div>
+</div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/HttpSerializationProviders.html#textDeserializer()">io.servicetalk.http.api.HttpSerializationProviders.textDeserializer()</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/http/api/HttpSerializers.html#textSerializerUtf8()"><code>HttpSerializers.textSerializerUtf8()</code></a> for aggregated. For streaming, use one of the
  following:
  <ul>
@@ -806,20 +815,7 @@ loadScripts(document, 'script');</script>
      targeted at your <a href="io/servicetalk/http/api/HttpHeaderNames.html#CONTENT_TYPE"><code>HttpHeaderNames.CONTENT_TYPE</code></a></li>
  </ul></div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/HttpSerializationProviders.html#textDeserializer(java.nio.charset.Charset)">io.servicetalk.http.api.HttpSerializationProviders.textDeserializer<wbr>(Charset)</a></div>
-<div class="col-last odd-row-color">
-<div class="deprecation-comment">Use <a href="io/servicetalk/http/api/HttpSerializers.html#textSerializer(java.nio.charset.Charset)"><code>HttpSerializers.textSerializer(Charset)</code></a> for aggregated. For streaming, use one of the
- following:
- <ul>
-     <li><a href="io/servicetalk/http/api/HttpSerializers.html#appSerializerUtf8FixLen()"><code>HttpSerializers.appSerializerUtf8FixLen()</code></a></li>
-     <li><a href="io/servicetalk/http/api/HttpSerializers.html#appSerializerAsciiVarLen()"><code>HttpSerializers.appSerializerAsciiVarLen()</code></a></li>
-     <li>Aggregate the payload (e.g. <a href="io/servicetalk/http/api/StreamingHttpRequest.html#toRequest()"><code>StreamingHttpRequest.toRequest()</code></a>) and use
-     <a href="io/servicetalk/http/api/HttpSerializers.html#textSerializer(java.nio.charset.Charset)"><code>HttpSerializers.textSerializer(Charset)</code></a> if your payload is text</li>
-     <li><a href="io/servicetalk/http/api/HttpSerializers.html#streamingSerializer(io.servicetalk.serializer.api.StreamingSerializerDeserializer,java.util.function.Consumer,java.util.function.Predicate)"><code>HttpSerializers.streamingSerializer(StreamingSerializerDeserializer, Consumer, Predicate)</code></a>
-     targeted at your <a href="io/servicetalk/http/api/HttpHeaderNames.html#CONTENT_TYPE"><code>HttpHeaderNames.CONTENT_TYPE</code></a></li>
- </ul></div>
-</div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/HttpSerializationProviders.html#textDeserializer(java.nio.charset.Charset,java.util.function.Predicate)">io.servicetalk.http.api.HttpSerializationProviders.textDeserializer<wbr>(Charset, Predicate&lt;HttpHeaders&gt;)</a></div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/HttpSerializationProviders.html#textDeserializer(java.nio.charset.Charset)">io.servicetalk.http.api.HttpSerializationProviders.textDeserializer<wbr>(Charset)</a></div>
 <div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/http/api/HttpSerializers.html#textSerializer(java.nio.charset.Charset)"><code>HttpSerializers.textSerializer(Charset)</code></a> for aggregated. For streaming, use one of the
  following:
@@ -832,8 +828,21 @@ loadScripts(document, 'script');</script>
      targeted at your <a href="io/servicetalk/http/api/HttpHeaderNames.html#CONTENT_TYPE"><code>HttpHeaderNames.CONTENT_TYPE</code></a></li>
  </ul></div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/HttpSerializationProviders.html#textSerializer()">io.servicetalk.http.api.HttpSerializationProviders.textSerializer()</a></div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/HttpSerializationProviders.html#textDeserializer(java.nio.charset.Charset,java.util.function.Predicate)">io.servicetalk.http.api.HttpSerializationProviders.textDeserializer<wbr>(Charset, Predicate&lt;HttpHeaders&gt;)</a></div>
 <div class="col-last odd-row-color">
+<div class="deprecation-comment">Use <a href="io/servicetalk/http/api/HttpSerializers.html#textSerializer(java.nio.charset.Charset)"><code>HttpSerializers.textSerializer(Charset)</code></a> for aggregated. For streaming, use one of the
+ following:
+ <ul>
+     <li><a href="io/servicetalk/http/api/HttpSerializers.html#appSerializerUtf8FixLen()"><code>HttpSerializers.appSerializerUtf8FixLen()</code></a></li>
+     <li><a href="io/servicetalk/http/api/HttpSerializers.html#appSerializerAsciiVarLen()"><code>HttpSerializers.appSerializerAsciiVarLen()</code></a></li>
+     <li>Aggregate the payload (e.g. <a href="io/servicetalk/http/api/StreamingHttpRequest.html#toRequest()"><code>StreamingHttpRequest.toRequest()</code></a>) and use
+     <a href="io/servicetalk/http/api/HttpSerializers.html#textSerializer(java.nio.charset.Charset)"><code>HttpSerializers.textSerializer(Charset)</code></a> if your payload is text</li>
+     <li><a href="io/servicetalk/http/api/HttpSerializers.html#streamingSerializer(io.servicetalk.serializer.api.StreamingSerializerDeserializer,java.util.function.Consumer,java.util.function.Predicate)"><code>HttpSerializers.streamingSerializer(StreamingSerializerDeserializer, Consumer, Predicate)</code></a>
+     targeted at your <a href="io/servicetalk/http/api/HttpHeaderNames.html#CONTENT_TYPE"><code>HttpHeaderNames.CONTENT_TYPE</code></a></li>
+ </ul></div>
+</div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/HttpSerializationProviders.html#textSerializer()">io.servicetalk.http.api.HttpSerializationProviders.textSerializer()</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/http/api/HttpSerializers.html#textSerializerUtf8()"><code>HttpSerializers.textSerializerUtf8()</code></a> for aggregated. For streaming, use one of the
  following:
  <ul>
@@ -842,7 +851,17 @@ loadScripts(document, 'script');</script>
      <li><a href="io/servicetalk/http/api/HttpSerializers.html#stringStreamingSerializer(java.nio.charset.Charset,java.util.function.Consumer)"><code>HttpSerializers.stringStreamingSerializer(Charset, Consumer)</code></a></li>
  </ul></div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/HttpSerializationProviders.html#textSerializer(java.nio.charset.Charset)">io.servicetalk.http.api.HttpSerializationProviders.textSerializer<wbr>(Charset)</a></div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/HttpSerializationProviders.html#textSerializer(java.nio.charset.Charset)">io.servicetalk.http.api.HttpSerializationProviders.textSerializer<wbr>(Charset)</a></div>
+<div class="col-last odd-row-color">
+<div class="deprecation-comment">Use <a href="io/servicetalk/http/api/HttpSerializers.html#textSerializer(java.nio.charset.Charset)"><code>HttpSerializers.textSerializer(Charset)</code></a> for aggregated. For streaming, use one of the
+ following:
+ <ul>
+     <li><a href="io/servicetalk/http/api/HttpSerializers.html#appSerializerUtf8FixLen()"><code>HttpSerializers.appSerializerUtf8FixLen()</code></a></li>
+     <li><a href="io/servicetalk/http/api/HttpSerializers.html#appSerializerAsciiVarLen()"><code>HttpSerializers.appSerializerAsciiVarLen()</code></a></li>
+     <li><a href="io/servicetalk/http/api/HttpSerializers.html#stringStreamingSerializer(java.nio.charset.Charset,java.util.function.Consumer)"><code>HttpSerializers.stringStreamingSerializer(Charset, Consumer)</code></a></li>
+ </ul></div>
+</div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/HttpSerializationProviders.html#textSerializer(java.nio.charset.Charset,java.util.function.Consumer)">io.servicetalk.http.api.HttpSerializationProviders.textSerializer<wbr>(Charset, Consumer&lt;HttpHeaders&gt;)</a></div>
 <div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/http/api/HttpSerializers.html#textSerializer(java.nio.charset.Charset)"><code>HttpSerializers.textSerializer(Charset)</code></a> for aggregated. For streaming, use one of the
  following:
@@ -852,67 +871,57 @@ loadScripts(document, 'script');</script>
      <li><a href="io/servicetalk/http/api/HttpSerializers.html#stringStreamingSerializer(java.nio.charset.Charset,java.util.function.Consumer)"><code>HttpSerializers.stringStreamingSerializer(Charset, Consumer)</code></a></li>
  </ul></div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/HttpSerializationProviders.html#textSerializer(java.nio.charset.Charset,java.util.function.Consumer)">io.servicetalk.http.api.HttpSerializationProviders.textSerializer<wbr>(Charset, Consumer&lt;HttpHeaders&gt;)</a></div>
-<div class="col-last odd-row-color">
-<div class="deprecation-comment">Use <a href="io/servicetalk/http/api/HttpSerializers.html#textSerializer(java.nio.charset.Charset)"><code>HttpSerializers.textSerializer(Charset)</code></a> for aggregated. For streaming, use one of the
- following:
- <ul>
-     <li><a href="io/servicetalk/http/api/HttpSerializers.html#appSerializerUtf8FixLen()"><code>HttpSerializers.appSerializerUtf8FixLen()</code></a></li>
-     <li><a href="io/servicetalk/http/api/HttpSerializers.html#appSerializerAsciiVarLen()"><code>HttpSerializers.appSerializerAsciiVarLen()</code></a></li>
-     <li><a href="io/servicetalk/http/api/HttpSerializers.html#stringStreamingSerializer(java.nio.charset.Charset,java.util.function.Consumer)"><code>HttpSerializers.stringStreamingSerializer(Charset, Consumer)</code></a></li>
- </ul></div>
-</div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/StreamingHttpRequest.html#encoding(io.servicetalk.encoding.api.ContentCodec)">io.servicetalk.http.api.StreamingHttpRequest.encoding<wbr>(ContentCodec)</a></div>
-<div class="col-last even-row-color"></div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/StreamingHttpRequest.html#payloadBody(io.servicetalk.concurrent.api.Publisher,io.servicetalk.http.api.HttpSerializer)">io.servicetalk.http.api.StreamingHttpRequest.payloadBody<wbr>(Publisher&lt;T&gt;, HttpSerializer&lt;T&gt;)</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/StreamingHttpRequest.html#encoding(io.servicetalk.encoding.api.ContentCodec)">io.servicetalk.http.api.StreamingHttpRequest.encoding<wbr>(ContentCodec)</a></div>
+<div class="col-last odd-row-color"></div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/StreamingHttpRequest.html#payloadBody(io.servicetalk.concurrent.api.Publisher,io.servicetalk.http.api.HttpSerializer)">io.servicetalk.http.api.StreamingHttpRequest.payloadBody<wbr>(Publisher&lt;T&gt;, HttpSerializer&lt;T&gt;)</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/http/api/StreamingHttpRequest.html#payloadBody(io.servicetalk.concurrent.api.Publisher,io.servicetalk.http.api.HttpStreamingSerializer)"><code>StreamingHttpRequest.payloadBody(Publisher, HttpStreamingSerializer)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/StreamingHttpRequest.html#payloadBody(io.servicetalk.http.api.HttpDeserializer)">io.servicetalk.http.api.StreamingHttpRequest.payloadBody<wbr>(HttpDeserializer&lt;T&gt;)</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/StreamingHttpRequest.html#payloadBody(io.servicetalk.http.api.HttpDeserializer)">io.servicetalk.http.api.StreamingHttpRequest.payloadBody<wbr>(HttpDeserializer&lt;T&gt;)</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/http/api/StreamingHttpRequest.html#payloadBody(io.servicetalk.http.api.HttpStreamingDeserializer)"><code>StreamingHttpRequest.payloadBody(HttpStreamingDeserializer)</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/StreamingHttpRequest.html#transformPayloadBody(java.util.function.Function,io.servicetalk.http.api.HttpSerializer)">io.servicetalk.http.api.StreamingHttpRequest.transformPayloadBody<wbr>(Function&lt;Publisher&lt;Buffer&gt;, Publisher&lt;T&gt;&gt;, HttpSerializer&lt;T&gt;)</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/StreamingHttpRequest.html#transformPayloadBody(java.util.function.Function,io.servicetalk.http.api.HttpSerializer)">io.servicetalk.http.api.StreamingHttpRequest.transformPayloadBody<wbr>(Function&lt;Publisher&lt;Buffer&gt;, Publisher&lt;T&gt;&gt;, HttpSerializer&lt;T&gt;)</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/http/api/StreamingHttpRequest.html#transformPayloadBody(java.util.function.Function,io.servicetalk.http.api.HttpStreamingSerializer)"><code>StreamingHttpRequest.transformPayloadBody(Function, HttpStreamingSerializer)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/StreamingHttpRequest.html#transformPayloadBody(java.util.function.Function,io.servicetalk.http.api.HttpDeserializer,io.servicetalk.http.api.HttpSerializer)">io.servicetalk.http.api.StreamingHttpRequest.transformPayloadBody<wbr>(Function&lt;Publisher&lt;T&gt;, Publisher&lt;R&gt;&gt;, HttpDeserializer&lt;T&gt;, HttpSerializer&lt;R&gt;)</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/StreamingHttpRequest.html#transformPayloadBody(java.util.function.Function,io.servicetalk.http.api.HttpDeserializer,io.servicetalk.http.api.HttpSerializer)">io.servicetalk.http.api.StreamingHttpRequest.transformPayloadBody<wbr>(Function&lt;Publisher&lt;T&gt;, Publisher&lt;R&gt;&gt;, HttpDeserializer&lt;T&gt;, HttpSerializer&lt;R&gt;)</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/http/api/StreamingHttpRequest.html#transformPayloadBody(java.util.function.Function,io.servicetalk.http.api.HttpStreamingDeserializer,io.servicetalk.http.api.HttpStreamingSerializer)"><code>StreamingHttpRequest.transformPayloadBody(Function, HttpStreamingDeserializer, HttpStreamingSerializer)</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/StreamingHttpResponse.html#encoding(io.servicetalk.encoding.api.ContentCodec)">io.servicetalk.http.api.StreamingHttpResponse.encoding<wbr>(ContentCodec)</a></div>
-<div class="col-last odd-row-color"></div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/StreamingHttpResponse.html#payloadBody(io.servicetalk.concurrent.api.Publisher,io.servicetalk.http.api.HttpSerializer)">io.servicetalk.http.api.StreamingHttpResponse.payloadBody<wbr>(Publisher&lt;T&gt;, HttpSerializer&lt;T&gt;)</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/StreamingHttpResponse.html#encoding(io.servicetalk.encoding.api.ContentCodec)">io.servicetalk.http.api.StreamingHttpResponse.encoding<wbr>(ContentCodec)</a></div>
+<div class="col-last even-row-color"></div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/StreamingHttpResponse.html#payloadBody(io.servicetalk.concurrent.api.Publisher,io.servicetalk.http.api.HttpSerializer)">io.servicetalk.http.api.StreamingHttpResponse.payloadBody<wbr>(Publisher&lt;T&gt;, HttpSerializer&lt;T&gt;)</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/http/api/StreamingHttpResponse.html#payloadBody(io.servicetalk.concurrent.api.Publisher,io.servicetalk.http.api.HttpStreamingSerializer)"><code>StreamingHttpResponse.payloadBody(Publisher, HttpStreamingSerializer)</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/StreamingHttpResponse.html#payloadBody(io.servicetalk.http.api.HttpDeserializer)">io.servicetalk.http.api.StreamingHttpResponse.payloadBody<wbr>(HttpDeserializer&lt;T&gt;)</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/StreamingHttpResponse.html#payloadBody(io.servicetalk.http.api.HttpDeserializer)">io.servicetalk.http.api.StreamingHttpResponse.payloadBody<wbr>(HttpDeserializer&lt;T&gt;)</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/http/api/StreamingHttpResponse.html#payloadBody(io.servicetalk.http.api.HttpStreamingDeserializer)"><code>StreamingHttpResponse.payloadBody(HttpStreamingDeserializer)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/StreamingHttpResponse.html#transformPayloadBody(java.util.function.Function,io.servicetalk.http.api.HttpSerializer)">io.servicetalk.http.api.StreamingHttpResponse.transformPayloadBody<wbr>(Function&lt;Publisher&lt;Buffer&gt;, Publisher&lt;T&gt;&gt;, HttpSerializer&lt;T&gt;)</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/StreamingHttpResponse.html#transformPayloadBody(java.util.function.Function,io.servicetalk.http.api.HttpSerializer)">io.servicetalk.http.api.StreamingHttpResponse.transformPayloadBody<wbr>(Function&lt;Publisher&lt;Buffer&gt;, Publisher&lt;T&gt;&gt;, HttpSerializer&lt;T&gt;)</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/http/api/StreamingHttpResponse.html#transformPayloadBody(java.util.function.Function,io.servicetalk.http.api.HttpStreamingSerializer)"><code>StreamingHttpResponse.transformPayloadBody(Function, HttpStreamingSerializer)</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/api/StreamingHttpResponse.html#transformPayloadBody(java.util.function.Function,io.servicetalk.http.api.HttpDeserializer,io.servicetalk.http.api.HttpSerializer)">io.servicetalk.http.api.StreamingHttpResponse.transformPayloadBody<wbr>(Function&lt;Publisher&lt;T&gt;, Publisher&lt;R&gt;&gt;, HttpDeserializer&lt;T&gt;, HttpSerializer&lt;R&gt;)</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/api/StreamingHttpResponse.html#transformPayloadBody(java.util.function.Function,io.servicetalk.http.api.HttpDeserializer,io.servicetalk.http.api.HttpSerializer)">io.servicetalk.http.api.StreamingHttpResponse.transformPayloadBody<wbr>(Function&lt;Publisher&lt;T&gt;, Publisher&lt;R&gt;&gt;, HttpDeserializer&lt;T&gt;, HttpSerializer&lt;R&gt;)</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/http/api/StreamingHttpResponse.html#transformPayloadBody(java.util.function.Function,io.servicetalk.http.api.HttpStreamingDeserializer,io.servicetalk.http.api.HttpStreamingSerializer)"><code>StreamingHttpResponse.transformPayloadBody(Function, HttpStreamingDeserializer, HttpStreamingSerializer)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/netty/HttpClients.html#forMultiAddressUrl(io.servicetalk.client.api.ServiceDiscoverer)">io.servicetalk.http.netty.HttpClients.forMultiAddressUrl<wbr>(ServiceDiscoverer&lt;HostAndPort, InetSocketAddress, ServiceDiscovererEvent&lt;InetSocketAddress&gt;&gt;)</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/netty/HttpClients.html#forMultiAddressUrl(io.servicetalk.client.api.ServiceDiscoverer)">io.servicetalk.http.netty.HttpClients.forMultiAddressUrl<wbr>(ServiceDiscoverer&lt;HostAndPort, InetSocketAddress, ServiceDiscovererEvent&lt;InetSocketAddress&gt;&gt;)</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/http/netty/HttpClients.html#forMultiAddressUrl()"><code>HttpClients.forMultiAddressUrl()</code></a> to create <a href="io/servicetalk/http/api/MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api"><code>MultiAddressHttpClientBuilder</code></a>, then use
  <a href="io/servicetalk/http/api/MultiAddressHttpClientBuilder.html#initializer(io.servicetalk.http.api.MultiAddressHttpClientBuilder.SingleAddressInitializer)"><code>MultiAddressHttpClientBuilder.initializer(SingleAddressInitializer)</code></a> to override <a href="io/servicetalk/client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>
  using <a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html#serviceDiscoverer(io.servicetalk.client.api.ServiceDiscoverer)"><code>SingleAddressHttpClientBuilder.serviceDiscoverer(ServiceDiscoverer)</code></a> for all or some of the internal
  clients.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/netty/HttpClients.html#forPartitionedAddress(io.servicetalk.client.api.ServiceDiscoverer,U,java.util.function.Function)">io.servicetalk.http.netty.HttpClients.forPartitionedAddress<wbr>(ServiceDiscoverer&lt;U, R, PartitionedServiceDiscovererEvent&lt;R&gt;&gt;, U, Function&lt;HttpRequestMetaData, PartitionAttributesBuilder&gt;)</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/netty/HttpClients.html#forPartitionedAddress(io.servicetalk.client.api.ServiceDiscoverer,U,java.util.function.Function)">io.servicetalk.http.netty.HttpClients.forPartitionedAddress<wbr>(ServiceDiscoverer&lt;U, R, PartitionedServiceDiscovererEvent&lt;R&gt;&gt;, U, Function&lt;HttpRequestMetaData, PartitionAttributesBuilder&gt;)</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">We are unaware of anyone using "partition" feature and plan to remove it in future releases.
  If you depend on it, consider using <a href="io/servicetalk/client/api/ClientGroup.html" title="interface in io.servicetalk.client.api"><code>ClientGroup</code></a> as an alternative or reach out to the maintainers
  describing the use-case.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/http/utils/TimeoutFromRequest.html#toTimeoutFromRequest(java.util.function.Function,io.servicetalk.http.api.HttpExecutionStrategy)">io.servicetalk.http.utils.TimeoutFromRequest.toTimeoutFromRequest<wbr>(Function&lt;HttpRequestMetaData, Duration&gt;, HttpExecutionStrategy)</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/http/utils/TimeoutFromRequest.html#toTimeoutFromRequest(java.util.function.Function,io.servicetalk.http.api.HttpExecutionStrategy)">io.servicetalk.http.utils.TimeoutFromRequest.toTimeoutFromRequest<wbr>(Function&lt;HttpRequestMetaData, Duration&gt;, HttpExecutionStrategy)</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">In areas which require <a href="io/servicetalk/http/utils/TimeoutFromRequest.html" title="interface in io.servicetalk.http.utils"><code>TimeoutFromRequest</code></a> use variants that accept
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/BiFunction.html" title="class or interface in java.util.function" class="external-link"><code>BiFunction</code></a>&lt;<a href="io/servicetalk/http/api/HttpRequestMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpRequestMetaData</code></a>, <a href="io/servicetalk/concurrent/TimeSource.html" title="interface in io.servicetalk.concurrent"><code>TimeSource</code></a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link"><code>Duration</code></a>&gt;.
  E.g.:
@@ -920,171 +929,171 @@ loadScripts(document, 'script');</script>
  <a href="io/servicetalk/http/utils/TimeoutHttpServiceFilter.html#%3Cinit%3E(java.util.function.BiFunction,boolean)"><code>TimeoutHttpServiceFilter(BiFunction, boolean)</code></a> for filters.
  Note that passed <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/BiFunction.html" title="class or interface in java.util.function" class="external-link"><code>BiFunction</code></a> should never block.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/serialization/api/Serializer.html#deserialize(io.servicetalk.concurrent.api.Publisher,io.servicetalk.serialization.api.TypeHolder)">io.servicetalk.serialization.api.Serializer.deserialize<wbr>(Publisher&lt;Buffer&gt;, TypeHolder&lt;T&gt;)</a></div>
-<div class="col-last odd-row-color">
-<div class="deprecation-comment">Use
- <a href="io/servicetalk/serializer/api/StreamingDeserializer.html#deserialize(io.servicetalk.concurrent.api.Publisher,io.servicetalk.buffer.api.BufferAllocator)"><code>StreamingDeserializer.deserialize(Publisher, BufferAllocator)</code></a>.</div>
-</div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/serialization/api/Serializer.html#deserialize(io.servicetalk.concurrent.api.Publisher,java.lang.Class)">io.servicetalk.serialization.api.Serializer.deserialize<wbr>(Publisher&lt;Buffer&gt;, Class&lt;T&gt;)</a></div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/serialization/api/Serializer.html#deserialize(io.servicetalk.concurrent.api.Publisher,io.servicetalk.serialization.api.TypeHolder)">io.servicetalk.serialization.api.Serializer.deserialize<wbr>(Publisher&lt;Buffer&gt;, TypeHolder&lt;T&gt;)</a></div>
 <div class="col-last even-row-color">
 <div class="deprecation-comment">Use
  <a href="io/servicetalk/serializer/api/StreamingDeserializer.html#deserialize(io.servicetalk.concurrent.api.Publisher,io.servicetalk.buffer.api.BufferAllocator)"><code>StreamingDeserializer.deserialize(Publisher, BufferAllocator)</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/serialization/api/Serializer.html#deserialize(io.servicetalk.concurrent.BlockingIterable,io.servicetalk.serialization.api.TypeHolder)">io.servicetalk.serialization.api.Serializer.deserialize<wbr>(BlockingIterable&lt;Buffer&gt;, TypeHolder&lt;T&gt;)</a></div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/serialization/api/Serializer.html#deserialize(io.servicetalk.concurrent.api.Publisher,java.lang.Class)">io.servicetalk.serialization.api.Serializer.deserialize<wbr>(Publisher&lt;Buffer&gt;, Class&lt;T&gt;)</a></div>
 <div class="col-last odd-row-color">
 <div class="deprecation-comment">Use
- <a href="io/servicetalk/serializer/api/StreamingDeserializer.html#deserialize(java.lang.Iterable,io.servicetalk.buffer.api.BufferAllocator)"><code>StreamingDeserializer.deserialize(Iterable, BufferAllocator)</code></a>.</div>
+ <a href="io/servicetalk/serializer/api/StreamingDeserializer.html#deserialize(io.servicetalk.concurrent.api.Publisher,io.servicetalk.buffer.api.BufferAllocator)"><code>StreamingDeserializer.deserialize(Publisher, BufferAllocator)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/serialization/api/Serializer.html#deserialize(io.servicetalk.concurrent.BlockingIterable,java.lang.Class)">io.servicetalk.serialization.api.Serializer.deserialize<wbr>(BlockingIterable&lt;Buffer&gt;, Class&lt;T&gt;)</a></div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/serialization/api/Serializer.html#deserialize(io.servicetalk.concurrent.BlockingIterable,io.servicetalk.serialization.api.TypeHolder)">io.servicetalk.serialization.api.Serializer.deserialize<wbr>(BlockingIterable&lt;Buffer&gt;, TypeHolder&lt;T&gt;)</a></div>
 <div class="col-last even-row-color">
 <div class="deprecation-comment">Use
  <a href="io/servicetalk/serializer/api/StreamingDeserializer.html#deserialize(java.lang.Iterable,io.servicetalk.buffer.api.BufferAllocator)"><code>StreamingDeserializer.deserialize(Iterable, BufferAllocator)</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/serialization/api/Serializer.html#deserialize(java.lang.Iterable,io.servicetalk.serialization.api.TypeHolder)">io.servicetalk.serialization.api.Serializer.deserialize<wbr>(Iterable&lt;Buffer&gt;, TypeHolder&lt;T&gt;)</a></div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/serialization/api/Serializer.html#deserialize(io.servicetalk.concurrent.BlockingIterable,java.lang.Class)">io.servicetalk.serialization.api.Serializer.deserialize<wbr>(BlockingIterable&lt;Buffer&gt;, Class&lt;T&gt;)</a></div>
 <div class="col-last odd-row-color">
 <div class="deprecation-comment">Use
  <a href="io/servicetalk/serializer/api/StreamingDeserializer.html#deserialize(java.lang.Iterable,io.servicetalk.buffer.api.BufferAllocator)"><code>StreamingDeserializer.deserialize(Iterable, BufferAllocator)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/serialization/api/Serializer.html#deserialize(java.lang.Iterable,java.lang.Class)">io.servicetalk.serialization.api.Serializer.deserialize<wbr>(Iterable&lt;Buffer&gt;, Class&lt;T&gt;)</a></div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/serialization/api/Serializer.html#deserialize(java.lang.Iterable,io.servicetalk.serialization.api.TypeHolder)">io.servicetalk.serialization.api.Serializer.deserialize<wbr>(Iterable&lt;Buffer&gt;, TypeHolder&lt;T&gt;)</a></div>
 <div class="col-last even-row-color">
 <div class="deprecation-comment">Use
  <a href="io/servicetalk/serializer/api/StreamingDeserializer.html#deserialize(java.lang.Iterable,io.servicetalk.buffer.api.BufferAllocator)"><code>StreamingDeserializer.deserialize(Iterable, BufferAllocator)</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/serialization/api/Serializer.html#deserializeAggregated(io.servicetalk.buffer.api.Buffer,io.servicetalk.serialization.api.TypeHolder)">io.servicetalk.serialization.api.Serializer.deserializeAggregated<wbr>(Buffer, TypeHolder&lt;T&gt;)</a></div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/serialization/api/Serializer.html#deserialize(java.lang.Iterable,java.lang.Class)">io.servicetalk.serialization.api.Serializer.deserialize<wbr>(Iterable&lt;Buffer&gt;, Class&lt;T&gt;)</a></div>
+<div class="col-last odd-row-color">
+<div class="deprecation-comment">Use
+ <a href="io/servicetalk/serializer/api/StreamingDeserializer.html#deserialize(java.lang.Iterable,io.servicetalk.buffer.api.BufferAllocator)"><code>StreamingDeserializer.deserialize(Iterable, BufferAllocator)</code></a>.</div>
+</div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/serialization/api/Serializer.html#deserializeAggregated(io.servicetalk.buffer.api.Buffer,io.servicetalk.serialization.api.TypeHolder)">io.servicetalk.serialization.api.Serializer.deserializeAggregated<wbr>(Buffer, TypeHolder&lt;T&gt;)</a></div>
+<div class="col-last even-row-color">
+<div class="deprecation-comment">Use <a href="io/servicetalk/serializer/api/StreamingDeserializer.html" title="interface in io.servicetalk.serializer.api"><code>StreamingDeserializer</code></a> that understands your protocol's
+ framing.</div>
+</div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/serialization/api/Serializer.html#deserializeAggregated(io.servicetalk.buffer.api.Buffer,java.lang.Class)">io.servicetalk.serialization.api.Serializer.deserializeAggregated<wbr>(Buffer, Class&lt;T&gt;)</a></div>
 <div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/serializer/api/StreamingDeserializer.html" title="interface in io.servicetalk.serializer.api"><code>StreamingDeserializer</code></a> that understands your protocol's
  framing.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/serialization/api/Serializer.html#deserializeAggregated(io.servicetalk.buffer.api.Buffer,java.lang.Class)">io.servicetalk.serialization.api.Serializer.deserializeAggregated<wbr>(Buffer, Class&lt;T&gt;)</a></div>
-<div class="col-last even-row-color">
-<div class="deprecation-comment">Use <a href="io/servicetalk/serializer/api/StreamingDeserializer.html" title="interface in io.servicetalk.serializer.api"><code>StreamingDeserializer</code></a> that understands your protocol's
- framing.</div>
-</div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/serialization/api/Serializer.html#deserializeAggregatedSingle(io.servicetalk.buffer.api.Buffer,io.servicetalk.serialization.api.TypeHolder)">io.servicetalk.serialization.api.Serializer.deserializeAggregatedSingle<wbr>(Buffer, TypeHolder&lt;T&gt;)</a></div>
-<div class="col-last odd-row-color">
-<div class="deprecation-comment">Use <a href="io/servicetalk/serializer/api/Deserializer.html" title="interface in io.servicetalk.serializer.api"><code>Deserializer</code></a>.</div>
-</div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/serialization/api/Serializer.html#deserializeAggregatedSingle(io.servicetalk.buffer.api.Buffer,java.lang.Class)">io.servicetalk.serialization.api.Serializer.deserializeAggregatedSingle<wbr>(Buffer, Class&lt;T&gt;)</a></div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/serialization/api/Serializer.html#deserializeAggregatedSingle(io.servicetalk.buffer.api.Buffer,io.servicetalk.serialization.api.TypeHolder)">io.servicetalk.serialization.api.Serializer.deserializeAggregatedSingle<wbr>(Buffer, TypeHolder&lt;T&gt;)</a></div>
 <div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/serializer/api/Deserializer.html" title="interface in io.servicetalk.serializer.api"><code>Deserializer</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/serialization/api/Serializer.html#serialize(io.servicetalk.concurrent.api.Publisher,io.servicetalk.buffer.api.BufferAllocator,io.servicetalk.serialization.api.TypeHolder)">io.servicetalk.serialization.api.Serializer.serialize<wbr>(Publisher&lt;T&gt;, BufferAllocator, TypeHolder&lt;T&gt;)</a></div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/serialization/api/Serializer.html#deserializeAggregatedSingle(io.servicetalk.buffer.api.Buffer,java.lang.Class)">io.servicetalk.serialization.api.Serializer.deserializeAggregatedSingle<wbr>(Buffer, Class&lt;T&gt;)</a></div>
 <div class="col-last odd-row-color">
-<div class="deprecation-comment">Use <a href="io/servicetalk/serializer/api/StreamingSerializer.html#serialize(io.servicetalk.concurrent.api.Publisher,io.servicetalk.buffer.api.BufferAllocator)"><code>StreamingSerializer.serialize(Publisher, BufferAllocator)</code></a>.</div>
+<div class="deprecation-comment">Use <a href="io/servicetalk/serializer/api/Deserializer.html" title="interface in io.servicetalk.serializer.api"><code>Deserializer</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/serialization/api/Serializer.html#serialize(io.servicetalk.concurrent.api.Publisher,io.servicetalk.buffer.api.BufferAllocator,io.servicetalk.serialization.api.TypeHolder,java.util.function.IntUnaryOperator)">io.servicetalk.serialization.api.Serializer.serialize<wbr>(Publisher&lt;T&gt;, BufferAllocator, TypeHolder&lt;T&gt;, IntUnaryOperator)</a></div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/serialization/api/Serializer.html#serialize(io.servicetalk.concurrent.api.Publisher,io.servicetalk.buffer.api.BufferAllocator,io.servicetalk.serialization.api.TypeHolder)">io.servicetalk.serialization.api.Serializer.serialize<wbr>(Publisher&lt;T&gt;, BufferAllocator, TypeHolder&lt;T&gt;)</a></div>
 <div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/serializer/api/StreamingSerializer.html#serialize(io.servicetalk.concurrent.api.Publisher,io.servicetalk.buffer.api.BufferAllocator)"><code>StreamingSerializer.serialize(Publisher, BufferAllocator)</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/serialization/api/Serializer.html#serialize(io.servicetalk.concurrent.api.Publisher,io.servicetalk.buffer.api.BufferAllocator,java.lang.Class)">io.servicetalk.serialization.api.Serializer.serialize<wbr>(Publisher&lt;T&gt;, BufferAllocator, Class&lt;T&gt;)</a></div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/serialization/api/Serializer.html#serialize(io.servicetalk.concurrent.api.Publisher,io.servicetalk.buffer.api.BufferAllocator,io.servicetalk.serialization.api.TypeHolder,java.util.function.IntUnaryOperator)">io.servicetalk.serialization.api.Serializer.serialize<wbr>(Publisher&lt;T&gt;, BufferAllocator, TypeHolder&lt;T&gt;, IntUnaryOperator)</a></div>
 <div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/serializer/api/StreamingSerializer.html#serialize(io.servicetalk.concurrent.api.Publisher,io.servicetalk.buffer.api.BufferAllocator)"><code>StreamingSerializer.serialize(Publisher, BufferAllocator)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/serialization/api/Serializer.html#serialize(io.servicetalk.concurrent.api.Publisher,io.servicetalk.buffer.api.BufferAllocator,java.lang.Class,java.util.function.IntUnaryOperator)">io.servicetalk.serialization.api.Serializer.serialize<wbr>(Publisher&lt;T&gt;, BufferAllocator, Class&lt;T&gt;, IntUnaryOperator)</a></div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/serialization/api/Serializer.html#serialize(io.servicetalk.concurrent.api.Publisher,io.servicetalk.buffer.api.BufferAllocator,java.lang.Class)">io.servicetalk.serialization.api.Serializer.serialize<wbr>(Publisher&lt;T&gt;, BufferAllocator, Class&lt;T&gt;)</a></div>
 <div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/serializer/api/StreamingSerializer.html#serialize(io.servicetalk.concurrent.api.Publisher,io.servicetalk.buffer.api.BufferAllocator)"><code>StreamingSerializer.serialize(Publisher, BufferAllocator)</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/serialization/api/Serializer.html#serialize(io.servicetalk.concurrent.BlockingIterable,io.servicetalk.buffer.api.BufferAllocator,io.servicetalk.serialization.api.TypeHolder)">io.servicetalk.serialization.api.Serializer.serialize<wbr>(BlockingIterable&lt;T&gt;, BufferAllocator, TypeHolder&lt;T&gt;)</a></div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/serialization/api/Serializer.html#serialize(io.servicetalk.concurrent.api.Publisher,io.servicetalk.buffer.api.BufferAllocator,java.lang.Class,java.util.function.IntUnaryOperator)">io.servicetalk.serialization.api.Serializer.serialize<wbr>(Publisher&lt;T&gt;, BufferAllocator, Class&lt;T&gt;, IntUnaryOperator)</a></div>
 <div class="col-last odd-row-color">
-<div class="deprecation-comment">Use <a href="io/servicetalk/serializer/api/StreamingSerializer.html#serialize(java.lang.Iterable,io.servicetalk.buffer.api.BufferAllocator)"><code>StreamingSerializer.serialize(Iterable, BufferAllocator)</code></a>.</div>
+<div class="deprecation-comment">Use <a href="io/servicetalk/serializer/api/StreamingSerializer.html#serialize(io.servicetalk.concurrent.api.Publisher,io.servicetalk.buffer.api.BufferAllocator)"><code>StreamingSerializer.serialize(Publisher, BufferAllocator)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/serialization/api/Serializer.html#serialize(io.servicetalk.concurrent.BlockingIterable,io.servicetalk.buffer.api.BufferAllocator,io.servicetalk.serialization.api.TypeHolder,java.util.function.IntUnaryOperator)">io.servicetalk.serialization.api.Serializer.serialize<wbr>(BlockingIterable&lt;T&gt;, BufferAllocator, TypeHolder&lt;T&gt;, IntUnaryOperator)</a></div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/serialization/api/Serializer.html#serialize(io.servicetalk.concurrent.BlockingIterable,io.servicetalk.buffer.api.BufferAllocator,io.servicetalk.serialization.api.TypeHolder)">io.servicetalk.serialization.api.Serializer.serialize<wbr>(BlockingIterable&lt;T&gt;, BufferAllocator, TypeHolder&lt;T&gt;)</a></div>
 <div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/serializer/api/StreamingSerializer.html#serialize(java.lang.Iterable,io.servicetalk.buffer.api.BufferAllocator)"><code>StreamingSerializer.serialize(Iterable, BufferAllocator)</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/serialization/api/Serializer.html#serialize(io.servicetalk.concurrent.BlockingIterable,io.servicetalk.buffer.api.BufferAllocator,java.lang.Class)">io.servicetalk.serialization.api.Serializer.serialize<wbr>(BlockingIterable&lt;T&gt;, BufferAllocator, Class&lt;T&gt;)</a></div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/serialization/api/Serializer.html#serialize(io.servicetalk.concurrent.BlockingIterable,io.servicetalk.buffer.api.BufferAllocator,io.servicetalk.serialization.api.TypeHolder,java.util.function.IntUnaryOperator)">io.servicetalk.serialization.api.Serializer.serialize<wbr>(BlockingIterable&lt;T&gt;, BufferAllocator, TypeHolder&lt;T&gt;, IntUnaryOperator)</a></div>
 <div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/serializer/api/StreamingSerializer.html#serialize(java.lang.Iterable,io.servicetalk.buffer.api.BufferAllocator)"><code>StreamingSerializer.serialize(Iterable, BufferAllocator)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/serialization/api/Serializer.html#serialize(io.servicetalk.concurrent.BlockingIterable,io.servicetalk.buffer.api.BufferAllocator,java.lang.Class,java.util.function.IntUnaryOperator)">io.servicetalk.serialization.api.Serializer.serialize<wbr>(BlockingIterable&lt;T&gt;, BufferAllocator, Class&lt;T&gt;, IntUnaryOperator)</a></div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/serialization/api/Serializer.html#serialize(io.servicetalk.concurrent.BlockingIterable,io.servicetalk.buffer.api.BufferAllocator,java.lang.Class)">io.servicetalk.serialization.api.Serializer.serialize<wbr>(BlockingIterable&lt;T&gt;, BufferAllocator, Class&lt;T&gt;)</a></div>
 <div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/serializer/api/StreamingSerializer.html#serialize(java.lang.Iterable,io.servicetalk.buffer.api.BufferAllocator)"><code>StreamingSerializer.serialize(Iterable, BufferAllocator)</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/serialization/api/Serializer.html#serialize(java.lang.Iterable,io.servicetalk.buffer.api.BufferAllocator,io.servicetalk.serialization.api.TypeHolder)">io.servicetalk.serialization.api.Serializer.serialize<wbr>(Iterable&lt;T&gt;, BufferAllocator, TypeHolder&lt;T&gt;)</a></div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/serialization/api/Serializer.html#serialize(io.servicetalk.concurrent.BlockingIterable,io.servicetalk.buffer.api.BufferAllocator,java.lang.Class,java.util.function.IntUnaryOperator)">io.servicetalk.serialization.api.Serializer.serialize<wbr>(BlockingIterable&lt;T&gt;, BufferAllocator, Class&lt;T&gt;, IntUnaryOperator)</a></div>
 <div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/serializer/api/StreamingSerializer.html#serialize(java.lang.Iterable,io.servicetalk.buffer.api.BufferAllocator)"><code>StreamingSerializer.serialize(Iterable, BufferAllocator)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/serialization/api/Serializer.html#serialize(java.lang.Iterable,io.servicetalk.buffer.api.BufferAllocator,io.servicetalk.serialization.api.TypeHolder,java.util.function.IntUnaryOperator)">io.servicetalk.serialization.api.Serializer.serialize<wbr>(Iterable&lt;T&gt;, BufferAllocator, TypeHolder&lt;T&gt;, IntUnaryOperator)</a></div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/serialization/api/Serializer.html#serialize(java.lang.Iterable,io.servicetalk.buffer.api.BufferAllocator,io.servicetalk.serialization.api.TypeHolder)">io.servicetalk.serialization.api.Serializer.serialize<wbr>(Iterable&lt;T&gt;, BufferAllocator, TypeHolder&lt;T&gt;)</a></div>
 <div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/serializer/api/StreamingSerializer.html#serialize(java.lang.Iterable,io.servicetalk.buffer.api.BufferAllocator)"><code>StreamingSerializer.serialize(Iterable, BufferAllocator)</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/serialization/api/Serializer.html#serialize(java.lang.Iterable,io.servicetalk.buffer.api.BufferAllocator,java.lang.Class)">io.servicetalk.serialization.api.Serializer.serialize<wbr>(Iterable&lt;T&gt;, BufferAllocator, Class&lt;T&gt;)</a></div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/serialization/api/Serializer.html#serialize(java.lang.Iterable,io.servicetalk.buffer.api.BufferAllocator,io.servicetalk.serialization.api.TypeHolder,java.util.function.IntUnaryOperator)">io.servicetalk.serialization.api.Serializer.serialize<wbr>(Iterable&lt;T&gt;, BufferAllocator, TypeHolder&lt;T&gt;, IntUnaryOperator)</a></div>
 <div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/serializer/api/StreamingSerializer.html#serialize(java.lang.Iterable,io.servicetalk.buffer.api.BufferAllocator)"><code>StreamingSerializer.serialize(Iterable, BufferAllocator)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/serialization/api/Serializer.html#serialize(java.lang.Iterable,io.servicetalk.buffer.api.BufferAllocator,java.lang.Class,java.util.function.IntUnaryOperator)">io.servicetalk.serialization.api.Serializer.serialize<wbr>(Iterable&lt;T&gt;, BufferAllocator, Class&lt;T&gt;, IntUnaryOperator)</a></div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/serialization/api/Serializer.html#serialize(java.lang.Iterable,io.servicetalk.buffer.api.BufferAllocator,java.lang.Class)">io.servicetalk.serialization.api.Serializer.serialize<wbr>(Iterable&lt;T&gt;, BufferAllocator, Class&lt;T&gt;)</a></div>
 <div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/serializer/api/StreamingSerializer.html#serialize(java.lang.Iterable,io.servicetalk.buffer.api.BufferAllocator)"><code>StreamingSerializer.serialize(Iterable, BufferAllocator)</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/serialization/api/Serializer.html#serialize(T,io.servicetalk.buffer.api.Buffer)">io.servicetalk.serialization.api.Serializer.serialize<wbr>(T, Buffer)</a></div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/serialization/api/Serializer.html#serialize(java.lang.Iterable,io.servicetalk.buffer.api.BufferAllocator,java.lang.Class,java.util.function.IntUnaryOperator)">io.servicetalk.serialization.api.Serializer.serialize<wbr>(Iterable&lt;T&gt;, BufferAllocator, Class&lt;T&gt;, IntUnaryOperator)</a></div>
 <div class="col-last odd-row-color">
+<div class="deprecation-comment">Use <a href="io/servicetalk/serializer/api/StreamingSerializer.html#serialize(java.lang.Iterable,io.servicetalk.buffer.api.BufferAllocator)"><code>StreamingSerializer.serialize(Iterable, BufferAllocator)</code></a>.</div>
+</div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/serialization/api/Serializer.html#serialize(T,io.servicetalk.buffer.api.Buffer)">io.servicetalk.serialization.api.Serializer.serialize<wbr>(T, Buffer)</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/serializer/api/Serializer.html" title="interface in io.servicetalk.serializer.api"><code>Serializer</code></a></div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/serialization/api/Serializer.html#serialize(T,io.servicetalk.buffer.api.BufferAllocator)">io.servicetalk.serialization.api.Serializer.serialize<wbr>(T, BufferAllocator)</a></div>
-<div class="col-last even-row-color">
-<div class="deprecation-comment">Use <a href="io/servicetalk/serializer/api/Serializer.html#serialize(T,io.servicetalk.buffer.api.BufferAllocator)"><code>Serializer.serialize(Object, BufferAllocator)</code></a>.</div>
-</div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/serialization/api/Serializer.html#serialize(T,io.servicetalk.buffer.api.BufferAllocator,int)">io.servicetalk.serialization.api.Serializer.serialize<wbr>(T, BufferAllocator, int)</a></div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/serialization/api/Serializer.html#serialize(T,io.servicetalk.buffer.api.BufferAllocator)">io.servicetalk.serialization.api.Serializer.serialize<wbr>(T, BufferAllocator)</a></div>
 <div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/serializer/api/Serializer.html#serialize(T,io.servicetalk.buffer.api.BufferAllocator)"><code>Serializer.serialize(Object, BufferAllocator)</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/serialization/api/StreamingDeserializer.html#deserialize(io.servicetalk.buffer.api.Buffer)">io.servicetalk.serialization.api.StreamingDeserializer.deserialize<wbr>(Buffer)</a></div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/serialization/api/Serializer.html#serialize(T,io.servicetalk.buffer.api.BufferAllocator,int)">io.servicetalk.serialization.api.Serializer.serialize<wbr>(T, BufferAllocator, int)</a></div>
 <div class="col-last even-row-color">
+<div class="deprecation-comment">Use <a href="io/servicetalk/serializer/api/Serializer.html#serialize(T,io.servicetalk.buffer.api.BufferAllocator)"><code>Serializer.serialize(Object, BufferAllocator)</code></a>.</div>
+</div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/serialization/api/StreamingDeserializer.html#deserialize(io.servicetalk.buffer.api.Buffer)">io.servicetalk.serialization.api.StreamingDeserializer.deserialize<wbr>(Buffer)</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/serializer/api/StreamingDeserializer.html" title="interface in io.servicetalk.serializer.api"><code>StreamingDeserializer</code></a> that understands your protocol's
  framing.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/serialization/api/StreamingDeserializer.html#deserialize(io.servicetalk.concurrent.BlockingIterable)">io.servicetalk.serialization.api.StreamingDeserializer.deserialize<wbr>(BlockingIterable&lt;Buffer&gt;)</a></div>
-<div class="col-last odd-row-color">
-<div class="deprecation-comment">Use
- <a href="io/servicetalk/serializer/api/StreamingDeserializer.html#deserialize(java.lang.Iterable,io.servicetalk.buffer.api.BufferAllocator)"><code>StreamingDeserializer.deserialize(Iterable, BufferAllocator)</code></a>.</div>
-</div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/serialization/api/StreamingDeserializer.html#deserialize(java.lang.Iterable)">io.servicetalk.serialization.api.StreamingDeserializer.deserialize<wbr>(Iterable&lt;Buffer&gt;)</a></div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/serialization/api/StreamingDeserializer.html#deserialize(io.servicetalk.concurrent.BlockingIterable)">io.servicetalk.serialization.api.StreamingDeserializer.deserialize<wbr>(BlockingIterable&lt;Buffer&gt;)</a></div>
 <div class="col-last even-row-color">
 <div class="deprecation-comment">Use
  <a href="io/servicetalk/serializer/api/StreamingDeserializer.html#deserialize(java.lang.Iterable,io.servicetalk.buffer.api.BufferAllocator)"><code>StreamingDeserializer.deserialize(Iterable, BufferAllocator)</code></a>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/serialization/api/StreamingSerializer.html#serialize(java.lang.Object,io.servicetalk.buffer.api.Buffer)">io.servicetalk.serialization.api.StreamingSerializer.serialize<wbr>(Object, Buffer)</a></div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/serialization/api/StreamingDeserializer.html#deserialize(java.lang.Iterable)">io.servicetalk.serialization.api.StreamingDeserializer.deserialize<wbr>(Iterable&lt;Buffer&gt;)</a></div>
 <div class="col-last odd-row-color">
+<div class="deprecation-comment">Use
+ <a href="io/servicetalk/serializer/api/StreamingDeserializer.html#deserialize(java.lang.Iterable,io.servicetalk.buffer.api.BufferAllocator)"><code>StreamingDeserializer.deserialize(Iterable, BufferAllocator)</code></a>.</div>
+</div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/serialization/api/StreamingSerializer.html#serialize(java.lang.Object,io.servicetalk.buffer.api.Buffer)">io.servicetalk.serialization.api.StreamingSerializer.serialize<wbr>(Object, Buffer)</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/serializer/api/StreamingSerializer.html" title="interface in io.servicetalk.serializer.api"><code>StreamingSerializer</code></a>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/transport/api/ConnectionObserver.ReadObserver.html#itemRead()">io.servicetalk.transport.api.ConnectionObserver.ReadObserver.itemRead()</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/transport/api/ConnectionObserver.ReadObserver.html#itemRead()">io.servicetalk.transport.api.ConnectionObserver.ReadObserver.itemRead()</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/transport/api/ConnectionObserver.ReadObserver.html#itemRead(java.lang.Object)"><code>ConnectionObserver.ReadObserver.itemRead(Object)</code></a></div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/transport/api/ConnectionObserver.WriteObserver.html#itemReceived()">io.servicetalk.transport.api.ConnectionObserver.WriteObserver.itemReceived()</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/transport/api/ConnectionObserver.WriteObserver.html#itemReceived()">io.servicetalk.transport.api.ConnectionObserver.WriteObserver.itemReceived()</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use {<a href="io/servicetalk/transport/api/ConnectionObserver.WriteObserver.html#itemReceived(java.lang.Object)"><code>ConnectionObserver.WriteObserver.itemReceived(Object)</code></a>}</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/transport/api/ConnectionObserver.WriteObserver.html#itemWritten()">io.servicetalk.transport.api.ConnectionObserver.WriteObserver.itemWritten()</a></div>
-<div class="col-last even-row-color">
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/transport/api/ConnectionObserver.WriteObserver.html#itemWritten()">io.servicetalk.transport.api.ConnectionObserver.WriteObserver.itemWritten()</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/transport/api/ConnectionObserver.WriteObserver.html#itemWritten(java.lang.Object)"><code>ConnectionObserver.WriteObserver.itemWritten(Object)</code></a></div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/transport/api/TransportObserver.html#onNewConnection()">io.servicetalk.transport.api.TransportObserver.onNewConnection()</a></div>
-<div class="col-last odd-row-color">
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/transport/api/TransportObserver.html#onNewConnection()">io.servicetalk.transport.api.TransportObserver.onNewConnection()</a></div>
+<div class="col-last even-row-color">
 <div class="deprecation-comment">Use <a href="io/servicetalk/transport/api/TransportObserver.html#onNewConnection(java.lang.Object,java.lang.Object)"><code>TransportObserver.onNewConnection(Object, Object)</code></a></div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html#initChannel(io.netty.channel.Channel,io.servicetalk.buffer.api.BufferAllocator,io.servicetalk.concurrent.api.Executor,io.servicetalk.transport.api.IoExecutor,io.servicetalk.transport.netty.internal.CloseHandler,io.servicetalk.transport.netty.internal.FlushStrategy,java.lang.Long,io.servicetalk.transport.netty.internal.ChannelInitializer,io.servicetalk.transport.api.ExecutionStrategy,io.servicetalk.transport.api.ConnectionInfo.Protocol,io.servicetalk.transport.api.ConnectionObserver,boolean)">io.servicetalk.transport.netty.internal.DefaultNettyConnection.initChannel<wbr>(Channel, BufferAllocator, Executor, IoExecutor, CloseHandler, FlushStrategy, Long, ChannelInitializer, ExecutionStrategy, ConnectionInfo.Protocol, ConnectionObserver, boolean)</a></div>
-<div class="col-last even-row-color">
-<div class="deprecation-comment">Use <code>#initChannel(Channel, BufferAllocator, Executor, IoExecutor, CloseHandler, FlushStrategy,
- long, SslConfig, ChannelInitializer, ExecutionStrategy, Protocol, ConnectionObserver, boolean, Predicate)</code>.</div>
-</div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html#initChannel(io.netty.channel.Channel,io.servicetalk.buffer.api.BufferAllocator,io.servicetalk.concurrent.api.Executor,io.servicetalk.transport.api.IoExecutor,io.servicetalk.transport.netty.internal.CloseHandler,io.servicetalk.transport.netty.internal.FlushStrategy,java.lang.Long,io.servicetalk.transport.netty.internal.ChannelInitializer,io.servicetalk.transport.api.ExecutionStrategy,io.servicetalk.transport.api.ConnectionInfo.Protocol,io.servicetalk.transport.api.ConnectionObserver,boolean,java.util.function.Predicate)">io.servicetalk.transport.netty.internal.DefaultNettyConnection.initChannel<wbr>(Channel, BufferAllocator, Executor, IoExecutor, CloseHandler, FlushStrategy, Long, ChannelInitializer, ExecutionStrategy, ConnectionInfo.Protocol, ConnectionObserver, boolean, Predicate&lt;Object&gt;)</a></div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html#initChannel(io.netty.channel.Channel,io.servicetalk.buffer.api.BufferAllocator,io.servicetalk.concurrent.api.Executor,io.servicetalk.transport.api.IoExecutor,io.servicetalk.transport.netty.internal.CloseHandler,io.servicetalk.transport.netty.internal.FlushStrategy,java.lang.Long,io.servicetalk.transport.netty.internal.ChannelInitializer,io.servicetalk.transport.api.ExecutionStrategy,io.servicetalk.transport.api.ConnectionInfo.Protocol,io.servicetalk.transport.api.ConnectionObserver,boolean)">io.servicetalk.transport.netty.internal.DefaultNettyConnection.initChannel<wbr>(Channel, BufferAllocator, Executor, IoExecutor, CloseHandler, FlushStrategy, Long, ChannelInitializer, ExecutionStrategy, ConnectionInfo.Protocol, ConnectionObserver, boolean)</a></div>
 <div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <code>#initChannel(Channel, BufferAllocator, Executor, IoExecutor, CloseHandler, FlushStrategy,
  long, SslConfig, ChannelInitializer, ExecutionStrategy, Protocol, ConnectionObserver, boolean, Predicate)</code>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html#initChildChannel(io.netty.channel.Channel,io.servicetalk.transport.api.ExecutionContext,io.servicetalk.transport.netty.internal.CloseHandler,io.servicetalk.transport.netty.internal.FlushStrategy,java.lang.Long,io.servicetalk.transport.api.ConnectionInfo.Protocol,javax.net.ssl.SSLSession,io.netty.channel.ChannelConfig,io.servicetalk.transport.api.ConnectionObserver.StreamObserver,boolean,java.util.function.Predicate,java.util.function.UnaryOperator)">io.servicetalk.transport.netty.internal.DefaultNettyConnection.initChildChannel<wbr>(Channel, ExecutionContext&lt;?&gt;, CloseHandler, FlushStrategy, Long, ConnectionInfo.Protocol, SSLSession, ChannelConfig, ConnectionObserver.StreamObserver, boolean, Predicate&lt;Object&gt;, UnaryOperator&lt;Throwable&gt;)</a></div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html#initChannel(io.netty.channel.Channel,io.servicetalk.buffer.api.BufferAllocator,io.servicetalk.concurrent.api.Executor,io.servicetalk.transport.api.IoExecutor,io.servicetalk.transport.netty.internal.CloseHandler,io.servicetalk.transport.netty.internal.FlushStrategy,java.lang.Long,io.servicetalk.transport.netty.internal.ChannelInitializer,io.servicetalk.transport.api.ExecutionStrategy,io.servicetalk.transport.api.ConnectionInfo.Protocol,io.servicetalk.transport.api.ConnectionObserver,boolean,java.util.function.Predicate)">io.servicetalk.transport.netty.internal.DefaultNettyConnection.initChannel<wbr>(Channel, BufferAllocator, Executor, IoExecutor, CloseHandler, FlushStrategy, Long, ChannelInitializer, ExecutionStrategy, ConnectionInfo.Protocol, ConnectionObserver, boolean, Predicate&lt;Object&gt;)</a></div>
 <div class="col-last even-row-color">
-<div class="deprecation-comment">Use <code>#initChildChannel(Channel, ExecutionContext, CloseHandler, FlushStrategy, long, Protocol,
- SslConfig, SSLSession, ChannelConfig, StreamObserver, boolean, Predicate, UnaryOperator)</code>.</div>
+<div class="deprecation-comment">Use <code>#initChannel(Channel, BufferAllocator, Executor, IoExecutor, CloseHandler, FlushStrategy,
+ long, SslConfig, ChannelInitializer, ExecutionStrategy, Protocol, ConnectionObserver, boolean, Predicate)</code>.</div>
 </div>
-<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html#initChildChannel(io.netty.channel.Channel,io.servicetalk.transport.api.ExecutionContext,io.servicetalk.transport.netty.internal.CloseHandler,io.servicetalk.transport.netty.internal.FlushStrategy,java.lang.Long,io.servicetalk.transport.api.ConnectionInfo.Protocol,javax.net.ssl.SSLSession,io.netty.channel.ChannelConfig,io.servicetalk.transport.api.ConnectionObserver.StreamObserver,boolean,java.util.function.UnaryOperator)">io.servicetalk.transport.netty.internal.DefaultNettyConnection.initChildChannel<wbr>(Channel, ExecutionContext&lt;?&gt;, CloseHandler, FlushStrategy, Long, ConnectionInfo.Protocol, SSLSession, ChannelConfig, ConnectionObserver.StreamObserver, boolean, UnaryOperator&lt;Throwable&gt;)</a></div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html#initChildChannel(io.netty.channel.Channel,io.servicetalk.transport.api.ExecutionContext,io.servicetalk.transport.netty.internal.CloseHandler,io.servicetalk.transport.netty.internal.FlushStrategy,java.lang.Long,io.servicetalk.transport.api.ConnectionInfo.Protocol,javax.net.ssl.SSLSession,io.netty.channel.ChannelConfig,io.servicetalk.transport.api.ConnectionObserver.StreamObserver,boolean,java.util.function.Predicate,java.util.function.UnaryOperator)">io.servicetalk.transport.netty.internal.DefaultNettyConnection.initChildChannel<wbr>(Channel, ExecutionContext&lt;?&gt;, CloseHandler, FlushStrategy, Long, ConnectionInfo.Protocol, SSLSession, ChannelConfig, ConnectionObserver.StreamObserver, boolean, Predicate&lt;Object&gt;, UnaryOperator&lt;Throwable&gt;)</a></div>
 <div class="col-last odd-row-color">
 <div class="deprecation-comment">Use <code>#initChildChannel(Channel, ExecutionContext, CloseHandler, FlushStrategy, long, Protocol,
  SslConfig, SSLSession, ChannelConfig, StreamObserver, boolean, Predicate, UnaryOperator)</code>.</div>
 </div>
-<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/transport/netty/internal/NettyIoExecutor.html#asExecutor()">io.servicetalk.transport.netty.internal.NettyIoExecutor.asExecutor()</a></div>
+<div class="col-summary-item-name even-row-color"><a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html#initChildChannel(io.netty.channel.Channel,io.servicetalk.transport.api.ExecutionContext,io.servicetalk.transport.netty.internal.CloseHandler,io.servicetalk.transport.netty.internal.FlushStrategy,java.lang.Long,io.servicetalk.transport.api.ConnectionInfo.Protocol,javax.net.ssl.SSLSession,io.netty.channel.ChannelConfig,io.servicetalk.transport.api.ConnectionObserver.StreamObserver,boolean,java.util.function.UnaryOperator)">io.servicetalk.transport.netty.internal.DefaultNettyConnection.initChildChannel<wbr>(Channel, ExecutionContext&lt;?&gt;, CloseHandler, FlushStrategy, Long, ConnectionInfo.Protocol, SSLSession, ChannelConfig, ConnectionObserver.StreamObserver, boolean, UnaryOperator&lt;Throwable&gt;)</a></div>
 <div class="col-last even-row-color">
+<div class="deprecation-comment">Use <code>#initChildChannel(Channel, ExecutionContext, CloseHandler, FlushStrategy, long, Protocol,
+ SslConfig, SSLSession, ChannelConfig, StreamObserver, boolean, Predicate, UnaryOperator)</code>.</div>
+</div>
+<div class="col-summary-item-name odd-row-color"><a href="io/servicetalk/transport/netty/internal/NettyIoExecutor.html#asExecutor()">io.servicetalk.transport.netty.internal.NettyIoExecutor.asExecutor()</a></div>
+<div class="col-last odd-row-color">
 <div class="deprecation-comment">IoExecutor now implements <a href="io/servicetalk/concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> so this method is redundant.</div>
 </div>
 </div>
