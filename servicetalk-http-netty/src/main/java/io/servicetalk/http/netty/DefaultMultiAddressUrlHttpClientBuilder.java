@@ -96,6 +96,39 @@ final class DefaultMultiAddressUrlHttpClientBuilder
 
     private static final String HTTPS_SCHEME = HTTPS.toString();
 
+    private static final HttpExecutionStrategy DEFAULT_CHECK = new HttpExecutionStrategy() {
+
+        @Override
+        public boolean isCloseOffloaded() {
+            return false;
+        }
+
+        @Override
+        public boolean isMetadataReceiveOffloaded() {
+            return false;
+        }
+
+        @Override
+        public boolean isDataReceiveOffloaded() {
+            return false;
+        }
+
+        @Override
+        public boolean isSendOffloaded() {
+            return false;
+        }
+
+        @Override
+        public boolean isEventOffloaded() {
+            return false;
+        }
+
+        @Override
+        public HttpExecutionStrategy merge(final HttpExecutionStrategy other) {
+            return null;
+        }
+    };
+
     private final Function<HostAndPort, SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>> builderFactory;
     private final HttpExecutionContextBuilder executionContextBuilder = new HttpExecutionContextBuilder();
 
@@ -261,8 +294,11 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     }
 
     private static void singleClientStrategyUpdate(ContextMap context, HttpExecutionStrategy singleStrategy) {
-        HttpExecutionStrategy requestStrategy = context.getOrDefault(HTTP_EXECUTION_STRATEGY_KEY, defaultStrategy());
+        HttpExecutionStrategy requestStrategy = context.getOrDefault(HTTP_EXECUTION_STRATEGY_KEY, DEFAULT_CHECK);
         assert null != requestStrategy : "Request strategy unexpectedly null";
+        if (DEFAULT_CHECK == requestStrategy) {
+            throw new AssertionError("HTTP_EXECUTION_STRATEGY_KEY not initialized");
+        }
         HttpExecutionStrategy useStrategy = defaultStrategy() == requestStrategy ?
                 // For all apis except async streaming default conversion has already been done.
                 // This is the default to required strategy resolution for the async streaming client.

@@ -520,8 +520,8 @@ class ClientEffectiveStrategyTest {
                     final HttpExecutionStrategy requestStrategy = request.context().get(HTTP_EXECUTION_STRATEGY_KEY);
                     return delegate.request(request.transformPayloadBody(payload ->
                                     payload.beforeRequest(__ -> recordThread(Send, clientStrategy, requestStrategy))))
-                            .beforeOnSuccess(__ -> recordThread(ReceiveMeta, clientStrategy, requestStrategy))
-                            .map(resp -> resp.transformPayloadBody(payload -> payload
+                            .beforeFinally(() -> recordThread(ReceiveMeta, clientStrategy, requestStrategy))
+                            .map(resp -> resp.transformMessageBody(message -> message
                                     .beforeOnNext(__ -> recordThread(ReceiveData, clientStrategy, requestStrategy))));
                 }
             };
