@@ -31,6 +31,11 @@ dependencies {
   api platform("org.glassfish.jersey:jersey-bom:${jerseyVersion}")
 
   constraints {
+    // Ideally this come from the Netty BOM
+    api "io.netty.incubator:netty-incubator-transport-native-io_uring:$nettyIoUringVersion"
+    runtime "io.netty.incubator:netty-incubator-transport-native-io_uring:$nettyIoUringVersion:linux-x86_64"
+    runtime "io.netty.incubator:netty-incubator-transport-native-io_uring:$nettyIoUringVersion:linux-aarch_64"
+
     // We don't use the jackson-bom because we want to target specifically jackson-databind
     api "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
     api "com.google.api.grpc:proto-google-common-protos:$protoGoogleCommonProtosVersion"
