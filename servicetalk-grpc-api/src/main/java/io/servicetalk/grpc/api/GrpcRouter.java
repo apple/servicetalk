@@ -69,7 +69,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
@@ -183,7 +182,7 @@ final class GrpcRouter {
                                        final Map<String, GrpcExecutionStrategy> executionStrategies) {
         for (Map.Entry<String, RouteProvider> entry : routes.entrySet()) {
             final String path = entry.getKey();
-            final ServiceAdapterHolder adapterHolder = entry.getValue().buildRoute(executionContext);
+            final ServiceAdapterHolder adapterHolder = entry.getValue().serviceAdapterHolder();
             final StreamingHttpService route = closeable.append(adapterHolder.adaptor());
             final GrpcExecutionStrategy routeStrategy = executionStrategies.getOrDefault(path, null);
             final HttpExecutionStrategy missing = null == routeStrategy ?
@@ -338,7 +337,7 @@ final class GrpcRouter {
             CharSequence responseContentType = grpcContentType(methodDescriptor.responseDescriptor()
                     .serializerDescriptor().contentType());
             verifyNoOverrides(routes.put(methodDescriptor.httpPath(),
-                    new RouteProvider(executionContext -> toStreamingHttpService(
+                    new RouteProvider(toStreamingHttpService(
                     new HttpService() {
                         @Override
                         public Single<HttpResponse> handle(final HttpServiceContext ctx, final HttpRequest request,
@@ -408,8 +407,9 @@ final class GrpcRouter {
                     .serializerDescriptor().contentType());
             CharSequence responseContentType = grpcContentType(methodDescriptor.responseDescriptor()
                     .serializerDescriptor().contentType());
-            verifyNoOverrides(streamingRoutes.put(methodDescriptor.httpPath(), new RouteProvider(executionContext -> {
-                        final StreamingHttpService service = new StreamingHttpService() {
+            verifyNoOverrides(streamingRoutes.put(methodDescriptor.httpPath(), new RouteProvider(
+                    new ServiceAdapterHolder() {
+                        private final StreamingHttpService service = new StreamingHttpService() {
                             @Override
                             public Single<StreamingHttpResponse> handle(
                                     final HttpServiceContext ctx, final StreamingHttpRequest request,
@@ -447,17 +447,16 @@ final class GrpcRouter {
                                 return route.closeAsyncGracefully();
                             }
                         };
-                        return new ServiceAdapterHolder() {
-                            @Override
-                            public StreamingHttpService adaptor() {
-                                return service;
-                            }
 
-                            @Override
-                            public HttpExecutionStrategy serviceInvocationStrategy() {
-                                return executionStrategy == null ? defaultStrategy() : executionStrategy;
-                            }
-                        };
+                        @Override
+                        public StreamingHttpService adaptor() {
+                            return service;
+                        }
+
+                        @Override
+                        public HttpExecutionStrategy serviceInvocationStrategy() {
+                            return executionStrategy == null ? defaultStrategy() : executionStrategy;
+                        }
                     }, route)),
                     // We only assume duplication across blocking and async variant of the same API and not between
                     // aggregated and streaming. Therefore, verify that there is no blocking-streaming route registered
@@ -548,7 +547,7 @@ final class GrpcRouter {
                     .serializerDescriptor().contentType());
             CharSequence responseContentType = grpcContentType(methodDescriptor.responseDescriptor()
                     .serializerDescriptor().contentType());
-            verifyNoOverrides(blockingRoutes.put(methodDescriptor.httpPath(), new RouteProvider(executionContext ->
+            verifyNoOverrides(blockingRoutes.put(methodDescriptor.httpPath(), new RouteProvider(
                     toStreamingHttpService(new BlockingHttpService() {
                         @Override
                         public HttpResponse handle(final HttpServiceContext ctx, final HttpRequest request,
@@ -612,7 +611,7 @@ final class GrpcRouter {
             CharSequence responseContentType = grpcContentType(methodDescriptor.responseDescriptor()
                     .serializerDescriptor().contentType());
             verifyNoOverrides(blockingStreamingRoutes.put(methodDescriptor.httpPath(),
-                    new RouteProvider(executionContext -> toStreamingHttpService(new BlockingStreamingHttpService() {
+                    new RouteProvider(toStreamingHttpService(new BlockingStreamingHttpService() {
                         @Override
                         public void handle(final HttpServiceContext ctx, final BlockingStreamingHttpRequest request,
                                            final BlockingStreamingHttpServerResponse response) throws Exception {
@@ -822,22 +821,22 @@ final class GrpcRouter {
 
     private static final class RouteProvider implements AsyncCloseable {
 
-        private final Function<GrpcExecutionContext, ServiceAdapterHolder> routeProvider;
+        private final ServiceAdapterHolder serviceAdapterHolder;
         private final AsyncCloseable closeable;
 
-        RouteProvider(final Function<GrpcExecutionContext, ServiceAdapterHolder> routeProvider,
+        RouteProvider(final ServiceAdapterHolder serviceAdapterHolder,
                       final AsyncCloseable closeable) {
-            this.routeProvider = routeProvider;
+            this.serviceAdapterHolder = serviceAdapterHolder;
             this.closeable = closeable;
         }
 
-        RouteProvider(final Function<GrpcExecutionContext, ServiceAdapterHolder> routeProvider,
+        RouteProvider(final ServiceAdapterHolder serviceAdapterHolder,
                       final GracefulAutoCloseable closeable) {
-            this(routeProvider, toAsyncCloseable(closeable));
+            this(serviceAdapterHolder, toAsyncCloseable(closeable));
         }
 
-        ServiceAdapterHolder buildRoute(GrpcExecutionContext executionContext) {
-            return routeProvider.apply(executionContext);
+        ServiceAdapterHolder serviceAdapterHolder() {
+            return serviceAdapterHolder;
         }
 
         @Override
