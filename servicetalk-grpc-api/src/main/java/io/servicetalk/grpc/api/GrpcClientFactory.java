@@ -79,7 +79,7 @@ public abstract class GrpcClientFactory<Client extends GrpcClient<BlockingClient
      */
     @Deprecated
     public GrpcClientFactory<Client, BlockingClient>
-    supportedMessageCodings(List<ContentCodec> codings) {
+    supportedMessageCodings(List<ContentCodec> codings) {   // FIXME: 0.43 - remove deprecated method
         this.supportedCodings = unmodifiableList(new ArrayList<>(codings));
         return this;
     }
@@ -91,7 +91,7 @@ public abstract class GrpcClientFactory<Client extends GrpcClient<BlockingClient
      * {@link io.servicetalk.encoding.api.BufferEncoder}s and {@link io.servicetalk.encoding.api.BufferDecoderGroup}.
      */
     @Deprecated
-    protected List<ContentCodec> supportedMessageCodings() {
+    protected List<ContentCodec> supportedMessageCodings() {    // FIXME: 0.43 - remove deprecated method
         return supportedCodings;
     }
 
