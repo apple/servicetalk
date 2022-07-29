@@ -23,6 +23,7 @@ import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -660,6 +661,7 @@ class ConnectablePayloadWriterTest {
     }
 
     @Test
+    @Timeout(30)
     void multiThreadedProducerConsumer() throws Exception {
         final Random r = new Random();
         final long seed = r.nextLong();  // capture seed to have repeatable tests
