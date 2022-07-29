@@ -22,4 +22,5 @@
   <!-- The list of test cases must be kept single-line each. -->
   <suppress checks="LineLength"
             files="io[\\/]servicetalk[\\/]transport[\\/]netty[\\/]internal[\\/]RequestResponseCloseHandlerTest.java"/>
+  <suppress checks="LineLength" files="build.gradle"/>
 </suppressions>

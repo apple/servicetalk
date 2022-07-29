@@ -37,6 +37,12 @@ dependencies {
     api "com.google.code.findbugs:jsr305:$jsr305Version"
     api "com.sun.activation:jakarta.activation:$javaxActivationVersion"
     api "com.sun.xml.bind:jaxb-core:$javaxJaxbCoreVersion"
+
+    // Ideally these come from the Netty BOM
+    api "io.netty.incubator:netty-incubator-transport-native-io_uring:$nettyIoUringVersion"
+    api "io.netty.incubator:netty-incubator-transport-native-io_uring:$nettyIoUringVersion:linux-x86_64"
+    api "io.netty.incubator:netty-incubator-transport-native-io_uring:$nettyIoUringVersion:linux-aarch_64"
+
     api "io.opentracing:opentracing-api:$openTracingVersion"
     api "io.zipkin.reporter2:zipkin-reporter:$zipkinReporterVersion"
     api "jakarta.ws.rs:jakarta.ws.rs-api:$jaxRsVersion"
