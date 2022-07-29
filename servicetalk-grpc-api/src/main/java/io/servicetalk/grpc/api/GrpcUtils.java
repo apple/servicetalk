@@ -180,16 +180,6 @@ final class GrpcUtils {
                 .transform(new GrpcStatusUpdater(allocator, STATUS_OK));
     }
 
-    static StreamingHttpResponse newResponse(final StreamingHttpResponseFactory responseFactory,
-                                             final CharSequence contentType,
-                                             @Nullable final CharSequence encoding,
-                                             @Nullable final CharSequence acceptedEncoding,
-                                             final GrpcStatus status,
-                                             final BufferAllocator allocator) {
-        return newStreamingResponse(responseFactory, contentType, encoding, acceptedEncoding)
-                .transform(new GrpcStatusUpdater(allocator, status));
-    }
-
     static HttpResponse newResponse(final HttpResponseFactory responseFactory,
                                     final CharSequence contentType,
                                     @Nullable final CharSequence encoding,

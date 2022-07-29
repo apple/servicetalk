@@ -23,7 +23,6 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.encoding.api.BufferDecoderGroup;
 import io.servicetalk.encoding.api.BufferEncoder;
-import io.servicetalk.grpc.api.GrpcRouter.RouteProviders;
 import io.servicetalk.grpc.api.GrpcServiceFactory.ServerBinder;
 import io.servicetalk.grpc.api.GrpcUtils.DefaultMethodDescriptor;
 import io.servicetalk.http.api.HttpExecutionStrategies;
@@ -119,50 +118,6 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @return {@link Service} containing all the passed routes.
      */
     protected abstract Service newServiceFromRoutes(AllGrpcRoutes routes);
-
-    /**
-     * Returns a {@link AllGrpcRoutes} representing this {@link GrpcRoutes}. Any route registered that is not a
-     * {@link StreamingRoute} will be converted to a {@link StreamingRoute}.
-     * @return {@link AllGrpcRoutes} representing this {@link GrpcRoutes}.
-     */
-    AllGrpcRoutes drainToStreamingRoutes() {
-        final RouteProviders routeProviders = routeBuilder.drainRoutes();
-        return new AllGrpcRoutes() {
-            @Override
-            public <Req, Resp> StreamingRoute<Req, Resp> streamingRouteFor(
-                    final String path) throws IllegalArgumentException {
-                return routeProviders.routeProvider(path).asStreamingRoute();
-            }
-
-            @Override
-            public <Req, Resp> Route<Req, Resp> routeFor(final String path)
-                    throws IllegalArgumentException {
-                return routeProviders.routeProvider(path).asRoute();
-            }
-
-            @Override
-            public <Req, Resp> RequestStreamingRoute<Req, Resp>
-            requestStreamingRouteFor(final String path) throws IllegalArgumentException {
-                return routeProviders.routeProvider(path).asRequestStreamingRoute();
-            }
-
-            @Override
-            public <Req, Resp> ResponseStreamingRoute<Req, Resp>
-            responseStreamingRouteFor(final String path) throws IllegalArgumentException {
-                return routeProviders.routeProvider(path).asResponseStreamingRoute();
-            }
-
-            @Override
-            public Completable closeAsync() {
-                return routeProviders.closeAsync();
-            }
-
-            @Override
-            public Completable closeAsyncGracefully() {
-                return routeProviders.closeAsyncGracefully();
-            }
-        };
-    }
 
     static GrpcRoutes<?> merge(GrpcRoutes<?>... allRoutes) {
         final GrpcRouter.Builder[] builders = new GrpcRouter.Builder[allRoutes.length];

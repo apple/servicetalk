@@ -18,6 +18,7 @@ package io.servicetalk.grpc.api;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.BlockingIterator;
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.GracefulAutoCloseable;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.AsyncCloseables;
@@ -69,16 +70,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.grpc.api.GrpcHeaderValues.APPLICATION_GRPC;
-import static io.servicetalk.grpc.api.GrpcRouteConversions.toAsyncCloseable;
-import static io.servicetalk.grpc.api.GrpcRouteConversions.toRequestStreamingRoute;
-import static io.servicetalk.grpc.api.GrpcRouteConversions.toResponseStreamingRoute;
-import static io.servicetalk.grpc.api.GrpcRouteConversions.toRoute;
-import static io.servicetalk.grpc.api.GrpcRouteConversions.toStreaming;
 import static io.servicetalk.grpc.api.GrpcStatus.fromCodeValue;
 import static io.servicetalk.grpc.api.GrpcStatusCode.INVALID_ARGUMENT;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNIMPLEMENTED;
@@ -297,19 +294,6 @@ final class GrpcRouter {
             this.executionStrategies = executionStrategies;
         }
 
-        RouteProviders drainRoutes() {
-            final Map<String, RouteProvider> allRoutes = new HashMap<>();
-            allRoutes.putAll(routes);
-            allRoutes.putAll(streamingRoutes);
-            allRoutes.putAll(blockingRoutes);
-            allRoutes.putAll(blockingStreamingRoutes);
-            routes.clear();
-            streamingRoutes.clear();
-            blockingRoutes.clear();
-            blockingStreamingRoutes.clear();
-            return new RouteProviders(allRoutes);
-        }
-
         GrpcExecutionStrategy executionStrategyFor(final String path, final GrpcExecutionStrategy defaultValue) {
             return executionStrategies.getOrDefault(path, defaultValue);
         }
@@ -399,9 +383,7 @@ final class GrpcRouter {
                         public Completable closeAsyncGracefully() {
                             return route.closeAsyncGracefully();
                         }
-                    }, executionStrategy == null ? defaultStrategy() : executionStrategy),
-                    () -> toStreaming(route), () -> toRequestStreamingRoute(route),
-                    () -> toResponseStreamingRoute(route), () -> route, route)),
+                    }, executionStrategy == null ? defaultStrategy() : executionStrategy), route)),
                     // We only assume duplication across blocking and async variant of the same API and not between
                     // aggregated and streaming. Therefore, verify that there is no blocking-aggregated route registered
                     // for the same path:
@@ -476,8 +458,7 @@ final class GrpcRouter {
                                 return executionStrategy == null ? defaultStrategy() : executionStrategy;
                             }
                         };
-                    }, () -> route, () -> toRequestStreamingRoute(route), () -> toResponseStreamingRoute(route),
-                            () -> toRoute(route), route)),
+                    }, route)),
                     // We only assume duplication across blocking and async variant of the same API and not between
                     // aggregated and streaming. Therefore, verify that there is no blocking-streaming route registered
                     // for the same path:
@@ -605,9 +586,7 @@ final class GrpcRouter {
                         public void closeGracefully() throws Exception {
                             route.closeGracefully();
                         }
-                    }, executionStrategy == null ? defaultStrategy() : executionStrategy),
-                    () -> toStreaming(route), () -> toRequestStreamingRoute(route),
-                    () -> toResponseStreamingRoute(route), () -> toRoute(route), route)),
+                    }, executionStrategy == null ? defaultStrategy() : executionStrategy), route)),
                     // We only assume duplication across blocking and async variant of the same API and not between
                     // aggregated and streaming. Therefore, verify that there is no async-aggregated route registered
                     // for the same path:
@@ -675,9 +654,7 @@ final class GrpcRouter {
                         public void closeGracefully() throws Exception {
                             route.closeGracefully();
                         }
-                    }, executionStrategy == null ? defaultStrategy() : executionStrategy),
-                    () -> toStreaming(route), () -> toRequestStreamingRoute(route),
-                    () -> toResponseStreamingRoute(route), () -> toRoute(route), route)),
+                    }, executionStrategy == null ? defaultStrategy() : executionStrategy), route)),
                     // We only assume duplication across blocking and async variant of the same API and not between
                     // aggregated and streaming. Therefore, verify that there is no async-streaming route registered
                     // for the same path:
@@ -843,106 +820,26 @@ final class GrpcRouter {
         }
     }
 
-    static final class RouteProviders implements AsyncCloseable {
-
-        private final Map<String, RouteProvider> routes;
-        private final CompositeCloseable closeable;
-
-        RouteProviders(final Map<String, RouteProvider> routes) {
-            this.routes = routes;
-            closeable = AsyncCloseables.newCompositeCloseable();
-            for (RouteProvider provider : routes.values()) {
-                closeable.append(provider);
-            }
-        }
-
-        RouteProvider routeProvider(final String path) {
-            final RouteProvider routeProvider = routes.get(path);
-            if (routeProvider == null) {
-                throw new IllegalArgumentException("No routes registered for path: " + path);
-            }
-            return routeProvider;
-        }
-
-        @Override
-        public Completable closeAsync() {
-            return closeable.closeAsync();
-        }
-
-        @Override
-        public Completable closeAsyncGracefully() {
-            return closeable.closeAsyncGracefully();
-        }
-    }
-
-    static final class RouteProvider implements AsyncCloseable {
+    private static final class RouteProvider implements AsyncCloseable {
 
         private final Function<GrpcExecutionContext, ServiceAdapterHolder> routeProvider;
-        private final Supplier<StreamingRoute<?, ?>> toStreamingConverter;
-        private final Supplier<RequestStreamingRoute<?, ?>> toRequestStreamingRouteConverter;
-        private final Supplier<ResponseStreamingRoute<?, ?>> toResponseStreamingRouteConverter;
-        private final Supplier<Route<?, ?>> toRouteConverter;
         private final AsyncCloseable closeable;
 
         RouteProvider(final Function<GrpcExecutionContext, ServiceAdapterHolder> routeProvider,
-                      final Supplier<StreamingRoute<?, ?>> toStreamingConverter,
-                      final Supplier<RequestStreamingRoute<?, ?>> toRequestStreamingRouteConverter,
-                      final Supplier<ResponseStreamingRoute<?, ?>> toResponseStreamingRouteConverter,
-                      final Supplier<Route<?, ?>> toRouteConverter,
                       final AsyncCloseable closeable) {
             this.routeProvider = routeProvider;
-            this.toStreamingConverter = toStreamingConverter;
-            this.toRequestStreamingRouteConverter = toRequestStreamingRouteConverter;
-            this.toResponseStreamingRouteConverter = toResponseStreamingRouteConverter;
-            this.toRouteConverter = toRouteConverter;
             this.closeable = closeable;
         }
 
         RouteProvider(final Function<GrpcExecutionContext, ServiceAdapterHolder> routeProvider,
-                      final Supplier<StreamingRoute<?, ?>> toStreamingConverter,
-                      final Supplier<RequestStreamingRoute<?, ?>> toRequestStreamingRouteConverter,
-                      final Supplier<ResponseStreamingRoute<?, ?>> toResponseStreamingRouteConverter,
-                      final Supplier<Route<?, ?>> toRouteConverter,
                       final GracefulAutoCloseable closeable) {
-            this(routeProvider, toStreamingConverter, toRequestStreamingRouteConverter,
-                    toResponseStreamingRouteConverter, toRouteConverter, toAsyncCloseable(closeable));
+            this(routeProvider, toAsyncCloseable(closeable));
         }
 
         ServiceAdapterHolder buildRoute(GrpcExecutionContext executionContext) {
             return routeProvider.apply(executionContext);
         }
 
-        <Req, Resp> RequestStreamingRoute<Req, Resp> asRequestStreamingRoute() {
-            // We assume that generated code passes the correct types here.
-            @SuppressWarnings("unchecked")
-            RequestStreamingRoute<Req, Resp> toReturn =
-                    (RequestStreamingRoute<Req, Resp>) toRequestStreamingRouteConverter.get();
-            return toReturn;
-        }
-
-        <Req, Resp> ResponseStreamingRoute<Req, Resp>
-        asResponseStreamingRoute() {
-            // We assume that generated code passes the correct types here.
-            @SuppressWarnings("unchecked")
-            ResponseStreamingRoute<Req, Resp> toReturn =
-                    (ResponseStreamingRoute<Req, Resp>) toResponseStreamingRouteConverter.get();
-            return toReturn;
-        }
-
-        <Req, Resp> StreamingRoute<Req, Resp> asStreamingRoute() {
-            // We assume that generated code passes the correct types here.
-            @SuppressWarnings("unchecked")
-            StreamingRoute<Req, Resp> toReturn = (StreamingRoute<Req, Resp>) toStreamingConverter.get();
-            return toReturn;
-        }
-
-        <Req, Resp> Route<Req, Resp> asRoute() {
-            // We assume that generated code passes the correct types here.
-            @SuppressWarnings("unchecked")
-            Route<Req, Resp> toReturn = (Route<Req, Resp>) toRouteConverter.get();
-            return toReturn;
-        }
-
         @Override
         public Completable closeAsync() {
             return closeable.closeAsync();
@@ -951,6 +848,32 @@ final class GrpcRouter {
         @Override
         public Completable closeAsyncGracefully() {
             return closeable.closeAsyncGracefully();
+        }
+
+        private static AsyncCloseable toAsyncCloseable(final GracefulAutoCloseable original) {
+            return AsyncCloseables.toAsyncCloseable(graceful -> new Completable() {
+                @Override
+                protected void handleSubscribe(final CompletableSource.Subscriber subscriber) {
+                    try {
+                        subscriber.onSubscribe(IGNORE_CANCEL);
+                    } catch (Throwable cause) {
+                        handleExceptionFromOnSubscribe(subscriber, cause);
+                        return;
+                    }
+
+                    try {
+                        if (graceful) {
+                            original.closeGracefully();
+                        } else {
+                            original.close();
+                        }
+                    } catch (Throwable t) {
+                        subscriber.onError(t);
+                        return;
+                    }
+                    subscriber.onComplete();
+                }
+            });
         }
     }
 }
