@@ -544,9 +544,10 @@ final class Generator {
                         .returns(state.serviceFactoryClass)
                         .addStatement("return new $T(this)", state.serviceFactoryClass)
                         .build())
-                .addMethod(methodBuilder("newServiceFromRoutes")
+                .addMethod(methodBuilder("newServiceFromRoutes")    // FIXME: 0.43 - remove deprecated method
                         .addModifiers(PROTECTED)
                         .addAnnotation(Override.class)
+                        .addAnnotation(Deprecated.class)
                         .returns(serviceFromRoutesClass)
                         .addParameter(AllGrpcRoutes, routes, FINAL)
                         .addStatement("return new $T($L)", serviceFromRoutesClass, routes)
@@ -632,6 +633,7 @@ final class Generator {
         final MethodSpec.Builder registerRoutesMethodSpecBuilder = methodBuilder(registerRoutes)
                 .addModifiers(PROTECTED)
                 .addAnnotation(Override.class)
+                .addAnnotation(Deprecated.class)    // FIXME: 0.43 - remove deprecated method
                 .addParameter(state.serviceClass, service, FINAL);
 
         state.serviceProto.getMethodList().stream()
@@ -997,12 +999,14 @@ final class Generator {
         return serviceClassBuilder;
     }
 
+    // FIXME: 0.43 - remove deprecated class
     private TypeSpec newServiceFromRoutesClassSpec(final ClassName serviceFromRoutesClass,
                                                    final List<RpcInterface> rpcInterfaces,
                                                    final ClassName serviceClass) {
         final TypeSpec.Builder serviceFromRoutesSpecBuilder = classBuilder(serviceFromRoutesClass)
                 .addModifiers(PRIVATE, STATIC, FINAL)
                 .addSuperinterface(serviceClass)
+                .addAnnotation(Deprecated.class)
                 .addField(AsyncCloseable, closeable, PRIVATE, FINAL);
 
         final MethodSpec.Builder serviceFromRoutesConstructorBuilder = constructorBuilder()

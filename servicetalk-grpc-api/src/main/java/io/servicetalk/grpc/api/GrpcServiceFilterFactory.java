@@ -31,7 +31,7 @@ import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
  */
 @FunctionalInterface
 @Deprecated
-public interface GrpcServiceFilterFactory<Filter extends Service, Service> {
+public interface GrpcServiceFilterFactory<Filter extends Service, Service> {// FIXME: 0.43 - remove deprecated interface
 
     /**
      * Create a {@link Filter} using the provided {@link Service}.

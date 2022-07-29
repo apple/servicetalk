@@ -24,7 +24,8 @@ import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
  */
 public final class GrpcExecutionStrategies {
 
-    private static final GrpcExecutionStrategy NEVER_OFFLOAD_STRATEGY =
+    @Deprecated
+    private static final GrpcExecutionStrategy NEVER_OFFLOAD_STRATEGY = // FIXME: 0.43 - remove deprecated constant
             new DefaultGrpcExecutionStrategy(HttpExecutionStrategies.offloadNever()) {
                 @Override
                 public HttpExecutionStrategy merge(final HttpExecutionStrategy other) {
@@ -32,8 +33,6 @@ public final class GrpcExecutionStrategies {
                 }
             };
 
-    // FIXME: 0.43 - remove deprecated method
-    @Deprecated
     private static final GrpcExecutionStrategy DEFAULT_GRPC_EXECUTION_STRATEGY =
             new DefaultGrpcExecutionStrategy(HttpExecutionStrategies.defaultStrategy()) {
                 @Override

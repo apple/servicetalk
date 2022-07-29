@@ -108,16 +108,24 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * Register all routes contained in the passed {@link Service}.
      *
      * @param service {@link Service} for which routes have to be registered.
+     * @deprecated This method is not used starting from version 0.42.0 (see
+     * <a href="https://github.com/apple/servicetalk/pull/1893">PR#1893</a>), we plan to remove it in future releases.
+     * In case you have a use-case, let us know.
      */
-    protected abstract void registerRoutes(Service service);
+    @Deprecated
+    protected abstract void registerRoutes(Service service);    // FIXME: 0.43 - remove deprecated method
 
     /**
      * Create a new {@link Service} from the passed {@link AllGrpcRoutes}.
      *
      * @param routes {@link AllGrpcRoutes} for which a {@link Service} has to be created.
      * @return {@link Service} containing all the passed routes.
+     * @deprecated This method is not used starting from version 0.42.0 (see
+     * <a href="https://github.com/apple/servicetalk/pull/1893">PR#1893</a>), we plan to remove it in future releases.
+     * In case you have a use-case, let us know.
      */
-    protected abstract Service newServiceFromRoutes(AllGrpcRoutes routes);
+    @Deprecated
+    protected abstract Service newServiceFromRoutes(AllGrpcRoutes routes);  // FIXME: 0.43 - remove deprecated method
 
     static GrpcRoutes<?> merge(GrpcRoutes<?>... allRoutes) {
         final GrpcRouter.Builder[] builders = new GrpcRouter.Builder[allRoutes.length];
@@ -127,11 +135,13 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
             errors.addAll(allRoutes[i].errors);
         }
         return new GrpcRoutes<GrpcService>(GrpcRouter.Builder.merge(builders), errors) {
+            @Deprecated
             @Override
             protected void registerRoutes(final GrpcService service) {
                 throw new UnsupportedOperationException("Merged service factory can not register routes.");
             }
 
+            @Deprecated
             @Override
             protected GrpcService newServiceFromRoutes(final AllGrpcRoutes routes) {
                 throw new UnsupportedOperationException("Merged service factory can not create new service.");
@@ -168,7 +178,7 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @deprecated Use {@link #addRoute(Class, MethodDescriptor, BufferDecoderGroup, List, Route)}.
      */
     @Deprecated
-    protected final <Req, Resp> void addRoute(
+    protected final <Req, Resp> void addRoute(  // FIXME: 0.43 - remove deprecated method
             final String path, final Class<?> serviceClass, final String methodName, final Route<Req, Resp> route,
             final Class<Req> requestClass, final Class<Resp> responseClass,
             final GrpcSerializationProvider serializationProvider) {
@@ -214,7 +224,7 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @deprecated Use {@link #addRoute(GrpcExecutionStrategy, MethodDescriptor, BufferDecoderGroup, List, Route)}.
      */
     @Deprecated
-    protected final <Req, Resp> void addRoute(
+    protected final <Req, Resp> void addRoute(  // FIXME: 0.43 - remove deprecated method
             final String path, final GrpcExecutionStrategy executionStrategy, final Route<Req, Resp> route,
             final Class<Req> requestClass, final Class<Resp> responseClass,
             final GrpcSerializationProvider serializationProvider) {
@@ -257,7 +267,7 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @deprecated Use {@link #addStreamingRoute(Class, MethodDescriptor, BufferDecoderGroup, List, StreamingRoute)}.
      */
     @Deprecated
-    protected final <Req, Resp> void addStreamingRoute(
+    protected final <Req, Resp> void addStreamingRoute( // FIXME: 0.43 - remove deprecated method
             final String path, final Class<?> serviceClass, final String methodName,
             final StreamingRoute<Req, Resp> route, final Class<Req> requestClass, final Class<Resp> responseClass,
             final GrpcSerializationProvider serializationProvider) {
@@ -304,7 +314,7 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * StreamingRoute)}
      */
     @Deprecated
-    protected final <Req, Resp> void addStreamingRoute(
+    protected final <Req, Resp> void addStreamingRoute( // FIXME: 0.43 - remove deprecated method
             final String path, final GrpcExecutionStrategy executionStrategy,
             final StreamingRoute<Req, Resp> route, final Class<Req> requestClass,
             final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
@@ -348,7 +358,7 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * {@link #addRequestStreamingRoute(Class, MethodDescriptor, BufferDecoderGroup, List, RequestStreamingRoute)}.
      */
     @Deprecated
-    protected final <Req, Resp> void addRequestStreamingRoute(
+    protected final <Req, Resp> void addRequestStreamingRoute(  // FIXME: 0.43 - remove deprecated method
             final String path, final Class<?> serviceClass, final String methodName,
             final RequestStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
             final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
@@ -397,7 +407,7 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * RequestStreamingRoute)}.
      */
     @Deprecated
-    protected final <Req, Resp> void addRequestStreamingRoute(
+    protected final <Req, Resp> void addRequestStreamingRoute(  // FIXME: 0.43 - remove deprecated method
             final String path, final GrpcExecutionStrategy executionStrategy,
             final RequestStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
             final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
@@ -442,7 +452,7 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * {@link #addResponseStreamingRoute(Class, MethodDescriptor, BufferDecoderGroup, List, ResponseStreamingRoute)}.
      */
     @Deprecated
-    protected final <Req, Resp> void addResponseStreamingRoute(
+    protected final <Req, Resp> void addResponseStreamingRoute( // FIXME: 0.43 - remove deprecated method
             final String path, final Class<?> serviceClass, final String methodName,
             final ResponseStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
             final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
@@ -491,7 +501,7 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * ResponseStreamingRoute)}.
      */
     @Deprecated
-    protected final <Req, Resp> void addResponseStreamingRoute(
+    protected final <Req, Resp> void addResponseStreamingRoute( // FIXME: 0.43 - remove deprecated method
             final String path, final GrpcExecutionStrategy executionStrategy,
             final ResponseStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
             final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
@@ -535,7 +545,7 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @deprecated Use {@link #addBlockingRoute(Class, MethodDescriptor, BufferDecoderGroup, List, BlockingRoute)}.
      */
     @Deprecated
-    protected final <Req, Resp> void addBlockingRoute(
+    protected final <Req, Resp> void addBlockingRoute(  // FIXME: 0.43 - remove deprecated method
             final String path, final Class<?> serviceClass, final String methodName,
             final BlockingRoute<Req, Resp> route, final Class<Req> requestClass, final Class<Resp> responseClass,
             final GrpcSerializationProvider serializationProvider) {
@@ -583,7 +593,7 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * BlockingRoute)}.
      */
     @Deprecated
-    protected final <Req, Resp> void addBlockingRoute(
+    protected final <Req, Resp> void addBlockingRoute(  // FIXME: 0.43 - remove deprecated method
             final String path, final GrpcExecutionStrategy executionStrategy, final BlockingRoute<Req, Resp> route,
             final Class<Req> requestClass, final Class<Resp> responseClass,
             final GrpcSerializationProvider serializationProvider) {
@@ -628,7 +638,7 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * {@link #addBlockingStreamingRoute(Class, MethodDescriptor, BufferDecoderGroup, List, BlockingStreamingRoute)}.
      */
     @Deprecated
-    protected final <Req, Resp> void addBlockingStreamingRoute(
+    protected final <Req, Resp> void addBlockingStreamingRoute( // FIXME: 0.43 - remove deprecated method
             final String path, final Class<?> serviceClass, final String methodName,
             final BlockingStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
             final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
@@ -677,7 +687,7 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * BlockingStreamingRoute)}.
      */
     @Deprecated
-    protected final <Req, Resp> void addBlockingStreamingRoute(
+    protected final <Req, Resp> void addBlockingStreamingRoute( // FIXME: 0.43 - remove deprecated method
             final String path, final GrpcExecutionStrategy executionStrategy,
             final BlockingStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
             final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
@@ -722,7 +732,7 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * {@link #addBlockingStreamingRoute(Class, MethodDescriptor, BufferDecoderGroup, List, BlockingStreamingRoute)}.
      */
     @Deprecated
-    protected final <Req, Resp> void addBlockingRequestStreamingRoute(
+    protected final <Req, Resp> void addBlockingRequestStreamingRoute(  // FIXME: 0.43 - remove deprecated method
             final String path, final Class<?> serviceClass, final String methodName,
             final BlockingRequestStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
             final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
@@ -771,7 +781,7 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * BlockingRequestStreamingRoute)}.
      */
     @Deprecated
-    protected final <Req, Resp> void addBlockingRequestStreamingRoute(
+    protected final <Req, Resp> void addBlockingRequestStreamingRoute(  // FIXME: 0.43 - remove deprecated method
             final String path, final GrpcExecutionStrategy executionStrategy,
             final BlockingRequestStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
             final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
@@ -818,7 +828,7 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * BlockingResponseStreamingRoute)}.
      */
     @Deprecated
-    protected final <Req, Resp> void addBlockingResponseStreamingRoute(
+    protected final <Req, Resp> void addBlockingResponseStreamingRoute( // FIXME: 0.43 - remove deprecated method
             final String path, final Class<?> serviceClass, final String methodName,
             final BlockingResponseStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
             final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
@@ -867,7 +877,7 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * BlockingResponseStreamingRoute)}.
      */
     @Deprecated
-    protected final <Req, Resp> void addBlockingResponseStreamingRoute(
+    protected final <Req, Resp> void addBlockingResponseStreamingRoute( // FIXME: 0.43 - remove deprecated method
             final String path, final GrpcExecutionStrategy executionStrategy,
             final BlockingResponseStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
             final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
@@ -1358,8 +1368,13 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
 
     /**
      * A collection of route corresponding to the enclosing {@link GrpcRoutes}.
+     *
+     * @deprecated This class is not used starting from version 0.42.0 (see
+     * <a href="https://github.com/apple/servicetalk/pull/1893">PR#1893</a>), we plan to remove it in future releases.
+     * In case you have a use-case, let us know.
      */
-    protected interface AllGrpcRoutes extends AsyncCloseable {
+    @Deprecated
+    protected interface AllGrpcRoutes extends AsyncCloseable {  // FIXME: 0.43 - remove deprecated interface
 
         /**
          * Returns the registered {@link StreamingRoute} for the passed {@code path}. If a route with a different
