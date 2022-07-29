@@ -46,7 +46,7 @@ public interface LoadBalancerFactory<ResolvedAddress, C extends LoadBalancedConn
      * @deprecated In the future only {@link #newLoadBalancer(String, Publisher, ConnectionFactory)} will remain,
      * please use that method instead.
      */
-    @Deprecated
+    @Deprecated // FIXME: 0.43 - remove deprecated method
     default <T extends C> LoadBalancer<T> newLoadBalancer(
             Publisher<? extends ServiceDiscovererEvent<ResolvedAddress>> eventPublisher,
             ConnectionFactory<ResolvedAddress, T> connectionFactory) {

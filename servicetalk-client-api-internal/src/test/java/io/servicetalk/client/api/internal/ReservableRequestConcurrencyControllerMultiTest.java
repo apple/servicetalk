@@ -15,12 +15,13 @@
  */
 package io.servicetalk.client.api.internal;
 
+import io.servicetalk.client.api.ReservableRequestConcurrencyController;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 
 import org.junit.jupiter.api.Test;
 
-import static io.servicetalk.client.api.internal.RequestConcurrencyController.Result.Accepted;
+import static io.servicetalk.client.api.RequestConcurrencyController.Result.Accepted;
 import static io.servicetalk.concurrent.api.Completable.never;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static org.hamcrest.MatcherAssert.assertThat;

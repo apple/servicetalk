@@ -15,15 +15,16 @@
  */
 package io.servicetalk.client.api.internal;
 
+import io.servicetalk.client.api.RequestConcurrencyController;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestPublisher;
 
 import org.junit.jupiter.api.Test;
 
-import static io.servicetalk.client.api.internal.RequestConcurrencyController.Result.Accepted;
-import static io.servicetalk.client.api.internal.RequestConcurrencyController.Result.RejectedPermanently;
-import static io.servicetalk.client.api.internal.RequestConcurrencyController.Result.RejectedTemporary;
+import static io.servicetalk.client.api.RequestConcurrencyController.Result.Accepted;
+import static io.servicetalk.client.api.RequestConcurrencyController.Result.RejectedPermanently;
+import static io.servicetalk.client.api.RequestConcurrencyController.Result.RejectedTemporary;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.never;
 import static io.servicetalk.concurrent.api.Publisher.from;

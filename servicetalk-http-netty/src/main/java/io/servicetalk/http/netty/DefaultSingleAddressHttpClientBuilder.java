@@ -33,6 +33,7 @@ import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.DelegatingHttpExecutionContext;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
+import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeadersFactory;
@@ -247,7 +248,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
 
             final HttpExecutionStrategy builderStrategy = executionContext.executionStrategy();
             // closed by the LoadBalancer
-            final ConnectionFactory<R, LoadBalancedStreamingHttpConnection> connectionFactory;
+            final ConnectionFactory<R, FilterableStreamingHttpLoadBalancedConnection> connectionFactory;
             final StreamingHttpRequestResponseFactory reqRespFactory = defaultReqRespFactory(roConfig,
                     executionContext.bufferAllocator());
 
@@ -277,7 +278,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                         ctx.builder.loadBalancerFactory::toLoadBalancedConnection);
             }
 
-            final LoadBalancer<LoadBalancedStreamingHttpConnection> lb =
+            final LoadBalancer<FilterableStreamingHttpLoadBalancedConnection> lb =
                     closeOnException.prepend(ctx.builder.loadBalancerFactory.newLoadBalancer(
                             targetAddress(ctx),
                             sdEvents,
