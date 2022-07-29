@@ -21,4 +21,5 @@
 <suppressions>
   <suppress checks="FallThrough" files="io[\\/]servicetalk[\\/]http[\\/]netty[\\/]HttpObjectDecoder.java"/>
   <suppress checks="FallThrough" files="io[\\/]servicetalk[\\/]http[\\/]netty[\\/]HttpObjectEncoder.java"/>
+  <suppress checks="LineLength" files="build.gradle"/>
 </suppressions>
