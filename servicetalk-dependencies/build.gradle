@@ -65,7 +65,7 @@ dependencies {
     api "org.slf4j:slf4j-api:$slf4jVersion"
 
     // Use `runtime` for dependencies which are used ONLY at runtime
-    runtime "com.sun.xml.bind:jaxb-impl:$javaxJaxbImplVersion"
+    api "com.sun.xml.bind:jaxb-impl:$javaxJaxbImplVersion"
   }
 }
 
