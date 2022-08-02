@@ -19,6 +19,7 @@ apply plugin: "java-platform"
 
 description="ServiceTalk BOM that includes all modules"
 
+// IMPORTANT: Ensure that the module list is consistent with `servicetalk-dependencies`
 rootProject.subprojects.findAll { !it.name.endsWith("-bom") &&
                                   !it.name.endsWith("-dependencies") &&
                                   !it.name.contains("examples") &&
