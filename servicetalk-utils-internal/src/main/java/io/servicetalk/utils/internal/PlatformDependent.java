@@ -50,6 +50,7 @@ import org.jctools.util.UnsafeAccess;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
@@ -318,7 +319,13 @@ public final class PlatformDependent {
                 // must mark this block as privileged too
                 unsafe = AccessController.doPrivileged((PrivilegedAction<Object>) () -> {
                     // force JCTools to initialize unsafe
-                    return UnsafeAccess.UNSAFE;
+                    try {
+                        Field unsafeStatic = UnsafeAccess.class.getDeclaredField("UNSAFE");
+                        return unsafeStatic.get(null);
+                    } catch (IllegalAccessException | NoSuchFieldException e) {
+                        LOGGER.debug("jctools unsafe failed: ", e);
+                        return null;
+                    }
                 });
             }
 

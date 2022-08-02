@@ -32,26 +32,29 @@ package io.servicetalk.utils.internal;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.misc.Unsafe;
 
 import java.io.FileDescriptor;
+import java.lang.invoke.CallSite;
+import java.lang.invoke.LambdaMetafactory;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+import java.util.Objects;
+import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.utils.internal.ReflectionUtils.extractNioBitsMethod;
 import static io.servicetalk.utils.internal.ReflectionUtils.lookupAccessibleObject;
 import static java.lang.Boolean.getBoolean;
-import static java.util.Objects.requireNonNull;
 
 /**
  * {@link PlatformDependent} operations that require access to {@code sun.misc.*}.
- *
+ * <p/>
  * This class is forked from the netty project and modified to suit our needs.
  */
 final class PlatformDependent0 {
@@ -63,7 +66,7 @@ final class PlatformDependent0 {
     private static final String DEALLOCATOR_CLASS_NAME = "java.nio.DirectByteBuffer$Deallocator";
 
     @Nullable
-    private static final Unsafe UNSAFE;
+    private static final Object UNSAFE;
     @Nullable
     private static final MethodHandle DIRECT_BUFFER_CONSTRUCTOR;
     @Nullable
@@ -73,10 +76,19 @@ final class PlatformDependent0 {
     @Nullable
     private static final MethodHandle UNRESERVE_MEMORY;
 
+    @Nullable
+    private static final MethodHandle ALLOCATE_MEMORY;
+
+    @Nullable
+    private static final MethodHandle FREE_MEMORY;
+
+    @Nullable
+    private static final Consumer<Throwable> THROW_EXCEPTION;
+
     private static final boolean USE_DIRECT_BUFFER_WITHOUT_ZEROING;
 
     static {
-        Unsafe unsafe;
+        Object unsafe;
 
         if (IS_EXPLICIT_NO_UNSAFE) {
             unsafe = null;
@@ -84,14 +96,15 @@ final class PlatformDependent0 {
             // attempt to access field Unsafe#theUnsafe
             final Object maybeUnsafe = AccessController.doPrivileged((PrivilegedAction<Object>) () -> {
                 try {
-                    final Field unsafeField = Unsafe.class.getDeclaredField("theUnsafe");
+                    Class<?> unsafeClass = Class.forName("sun.misc.Unsafe");
+                    final Field unsafeField = unsafeClass.getDeclaredField("theUnsafe");
                     final Throwable cause = ReflectionUtils.trySetAccessible(unsafeField, false);
                     if (cause != null) {
                         return cause;
                     }
                     // the unsafe instance
                     return unsafeField.get(null);
-                } catch (NoSuchFieldException | SecurityException | IllegalAccessException e) {
+                } catch (ClassNotFoundException | NoSuchFieldException | SecurityException | IllegalAccessException e) {
                     return e;
                 }
             });
@@ -100,15 +113,55 @@ final class PlatformDependent0 {
             // is an instanceof Unsafe and reversing the if and else blocks; this is because an
             // instanceof check against Unsafe will trigger a class load and we might not have
             // the runtime permission accessClassInPackage.sun.misc
-            if (maybeUnsafe instanceof Exception) {
+            if (maybeUnsafe instanceof Throwable) {
                 unsafe = null;
-                LOGGER.debug("sun.misc.Unsafe.theUnsafe: unavailable", (Exception) maybeUnsafe);
+                LOGGER.debug("sun.misc.Unsafe.theUnsafe: unavailable", (Throwable) maybeUnsafe);
             } else {
-                unsafe = (Unsafe) maybeUnsafe;
-                LOGGER.debug("sun.misc.Unsafe.theUnsafe: available");
+                unsafe = maybeUnsafe;
+                LOGGER.debug("sun.misc.Unsafe.theUnsafe: {}", null == unsafe ? "unavailable" : "available");
             }
         }
         UNSAFE = unsafe;
+
+        if (null == unsafe) {
+            THROW_EXCEPTION = null;
+            ALLOCATE_MEMORY = null;
+            FREE_MEMORY = null;
+        } else {
+            Consumer<Throwable> throwConsumer = null;
+            MethodHandle allocateMH = null;
+            MethodHandle freeMH = null;
+            MethodHandles.Lookup lookup = MethodHandles.lookup();
+            MethodHandle throwExceptionMH = null;
+            try {
+                throwExceptionMH = lookup.findVirtual(unsafe.getClass(), "throwException",
+                        MethodType.methodType(void.class, Throwable.class));
+                CallSite throwExceptionCallSite = LambdaMetafactory.metafactory(
+                        lookup, "accept",
+                        MethodType.methodType(Consumer.class, unsafe.getClass()),
+                        MethodType.methodType(void.class, Object.class),
+                        throwExceptionMH,
+                        MethodType.methodType(void.class, Throwable.class));
+                throwConsumer = (Consumer<Throwable>) throwExceptionCallSite.getTarget().bindTo(unsafe).invoke();
+            } catch (Throwable all) {
+                LOGGER.warn("failed computing THROW_EXCEPTION", all);
+            }
+            try {
+                allocateMH = lookup.findVirtual(unsafe.getClass(), "allocateMemory",
+                        MethodType.methodType(long.class, long.class)).bindTo(unsafe);
+            } catch (Throwable all) {
+                LOGGER.warn("failed computing THROW_EXCEPTION", all);
+            }
+            try {
+                freeMH = lookup.findVirtual(unsafe.getClass(), "freeMemory",
+                        MethodType.methodType(void.class, long.class)).bindTo(unsafe);
+            } catch (Throwable all) {
+                LOGGER.warn("failed computing THROW_EXCEPTION", all);
+            }
+            THROW_EXCEPTION = throwConsumer;
+            ALLOCATE_MEMORY = allocateMH;
+            FREE_MEMORY = freeMH;
+        }
 
         final ByteBuffer direct;
         final MethodHandles.Lookup lookup;
@@ -215,12 +268,21 @@ final class PlatformDependent0 {
 
     static long allocateMemory(final long size) {
         assert UNSAFE != null;
-        return UNSAFE.allocateMemory(size);
+        try {
+            return (long) ALLOCATE_MEMORY.invokeExact(size);
+        } catch (Throwable e) {
+            throwException(e);
+            return Long.MIN_VALUE; // never reached
+        }
     }
 
     static void freeMemory(final long address) {
         assert UNSAFE != null;
-        UNSAFE.freeMemory(address);
+        try {
+            FREE_MEMORY.invokeExact(address);
+        } catch (Throwable e) {
+            throwException(e);
+        }
     }
 
     static ByteBuffer newDirectBuffer(final long address, final long size, final int capacity) {
@@ -241,6 +303,14 @@ final class PlatformDependent0 {
     static void throwException(Throwable cause) {
         assert UNSAFE != null;
         // JVM has been observed to crash when passing a null argument. See https://github.com/netty/netty/issues/4131.
-        UNSAFE.throwException(requireNonNull(cause));
+        try {
+            THROW_EXCEPTION.accept(Objects.requireNonNull(cause));
+        } catch (Throwable all) {
+            sneakyThrows(cause);
+        }
+    }
+
+    private static <E extends Throwable> void sneakyThrows(final Throwable t) throws E {
+        throw (E) t;
     }
 }
