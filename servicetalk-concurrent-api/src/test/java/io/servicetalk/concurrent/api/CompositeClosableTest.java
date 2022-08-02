@@ -15,6 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -27,6 +28,7 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+@Timeout(30)
 final class CompositeClosableTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] merge={0} gracefully={1}")
