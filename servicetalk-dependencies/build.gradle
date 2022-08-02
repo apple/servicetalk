@@ -17,14 +17,24 @@
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-core"
 apply plugin: "java-platform"
 
-description = "ServiceTalk BOM that includes direct dependencies"
+description = "ServiceTalk BOM that includes all modules and direct dependencies"
 
 javaPlatform {
   allowDependencies()
 }
 
+// IMPORTANT: Ensure that the module list is consistent with `servicetalk-bom`
+// Include modules directly rather than by defining servicetalk bom as
+// a platform to work around [MNG-6772](https://issues.apache.org/jira/browse/MNG-6772).
+rootProject.subprojects.findAll { !it.name.endsWith("-bom") &&
+    !it.name.endsWith("-dependencies") &&
+    !it.name.contains("examples") &&
+    !it.name.equals("grpc") &&
+    !it.name.equals("http") }.each {
+  dependencies.constraints.add("api", it)
+}
+
 dependencies {
-  api platform(project(":servicetalk-bom"))
   api platform("io.netty:netty-bom:${nettyVersion}")
   api platform("com.google.protobuf:protobuf-bom:${protobufVersion}")
   api platform("org.apache.logging.log4j:log4j-bom:${log4jVersion}")
