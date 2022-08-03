@@ -34,7 +34,6 @@ dependencies {
   api project(":servicetalk-encoding-api")
 
   implementation project(":servicetalk-annotations")
-  implementation project(":servicetalk-client-api-internal")
   implementation project(":servicetalk-concurrent-internal")
   implementation project(":servicetalk-concurrent-api-internal")
   implementation project(":servicetalk-encoding-api-internal")

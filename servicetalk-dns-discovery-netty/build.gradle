@@ -23,7 +23,6 @@ dependencies {
   api project(":servicetalk-client-api")
 
   implementation project(":servicetalk-annotations")
-  implementation project(":servicetalk-client-api-internal")
   implementation project(":servicetalk-concurrent-internal")
   implementation project(":servicetalk-concurrent-api-internal")
   implementation project(":servicetalk-transport-netty")

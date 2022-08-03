@@ -16,7 +16,6 @@
 package io.servicetalk.client.api.internal;
 
 import io.servicetalk.client.api.ConsumableEvent;
-import io.servicetalk.client.api.RequestConcurrencyController;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.api.Completable;
@@ -28,6 +27,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
+@Deprecated // FIXME: 0.43 - remove deprecated class
 abstract class AbstractRequestConcurrencyController implements RequestConcurrencyController {
     private static final AtomicIntegerFieldUpdater<AbstractRequestConcurrencyController>
             pendingRequestsUpdater = newUpdater(AbstractRequestConcurrencyController.class,

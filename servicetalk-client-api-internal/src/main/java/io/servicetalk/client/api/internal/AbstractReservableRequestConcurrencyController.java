@@ -16,7 +16,6 @@
 package io.servicetalk.client.api.internal;
 
 import io.servicetalk.client.api.ConsumableEvent;
-import io.servicetalk.client.api.ReservableRequestConcurrencyController;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
@@ -31,6 +30,7 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
+@Deprecated // FIXME: 0.43 - remove deprecated class
 abstract class AbstractReservableRequestConcurrencyController implements ReservableRequestConcurrencyController {
     private static final AtomicIntegerFieldUpdater<AbstractReservableRequestConcurrencyController>
             pendingRequestsUpdater = newUpdater(AbstractReservableRequestConcurrencyController.class,

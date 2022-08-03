@@ -30,8 +30,8 @@ import io.servicetalk.transport.api.TransportObserver;
 
 import javax.annotation.Nullable;
 
-import static io.servicetalk.client.api.internal.ReservableRequestConcurrencyControllers.newController;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
+import static io.servicetalk.http.netty.ReservableRequestConcurrencyControllers.newController;
 import static io.servicetalk.http.netty.StreamingConnectionFactory.buildStreaming;
 
 final class PipelinedLBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpConnectionFactory<ResolvedAddress> {

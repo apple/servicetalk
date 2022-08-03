@@ -23,7 +23,10 @@ import static java.util.Objects.requireNonNull;
  * A {@link ConsumableEvent} which ignores {@link #eventConsumed()}.
  *
  * @param <T> The type of event.
+ * @deprecated This class is not used by ServiceTalk internal code anymore and will be removed in the future releases.
+ * If you depend on it, consider replica ting this implementation in your codebase.
  */
+@Deprecated // FIXME: 0.43 - remove deprecated class
 public final class IgnoreConsumedEvent<T> implements ConsumableEvent<T> {
     private final T event;
 
