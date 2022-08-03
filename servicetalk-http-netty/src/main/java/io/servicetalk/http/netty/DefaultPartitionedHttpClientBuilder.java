@@ -70,6 +70,7 @@ import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.se
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
 
+@Deprecated // FIXME: 0.43 - remove deprecated class
 final class DefaultPartitionedHttpClientBuilder<U, R> implements PartitionedHttpClientBuilder<U, R> {
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultPartitionedHttpClientBuilder.class);
 
