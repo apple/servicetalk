@@ -16,16 +16,18 @@
 package io.servicetalk.client.api.internal;
 
 import io.servicetalk.client.api.ConsumableEvent;
-import io.servicetalk.client.api.RequestConcurrencyController;
-import io.servicetalk.client.api.ReservableRequestConcurrencyController;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 
 /**
  * Factory for common {@link ReservableRequestConcurrencyController}s.
+ *
+ * @deprecated This class is not used by ServiceTalk internal code anymore and will be removed in the future releases.
+ * If you depend on it, consider replicating this implementation in your codebase.
  */
+@Deprecated
 public final class ReservableRequestConcurrencyControllers {
-    private ReservableRequestConcurrencyControllers() {
+    private ReservableRequestConcurrencyControllers() { // FIXME: 0.43 - remove deprecated class
         // no instances
     }
 

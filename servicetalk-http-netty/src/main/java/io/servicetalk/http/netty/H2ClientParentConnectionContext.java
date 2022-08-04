@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019-2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.ConsumableEvent;
-import io.servicetalk.client.api.internal.IgnoreConsumedEvent;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.PublisherSource.Processor;
 import io.servicetalk.concurrent.SingleSource;
@@ -40,6 +39,7 @@ import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.netty.LoadBalancedStreamingHttpClient.OnStreamClosedRunnable;
+import io.servicetalk.http.netty.ReservableRequestConcurrencyControllers.IgnoreConsumedEvent;
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ConnectionObserver.MultiplexedObserver;
 import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
@@ -154,9 +154,9 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
 
         private static final Logger LOGGER = LoggerFactory.getLogger(DefaultH2ClientParentConnection.class);
 
-        private static final IgnoreConsumedEvent<Integer> DEFAULT_H2_MAX_CONCURRENCY_EVENT =
+        private static final ConsumableEvent<Integer> DEFAULT_H2_MAX_CONCURRENCY_EVENT =
                 new IgnoreConsumedEvent<>(SMALLEST_MAX_CONCURRENT_STREAMS);
-        private static final IgnoreConsumedEvent<Integer> ZERO_MAX_CONCURRENCY_EVENT = new IgnoreConsumedEvent<>(0);
+        private static final ConsumableEvent<Integer> ZERO_MAX_CONCURRENCY_EVENT = new IgnoreConsumedEvent<>(0);
 
         private final Http2StreamChannelBootstrap bs;
         private final HttpHeadersFactory headersFactory;

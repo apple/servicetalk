@@ -19,10 +19,11 @@ import io.servicetalk.client.api.ConsumableEvent;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 
-import static io.servicetalk.client.api.RequestConcurrencyController.Result.Accepted;
-import static io.servicetalk.client.api.RequestConcurrencyController.Result.RejectedPermanently;
-import static io.servicetalk.client.api.RequestConcurrencyController.Result.RejectedTemporary;
+import static io.servicetalk.client.api.internal.RequestConcurrencyController.Result.Accepted;
+import static io.servicetalk.client.api.internal.RequestConcurrencyController.Result.RejectedPermanently;
+import static io.servicetalk.client.api.internal.RequestConcurrencyController.Result.RejectedTemporary;
 
+@Deprecated // FIXME: 0.43 - remove deprecated class
 final class RequestConcurrencyControllerMulti extends AbstractRequestConcurrencyController {
     private final int maxRequests;
 

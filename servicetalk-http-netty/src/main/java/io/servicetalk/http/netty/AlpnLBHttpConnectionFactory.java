@@ -39,10 +39,10 @@ import io.netty.channel.Channel;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.client.api.internal.ReservableRequestConcurrencyControllers.newController;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.http.netty.AlpnIds.HTTP_1_1;
 import static io.servicetalk.http.netty.AlpnIds.HTTP_2;
+import static io.servicetalk.http.netty.ReservableRequestConcurrencyControllers.newController;
 import static io.servicetalk.http.netty.StreamingConnectionFactory.withSslConfigPeerHost;
 
 final class AlpnLBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpConnectionFactory<ResolvedAddress> {
