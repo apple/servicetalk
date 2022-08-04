@@ -44,6 +44,7 @@ import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+import java.util.Objects;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
@@ -147,13 +148,7 @@ final class PlatformDependent0 {
                         throwExceptionMH,
                         MethodType.methodType(void.class, Throwable.class));
                 //noinspection unchecked
-                Consumer<Throwable> unsafeThrowConsumer =
-                        (Consumer<Throwable>) throwExceptionCallSite.getTarget().bindTo(unsafe).invoke();
-                throwConsumer = (t) -> {
-                    // JVM has been observed to crash when passing a null argument.
-                    // See https://github.com/netty/netty/issues/4131.
-                    unsafeThrowConsumer.accept(null != t ? t : new NullPointerException("Throwable was null"));
-                };
+                throwConsumer = (Consumer<Throwable>) throwExceptionCallSite.getTarget().bindTo(unsafe).invoke();
                 LOGGER.debug("sun.misc.Unsafe#throwException(Throwable): available");
             } catch (Throwable t) {
                 LOGGER.debug("sun.misc.Unsafe#throwException(Throwable): unavailable", t);
@@ -322,7 +317,9 @@ final class PlatformDependent0 {
     }
 
     static <T> T throwException(Throwable t) {
-        THROW_EXCEPTION.accept(t);
+        // JVM has been observed to crash when passing a null argument.
+        // See https://github.com/netty/netty/issues/4131.
+        THROW_EXCEPTION.accept(Objects.requireNonNull(t));
         // This will never be invoked at runtime because accept will rethrow the passed Throwable.
         // However, this is necessary to fool the compiler.
         return uncheckedCast();
