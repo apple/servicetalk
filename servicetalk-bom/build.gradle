@@ -16,11 +16,12 @@
 
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-core"
 apply plugin: "java-platform"
-apply from: "../gradle/bomUtils.gradle"
 
 description="ServiceTalk BOM that includes all modules"
 
-rootProject.subprojects.findAll { it -> bomInclusionClosure(it) }.each {
+rootProject.subprojects.findAll { !it.name.endsWith("-bom") && !it.name.endsWith("-dependencies") &&
+                                  !it.name.contains("examples") && !it.name.equals("grpc") &&
+                                  !it.name.equals("http")}.each {
     dependencies.constraints.add("api", it)
 }
 
