@@ -27,6 +27,19 @@ public final class ThrowableUtils {
     }
 
     /**
+     * Raises an exception bypassing compiler checks for checked exceptions.
+     *
+     * @param t The {@link Throwable} to throw.
+     * @param <T> The expected type
+     * @return nothing actually will be returned from this method because it rethrows the specified exception. Making
+     * this method return an arbitrary type makes the caller method easier as they do not have to add a return statement
+     * after calling this method.
+     */
+    public static <T> T throwException(final Throwable t) {
+        return PlatformDependent0.throwException(t);
+    }
+
+    /**
      * Combine two potential {@link Throwable}s into one.
      * If both parameters are {@link Throwable}, the {@code second} one will be
      * {@link Throwable#addSuppressed(Throwable) suppressed} by the {@code first} one.

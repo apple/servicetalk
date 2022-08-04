@@ -22,7 +22,6 @@ import static java.lang.Boolean.getBoolean;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
@@ -40,13 +39,5 @@ class PlatformDependentTest {
         long allocated = PlatformDependent.allocateMemory(1);
         assertThat(allocated, is(Matchers.not(0)));
         PlatformDependent.freeMemory(allocated);
-    }
-
-    @Test
-    void throwException() {
-        assumeTrue(PlatformDependent.hasUnsafe(), "Unsafe absent or disabled");
-        Exception customException = new Exception() {
-        };
-        assertThrows(customException.getClass(), () -> PlatformDependent.throwException(customException));
     }
 }

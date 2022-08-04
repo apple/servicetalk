@@ -44,7 +44,6 @@ import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
-import java.util.Objects;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
@@ -54,7 +53,7 @@ import static java.lang.Boolean.getBoolean;
 
 /**
  * {@link PlatformDependent} operations that require access to {@code sun.misc.*}.
- * <p/>
+ * <p>
  * This class is forked from the netty project and modified to suit our needs.
  */
 final class PlatformDependent0 {
@@ -65,8 +64,9 @@ final class PlatformDependent0 {
 
     private static final String DEALLOCATOR_CLASS_NAME = "java.nio.DirectByteBuffer$Deallocator";
 
+    @Deprecated
     @Nullable
-    private static final Object UNSAFE;
+    private static final Object UNSAFE; // FIXME: 0.43 - remove deprecated constant
     @Nullable
     private static final MethodHandle DIRECT_BUFFER_CONSTRUCTOR;
     @Nullable
@@ -86,6 +86,7 @@ final class PlatformDependent0 {
     private static final Consumer<Throwable> THROW_EXCEPTION;
 
     private static final boolean USE_DIRECT_BUFFER_WITHOUT_ZEROING;
+    private static final Object DUMMY = new Object();
 
     static {
         Object unsafe;
@@ -96,8 +97,7 @@ final class PlatformDependent0 {
             // attempt to access field Unsafe#theUnsafe
             final Object maybeUnsafe = AccessController.doPrivileged((PrivilegedAction<Object>) () -> {
                 try {
-                    Class<?> unsafeClass = Class.forName("sun.misc.Unsafe");
-                    final Field unsafeField = unsafeClass.getDeclaredField("theUnsafe");
+                    final Field unsafeField = Class.forName("sun.misc.Unsafe").getDeclaredField("theUnsafe");
                     final Throwable cause = ReflectionUtils.trySetAccessible(unsafeField, false);
                     if (cause != null) {
                         return cause;
@@ -109,30 +109,34 @@ final class PlatformDependent0 {
                 }
             });
 
-            // the conditional check here can not be replaced with checking that maybeUnsafe
+            // The conditional check here can not be replaced with checking that maybeUnsafe
             // is an instanceof Unsafe and reversing the if and else blocks; this is because an
             // instanceof check against Unsafe will trigger a class load and we might not have
-            // the runtime permission accessClassInPackage.sun.misc
+            // the runtime permission accessClassInPackage.sun.misc.
+            // We also try to avoid any direct reference to sun.misc.Unsafe to be able to compile with `--release 8`
+            // flag on JDK9+, see https://bugs.openjdk.org/browse/JDK-8214165.
             if (maybeUnsafe instanceof Throwable) {
                 unsafe = null;
                 LOGGER.debug("sun.misc.Unsafe.theUnsafe: unavailable", (Throwable) maybeUnsafe);
             } else {
                 unsafe = maybeUnsafe;
-                LOGGER.debug("sun.misc.Unsafe.theUnsafe: {}", null == unsafe ? "unavailable" : "available");
+                LOGGER.debug("sun.misc.Unsafe.theUnsafe: available");
             }
         }
-        UNSAFE = unsafe;
 
+        final MethodHandles.Lookup lookup;
         if (null == unsafe) {
-            THROW_EXCEPTION = null;
+            lookup = null;
+            THROW_EXCEPTION = PlatformDependent0::throwException0;
             ALLOCATE_MEMORY = null;
             FREE_MEMORY = null;
+            UNSAFE = null;
         } else {
-            Consumer<Throwable> throwConsumer = null;
+            lookup = MethodHandles.lookup();
+            Consumer<Throwable> throwConsumer = PlatformDependent0::throwException0;
+            MethodHandle throwExceptionMH = null;
             MethodHandle allocateMH = null;
             MethodHandle freeMH = null;
-            MethodHandles.Lookup lookup = MethodHandles.lookup();
-            MethodHandle throwExceptionMH = null;
             try {
                 throwExceptionMH = lookup.findVirtual(unsafe.getClass(), "throwException",
                         MethodType.methodType(void.class, Throwable.class));
@@ -142,37 +146,56 @@ final class PlatformDependent0 {
                         MethodType.methodType(void.class, Object.class),
                         throwExceptionMH,
                         MethodType.methodType(void.class, Throwable.class));
-                throwConsumer = (Consumer<Throwable>) throwExceptionCallSite.getTarget().bindTo(unsafe).invoke();
-            } catch (Throwable all) {
-                LOGGER.warn("failed computing THROW_EXCEPTION", all);
+                //noinspection unchecked
+                Consumer<Throwable> unsafeThrowConsumer =
+                        (Consumer<Throwable>) throwExceptionCallSite.getTarget().bindTo(unsafe).invoke();
+                throwConsumer = (t) -> {
+                    try {
+                        // JVM has been observed to crash when passing a null argument.
+                        // See https://github.com/netty/netty/issues/4131.
+                        unsafeThrowConsumer.accept(null != t ? t : new NullPointerException("Throwable was null"));
+                    } catch (Throwable all) {
+                        throwException0(t);
+                    }
+                };
+                LOGGER.debug("sun.misc.Unsafe#throwException(Throwable): available");
+            } catch (Throwable t) {
+                LOGGER.debug("sun.misc.Unsafe#throwException(Throwable): unavailable", t);
             }
+            Long address = null;
             try {
                 allocateMH = lookup.findVirtual(unsafe.getClass(), "allocateMemory",
                         MethodType.methodType(long.class, long.class)).bindTo(unsafe);
-            } catch (Throwable all) {
-                LOGGER.warn("failed computing THROW_EXCEPTION", all);
+                address = (long) allocateMH.invokeExact(1L);
+                LOGGER.debug("sun.misc.Unsafe#allocateMemory(long): available");
+            } catch (Throwable t) {
+                LOGGER.debug("sun.misc.Unsafe#allocateMemory(long): unavailable", t);
             }
             try {
                 freeMH = lookup.findVirtual(unsafe.getClass(), "freeMemory",
                         MethodType.methodType(void.class, long.class)).bindTo(unsafe);
-            } catch (Throwable all) {
-                LOGGER.warn("failed computing THROW_EXCEPTION", all);
+                if (address != null) {
+                    freeMH.invokeExact((long) address);
+                }
+                LOGGER.debug("sun.misc.Unsafe#freeMemory(long): available");
+            } catch (Throwable t) {
+                LOGGER.debug("sun.misc.Unsafe#freeMemory(long): unavailable", t);
             }
             THROW_EXCEPTION = throwConsumer;
             ALLOCATE_MEMORY = allocateMH;
             FREE_MEMORY = freeMH;
+            // Mark Unsafe as available only if all required Unsafe methods are available too:
+            UNSAFE = THROW_EXCEPTION != null && ALLOCATE_MEMORY != null && FREE_MEMORY != null ? unsafe : null;
         }
+        LOGGER.debug("sun.misc.Unsafe: {}", UNSAFE != null ? "available" : "unavailable");
 
         final ByteBuffer direct;
-        final MethodHandles.Lookup lookup;
         // Define DIRECT_BUFFER_CONSTRUCTOR:
         if (UNSAFE == null) {
             direct = null;
-            lookup = null;
             DIRECT_BUFFER_CONSTRUCTOR = null;
         } else {
             direct = ByteBuffer.allocateDirect(1);
-            lookup = MethodHandles.lookup();
             DIRECT_BUFFER_CONSTRUCTOR = lookupAccessibleObject(() -> direct.getClass().getDeclaredConstructor(
                     int.class, long.class, FileDescriptor.class, Runnable.class), Constructor.class, constructor -> {
 
@@ -231,7 +254,8 @@ final class PlatformDependent0 {
 
         // Define USE_DIRECT_BUFFER_WITHOUT_ZEROING:
         USE_DIRECT_BUFFER_WITHOUT_ZEROING = UNSAFE != null && DIRECT_BUFFER_CONSTRUCTOR != null &&
-                DEALLOCATOR_CONSTRUCTOR != null && RESERVE_MEMORY != null && UNRESERVE_MEMORY != null;
+                DEALLOCATOR_CONSTRUCTOR != null && RESERVE_MEMORY != null && UNRESERVE_MEMORY != null &&
+                ALLOCATE_MEMORY != null && FREE_MEMORY != null;
         LOGGER.debug("Allocation of DirectByteBuffer without zeroing memory: {}",
                 USE_DIRECT_BUFFER_WITHOUT_ZEROING ? "available" : "unavailable");
     }
@@ -240,7 +264,8 @@ final class PlatformDependent0 {
         // no instantiation
     }
 
-    static boolean hasUnsafe() {
+    @Deprecated
+    static boolean hasUnsafe() {    // FIXME: 0.43 - remove deprecated method
         return UNSAFE != null;
     }
 
@@ -253,7 +278,7 @@ final class PlatformDependent0 {
         try {
             RESERVE_MEMORY.invoke(size, capacity);
         } catch (Throwable t) {
-            throw new Error(t);
+            throwException(t);
         }
     }
 
@@ -262,26 +287,26 @@ final class PlatformDependent0 {
         try {
             UNRESERVE_MEMORY.invoke(size, capacity);
         } catch (Throwable t) {
-            throw new Error(t);
+            throwException(t);
         }
     }
 
     static long allocateMemory(final long size) {
-        assert UNSAFE != null;
+        assert ALLOCATE_MEMORY != null;
         try {
             return (long) ALLOCATE_MEMORY.invokeExact(size);
-        } catch (Throwable e) {
-            throwException(e);
+        } catch (Throwable t) {
+            throwException(t);
             return Long.MIN_VALUE; // never reached
         }
     }
 
     static void freeMemory(final long address) {
-        assert UNSAFE != null;
+        assert FREE_MEMORY != null;
         try {
             FREE_MEMORY.invokeExact(address);
-        } catch (Throwable e) {
-            throwException(e);
+        } catch (Throwable t) {
+            throwException(t);
         }
     }
 
@@ -300,17 +325,27 @@ final class PlatformDependent0 {
         }
     }
 
-    static void throwException(Throwable cause) {
-        assert UNSAFE != null;
-        // JVM has been observed to crash when passing a null argument. See https://github.com/netty/netty/issues/4131.
-        try {
-            THROW_EXCEPTION.accept(Objects.requireNonNull(cause));
-        } catch (Throwable all) {
-            sneakyThrows(cause);
-        }
+    static <T> T throwException(Throwable t) {
+        THROW_EXCEPTION.accept(t);
+        // This will never be invoked at runtime because accept will rethrow the passed Throwable.
+        // However, this is necessary to fool the compiler.
+        return uncheckedCast();
     }
 
-    private static <E extends Throwable> void sneakyThrows(final Throwable t) throws E {
+    /**
+     * Throws the provided exception using the "sneaky throws" idiom.
+     *
+     * @param t The exception to throw.
+     * @param <E> the expected type of the exception thrown.
+     * @throws E unconditional throws the provided exception.
+     */
+    @SuppressWarnings("unchecked")
+    private static <E extends Throwable> void throwException0(final Throwable t) throws E {
         throw (E) t;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> T uncheckedCast() {
+        return (T) DUMMY;
     }
 }

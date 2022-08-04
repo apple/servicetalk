@@ -50,7 +50,6 @@ import org.jctools.util.UnsafeAccess;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
@@ -63,7 +62,7 @@ import static java.lang.Math.min;
 
 /**
  * Provide utilities that are dependent on the current runtime environment.
- *
+ * <p>
  * This class is forked from the netty project and modified to suit our needs.
  */
 public final class PlatformDependent {
@@ -76,7 +75,6 @@ public final class PlatformDependent {
     private static final int MAX_ALLOWED_QUEUE_CAPACITY = Pow2.MAX_POW2;
     private static final int MIN_ALLOWED_SPSC_CHUNK_SIZE = 8; // JCTools does not allow lower initial capacity.
     private static final int MIN_ALLOWED_MPSC_CHUNK_SIZE = 2; // JCTools does not allow lower initial capacity.
-    private static final Object DUMMY = new Object();
 
     private PlatformDependent() {
         // no instantiation
@@ -86,8 +84,10 @@ public final class PlatformDependent {
      * Checks if {@code sun.misc.Unsafe} is available and has not been disabled.
      *
      * @return {@code true} if {@code sun.misc.Unsafe} is available.
+     * @deprecated This method is not used by internal ServiceTalk code anymore and will be removed in future releases.
      */
-    public static boolean hasUnsafe() {
+    @Deprecated
+    public static boolean hasUnsafe() { // FIXME: 0.43 - remove deprecated method
         return PlatformDependent0.hasUnsafe();
     }
 
@@ -160,26 +160,11 @@ public final class PlatformDependent {
     * @return nothing actually will be returned from this method because it rethrows the specified exception. Making
     * this method return an arbitrary type makes the caller method easier as they do not have to add a return statement
     * after calling this method.
+    * @deprecated Use {@link ThrowableUtils#throwException(Throwable)}.
     */
-    public static <T> T throwException(final Throwable t) {
-        if (hasUnsafe()) {
-            PlatformDependent0.throwException(t);
-        } else {
-            PlatformDependent.<RuntimeException>throwException0(t);
-        }
-        // This will never be invoked at runtime because each branch above with rethrow the passed Throwable.
-        // However, this is necessary to fool the compiler.
-        return uncheckedCast();
-    }
-
-    @SuppressWarnings("unchecked")
-    private static <E extends Throwable> void throwException0(final Throwable t) throws E {
-        throw (E) t;
-    }
-
-    @SuppressWarnings("unchecked")
-    private static <T> T uncheckedCast() {
-        return (T) DUMMY;
+    @Deprecated
+    public static <T> T throwException(final Throwable t) { // FIXME: 0.43 - remove deprecated method
+        return ThrowableUtils.throwException(t);
     }
 
     /**
@@ -312,25 +297,20 @@ public final class PlatformDependent {
         }
 
         static {
-            Object unsafe = null;
-            if (hasUnsafe()) {
-                // jctools goes through its own process of initializing unsafe; of
-                // course, this requires permissions which might not be granted to calling code, so we
-                // must mark this block as privileged too
-                unsafe = AccessController.doPrivileged((PrivilegedAction<Object>) () -> {
-                    // force JCTools to initialize unsafe
-                    try {
-                        Field unsafeStatic = UnsafeAccess.class.getDeclaredField("UNSAFE");
-                        return unsafeStatic.get(null);
-                    } catch (IllegalAccessException | NoSuchFieldException e) {
-                        LOGGER.debug("jctools unsafe failed: ", e);
-                        return null;
-                    }
-                });
-            }
+            // jctools goes through its own process of initializing unsafe; of
+            // course, this requires permissions which might not be granted to calling code, so we
+            // must mark this block as privileged too
+            Object maybeUnsafe = AccessController.doPrivileged((PrivilegedAction<Object>) () -> {
+                // force JCTools to initialize unsafe
+                try {
+                    return UnsafeAccess.class.getDeclaredField("UNSAFE").get(null);
+                } catch (IllegalAccessException | NoSuchFieldException e) {
+                    return e;
+                }
+            });
 
-            if (unsafe == null) {
-                LOGGER.debug("jctools Unbounded/ChunkedArrayQueue: unavailable.");
+            if (maybeUnsafe instanceof Throwable) {
+                LOGGER.debug("jctools Unbounded/ChunkedArrayQueue: unavailable.", (Throwable) maybeUnsafe);
                 USE_UNSAFE_QUEUES = false;
             } else {
                 LOGGER.debug("jctools Unbounded/ChunkedArrayQueue: available.");

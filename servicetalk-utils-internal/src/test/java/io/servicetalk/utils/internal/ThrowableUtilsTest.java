@@ -24,8 +24,17 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.core.Is.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class ThrowableUtilTest {
+class ThrowableUtilsTest {
+
+    @Test
+    void throwException() {
+        Exception customException = new Exception("Deliberate Exception") {
+            // use an inner class so that we get a custom exception class
+        };
+        assertThrows(customException.getClass(), () -> ThrowableUtils.throwException(customException));
+    }
 
     @Test
     void combineNonThrowable() {
