@@ -38,8 +38,8 @@ import static io.servicetalk.utils.internal.PlatformDependent.allocateMemory;
 import static io.servicetalk.utils.internal.PlatformDependent.freeMemory;
 import static io.servicetalk.utils.internal.PlatformDependent.newDirectBuffer;
 import static io.servicetalk.utils.internal.PlatformDependent.reserveMemory;
-import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static io.servicetalk.utils.internal.PlatformDependent.unreserveMemory;
+import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
 
 final class UnreleasableUnsafeNoZeroingDirectByteBuf extends UnreleasableUnsafeDirectByteBuf {
 
