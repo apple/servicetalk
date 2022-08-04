@@ -60,7 +60,11 @@ import static java.util.Objects.requireNonNull;
  * @param <U> the type of address before resolution (unresolved address)
  * @param <R> the type of address after resolution (resolved address)
  * @param <Client> the type of client to connect to the partitions
+ * @deprecated We are unaware of anyone using "partition" feature and plan to remove it in future releases.
+ * If you depend on it, consider using {@link ClientGroup} as an alternative or reach out to the maintainers describing
+ * the use-case.
  */
+@Deprecated // FIXME: 0.43 - remove deprecated class
 public final class DefaultPartitionedClientGroup<U, R, Client extends ListenableAsyncCloseable>
         implements ClientGroup<PartitionAttributes, Client> {
 
@@ -69,7 +73,11 @@ public final class DefaultPartitionedClientGroup<U, R, Client extends Listenable
      * @param <U> the type of address before resolution (unresolved address)
      * @param <R> the type of address after resolution (resolved address)
      * @param <Client> the type of client to connect to the partitions
+     * @deprecated We are unaware of anyone using "partition" feature and plan to remove it in future releases.
+     * If you depend on it, consider using {@link ClientGroup} as an alternative or reach out to the maintainers
+     * describing the use-case.
      */
+    @Deprecated
     @FunctionalInterface
     public interface PartitionedClientFactory<U, R, Client> {
         /**
