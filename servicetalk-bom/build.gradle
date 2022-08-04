@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019, 2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,11 @@
 
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-core"
 apply plugin: "java-platform"
+apply from: "../gradle/bomUtils.gradle"
 
 description="ServiceTalk BOM that includes all modules"
 
-// IMPORTANT: Ensure that the module list is consistent with `servicetalk-dependencies`
-rootProject.subprojects.findAll { !it.name.endsWith("-bom") &&
-                                  !it.name.endsWith("-dependencies") &&
-                                  !it.name.contains("examples") &&
-                                  !it.name.equals("grpc") &&
-                                  !it.name.equals("http") }.each {
+rootProject.subprojects.findAll { it -> bomInclusionClosure(it) }.each {
     dependencies.constraints.add("api", it)
 }
 
