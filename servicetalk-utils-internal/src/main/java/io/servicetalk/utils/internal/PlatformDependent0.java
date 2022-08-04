@@ -150,13 +150,9 @@ final class PlatformDependent0 {
                 Consumer<Throwable> unsafeThrowConsumer =
                         (Consumer<Throwable>) throwExceptionCallSite.getTarget().bindTo(unsafe).invoke();
                 throwConsumer = (t) -> {
-                    try {
-                        // JVM has been observed to crash when passing a null argument.
-                        // See https://github.com/netty/netty/issues/4131.
-                        unsafeThrowConsumer.accept(null != t ? t : new NullPointerException("Throwable was null"));
-                    } catch (Throwable all) {
-                        throwException0(t);
-                    }
+                    // JVM has been observed to crash when passing a null argument.
+                    // See https://github.com/netty/netty/issues/4131.
+                    unsafeThrowConsumer.accept(null != t ? t : new NullPointerException("Throwable was null"));
                 };
                 LOGGER.debug("sun.misc.Unsafe#throwException(Throwable): available");
             } catch (Throwable t) {
