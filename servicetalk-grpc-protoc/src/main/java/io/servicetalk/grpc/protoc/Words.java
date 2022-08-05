@@ -58,7 +58,7 @@ final class Words {
     static final String Default = "Default";
     static final String Metadata = "Metadata";
     static final String Factory = "Factory";
-    static final String Filter = "Filter";
+    static final String asBlockingClient = "asBlockingClient";
     static final String Rpc = "Rpc";
     static final String To = "To";
     static final String PROTO_CONTENT_TYPE = "+proto";
