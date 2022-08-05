@@ -126,6 +126,7 @@ import static io.servicetalk.grpc.protoc.Words.Service;
 import static io.servicetalk.grpc.protoc.Words.To;
 import static io.servicetalk.grpc.protoc.Words.addBlockingService;
 import static io.servicetalk.grpc.protoc.Words.addService;
+import static io.servicetalk.grpc.protoc.Words.asBlockingClient;
 import static io.servicetalk.grpc.protoc.Words.bind;
 import static io.servicetalk.grpc.protoc.Words.bufferDecoderGroup;
 import static io.servicetalk.grpc.protoc.Words.bufferEncoders;
@@ -958,7 +959,17 @@ final class Generator {
                             }));
         }
 
-        serviceClassBuilder.addType(clientSpecBuilder.build()).addType(blockingClientSpecBuilder.build());
+        final ClassName clientToBlockingClientClass = state.clientClass.peerClass(state.clientClass.simpleName() + To
+                + state.blockingClientClass.simpleName());
+
+        clientSpecBuilder.addMethod(methodBuilder(asBlockingClient)
+                .addModifiers(PUBLIC, DEFAULT)
+                .addAnnotation(Override.class)
+                .returns(state.blockingClientClass)
+                .addStatement("return new $T(this)", clientToBlockingClientClass).build());
+
+        serviceClassBuilder.addType(clientSpecBuilder.build()).addType(blockingClientSpecBuilder.build())
+                .addType(newClientToBlockingClientClassSpec(state, clientToBlockingClientClass));
 
         return serviceClassBuilder;
     }
@@ -968,8 +979,6 @@ final class Generator {
         final ClassName defaultClientClass = clientFactoryClass.nestedClass(Default + state.clientClass.simpleName());
         final ClassName defaultBlockingClientClass = clientFactoryClass.nestedClass(Default +
                 state.blockingClientClass.simpleName());
-        final ClassName clientToBlockingClientClass = clientFactoryClass.nestedClass(state.clientClass.simpleName() + To
-                + state.blockingClientClass.simpleName());
 
         final TypeSpec.Builder clientFactorySpecBuilder = classBuilder(clientFactoryClass)
                 .addModifiers(PUBLIC, STATIC)
@@ -991,8 +1000,7 @@ final class Generator {
                                 supportedMessageCodings, bufferDecoderGroup)
                         .build())
                 .addType(newDefaultClientClassSpec(state, defaultClientClass, defaultBlockingClientClass))
-                .addType(newDefaultBlockingClientClassSpec(state, defaultClientClass, defaultBlockingClientClass))
-                .addType(newClientToBlockingClientClassSpec(state, clientToBlockingClientClass));
+                .addType(newDefaultBlockingClientClassSpec(state, defaultClientClass, defaultBlockingClientClass));
 
         serviceClassBuilder.addType(clientFactorySpecBuilder.build());
 
@@ -1204,7 +1212,7 @@ final class Generator {
                 .addField(GrpcClientCallFactory, factory, PRIVATE, FINAL)
                 .addField(GrpcSupportedCodings, supportedMessageCodings, PRIVATE, FINAL)
                 .addField(BufferDecoderGroup, bufferDecoderGroup, PRIVATE, FINAL)
-                .addMethod(methodBuilder("asBlockingClient")
+                .addMethod(methodBuilder(asBlockingClient)
                         .addModifiers(PUBLIC)
                         .addAnnotation(Override.class)
                         .returns(state.blockingClientClass)
@@ -1301,7 +1309,6 @@ final class Generator {
                         .addModifiers(PUBLIC)
                         .addAnnotation(Override.class)
                         .returns(state.clientClass)
-                        // TODO: Cache client
                         .addStatement("return $L", client)
                         .build())
                 .addMethod(newDelegatingMethodSpec(executionContext, client, GrpcExecutionContext, null))
