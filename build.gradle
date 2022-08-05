@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import io.servicetalk.gradle.plugin.internal.Versions
+
 if (!repositories) {
   allprojects {
     buildscript {
@@ -43,7 +45,9 @@ subprojects {
   task printJavaTargetCompatibility {
     doLast {
       if (project.parent == project.rootProject) {
-        println("version: " + project.properties.targetCompatibility + " name: " + project.name)
+        def javaLanguage = (project.tasks.withType(JavaCompile)?.findByName("compileJava")?.options?.release?.get()) ?:
+            Integer.parseInt(Versions.TARGET_VERSION.getMajorVersion())
+        println("version: " + javaLanguage + " name: " + project.name)
       }
     }
   }

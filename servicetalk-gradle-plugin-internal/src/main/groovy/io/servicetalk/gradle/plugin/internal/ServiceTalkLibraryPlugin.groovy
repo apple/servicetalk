@@ -17,10 +17,12 @@ package io.servicetalk.gradle.plugin.internal
 
 import com.github.spotbugs.snom.SpotBugsTask
 import info.solidsoft.gradle.pitest.PitestTask
+import org.gradle.api.JavaVersion
 import org.gradle.api.Project
 import org.gradle.api.plugins.quality.Pmd
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.publish.maven.tasks.AbstractPublishToMaven
+import org.gradle.api.tasks.compile.JavaCompile
 
 import static io.servicetalk.gradle.plugin.internal.ProjectUtils.addManifestAttributes
 import static io.servicetalk.gradle.plugin.internal.ProjectUtils.addQualityTask
@@ -58,6 +60,32 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
 
       sourceCompatibility = TARGET_VERSION
       targetCompatibility = TARGET_VERSION
+
+      def javaRelease = Integer.parseInt(TARGET_VERSION.getMajorVersion())
+
+      if (JavaVersion.current().isJava9Compatible()) {
+        compileJava {
+          options.release = javaRelease
+        }
+        compileTestJava {
+          options.release = javaRelease
+        }
+
+        // Not every project has compileTestFixturesJava task so we have to defer attempting configuration
+        project.afterEvaluate {
+          def compileTasks = project.tasks.withType(JavaCompile)
+          def compileJavaTask = compileTasks?.findByName("compileJava")
+          def compileJavaTestFixturesTask = compileTasks?.findByName("compileTestFixturesJava")
+          if (null != compileJavaTask && null != compileJavaTestFixturesTask) {
+            def useRelease = compileJavaTask?.options?.release?.getOrNull() ?: javaRelease
+            // if another action has set a higher language version, never reduce it.
+            if (compileJavaTestFixturesTask?.options?.release?.getOrNull() == null ||
+                compileJavaTestFixturesTask.options.release.get() < useRelease) {
+              compileJavaTestFixturesTask.options.release = useRelease
+            }
+          }
+        }
+      }
 
       jar {
         addManifestAttributes(project, manifest)
