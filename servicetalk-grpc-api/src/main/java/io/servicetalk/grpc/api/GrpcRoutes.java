@@ -1213,7 +1213,8 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
          * breaking API changes, make sure to implement both methods. The release after next will remove this method.
          * This intermediate step is necessary to maintain {@link FunctionalInterface} contract that requires to have a
          * single non-default method.
-         * <b>Note</b>: if you also use {@link #wrap(BlockingStreamingRoute, GracefulAutoCloseable)} method,
+         * <b>Note</b>: if you also use
+         * {@link BlockingStreamingRoute#wrap(BlockingStreamingRoute, GracefulAutoCloseable)} method,
          * make sure to pass there an implementation of {@link BlockingStreamingRoute} that implements both
          * overloads instead of a lambda. Otherwise, the default
          * {@link #handle(GrpcServiceContext, BlockingIterable, BlockingStreamingGrpcServerResponse)} implementation
@@ -1247,7 +1248,7 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
          * Convenience method to wrap a raw {@link BlockingStreamingRoute} instance with a passed detached close
          * implementation of {@link GracefulAutoCloseable}.
          * <p>
-         * <b>Note</b>: Make sure to pass there an implementation of {@link BlockingStreamingRoute} that implements both
+         * <b>Note</b>: make sure to pass there an implementation of {@link BlockingStreamingRoute} that implements both
          * overloads instead of a lambda. Otherwise, the default
          * {@link #handle(GrpcServiceContext, BlockingIterable, BlockingStreamingGrpcServerResponse)} implementation
          * will be used.
@@ -1368,7 +1369,8 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
          * breaking API changes, make sure to implement both methods. The release after next will remove this method.
          * This intermediate step is necessary to maintain {@link FunctionalInterface} contract that requires to have a
          * single non-default method.
-         * <b>Note</b>: if you also use {@link #wrap(BlockingResponseStreamingRoute, GracefulAutoCloseable)} method,
+         * <b>Note</b>: if you also use
+         * {@link BlockingResponseStreamingRoute#wrap(BlockingResponseStreamingRoute, GracefulAutoCloseable)} method,
          * make sure to pass there an implementation of {@link BlockingResponseStreamingRoute} that implements both
          * overloads instead of a lambda. Otherwise, the default
          * {@link #handle(GrpcServiceContext, Object, BlockingStreamingGrpcServerResponse)} implementation will be used.
@@ -1400,9 +1402,8 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
          * Convenience method to wrap a raw {@link BlockingResponseStreamingRoute} instance with a passed detached close
          * implementation of {@link GracefulAutoCloseable}.
          * <p>
-         * <b>Note</b>: if you also use {@link #wrap(BlockingResponseStreamingRoute, GracefulAutoCloseable)} method,
-         * make sure to pass there an implementation of {@link BlockingResponseStreamingRoute} that implements both
-         * overloads instead of a lambda. Otherwise, the default
+         * <b>Note</b>: make sure to pass there an implementation of {@link BlockingResponseStreamingRoute} that
+         * implements both overloads instead of a lambda. Otherwise, the default
          * {@link #handle(GrpcServiceContext, Object, BlockingStreamingGrpcServerResponse)} implementation will be used.
          *
          * @param rawRoute {@link BlockingResponseStreamingRoute} instance that has a detached close implementation.
