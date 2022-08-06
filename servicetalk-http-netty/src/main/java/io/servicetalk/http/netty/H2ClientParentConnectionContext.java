@@ -26,7 +26,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
-import io.servicetalk.concurrent.internal.ThrowableUtils;
+import io.servicetalk.concurrent.internal.StacklessCancellationException;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpConnectionContext;
 import io.servicetalk.http.api.HttpEventKey;
@@ -69,7 +69,6 @@ import org.slf4j.LoggerFactory;
 
 import java.net.SocketAddress;
 import java.net.SocketOption;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
@@ -522,25 +521,6 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
             if (completedUpdater.compareAndSet(this, 0, 1)) {
                 channel.writeAndFlush(Http2SettingsAckFrame.INSTANCE);
             }
-        }
-    }
-
-    static final class StacklessCancellationException extends CancellationException {
-        private static final long serialVersionUID = 3235852873427231209L;
-
-        private StacklessCancellationException(String message) {
-            super(message);
-        }
-
-        // Override fillInStackTrace() so we not populate the backtrace via a native call and so leak the
-        // Classloader.
-        @Override
-        public Throwable fillInStackTrace() {
-            return this;
-        }
-
-        static StacklessCancellationException newInstance(String message, Class<?> clazz, String method) {
-            return ThrowableUtils.unknownStackTrace(new StacklessCancellationException(message), clazz, method);
         }
     }
 }

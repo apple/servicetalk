@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TerminalSignalConsumer;
+import io.servicetalk.concurrent.api.internal.SpliceFlatStreamToSingleResult;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpConnectionContext;
 import io.servicetalk.http.api.HttpEventKey;
@@ -167,7 +168,7 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
                         }
                     }
                 })
-                .liftSyncToSingle(new SpliceFlatStreamToMetaSingle<>(this::newSplicedResponse));
+                .liftSyncToSingle(new SpliceFlatStreamToSingleResult<>(this::newSplicedResponse));
     }
 
     @Override

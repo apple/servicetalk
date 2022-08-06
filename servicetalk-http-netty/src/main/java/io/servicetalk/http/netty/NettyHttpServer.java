@@ -26,6 +26,7 @@ import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Processors;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.internal.SpliceFlatStreamToSingleResult;
 import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.concurrent.internal.RejectedSubscribeError;
@@ -316,7 +317,7 @@ final class NettyHttpServer {
 
         void process(final boolean handleMultipleRequests) {
             final Single<StreamingHttpRequest> requestSingle =
-                    connection.read().liftSyncToSingle(new SpliceFlatStreamToMetaSingle<>(
+                    connection.read().liftSyncToSingle(new SpliceFlatStreamToSingleResult<>(
                             (HttpRequestMetaData meta, Publisher<Object> payload) ->
                                     newTransportRequest(meta.method(), meta.requestTarget(), meta.version(),
                                             meta.headers(), executionContext().bufferAllocator(), payload,
