@@ -88,6 +88,7 @@ import static io.servicetalk.grpc.api.GrpcStatusCode.UNKNOWN;
 import static io.servicetalk.grpc.api.GrpcStatusCode.fromHttp2ErrorCode;
 import static io.servicetalk.grpc.internal.DeadlineUtils.GRPC_TIMEOUT_HEADER_KEY;
 import static io.servicetalk.grpc.internal.DeadlineUtils.makeTimeoutHeader;
+import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderNames.SERVER;
 import static io.servicetalk.http.api.HttpHeaderNames.TE;
@@ -147,6 +148,7 @@ final class GrpcUtils {
     }
 
     static void initRequest(final HttpRequestMetaData request,
+                            final GrpcClientMetadata metadata,
                             final CharSequence contentType,
                             @Nullable final CharSequence encoding,
                             @Nullable final CharSequence acceptedEncoding,
@@ -165,6 +167,16 @@ final class GrpcUtils {
         }
         if (acceptedEncoding != null) {
             headers.set(GRPC_MESSAGE_ACCEPT_ENCODING, acceptedEncoding);
+        }
+        assignStrategy(request, metadata);
+        request.context(metadata.requestContext());
+    }
+
+    private static void assignStrategy(HttpRequestMetaData requestMetaData, GrpcClientMetadata grpcMetadata) {
+        @Nullable
+        final GrpcExecutionStrategy strategy = grpcMetadata.strategy();
+        if (strategy != null) {
+            requestMetaData.context().put(HTTP_EXECUTION_STRATEGY_KEY, strategy);
         }
     }
 

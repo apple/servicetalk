@@ -15,6 +15,9 @@
  */
 package io.servicetalk.grpc.api;
 
+import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.encoding.api.ContentCodec;
 import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.transport.api.ConnectionContext;
@@ -39,6 +42,19 @@ public interface GrpcServiceContext extends ConnectionContext, GrpcMetadata {
      */
     @Deprecated
     List<ContentCodec> supportedMessageCodings();
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * <b>Note</b>: for asynchronous endpoints that return a {@link Single} or a {@link Publisher} the response context
+     * must be modified before the async source emits an item or completes. As soon as an item is emitted, the HTTP
+     * response will be send back the the client and any later modifications for this context won't be visible in an
+     * HTTP filter chain.
+     */
+    @Override
+    default ContextMap responseContext() {
+        return GrpcMetadata.super.responseContext();
+    }
 
     interface GrpcProtocol extends Protocol {
 

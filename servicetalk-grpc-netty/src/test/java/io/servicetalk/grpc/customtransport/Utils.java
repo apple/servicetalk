@@ -23,6 +23,8 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
+import io.servicetalk.concurrent.internal.DefaultContextMap;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.encoding.api.ContentCodec;
 import io.servicetalk.grpc.api.GrpcExecutionContext;
 import io.servicetalk.grpc.api.GrpcExecutionStrategies;
@@ -47,7 +49,6 @@ import java.net.SocketAddress;
 import java.net.SocketOption;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.ToIntFunction;
 import javax.annotation.Nullable;
@@ -102,6 +103,8 @@ final class Utils {
     static final class ChannelGrpcServiceContext implements GrpcServiceContext {
         private final ListenableAsyncCloseable closeAsync;
         private final GrpcExecutionContext ctx;
+        private final ContextMap requestContext = new DefaultContextMap();
+        private final ContextMap responseContext = new DefaultContextMap();
 
         ChannelGrpcServiceContext(Channel channel, GrpcExecutionContext ctx) {
             closeAsync = toListenableAsyncCloseable(new AsyncCloseable() {
@@ -132,7 +135,7 @@ final class Utils {
                     return closeAsync;
                 }
             });
-            this.ctx = Objects.requireNonNull(ctx);
+            this.ctx = requireNonNull(ctx);
         }
 
         @Override
@@ -154,6 +157,16 @@ final class Utils {
         @Override
         public String path() {
             return "<deprecated>";
+        }
+
+        @Override
+        public ContextMap requestContext() {
+            return requestContext;
+        }
+
+        @Override
+        public ContextMap responseContext() {
+            return responseContext;
         }
 
         @Override

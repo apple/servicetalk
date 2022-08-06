@@ -1,0 +1,309 @@
+/*
+ * Copyright © 2022 Apple Inc. and the ServiceTalk project authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.servicetalk.grpc.netty;
+
+import io.servicetalk.concurrent.BlockingIterable;
+import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.context.api.ContextMap;
+import io.servicetalk.context.api.ContextMap.Key;
+import io.servicetalk.grpc.api.BlockingStreamingGrpcServerResponse;
+import io.servicetalk.grpc.api.DefaultGrpcClientMetadata;
+import io.servicetalk.grpc.api.GrpcBindableService;
+import io.servicetalk.grpc.api.GrpcClientMetadata;
+import io.servicetalk.grpc.api.GrpcPayloadWriter;
+import io.servicetalk.grpc.api.GrpcServiceContext;
+import io.servicetalk.grpc.netty.TesterProto.TestRequest;
+import io.servicetalk.grpc.netty.TesterProto.TestResponse;
+import io.servicetalk.grpc.netty.TesterProto.Tester.BlockingTesterService;
+import io.servicetalk.grpc.netty.TesterProto.Tester.TesterClient;
+import io.servicetalk.grpc.netty.TesterProto.Tester.TesterService;
+import io.servicetalk.http.api.HttpServiceContext;
+import io.servicetalk.http.api.StreamingHttpClientFilter;
+import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequester;
+import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.StreamingHttpResponseFactory;
+import io.servicetalk.http.api.StreamingHttpServiceFilter;
+import io.servicetalk.transport.api.ServerContext;
+
+import org.junit.jupiter.api.Test;
+
+import java.util.Locale;
+
+import static io.servicetalk.buffer.api.Matchers.contentEqualTo;
+import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.context.api.ContextMap.Key.newKey;
+import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
+import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
+import static java.lang.String.join;
+import static java.util.Collections.singletonList;
+import static java.util.Objects.requireNonNull;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.sameInstance;
+
+class RequestResponseContextTest {
+
+    private static final Key<CharSequence> CLIENT_META = newKey("CLIENT_META", CharSequence.class);
+    private static final Key<CharSequence> CLIENT_FILTER_OUT_META =
+            newKey("CLIENT_FILTER_OUT_META", CharSequence.class);
+    private static final Key<CharSequence> CLIENT_FILTER_IN_META =
+            newKey("CLIENT_FILTER_IN_META", CharSequence.class);
+    private static final Key<CharSequence> SERVER_FILTER_IN_META =
+            newKey("SERVER_FILTER_IN_META", CharSequence.class);
+    private static final Key<CharSequence> SERVER_META = newKey("SERVER_META", CharSequence.class);
+    private static final Key<CharSequence> SERVER_FILTER_OUT_META =
+            newKey("SERVER_FILTER_OUT_META", CharSequence.class);
+
+    private static final TestRequest REQUEST = TestRequest.newBuilder().setName("name").build();
+
+    @Test
+    void test() throws Exception {
+        testRequestResponse(new TesterServiceImpl(),
+                (client, metadata) -> client.test(metadata, REQUEST).toFuture().get());
+    }
+
+    @Test
+    void testBiDiStream() throws Exception {
+        testRequestResponse(new TesterServiceImpl(),
+                (client, metadata) -> client.testBiDiStream(metadata, from(REQUEST)).firstOrError().toFuture().get());
+    }
+
+    @Test
+    void testResponseStream() throws Exception {
+        testRequestResponse(new TesterServiceImpl(),
+                (client, metadata) -> client.testResponseStream(metadata, REQUEST).firstOrError().toFuture().get());
+    }
+
+    @Test
+    void testRequestStream() throws Exception {
+        testRequestResponse(new TesterServiceImpl(),
+                (client, metadata) -> client.testRequestStream(metadata, from(REQUEST)).toFuture().get());
+    }
+
+    @Test
+    void testBlocking() throws Exception {
+        testRequestResponse(new BlockingTesterServiceImpl(),
+                (client, metadata) -> client.asBlockingClient().test(metadata, REQUEST));
+    }
+
+    @Test
+    void testBiDiStreamBlocking() throws Exception {
+        testRequestResponse(new BlockingTesterServiceImpl(),
+                (client, metadata) -> client.asBlockingClient().testBiDiStream(metadata, singletonList(REQUEST))
+                        .iterator().next());
+    }
+
+    @Test
+    void testResponseStreamBlocking() throws Exception {
+        testRequestResponse(new BlockingTesterServiceImpl(),
+                (client, metadata) -> client.asBlockingClient().testResponseStream(metadata, REQUEST)
+                        .iterator().next());
+    }
+
+    @Test
+    void testRequestStreamBlocking() throws Exception {
+        testRequestResponse(new BlockingTesterServiceImpl(),
+                (client, metadata) -> client.asBlockingClient().testRequestStream(metadata, singletonList(REQUEST)));
+    }
+
+    private static void testRequestResponse(GrpcBindableService<?> service, Exchange exchange) throws Exception {
+        try (ServerContext serverContext = GrpcServers.forAddress(localAddress(0))
+                .initializeHttp(httpBuilder -> httpBuilder.appendServiceFilter(s -> new StreamingHttpServiceFilter(s) {
+
+                    @Override
+                    public Single<StreamingHttpResponse> handle(HttpServiceContext ctx,
+                                                                StreamingHttpRequest request,
+                                                                StreamingHttpResponseFactory responseFactory) {
+                        // Take the first two values from headers
+                        request.context().put(CLIENT_META, request.headers().get(header(CLIENT_META)));
+                        request.context().put(CLIENT_FILTER_OUT_META,
+                                request.headers().get(header(CLIENT_FILTER_OUT_META)));
+                        // Set the last value to context only
+                        request.context().put(SERVER_FILTER_IN_META, value(SERVER_FILTER_IN_META));
+                        return delegate().handle(ctx, request, responseFactory)
+                                .whenOnSuccess(response -> {
+                                    // Take the first two values from context
+                                    response.headers().set(header(SERVER_FILTER_IN_META),
+                                            requireNonNull(response.context().get(SERVER_FILTER_IN_META)));
+                                    response.headers().set(header(SERVER_META),
+                                            requireNonNull(response.context().get(SERVER_META)));
+                                    // Set the last value to headers only
+                                    assertThat(response.context().containsKey(SERVER_FILTER_OUT_META), is(false));
+                                    response.headers().set(header(SERVER_FILTER_OUT_META),
+                                            value(SERVER_FILTER_OUT_META));
+                                });
+                    }
+                }))
+                .listenAndAwait(service);
+             TesterClient client = GrpcClients.forAddress(serverHostAndPort(serverContext))
+                     .initializeHttp(httpBuilder -> httpBuilder
+                             .appendClientFilter(c -> new StreamingHttpClientFilter(c) {
+                                 @Override
+                                 protected Single<StreamingHttpResponse> request(StreamingHttpRequester delegate,
+                                                                                 StreamingHttpRequest request) {
+                                     return Single.defer(() -> {
+                                         request.headers().set(header(CLIENT_META),
+                                                 requireNonNull(request.context().get(CLIENT_META)));
+                                         request.context().put(CLIENT_FILTER_OUT_META, value(CLIENT_FILTER_OUT_META));
+                                         request.headers().set(header(CLIENT_FILTER_OUT_META),
+                                                 requireNonNull(request.context().get(CLIENT_FILTER_OUT_META)));
+                                         return delegate.request(request).shareContextOnSubscribe()
+                                                 .whenOnSuccess(response -> {
+                                                     // Take the first three values from headers
+                                                     response.context().put(SERVER_FILTER_IN_META,
+                                                             response.headers().get(header(SERVER_FILTER_IN_META)));
+                                                     response.context().put(SERVER_META,
+                                                             response.headers().get(header(SERVER_META)));
+                                                     response.context().put(SERVER_FILTER_OUT_META,
+                                                             response.headers().get(header(SERVER_FILTER_OUT_META)));
+                                                     // Set the last value to context only
+                                                     response.context().put(CLIENT_FILTER_IN_META,
+                                                             value(CLIENT_FILTER_IN_META));
+                                                 });
+                                     });
+                                 }
+                             }))
+                     .build(new TesterProto.Tester.ClientFactory())) {
+
+            GrpcClientMetadata metadata = new DefaultGrpcClientMetadata();
+            metadata.requestContext().put(CLIENT_META, value(CLIENT_META));
+
+            TestResponse response = exchange.send(client, metadata);
+            assertThat(response.getMessage(), is(contentEqualTo(
+                    join(":", value(CLIENT_META), value(CLIENT_FILTER_OUT_META), value(SERVER_FILTER_IN_META)))));
+
+            ContextMap requestContext = metadata.requestContext();
+            assertThat(requestContext.get(CLIENT_META), is(contentEqualTo(value(CLIENT_META))));
+            assertThat(requestContext.get(CLIENT_FILTER_OUT_META), is(contentEqualTo(value(CLIENT_FILTER_OUT_META))));
+
+            ContextMap responseContext = metadata.responseContext();
+            assertThat(responseContext.get(CLIENT_FILTER_IN_META), is(contentEqualTo(value(CLIENT_FILTER_IN_META))));
+            assertThat(responseContext.get(SERVER_FILTER_IN_META), is(contentEqualTo(value(SERVER_FILTER_IN_META))));
+            assertThat(responseContext.get(SERVER_META), is(contentEqualTo(value(SERVER_META))));
+            assertThat(responseContext.get(SERVER_FILTER_OUT_META), is(contentEqualTo(value(SERVER_FILTER_OUT_META))));
+        }
+    }
+
+    private static String header(Key<CharSequence> key) {
+        return key.name().toLowerCase(Locale.ROOT) + "_header";
+    }
+
+    private static String value(Key<CharSequence> key) {
+        return key.name() + "_VALUE";
+    }
+
+    private static void setContext(GrpcServiceContext ctx) {
+        ctx.responseContext().put(SERVER_FILTER_IN_META, ctx.requestContext().get(SERVER_FILTER_IN_META));
+        ctx.responseContext().put(SERVER_META, value(SERVER_META));
+    }
+
+    private static TestResponse newResponse(ContextMap requestContext) {
+        return TestResponse.newBuilder()
+                .setMessage(join(":",
+                        requestContext.get(CLIENT_META),
+                        requestContext.get(CLIENT_FILTER_OUT_META),
+                        requestContext.get(SERVER_FILTER_IN_META)))
+                .build();
+    }
+
+    @FunctionalInterface
+    private interface Exchange {
+        TestResponse send(TesterClient client, GrpcClientMetadata metadata) throws Exception;
+    }
+
+    private static final class TesterServiceImpl implements TesterService {
+
+        @Override
+        public Single<TestResponse> test(GrpcServiceContext ctx, TestRequest request) {
+            return Single.defer(() -> {
+                setContext(ctx);
+                return succeeded(newResponse(ctx.requestContext()));
+            });
+        }
+
+        @Override
+        public Publisher<TestResponse> testBiDiStream(GrpcServiceContext ctx, Publisher<TestRequest> request) {
+            return request.ignoreElements()
+                    .whenOnComplete(() -> setContext(ctx))
+                    .concat(from(newResponse(ctx.requestContext())));
+        }
+
+        @Override
+        public Publisher<TestResponse> testResponseStream(GrpcServiceContext ctx, TestRequest request) {
+            return Publisher.defer(() -> {
+                setContext(ctx);
+                return from(newResponse(ctx.requestContext()));
+            });
+        }
+
+        @Override
+        public Single<TestResponse> testRequestStream(GrpcServiceContext ctx, Publisher<TestRequest> request) {
+            return request.ignoreElements()
+                    .whenOnComplete(() -> setContext(ctx))
+                    .concat(succeeded(newResponse(ctx.requestContext())));
+        }
+    }
+
+    private static final class BlockingTesterServiceImpl implements BlockingTesterService {
+
+        @Override
+        public TestResponse test(GrpcServiceContext ctx, TestRequest request) {
+            setContext(ctx);
+            return newResponse(ctx.requestContext());
+        }
+
+        @Override
+        public void testBiDiStream(GrpcServiceContext ctx, BlockingIterable<TestRequest> request,
+                                   GrpcPayloadWriter<TestResponse> responseWriter) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void testBiDiStream(GrpcServiceContext ctx, BlockingIterable<TestRequest> request,
+                                   BlockingStreamingGrpcServerResponse<TestResponse> response) throws Exception {
+            assertThat(ctx.responseContext(), is(sameInstance(response.context())));
+            setContext(ctx);
+            try (GrpcPayloadWriter<TestResponse> writer = response.sendMetaData()) {
+                writer.write(newResponse(ctx.requestContext()));
+            }
+        }
+
+        @Override
+        public void testResponseStream(GrpcServiceContext ctx, TestRequest request,
+                                       GrpcPayloadWriter<TestResponse> responseWriter) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void testResponseStream(GrpcServiceContext ctx, TestRequest request,
+                                       BlockingStreamingGrpcServerResponse<TestResponse> response) throws Exception {
+            assertThat(ctx.responseContext(), is(sameInstance(response.context())));
+            setContext(ctx);
+            try (GrpcPayloadWriter<TestResponse> writer = response.sendMetaData()) {
+                writer.write(newResponse(ctx.requestContext()));
+            }
+        }
+
+        @Override
+        public TestResponse testRequestStream(GrpcServiceContext ctx, BlockingIterable<TestRequest> request) {
+            setContext(ctx);
+            return newResponse(ctx.requestContext());
+        }
+    }
+}

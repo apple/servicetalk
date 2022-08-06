@@ -1206,19 +1206,51 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
          * @param ctx {@link GrpcServiceContext} for this call.
          * @param request {@link BlockingIterable} of {@link Req} to handle.
          * @param responseWriter {@link GrpcPayloadWriter} to write the response.
+         * The implementation of this method is responsible for calling {@link GrpcPayloadWriter#close()}.
+         * @throws Exception If an exception occurs during request processing.
+         * @deprecated Use {@link #handle(GrpcServiceContext, BlockingIterable, BlockingStreamingGrpcServerResponse)}.
+         * In the next release, this method will have a default implementation but the new overload won't. To avoid
+         * breaking API changes, make sure to implement both methods. The release after next will remove this method.
+         * This intermediate step is necessary to maintain {@link FunctionalInterface} contract that requires to have a
+         * single non-default method.
+         * <b>Note</b>: if you also use {@link #wrap(BlockingStreamingRoute, GracefulAutoCloseable)} method,
+         * make sure to pass there an implementation of {@link BlockingStreamingRoute} that implements both
+         * overloads instead of a lambda. Otherwise, the default
+         * {@link #handle(GrpcServiceContext, BlockingIterable, BlockingStreamingGrpcServerResponse)} implementation
+         * will be used.
+         */
+        @Deprecated
+        void handle(GrpcServiceContext ctx, BlockingIterable<Req> request,  // FIXME: 0.43 - add default impl
+                    GrpcPayloadWriter<Resp> responseWriter) throws Exception;
+
+        /**
+         * Handles the passed {@link Req}.
+         *
+         * @param ctx {@link GrpcServiceContext} for this call.
+         * @param request {@link BlockingIterable} of {@link Req} to handle.
+         * @param response {@link BlockingStreamingGrpcServerResponse} to send the response.
+         * The implementation of this method is responsible for calling {@link GrpcPayloadWriter#close()}.
          * @throws Exception If an exception occurs during request processing.
          */
-        void handle(GrpcServiceContext ctx, BlockingIterable<Req> request,
-                    GrpcPayloadWriter<Resp> responseWriter) throws Exception;
+        default void handle(GrpcServiceContext ctx, BlockingIterable<Req> request,  // FIXME: 0.43 - remove default impl
+                    BlockingStreamingGrpcServerResponse<Resp> response) throws Exception {
+            handle(ctx, request, response.sendMetaData());
+        }
 
         @Override
         default void close() throws Exception {
             // No op
         }
 
+        // FIXME: 0.43 - remove "Note" from javadoc
         /**
          * Convenience method to wrap a raw {@link BlockingStreamingRoute} instance with a passed detached close
          * implementation of {@link GracefulAutoCloseable}.
+         * <p>
+         * <b>Note</b>: Make sure to pass there an implementation of {@link BlockingStreamingRoute} that implements both
+         * overloads instead of a lambda. Otherwise, the default
+         * {@link #handle(GrpcServiceContext, BlockingIterable, BlockingStreamingGrpcServerResponse)} implementation
+         * will be used.
          *
          * @param rawRoute {@link BlockingStreamingRoute} instance that has a detached close implementation.
          * @param closeable {@link GracefulAutoCloseable} implementation for the passed {@code rawRoute}.
@@ -1234,6 +1266,12 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
                 public void handle(final GrpcServiceContext ctx, final BlockingIterable<Req> request,
                                    final GrpcPayloadWriter<Resp> responseWriter) throws Exception {
                     rawRoute.handle(ctx, request, responseWriter);
+                }
+
+                @Override
+                public void handle(final GrpcServiceContext ctx, final BlockingIterable<Req> request,
+                                   final BlockingStreamingGrpcServerResponse<Resp> response) throws Exception {
+                    rawRoute.handle(ctx, request, response);
                 }
 
                 @Override
@@ -1323,18 +1361,49 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
          * @param ctx {@link GrpcServiceContext} for this call.
          * @param request {@link Req} to handle.
          * @param responseWriter {@link GrpcPayloadWriter} to write the response.
+         * The implementation of this method is responsible for calling {@link GrpcPayloadWriter#close()}.
+         * @throws Exception If an exception occurs during request processing.
+         * @deprecated Use {@link #handle(GrpcServiceContext, Object, BlockingStreamingGrpcServerResponse)}.
+         * In the next release, this method will have a default implementation but the new overload won't. To avoid
+         * breaking API changes, make sure to implement both methods. The release after next will remove this method.
+         * This intermediate step is necessary to maintain {@link FunctionalInterface} contract that requires to have a
+         * single non-default method.
+         * <b>Note</b>: if you also use {@link #wrap(BlockingResponseStreamingRoute, GracefulAutoCloseable)} method,
+         * make sure to pass there an implementation of {@link BlockingResponseStreamingRoute} that implements both
+         * overloads instead of a lambda. Otherwise, the default
+         * {@link #handle(GrpcServiceContext, Object, BlockingStreamingGrpcServerResponse)} implementation will be used.
+         */
+        @Deprecated // FIXME: 0.43 - add default impl
+        void handle(GrpcServiceContext ctx, Req request, GrpcPayloadWriter<Resp> responseWriter) throws Exception;
+
+        /**
+         * Handles the passed {@link Req}.
+         *
+         * @param ctx {@link GrpcServiceContext} for this call.
+         * @param request {@link Req} to handle.
+         * @param response {@link BlockingStreamingGrpcServerResponse} to send the response.
+         * The implementation of this method is responsible for calling {@link GrpcPayloadWriter#close()}.
          * @throws Exception If an exception occurs during request processing.
          */
-        void handle(GrpcServiceContext ctx, Req request, GrpcPayloadWriter<Resp> responseWriter) throws Exception;
+        default void handle(GrpcServiceContext ctx, Req request,  // FIXME: 0.43 - remove default impl
+                    BlockingStreamingGrpcServerResponse<Resp> response) throws Exception {
+            handle(ctx, request, response.sendMetaData());
+        }
 
         @Override
         default void close() throws Exception {
             // No op
         }
 
+        // FIXME: 0.43 - remove "Note" from javadoc
         /**
          * Convenience method to wrap a raw {@link BlockingResponseStreamingRoute} instance with a passed detached close
          * implementation of {@link GracefulAutoCloseable}.
+         * <p>
+         * <b>Note</b>: if you also use {@link #wrap(BlockingResponseStreamingRoute, GracefulAutoCloseable)} method,
+         * make sure to pass there an implementation of {@link BlockingResponseStreamingRoute} that implements both
+         * overloads instead of a lambda. Otherwise, the default
+         * {@link #handle(GrpcServiceContext, Object, BlockingStreamingGrpcServerResponse)} implementation will be used.
          *
          * @param rawRoute {@link BlockingResponseStreamingRoute} instance that has a detached close implementation.
          * @param closeable {@link GracefulAutoCloseable} implementation for the passed {@code rawRoute}.
@@ -1351,6 +1420,12 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
                 public void handle(final GrpcServiceContext ctx, final Req request,
                                    final GrpcPayloadWriter<Resp> responseWriter) throws Exception {
                     rawRoute.handle(ctx, request, responseWriter);
+                }
+
+                @Override
+                public void handle(final GrpcServiceContext ctx, final Req request,
+                                   final BlockingStreamingGrpcServerResponse<Resp> response) throws Exception {
+                    rawRoute.handle(ctx, request, response);
                 }
 
                 @Override
