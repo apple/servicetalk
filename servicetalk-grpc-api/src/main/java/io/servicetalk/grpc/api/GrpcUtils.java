@@ -27,6 +27,7 @@ import io.servicetalk.encoding.api.Identity;
 import io.servicetalk.encoding.api.internal.ContentCodecToBufferDecoder;
 import io.servicetalk.encoding.api.internal.ContentCodecToBufferEncoder;
 import io.servicetalk.encoding.api.internal.HeaderUtils;
+import io.servicetalk.grpc.api.DefaultGrpcMetadata.LazyContextMapSupplier;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.Http2Exception;
 import io.servicetalk.http.api.HttpDeserializer;
@@ -184,48 +185,58 @@ final class GrpcUtils {
                                                  final CharSequence contentType,
                                                  @Nullable final CharSequence encoding,
                                                  @Nullable final CharSequence acceptedEncoding,
+                                                 final LazyContextMapSupplier responseContext,
                                                  final Publisher<T> payload,
                                                  final GrpcStreamingSerializer<T> serializer,
                                                  final BufferAllocator allocator) {
-        return newStreamingResponse(responseFactory, contentType, encoding, acceptedEncoding)
-                .payloadBody(serializer.serialize(payload, allocator))
+        final StreamingHttpResponse response = responseFactory.ok();
+        initResponse(response, contentType, encoding, acceptedEncoding);
+        if (responseContext.isInitialized()) {
+            response.context(responseContext.get());
+        }
+        return response.payloadBody(serializer.serialize(payload, allocator))
                 .transform(new GrpcStatusUpdater(allocator, STATUS_OK));
     }
 
     static HttpResponse newResponse(final HttpResponseFactory responseFactory,
                                     final CharSequence contentType,
+                                    final LazyContextMapSupplier responseContext,
                                     @Nullable final CharSequence encoding,
                                     @Nullable final CharSequence acceptedEncoding) {
         final HttpResponse response = responseFactory.ok();
         initResponse(response, contentType, encoding, acceptedEncoding);
         setStatusOk(response.trailers());
+        if (responseContext.isInitialized()) {
+            response.context(responseContext.get());
+        }
         return response;
     }
 
     static HttpResponse newErrorResponse(final HttpResponseFactory responseFactory,
                                          final CharSequence contentType,
-                                         final Throwable cause, final BufferAllocator allocator) {
+                                         final Throwable cause,
+                                         final BufferAllocator allocator,
+                                         @Nullable final LazyContextMapSupplier responseContext) {
         final HttpResponse response = responseFactory.ok();
         initResponse(response, contentType, null, null);
         setStatus(response.headers(), cause, allocator);
+        if (responseContext != null && responseContext.isInitialized()) {
+            response.context(responseContext.get());
+        }
         return response;
     }
 
     static StreamingHttpResponse newErrorResponse(final StreamingHttpResponseFactory responseFactory,
-                                                  final CharSequence contentType, final Throwable cause,
-                                                  final BufferAllocator allocator) {
+                                                  final CharSequence contentType,
+                                                  final Throwable cause,
+                                                  final BufferAllocator allocator,
+                                                  @Nullable final LazyContextMapSupplier responseContext) {
         final StreamingHttpResponse response = responseFactory.ok();
         initResponse(response, contentType, null, null);
         setStatus(response.headers(), cause, allocator);
-        return response;
-    }
-
-    private static StreamingHttpResponse newStreamingResponse(final StreamingHttpResponseFactory responseFactory,
-                                                              final CharSequence contentType,
-                                                              @Nullable final CharSequence encoding,
-                                                              @Nullable final CharSequence acceptedEncoding) {
-        final StreamingHttpResponse response = responseFactory.ok();
-        initResponse(response, contentType, encoding, acceptedEncoding);
+        if (responseContext != null && responseContext.isInitialized()) {
+            response.context(responseContext.get());
+        }
         return response;
     }
 

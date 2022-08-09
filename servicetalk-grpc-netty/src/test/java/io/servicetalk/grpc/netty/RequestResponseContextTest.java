@@ -26,6 +26,7 @@ import io.servicetalk.grpc.api.GrpcBindableService;
 import io.servicetalk.grpc.api.GrpcClientMetadata;
 import io.servicetalk.grpc.api.GrpcPayloadWriter;
 import io.servicetalk.grpc.api.GrpcServiceContext;
+import io.servicetalk.grpc.api.GrpcStatusException;
 import io.servicetalk.grpc.netty.TesterProto.TestRequest;
 import io.servicetalk.grpc.netty.TesterProto.TestResponse;
 import io.servicetalk.grpc.netty.TesterProto.Tester.BlockingTesterService;
@@ -40,14 +41,18 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.transport.api.ServerContext;
 
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.Locale;
 
 import static io.servicetalk.buffer.api.Matchers.contentEqualTo;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.concurrent.api.internal.BlockingUtils.blockingInvocation;
+import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.context.api.ContextMap.Key.newKey;
+import static io.servicetalk.grpc.api.GrpcStatusCode.UNKNOWN;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.lang.String.join;
@@ -56,6 +61,7 @@ import static java.util.Objects.requireNonNull;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class RequestResponseContextTest {
 
@@ -72,57 +78,69 @@ class RequestResponseContextTest {
 
     private static final TestRequest REQUEST = TestRequest.newBuilder().setName("name").build();
 
-    @Test
-    void test() throws Exception {
-        testRequestResponse(new TesterServiceImpl(),
-                (client, metadata) -> client.test(metadata, REQUEST).toFuture().get());
+    @ParameterizedTest(name = "{displayName} [{index}] error={0}")
+    @ValueSource(booleans = {false, true})
+    void test(boolean error) throws Exception {
+        testRequestResponse(new TesterServiceImpl(error),
+                (client, metadata) -> blockingInvocation(client.test(metadata, REQUEST)), error);
     }
 
-    @Test
-    void testBiDiStream() throws Exception {
-        testRequestResponse(new TesterServiceImpl(),
-                (client, metadata) -> client.testBiDiStream(metadata, from(REQUEST)).firstOrError().toFuture().get());
+    @ParameterizedTest(name = "{displayName} [{index}] error={0}")
+    @ValueSource(booleans = {false, true})
+    void testBiDiStream(boolean error) throws Exception {
+        testRequestResponse(new TesterServiceImpl(error),
+                (client, metadata) -> blockingInvocation(client.testBiDiStream(metadata, from(REQUEST)).firstOrError()),
+                error);
     }
 
-    @Test
-    void testResponseStream() throws Exception {
-        testRequestResponse(new TesterServiceImpl(),
-                (client, metadata) -> client.testResponseStream(metadata, REQUEST).firstOrError().toFuture().get());
+    @ParameterizedTest(name = "{displayName} [{index}] error={0}")
+    @ValueSource(booleans = {false, true})
+    void testResponseStream(boolean error) throws Exception {
+        testRequestResponse(new TesterServiceImpl(error),
+                (client, metadata) -> blockingInvocation(client.testResponseStream(metadata, REQUEST).firstOrError()),
+                error);
     }
 
-    @Test
-    void testRequestStream() throws Exception {
-        testRequestResponse(new TesterServiceImpl(),
-                (client, metadata) -> client.testRequestStream(metadata, from(REQUEST)).toFuture().get());
+    @ParameterizedTest(name = "{displayName} [{index}] error={0}")
+    @ValueSource(booleans = {false, true})
+    void testRequestStream(boolean error) throws Exception {
+        testRequestResponse(new TesterServiceImpl(error),
+                (client, metadata) -> blockingInvocation(client.testRequestStream(metadata, from(REQUEST))), error);
     }
 
-    @Test
-    void testBlocking() throws Exception {
-        testRequestResponse(new BlockingTesterServiceImpl(),
-                (client, metadata) -> client.asBlockingClient().test(metadata, REQUEST));
+    @ParameterizedTest(name = "{displayName} [{index}] error={0}")
+    @ValueSource(booleans = {false, true})
+    void testBlocking(boolean error) throws Exception {
+        testRequestResponse(new BlockingTesterServiceImpl(error),
+                (client, metadata) -> client.asBlockingClient().test(metadata, REQUEST), error);
     }
 
-    @Test
-    void testBiDiStreamBlocking() throws Exception {
-        testRequestResponse(new BlockingTesterServiceImpl(),
+    @ParameterizedTest(name = "{displayName} [{index}] error={0}")
+    @ValueSource(booleans = {false, true})
+    void testBiDiStreamBlocking(boolean error) throws Exception {
+        testRequestResponse(new BlockingTesterServiceImpl(error),
                 (client, metadata) -> client.asBlockingClient().testBiDiStream(metadata, singletonList(REQUEST))
-                        .iterator().next());
+                        .iterator().next(), error);
     }
 
-    @Test
-    void testResponseStreamBlocking() throws Exception {
-        testRequestResponse(new BlockingTesterServiceImpl(),
+    @ParameterizedTest(name = "{displayName} [{index}] error={0}")
+    @ValueSource(booleans = {false, true})
+    void testResponseStreamBlocking(boolean error) throws Exception {
+        testRequestResponse(new BlockingTesterServiceImpl(error),
                 (client, metadata) -> client.asBlockingClient().testResponseStream(metadata, REQUEST)
-                        .iterator().next());
+                        .iterator().next(), error);
     }
 
-    @Test
-    void testRequestStreamBlocking() throws Exception {
-        testRequestResponse(new BlockingTesterServiceImpl(),
-                (client, metadata) -> client.asBlockingClient().testRequestStream(metadata, singletonList(REQUEST)));
+    @ParameterizedTest(name = "{displayName} [{index}] error={0}")
+    @ValueSource(booleans = {false, true})
+    void testRequestStreamBlocking(boolean error) throws Exception {
+        testRequestResponse(new BlockingTesterServiceImpl(error),
+                (client, metadata) -> client.asBlockingClient().testRequestStream(metadata, singletonList(REQUEST)),
+                error);
     }
 
-    private static void testRequestResponse(GrpcBindableService<?> service, Exchange exchange) throws Exception {
+    private static void testRequestResponse(GrpcBindableService<?> service, Exchange exchange,
+                                            boolean error) throws Exception {
         try (ServerContext serverContext = GrpcServers.forAddress(localAddress(0))
                 .initializeHttp(httpBuilder -> httpBuilder.appendServiceFilter(s -> new StreamingHttpServiceFilter(s) {
 
@@ -184,9 +202,14 @@ class RequestResponseContextTest {
             GrpcClientMetadata metadata = new DefaultGrpcClientMetadata();
             metadata.requestContext().put(CLIENT_META, value(CLIENT_META));
 
-            TestResponse response = exchange.send(client, metadata);
-            assertThat(response.getMessage(), is(contentEqualTo(
-                    join(":", value(CLIENT_META), value(CLIENT_FILTER_OUT_META), value(SERVER_FILTER_IN_META)))));
+            if (error) {
+                GrpcStatusException e = assertThrows(GrpcStatusException.class, () -> exchange.send(client, metadata));
+                assertThat(e.status().code(), is(UNKNOWN));
+            } else {
+                TestResponse response = exchange.send(client, metadata);
+                assertThat(response.getMessage(), is(contentEqualTo(
+                        join(":", value(CLIENT_META), value(CLIENT_FILTER_OUT_META), value(SERVER_FILTER_IN_META)))));
+            }
 
             ContextMap requestContext = metadata.requestContext();
             assertThat(requestContext.get(CLIENT_META), is(contentEqualTo(value(CLIENT_META))));
@@ -229,11 +252,17 @@ class RequestResponseContextTest {
 
     private static final class TesterServiceImpl implements TesterService {
 
+        private final boolean error;
+
+        private TesterServiceImpl(final boolean error) {
+            this.error = error;
+        }
+
         @Override
         public Single<TestResponse> test(GrpcServiceContext ctx, TestRequest request) {
             return Single.defer(() -> {
                 setContext(ctx);
-                return succeeded(newResponse(ctx.requestContext()));
+                return error ? Single.failed(DELIBERATE_EXCEPTION) : succeeded(newResponse(ctx.requestContext()));
             });
         }
 
@@ -241,14 +270,14 @@ class RequestResponseContextTest {
         public Publisher<TestResponse> testBiDiStream(GrpcServiceContext ctx, Publisher<TestRequest> request) {
             return request.ignoreElements()
                     .whenOnComplete(() -> setContext(ctx))
-                    .concat(from(newResponse(ctx.requestContext())));
+                    .concat(error ? Publisher.failed(DELIBERATE_EXCEPTION) : from(newResponse(ctx.requestContext())));
         }
 
         @Override
         public Publisher<TestResponse> testResponseStream(GrpcServiceContext ctx, TestRequest request) {
             return Publisher.defer(() -> {
                 setContext(ctx);
-                return from(newResponse(ctx.requestContext()));
+                return error ? Publisher.failed(DELIBERATE_EXCEPTION) : from(newResponse(ctx.requestContext()));
             });
         }
 
@@ -256,15 +285,24 @@ class RequestResponseContextTest {
         public Single<TestResponse> testRequestStream(GrpcServiceContext ctx, Publisher<TestRequest> request) {
             return request.ignoreElements()
                     .whenOnComplete(() -> setContext(ctx))
-                    .concat(succeeded(newResponse(ctx.requestContext())));
+                    .concat(error ? Single.failed(DELIBERATE_EXCEPTION) : succeeded(newResponse(ctx.requestContext())));
         }
     }
 
     private static final class BlockingTesterServiceImpl implements BlockingTesterService {
 
+        private final boolean error;
+
+        private BlockingTesterServiceImpl(final boolean error) {
+            this.error = error;
+        }
+
         @Override
         public TestResponse test(GrpcServiceContext ctx, TestRequest request) {
             setContext(ctx);
+            if (error) {
+                throw DELIBERATE_EXCEPTION;
+            }
             return newResponse(ctx.requestContext());
         }
 
@@ -279,6 +317,9 @@ class RequestResponseContextTest {
                                    BlockingStreamingGrpcServerResponse<TestResponse> response) throws Exception {
             assertThat(ctx.responseContext(), is(sameInstance(response.context())));
             setContext(ctx);
+            if (error) {
+                throw DELIBERATE_EXCEPTION;
+            }
             try (GrpcPayloadWriter<TestResponse> writer = response.sendMetaData()) {
                 writer.write(newResponse(ctx.requestContext()));
             }
@@ -295,6 +336,9 @@ class RequestResponseContextTest {
                                        BlockingStreamingGrpcServerResponse<TestResponse> response) throws Exception {
             assertThat(ctx.responseContext(), is(sameInstance(response.context())));
             setContext(ctx);
+            if (error) {
+                throw DELIBERATE_EXCEPTION;
+            }
             try (GrpcPayloadWriter<TestResponse> writer = response.sendMetaData()) {
                 writer.write(newResponse(ctx.requestContext()));
             }
@@ -303,6 +347,9 @@ class RequestResponseContextTest {
         @Override
         public TestResponse testRequestStream(GrpcServiceContext ctx, BlockingIterable<TestRequest> request) {
             setContext(ctx);
+            if (error) {
+                throw DELIBERATE_EXCEPTION;
+            }
             return newResponse(ctx.requestContext());
         }
     }
