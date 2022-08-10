@@ -95,7 +95,7 @@ final class DefaultGrpcServerBuilder implements GrpcServerBuilder, ServerBinder 
     // Do not use this ctor directly, GrpcServers is the entry point for creating a new builder.
     DefaultGrpcServerBuilder(final Supplier<HttpServerBuilder> httpServerBuilderSupplier) {
         this.httpServerBuilderSupplier = () ->
-                Objects.requireNonNull(httpServerBuilderSupplier.get(), "httpServerBuilderSupplier was null")
+                Objects.requireNonNull(httpServerBuilderSupplier.get(), "supplier result was null")
                     .protocols(h2Default()).allowDropRequestTrailers(true);
     }
 
