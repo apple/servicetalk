@@ -25,6 +25,7 @@ import io.servicetalk.http.api.DefaultHttpExecutionContext;
 import io.servicetalk.http.api.HttpConnectionContext;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpProtocolVersion;
+import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
@@ -147,6 +148,12 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
     @Override
     public HttpProtocolVersion protocol() {
         return HTTP_2_0;
+    }
+
+    @Nullable
+    @Override
+    public ConnectionContext parent() {
+        return null;
     }
 
     @Override

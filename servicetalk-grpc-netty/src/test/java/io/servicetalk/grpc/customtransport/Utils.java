@@ -37,6 +37,7 @@ import io.servicetalk.serializer.api.Serializer;
 import io.servicetalk.serializer.api.StreamingDeserializer;
 import io.servicetalk.serializer.api.StreamingSerializer;
 import io.servicetalk.serializer.utils.FramedDeserializerOperator;
+import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.SslConfig;
 
@@ -192,6 +193,12 @@ final class Utils {
         @Override
         public GrpcProtocol protocol() {
             return InMemoryGrpcProtocol.INSTANCE;
+        }
+
+        @Nullable
+        @Override
+        public ConnectionContext parent() {
+            return null;
         }
 
         @Deprecated
