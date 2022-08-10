@@ -306,7 +306,8 @@ final class GrpcUtils {
     static <Resp> Publisher<Resp> validateResponseAndGetPayload(final StreamingHttpResponse response,
                                                                 final CharSequence expectedContentType,
                                                                 final BufferAllocator allocator,
-                                                                final GrpcStreamingDeserializer<Resp> deserializer) {
+                                                                final GrpcStreamingDeserializer<Resp> deserializer,
+                                                                final String httpPath) {
         validateStatusCode(response.status()); // gRPC protocol requires 200, don't look further if this check fails.
         // In case of an empty response, gRPC-server may return only one HEADER frame with endStream=true. Our
         // HTTP1-based implementation translates them into response headers so we need to look for a grpc-status in both
@@ -322,7 +323,7 @@ final class GrpcUtils {
             final Completable drainResponse = response.messageBody().beforeOnNext(frame -> {
                 throw new GrpcStatus(INTERNAL, null, "Violation of the protocol: received unexpected " +
                         (frame instanceof HttpHeaders ? "Trailers" : "Data") +
-                        "frame after already receiving Trailers-Only response with grpc-status: " +
+                        "frame after Trailers-Only response is received with grpc-status: " +
                         grpcStatusCode.value() + '(' + grpcStatusCode + ')').asException();
             }).ignoreElements();
             final GrpcStatusException grpcStatusException = convertToGrpcStatusException(grpcStatusCode, headers);
@@ -337,7 +338,8 @@ final class GrpcUtils {
                     // Instead, we log those errors for visibility. Use onErrorComplete instead of whenOnError to avoid
                     // logging the same exception twice inside SimpleCompletableSubscriber.
                     drainResponse.onErrorComplete(t -> {
-                        LOGGER.error("Unexpected error", t);
+                        LOGGER.error("Unexpected error while asynchronously draining a Trailers-Only response for {}",
+                                httpPath, t);
                         return true;
                     }).subscribe().cancel();
                 });
