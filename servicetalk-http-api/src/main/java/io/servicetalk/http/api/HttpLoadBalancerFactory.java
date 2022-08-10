@@ -119,8 +119,11 @@ public interface HttpLoadBalancerFactory<ResolvedAddress>
                 final FilterableStreamingHttpConnection delegate,
                 final ReservableRequestConcurrencyController controller) {
             this(delegate, controller, () -> {
-                throw new UnsupportedOperationException("This type of connection doesn't support scoring. " +
-                        "Connection scoring is only available through scoring supported load balancers.");
+                throw new UnsupportedOperationException(
+                        DefaultFilterableStreamingHttpLoadBalancedConnection.class.getName() +
+                                " doesn't support scoring. " + ScoreSupplier.class.getName() +
+                                " is only available through " + HttpLoadBalancerFactory.class.getSimpleName() +
+                                " implementations that support scoring.");
             });
         }
 
