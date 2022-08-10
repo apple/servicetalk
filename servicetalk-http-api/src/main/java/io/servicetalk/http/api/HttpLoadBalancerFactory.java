@@ -29,7 +29,6 @@ import javax.annotation.Nullable;
 import static io.servicetalk.http.api.HttpApiConversions.toReservedBlockingConnection;
 import static io.servicetalk.http.api.HttpApiConversions.toReservedBlockingStreamingConnection;
 import static io.servicetalk.http.api.HttpApiConversions.toReservedConnection;
-import static java.lang.Integer.MAX_VALUE;
 import static java.util.Objects.requireNonNull;
 
 /**

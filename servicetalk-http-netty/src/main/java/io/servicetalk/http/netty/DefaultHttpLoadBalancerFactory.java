@@ -37,7 +37,6 @@ import io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory;
 
 import java.util.Collection;
 
-import static java.lang.Integer.MAX_VALUE;
 import static java.util.Objects.requireNonNull;
 
 /**
