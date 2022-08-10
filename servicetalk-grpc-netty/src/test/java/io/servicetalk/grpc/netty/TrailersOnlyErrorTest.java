@@ -15,7 +15,6 @@
  */
 package io.servicetalk.grpc.netty;
 
-import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.grpc.api.GrpcClientBuilder;
 import io.servicetalk.grpc.api.GrpcServerBuilder;
@@ -23,6 +22,7 @@ import io.servicetalk.grpc.api.GrpcStatusCode;
 import io.servicetalk.grpc.api.GrpcStatusException;
 import io.servicetalk.grpc.netty.TesterProto.TestRequest;
 import io.servicetalk.grpc.netty.TesterProto.Tester;
+import io.servicetalk.grpc.netty.TesterProto.Tester.BlockingTesterClient;
 import io.servicetalk.grpc.netty.TesterProto.Tester.TesterClient;
 import io.servicetalk.grpc.netty.TesterProto.Tester.TesterService;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
@@ -35,6 +35,7 @@ import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
+import io.servicetalk.http.utils.BeforeFinallyHttpOperator;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 
@@ -42,9 +43,11 @@ import io.grpc.examples.helloworld.Greeter;
 import io.grpc.examples.helloworld.Greeter.GreeterClient;
 import io.grpc.examples.helloworld.HelloRequest;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -59,8 +62,10 @@ import static io.servicetalk.grpc.api.GrpcStatusCode.UNKNOWN;
 import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
+import static java.util.Collections.singleton;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -73,12 +78,13 @@ class TrailersOnlyErrorTest {
     @Test
     void testRouteThrows() throws Exception {
         final BlockingQueue<Throwable> asyncErrors = new LinkedBlockingDeque<>();
+        final CountDownLatch responseLatch = new CountDownLatch(1);
         try (ServerContext serverContext = GrpcServers.forAddress(localAddress(0))
                 .listenAndAwait(new Tester.ServiceFactory(mockTesterService()))) {
 
             final GrpcClientBuilder<HostAndPort, InetSocketAddress> clientBuilder =
                     GrpcClients.forAddress(serverHostAndPort(serverContext)).initializeHttp(builder -> builder
-                            .appendClientFilter(__ -> true, setupResponseVerifierFilter(asyncErrors)));
+                            .appendClientFilter(__ -> true, setupResponseVerifierFilter(asyncErrors, responseLatch)));
 
             // The server only binds on Tester service, but the client sends a HelloRequest (Greeter service),
             // thus no route is found and it should result in UNIMPLEMENTED.
@@ -87,11 +93,13 @@ class TrailersOnlyErrorTest {
                 assertNoAsyncErrors(asyncErrors);
             }
         }
+        responseLatch.await();  // Make sure all responses complete
     }
 
     @Test
     void testServiceThrows() throws Exception {
         final BlockingQueue<Throwable> asyncErrors = new LinkedBlockingDeque<>();
+        final CountDownLatch responseLatch = new CountDownLatch(4);
         final TesterService service = mockTesterService();
         setupServiceThrows(service);
 
@@ -100,31 +108,60 @@ class TrailersOnlyErrorTest {
 
             final GrpcClientBuilder<HostAndPort, InetSocketAddress> clientBuilder =
                     GrpcClients.forAddress(serverHostAndPort(serverContext)).initializeHttp(builder -> builder
-                            .appendClientFilter(__ -> true, setupResponseVerifierFilter(asyncErrors)));
+                            .appendClientFilter(__ -> true, setupResponseVerifierFilter(asyncErrors, responseLatch)));
 
             try (TesterClient client = clientBuilder.build(new Tester.ClientFactory())) {
-                verifyException(client.test(TestRequest.newBuilder()
-                        .build()).toFuture(), UNKNOWN);
+                verifyException(client.test(TestRequest.newBuilder().build()).toFuture(), UNKNOWN);
                 assertNoAsyncErrors(asyncErrors);
 
-                verifyException(client.testRequestStream(Publisher.from(TestRequest.newBuilder()
-                        .build())).toFuture(), UNKNOWN);
+                verifyException(client.testRequestStream(from(TestRequest.newBuilder().build())).toFuture(), UNKNOWN);
                 assertNoAsyncErrors(asyncErrors);
 
-                verifyException(client.testBiDiStream(from(TestRequest.newBuilder()
-                        .build()).concat(never())).toFuture(), UNKNOWN);
-                assertNoAsyncErrors(asyncErrors);
+                // Skip testing client.testResponseStream bcz it can not generate Trailers-Only response
+
+                verifyException(client.testBiDiStream(never()).toFuture(), UNKNOWN);
 
                 verifyException(client.testBiDiStream(from(TestRequest.newBuilder()
                         .build())).toFuture(), UNKNOWN);
                 assertNoAsyncErrors(asyncErrors);
             }
         }
+        responseLatch.await();  // Make sure all responses complete
+    }
+
+    @Test
+    void testServiceThrowsBlockingClient() throws Exception {
+        final BlockingQueue<Throwable> asyncErrors = new LinkedBlockingDeque<>();
+        final CountDownLatch responseLatch = new CountDownLatch(3);
+        final TesterService service = mockTesterService();
+        setupServiceThrows(service);
+
+        try (ServerContext serverContext = GrpcServers.forAddress(localAddress(0))
+                .listenAndAwait(new Tester.ServiceFactory(service))) {
+
+            final GrpcClientBuilder<HostAndPort, InetSocketAddress> clientBuilder =
+                    GrpcClients.forAddress(serverHostAndPort(serverContext)).initializeHttp(builder -> builder
+                            .appendClientFilter(__ -> true, setupResponseVerifierFilter(asyncErrors, responseLatch)));
+
+            try (BlockingTesterClient client = clientBuilder.buildBlocking(new Tester.ClientFactory())) {
+                verifyException(() -> client.test(TestRequest.newBuilder().build()), UNKNOWN);
+                assertNoAsyncErrors(asyncErrors);
+
+                verifyException(() -> client.testRequestStream(singleton(TestRequest.newBuilder().build())), UNKNOWN);
+                assertNoAsyncErrors(asyncErrors);
+
+                verifyException(() -> client.testBiDiStream(singleton(TestRequest.newBuilder().build()))
+                        .iterator().next(), UNKNOWN);
+                assertNoAsyncErrors(asyncErrors);
+            }
+        }
+        responseLatch.await();  // Make sure all responses complete
     }
 
     @Test
     void testServiceSingleThrows() throws Exception {
         final BlockingQueue<Throwable> asyncErrors = new LinkedBlockingDeque<>();
+        final CountDownLatch responseLatch = new CountDownLatch(2);
         final TesterService service = mockTesterService();
         setupServiceSingleThrows(service);
 
@@ -133,18 +170,25 @@ class TrailersOnlyErrorTest {
 
             final GrpcClientBuilder<HostAndPort, InetSocketAddress> clientBuilder =
                     GrpcClients.forAddress(serverHostAndPort(serverContext)).initializeHttp(builder -> builder
-                            .appendClientFilter(__ -> true, setupResponseVerifierFilter(asyncErrors)));
+                            .appendClientFilter(__ -> true, setupResponseVerifierFilter(asyncErrors, responseLatch)));
 
             try (TesterClient client = clientBuilder.build(new Tester.ClientFactory())) {
                 verifyException(client.test(TestRequest.newBuilder().build()).toFuture(), UNKNOWN);
                 assertNoAsyncErrors(asyncErrors);
             }
+
+            try (BlockingTesterClient client = clientBuilder.buildBlocking(new Tester.ClientFactory())) {
+                verifyException(() -> client.test(TestRequest.newBuilder().build()), UNKNOWN);
+                assertNoAsyncErrors(asyncErrors);
+            }
         }
+        responseLatch.await();  // Make sure all responses complete
     }
 
     @Test
     void testServiceFilterThrows() throws Exception {
         final BlockingQueue<Throwable> asyncErrors = new LinkedBlockingDeque<>();
+        final CountDownLatch responseLatch = new CountDownLatch(5);
         final TesterService service = mockTesterService();
 
         final GrpcServerBuilder serverBuilder = GrpcServers.forAddress(localAddress(0))
@@ -161,40 +205,39 @@ class TrailersOnlyErrorTest {
 
             final GrpcClientBuilder<HostAndPort, InetSocketAddress> clientBuilder =
                     GrpcClients.forAddress(serverHostAndPort(serverContext)).initializeHttp(builder -> builder
-                            .appendClientFilter(__ -> true, setupResponseVerifierFilter(asyncErrors)));
+                            .appendClientFilter(__ -> true, setupResponseVerifierFilter(asyncErrors, responseLatch)));
 
             try (TesterClient client = clientBuilder.build(new Tester.ClientFactory())) {
-                verifyException(client.test(TestRequest.newBuilder()
-                        .build()).toFuture(), UNKNOWN);
+                verifyException(client.test(TestRequest.newBuilder().build()).toFuture(), UNKNOWN);
                 assertNoAsyncErrors(asyncErrors);
 
-                verifyException(client.testRequestStream(Publisher.from(TestRequest.newBuilder().build())).toFuture(),
-                        UNKNOWN);
+                verifyException(client.testRequestStream(from(TestRequest.newBuilder().build())).toFuture(), UNKNOWN);
                 assertNoAsyncErrors(asyncErrors);
 
                 verifyException(client.testResponseStream(TestRequest.newBuilder().build()).toFuture(), UNKNOWN);
                 assertNoAsyncErrors(asyncErrors);
 
-                verifyException(client.testBiDiStream(from(TestRequest.newBuilder().build())
-                        .concat(never())).toFuture(), UNKNOWN);
+                verifyException(client.testBiDiStream(never()).toFuture(), UNKNOWN);
                 assertNoAsyncErrors(asyncErrors);
 
-                verifyException(client.testBiDiStream(from(TestRequest.newBuilder()
-                        .build())).toFuture(), UNKNOWN);
+                verifyException(client.testBiDiStream(from(TestRequest.newBuilder().build())).toFuture(), UNKNOWN);
                 assertNoAsyncErrors(asyncErrors);
             }
         }
+        responseLatch.await();  // Make sure all responses complete
     }
 
     private static void verifyException(final Future<?> result, final GrpcStatusCode expectedCode) {
-        verifyException(assertThrows(ExecutionException.class, result::get).getCause(), expectedCode);
+        ExecutionException ee = assertThrows(ExecutionException.class, result::get);
+        assertNotNull(ee.getCause());
+        assertThat(ee.getCause(), is(instanceOf(GrpcStatusException.class)));
+        GrpcStatusException gse = (GrpcStatusException) ee.getCause();
+        assertThat(gse.status().code(), is(expectedCode));
     }
 
-    private static void verifyException(final Throwable cause, final GrpcStatusCode expectedCode) {
-        assertNotNull(cause);
-        assertThat(assertThrows(GrpcStatusException.class, () -> {
-            throw cause;
-        }).status().code(), equalTo(expectedCode));
+    private static void verifyException(final Executable exchange, final GrpcStatusCode expectedCode) {
+        GrpcStatusException e = assertThrows(GrpcStatusException.class, exchange::execute);
+        assertThat(e.status().code(), is(expectedCode));
     }
 
     private static TesterService mockTesterService() {
@@ -213,9 +256,11 @@ class TrailersOnlyErrorTest {
 
     private static void setupServiceSingleThrows(final TesterService service) {
         when(service.test(any(), any())).thenReturn(Single.failed(DELIBERATE_EXCEPTION));
+        // No need to test other routes because they transmit an error in trailers instead of headers
     }
 
-    private static StreamingHttpClientFilterFactory setupResponseVerifierFilter(final BlockingQueue<Throwable> errors) {
+    private static StreamingHttpClientFilterFactory setupResponseVerifierFilter(final BlockingQueue<Throwable> errors,
+                                                                                final CountDownLatch responseLatch) {
         return new StreamingHttpClientFilterFactory() {
             @Override
             public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {
@@ -227,7 +272,7 @@ class TrailersOnlyErrorTest {
                                 .map(response -> {
                                     assertGrpcStatusInHeaders(response, errors);
                                     return response;
-                                });
+                                }).liftAsync(new BeforeFinallyHttpOperator(responseLatch::countDown));
                     }
                 };
             }
