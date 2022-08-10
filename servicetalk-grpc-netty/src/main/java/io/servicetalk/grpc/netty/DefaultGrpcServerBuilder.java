@@ -55,7 +55,6 @@ import java.net.SocketOption;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
