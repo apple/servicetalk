@@ -119,7 +119,10 @@ public interface HttpLoadBalancerFactory<ResolvedAddress>
         public DefaultFilterableStreamingHttpLoadBalancedConnection(
                 final FilterableStreamingHttpConnection delegate,
                 final ReservableRequestConcurrencyController controller) {
-            this(delegate, controller, () -> MAX_VALUE);
+            this(delegate, controller, () -> {
+                throw new UnsupportedOperationException("This type of connection doesn't support scoring. " +
+                        "Connection scoring is only available through scoring supported load balancers.");
+            });
         }
 
         /**

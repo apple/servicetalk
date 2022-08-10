@@ -142,7 +142,8 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
 
         @Override
         public int score() {
-            return MAX_VALUE;
+            throw new UnsupportedOperationException("This type of connection doesn't support scoring. " +
+                    "Connection scoring is only available through scoring supported load balancers.");
         }
 
         @Override
