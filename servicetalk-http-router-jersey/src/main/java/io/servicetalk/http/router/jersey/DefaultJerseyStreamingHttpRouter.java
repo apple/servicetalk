@@ -43,8 +43,6 @@ import org.glassfish.jersey.server.ApplicationHandler;
 import org.glassfish.jersey.server.ContainerRequest;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.server.spi.Container;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
@@ -398,8 +396,13 @@ final class DefaultJerseyStreamingHttpRouter implements StreamingHttpService {
         }
     }
 
+    /**
+     * {@link ApplicationHandler#handle(ContainerRequest)} may throw if it has been shutdown concurrently. This class
+     * prevents duplicate terminal signals which would violate <a href="
+     * https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.4/README.md#1.7">Reactive Streams 1.7</a>
+     * @param <T> The type of {@link Subscriber}.
+     */
     private static final class DuplicateTerminateDetectorSingle<T> implements Subscriber<T> {
-        private static final Logger LOGGER = LoggerFactory.getLogger(DuplicateTerminateDetectorSingle.class);
         @SuppressWarnings("rawtypes")
         private static final AtomicIntegerFieldUpdater<DuplicateTerminateDetectorSingle> doneUpdater =
                 newUpdater(DuplicateTerminateDetectorSingle.class, "done");
@@ -419,17 +422,14 @@ final class DefaultJerseyStreamingHttpRouter implements StreamingHttpService {
         public void onSuccess(@Nullable final T result) {
             if (doneUpdater.compareAndSet(this, 0, 1)) {
                 delegate.onSuccess(result);
-            } else {
-                LOGGER.error("duplicate termination in onSuccess {} {}", result, delegate);
             }
         }
 
         @Override
         public void onError(final Throwable t) {
+            // ApplicationHandler.handler may throw if shutdown concurrently with request processing
             if (doneUpdater.compareAndSet(this, 0, 1)) {
                 delegate.onError(t);
-            } else {
-                LOGGER.error("duplicate termination in onError {}", delegate, t);
             }
         }
     }
