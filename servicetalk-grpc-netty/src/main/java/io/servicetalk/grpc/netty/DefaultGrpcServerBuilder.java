@@ -55,6 +55,7 @@ import java.net.SocketOption;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
@@ -93,8 +94,9 @@ final class DefaultGrpcServerBuilder implements GrpcServerBuilder, ServerBinder 
 
     // Do not use this ctor directly, GrpcServers is the entry point for creating a new builder.
     DefaultGrpcServerBuilder(final Supplier<HttpServerBuilder> httpServerBuilderSupplier) {
-        this.httpServerBuilderSupplier = () -> httpServerBuilderSupplier.get()
-                .protocols(h2Default()).allowDropRequestTrailers(true);
+        this.httpServerBuilderSupplier = () ->
+                Objects.requireNonNull(httpServerBuilderSupplier.get(), "httpServerBuilderSupplier was null")
+                    .protocols(h2Default()).allowDropRequestTrailers(true);
     }
 
     @Override
