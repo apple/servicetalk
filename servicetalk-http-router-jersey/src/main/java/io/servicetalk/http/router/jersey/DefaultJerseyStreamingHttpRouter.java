@@ -427,7 +427,6 @@ final class DefaultJerseyStreamingHttpRouter implements StreamingHttpService {
 
         @Override
         public void onError(final Throwable t) {
-            // ApplicationHandler.handler may throw if shutdown concurrently with request processing
             if (doneUpdater.compareAndSet(this, 0, 1)) {
                 delegate.onError(t);
             }
