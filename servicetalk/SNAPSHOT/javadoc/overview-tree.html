@@ -379,6 +379,7 @@ loadScripts(document, 'script');</script>
 <li class="circle">io.servicetalk.grpc.netty.<a href="io/servicetalk/grpc/netty/GrpcLifecycleObserverServiceFilter.html" class="type-name-link" title="class in io.servicetalk.grpc.netty">GrpcLifecycleObserverServiceFilter</a></li>
 </ul>
 </li>
+<li class="circle">io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpLoadBalancerFactory.DefaultFilterableStreamingHttpLoadBalancedConnection.html" class="type-name-link" title="class in io.servicetalk.http.api">HttpLoadBalancerFactory.DefaultFilterableStreamingHttpLoadBalancedConnection</a> (implements io.servicetalk.http.api.<a href="io/servicetalk/http/api/FilterableStreamingHttpLoadBalancedConnection.html" title="interface in io.servicetalk.http.api">FilterableStreamingHttpLoadBalancedConnection</a>)</li>
 <li class="circle">io.servicetalk.http.router.predicate.<a href="io/servicetalk/http/router/predicate/HttpPredicateRouterBuilder.html" class="type-name-link" title="class in io.servicetalk.http.router.predicate">HttpPredicateRouterBuilder</a> (implements io.servicetalk.http.router.predicate.dsl.<a href="io/servicetalk/http/router/predicate/dsl/RouteStarter.html" title="interface in io.servicetalk.http.router.predicate.dsl">RouteStarter</a>)</li>
 <li class="circle">io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/HttpProtocolConfigs.html" class="type-name-link" title="class in io.servicetalk.http.netty">HttpProtocolConfigs</a></li>
 <li class="circle">io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpProtocolVersion.html" class="type-name-link" title="class in io.servicetalk.http.api">HttpProtocolVersion</a> (implements java.lang.<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Comparable.html" title="class or interface in java.lang" class="external-link">Comparable</a>&lt;T&gt;, io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/ConnectionInfo.Protocol.html" title="interface in io.servicetalk.transport.api">ConnectionInfo.Protocol</a>)</li>
@@ -742,9 +743,9 @@ loadScripts(document, 'script');</script>
 </ul>
 </li>
 <li class="circle">io.servicetalk.client.api.<a href="io/servicetalk/client/api/LoadBalancedAddress.html" class="type-name-link" title="interface in io.servicetalk.client.api">LoadBalancedAddress</a>&lt;C&gt; (also extends io.servicetalk.client.api.<a href="io/servicetalk/client/api/ScoreSupplier.html" title="interface in io.servicetalk.client.api">ScoreSupplier</a>)</li>
-<li class="circle">io.servicetalk.client.api.<a href="io/servicetalk/client/api/LoadBalancedConnection.html" class="type-name-link" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a> (also extends io.servicetalk.client.api.<a href="io/servicetalk/client/api/ScoreSupplier.html" title="interface in io.servicetalk.client.api">ScoreSupplier</a>)
+<li class="circle">io.servicetalk.client.api.<a href="io/servicetalk/client/api/LoadBalancedConnection.html" class="type-name-link" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a> (also extends io.servicetalk.client.api.<a href="io/servicetalk/client/api/ReservableRequestConcurrencyController.html" title="interface in io.servicetalk.client.api">ReservableRequestConcurrencyController</a>, io.servicetalk.client.api.<a href="io/servicetalk/client/api/ScoreSupplier.html" title="interface in io.servicetalk.client.api">ScoreSupplier</a>)
 <ul>
-<li class="circle">io.servicetalk.http.api.<a href="io/servicetalk/http/api/FilterableStreamingHttpLoadBalancedConnection.html" class="type-name-link" title="interface in io.servicetalk.http.api">FilterableStreamingHttpLoadBalancedConnection</a> (also extends io.servicetalk.http.api.<a href="io/servicetalk/http/api/FilterableStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">FilterableStreamingHttpConnection</a>)</li>
+<li class="circle">io.servicetalk.http.api.<a href="io/servicetalk/http/api/FilterableStreamingHttpLoadBalancedConnection.html" class="type-name-link" title="interface in io.servicetalk.http.api">FilterableStreamingHttpLoadBalancedConnection</a> (also extends io.servicetalk.http.api.<a href="io/servicetalk/http/api/FilterableStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">FilterableStreamingHttpConnection</a>, io.servicetalk.http.api.<a href="io/servicetalk/http/api/ReservedStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">ReservedStreamingHttpConnection</a>)</li>
 </ul>
 </li>
 <li class="circle">io.servicetalk.client.api.<a href="io/servicetalk/client/api/LoadBalancer.html" class="type-name-link" title="interface in io.servicetalk.client.api">LoadBalancer</a>&lt;C&gt;</li>
@@ -767,13 +768,21 @@ loadScripts(document, 'script');</script>
 <ul>
 <li class="circle">io.servicetalk.http.api.<a href="io/servicetalk/http/api/FilterableReservedStreamingHttpConnection.html" class="type-name-link" title="interface in io.servicetalk.http.api">FilterableReservedStreamingHttpConnection</a>
 <ul>
-<li class="circle">io.servicetalk.http.api.<a href="io/servicetalk/http/api/ReservedStreamingHttpConnection.html" class="type-name-link" title="interface in io.servicetalk.http.api">ReservedStreamingHttpConnection</a> (also extends io.servicetalk.http.api.<a href="io/servicetalk/http/api/StreamingHttpConnection.html" title="interface in io.servicetalk.http.api">StreamingHttpConnection</a>)</li>
+<li class="circle">io.servicetalk.http.api.<a href="io/servicetalk/http/api/ReservedStreamingHttpConnection.html" class="type-name-link" title="interface in io.servicetalk.http.api">ReservedStreamingHttpConnection</a> (also extends io.servicetalk.http.api.<a href="io/servicetalk/http/api/StreamingHttpConnection.html" title="interface in io.servicetalk.http.api">StreamingHttpConnection</a>)
+<ul>
+<li class="circle">io.servicetalk.http.api.<a href="io/servicetalk/http/api/FilterableStreamingHttpLoadBalancedConnection.html" class="type-name-link" title="interface in io.servicetalk.http.api">FilterableStreamingHttpLoadBalancedConnection</a> (also extends io.servicetalk.http.api.<a href="io/servicetalk/http/api/FilterableStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">FilterableStreamingHttpConnection</a>, io.servicetalk.client.api.<a href="io/servicetalk/client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>)</li>
 </ul>
 </li>
-<li class="circle">io.servicetalk.http.api.<a href="io/servicetalk/http/api/FilterableStreamingHttpLoadBalancedConnection.html" class="type-name-link" title="interface in io.servicetalk.http.api">FilterableStreamingHttpLoadBalancedConnection</a> (also extends io.servicetalk.client.api.<a href="io/servicetalk/client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>)</li>
+</ul>
+</li>
+<li class="circle">io.servicetalk.http.api.<a href="io/servicetalk/http/api/FilterableStreamingHttpLoadBalancedConnection.html" class="type-name-link" title="interface in io.servicetalk.http.api">FilterableStreamingHttpLoadBalancedConnection</a> (also extends io.servicetalk.client.api.<a href="io/servicetalk/client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>, io.servicetalk.http.api.<a href="io/servicetalk/http/api/ReservedStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">ReservedStreamingHttpConnection</a>)</li>
 <li class="circle">io.servicetalk.http.api.<a href="io/servicetalk/http/api/StreamingHttpConnection.html" class="type-name-link" title="interface in io.servicetalk.http.api">StreamingHttpConnection</a> (also extends io.servicetalk.concurrent.<a href="io/servicetalk/concurrent/GracefulAutoCloseable.html" title="interface in io.servicetalk.concurrent">GracefulAutoCloseable</a>)
 <ul>
-<li class="circle">io.servicetalk.http.api.<a href="io/servicetalk/http/api/ReservedStreamingHttpConnection.html" class="type-name-link" title="interface in io.servicetalk.http.api">ReservedStreamingHttpConnection</a> (also extends io.servicetalk.http.api.<a href="io/servicetalk/http/api/FilterableReservedStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">FilterableReservedStreamingHttpConnection</a>)</li>
+<li class="circle">io.servicetalk.http.api.<a href="io/servicetalk/http/api/ReservedStreamingHttpConnection.html" class="type-name-link" title="interface in io.servicetalk.http.api">ReservedStreamingHttpConnection</a> (also extends io.servicetalk.http.api.<a href="io/servicetalk/http/api/FilterableReservedStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">FilterableReservedStreamingHttpConnection</a>)
+<ul>
+<li class="circle">io.servicetalk.http.api.<a href="io/servicetalk/http/api/FilterableStreamingHttpLoadBalancedConnection.html" class="type-name-link" title="interface in io.servicetalk.http.api">FilterableStreamingHttpLoadBalancedConnection</a> (also extends io.servicetalk.http.api.<a href="io/servicetalk/http/api/FilterableStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">FilterableStreamingHttpConnection</a>, io.servicetalk.client.api.<a href="io/servicetalk/client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>)</li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -888,7 +897,11 @@ loadScripts(document, 'script');</script>
 <li class="circle">io.servicetalk.http.api.<a href="io/servicetalk/http/api/StreamingHttpClient.html" class="type-name-link" title="interface in io.servicetalk.http.api">StreamingHttpClient</a> (also extends io.servicetalk.http.api.<a href="io/servicetalk/http/api/FilterableStreamingHttpClient.html" title="interface in io.servicetalk.http.api">FilterableStreamingHttpClient</a>)</li>
 <li class="circle">io.servicetalk.http.api.<a href="io/servicetalk/http/api/StreamingHttpConnection.html" class="type-name-link" title="interface in io.servicetalk.http.api">StreamingHttpConnection</a> (also extends io.servicetalk.http.api.<a href="io/servicetalk/http/api/FilterableStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">FilterableStreamingHttpConnection</a>)
 <ul>
-<li class="circle">io.servicetalk.http.api.<a href="io/servicetalk/http/api/ReservedStreamingHttpConnection.html" class="type-name-link" title="interface in io.servicetalk.http.api">ReservedStreamingHttpConnection</a> (also extends io.servicetalk.http.api.<a href="io/servicetalk/http/api/FilterableReservedStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">FilterableReservedStreamingHttpConnection</a>)</li>
+<li class="circle">io.servicetalk.http.api.<a href="io/servicetalk/http/api/ReservedStreamingHttpConnection.html" class="type-name-link" title="interface in io.servicetalk.http.api">ReservedStreamingHttpConnection</a> (also extends io.servicetalk.http.api.<a href="io/servicetalk/http/api/FilterableReservedStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">FilterableReservedStreamingHttpConnection</a>)
+<ul>
+<li class="circle">io.servicetalk.http.api.<a href="io/servicetalk/http/api/FilterableStreamingHttpLoadBalancedConnection.html" class="type-name-link" title="interface in io.servicetalk.http.api">FilterableStreamingHttpLoadBalancedConnection</a> (also extends io.servicetalk.http.api.<a href="io/servicetalk/http/api/FilterableStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">FilterableStreamingHttpConnection</a>, io.servicetalk.client.api.<a href="io/servicetalk/client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>)</li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -1337,6 +1350,19 @@ loadScripts(document, 'script');</script>
 <li class="circle">io.servicetalk.client.api.internal.<a href="io/servicetalk/client/api/internal/ReservableRequestConcurrencyController.html" class="type-name-link" title="interface in io.servicetalk.client.api.internal">ReservableRequestConcurrencyController</a></li>
 </ul>
 </li>
+<li class="circle">io.servicetalk.client.api.<a href="io/servicetalk/client/api/RequestConcurrencyController.html" class="type-name-link" title="interface in io.servicetalk.client.api">RequestConcurrencyController</a>
+<ul>
+<li class="circle">io.servicetalk.client.api.<a href="io/servicetalk/client/api/ReservableRequestConcurrencyController.html" class="type-name-link" title="interface in io.servicetalk.client.api">ReservableRequestConcurrencyController</a>
+<ul>
+<li class="circle">io.servicetalk.client.api.<a href="io/servicetalk/client/api/LoadBalancedConnection.html" class="type-name-link" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a> (also extends io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a>, io.servicetalk.client.api.<a href="io/servicetalk/client/api/ScoreSupplier.html" title="interface in io.servicetalk.client.api">ScoreSupplier</a>)
+<ul>
+<li class="circle">io.servicetalk.http.api.<a href="io/servicetalk/http/api/FilterableStreamingHttpLoadBalancedConnection.html" class="type-name-link" title="interface in io.servicetalk.http.api">FilterableStreamingHttpLoadBalancedConnection</a> (also extends io.servicetalk.http.api.<a href="io/servicetalk/http/api/FilterableStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">FilterableStreamingHttpConnection</a>, io.servicetalk.http.api.<a href="io/servicetalk/http/api/ReservedStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">ReservedStreamingHttpConnection</a>)</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
 <li class="circle">io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/RetryableException.html" class="type-name-link" title="interface in io.servicetalk.transport.api">RetryableException</a></li>
 <li class="circle">io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.DelayedRetry.html" class="type-name-link" title="interface in io.servicetalk.http.netty">RetryingHttpRequesterFilter.DelayedRetry</a></li>
 <li class="circle">io.servicetalk.http.router.predicate.dsl.<a href="io/servicetalk/http/router/predicate/dsl/RouteContinuation.html" class="type-name-link" title="interface in io.servicetalk.http.router.predicate.dsl">RouteContinuation</a></li>
@@ -1355,9 +1381,9 @@ loadScripts(document, 'script');</script>
 <li class="circle">io.servicetalk.client.api.<a href="io/servicetalk/client/api/ScoreSupplier.html" class="type-name-link" title="interface in io.servicetalk.client.api">ScoreSupplier</a>
 <ul>
 <li class="circle">io.servicetalk.client.api.<a href="io/servicetalk/client/api/LoadBalancedAddress.html" class="type-name-link" title="interface in io.servicetalk.client.api">LoadBalancedAddress</a>&lt;C&gt; (also extends io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a>)</li>
-<li class="circle">io.servicetalk.client.api.<a href="io/servicetalk/client/api/LoadBalancedConnection.html" class="type-name-link" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a> (also extends io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a>)
+<li class="circle">io.servicetalk.client.api.<a href="io/servicetalk/client/api/LoadBalancedConnection.html" class="type-name-link" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a> (also extends io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a>, io.servicetalk.client.api.<a href="io/servicetalk/client/api/ReservableRequestConcurrencyController.html" title="interface in io.servicetalk.client.api">ReservableRequestConcurrencyController</a>)
 <ul>
-<li class="circle">io.servicetalk.http.api.<a href="io/servicetalk/http/api/FilterableStreamingHttpLoadBalancedConnection.html" class="type-name-link" title="interface in io.servicetalk.http.api">FilterableStreamingHttpLoadBalancedConnection</a> (also extends io.servicetalk.http.api.<a href="io/servicetalk/http/api/FilterableStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">FilterableStreamingHttpConnection</a>)</li>
+<li class="circle">io.servicetalk.http.api.<a href="io/servicetalk/http/api/FilterableStreamingHttpLoadBalancedConnection.html" class="type-name-link" title="interface in io.servicetalk.http.api">FilterableStreamingHttpLoadBalancedConnection</a> (also extends io.servicetalk.http.api.<a href="io/servicetalk/http/api/FilterableStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">FilterableStreamingHttpConnection</a>, io.servicetalk.http.api.<a href="io/servicetalk/http/api/ReservedStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">ReservedStreamingHttpConnection</a>)</li>
 </ul>
 </li>
 </ul>
@@ -1444,13 +1470,21 @@ loadScripts(document, 'script');</script>
 <ul>
 <li class="circle">io.servicetalk.http.api.<a href="io/servicetalk/http/api/FilterableReservedStreamingHttpConnection.html" class="type-name-link" title="interface in io.servicetalk.http.api">FilterableReservedStreamingHttpConnection</a>
 <ul>
-<li class="circle">io.servicetalk.http.api.<a href="io/servicetalk/http/api/ReservedStreamingHttpConnection.html" class="type-name-link" title="interface in io.servicetalk.http.api">ReservedStreamingHttpConnection</a> (also extends io.servicetalk.http.api.<a href="io/servicetalk/http/api/StreamingHttpConnection.html" title="interface in io.servicetalk.http.api">StreamingHttpConnection</a>)</li>
+<li class="circle">io.servicetalk.http.api.<a href="io/servicetalk/http/api/ReservedStreamingHttpConnection.html" class="type-name-link" title="interface in io.servicetalk.http.api">ReservedStreamingHttpConnection</a> (also extends io.servicetalk.http.api.<a href="io/servicetalk/http/api/StreamingHttpConnection.html" title="interface in io.servicetalk.http.api">StreamingHttpConnection</a>)
+<ul>
+<li class="circle">io.servicetalk.http.api.<a href="io/servicetalk/http/api/FilterableStreamingHttpLoadBalancedConnection.html" class="type-name-link" title="interface in io.servicetalk.http.api">FilterableStreamingHttpLoadBalancedConnection</a> (also extends io.servicetalk.http.api.<a href="io/servicetalk/http/api/FilterableStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">FilterableStreamingHttpConnection</a>, io.servicetalk.client.api.<a href="io/servicetalk/client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>)</li>
 </ul>
 </li>
-<li class="circle">io.servicetalk.http.api.<a href="io/servicetalk/http/api/FilterableStreamingHttpLoadBalancedConnection.html" class="type-name-link" title="interface in io.servicetalk.http.api">FilterableStreamingHttpLoadBalancedConnection</a> (also extends io.servicetalk.client.api.<a href="io/servicetalk/client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>)</li>
+</ul>
+</li>
+<li class="circle">io.servicetalk.http.api.<a href="io/servicetalk/http/api/FilterableStreamingHttpLoadBalancedConnection.html" class="type-name-link" title="interface in io.servicetalk.http.api">FilterableStreamingHttpLoadBalancedConnection</a> (also extends io.servicetalk.client.api.<a href="io/servicetalk/client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>, io.servicetalk.http.api.<a href="io/servicetalk/http/api/ReservedStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">ReservedStreamingHttpConnection</a>)</li>
 <li class="circle">io.servicetalk.http.api.<a href="io/servicetalk/http/api/StreamingHttpConnection.html" class="type-name-link" title="interface in io.servicetalk.http.api">StreamingHttpConnection</a> (also extends io.servicetalk.concurrent.<a href="io/servicetalk/concurrent/GracefulAutoCloseable.html" title="interface in io.servicetalk.concurrent">GracefulAutoCloseable</a>)
 <ul>
-<li class="circle">io.servicetalk.http.api.<a href="io/servicetalk/http/api/ReservedStreamingHttpConnection.html" class="type-name-link" title="interface in io.servicetalk.http.api">ReservedStreamingHttpConnection</a> (also extends io.servicetalk.http.api.<a href="io/servicetalk/http/api/FilterableReservedStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">FilterableReservedStreamingHttpConnection</a>)</li>
+<li class="circle">io.servicetalk.http.api.<a href="io/servicetalk/http/api/ReservedStreamingHttpConnection.html" class="type-name-link" title="interface in io.servicetalk.http.api">ReservedStreamingHttpConnection</a> (also extends io.servicetalk.http.api.<a href="io/servicetalk/http/api/FilterableReservedStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">FilterableReservedStreamingHttpConnection</a>)
+<ul>
+<li class="circle">io.servicetalk.http.api.<a href="io/servicetalk/http/api/FilterableStreamingHttpLoadBalancedConnection.html" class="type-name-link" title="interface in io.servicetalk.http.api">FilterableStreamingHttpLoadBalancedConnection</a> (also extends io.servicetalk.http.api.<a href="io/servicetalk/http/api/FilterableStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">FilterableStreamingHttpConnection</a>, io.servicetalk.client.api.<a href="io/servicetalk/client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>)</li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -1542,6 +1576,7 @@ loadScripts(document, 'script');</script>
 <li class="circle">io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpSetCookie.SameSite.html" class="type-name-link" title="enum class in io.servicetalk.http.api">HttpSetCookie.SameSite</a></li>
 <li class="circle">io.servicetalk.logging.api.<a href="io/servicetalk/logging/api/LogLevel.html" class="type-name-link" title="enum class in io.servicetalk.logging.api">LogLevel</a></li>
 <li class="circle">io.servicetalk.client.api.internal.<a href="io/servicetalk/client/api/internal/RequestConcurrencyController.Result.html" class="type-name-link" title="enum class in io.servicetalk.client.api.internal">RequestConcurrencyController.Result</a></li>
+<li class="circle">io.servicetalk.client.api.<a href="io/servicetalk/client/api/RequestConcurrencyController.Result.html" class="type-name-link" title="enum class in io.servicetalk.client.api">RequestConcurrencyController.Result</a></li>
 <li class="circle">io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/SplittingFlushStrategy.FlushBoundaryProvider.FlushBoundary.html" class="type-name-link" title="enum class in io.servicetalk.transport.netty.internal">SplittingFlushStrategy.FlushBoundaryProvider.FlushBoundary</a></li>
 <li class="circle">io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/SslClientAuthMode.html" class="type-name-link" title="enum class in io.servicetalk.transport.api">SslClientAuthMode</a></li>
 <li class="circle">io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/SslProvider.html" class="type-name-link" title="enum class in io.servicetalk.transport.api">SslProvider</a></li>

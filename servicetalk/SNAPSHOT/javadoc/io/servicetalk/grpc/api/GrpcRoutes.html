@@ -102,7 +102,10 @@ loadScripts(document, 'script');</script>
 <div class="col-first even-row-color"><code>protected static interface&nbsp;</code></div>
 <div class="col-second even-row-color"><code><a href="GrpcRoutes.AllGrpcRoutes.html" class="type-name-link" title="interface in io.servicetalk.grpc.api">GrpcRoutes.AllGrpcRoutes</a></code></div>
 <div class="col-last even-row-color">
-<div class="block">A collection of route corresponding to the enclosing <a href="GrpcRoutes.html" title="class in io.servicetalk.grpc.api"><code>GrpcRoutes</code></a>.</div>
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">This class is not used starting from version 0.42.0 (see
+ <a href="https://github.com/apple/servicetalk/pull/1893">PR#1893</a>), we plan to remove it in future releases.</div>
+</div>
 </div>
 <div class="col-first odd-row-color"><code>protected static interface&nbsp;</code></div>
 <div class="col-second odd-row-color"><code><a href="GrpcRoutes.BlockingRequestStreamingRoute.html" class="type-name-link" title="interface in io.servicetalk.grpc.api">GrpcRoutes.BlockingRequestStreamingRoute</a>&lt;<a href="GrpcRoutes.BlockingRequestStreamingRoute.html" title="type parameter in GrpcRoutes.BlockingRequestStreamingRoute">Req</a>,<wbr><a href="GrpcRoutes.BlockingRequestStreamingRoute.html" title="type parameter in GrpcRoutes.BlockingRequestStreamingRoute">Resp</a>&gt;</code></div>
@@ -566,15 +569,21 @@ Resp&gt;&nbsp;void</code></div>
 <div class="deprecation-comment">Use <a href="#addStreamingRoute(java.lang.Class,io.servicetalk.grpc.api.MethodDescriptor,io.servicetalk.encoding.api.BufferDecoderGroup,java.util.List,io.servicetalk.grpc.api.GrpcRoutes.StreamingRoute)"><code>addStreamingRoute(Class, MethodDescriptor, BufferDecoderGroup, List, StreamingRoute)</code></a>.</div>
 </div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>protected abstract <a href="GrpcRoutes.html" title="type parameter in GrpcRoutes">Service</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#newServiceFromRoutes(io.servicetalk.grpc.api.GrpcRoutes.AllGrpcRoutes)" class="member-name-link">newServiceFromRoutes</a><wbr>(<a href="GrpcRoutes.AllGrpcRoutes.html" title="interface in io.servicetalk.grpc.api">GrpcRoutes.AllGrpcRoutes</a>&nbsp;routes)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
-<div class="block">Create a new <a href="GrpcRoutes.html" title="class in io.servicetalk.grpc.api"><code>GrpcRoutes</code></a> from the passed <a href="GrpcRoutes.AllGrpcRoutes.html" title="interface in io.servicetalk.grpc.api"><code>GrpcRoutes.AllGrpcRoutes</code></a>.</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code>protected abstract <a href="GrpcRoutes.html" title="type parameter in GrpcRoutes">Service</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code><a href="#newServiceFromRoutes(io.servicetalk.grpc.api.GrpcRoutes.AllGrpcRoutes)" class="member-name-link">newServiceFromRoutes</a><wbr>(<a href="GrpcRoutes.AllGrpcRoutes.html" title="interface in io.servicetalk.grpc.api">GrpcRoutes.AllGrpcRoutes</a>&nbsp;routes)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">This method is not used starting from version 0.42.0 (see
+ <a href="https://github.com/apple/servicetalk/pull/1893">PR#1893</a>), we plan to remove it in future releases.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>protected abstract void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#registerRoutes(Service)" class="member-name-link">registerRoutes</a><wbr>(<a href="GrpcRoutes.html" title="type parameter in GrpcRoutes">Service</a>&nbsp;service)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
-<div class="block">Register all routes contained in the passed <a href="GrpcRoutes.html" title="class in io.servicetalk.grpc.api"><code>GrpcRoutes</code></a>.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code>protected abstract void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code><a href="#registerRoutes(Service)" class="member-name-link">registerRoutes</a><wbr>(<a href="GrpcRoutes.html" title="type parameter in GrpcRoutes">Service</a>&nbsp;service)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">This method is not used starting from version 0.42.0 (see
+ <a href="https://github.com/apple/servicetalk/pull/1893">PR#1893</a>), we plan to remove it in future releases.</div>
+</div>
 </div>
 </div>
 </div>
@@ -625,7 +634,13 @@ Resp&gt;&nbsp;void</code></div>
 <li>
 <section class="detail" id="registerRoutes(Service)">
 <h3 id="registerRoutes(io.servicetalk.grpc.api.GrpcService)">registerRoutes</h3>
-<div class="member-signature"><span class="modifiers">protected abstract</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">registerRoutes</span><wbr><span class="parameters">(<a href="GrpcRoutes.html" title="type parameter in GrpcRoutes">Service</a>&nbsp;service)</span></div>
+<div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">protected abstract</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">registerRoutes</span><wbr><span class="parameters">(<a href="GrpcRoutes.html" title="type parameter in GrpcRoutes">Service</a>&nbsp;service)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">This method is not used starting from version 0.42.0 (see
+ <a href="https://github.com/apple/servicetalk/pull/1893">PR#1893</a>), we plan to remove it in future releases.
+ In case you have a use-case, let us know.</div>
+</div>
 <div class="block">Register all routes contained in the passed <a href="GrpcRoutes.html" title="class in io.servicetalk.grpc.api"><code>GrpcRoutes</code></a>.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
@@ -636,7 +651,13 @@ Resp&gt;&nbsp;void</code></div>
 <li>
 <section class="detail" id="newServiceFromRoutes(io.servicetalk.grpc.api.GrpcRoutes.AllGrpcRoutes)">
 <h3>newServiceFromRoutes</h3>
-<div class="member-signature"><span class="modifiers">protected abstract</span>&nbsp;<span class="return-type"><a href="GrpcRoutes.html" title="type parameter in GrpcRoutes">Service</a></span>&nbsp;<span class="element-name">newServiceFromRoutes</span><wbr><span class="parameters">(<a href="GrpcRoutes.AllGrpcRoutes.html" title="interface in io.servicetalk.grpc.api">GrpcRoutes.AllGrpcRoutes</a>&nbsp;routes)</span></div>
+<div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">protected abstract</span>&nbsp;<span class="return-type"><a href="GrpcRoutes.html" title="type parameter in GrpcRoutes">Service</a></span>&nbsp;<span class="element-name">newServiceFromRoutes</span><wbr><span class="parameters">(<a href="GrpcRoutes.AllGrpcRoutes.html" title="interface in io.servicetalk.grpc.api">GrpcRoutes.AllGrpcRoutes</a>&nbsp;routes)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">This method is not used starting from version 0.42.0 (see
+ <a href="https://github.com/apple/servicetalk/pull/1893">PR#1893</a>), we plan to remove it in future releases.
+ In case you have a use-case, let us know.</div>
+</div>
 <div class="block">Create a new <a href="GrpcRoutes.html" title="class in io.servicetalk.grpc.api"><code>GrpcRoutes</code></a> from the passed <a href="GrpcRoutes.AllGrpcRoutes.html" title="interface in io.servicetalk.grpc.api"><code>GrpcRoutes.AllGrpcRoutes</code></a>.</div>
 <dl class="notes">
 <dt>Parameters:</dt>

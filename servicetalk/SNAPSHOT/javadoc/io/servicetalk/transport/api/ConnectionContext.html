@@ -15,7 +15,11 @@
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
-<script type="text/javascript">var pathtoroot = "../../../../";
+<script type="text/javascript">var evenRowColor = "even-row-color";
+var oddRowColor = "odd-row-color";
+var tableTab = "table-tab";
+var activeTableTab = "active-table-tab";
+var pathtoroot = "../../../../";
 loadScripts(document, 'script');</script>
 <noscript>
 <div>JavaScript is disabled on your browser.</div>
@@ -49,7 +53,7 @@ loadScripts(document, 'script');</script>
 <li>Detail:&nbsp;</li>
 <li>Field&nbsp;|&nbsp;</li>
 <li>Constr&nbsp;|&nbsp;</li>
-<li>Method</li>
+<li><a href="#method-detail">Method</a></li>
 </ul>
 </div>
 <div class="nav-list-search"><label for="search-input">SEARCH:</label>
@@ -100,6 +104,21 @@ extends <a href="ConnectionInfo.html" title="interface in io.servicetalk.transpo
 <li>
 <section class="method-summary" id="method-summary">
 <h2>Method Summary</h2>
+<div id="method-summary-table">
+<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab5" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab5', 3)" class="table-tab">Default Methods</button></div>
+<div id="method-summary-table.tabpanel" role="tabpanel">
+<div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
+<div class="table-header col-first">Modifier and Type</div>
+<div class="table-header col-second">Method</div>
+<div class="table-header col-last">Description</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="ConnectionContext.html" title="interface in io.servicetalk.transport.api">ConnectionContext</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#parent()" class="member-name-link">parent</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
+<div class="block">Returns a reference to a parent <a href="ConnectionContext.html" title="interface in io.servicetalk.transport.api"><code>ConnectionContext</code></a> if any.</div>
+</div>
+</div>
+</div>
+</div>
 <div class="inherited-list">
 <h3 id="methods-inherited-from-class-io.servicetalk.concurrent.api.AsyncCloseable">Methods inherited from interface&nbsp;io.servicetalk.concurrent.api.<a href="../../concurrent/api/AsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">AsyncCloseable</a></h3>
 <code><a href="../../concurrent/api/AsyncCloseable.html#closeAsync()">closeAsync</a>, <a href="../../concurrent/api/AsyncCloseable.html#closeAsyncGracefully()">closeAsyncGracefully</a></code></div>
@@ -109,6 +128,33 @@ extends <a href="ConnectionInfo.html" title="interface in io.servicetalk.transpo
 <div class="inherited-list">
 <h3 id="methods-inherited-from-class-io.servicetalk.concurrent.api.ListenableAsyncCloseable">Methods inherited from interface&nbsp;io.servicetalk.concurrent.api.<a href="../../concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a></h3>
 <code><a href="../../concurrent/api/ListenableAsyncCloseable.html#onClose()">onClose</a></code></div>
+</section>
+</li>
+</ul>
+</section>
+<section class="details">
+<ul class="details-list">
+<!-- ============ METHOD DETAIL ========== -->
+<li>
+<section class="method-details" id="method-detail">
+<h2>Method Details</h2>
+<ul class="member-list">
+<li>
+<section class="detail" id="parent()">
+<h3>parent</h3>
+<div class="member-signature"><span class="annotations">@Nullable
+</span><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="ConnectionContext.html" title="interface in io.servicetalk.transport.api">ConnectionContext</a></span>&nbsp;<span class="element-name">parent</span>()</div>
+<div class="block">Returns a reference to a parent <a href="ConnectionContext.html" title="interface in io.servicetalk.transport.api"><code>ConnectionContext</code></a> if any.
+ <p>
+ This method is useful when multiple virtual streams are multiplexed over a single connection to get access to the
+ actual <a href="ConnectionContext.html" title="interface in io.servicetalk.transport.api"><code>ConnectionContext</code></a> that represents network.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>a reference to a parent <a href="ConnectionContext.html" title="interface in io.servicetalk.transport.api"><code>ConnectionContext</code></a> if any. Otherwise, returns <code>null</code>.</dd>
+</dl>
+</section>
+</li>
+</ul>
 </section>
 </li>
 </ul>

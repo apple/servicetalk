@@ -87,8 +87,14 @@ loadScripts(document, 'script');</script>
 <dd>This is a functional interface and can therefore be used as the assignment target for a lambda expression or method reference.</dd>
 </dl>
 <hr>
-<div class="type-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/FunctionalInterface.html" title="class or interface in java.lang" class="external-link">@FunctionalInterface</a>
+<div class="type-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/FunctionalInterface.html" title="class or interface in java.lang" class="external-link">@FunctionalInterface</a>
 </span><span class="modifiers">public static interface </span><span class="element-name type-name-label">DefaultPartitionedClientGroup.PartitionedClientFactory&lt;U,<wbr>R,<wbr>Client&gt;</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">We are unaware of anyone using "partition" feature and plan to remove it in future releases.
+ If you depend on it, consider using <a href="../ClientGroup.html" title="interface in io.servicetalk.client.api"><code>ClientGroup</code></a> as an alternative or reach out to the maintainers
+ describing the use-case.</div>
+</div>
 <div class="block">Factory for building partitioned clients.</div>
 </section>
 <section class="summary">
@@ -98,16 +104,17 @@ loadScripts(document, 'script');</script>
 <section class="method-summary" id="method-summary">
 <h2>Method Summary</h2>
 <div id="method-summary-table">
-<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab3" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab3', 3)" class="table-tab">Abstract Methods</button></div>
+<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab3" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab3', 3)" class="table-tab">Abstract Methods</button><button id="method-summary-table-tab6" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab6', 3)" class="table-tab">Deprecated Methods</button></div>
 <div id="method-summary-table.tabpanel" role="tabpanel">
 <div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="DefaultPartitionedClientGroup.PartitionedClientFactory.html" title="type parameter in DefaultPartitionedClientGroup.PartitionedClientFactory">Client</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#apply(io.servicetalk.client.api.partition.PartitionAttributes,io.servicetalk.client.api.ServiceDiscoverer)" class="member-name-link">apply</a><wbr>(<a href="../partition/PartitionAttributes.html" title="interface in io.servicetalk.client.api.partition">PartitionAttributes</a>&nbsp;pa,
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code><a href="DefaultPartitionedClientGroup.PartitionedClientFactory.html" title="type parameter in DefaultPartitionedClientGroup.PartitionedClientFactory">Client</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code><a href="#apply(io.servicetalk.client.api.partition.PartitionAttributes,io.servicetalk.client.api.ServiceDiscoverer)" class="member-name-link">apply</a><wbr>(<a href="../partition/PartitionAttributes.html" title="interface in io.servicetalk.client.api.partition">PartitionAttributes</a>&nbsp;pa,
  <a href="../ServiceDiscoverer.html" title="interface in io.servicetalk.client.api">ServiceDiscoverer</a>&lt;<a href="DefaultPartitionedClientGroup.PartitionedClientFactory.html" title="type parameter in DefaultPartitionedClientGroup.PartitionedClientFactory">U</a>,<wbr><a href="DefaultPartitionedClientGroup.PartitionedClientFactory.html" title="type parameter in DefaultPartitionedClientGroup.PartitionedClientFactory">R</a>,<wbr><a href="../ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;<a href="DefaultPartitionedClientGroup.PartitionedClientFactory.html" title="type parameter in DefaultPartitionedClientGroup.PartitionedClientFactory">R</a>&gt;&gt;&nbsp;psd)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Create a partitioned client.</div>
 </div>
 </div>
@@ -129,6 +136,7 @@ loadScripts(document, 'script');</script>
 <h3>apply</h3>
 <div class="member-signature"><span class="return-type"><a href="DefaultPartitionedClientGroup.PartitionedClientFactory.html" title="type parameter in DefaultPartitionedClientGroup.PartitionedClientFactory">Client</a></span>&nbsp;<span class="element-name">apply</span><wbr><span class="parameters">(<a href="../partition/PartitionAttributes.html" title="interface in io.servicetalk.client.api.partition">PartitionAttributes</a>&nbsp;pa,
  <a href="../ServiceDiscoverer.html" title="interface in io.servicetalk.client.api">ServiceDiscoverer</a>&lt;<a href="DefaultPartitionedClientGroup.PartitionedClientFactory.html" title="type parameter in DefaultPartitionedClientGroup.PartitionedClientFactory">U</a>,<wbr><a href="DefaultPartitionedClientGroup.PartitionedClientFactory.html" title="type parameter in DefaultPartitionedClientGroup.PartitionedClientFactory">R</a>,<wbr><a href="../ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;<a href="DefaultPartitionedClientGroup.PartitionedClientFactory.html" title="type parameter in DefaultPartitionedClientGroup.PartitionedClientFactory">R</a>&gt;&gt;&nbsp;psd)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Create a partitioned client.</div>
 <dl class="notes">
 <dt>Parameters:</dt>

@@ -84,9 +84,14 @@ loadScripts(document, 'script');</script>
 <dd><code><a href="../ConsumableEvent.html" title="interface in io.servicetalk.client.api">ConsumableEvent</a>&lt;T&gt;</code></dd>
 </dl>
 <hr>
-<div class="type-signature"><span class="modifiers">public final class </span><span class="element-name type-name-label">IgnoreConsumedEvent&lt;T&gt;</span>
+<div class="type-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">public final class </span><span class="element-name type-name-label">IgnoreConsumedEvent&lt;T&gt;</span>
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>
 implements <a href="../ConsumableEvent.html" title="interface in io.servicetalk.client.api">ConsumableEvent</a>&lt;T&gt;</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">This class is not used by ServiceTalk internal code anymore and will be removed in the future releases.
+ If you depend on it, consider replica ting this implementation in your codebase.</div>
+</div>
 <div class="block">A <a href="../ConsumableEvent.html" title="interface in io.servicetalk.client.api"><code>ConsumableEvent</code></a> which ignores <a href="#eventConsumed()"><code>eventConsumed()</code></a>.</div>
 </section>
 <section class="summary">
@@ -101,6 +106,7 @@ implements <a href="../ConsumableEvent.html" title="interface in io.servicetalk.
 <div class="table-header col-last">Description</div>
 <div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(T)" class="member-name-link">IgnoreConsumedEvent</a><wbr>(<a href="IgnoreConsumedEvent.html" title="type parameter in IgnoreConsumedEvent">T</a>&nbsp;event)</code></div>
 <div class="col-last even-row-color">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Create a new instance.</div>
 </div>
 </div>
@@ -111,20 +117,22 @@ implements <a href="../ConsumableEvent.html" title="interface in io.servicetalk.
 <section class="method-summary" id="method-summary">
 <h2>Method Summary</h2>
 <div id="method-summary-table">
-<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button></div>
+<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button><button id="method-summary-table-tab6" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab6', 3)" class="table-tab">Deprecated Methods</button></div>
 <div id="method-summary-table.tabpanel" role="tabpanel">
 <div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="IgnoreConsumedEvent.html" title="type parameter in IgnoreConsumedEvent">T</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#event()" class="member-name-link">event</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="IgnoreConsumedEvent.html" title="type parameter in IgnoreConsumedEvent">T</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#event()" class="member-name-link">event</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Get the event.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#eventConsumed()" class="member-name-link">eventConsumed</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code>void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#eventConsumed()" class="member-name-link">eventConsumed</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Signify the <a href="../ConsumableEvent.html#event()"><code>ConsumableEvent.event()</code></a> has been consumed and any side effects have taken place.</div>
 </div>
 </div>
@@ -148,6 +156,7 @@ implements <a href="../ConsumableEvent.html" title="interface in io.servicetalk.
 <section class="detail" id="&lt;init&gt;(T)">
 <h3 id="&lt;init&gt;(java.lang.Object)">IgnoreConsumedEvent</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">IgnoreConsumedEvent</span><wbr><span class="parameters">(<a href="IgnoreConsumedEvent.html" title="type parameter in IgnoreConsumedEvent">T</a>&nbsp;event)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Create a new instance.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
@@ -167,6 +176,7 @@ implements <a href="../ConsumableEvent.html" title="interface in io.servicetalk.
 <section class="detail" id="event()">
 <h3>event</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="IgnoreConsumedEvent.html" title="type parameter in IgnoreConsumedEvent">T</a></span>&nbsp;<span class="element-name">event</span>()</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="../ConsumableEvent.html#event()">ConsumableEvent</a></code></span></div>
 <div class="block">Get the event.</div>
 <dl class="notes">
@@ -181,6 +191,7 @@ implements <a href="../ConsumableEvent.html" title="interface in io.servicetalk.
 <section class="detail" id="eventConsumed()">
 <h3>eventConsumed</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">eventConsumed</span>()</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="../ConsumableEvent.html#eventConsumed()">ConsumableEvent</a></code></span></div>
 <div class="block">Signify the <a href="../ConsumableEvent.html#event()"><code>ConsumableEvent.event()</code></a> has been consumed and any side effects have taken place.</div>
 <dl class="notes">

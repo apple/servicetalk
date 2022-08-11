@@ -86,9 +86,15 @@ loadScripts(document, 'script');</script>
 <dd><code><a href="../ClientGroup.html" title="interface in io.servicetalk.client.api">ClientGroup</a>&lt;<a href="../partition/PartitionAttributes.html" title="interface in io.servicetalk.client.api.partition">PartitionAttributes</a>,<wbr>Client&gt;</code>, <code><a href="../../../concurrent/api/AsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">AsyncCloseable</a></code>, <code><a href="../../../concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a></code></dd>
 </dl>
 <hr>
-<div class="type-signature"><span class="modifiers">public final class </span><span class="element-name type-name-label">DefaultPartitionedClientGroup&lt;U,<wbr>R,<wbr>Client extends <a href="../../../concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a>&gt;</span>
+<div class="type-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">public final class </span><span class="element-name type-name-label">DefaultPartitionedClientGroup&lt;U,<wbr>R,<wbr>Client extends <a href="../../../concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a>&gt;</span>
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>
 implements <a href="../ClientGroup.html" title="interface in io.servicetalk.client.api">ClientGroup</a>&lt;<a href="../partition/PartitionAttributes.html" title="interface in io.servicetalk.client.api.partition">PartitionAttributes</a>,<wbr>Client&gt;</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">We are unaware of anyone using "partition" feature and plan to remove it in future releases.
+ If you depend on it, consider using <a href="../ClientGroup.html" title="interface in io.servicetalk.client.api"><code>ClientGroup</code></a> as an alternative or reach out to the maintainers describing
+ the use-case.</div>
+</div>
 <div class="block">An implementation of <a href="../ClientGroup.html" title="interface in io.servicetalk.client.api"><code>ClientGroup</code></a> that can be used for partitioned client use-cases where <a href="../partition/PartitionAttributes.html" title="interface in io.servicetalk.client.api.partition"><code>PartitionAttributes</code></a> are discovered through <a href="../partition/PartitionedServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api.partition"><code>PartitionedServiceDiscovererEvent</code></a>s.</div>
 </section>
 <section class="summary">
@@ -105,7 +111,9 @@ implements <a href="../ClientGroup.html" title="interface in io.servicetalk.clie
 <div class="col-first even-row-color"><code>static interface&nbsp;</code></div>
 <div class="col-second even-row-color"><code><a href="DefaultPartitionedClientGroup.PartitionedClientFactory.html" class="type-name-link" title="interface in io.servicetalk.client.api.internal">DefaultPartitionedClientGroup.PartitionedClientFactory</a>&lt;<a href="DefaultPartitionedClientGroup.PartitionedClientFactory.html" title="type parameter in DefaultPartitionedClientGroup.PartitionedClientFactory">U</a>,<wbr><a href="DefaultPartitionedClientGroup.PartitionedClientFactory.html" title="type parameter in DefaultPartitionedClientGroup.PartitionedClientFactory">R</a>,<wbr><a href="DefaultPartitionedClientGroup.PartitionedClientFactory.html" title="type parameter in DefaultPartitionedClientGroup.PartitionedClientFactory">Client</a>&gt;</code></div>
 <div class="col-last even-row-color">
-<div class="block">Factory for building partitioned clients.</div>
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">We are unaware of anyone using "partition" feature and plan to remove it in future releases.</div>
+</div>
 </div>
 </div>
 </section>
@@ -125,6 +133,7 @@ implements <a href="../ClientGroup.html" title="interface in io.servicetalk.clie
  <a href="../../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="../partition/PartitionedServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api.partition">PartitionedServiceDiscovererEvent</a>&lt;<a href="DefaultPartitionedClientGroup.html" title="type parameter in DefaultPartitionedClientGroup">R</a>&gt;&gt;&nbsp;psdEvents,
  int&nbsp;psdMaxQueueSize)</code></div>
 <div class="col-last even-row-color">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Creates a new instance.</div>
 </div>
 </div>
@@ -135,31 +144,35 @@ implements <a href="../ClientGroup.html" title="interface in io.servicetalk.clie
 <section class="method-summary" id="method-summary">
 <h2>Method Summary</h2>
 <div id="method-summary-table">
-<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button></div>
+<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button><button id="method-summary-table-tab6" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab6', 3)" class="table-tab">Deprecated Methods</button></div>
 <div id="method-summary-table.tabpanel" role="tabpanel">
 <div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#closeAsync()" class="member-name-link">closeAsync</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="../../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#closeAsync()" class="member-name-link">closeAsync</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Used to close/shutdown a resource.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#closeAsyncGracefully()" class="member-name-link">closeAsyncGracefully</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="../../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#closeAsyncGracefully()" class="member-name-link">closeAsyncGracefully</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Used to close/shutdown a resource, similar to <a href="../../../concurrent/api/AsyncCloseable.html#closeAsync()"><code>AsyncCloseable.closeAsync()</code></a>, but attempts to cleanup state before
  abruptly closing.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="DefaultPartitionedClientGroup.html" title="type parameter in DefaultPartitionedClientGroup">Client</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#get(io.servicetalk.client.api.partition.PartitionAttributes)" class="member-name-link">get</a><wbr>(<a href="../partition/PartitionAttributes.html" title="interface in io.servicetalk.client.api.partition">PartitionAttributes</a>&nbsp;partitionAttributes)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="DefaultPartitionedClientGroup.html" title="type parameter in DefaultPartitionedClientGroup">Client</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#get(io.servicetalk.client.api.partition.PartitionAttributes)" class="member-name-link">get</a><wbr>(<a href="../partition/PartitionAttributes.html" title="interface in io.servicetalk.client.api.partition">PartitionAttributes</a>&nbsp;partitionAttributes)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Return the <a href="../ClientGroup.html" title="interface in io.servicetalk.client.api"><code>ClientGroup</code></a> identified by the provided <code>key</code> or create a new one when none exists.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onClose()" class="member-name-link">onClose</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="../../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#onClose()" class="member-name-link">onClose</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Returns a <a href="../../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that is notified once the <a href="../../../concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api"><code>ListenableAsyncCloseable</code></a> was closed.</div>
 </div>
 </div>
@@ -188,6 +201,7 @@ implements <a href="../ClientGroup.html" title="interface in io.servicetalk.clie
  <a href="../partition/PartitionMapFactory.html" title="interface in io.servicetalk.client.api.partition">PartitionMapFactory</a>&nbsp;partitionMapFactory,
  <a href="../../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="../partition/PartitionedServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api.partition">PartitionedServiceDiscovererEvent</a>&lt;<a href="DefaultPartitionedClientGroup.html" title="type parameter in DefaultPartitionedClientGroup">R</a>&gt;&gt;&nbsp;psdEvents,
  int&nbsp;psdMaxQueueSize)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Creates a new instance.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
@@ -212,6 +226,7 @@ implements <a href="../ClientGroup.html" title="interface in io.servicetalk.clie
 <section class="detail" id="onClose()">
 <h3>onClose</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="../../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></span>&nbsp;<span class="element-name">onClose</span>()</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="../../../concurrent/api/ListenableAsyncCloseable.html#onClose()">ListenableAsyncCloseable</a></code></span></div>
 <div class="block">Returns a <a href="../../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that is notified once the <a href="../../../concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api"><code>ListenableAsyncCloseable</code></a> was closed.</div>
 <dl class="notes">
@@ -226,6 +241,7 @@ implements <a href="../ClientGroup.html" title="interface in io.servicetalk.clie
 <section class="detail" id="closeAsync()">
 <h3>closeAsync</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="../../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></span>&nbsp;<span class="element-name">closeAsync</span>()</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="../../../concurrent/api/AsyncCloseable.html#closeAsync()">AsyncCloseable</a></code></span></div>
 <div class="block">Used to close/shutdown a resource.</div>
 <dl class="notes">
@@ -240,6 +256,7 @@ implements <a href="../ClientGroup.html" title="interface in io.servicetalk.clie
 <section class="detail" id="closeAsyncGracefully()">
 <h3>closeAsyncGracefully</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="../../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></span>&nbsp;<span class="element-name">closeAsyncGracefully</span>()</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="../../../concurrent/api/AsyncCloseable.html#closeAsyncGracefully()">AsyncCloseable</a></code></span></div>
 <div class="block">Used to close/shutdown a resource, similar to <a href="../../../concurrent/api/AsyncCloseable.html#closeAsync()"><code>AsyncCloseable.closeAsync()</code></a>, but attempts to cleanup state before
  abruptly closing. This provides a hint that implementations can use to stop accepting new work and finish in
@@ -260,6 +277,7 @@ implements <a href="../ClientGroup.html" title="interface in io.servicetalk.clie
 <section class="detail" id="get(io.servicetalk.client.api.partition.PartitionAttributes)">
 <h3>get</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="DefaultPartitionedClientGroup.html" title="type parameter in DefaultPartitionedClientGroup">Client</a></span>&nbsp;<span class="element-name">get</span><wbr><span class="parameters">(<a href="../partition/PartitionAttributes.html" title="interface in io.servicetalk.client.api.partition">PartitionAttributes</a>&nbsp;partitionAttributes)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="../ClientGroup.html#get(Key)">ClientGroup</a></code></span></div>
 <div class="block">Return the <a href="../ClientGroup.html" title="interface in io.servicetalk.client.api"><code>ClientGroup</code></a> identified by the provided <code>key</code> or create a new one when none exists.</div>
 <dl class="notes">

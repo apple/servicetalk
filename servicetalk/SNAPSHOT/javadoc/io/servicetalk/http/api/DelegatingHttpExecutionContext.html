@@ -119,19 +119,24 @@ implements <a href="HttpExecutionContext.html" title="interface in io.servicetal
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Return the <a href="../../buffer/api/BufferAllocator.html" title="interface in io.servicetalk.buffer.api"><code>BufferAllocator</code></a> that can be used to allocate <a href="../../buffer/api/Buffer.html" title="interface in io.servicetalk.buffer.api"><code>Buffer</code></a>s if needed.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategy</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#executionStrategy()" class="member-name-link">executionStrategy</a>()</code></div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>protected final <a href="HttpExecutionContext.html" title="interface in io.servicetalk.http.api">HttpExecutionContext</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#delegate()" class="member-name-link">delegate</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Get the <a href="HttpExecutionContext.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionContext</code></a> that this class delegates to.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategy</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#executionStrategy()" class="member-name-link">executionStrategy</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns the <a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> associated with this context.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#executor()" class="member-name-link">executor</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#executor()" class="member-name-link">executor</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Get the <a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> that is used to create any asynchronous sources.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../../transport/api/IoExecutor.html" title="interface in io.servicetalk.transport.api">IoExecutor</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#ioExecutor()" class="member-name-link">ioExecutor</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../../transport/api/IoExecutor.html" title="interface in io.servicetalk.transport.api">IoExecutor</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#ioExecutor()" class="member-name-link">ioExecutor</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Get the <a href="../../transport/api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a> that is used to handle the I/O.</div>
 </div>
 </div>
@@ -170,6 +175,17 @@ implements <a href="HttpExecutionContext.html" title="interface in io.servicetal
 <section class="method-details" id="method-detail">
 <h2>Method Details</h2>
 <ul class="member-list">
+<li>
+<section class="detail" id="delegate()">
+<h3>delegate</h3>
+<div class="member-signature"><span class="modifiers">protected final</span>&nbsp;<span class="return-type"><a href="HttpExecutionContext.html" title="interface in io.servicetalk.http.api">HttpExecutionContext</a></span>&nbsp;<span class="element-name">delegate</span>()</div>
+<div class="block">Get the <a href="HttpExecutionContext.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionContext</code></a> that this class delegates to.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>the <a href="HttpExecutionContext.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionContext</code></a> that this class delegates to.</dd>
+</dl>
+</section>
+</li>
 <li>
 <section class="detail" id="executionStrategy()">
 <h3>executionStrategy</h3>

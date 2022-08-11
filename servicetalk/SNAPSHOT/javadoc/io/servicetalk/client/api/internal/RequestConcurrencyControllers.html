@@ -76,8 +76,13 @@ loadScripts(document, 'script');</script>
 </div>
 <section class="class-description" id="class-description">
 <hr>
-<div class="type-signature"><span class="modifiers">public final class </span><span class="element-name type-name-label">RequestConcurrencyControllers</span>
+<div class="type-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">public final class </span><span class="element-name type-name-label">RequestConcurrencyControllers</span>
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">This class is not used by ServiceTalk internal code anymore and will be removed in the future releases.
+ If you depend on it, consider replicating this implementation in your codebase.</div>
+</div>
 <div class="block">Factory for common <a href="RequestConcurrencyController.html" title="interface in io.servicetalk.client.api.internal"><code>RequestConcurrencyController</code></a>s.</div>
 </section>
 <section class="summary">
@@ -87,23 +92,25 @@ loadScripts(document, 'script');</script>
 <section class="method-summary" id="method-summary">
 <h2>Method Summary</h2>
 <div id="method-summary-table">
-<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab1" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab1', 3)" class="table-tab">Static Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button></div>
+<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab1" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab1', 3)" class="table-tab">Static Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button><button id="method-summary-table-tab6" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab6', 3)" class="table-tab">Deprecated Methods</button></div>
 <div id="method-summary-table.tabpanel" role="tabpanel">
 <div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="RequestConcurrencyController.html" title="interface in io.servicetalk.client.api.internal">RequestConcurrencyController</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#newController(io.servicetalk.concurrent.api.Publisher,io.servicetalk.concurrent.api.Completable,int)" class="member-name-link">newController</a><wbr>(<a href="../../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;? extends <a href="../ConsumableEvent.html" title="interface in io.servicetalk.client.api">ConsumableEvent</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&gt;&gt;&nbsp;maxConcurrency,
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code>static <a href="RequestConcurrencyController.html" title="interface in io.servicetalk.client.api.internal">RequestConcurrencyController</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#newController(io.servicetalk.concurrent.api.Publisher,io.servicetalk.concurrent.api.Completable,int)" class="member-name-link">newController</a><wbr>(<a href="../../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;? extends <a href="../ConsumableEvent.html" title="interface in io.servicetalk.client.api">ConsumableEvent</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&gt;&gt;&nbsp;maxConcurrency,
  <a href="../../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>&nbsp;onClosing,
  int&nbsp;initialMaxConcurrency)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Create a new instance of <a href="RequestConcurrencyController.html" title="interface in io.servicetalk.client.api.internal"><code>RequestConcurrencyController</code></a>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="RequestConcurrencyController.html" title="interface in io.servicetalk.client.api.internal">RequestConcurrencyController</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#newSingleController(io.servicetalk.concurrent.api.Publisher,io.servicetalk.concurrent.api.Completable)" class="member-name-link">newSingleController</a><wbr>(<a href="../../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;? extends <a href="../ConsumableEvent.html" title="interface in io.servicetalk.client.api">ConsumableEvent</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&gt;&gt;&nbsp;maxConcurrency,
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code>static <a href="RequestConcurrencyController.html" title="interface in io.servicetalk.client.api.internal">RequestConcurrencyController</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#newSingleController(io.servicetalk.concurrent.api.Publisher,io.servicetalk.concurrent.api.Completable)" class="member-name-link">newSingleController</a><wbr>(<a href="../../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;? extends <a href="../ConsumableEvent.html" title="interface in io.servicetalk.client.api">ConsumableEvent</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&gt;&gt;&nbsp;maxConcurrency,
  <a href="../../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>&nbsp;onClosing)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Create a <a href="RequestConcurrencyController.html" title="interface in io.servicetalk.client.api.internal"><code>RequestConcurrencyController</code></a> that only allows a single outstanding request.</div>
 </div>
 </div>
@@ -129,6 +136,7 @@ loadScripts(document, 'script');</script>
 <div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="RequestConcurrencyController.html" title="interface in io.servicetalk.client.api.internal">RequestConcurrencyController</a></span>&nbsp;<span class="element-name">newController</span><wbr><span class="parameters">(<a href="../../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;? extends <a href="../ConsumableEvent.html" title="interface in io.servicetalk.client.api">ConsumableEvent</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&gt;&gt;&nbsp;maxConcurrency,
  <a href="../../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>&nbsp;onClosing,
  int&nbsp;initialMaxConcurrency)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Create a new instance of <a href="RequestConcurrencyController.html" title="interface in io.servicetalk.client.api.internal"><code>RequestConcurrencyController</code></a>.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
@@ -147,6 +155,7 @@ loadScripts(document, 'script');</script>
 <h3>newSingleController</h3>
 <div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="RequestConcurrencyController.html" title="interface in io.servicetalk.client.api.internal">RequestConcurrencyController</a></span>&nbsp;<span class="element-name">newSingleController</span><wbr><span class="parameters">(<a href="../../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;? extends <a href="../ConsumableEvent.html" title="interface in io.servicetalk.client.api">ConsumableEvent</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html" title="class or interface in java.lang" class="external-link">Integer</a>&gt;&gt;&nbsp;maxConcurrency,
  <a href="../../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a>&nbsp;onClosing)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Create a <a href="RequestConcurrencyController.html" title="interface in io.servicetalk.client.api.internal"><code>RequestConcurrencyController</code></a> that only allows a single outstanding request. Even
  if <code>maxConcurrencySetting</code> increases beyond <code>1</code> only a single
  <a href="RequestConcurrencyController.html#tryRequest()"><code>RequestConcurrencyController.tryRequest()</code></a> will succeed at any given time. The initial value is assumed

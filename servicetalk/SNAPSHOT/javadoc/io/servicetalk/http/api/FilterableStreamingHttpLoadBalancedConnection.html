@@ -15,7 +15,11 @@
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
-<script type="text/javascript">var pathtoroot = "../../../../";
+<script type="text/javascript">var evenRowColor = "even-row-color";
+var oddRowColor = "odd-row-color";
+var tableTab = "table-tab";
+var activeTableTab = "active-table-tab";
+var pathtoroot = "../../../../";
 loadScripts(document, 'script');</script>
 <noscript>
 <div>JavaScript is disabled on your browser.</div>
@@ -40,7 +44,7 @@ loadScripts(document, 'script');</script>
 <div>
 <ul class="sub-nav-list">
 <li>Summary:&nbsp;</li>
-<li>Nested&nbsp;|&nbsp;</li>
+<li><a href="#nested-class-summary">Nested</a>&nbsp;|&nbsp;</li>
 <li>Field&nbsp;|&nbsp;</li>
 <li>Constr&nbsp;|&nbsp;</li>
 <li><a href="#method-summary">Method</a></li>
@@ -49,7 +53,7 @@ loadScripts(document, 'script');</script>
 <li>Detail:&nbsp;</li>
 <li>Field&nbsp;|&nbsp;</li>
 <li>Constr&nbsp;|&nbsp;</li>
-<li>Method</li>
+<li><a href="#method-detail">Method</a></li>
 </ul>
 </div>
 <div class="nav-list-search"><label for="search-input">SEARCH:</label>
@@ -70,19 +74,62 @@ loadScripts(document, 'script');</script>
 <section class="class-description" id="class-description">
 <dl class="notes">
 <dt>All Superinterfaces:</dt>
-<dd><code><a href="../../concurrent/api/AsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">AsyncCloseable</a></code>, <code><a href="FilterableStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">FilterableStreamingHttpConnection</a></code>, <code><a href="../../concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a></code>, <code><a href="../../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a></code>, <code><a href="../../client/api/ScoreSupplier.html" title="interface in io.servicetalk.client.api">ScoreSupplier</a></code>, <code><a href="StreamingHttpRequester.html" title="interface in io.servicetalk.http.api">StreamingHttpRequester</a></code>, <code><a href="StreamingHttpRequestFactory.html" title="interface in io.servicetalk.http.api">StreamingHttpRequestFactory</a></code></dd>
+<dd><code><a href="../../concurrent/api/AsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">AsyncCloseable</a></code>, <code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/AutoCloseable.html" title="class or interface in java.lang" class="external-link">AutoCloseable</a></code>, <code><a href="FilterableReservedStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">FilterableReservedStreamingHttpConnection</a></code>, <code><a href="FilterableStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">FilterableStreamingHttpConnection</a></code>, <code><a href="../../concurrent/GracefulAutoCloseable.html" title="interface in io.servicetalk.concurrent">GracefulAutoCloseable</a></code>, <code><a href="../../concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a></code>, <code><a href="../../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a></code>, <code><a href="../../client/api/RequestConcurrencyController.html" title="interface in io.servicetalk.client.api">RequestConcurrencyController</a></code>, <code><a href="../../client/api/ReservableRequestConcurrencyController.html" title="interface in io.servicetalk.client.api">ReservableRequestConcurrencyController</a></code>, <code><a href="ReservedStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">ReservedStreamingHttpConnection</a></code>, <code><a href="../../client/api/ScoreSupplier.html" title="interface in io.servicetalk.client.api">ScoreSupplier</a></code>, <code><a href="StreamingHttpConnection.html" title="interface in io.servicetalk.http.api">StreamingHttpConnection</a></code>, <code><a href="StreamingHttpRequester.html" title="interface in io.servicetalk.http.api">StreamingHttpRequester</a></code>, <code><a href="StreamingHttpRequestFactory.html" title="interface in io.servicetalk.http.api">StreamingHttpRequestFactory</a></code></dd>
+</dl>
+<dl class="notes">
+<dt>All Known Implementing Classes:</dt>
+<dd><code><a href="HttpLoadBalancerFactory.DefaultFilterableStreamingHttpLoadBalancedConnection.html" title="class in io.servicetalk.http.api">HttpLoadBalancerFactory.DefaultFilterableStreamingHttpLoadBalancedConnection</a></code></dd>
 </dl>
 <hr>
 <div class="type-signature"><span class="modifiers">public interface </span><span class="element-name type-name-label">FilterableStreamingHttpLoadBalancedConnection</span><span class="extends-implements">
-extends <a href="FilterableStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">FilterableStreamingHttpConnection</a>, <a href="../../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a></span></div>
+extends <a href="FilterableStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">FilterableStreamingHttpConnection</a>, <a href="../../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>, <a href="ReservedStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">ReservedStreamingHttpConnection</a></span></div>
 <div class="block">A <a href="FilterableStreamingHttpConnection.html" title="interface in io.servicetalk.http.api"><code>FilterableStreamingHttpConnection</code></a> that supported filtering and implements the <a href="../../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api"><code>LoadBalancedConnection</code></a> contract.</div>
 </section>
 <section class="summary">
 <ul class="summary-list">
+<!-- ======== NESTED CLASS SUMMARY ======== -->
+<li>
+<section class="nested-class-summary" id="nested-class-summary">
+<h2>Nested Class Summary</h2>
+<div class="inherited-list">
+<h2 id="nested-classes-inherited-from-class-io.servicetalk.client.api.RequestConcurrencyController">Nested classes/interfaces inherited from interface&nbsp;io.servicetalk.client.api.<a href="../../client/api/RequestConcurrencyController.html" title="interface in io.servicetalk.client.api">RequestConcurrencyController</a></h2>
+<code><a href="../../client/api/RequestConcurrencyController.Result.html" title="enum class in io.servicetalk.client.api">RequestConcurrencyController.Result</a></code></div>
+</section>
+</li>
 <!-- ========== METHOD SUMMARY =========== -->
 <li>
 <section class="method-summary" id="method-summary">
 <h2>Method Summary</h2>
+<div id="method-summary-table">
+<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab5" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab5', 3)" class="table-tab">Default Methods</button></div>
+<div id="method-summary-table.tabpanel" role="tabpanel">
+<div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
+<div class="table-header col-first">Modifier and Type</div>
+<div class="table-header col-second">Method</div>
+<div class="table-header col-last">Description</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="ReservedBlockingHttpConnection.html" title="interface in io.servicetalk.http.api">ReservedBlockingHttpConnection</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#asBlockingConnection()" class="member-name-link">asBlockingConnection</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
+<div class="block">Convert this <a href="StreamingHttpConnection.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpConnection</code></a> to the <a href="BlockingHttpConnection.html" title="interface in io.servicetalk.http.api"><code>BlockingHttpConnection</code></a> API.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="ReservedBlockingStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">ReservedBlockingStreamingHttpConnection</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#asBlockingStreamingConnection()" class="member-name-link">asBlockingStreamingConnection</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
+<div class="block">Convert this <a href="StreamingHttpConnection.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpConnection</code></a> to the <a href="BlockingStreamingHttpConnection.html" title="interface in io.servicetalk.http.api"><code>BlockingStreamingHttpConnection</code></a> API.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="ReservedHttpConnection.html" title="interface in io.servicetalk.http.api">ReservedHttpConnection</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#asConnection()" class="member-name-link">asConnection</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
+<div class="block">Convert this <a href="StreamingHttpConnection.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpConnection</code></a> to the <a href="HttpConnection.html" title="interface in io.servicetalk.http.api"><code>HttpConnection</code></a> API.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#releaseAsync()" class="member-name-link">releaseAsync</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
+<div class="block">Must be called (and subscribed to) to signify the reservation has completed after <a href="../../client/api/ReservableRequestConcurrencyController.html#tryReserve()"><code>ReservableRequestConcurrencyController.tryReserve()</code></a>.</div>
+</div>
+</div>
+</div>
+</div>
 <div class="inherited-list">
 <h3 id="methods-inherited-from-class-io.servicetalk.concurrent.api.AsyncCloseable">Methods inherited from interface&nbsp;io.servicetalk.concurrent.api.<a href="../../concurrent/api/AsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">AsyncCloseable</a></h3>
 <code><a href="../../concurrent/api/AsyncCloseable.html#closeAsync()">closeAsync</a>, <a href="../../concurrent/api/AsyncCloseable.html#closeAsyncGracefully()">closeAsyncGracefully</a></code></div>
@@ -93,14 +140,107 @@ extends <a href="FilterableStreamingHttpConnection.html" title="interface in io.
 <h3 id="methods-inherited-from-class-io.servicetalk.concurrent.api.ListenableAsyncCloseable">Methods inherited from interface&nbsp;io.servicetalk.concurrent.api.<a href="../../concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a></h3>
 <code><a href="../../concurrent/api/ListenableAsyncCloseable.html#onClose()">onClose</a></code></div>
 <div class="inherited-list">
+<h3 id="methods-inherited-from-class-io.servicetalk.client.api.LoadBalancedConnection">Methods inherited from interface&nbsp;io.servicetalk.client.api.<a href="../../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a></h3>
+<code><a href="../../client/api/LoadBalancedConnection.html#requestFinished()">requestFinished</a>, <a href="../../client/api/LoadBalancedConnection.html#tryRequest()">tryRequest</a>, <a href="../../client/api/LoadBalancedConnection.html#tryReserve()">tryReserve</a></code></div>
+<div class="inherited-list">
 <h3 id="methods-inherited-from-class-io.servicetalk.client.api.ScoreSupplier">Methods inherited from interface&nbsp;io.servicetalk.client.api.<a href="../../client/api/ScoreSupplier.html" title="interface in io.servicetalk.client.api">ScoreSupplier</a></h3>
 <code><a href="../../client/api/ScoreSupplier.html#score()">score</a></code></div>
+<div class="inherited-list">
+<h3 id="methods-inherited-from-class-io.servicetalk.http.api.StreamingHttpConnection">Methods inherited from interface&nbsp;io.servicetalk.http.api.<a href="StreamingHttpConnection.html" title="interface in io.servicetalk.http.api">StreamingHttpConnection</a></h3>
+<code><a href="StreamingHttpConnection.html#close()">close</a>, <a href="StreamingHttpConnection.html#closeGracefully()">closeGracefully</a></code></div>
 <div class="inherited-list">
 <h3 id="methods-inherited-from-class-io.servicetalk.http.api.StreamingHttpRequester">Methods inherited from interface&nbsp;io.servicetalk.http.api.<a href="StreamingHttpRequester.html" title="interface in io.servicetalk.http.api">StreamingHttpRequester</a></h3>
 <code><a href="StreamingHttpRequester.html#executionContext()">executionContext</a>, <a href="StreamingHttpRequester.html#httpResponseFactory()">httpResponseFactory</a>, <a href="StreamingHttpRequester.html#request(io.servicetalk.http.api.StreamingHttpRequest)">request</a></code></div>
 <div class="inherited-list">
 <h3 id="methods-inherited-from-class-io.servicetalk.http.api.StreamingHttpRequestFactory">Methods inherited from interface&nbsp;io.servicetalk.http.api.<a href="StreamingHttpRequestFactory.html" title="interface in io.servicetalk.http.api">StreamingHttpRequestFactory</a></h3>
 <code><a href="StreamingHttpRequestFactory.html#connect(java.lang.String)">connect</a>, <a href="StreamingHttpRequestFactory.html#delete(java.lang.String)">delete</a>, <a href="StreamingHttpRequestFactory.html#get(java.lang.String)">get</a>, <a href="StreamingHttpRequestFactory.html#head(java.lang.String)">head</a>, <a href="StreamingHttpRequestFactory.html#newRequest(io.servicetalk.http.api.HttpRequestMethod,java.lang.String)">newRequest</a>, <a href="StreamingHttpRequestFactory.html#options(java.lang.String)">options</a>, <a href="StreamingHttpRequestFactory.html#patch(java.lang.String)">patch</a>, <a href="StreamingHttpRequestFactory.html#post(java.lang.String)">post</a>, <a href="StreamingHttpRequestFactory.html#put(java.lang.String)">put</a>, <a href="StreamingHttpRequestFactory.html#trace(java.lang.String)">trace</a></code></div>
+</section>
+</li>
+</ul>
+</section>
+<section class="details">
+<ul class="details-list">
+<!-- ============ METHOD DETAIL ========== -->
+<li>
+<section class="method-details" id="method-detail">
+<h2>Method Details</h2>
+<ul class="member-list">
+<li>
+<section class="detail" id="asConnection()">
+<h3>asConnection</h3>
+<div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="ReservedHttpConnection.html" title="interface in io.servicetalk.http.api">ReservedHttpConnection</a></span>&nbsp;<span class="element-name">asConnection</span>()</div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="StreamingHttpConnection.html#asConnection()">StreamingHttpConnection</a></code></span></div>
+<div class="block">Convert this <a href="StreamingHttpConnection.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpConnection</code></a> to the <a href="HttpConnection.html" title="interface in io.servicetalk.http.api"><code>HttpConnection</code></a> API.
+ <p>
+ This API is provided for convenience. It is recommended that
+ filters are implemented using the <a href="StreamingHttpConnection.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpConnection</code></a> asynchronous API for maximum portability.</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="ReservedStreamingHttpConnection.html#asConnection()">asConnection</a></code>&nbsp;in interface&nbsp;<code><a href="ReservedStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">ReservedStreamingHttpConnection</a></code></dd>
+<dt>Specified by:</dt>
+<dd><code><a href="StreamingHttpConnection.html#asConnection()">asConnection</a></code>&nbsp;in interface&nbsp;<code><a href="StreamingHttpConnection.html" title="interface in io.servicetalk.http.api">StreamingHttpConnection</a></code></dd>
+<dt>Returns:</dt>
+<dd>a <a href="HttpConnection.html" title="interface in io.servicetalk.http.api"><code>HttpConnection</code></a> representation of this <a href="StreamingHttpConnection.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpConnection</code></a>.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="asBlockingStreamingConnection()">
+<h3>asBlockingStreamingConnection</h3>
+<div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="ReservedBlockingStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">ReservedBlockingStreamingHttpConnection</a></span>&nbsp;<span class="element-name">asBlockingStreamingConnection</span>()</div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="StreamingHttpConnection.html#asBlockingStreamingConnection()">StreamingHttpConnection</a></code></span></div>
+<div class="block">Convert this <a href="StreamingHttpConnection.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpConnection</code></a> to the <a href="BlockingStreamingHttpConnection.html" title="interface in io.servicetalk.http.api"><code>BlockingStreamingHttpConnection</code></a> API.
+ <p>
+ This API is provided for convenience for a more familiar sequential programming model. It is recommended that
+ filters are implemented using the <a href="StreamingHttpConnection.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpConnection</code></a> asynchronous API for maximum portability.</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="ReservedStreamingHttpConnection.html#asBlockingStreamingConnection()">asBlockingStreamingConnection</a></code>&nbsp;in interface&nbsp;<code><a href="ReservedStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">ReservedStreamingHttpConnection</a></code></dd>
+<dt>Specified by:</dt>
+<dd><code><a href="StreamingHttpConnection.html#asBlockingStreamingConnection()">asBlockingStreamingConnection</a></code>&nbsp;in interface&nbsp;<code><a href="StreamingHttpConnection.html" title="interface in io.servicetalk.http.api">StreamingHttpConnection</a></code></dd>
+<dt>Returns:</dt>
+<dd>a <a href="BlockingStreamingHttpConnection.html" title="interface in io.servicetalk.http.api"><code>BlockingStreamingHttpConnection</code></a> representation of this <a href="StreamingHttpConnection.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpConnection</code></a>.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="asBlockingConnection()">
+<h3>asBlockingConnection</h3>
+<div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="ReservedBlockingHttpConnection.html" title="interface in io.servicetalk.http.api">ReservedBlockingHttpConnection</a></span>&nbsp;<span class="element-name">asBlockingConnection</span>()</div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="StreamingHttpConnection.html#asBlockingConnection()">StreamingHttpConnection</a></code></span></div>
+<div class="block">Convert this <a href="StreamingHttpConnection.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpConnection</code></a> to the <a href="BlockingHttpConnection.html" title="interface in io.servicetalk.http.api"><code>BlockingHttpConnection</code></a> API.
+ <p>
+ This API is provided for convenience for a more familiar sequential programming model. It is recommended that
+ filters are implemented using the <a href="StreamingHttpConnection.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpConnection</code></a> asynchronous API for maximum portability.</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="ReservedStreamingHttpConnection.html#asBlockingConnection()">asBlockingConnection</a></code>&nbsp;in interface&nbsp;<code><a href="ReservedStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">ReservedStreamingHttpConnection</a></code></dd>
+<dt>Specified by:</dt>
+<dd><code><a href="StreamingHttpConnection.html#asBlockingConnection()">asBlockingConnection</a></code>&nbsp;in interface&nbsp;<code><a href="StreamingHttpConnection.html" title="interface in io.servicetalk.http.api">StreamingHttpConnection</a></code></dd>
+<dt>Returns:</dt>
+<dd>a <a href="BlockingHttpConnection.html" title="interface in io.servicetalk.http.api"><code>BlockingHttpConnection</code></a> representation of this <a href="StreamingHttpConnection.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpConnection</code></a>.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="releaseAsync()">
+<h3>releaseAsync</h3>
+<div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></span>&nbsp;<span class="element-name">releaseAsync</span>()</div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="../../client/api/ReservableRequestConcurrencyController.html#releaseAsync()">ReservableRequestConcurrencyController</a></code></span></div>
+<div class="block">Must be called (and subscribed to) to signify the reservation has completed after <a href="../../client/api/ReservableRequestConcurrencyController.html#tryReserve()"><code>ReservableRequestConcurrencyController.tryReserve()</code></a>.</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="FilterableReservedStreamingHttpConnection.html#releaseAsync()">releaseAsync</a></code>&nbsp;in interface&nbsp;<code><a href="FilterableReservedStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">FilterableReservedStreamingHttpConnection</a></code></dd>
+<dt>Specified by:</dt>
+<dd><code><a href="../../client/api/LoadBalancedConnection.html#releaseAsync()">releaseAsync</a></code>&nbsp;in interface&nbsp;<code><a href="../../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a></code></dd>
+<dt>Specified by:</dt>
+<dd><code><a href="../../client/api/ReservableRequestConcurrencyController.html#releaseAsync()">releaseAsync</a></code>&nbsp;in interface&nbsp;<code><a href="../../client/api/ReservableRequestConcurrencyController.html" title="interface in io.servicetalk.client.api">ReservableRequestConcurrencyController</a></code></dd>
+<dt>Returns:</dt>
+<dd>a <a href="../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> for the release.</dd>
+</dl>
+</section>
+</li>
+</ul>
 </section>
 </li>
 </ul>

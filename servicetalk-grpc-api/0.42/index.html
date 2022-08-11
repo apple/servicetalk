@@ -1096,7 +1096,7 @@ Here is a quick start example of the
 </div>
 <div class="paragraph">
 <p>See
-<a href="https://github.com/apple/servicetalk/blob/0.42.12/servicetalk-examples/grpc/helloworld/src/main/java/io/servicetalk/examples/grpc/helloworld/blocking/BlockingHelloWorldClient.java">BlockingHelloWorldClient</a>.</p>
+<a href="https://github.com/apple/servicetalk/blob/0.42.13/servicetalk-examples/grpc/helloworld/src/main/java/io/servicetalk/examples/grpc/helloworld/blocking/BlockingHelloWorldClient.java">BlockingHelloWorldClient</a>.</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -1112,7 +1112,7 @@ Here is a quick start example of the
 </div>
 <div class="paragraph">
 <p>See
-<a href="https://github.com/apple/servicetalk/blob/0.42.12/servicetalk-examples/grpc/helloworld/src/main/java/io/servicetalk/examples/grpc/helloworld/blocking/BlockingHelloWorldServer.java">BlockingHelloWorldServer</a>.</p>
+<a href="https://github.com/apple/servicetalk/blob/0.42.13/servicetalk-examples/grpc/helloworld/src/main/java/io/servicetalk/examples/grpc/helloworld/blocking/BlockingHelloWorldServer.java">BlockingHelloWorldServer</a>.</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -1156,9 +1156,9 @@ transport for gRPC. The flow of data from the socket to the gRPC <code>Service</
 </div>
 <div class="paragraph">
 <p>Each <code>Service</code> has access to a
-<a href="https://github.com/apple/servicetalk/blob/0.42.12/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcServiceContext.java">GrpcServiceContext</a>
+<a href="https://github.com/apple/servicetalk/blob/0.42.13/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcServiceContext.java">GrpcServiceContext</a>
 which provides additional context
-(via <a href="https://github.com/apple/servicetalk/blob/0.42.12/servicetalk-transport-api/src/main/java/io/servicetalk/transport/api/ConnectionContext.java">ConnectionContext</a>)
+(via <a href="https://github.com/apple/servicetalk/blob/0.42.13/servicetalk-transport-api/src/main/java/io/servicetalk/transport/api/ConnectionContext.java">ConnectionContext</a>)
 into the <code>Connection</code>/transport details for each request/response. This means that a <code>GrpcService</code> method may be invoked
 for multiple connections, from different threads, and even concurrently.</p>
 </div>
@@ -1189,7 +1189,7 @@ if decoded protos are required.
 <div class="paragraph">
 <p>In addition to HTTP filters, gRPC users can also add gRPC filters which follow the same interface definition as the
 service and can be composed using the generated
-<a href="https://github.com/apple/servicetalk/blob/0.42.12/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcServiceFactory.java">GrpcServiceFactory</a>
+<a href="https://github.com/apple/servicetalk/blob/0.42.13/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcServiceFactory.java">GrpcServiceFactory</a>
 for a particular service definition.</p>
 </div>
 </div>
@@ -1200,7 +1200,7 @@ for a particular service definition.</p>
 <div class="sectionbody">
 <div class="paragraph">
 <p>A <code>Client</code> is created via the
-<a href="https://github.com/apple/servicetalk/blob/0.42.12/servicetalk-grpc-netty/src/main/java/io/servicetalk/grpc/netty/GrpcClients.java">GrpcClients</a> static
+<a href="https://github.com/apple/servicetalk/blob/0.42.13/servicetalk-grpc-netty/src/main/java/io/servicetalk/grpc/netty/GrpcClients.java">GrpcClients</a> static
 factory. It manages multiple <code>Connections</code> via a <a href="../../servicetalk-loadbalancer/0.42/index.html" class="page">LoadBalancer</a>.
 The control flow of a request/response can be visualized in the below diagram:</p>
 </div>
@@ -1250,7 +1250,7 @@ service definition if decoded protos are required.
 <div class="paragraph">
 <p>In addition to HTTP filters, gRPC users can also add gRPC filters which follow the same interface definition as the
 service and can be composed using the generated
-<a href="https://github.com/apple/servicetalk/blob/0.42.12/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcClientFactory.java">GrpcClientFactory</a>
+<a href="https://github.com/apple/servicetalk/blob/0.42.13/servicetalk-grpc-api/src/main/java/io/servicetalk/grpc/api/GrpcClientFactory.java">GrpcClientFactory</a>
 for a particular service definition.</p>
 </div>
 </div>

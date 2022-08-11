@@ -89,7 +89,7 @@ loadScripts(document, 'script');</script>
 </li>
 <li>
 <div id="class-summary">
-<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="class-summary-tab0" role="tab" aria-selected="true" aria-controls="class-summary.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary', 2)" class="active-table-tab">All Classes and Interfaces</button><button id="class-summary-tab1" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab1', 2)" class="table-tab">Interfaces</button><button id="class-summary-tab2" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab2', 2)" class="table-tab">Classes</button><button id="class-summary-tab5" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab5', 2)" class="table-tab">Exceptions</button></div>
+<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="class-summary-tab0" role="tab" aria-selected="true" aria-controls="class-summary.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary', 2)" class="active-table-tab">All Classes and Interfaces</button><button id="class-summary-tab1" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab1', 2)" class="table-tab">Interfaces</button><button id="class-summary-tab2" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab2', 2)" class="table-tab">Classes</button><button id="class-summary-tab3" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab3', 2)" class="table-tab">Enum Classes</button><button id="class-summary-tab5" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab5', 2)" class="table-tab">Exceptions</button></div>
 <div id="class-summary.tabpanel" role="tabpanel">
 <div class="summary-table two-column-summary" aria-labelledby="class-summary-tab0">
 <div class="table-header col-first">Class</div>
@@ -173,29 +173,41 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color class-summary class-summary-tab5">
 <div class="block">Thrown when no host is available but at least one is required.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab5"><a href="RetryableConnectException.html" title="class in io.servicetalk.client.api">RetryableConnectException</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab5">
+<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="RequestConcurrencyController.html" title="interface in io.servicetalk.client.api">RequestConcurrencyController</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab1">
+<div class="block">An interface which allows controlling reserving connections which maybe used concurrently.</div>
+</div>
+<div class="col-first even-row-color class-summary class-summary-tab3"><a href="RequestConcurrencyController.Result.html" title="enum class in io.servicetalk.client.api">RequestConcurrencyController.Result</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab3">
+<div class="block">Result of the <a href="RequestConcurrencyController.html#tryRequest()"><code>RequestConcurrencyController.tryRequest()</code></a> call.</div>
+</div>
+<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="ReservableRequestConcurrencyController.html" title="interface in io.servicetalk.client.api">ReservableRequestConcurrencyController</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab1">
+<div class="block">A <a href="RequestConcurrencyController.html" title="interface in io.servicetalk.client.api"><code>RequestConcurrencyController</code></a> that also allows to <a href="ReservableRequestConcurrencyController.html#tryReserve()"><code>ReservableRequestConcurrencyController.tryReserve()</code></a> a connection for exclusive use.</div>
+</div>
+<div class="col-first even-row-color class-summary class-summary-tab5"><a href="RetryableConnectException.html" title="class in io.servicetalk.client.api">RetryableConnectException</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab5">
 <div class="block">Throws when a connect operations failed.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab1"><a href="ScoreSupplier.html" title="interface in io.servicetalk.client.api">ScoreSupplier</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab1">
+<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="ScoreSupplier.html" title="interface in io.servicetalk.client.api">ScoreSupplier</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab1">
 <div class="block">Enables components to expose a score.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="ServiceDiscoverer.html" title="interface in io.servicetalk.client.api">ServiceDiscoverer</a>&lt;UnresolvedAddress,<wbr>ResolvedAddress,<wbr>E extends <a href="ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;ResolvedAddress&gt;&gt;</div>
-<div class="col-last odd-row-color class-summary class-summary-tab1">
+<div class="col-first even-row-color class-summary class-summary-tab1"><a href="ServiceDiscoverer.html" title="interface in io.servicetalk.client.api">ServiceDiscoverer</a>&lt;UnresolvedAddress,<wbr>ResolvedAddress,<wbr>E extends <a href="ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;ResolvedAddress&gt;&gt;</div>
+<div class="col-last even-row-color class-summary class-summary-tab1">
 <div class="block">Represents the interaction pattern with a service discovery system.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab1"><a href="ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;ResolvedAddress&gt;</div>
-<div class="col-last even-row-color class-summary class-summary-tab1">
+<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;ResolvedAddress&gt;</div>
+<div class="col-last odd-row-color class-summary class-summary-tab1">
 <div class="block">Notification from the Service Discovery system that availability for an address has changed.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="ServiceDiscovererEvent.Status.html" title="class in io.servicetalk.client.api">ServiceDiscovererEvent.Status</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="ServiceDiscovererEvent.Status.html" title="class in io.servicetalk.client.api">ServiceDiscovererEvent.Status</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">Status provided by the <a href="ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> system that guides the actions of <a href="LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> upon the
  bound <a href="ServiceDiscovererEvent.html#address()"><code>ServiceDiscovererEvent.address()</code></a> (via <a href="ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscovererEvent</code></a>).</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="TransportObserverConnectionFactoryFilter.html" title="class in io.servicetalk.client.api">TransportObserverConnectionFactoryFilter</a>&lt;ResolvedAddress,<wbr>C extends <a href="../../concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a>&gt;</div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="TransportObserverConnectionFactoryFilter.html" title="class in io.servicetalk.client.api">TransportObserverConnectionFactoryFilter</a>&lt;ResolvedAddress,<wbr>C extends <a href="../../concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a>&gt;</div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">A <a href="ConnectionFactoryFilter.html" title="interface in io.servicetalk.client.api"><code>ConnectionFactoryFilter</code></a> that configures a <a href="../../transport/api/TransportObserver.html" title="interface in io.servicetalk.transport.api"><code>TransportObserver</code></a> for new connections.</div>
 </div>
 </div>

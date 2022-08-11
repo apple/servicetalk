@@ -104,7 +104,7 @@ loadScripts(document, 'script');</script>
 <li class="circle">io.servicetalk.client.api.<a href="ClientGroup.html" class="type-name-link" title="interface in io.servicetalk.client.api">ClientGroup</a>&lt;Key,<wbr>Client&gt;</li>
 <li class="circle">io.servicetalk.client.api.<a href="ConnectionFactory.html" class="type-name-link" title="interface in io.servicetalk.client.api">ConnectionFactory</a>&lt;ResolvedAddress,<wbr>C&gt;</li>
 <li class="circle">io.servicetalk.client.api.<a href="LoadBalancedAddress.html" class="type-name-link" title="interface in io.servicetalk.client.api">LoadBalancedAddress</a>&lt;C&gt; (also extends io.servicetalk.client.api.<a href="ScoreSupplier.html" title="interface in io.servicetalk.client.api">ScoreSupplier</a>)</li>
-<li class="circle">io.servicetalk.client.api.<a href="LoadBalancedConnection.html" class="type-name-link" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a> (also extends io.servicetalk.client.api.<a href="ScoreSupplier.html" title="interface in io.servicetalk.client.api">ScoreSupplier</a>)</li>
+<li class="circle">io.servicetalk.client.api.<a href="LoadBalancedConnection.html" class="type-name-link" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a> (also extends io.servicetalk.client.api.<a href="ReservableRequestConcurrencyController.html" title="interface in io.servicetalk.client.api">ReservableRequestConcurrencyController</a>, io.servicetalk.client.api.<a href="ScoreSupplier.html" title="interface in io.servicetalk.client.api">ScoreSupplier</a>)</li>
 <li class="circle">io.servicetalk.client.api.<a href="LoadBalancer.html" class="type-name-link" title="interface in io.servicetalk.client.api">LoadBalancer</a>&lt;C&gt;</li>
 <li class="circle">io.servicetalk.client.api.<a href="ServiceDiscoverer.html" class="type-name-link" title="interface in io.servicetalk.client.api">ServiceDiscoverer</a>&lt;UnresolvedAddress,<wbr>ResolvedAddress,<wbr>E&gt;</li>
 </ul>
@@ -121,13 +121,36 @@ loadScripts(document, 'script');</script>
 <li class="circle">io.servicetalk.client.api.<a href="GroupKey.html" class="type-name-link" title="interface in io.servicetalk.client.api">GroupKey</a>&lt;Address&gt;</li>
 <li class="circle">io.servicetalk.client.api.<a href="LimitingConnectionFactoryFilter.ConnectionLimiter.html" class="type-name-link" title="interface in io.servicetalk.client.api">LimitingConnectionFactoryFilter.ConnectionLimiter</a>&lt;ResolvedAddress,<wbr>C&gt;</li>
 <li class="circle">io.servicetalk.client.api.<a href="LoadBalancerReadyEvent.html" class="type-name-link" title="interface in io.servicetalk.client.api">LoadBalancerReadyEvent</a></li>
+<li class="circle">io.servicetalk.client.api.<a href="RequestConcurrencyController.html" class="type-name-link" title="interface in io.servicetalk.client.api">RequestConcurrencyController</a>
+<ul>
+<li class="circle">io.servicetalk.client.api.<a href="ReservableRequestConcurrencyController.html" class="type-name-link" title="interface in io.servicetalk.client.api">ReservableRequestConcurrencyController</a>
+<ul>
+<li class="circle">io.servicetalk.client.api.<a href="LoadBalancedConnection.html" class="type-name-link" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a> (also extends io.servicetalk.concurrent.api.<a href="../../concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a>, io.servicetalk.client.api.<a href="ScoreSupplier.html" title="interface in io.servicetalk.client.api">ScoreSupplier</a>)</li>
+</ul>
+</li>
+</ul>
+</li>
 <li class="circle">io.servicetalk.client.api.<a href="ScoreSupplier.html" class="type-name-link" title="interface in io.servicetalk.client.api">ScoreSupplier</a>
 <ul>
 <li class="circle">io.servicetalk.client.api.<a href="LoadBalancedAddress.html" class="type-name-link" title="interface in io.servicetalk.client.api">LoadBalancedAddress</a>&lt;C&gt; (also extends io.servicetalk.concurrent.api.<a href="../../concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a>)</li>
-<li class="circle">io.servicetalk.client.api.<a href="LoadBalancedConnection.html" class="type-name-link" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a> (also extends io.servicetalk.concurrent.api.<a href="../../concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a>)</li>
+<li class="circle">io.servicetalk.client.api.<a href="LoadBalancedConnection.html" class="type-name-link" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a> (also extends io.servicetalk.concurrent.api.<a href="../../concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a>, io.servicetalk.client.api.<a href="ReservableRequestConcurrencyController.html" title="interface in io.servicetalk.client.api">ReservableRequestConcurrencyController</a>)</li>
 </ul>
 </li>
 <li class="circle">io.servicetalk.client.api.<a href="ServiceDiscovererEvent.html" class="type-name-link" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;ResolvedAddress&gt;</li>
+</ul>
+</section>
+<section class="hierarchy">
+<h2 title="Enum Class Hierarchy">Enum Class Hierarchy</h2>
+<ul>
+<li class="circle">java.lang.<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" class="type-name-link external-link" title="class or interface in java.lang">Object</a>
+<ul>
+<li class="circle">java.lang.<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Enum.html" class="type-name-link external-link" title="class or interface in java.lang">Enum</a>&lt;E&gt; (implements java.lang.<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Comparable.html" title="class or interface in java.lang" class="external-link">Comparable</a>&lt;T&gt;, java.lang.constant.<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/constant/Constable.html" title="class or interface in java.lang.constant" class="external-link">Constable</a>, java.io.<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/Serializable.html" title="class or interface in java.io" class="external-link">Serializable</a>)
+<ul>
+<li class="circle">io.servicetalk.client.api.<a href="RequestConcurrencyController.Result.html" class="type-name-link" title="enum class in io.servicetalk.client.api">RequestConcurrencyController.Result</a></li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
 </section>
 </main>

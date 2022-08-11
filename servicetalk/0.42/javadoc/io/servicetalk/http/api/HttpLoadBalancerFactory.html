@@ -44,7 +44,7 @@ loadScripts(document, 'script');</script>
 <div>
 <ul class="sub-nav-list">
 <li>Summary:&nbsp;</li>
-<li>Nested&nbsp;|&nbsp;</li>
+<li><a href="#nested-class-summary">Nested</a>&nbsp;|&nbsp;</li>
 <li>Field&nbsp;|&nbsp;</li>
 <li>Constr&nbsp;|&nbsp;</li>
 <li><a href="#method-summary">Method</a></li>
@@ -91,12 +91,29 @@ extends <a href="../../client/api/LoadBalancerFactory.html" title="interface in 
 </section>
 <section class="summary">
 <ul class="summary-list">
+<!-- ======== NESTED CLASS SUMMARY ======== -->
+<li>
+<section class="nested-class-summary" id="nested-class-summary">
+<h2>Nested Class Summary</h2>
+<div class="caption"><span>Nested Classes</span></div>
+<div class="summary-table three-column-summary">
+<div class="table-header col-first">Modifier and Type</div>
+<div class="table-header col-second">Interface</div>
+<div class="table-header col-last">Description</div>
+<div class="col-first even-row-color"><code>static final class&nbsp;</code></div>
+<div class="col-second even-row-color"><code><a href="HttpLoadBalancerFactory.DefaultFilterableStreamingHttpLoadBalancedConnection.html" class="type-name-link" title="class in io.servicetalk.http.api">HttpLoadBalancerFactory.DefaultFilterableStreamingHttpLoadBalancedConnection</a></code></div>
+<div class="col-last even-row-color">
+<div class="block">Default implementation of <a href="FilterableStreamingHttpLoadBalancedConnection.html" title="interface in io.servicetalk.http.api"><code>FilterableStreamingHttpLoadBalancedConnection</code></a>.</div>
+</div>
+</div>
+</section>
+</li>
 <!-- ========== METHOD SUMMARY =========== -->
 <li>
 <section class="method-summary" id="method-summary">
 <h2>Method Summary</h2>
 <div id="method-summary-table">
-<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab3" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab3', 3)" class="table-tab">Abstract Methods</button><button id="method-summary-table-tab5" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab5', 3)" class="table-tab">Default Methods</button></div>
+<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab5" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab5', 3)" class="table-tab">Default Methods</button><button id="method-summary-table-tab6" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab6', 3)" class="table-tab">Deprecated Methods</button></div>
 <div id="method-summary-table.tabpanel" role="tabpanel">
 <div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
 <div class="table-header col-first">Modifier and Type</div>
@@ -107,9 +124,18 @@ extends <a href="../../client/api/LoadBalancerFactory.html" title="interface in 
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
 <div class="block">Return an <a href="../../transport/api/ExecutionStrategy.html" title="interface in io.servicetalk.transport.api"><code>ExecutionStrategy</code></a> that describes the offloads required by the influencer.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="FilterableStreamingHttpLoadBalancedConnection.html" title="interface in io.servicetalk.http.api">FilterableStreamingHttpLoadBalancedConnection</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#toLoadBalancedConnection(io.servicetalk.http.api.FilterableStreamingHttpConnection)" class="member-name-link">toLoadBalancedConnection</a><wbr>(<a href="FilterableStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">FilterableStreamingHttpConnection</a>&nbsp;connection)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6"><code>default <a href="FilterableStreamingHttpLoadBalancedConnection.html" title="interface in io.servicetalk.http.api">FilterableStreamingHttpLoadBalancedConnection</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6"><code><a href="#toLoadBalancedConnection(io.servicetalk.http.api.FilterableStreamingHttpConnection)" class="member-name-link">toLoadBalancedConnection</a><wbr>(<a href="FilterableStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">FilterableStreamingHttpConnection</a>&nbsp;connection)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Implement and use <a href="#toLoadBalancedConnection(io.servicetalk.http.api.FilterableStreamingHttpConnection,io.servicetalk.client.api.ReservableRequestConcurrencyController,io.servicetalk.context.api.ContextMap)"><code>toLoadBalancedConnection(FilterableStreamingHttpConnection, ReservableRequestConcurrencyController, ContextMap)</code></a></div>
+</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="FilterableStreamingHttpLoadBalancedConnection.html" title="interface in io.servicetalk.http.api">FilterableStreamingHttpLoadBalancedConnection</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#toLoadBalancedConnection(io.servicetalk.http.api.FilterableStreamingHttpConnection,io.servicetalk.client.api.ReservableRequestConcurrencyController,io.servicetalk.context.api.ContextMap)" class="member-name-link">toLoadBalancedConnection</a><wbr>(<a href="FilterableStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">FilterableStreamingHttpConnection</a>&nbsp;connection,
+ <a href="../../client/api/ReservableRequestConcurrencyController.html" title="interface in io.servicetalk.client.api">ReservableRequestConcurrencyController</a>&nbsp;concurrencyController,
+ <a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api">ContextMap</a>&nbsp;context)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
 <div class="block">Converts the passed <a href="FilterableStreamingHttpConnection.html" title="interface in io.servicetalk.http.api"><code>FilterableStreamingHttpConnection</code></a> to a
  <a href="FilterableStreamingHttpLoadBalancedConnection.html" title="interface in io.servicetalk.http.api"><code>FilterableStreamingHttpLoadBalancedConnection</code></a>.</div>
 </div>
@@ -133,15 +159,40 @@ extends <a href="../../client/api/LoadBalancerFactory.html" title="interface in 
 <li>
 <section class="detail" id="toLoadBalancedConnection(io.servicetalk.http.api.FilterableStreamingHttpConnection)">
 <h3>toLoadBalancedConnection</h3>
-<div class="member-signature"><span class="return-type"><a href="FilterableStreamingHttpLoadBalancedConnection.html" title="interface in io.servicetalk.http.api">FilterableStreamingHttpLoadBalancedConnection</a></span>&nbsp;<span class="element-name">toLoadBalancedConnection</span><wbr><span class="parameters">(<a href="FilterableStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">FilterableStreamingHttpConnection</a>&nbsp;connection)</span></div>
+<div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="FilterableStreamingHttpLoadBalancedConnection.html" title="interface in io.servicetalk.http.api">FilterableStreamingHttpLoadBalancedConnection</a></span>&nbsp;<span class="element-name">toLoadBalancedConnection</span><wbr><span class="parameters">(<a href="FilterableStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">FilterableStreamingHttpConnection</a>&nbsp;connection)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Implement and use <a href="#toLoadBalancedConnection(io.servicetalk.http.api.FilterableStreamingHttpConnection,io.servicetalk.client.api.ReservableRequestConcurrencyController,io.servicetalk.context.api.ContextMap)"><code>toLoadBalancedConnection(FilterableStreamingHttpConnection, ReservableRequestConcurrencyController, ContextMap)</code></a></div>
+</div>
 <div class="block">Converts the passed <a href="FilterableStreamingHttpConnection.html" title="interface in io.servicetalk.http.api"><code>FilterableStreamingHttpConnection</code></a> to a
  <a href="FilterableStreamingHttpLoadBalancedConnection.html" title="interface in io.servicetalk.http.api"><code>FilterableStreamingHttpLoadBalancedConnection</code></a>.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>connection</code> - <a href="FilterableStreamingHttpConnection.html" title="interface in io.servicetalk.http.api"><code>FilterableStreamingHttpConnection</code></a> to convert.</dd>
+<dd><code>connection</code> - <a href="FilterableStreamingHttpConnection.html" title="interface in io.servicetalk.http.api"><code>FilterableStreamingHttpConnection</code></a> to convert</dd>
 <dt>Returns:</dt>
 <dd><a href="FilterableStreamingHttpLoadBalancedConnection.html" title="interface in io.servicetalk.http.api"><code>FilterableStreamingHttpLoadBalancedConnection</code></a> for the passed
- <a href="FilterableStreamingHttpConnection.html" title="interface in io.servicetalk.http.api"><code>FilterableStreamingHttpConnection</code></a>.</dd>
+ <a href="FilterableStreamingHttpConnection.html" title="interface in io.servicetalk.http.api"><code>FilterableStreamingHttpConnection</code></a></dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="toLoadBalancedConnection(io.servicetalk.http.api.FilterableStreamingHttpConnection,io.servicetalk.client.api.ReservableRequestConcurrencyController,io.servicetalk.context.api.ContextMap)">
+<h3>toLoadBalancedConnection</h3>
+<div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="FilterableStreamingHttpLoadBalancedConnection.html" title="interface in io.servicetalk.http.api">FilterableStreamingHttpLoadBalancedConnection</a></span>&nbsp;<span class="element-name">toLoadBalancedConnection</span><wbr><span class="parameters">(<a href="FilterableStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">FilterableStreamingHttpConnection</a>&nbsp;connection,
+ <a href="../../client/api/ReservableRequestConcurrencyController.html" title="interface in io.servicetalk.client.api">ReservableRequestConcurrencyController</a>&nbsp;concurrencyController,
+ @Nullable
+ <a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api">ContextMap</a>&nbsp;context)</span></div>
+<div class="block">Converts the passed <a href="FilterableStreamingHttpConnection.html" title="interface in io.servicetalk.http.api"><code>FilterableStreamingHttpConnection</code></a> to a
+ <a href="FilterableStreamingHttpLoadBalancedConnection.html" title="interface in io.servicetalk.http.api"><code>FilterableStreamingHttpLoadBalancedConnection</code></a>.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>connection</code> - <a href="FilterableStreamingHttpConnection.html" title="interface in io.servicetalk.http.api"><code>FilterableStreamingHttpConnection</code></a> to convert</dd>
+<dd><code>concurrencyController</code> - <a href="../../client/api/ReservableRequestConcurrencyController.html" title="interface in io.servicetalk.client.api"><code>ReservableRequestConcurrencyController</code></a> to control access to the connection</dd>
+<dd><code>context</code> - A <a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api"><code>context</code></a> of the caller (e.g. request/LB context) or <code>null</code> if no context</dd>
+<dt>Returns:</dt>
+<dd><a href="FilterableStreamingHttpLoadBalancedConnection.html" title="interface in io.servicetalk.http.api"><code>FilterableStreamingHttpLoadBalancedConnection</code></a> for the passed
+ <a href="FilterableStreamingHttpConnection.html" title="interface in io.servicetalk.http.api"><code>FilterableStreamingHttpConnection</code></a>
+ provided</dd>
 </dl>
 </section>
 </li>

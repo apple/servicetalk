@@ -15,7 +15,11 @@
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
-<script type="text/javascript">var pathtoroot = "../../../../";
+<script type="text/javascript">var evenRowColor = "even-row-color";
+var oddRowColor = "odd-row-color";
+var tableTab = "table-tab";
+var activeTableTab = "active-table-tab";
+var pathtoroot = "../../../../";
 loadScripts(document, 'script');</script>
 <noscript>
 <div>JavaScript is disabled on your browser.</div>
@@ -40,7 +44,7 @@ loadScripts(document, 'script');</script>
 <div>
 <ul class="sub-nav-list">
 <li>Summary:&nbsp;</li>
-<li>Nested&nbsp;|&nbsp;</li>
+<li><a href="#nested-class-summary">Nested</a>&nbsp;|&nbsp;</li>
 <li>Field&nbsp;|&nbsp;</li>
 <li>Constr&nbsp;|&nbsp;</li>
 <li><a href="#method-summary">Method</a></li>
@@ -49,7 +53,7 @@ loadScripts(document, 'script');</script>
 <li>Detail:&nbsp;</li>
 <li>Field&nbsp;|&nbsp;</li>
 <li>Constr&nbsp;|&nbsp;</li>
-<li>Method</li>
+<li><a href="#method-detail">Method</a></li>
 </ul>
 </div>
 <div class="nav-list-search"><label for="search-input">SEARCH:</label>
@@ -70,26 +74,75 @@ loadScripts(document, 'script');</script>
 <section class="class-description" id="class-description">
 <dl class="notes">
 <dt>All Superinterfaces:</dt>
-<dd><code><a href="../../concurrent/api/AsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">AsyncCloseable</a></code>, <code><a href="../../concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a></code>, <code><a href="ScoreSupplier.html" title="interface in io.servicetalk.client.api">ScoreSupplier</a></code></dd>
+<dd><code><a href="../../concurrent/api/AsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">AsyncCloseable</a></code>, <code><a href="../../concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a></code>, <code><a href="RequestConcurrencyController.html" title="interface in io.servicetalk.client.api">RequestConcurrencyController</a></code>, <code><a href="ReservableRequestConcurrencyController.html" title="interface in io.servicetalk.client.api">ReservableRequestConcurrencyController</a></code>, <code><a href="ScoreSupplier.html" title="interface in io.servicetalk.client.api">ScoreSupplier</a></code></dd>
 </dl>
 <dl class="notes">
 <dt>All Known Subinterfaces:</dt>
 <dd><code><a href="../../http/api/FilterableStreamingHttpLoadBalancedConnection.html" title="interface in io.servicetalk.http.api">FilterableStreamingHttpLoadBalancedConnection</a></code></dd>
 </dl>
+<dl class="notes">
+<dt>All Known Implementing Classes:</dt>
+<dd><code><a href="../../http/api/HttpLoadBalancerFactory.DefaultFilterableStreamingHttpLoadBalancedConnection.html" title="class in io.servicetalk.http.api">HttpLoadBalancerFactory.DefaultFilterableStreamingHttpLoadBalancedConnection</a></code></dd>
+</dl>
 <hr>
 <div class="type-signature"><span class="modifiers">public interface </span><span class="element-name type-name-label">LoadBalancedConnection</span><span class="extends-implements">
-extends <a href="../../concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a>, <a href="ScoreSupplier.html" title="interface in io.servicetalk.client.api">ScoreSupplier</a></span></div>
-<div class="block">A connection managed by a <a href="LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>.
- <p>
- Note: <a href="ScoreSupplier.html" title="interface in io.servicetalk.client.api"><code>ScoreSupplier</code></a> contract provides this connection's score, where 0.0 is the lowest score and 1.0 is the
- highest. <a href="LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>s prefer connections with a higher score.</div>
+extends <a href="ScoreSupplier.html" title="interface in io.servicetalk.client.api">ScoreSupplier</a>, <a href="ReservableRequestConcurrencyController.html" title="interface in io.servicetalk.client.api">ReservableRequestConcurrencyController</a>, <a href="../../concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a></span></div>
+<div class="block">A connection managed by a <a href="LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>.</div>
+<dl class="notes">
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="ScoreSupplier.html" title="interface in io.servicetalk.client.api"><code>ScoreSupplier</code></a></li>
+<li><a href="ReservableRequestConcurrencyController.html" title="interface in io.servicetalk.client.api"><code>ReservableRequestConcurrencyController</code></a></li>
+</ul>
+</dd>
+</dl>
 </section>
 <section class="summary">
 <ul class="summary-list">
+<!-- ======== NESTED CLASS SUMMARY ======== -->
+<li>
+<section class="nested-class-summary" id="nested-class-summary">
+<h2>Nested Class Summary</h2>
+<div class="inherited-list">
+<h2 id="nested-classes-inherited-from-class-io.servicetalk.client.api.RequestConcurrencyController">Nested classes/interfaces inherited from interface&nbsp;io.servicetalk.client.api.<a href="RequestConcurrencyController.html" title="interface in io.servicetalk.client.api">RequestConcurrencyController</a></h2>
+<code><a href="RequestConcurrencyController.Result.html" title="enum class in io.servicetalk.client.api">RequestConcurrencyController.Result</a></code></div>
+</section>
+</li>
 <!-- ========== METHOD SUMMARY =========== -->
 <li>
 <section class="method-summary" id="method-summary">
 <h2>Method Summary</h2>
+<div id="method-summary-table">
+<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab5" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab5', 3)" class="table-tab">Default Methods</button></div>
+<div id="method-summary-table.tabpanel" role="tabpanel">
+<div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
+<div class="table-header col-first">Modifier and Type</div>
+<div class="table-header col-second">Method</div>
+<div class="table-header col-last">Description</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#releaseAsync()" class="member-name-link">releaseAsync</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
+<div class="block">Must be called (and subscribed to) to signify the reservation has completed after <a href="ReservableRequestConcurrencyController.html#tryReserve()"><code>ReservableRequestConcurrencyController.tryReserve()</code></a>.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#requestFinished()" class="member-name-link">requestFinished</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
+<div class="block">Must be called after <a href="RequestConcurrencyController.html#tryRequest()"><code>RequestConcurrencyController.tryRequest()</code></a> to signify the request has completed.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="RequestConcurrencyController.Result.html" title="enum class in io.servicetalk.client.api">RequestConcurrencyController.Result</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#tryRequest()" class="member-name-link">tryRequest</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
+<div class="block">Attempts to reserve a connection for a single request, needs to be followed by <a href="RequestConcurrencyController.html#requestFinished()"><code>RequestConcurrencyController.requestFinished()</code></a>.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default boolean</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#tryReserve()" class="member-name-link">tryReserve</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
+<div class="block">Attempts to reserve a connection for exclusive use until <a href="ReservableRequestConcurrencyController.html#releaseAsync()"><code>ReservableRequestConcurrencyController.releaseAsync()</code></a> is called.</div>
+</div>
+</div>
+</div>
+</div>
 <div class="inherited-list">
 <h3 id="methods-inherited-from-class-io.servicetalk.concurrent.api.AsyncCloseable">Methods inherited from interface&nbsp;io.servicetalk.concurrent.api.<a href="../../concurrent/api/AsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">AsyncCloseable</a></h3>
 <code><a href="../../concurrent/api/AsyncCloseable.html#closeAsync()">closeAsync</a>, <a href="../../concurrent/api/AsyncCloseable.html#closeAsyncGracefully()">closeAsyncGracefully</a></code></div>
@@ -99,6 +152,75 @@ extends <a href="../../concurrent/api/ListenableAsyncCloseable.html" title="inte
 <div class="inherited-list">
 <h3 id="methods-inherited-from-class-io.servicetalk.client.api.ScoreSupplier">Methods inherited from interface&nbsp;io.servicetalk.client.api.<a href="ScoreSupplier.html" title="interface in io.servicetalk.client.api">ScoreSupplier</a></h3>
 <code><a href="ScoreSupplier.html#score()">score</a></code></div>
+</section>
+</li>
+</ul>
+</section>
+<section class="details">
+<ul class="details-list">
+<!-- ============ METHOD DETAIL ========== -->
+<li>
+<section class="method-details" id="method-detail">
+<h2>Method Details</h2>
+<ul class="member-list">
+<li>
+<section class="detail" id="tryRequest()">
+<h3>tryRequest</h3>
+<div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="RequestConcurrencyController.Result.html" title="enum class in io.servicetalk.client.api">RequestConcurrencyController.Result</a></span>&nbsp;<span class="element-name">tryRequest</span>()</div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="RequestConcurrencyController.html#tryRequest()">RequestConcurrencyController</a></code></span></div>
+<div class="block">Attempts to reserve a connection for a single request, needs to be followed by <a href="RequestConcurrencyController.html#requestFinished()"><code>RequestConcurrencyController.requestFinished()</code></a>.</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="RequestConcurrencyController.html#tryRequest()">tryRequest</a></code>&nbsp;in interface&nbsp;<code><a href="RequestConcurrencyController.html" title="interface in io.servicetalk.client.api">RequestConcurrencyController</a></code></dd>
+<dt>Returns:</dt>
+<dd><a href="RequestConcurrencyController.Result.html#Accepted"><code>RequestConcurrencyController.Result.Accepted</code></a> if this connection is available and reserved for performing a single request.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="requestFinished()">
+<h3>requestFinished</h3>
+<div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">requestFinished</span>()</div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="RequestConcurrencyController.html#requestFinished()">RequestConcurrencyController</a></code></span></div>
+<div class="block">Must be called after <a href="RequestConcurrencyController.html#tryRequest()"><code>RequestConcurrencyController.tryRequest()</code></a> to signify the request has completed. This method should be called
+ no more than once for each call to <a href="RequestConcurrencyController.html#tryRequest()"><code>RequestConcurrencyController.tryRequest()</code></a>.
+ <p>
+ Generally called from a <a href="../../concurrent/api/Publisher.html#beforeFinally(java.lang.Runnable)"><code>Publisher.beforeFinally(Runnable)</code></a> after a <a href="RequestConcurrencyController.html#tryRequest()"><code>RequestConcurrencyController.tryRequest()</code></a>.</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="RequestConcurrencyController.html#requestFinished()">requestFinished</a></code>&nbsp;in interface&nbsp;<code><a href="RequestConcurrencyController.html" title="interface in io.servicetalk.client.api">RequestConcurrencyController</a></code></dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="tryReserve()">
+<h3>tryReserve</h3>
+<div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">tryReserve</span>()</div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="ReservableRequestConcurrencyController.html#tryReserve()">ReservableRequestConcurrencyController</a></code></span></div>
+<div class="block">Attempts to reserve a connection for exclusive use until <a href="ReservableRequestConcurrencyController.html#releaseAsync()"><code>ReservableRequestConcurrencyController.releaseAsync()</code></a> is called.</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="ReservableRequestConcurrencyController.html#tryReserve()">tryReserve</a></code>&nbsp;in interface&nbsp;<code><a href="ReservableRequestConcurrencyController.html" title="interface in io.servicetalk.client.api">ReservableRequestConcurrencyController</a></code></dd>
+<dt>Returns:</dt>
+<dd><code>true</code> if this connection is available and reserved for performing a single request.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="releaseAsync()">
+<h3>releaseAsync</h3>
+<div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></span>&nbsp;<span class="element-name">releaseAsync</span>()</div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="ReservableRequestConcurrencyController.html#releaseAsync()">ReservableRequestConcurrencyController</a></code></span></div>
+<div class="block">Must be called (and subscribed to) to signify the reservation has completed after <a href="ReservableRequestConcurrencyController.html#tryReserve()"><code>ReservableRequestConcurrencyController.tryReserve()</code></a>.</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="ReservableRequestConcurrencyController.html#releaseAsync()">releaseAsync</a></code>&nbsp;in interface&nbsp;<code><a href="ReservableRequestConcurrencyController.html" title="interface in io.servicetalk.client.api">ReservableRequestConcurrencyController</a></code></dd>
+<dt>Returns:</dt>
+<dd>a <a href="../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> for the release.</dd>
+</dl>
+</section>
+</li>
+</ul>
 </section>
 </li>
 </ul>

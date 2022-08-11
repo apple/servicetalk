@@ -97,47 +97,52 @@ extends <a href="../../grpc/api/GrpcClient.html" title="interface in io.servicet
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="HealthCheckResponse.html" title="class in io.servicetalk.health.v1">HealthCheckResponse</a>&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#check(io.servicetalk.grpc.api.GrpcClientMetadata,io.servicetalk.health.v1.HealthCheckRequest)" class="member-name-link">check</a><wbr>(<a href="../../grpc/api/GrpcClientMetadata.html" title="interface in io.servicetalk.grpc.api">GrpcClientMetadata</a>&nbsp;metadata,
- <a href="HealthCheckRequest.html" title="class in io.servicetalk.health.v1">HealthCheckRequest</a>&nbsp;request)</code></div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="Health.BlockingHealthClient.html" title="interface in io.servicetalk.health.v1">Health.BlockingHealthClient</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#asBlockingClient()" class="member-name-link">asBlockingClient</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
+<div class="block">Converts this <a href="../../grpc/api/GrpcClient.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClient</code></a> to a blocking client.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="HealthCheckResponse.html" title="class in io.servicetalk.health.v1">HealthCheckResponse</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#check(io.servicetalk.grpc.api.GrpcClientMetadata,io.servicetalk.health.v1.HealthCheckRequest)" class="member-name-link">check</a><wbr>(<a href="../../grpc/api/GrpcClientMetadata.html" title="interface in io.servicetalk.grpc.api">GrpcClientMetadata</a>&nbsp;metadata,
+ <a href="HealthCheckRequest.html" title="class in io.servicetalk.health.v1">HealthCheckRequest</a>&nbsp;request)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
 <div class="block">
   If the requested service is unknown, the call will fail with status
   NOT_FOUND.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6"><code>default <a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="HealthCheckResponse.html" title="class in io.servicetalk.health.v1">HealthCheckResponse</a>&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6"><code><a href="#check(io.servicetalk.health.v1.Health.CheckMetadata,io.servicetalk.health.v1.HealthCheckRequest)" class="member-name-link">check</a><wbr>(<a href="Health.CheckMetadata.html" title="class in io.servicetalk.health.v1">Health.CheckMetadata</a>&nbsp;metadata,
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6"><code>default <a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="HealthCheckResponse.html" title="class in io.servicetalk.health.v1">HealthCheckResponse</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6"><code><a href="#check(io.servicetalk.health.v1.Health.CheckMetadata,io.servicetalk.health.v1.HealthCheckRequest)" class="member-name-link">check</a><wbr>(<a href="Health.CheckMetadata.html" title="class in io.servicetalk.health.v1">Health.CheckMetadata</a>&nbsp;metadata,
  <a href="HealthCheckRequest.html" title="class in io.servicetalk.health.v1">HealthCheckRequest</a>&nbsp;request)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6">
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6">
 <div class="block"><span class="deprecated-label">Deprecated.</span>
 <div class="deprecation-comment">Use <a href="#check(io.servicetalk.grpc.api.GrpcClientMetadata,io.servicetalk.health.v1.HealthCheckRequest)"><code>check(GrpcClientMetadata,HealthCheckRequest)</code></a>.</div>
 </div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="HealthCheckResponse.html" title="class in io.servicetalk.health.v1">HealthCheckResponse</a>&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#check(io.servicetalk.health.v1.HealthCheckRequest)" class="member-name-link">check</a><wbr>(<a href="HealthCheckRequest.html" title="class in io.servicetalk.health.v1">HealthCheckRequest</a>&nbsp;request)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="HealthCheckResponse.html" title="class in io.servicetalk.health.v1">HealthCheckResponse</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#check(io.servicetalk.health.v1.HealthCheckRequest)" class="member-name-link">check</a><wbr>(<a href="HealthCheckRequest.html" title="class in io.servicetalk.health.v1">HealthCheckRequest</a>&nbsp;request)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">
   If the requested service is unknown, the call will fail with status
   NOT_FOUND.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="HealthCheckResponse.html" title="class in io.servicetalk.health.v1">HealthCheckResponse</a>&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#watch(io.servicetalk.grpc.api.GrpcClientMetadata,io.servicetalk.health.v1.HealthCheckRequest)" class="member-name-link">watch</a><wbr>(<a href="../../grpc/api/GrpcClientMetadata.html" title="interface in io.servicetalk.grpc.api">GrpcClientMetadata</a>&nbsp;metadata,
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="HealthCheckResponse.html" title="class in io.servicetalk.health.v1">HealthCheckResponse</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#watch(io.servicetalk.grpc.api.GrpcClientMetadata,io.servicetalk.health.v1.HealthCheckRequest)" class="member-name-link">watch</a><wbr>(<a href="../../grpc/api/GrpcClientMetadata.html" title="interface in io.servicetalk.grpc.api">GrpcClientMetadata</a>&nbsp;metadata,
  <a href="HealthCheckRequest.html" title="class in io.servicetalk.health.v1">HealthCheckRequest</a>&nbsp;request)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
 <div class="block">
   Performs a watch for the serving status of the requested service.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6"><code>default <a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="HealthCheckResponse.html" title="class in io.servicetalk.health.v1">HealthCheckResponse</a>&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6"><code><a href="#watch(io.servicetalk.health.v1.Health.WatchMetadata,io.servicetalk.health.v1.HealthCheckRequest)" class="member-name-link">watch</a><wbr>(<a href="Health.WatchMetadata.html" title="class in io.servicetalk.health.v1">Health.WatchMetadata</a>&nbsp;metadata,
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6"><code>default <a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="HealthCheckResponse.html" title="class in io.servicetalk.health.v1">HealthCheckResponse</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6"><code><a href="#watch(io.servicetalk.health.v1.Health.WatchMetadata,io.servicetalk.health.v1.HealthCheckRequest)" class="member-name-link">watch</a><wbr>(<a href="Health.WatchMetadata.html" title="class in io.servicetalk.health.v1">Health.WatchMetadata</a>&nbsp;metadata,
  <a href="HealthCheckRequest.html" title="class in io.servicetalk.health.v1">HealthCheckRequest</a>&nbsp;request)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6">
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6">
 <div class="block"><span class="deprecated-label">Deprecated.</span>
 <div class="deprecation-comment">Use <a href="#watch(io.servicetalk.grpc.api.GrpcClientMetadata,io.servicetalk.health.v1.HealthCheckRequest)"><code>watch(GrpcClientMetadata,HealthCheckRequest)</code></a>.</div>
 </div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="HealthCheckResponse.html" title="class in io.servicetalk.health.v1">HealthCheckResponse</a>&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#watch(io.servicetalk.health.v1.HealthCheckRequest)" class="member-name-link">watch</a><wbr>(<a href="HealthCheckRequest.html" title="class in io.servicetalk.health.v1">HealthCheckRequest</a>&nbsp;request)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="HealthCheckResponse.html" title="class in io.servicetalk.health.v1">HealthCheckResponse</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#watch(io.servicetalk.health.v1.HealthCheckRequest)" class="member-name-link">watch</a><wbr>(<a href="HealthCheckRequest.html" title="class in io.servicetalk.health.v1">HealthCheckRequest</a>&nbsp;request)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">
   Performs a watch for the serving status of the requested service.</div>
 </div>
@@ -152,7 +157,7 @@ extends <a href="../../grpc/api/GrpcClient.html" title="interface in io.servicet
 <code><a href="../../concurrent/GracefulAutoCloseable.html#closeGracefully()">closeGracefully</a></code></div>
 <div class="inherited-list">
 <h3 id="methods-inherited-from-class-io.servicetalk.grpc.api.GrpcClient">Methods inherited from interface&nbsp;io.servicetalk.grpc.api.<a href="../../grpc/api/GrpcClient.html" title="interface in io.servicetalk.grpc.api">GrpcClient</a></h3>
-<code><a href="../../grpc/api/GrpcClient.html#asBlockingClient()">asBlockingClient</a>, <a href="../../grpc/api/GrpcClient.html#close()">close</a>, <a href="../../grpc/api/GrpcClient.html#executionContext()">executionContext</a></code></div>
+<code><a href="../../grpc/api/GrpcClient.html#close()">close</a>, <a href="../../grpc/api/GrpcClient.html#executionContext()">executionContext</a></code></div>
 <div class="inherited-list">
 <h3 id="methods-inherited-from-class-io.servicetalk.concurrent.api.ListenableAsyncCloseable">Methods inherited from interface&nbsp;io.servicetalk.concurrent.api.<a href="../../concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a></h3>
 <code><a href="../../concurrent/api/ListenableAsyncCloseable.html#onClose()">onClose</a></code></div>
@@ -315,6 +320,20 @@ extends <a href="../../grpc/api/GrpcClient.html" title="interface in io.servicet
 <dd><code>request</code> - the request to send to the server.</dd>
 <dt>Returns:</dt>
 <dd>used to read a stream of type <a href="HealthCheckResponse.html" title="class in io.servicetalk.health.v1"><code>HealthCheckResponse</code></a> from the server.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="asBlockingClient()">
+<h3>asBlockingClient</h3>
+<div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="Health.BlockingHealthClient.html" title="interface in io.servicetalk.health.v1">Health.BlockingHealthClient</a></span>&nbsp;<span class="element-name">asBlockingClient</span>()</div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="../../grpc/api/GrpcClient.html#asBlockingClient()">GrpcClient</a></code></span></div>
+<div class="block">Converts this <a href="../../grpc/api/GrpcClient.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClient</code></a> to a blocking client.</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="../../grpc/api/GrpcClient.html#asBlockingClient()">asBlockingClient</a></code>&nbsp;in interface&nbsp;<code><a href="../../grpc/api/GrpcClient.html" title="interface in io.servicetalk.grpc.api">GrpcClient</a>&lt;<a href="Health.BlockingHealthClient.html" title="interface in io.servicetalk.health.v1">Health.BlockingHealthClient</a>&gt;</code></dd>
+<dt>Returns:</dt>
+<dd>This <a href="../../grpc/api/GrpcClient.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClient</code></a> as a <a href="../../grpc/api/GrpcClient.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClient</code></a>.</dd>
 </dl>
 </section>
 </li>

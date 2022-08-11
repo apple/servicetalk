@@ -105,6 +105,11 @@ loadScripts(document, 'script');</script>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Combine two potential <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link"><code>Throwable</code></a>s into one.</div>
 </div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static &lt;T&gt;&nbsp;T</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#throwException(java.lang.Throwable)" class="member-name-link">throwException</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&nbsp;t)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">Raises an exception bypassing compiler checks for checked exceptions.</div>
+</div>
 </div>
 </div>
 </div>
@@ -122,6 +127,23 @@ loadScripts(document, 'script');</script>
 <section class="method-details" id="method-detail">
 <h2>Method Details</h2>
 <ul class="member-list">
+<li>
+<section class="detail" id="throwException(java.lang.Throwable)">
+<h3>throwException</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="type-parameters">&lt;T&gt;</span>&nbsp;<span class="return-type">T</span>&nbsp;<span class="element-name">throwException</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&nbsp;t)</span></div>
+<div class="block">Raises an exception bypassing compiler checks for checked exceptions.</div>
+<dl class="notes">
+<dt>Type Parameters:</dt>
+<dd><code>T</code> - The expected type</dd>
+<dt>Parameters:</dt>
+<dd><code>t</code> - The <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link"><code>Throwable</code></a> to throw.</dd>
+<dt>Returns:</dt>
+<dd>nothing actually will be returned from this method because it rethrows the specified exception. Making
+ this method return an arbitrary type makes the caller method easier as they do not have to add a return statement
+ after calling this method.</dd>
+</dl>
+</section>
+</li>
 <li>
 <section class="detail" id="combine(java.lang.Object,java.lang.Object)">
 <h3>combine</h3>

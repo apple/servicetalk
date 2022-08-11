@@ -819,7 +819,7 @@ loadScripts(document, 'script');</script>
  </code></pre></div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>predicate</code> - returns <code>true</code> if the <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link"><code>Throwable</code></a> should be transformed to and
+<dd><code>predicate</code> - returns <code>true</code> if the <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link"><code>Throwable</code></a> should be transformed to an
  <a href="../CompletableSource.Subscriber.html#onComplete()"><code>CompletableSource.Subscriber.onComplete()</code></a> signal. Returns <code>false</code> to propagate the error.</dd>
 <dt>Returns:</dt>
 <dd>A <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> which transform errors emitted on this <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> which match
