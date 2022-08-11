@@ -15,7 +15,9 @@
  */
 package io.servicetalk.grpc.netty;
 
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.BlockingIterable;
+import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.context.api.ContextMap;
@@ -32,7 +34,9 @@ import io.servicetalk.grpc.netty.TesterProto.TestResponse;
 import io.servicetalk.grpc.netty.TesterProto.Tester.BlockingTesterService;
 import io.servicetalk.grpc.netty.TesterProto.Tester.TesterClient;
 import io.servicetalk.grpc.netty.TesterProto.Tester.TesterService;
+import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpServiceContext;
+import io.servicetalk.http.api.StatelessTrailersTransformer;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
@@ -60,21 +64,25 @@ import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class RequestResponseContextTest {
 
     private static final Key<CharSequence> CLIENT_CTX = newKey("CLIENT_CTX", CharSequence.class);
-    private static final Key<CharSequence> CLIENT_FILTER_OUT_CTX =
-            newKey("CLIENT_FILTER_OUT_CTX", CharSequence.class);
-    private static final Key<CharSequence> CLIENT_FILTER_IN_CTX =
-            newKey("CLIENT_FILTER_IN_CTX", CharSequence.class);
-    private static final Key<CharSequence> SERVER_FILTER_IN_CTX =
-            newKey("SERVER_FILTER_IN_CTX", CharSequence.class);
+    private static final Key<CharSequence> CLIENT_FILTER_OUT_CTX = newKey("CLIENT_FILTER_OUT_CTX", CharSequence.class);
+    private static final Key<CharSequence> CLIENT_FILTER_IN_CTX = newKey("CLIENT_FILTER_IN_CTX", CharSequence.class);
+    private static final Key<CharSequence> SERVER_FILTER_IN_CTX = newKey("SERVER_FILTER_IN_CTX", CharSequence.class);
     private static final Key<CharSequence> SERVER_CTX = newKey("SERVER_CTX", CharSequence.class);
-    private static final Key<CharSequence> SERVER_FILTER_OUT_CTX =
-            newKey("SERVER_FILTER_OUT_CTX", CharSequence.class);
+    private static final Key<CharSequence> SERVER_FILTER_OUT_CTX = newKey("SERVER_FILTER_OUT_CTX", CharSequence.class);
+    private static final Key<CharSequence> SERVER_FILTER_IN_TRAILER_CTX =
+            newKey("SERVER_FILTER_IN_TRAILER_CTX", CharSequence.class);
+    private static final Key<CharSequence> SERVER_TRAILER_CTX = newKey("SERVER_TRAILER_CTX", CharSequence.class);
+    private static final Key<CharSequence> SERVER_FILTER_OUT_TRAILER_CTX =
+            newKey("SERVER_FILTER_OUT_TRAILER_CTX", CharSequence.class);
+    private static final Key<CharSequence> CLIENT_FILTER_IN_TRAILER_CTX =
+            newKey("CLIENT_FILTER_IN_TRAILER_CTX", CharSequence.class);
 
     private static final TestRequest REQUEST = TestRequest.newBuilder().setName("name").build();
 
@@ -119,16 +127,40 @@ class RequestResponseContextTest {
     @ValueSource(booleans = {false, true})
     void testBiDiStreamBlocking(boolean error) throws Exception {
         testRequestResponse(new BlockingTesterServiceImpl(error),
-                (client, metadata) -> client.asBlockingClient().testBiDiStream(metadata, singletonList(REQUEST))
-                        .iterator().next(), error);
+                (client, metadata) -> {
+                    BlockingIterator<TestResponse> iterator = client.asBlockingClient()
+                            .testBiDiStream(metadata, singletonList(REQUEST)).iterator();
+                    assertThat(iterator.hasNext(), is(true));
+                    if (error) {
+                        iterator.next();    // will throw
+                        throw new AssertionError("No error from response");
+                    } else {
+                        TestResponse response = iterator.next();
+                        assertThat(response, is(notNullValue()));
+                        assertThat(iterator.hasNext(), is(false));
+                        return response;
+                    }
+                }, error);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] error={0}")
     @ValueSource(booleans = {false, true})
     void testResponseStreamBlocking(boolean error) throws Exception {
         testRequestResponse(new BlockingTesterServiceImpl(error),
-                (client, metadata) -> client.asBlockingClient().testResponseStream(metadata, REQUEST)
-                        .iterator().next(), error);
+                (client, metadata) -> {
+                    BlockingIterator<TestResponse> iterator = client.asBlockingClient()
+                            .testResponseStream(metadata, REQUEST).iterator();
+                    assertThat(iterator.hasNext(), is(true));
+                    if (error) {
+                        iterator.next();    // will throw
+                        throw new AssertionError("No error from response");
+                    } else {
+                        TestResponse response = iterator.next();
+                        assertThat(response, is(notNullValue()));
+                        assertThat(iterator.hasNext(), is(false));
+                        return response;
+                    }
+                }, error);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] error={0}")
@@ -148,23 +180,38 @@ class RequestResponseContextTest {
                     public Single<StreamingHttpResponse> handle(HttpServiceContext ctx,
                                                                 StreamingHttpRequest request,
                                                                 StreamingHttpResponseFactory responseFactory) {
-                        // Take the first two values from headers
+                        // Take client-side values from headers:
                         request.context().put(CLIENT_CTX, request.headers().get(header(CLIENT_CTX)));
                         request.context().put(CLIENT_FILTER_OUT_CTX,
                                 request.headers().get(header(CLIENT_FILTER_OUT_CTX)));
-                        // Set the last value to context only
+                        // Set server-side values:
                         request.context().put(SERVER_FILTER_IN_CTX, value(SERVER_FILTER_IN_CTX));
+                        request.context().put(SERVER_FILTER_IN_TRAILER_CTX, value(SERVER_FILTER_IN_TRAILER_CTX));
                         return delegate().handle(ctx, request, responseFactory)
-                                .whenOnSuccess(response -> {
-                                    // Take the first two values from context
+                                .map(response -> {
+                                    // Take the first two values from context:
                                     response.headers().set(header(SERVER_FILTER_IN_CTX),
                                             requireNonNull(response.context().get(SERVER_FILTER_IN_CTX)));
                                     response.headers().set(header(SERVER_CTX),
                                             requireNonNull(response.context().get(SERVER_CTX)));
-                                    // Set the last value to headers only
+                                    // Set the last value explicitly:
                                     assertThat(response.context().containsKey(SERVER_FILTER_OUT_CTX), is(false));
                                     response.headers().set(header(SERVER_FILTER_OUT_CTX),
                                             value(SERVER_FILTER_OUT_CTX));
+                                    return response.transform(new StatelessTrailersTransformer<Buffer>() {
+                                        @Override
+                                        protected HttpHeaders payloadComplete(HttpHeaders trailers) {
+                                            // Take the first two values from context:
+                                            trailers.set(header(SERVER_FILTER_IN_TRAILER_CTX), requireNonNull(
+                                                    response.context().get(SERVER_FILTER_IN_TRAILER_CTX)));
+                                            trailers.set(header(SERVER_TRAILER_CTX), requireNonNull(
+                                                    response.context().get(SERVER_TRAILER_CTX)));
+                                            // Set the last value explicitly:
+                                            trailers.set(header(SERVER_FILTER_OUT_TRAILER_CTX),
+                                                    value(SERVER_FILTER_OUT_TRAILER_CTX));
+                                            return trailers;
+                                        }
+                                    });
                                 });
                     }
                 }))
@@ -182,17 +229,37 @@ class RequestResponseContextTest {
                                          request.headers().set(header(CLIENT_FILTER_OUT_CTX),
                                                  requireNonNull(request.context().get(CLIENT_FILTER_OUT_CTX)));
                                          return delegate.request(request).shareContextOnSubscribe()
-                                                 .whenOnSuccess(response -> {
-                                                     // Take the first three values from headers
-                                                     response.context().put(SERVER_FILTER_IN_CTX,
+                                                 .map(response -> {
+                                                     final ContextMap ctx = response.context();
+                                                     // Take the first three values from headers:
+                                                     ctx.put(SERVER_FILTER_IN_CTX,
                                                              response.headers().get(header(SERVER_FILTER_IN_CTX)));
-                                                     response.context().put(SERVER_CTX,
+                                                     ctx.put(SERVER_CTX,
                                                              response.headers().get(header(SERVER_CTX)));
-                                                     response.context().put(SERVER_FILTER_OUT_CTX,
+                                                     ctx.put(SERVER_FILTER_OUT_CTX,
                                                              response.headers().get(header(SERVER_FILTER_OUT_CTX)));
-                                                     // Set the last value to context only
-                                                     response.context().put(CLIENT_FILTER_IN_CTX,
+                                                     // Set the last value explicitly:
+                                                     ctx.put(CLIENT_FILTER_IN_CTX,
                                                              value(CLIENT_FILTER_IN_CTX));
+                                                     return response.transform(
+                                                             new StatelessTrailersTransformer<Buffer>() {
+                                                                 @Override
+                                                                 protected HttpHeaders payloadComplete(
+                                                                         HttpHeaders trailers) {
+                                                                     // Take the first three values from trailers:
+                                                                     ctx.put(SERVER_FILTER_IN_TRAILER_CTX, trailers.get(
+                                                                             header(SERVER_FILTER_IN_TRAILER_CTX)));
+                                                                     ctx.put(SERVER_TRAILER_CTX, trailers.get(
+                                                                             header(SERVER_TRAILER_CTX)));
+                                                                     ctx.put(SERVER_FILTER_OUT_TRAILER_CTX,
+                                                                             trailers.get(
+                                                                             header(SERVER_FILTER_OUT_TRAILER_CTX)));
+                                                                     // Set the last value explicitly:
+                                                                     ctx.put(CLIENT_FILTER_IN_TRAILER_CTX,
+                                                                             value(CLIENT_FILTER_IN_TRAILER_CTX));
+                                                                     return trailers;
+                                                                 }
+                                                             });
                                                  });
                                      });
                                  }
@@ -207,19 +274,27 @@ class RequestResponseContextTest {
                 assertThat(e.status().code(), is(UNKNOWN));
             } else {
                 TestResponse response = exchange.send(client, metadata);
-                assertThat(response.getMessage(), is(contentEqualTo(
-                        join(":", value(CLIENT_CTX), value(CLIENT_FILTER_OUT_CTX), value(SERVER_FILTER_IN_CTX)))));
+                assertThat(response.getMessage(), contentEqualTo(
+                        join(":", value(CLIENT_CTX), value(CLIENT_FILTER_OUT_CTX), value(SERVER_FILTER_IN_CTX))));
             }
 
             ContextMap requestContext = metadata.requestContext();
-            assertThat(requestContext.get(CLIENT_CTX), is(contentEqualTo(value(CLIENT_CTX))));
-            assertThat(requestContext.get(CLIENT_FILTER_OUT_CTX), is(contentEqualTo(value(CLIENT_FILTER_OUT_CTX))));
+            assertThat(requestContext.get(CLIENT_CTX), contentEqualTo(value(CLIENT_CTX)));
+            assertThat(requestContext.get(CLIENT_FILTER_OUT_CTX), contentEqualTo(value(CLIENT_FILTER_OUT_CTX)));
 
             ContextMap responseContext = metadata.responseContext();
-            assertThat(responseContext.get(CLIENT_FILTER_IN_CTX), is(contentEqualTo(value(CLIENT_FILTER_IN_CTX))));
-            assertThat(responseContext.get(SERVER_FILTER_IN_CTX), is(contentEqualTo(value(SERVER_FILTER_IN_CTX))));
-            assertThat(responseContext.get(SERVER_CTX), is(contentEqualTo(value(SERVER_CTX))));
-            assertThat(responseContext.get(SERVER_FILTER_OUT_CTX), is(contentEqualTo(value(SERVER_FILTER_OUT_CTX))));
+            assertThat(responseContext.get(CLIENT_FILTER_IN_CTX), contentEqualTo(value(CLIENT_FILTER_IN_CTX)));
+            assertThat(responseContext.get(SERVER_FILTER_IN_CTX), contentEqualTo(value(SERVER_FILTER_IN_CTX)));
+            assertThat(responseContext.get(SERVER_CTX), contentEqualTo(value(SERVER_CTX)));
+            assertThat(responseContext.get(SERVER_FILTER_OUT_CTX), contentEqualTo(value(SERVER_FILTER_OUT_CTX)));
+
+            assertThat(responseContext.get(CLIENT_FILTER_IN_TRAILER_CTX),
+                    contentEqualTo(value(CLIENT_FILTER_IN_TRAILER_CTX)));
+            assertThat(responseContext.get(SERVER_FILTER_IN_TRAILER_CTX),
+                    contentEqualTo(value(SERVER_FILTER_IN_TRAILER_CTX)));
+            assertThat(responseContext.get(SERVER_TRAILER_CTX), contentEqualTo(value(SERVER_TRAILER_CTX)));
+            assertThat(responseContext.get(SERVER_FILTER_OUT_TRAILER_CTX),
+                    contentEqualTo(value(SERVER_FILTER_OUT_TRAILER_CTX)));
         }
     }
 
@@ -231,9 +306,14 @@ class RequestResponseContextTest {
         return key.name() + "_VALUE";
     }
 
-    private static void setContext(GrpcServiceContext ctx) {
+    private static void setHeadersContext(GrpcServiceContext ctx) {
         ctx.responseContext().put(SERVER_FILTER_IN_CTX, ctx.requestContext().get(SERVER_FILTER_IN_CTX));
         ctx.responseContext().put(SERVER_CTX, value(SERVER_CTX));
+    }
+
+    private static void setTrailersContext(GrpcServiceContext ctx) {
+        ctx.responseContext().put(SERVER_FILTER_IN_TRAILER_CTX, ctx.requestContext().get(SERVER_FILTER_IN_TRAILER_CTX));
+        ctx.responseContext().put(SERVER_TRAILER_CTX, value(SERVER_TRAILER_CTX));
     }
 
     private static TestResponse newResponse(ContextMap requestContext) {
@@ -261,29 +341,34 @@ class RequestResponseContextTest {
         @Override
         public Single<TestResponse> test(GrpcServiceContext ctx, TestRequest request) {
             return Single.defer(() -> {
-                setContext(ctx);
+                setHeadersContext(ctx);
+                setTrailersContext(ctx);
                 return error ? Single.failed(DELIBERATE_EXCEPTION) : succeeded(newResponse(ctx.requestContext()));
             });
         }
 
         @Override
         public Publisher<TestResponse> testBiDiStream(GrpcServiceContext ctx, Publisher<TestRequest> request) {
-            setContext(ctx);
+            setHeadersContext(ctx);
             return request.ignoreElements()
+                    .whenOnComplete(() -> setTrailersContext(ctx))
                     .concat(error ? Publisher.failed(DELIBERATE_EXCEPTION) : from(newResponse(ctx.requestContext())));
         }
 
         @Override
         public Publisher<TestResponse> testResponseStream(GrpcServiceContext ctx, TestRequest request) {
-            setContext(ctx);
-            return Publisher.defer(() -> error ? Publisher.failed(DELIBERATE_EXCEPTION) :
-                    from(newResponse(ctx.requestContext())));
+            setHeadersContext(ctx);
+            return Publisher.defer(() -> {
+                setTrailersContext(ctx);
+                return error ? Publisher.failed(DELIBERATE_EXCEPTION) : from(newResponse(ctx.requestContext()));
+            });
         }
 
         @Override
         public Single<TestResponse> testRequestStream(GrpcServiceContext ctx, Publisher<TestRequest> request) {
-            setContext(ctx);
+            setHeadersContext(ctx);
             return request.ignoreElements()
+                    .whenOnComplete(() -> setTrailersContext(ctx))
                     .concat(error ? Single.failed(DELIBERATE_EXCEPTION) : succeeded(newResponse(ctx.requestContext())));
         }
     }
@@ -298,7 +383,8 @@ class RequestResponseContextTest {
 
         @Override
         public TestResponse test(GrpcServiceContext ctx, TestRequest request) {
-            setContext(ctx);
+            setHeadersContext(ctx);
+            setTrailersContext(ctx);
             if (error) {
                 throw DELIBERATE_EXCEPTION;
             }
@@ -315,12 +401,15 @@ class RequestResponseContextTest {
         public void testBiDiStream(GrpcServiceContext ctx, BlockingIterable<TestRequest> request,
                                    BlockingStreamingGrpcServerResponse<TestResponse> response) throws Exception {
             assertThat(ctx.responseContext(), is(sameInstance(response.context())));
-            setContext(ctx);
+            setHeadersContext(ctx);
+            request.forEach(__ -> { /* noop */ });
             if (error) {
+                setTrailersContext(ctx);
                 throw DELIBERATE_EXCEPTION;
             }
             try (GrpcPayloadWriter<TestResponse> writer = response.sendMetaData()) {
                 writer.write(newResponse(ctx.requestContext()));
+                setTrailersContext(ctx);
             }
         }
 
@@ -334,18 +423,22 @@ class RequestResponseContextTest {
         public void testResponseStream(GrpcServiceContext ctx, TestRequest request,
                                        BlockingStreamingGrpcServerResponse<TestResponse> response) throws Exception {
             assertThat(ctx.responseContext(), is(sameInstance(response.context())));
-            setContext(ctx);
+            setHeadersContext(ctx);
             if (error) {
+                setTrailersContext(ctx);
                 throw DELIBERATE_EXCEPTION;
             }
             try (GrpcPayloadWriter<TestResponse> writer = response.sendMetaData()) {
                 writer.write(newResponse(ctx.requestContext()));
+                setTrailersContext(ctx);
             }
         }
 
         @Override
         public TestResponse testRequestStream(GrpcServiceContext ctx, BlockingIterable<TestRequest> request) {
-            setContext(ctx);
+            setHeadersContext(ctx);
+            request.forEach(__ -> { /* noop */ });
+            setTrailersContext(ctx);
             if (error) {
                 throw DELIBERATE_EXCEPTION;
             }
