@@ -1200,6 +1200,7 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
     protected interface BlockingStreamingRoute<Req, Resp>
             extends GracefulAutoCloseable {
 
+        // FIXME: 0.43 - remove "Note" section from javadoc
         /**
          * Handles the passed {@link Req}.
          *
@@ -1213,10 +1214,9 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
          * breaking API changes, make sure to implement both methods. The release after next will remove this method.
          * This intermediate step is necessary to maintain {@link FunctionalInterface} contract that requires to have a
          * single non-default method.
-         * <b>Note</b>: if you also use
-         * {@link BlockingStreamingRoute#wrap(BlockingStreamingRoute, GracefulAutoCloseable)} method,
-         * make sure to pass there an implementation of {@link BlockingStreamingRoute} that implements both
-         * overloads instead of a lambda. Otherwise, the default
+         * <b>Note</b>: if you also use {@link GrpcRoutes.BlockingStreamingRoute#wrap(GrpcRoutes.BlockingStreamingRoute,
+         * GracefulAutoCloseable)} method, make sure to pass there an implementation of {@link BlockingStreamingRoute}
+         * that implements both overloads instead of a lambda. Otherwise, the default
          * {@link #handle(GrpcServiceContext, BlockingIterable, BlockingStreamingGrpcServerResponse)} implementation
          * will be used.
          */
@@ -1356,6 +1356,7 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
     protected interface BlockingResponseStreamingRoute<Req, Resp>
             extends GracefulAutoCloseable {
 
+        // FIXME: 0.43 - remove "Note" section from javadoc
         /**
          * Handles the passed {@link Req}.
          *
@@ -1369,11 +1370,11 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
          * breaking API changes, make sure to implement both methods. The release after next will remove this method.
          * This intermediate step is necessary to maintain {@link FunctionalInterface} contract that requires to have a
          * single non-default method.
-         * <b>Note</b>: if you also use
-         * {@link BlockingResponseStreamingRoute#wrap(BlockingResponseStreamingRoute, GracefulAutoCloseable)} method,
-         * make sure to pass there an implementation of {@link BlockingResponseStreamingRoute} that implements both
-         * overloads instead of a lambda. Otherwise, the default
-         * {@link #handle(GrpcServiceContext, Object, BlockingStreamingGrpcServerResponse)} implementation will be used.
+         * <b>Note</b>: if you also use {@link GrpcRoutes.BlockingResponseStreamingRoute#wrap(
+         * GrpcRoutes.BlockingResponseStreamingRoute, GracefulAutoCloseable)} method, make sure to pass there an
+         * implementation of {@link BlockingResponseStreamingRoute} that implements both overloads instead of a lambda.
+         * Otherwise, the default {@link #handle(GrpcServiceContext, Object, BlockingStreamingGrpcServerResponse)}
+         * implementation will be used.
          */
         @Deprecated // FIXME: 0.43 - add default impl
         void handle(GrpcServiceContext ctx, Req request, GrpcPayloadWriter<Resp> responseWriter) throws Exception;
