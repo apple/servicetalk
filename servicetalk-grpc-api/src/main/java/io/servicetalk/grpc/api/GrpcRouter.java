@@ -714,10 +714,10 @@ final class GrpcRouter {
                             } catch (Throwable t) {
                                 LOGGER.debug("Unexpected exception from blocking streaming endpoint for path: {}",
                                         methodDescriptor.httpPath(), t);
-                                HttpHeaders trailers = null;
+                                HttpHeaders trailers;
                                 if (grpcResponse == null || (trailers = grpcResponse.trailers()) == null) {
                                     setStatus(response.headers(), t, allocator);
-                                    // Use HTTP response to avoid setting "OK" in trailers and allocating serializer
+                                    // Use HTTP response to avoid setting "OK" in trailers and allocating a serializer
                                     response.sendMetaData().close();
                                 } else {
                                     setStatus(trailers, t, allocator);
@@ -912,7 +912,6 @@ final class GrpcRouter {
 
         @Override
         public ContextMap context() {
-            checkSent();
             return httpResponse.context();
         }
 
@@ -925,12 +924,6 @@ final class GrpcRouter {
             // Set status OK before returning PayloadWriter because users can close it right away
             setStatusOk(httpWriter.trailers());
             return grpcPayloadWriter;
-        }
-
-        private void checkSent() {
-            if (httpWriter != null) {
-                throw new IllegalStateException("Response meta-data is already sent");
-            }
         }
 
         @Nullable

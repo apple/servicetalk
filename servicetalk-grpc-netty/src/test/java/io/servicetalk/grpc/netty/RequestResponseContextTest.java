@@ -56,6 +56,7 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.internal.BlockingUtils.blockingInvocation;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.context.api.ContextMap.Key.newKey;
+import static io.servicetalk.grpc.api.GrpcHeaderNames.GRPC_STATUS;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNKNOWN;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
@@ -189,30 +190,37 @@ class RequestResponseContextTest {
                         request.context().put(SERVER_FILTER_IN_TRAILER_CTX, value(SERVER_FILTER_IN_TRAILER_CTX));
                         return delegate().handle(ctx, request, responseFactory)
                                 .map(response -> {
+                                    HttpHeaders headers = response.headers();
                                     // Take the first two values from context:
-                                    response.headers().set(header(SERVER_FILTER_IN_CTX),
+                                    headers.set(header(SERVER_FILTER_IN_CTX),
                                             requireNonNull(response.context().get(SERVER_FILTER_IN_CTX)));
-                                    response.headers().set(header(SERVER_CTX),
-                                            requireNonNull(response.context().get(SERVER_CTX)));
+                                    headers.set(header(SERVER_CTX), requireNonNull(response.context().get(SERVER_CTX)));
                                     // Set the last value explicitly:
                                     assertThat(response.context().containsKey(SERVER_FILTER_OUT_CTX), is(false));
-                                    response.headers().set(header(SERVER_FILTER_OUT_CTX),
-                                            value(SERVER_FILTER_OUT_CTX));
+                                    headers.set(header(SERVER_FILTER_OUT_CTX), value(SERVER_FILTER_OUT_CTX));
+
+                                    // For Trailers-Only response put everything into headers:
+                                    if (error && headers.contains(GRPC_STATUS)) {
+                                        setTrailers(response.context(), headers);
+                                        return response;
+                                    }
                                     return response.transform(new StatelessTrailersTransformer<Buffer>() {
                                         @Override
                                         protected HttpHeaders payloadComplete(HttpHeaders trailers) {
-                                            // Take the first two values from context:
-                                            trailers.set(header(SERVER_FILTER_IN_TRAILER_CTX), requireNonNull(
-                                                    response.context().get(SERVER_FILTER_IN_TRAILER_CTX)));
-                                            trailers.set(header(SERVER_TRAILER_CTX), requireNonNull(
-                                                    response.context().get(SERVER_TRAILER_CTX)));
-                                            // Set the last value explicitly:
-                                            trailers.set(header(SERVER_FILTER_OUT_TRAILER_CTX),
-                                                    value(SERVER_FILTER_OUT_TRAILER_CTX));
+                                            setTrailers(response.context(), trailers);
                                             return trailers;
                                         }
                                     });
                                 });
+                    }
+
+                    private void setTrailers(ContextMap ctx, HttpHeaders trailers) {
+                        // Take the first two values from context:
+                        trailers.set(header(SERVER_FILTER_IN_TRAILER_CTX),
+                                requireNonNull(ctx.get(SERVER_FILTER_IN_TRAILER_CTX)));
+                        trailers.set(header(SERVER_TRAILER_CTX), requireNonNull(ctx.get(SERVER_TRAILER_CTX)));
+                        // Set the last value explicitly:
+                        trailers.set(header(SERVER_FILTER_OUT_TRAILER_CTX), value(SERVER_FILTER_OUT_TRAILER_CTX));
                     }
                 }))
                 .listenAndAwait(service);
@@ -230,38 +238,45 @@ class RequestResponseContextTest {
                                                  requireNonNull(request.context().get(CLIENT_FILTER_OUT_CTX)));
                                          return delegate.request(request).shareContextOnSubscribe()
                                                  .map(response -> {
-                                                     final ContextMap ctx = response.context();
+                                                     HttpHeaders headers = response.headers();
                                                      // Take the first three values from headers:
-                                                     ctx.put(SERVER_FILTER_IN_CTX,
-                                                             response.headers().get(header(SERVER_FILTER_IN_CTX)));
-                                                     ctx.put(SERVER_CTX,
-                                                             response.headers().get(header(SERVER_CTX)));
-                                                     ctx.put(SERVER_FILTER_OUT_CTX,
-                                                             response.headers().get(header(SERVER_FILTER_OUT_CTX)));
+                                                     response.context().put(SERVER_FILTER_IN_CTX,
+                                                             headers.get(header(SERVER_FILTER_IN_CTX)));
+                                                     response.context().put(SERVER_CTX,
+                                                             headers.get(header(SERVER_CTX)));
+                                                     response.context().put(SERVER_FILTER_OUT_CTX,
+                                                             headers.get(header(SERVER_FILTER_OUT_CTX)));
                                                      // Set the last value explicitly:
-                                                     ctx.put(CLIENT_FILTER_IN_CTX,
+                                                     response.context().put(CLIENT_FILTER_IN_CTX,
                                                              value(CLIENT_FILTER_IN_CTX));
+
+                                                     // For Trailers-Only response take everything from headers:
+                                                     if (error && headers.contains(GRPC_STATUS)) {
+                                                         readTrailers(headers, response.context());
+                                                         return response;
+                                                     }
                                                      return response.transform(
                                                              new StatelessTrailersTransformer<Buffer>() {
                                                                  @Override
                                                                  protected HttpHeaders payloadComplete(
                                                                          HttpHeaders trailers) {
-                                                                     // Take the first three values from trailers:
-                                                                     ctx.put(SERVER_FILTER_IN_TRAILER_CTX, trailers.get(
-                                                                             header(SERVER_FILTER_IN_TRAILER_CTX)));
-                                                                     ctx.put(SERVER_TRAILER_CTX, trailers.get(
-                                                                             header(SERVER_TRAILER_CTX)));
-                                                                     ctx.put(SERVER_FILTER_OUT_TRAILER_CTX,
-                                                                             trailers.get(
-                                                                             header(SERVER_FILTER_OUT_TRAILER_CTX)));
-                                                                     // Set the last value explicitly:
-                                                                     ctx.put(CLIENT_FILTER_IN_TRAILER_CTX,
-                                                                             value(CLIENT_FILTER_IN_TRAILER_CTX));
+                                                                     readTrailers(trailers, response.context());
                                                                      return trailers;
                                                                  }
                                                              });
                                                  });
                                      });
+                                 }
+
+                                 private void readTrailers(HttpHeaders trailers, ContextMap ctx) {
+                                     // Take the first three values from trailers:
+                                     ctx.put(SERVER_FILTER_IN_TRAILER_CTX,
+                                             trailers.get(header(SERVER_FILTER_IN_TRAILER_CTX)));
+                                     ctx.put(SERVER_TRAILER_CTX, trailers.get(header(SERVER_TRAILER_CTX)));
+                                     ctx.put(SERVER_FILTER_OUT_TRAILER_CTX,
+                                             trailers.get(header(SERVER_FILTER_OUT_TRAILER_CTX)));
+                                     // Set the last value explicitly:
+                                     ctx.put(CLIENT_FILTER_IN_TRAILER_CTX, value(CLIENT_FILTER_IN_TRAILER_CTX));
                                  }
                              }))
                      .build(new TesterProto.Tester.ClientFactory())) {
