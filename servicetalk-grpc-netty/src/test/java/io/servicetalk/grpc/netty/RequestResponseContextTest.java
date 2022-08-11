@@ -268,23 +268,22 @@ class RequestResponseContextTest {
 
         @Override
         public Publisher<TestResponse> testBiDiStream(GrpcServiceContext ctx, Publisher<TestRequest> request) {
+            setContext(ctx);
             return request.ignoreElements()
-                    .whenOnComplete(() -> setContext(ctx))
                     .concat(error ? Publisher.failed(DELIBERATE_EXCEPTION) : from(newResponse(ctx.requestContext())));
         }
 
         @Override
         public Publisher<TestResponse> testResponseStream(GrpcServiceContext ctx, TestRequest request) {
-            return Publisher.defer(() -> {
-                setContext(ctx);
-                return error ? Publisher.failed(DELIBERATE_EXCEPTION) : from(newResponse(ctx.requestContext()));
-            });
+            setContext(ctx);
+            return Publisher.defer(() -> error ? Publisher.failed(DELIBERATE_EXCEPTION) :
+                    from(newResponse(ctx.requestContext())));
         }
 
         @Override
         public Single<TestResponse> testRequestStream(GrpcServiceContext ctx, Publisher<TestRequest> request) {
+            setContext(ctx);
             return request.ignoreElements()
-                    .whenOnComplete(() -> setContext(ctx))
                     .concat(error ? Single.failed(DELIBERATE_EXCEPTION) : succeeded(newResponse(ctx.requestContext())));
         }
     }
