@@ -18,6 +18,7 @@ package io.servicetalk.http.netty;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
+import io.servicetalk.client.api.ScoreSupplier;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
@@ -37,7 +38,6 @@ import io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory;
 
 import java.util.Collection;
 
-import static java.lang.Integer.MAX_VALUE;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -142,7 +142,11 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
 
         @Override
         public int score() {
-            return MAX_VALUE;
+            throw new UnsupportedOperationException(
+                   DefaultFilterableStreamingHttpLoadBalancedConnection.class.getName() +
+                           " doesn't support scoring. " + ScoreSupplier.class.getName() +
+                           " is only available through " + HttpLoadBalancerFactory.class.getSimpleName() +
+                           " implementations that support scoring.");
         }
 
         @Override

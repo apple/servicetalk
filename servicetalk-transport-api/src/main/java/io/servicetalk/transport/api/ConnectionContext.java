@@ -17,8 +17,23 @@ package io.servicetalk.transport.api;
 
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 
+import javax.annotation.Nullable;
+
 /**
  * A context for a connection.
  */
 public interface ConnectionContext extends ConnectionInfo, ListenableAsyncCloseable {
+
+    /**
+     * Returns a reference to a parent {@link ConnectionContext} if any.
+     * <p>
+     * This method is useful when multiple virtual streams are multiplexed over a single connection to get access to the
+     * actual {@link ConnectionContext} that represents network.
+     *
+     * @return a reference to a parent {@link ConnectionContext} if any. Otherwise, returns {@code null}.
+     */
+    @Nullable
+    default ConnectionContext parent() {    // FIXME: 0.43 - consider removing default impl
+        return null;
+    }
 }

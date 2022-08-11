@@ -23,6 +23,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpProtocolVersion;
+import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.netty.internal.FlushStrategies;
@@ -150,6 +151,7 @@ public class NettyPipelinedConnectionBenchmark {
 
     private NettyConnection<Object, Object> newNettyConnection() {
         return new NettyConnection<Object, Object>() {
+
             private final AtomicInteger offloadCount = new AtomicInteger();
             @Override
             public Publisher<Object> read() {
@@ -259,6 +261,12 @@ public class NettyPipelinedConnectionBenchmark {
             @Override
             public Protocol protocol() {
                 return HttpProtocolVersion.HTTP_1_1;
+            }
+
+            @Nullable
+            @Override
+            public ConnectionContext parent() {
+                return null;
             }
 
             @Override

@@ -21,11 +21,14 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpConnectionContext;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpProtocolVersion;
+import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.DelegatingConnectionContext;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
 import io.netty.channel.Channel;
+
+import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
 
@@ -50,6 +53,12 @@ final class DefaultNettyHttpConnectionContext extends DelegatingConnectionContex
     @Override
     public HttpProtocolVersion protocol() {
         return (HttpProtocolVersion) nettyConnectionContext.protocol();
+    }
+
+    @Nullable
+    @Override
+    public ConnectionContext parent() {
+        return nettyConnectionContext.parent();
     }
 
     @Override

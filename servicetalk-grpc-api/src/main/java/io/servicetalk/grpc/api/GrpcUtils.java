@@ -17,6 +17,7 @@ package io.servicetalk.grpc.api;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.encoding.api.BufferDecoder;
 import io.servicetalk.encoding.api.BufferDecoderGroup;
@@ -80,6 +81,7 @@ import static io.servicetalk.grpc.api.GrpcHeaderValues.SERVICETALK_USER_AGENT;
 import static io.servicetalk.grpc.api.GrpcStatusCode.CANCELLED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.DEADLINE_EXCEEDED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.FAILED_PRECONDITION;
+import static io.servicetalk.grpc.api.GrpcStatusCode.INTERNAL;
 import static io.servicetalk.grpc.api.GrpcStatusCode.INVALID_ARGUMENT;
 import static io.servicetalk.grpc.api.GrpcStatusCode.PERMISSION_DENIED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNAUTHENTICATED;
@@ -114,6 +116,8 @@ import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 final class GrpcUtils {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(GrpcUtils.class);
     private static final GrpcStatus STATUS_OK = GrpcStatus.fromCodeValue(GrpcStatusCode.OK.value());
     private static final BufferDecoderGroup EMPTY_BUFFER_DECODER_GROUP = new BufferDecoderGroupBuilder().build();
 
@@ -325,7 +329,8 @@ final class GrpcUtils {
     static <Resp> Publisher<Resp> validateResponseAndGetPayload(final StreamingHttpResponse response,
                                                                 final CharSequence expectedContentType,
                                                                 final BufferAllocator allocator,
-                                                                final GrpcStreamingDeserializer<Resp> deserializer) {
+                                                                final GrpcStreamingDeserializer<Resp> deserializer,
+                                                                final String httpPath) {
         validateStatusCode(response.status()); // gRPC protocol requires 200, don't look further if this check fails.
         // In case of an empty response, gRPC-server may return only one HEADER frame with endStream=true. Our
         // HTTP1-based implementation translates them into response headers so we need to look for a grpc-status in both
@@ -335,13 +340,36 @@ final class GrpcUtils {
         validateContentType(headers, expectedContentType);
         final GrpcStatusCode grpcStatusCode = extractGrpcStatusCodeFromHeaders(headers);
         if (grpcStatusCode != null) {
+            // Drain the response messageBody to make sure concurrency controller marks the request as finished.
+            // In case the grpc-status is received in headers, we expect an empty messageBody, draining should not see
+            // any other frames. However, the messageBody won't complete until after the request stream completes too.
+            final Completable drainResponse = response.messageBody().beforeOnNext(frame -> {
+                throw new GrpcStatus(INTERNAL, null, "Violation of the protocol: received unexpected " +
+                        (frame instanceof HttpHeaders ? "Trailers" : "Data") +
+                        "frame after Trailers-Only response is received with grpc-status: " +
+                        grpcStatusCode.value() + '(' + grpcStatusCode + ')').asException();
+            }).ignoreElements();
             final GrpcStatusException grpcStatusException = convertToGrpcStatusException(grpcStatusCode, headers);
             if (grpcStatusException != null) {
-                // Give priority to the error if it happens, to allow delayed requests or streams to terminate.
-                return Publisher.<Resp>failed(grpcStatusException)
-                        .concat(response.messageBody().ignoreElements());
+                // In case of an error, we cannot concat GrpcStatusException after drainResponse because users may never
+                // see the exception if the request publisher never terminates, or they may see a TimeoutException that
+                // will hide the original exception. Therefore, we have to return an error asap and then immediately
+                // subscribe & cancel the drainResponse. Cancellation is necessary to prevent sending large request
+                // payloads over network when server returns an error.
+                return Publisher.<Resp>failed(grpcStatusException).afterOnError(__ -> {
+                    // Because we subscribe asynchronously, users won't receive any further errors from drainResponse.
+                    // Instead, we log those errors for visibility. Use onErrorComplete instead of whenOnError to avoid
+                    // logging the same exception twice inside SimpleCompletableSubscriber.
+                    drainResponse.onErrorComplete(t -> {
+                        LOGGER.error("Unexpected error while asynchronously draining a Trailers-Only response for {}",
+                                httpPath, t);
+                        return true;
+                    }).subscribe().cancel();
+                });
             } else {
-                return response.messageBody().ignoreElements().toPublisher();
+                // In case of OK, return drainResponse to make sure the full request is transmitted to the server before
+                // we terminate the response publisher.
+                return drainResponse.toPublisher();
             }
         }
 

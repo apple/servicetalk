@@ -29,7 +29,6 @@ import javax.annotation.Nullable;
 import static io.servicetalk.http.api.HttpApiConversions.toReservedBlockingConnection;
 import static io.servicetalk.http.api.HttpApiConversions.toReservedBlockingStreamingConnection;
 import static io.servicetalk.http.api.HttpApiConversions.toReservedConnection;
-import static java.lang.Integer.MAX_VALUE;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -119,7 +118,13 @@ public interface HttpLoadBalancerFactory<ResolvedAddress>
         public DefaultFilterableStreamingHttpLoadBalancedConnection(
                 final FilterableStreamingHttpConnection delegate,
                 final ReservableRequestConcurrencyController controller) {
-            this(delegate, controller, () -> MAX_VALUE);
+            this(delegate, controller, () -> {
+                throw new UnsupportedOperationException(
+                        DefaultFilterableStreamingHttpLoadBalancedConnection.class.getName() +
+                                " doesn't support scoring. " + ScoreSupplier.class.getName() +
+                                " is only available through " + HttpLoadBalancerFactory.class.getSimpleName() +
+                                " implementations that support scoring.");
+            });
         }
 
         /**

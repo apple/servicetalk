@@ -165,17 +165,15 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                                 // ServiceTalk <-> Netty netty utilities
                                 DefaultNettyConnection<Object, Object> streamConnection =
                                         DefaultNettyConnection.initChildChannel(streamChannel,
-                                                connection.executionContext(),
+                                                connection,
                                                 closeHandler,
                                                 // TODO(scott): after flushStrategy is no longer on the connection
                                                 // level we can use DefaultNettyConnection.initChannel instead of this
                                                 // custom method.
-                                                connection.flushStrategyHolder.currentStrategy(),
+                                                connection.defaultFlushStrategy(),
                                                 connection.idleTimeoutMs,
                                                 HTTP_2_0,
-                                                connection.sslConfig(),
-                                                connection.sslSession(),
-                                                channel.config(),
+                                                connection.nettyChannel().config(),
                                                 streamObserver,
                                                 false, __ -> false,
                                                 NettyHttp2ExceptionUtils::wrapIfNecessary);

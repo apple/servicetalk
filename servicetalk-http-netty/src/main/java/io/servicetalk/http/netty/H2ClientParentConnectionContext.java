@@ -40,6 +40,7 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.netty.LoadBalancedStreamingHttpClient.OnStreamClosedRunnable;
 import io.servicetalk.http.netty.ReservableRequestConcurrencyControllers.IgnoreConsumedEvent;
+import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ConnectionObserver.MultiplexedObserver;
 import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
@@ -347,13 +348,11 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                             closeHandler, streamObserver));
                     DefaultNettyConnection<Object, Object> nettyConnection =
                             DefaultNettyConnection.initChildChannel(streamChannel,
-                                    parentContext.executionContext(),
+                                    parentContext,
                                     closeHandler,
-                                    parentContext.flushStrategyHolder.currentStrategy(),
+                                    parentContext.defaultFlushStrategy(),
                                     parentContext.idleTimeoutMs,
                                     HTTP_2_0,
-                                    parentContext.sslConfig(),
-                                    parentContext.sslSession(),
                                     parentContext.nettyChannel().config(),
                                     streamObserver,
                                     true, OBJ_EXPECT_CONTINUE,
@@ -437,6 +436,12 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
         @Override
         public HttpProtocolVersion protocol() {
             return parentContext.protocol();
+        }
+
+        @Nullable
+        @Override
+        public ConnectionContext parent() {
+            return parentContext.parent();
         }
 
         @Override

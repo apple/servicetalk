@@ -48,6 +48,7 @@ import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.tcp.netty.internal.ReadOnlyTcpServerConfig;
 import io.servicetalk.tcp.netty.internal.TcpServerBinder;
 import io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer;
+import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.SslConfig;
@@ -509,6 +510,12 @@ final class NettyHttpServer {
         @Override
         public HttpProtocolVersion protocol() {
             return (HttpProtocolVersion) connection.protocol();
+        }
+
+        @Nullable
+        @Override
+        public ConnectionContext parent() {
+            return connection.parent();
         }
 
         @Override

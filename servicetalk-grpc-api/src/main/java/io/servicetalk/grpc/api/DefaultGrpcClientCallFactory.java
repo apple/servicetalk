@@ -159,7 +159,7 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
                         return validateResponseAndGetPayload(response, responseContentType,
                                 streamingHttpClient.executionContext().bufferAllocator(),
                                 readGrpcMessageEncodingRaw(response.headers(), deserializerIdentity, deserializers,
-                                        GrpcStreamingDeserializer::messageEncoding));
+                                        GrpcStreamingDeserializer::messageEncoding), httpRequest.requestTarget());
                     })
                     .onErrorMap(GrpcUtils::toGrpcException);
         };
@@ -296,7 +296,7 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
                 return validateResponseAndGetPayload(response.toStreamingResponse(), responseContentType,
                         client.executionContext().bufferAllocator(), readGrpcMessageEncodingRaw(
                                 response.headers(), deserializerIdentity, deserializers,
-                                GrpcStreamingDeserializer::messageEncoding)).toIterable();
+                                GrpcStreamingDeserializer::messageEncoding), httpRequest.requestTarget()).toIterable();
             } catch (Throwable cause) {
                 throw toGrpcException(cause);
             }

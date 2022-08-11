@@ -137,7 +137,7 @@ public abstract class Completable {
      *         }
      *     }
      * }</pre>
-     * @param predicate returns {@code true} if the {@link Throwable} should be transformed to and
+     * @param predicate returns {@code true} if the {@link Throwable} should be transformed to an
      * {@link Subscriber#onComplete()} signal. Returns {@code false} to propagate the error.
      * @return A {@link Completable} which transform errors emitted on this {@link Completable} which match
      * {@code predicate} into a {@link Subscriber#onComplete()} signal (e.g. swallows the error).
