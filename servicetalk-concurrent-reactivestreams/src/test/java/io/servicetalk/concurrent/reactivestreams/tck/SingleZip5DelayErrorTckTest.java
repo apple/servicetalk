@@ -25,7 +25,7 @@ import static io.servicetalk.concurrent.api.Single.zipDelayError;
 @Test
 public class SingleZip5DelayErrorTckTest extends AbstractSingleTckTest<Integer> {
     @Override
-    public Publisher<Integer> createServiceTalkPublisher(long elements) {
+    protected Publisher<Integer> createServiceTalkPublisher(long elements) {
         return zipDelayError(results -> (Integer) results[0], succeeded(1), succeeded(null), succeeded(null),
                 succeeded(null)).toPublisher();
     }

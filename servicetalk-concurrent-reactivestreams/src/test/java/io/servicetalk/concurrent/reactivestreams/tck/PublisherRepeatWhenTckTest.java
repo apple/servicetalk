@@ -27,7 +27,7 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 @Test
 public class PublisherRepeatWhenTckTest extends AbstractPublisherTckTest<Integer> {
     @Override
-    public Publisher<Integer> createServiceTalkPublisher(long elements) {
+    protected Publisher<Integer> createServiceTalkPublisher(long elements) {
         return from(1).repeatWhen(i -> i < elements ? completed() : failed(DELIBERATE_EXCEPTION));
     }
 

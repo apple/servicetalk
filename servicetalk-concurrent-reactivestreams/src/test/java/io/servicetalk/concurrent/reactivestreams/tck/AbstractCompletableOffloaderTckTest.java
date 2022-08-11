@@ -15,15 +15,15 @@
  */
 package io.servicetalk.concurrent.reactivestreams.tck;
 
+import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.api.Publisher;
 
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 
-public abstract class PublisherAbstractOffloaderTckTest extends AbstractPublisherOperatorTckTest<Integer> {
+abstract class AbstractCompletableOffloaderTckTest extends AbstractCompletableOperatorTckTest {
     private static Executor executor;
 
     @BeforeClass
@@ -37,9 +37,9 @@ public abstract class PublisherAbstractOffloaderTckTest extends AbstractPublishe
     }
 
     @Override
-    protected final Publisher<Integer> composePublisher(Publisher<Integer> publisher, int elements) {
-        return applyOffload(publisher, executor);
+    protected final Completable composeCompletable(final Completable completable) {
+        return applyOffload(completable, executor);
     }
 
-    abstract Publisher<Integer> applyOffload(Publisher<Integer> original, Executor executor);
+    abstract Completable applyOffload(Completable original, Executor executor);
 }

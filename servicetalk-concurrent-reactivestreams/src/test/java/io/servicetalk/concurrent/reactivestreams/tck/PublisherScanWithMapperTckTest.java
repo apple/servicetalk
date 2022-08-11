@@ -18,10 +18,13 @@ package io.servicetalk.concurrent.reactivestreams.tck;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.ScanWithMapper;
 
+import org.testng.annotations.Test;
+
 import javax.annotation.Nullable;
 
 import static java.lang.String.valueOf;
 
+@Test
 public class PublisherScanWithMapperTckTest extends AbstractPublisherOperatorTckTest<String> {
     @Override
     protected Publisher<String> composePublisher(Publisher<Integer> publisher, int elements) {

@@ -23,7 +23,7 @@ import org.testng.annotations.Test;
 public class PublisherOnErrorResumeTckTest extends AbstractPublisherTckTest<Integer> {
 
     @Override
-    public Publisher<Integer> createServiceTalkPublisher(long elements) {
+    protected Publisher<Integer> createServiceTalkPublisher(long elements) {
         int numElements = TckUtils.requestNToInt(elements);
 
         return TckUtils.<Integer>newFailedPublisher()

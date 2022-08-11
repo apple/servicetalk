@@ -27,7 +27,7 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 public class SingleAmbTckTest extends AbstractSingleTckTest<Integer> {
 
     @Override
-    public Publisher<Integer> createServiceTalkPublisher(long elements) {
+    protected Publisher<Integer> createServiceTalkPublisher(long elements) {
         return amb(succeeded(1), never()).toPublisher();
     }
 }

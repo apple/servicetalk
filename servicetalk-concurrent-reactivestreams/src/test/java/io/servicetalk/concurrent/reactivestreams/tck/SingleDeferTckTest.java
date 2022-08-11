@@ -24,7 +24,7 @@ import org.testng.annotations.Test;
 public class SingleDeferTckTest extends AbstractSingleTckTest<Integer> {
 
     @Override
-    public Publisher<Integer> createServiceTalkPublisher(long elements) {
+    protected Publisher<Integer> createServiceTalkPublisher(long elements) {
         return Single.defer(() -> Single.succeeded(1)).toPublisher();
     }
 }

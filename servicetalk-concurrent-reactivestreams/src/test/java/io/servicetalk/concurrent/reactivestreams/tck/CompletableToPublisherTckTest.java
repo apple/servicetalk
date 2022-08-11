@@ -24,7 +24,7 @@ import org.testng.annotations.Test;
 public class CompletableToPublisherTckTest extends AbstractPublisherTckTest<Object> {
 
     @Override
-    public Publisher<Object> createServiceTalkPublisher(long elements) {
+    protected Publisher<Object> createServiceTalkPublisher(long elements) {
         return Completable.completed().toPublisher();
     }
 

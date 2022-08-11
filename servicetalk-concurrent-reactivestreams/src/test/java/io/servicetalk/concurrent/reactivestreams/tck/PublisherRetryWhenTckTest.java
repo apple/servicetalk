@@ -31,7 +31,7 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 public class PublisherRetryWhenTckTest extends AbstractPublisherTckTest<Integer> {
 
     @Override
-    public Publisher<Integer> createServiceTalkPublisher(long elements) {
+    protected Publisher<Integer> createServiceTalkPublisher(long elements) {
         return Publisher.defer(() -> {
             final AtomicLong cnt = new AtomicLong();
             return from(1)

@@ -27,7 +27,7 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 @Test
 public class CompletableOnErrorResumeClassTckTest extends AbstractCompletableTckTest {
     @Override
-    public Publisher<Object> createServiceTalkPublisher(long elements) {
+    protected Publisher<Object> createServiceTalkPublisher(long elements) {
         return failed(DELIBERATE_EXCEPTION)
                 .onErrorResume(DeliberateException.class, cause -> completed()).toPublisher();
     }

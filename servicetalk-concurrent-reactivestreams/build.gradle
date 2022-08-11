@@ -35,8 +35,10 @@ dependencies {
   testImplementation "org.junit.jupiter:junit-jupiter-api"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
   testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
-  testImplementation "org.reactivestreams:reactive-streams-tck:$reactiveStreamsVersion"
   testImplementation "org.testng:testng:$testngVersion"
+
+  testFixturesApi "org.reactivestreams:reactive-streams-tck:$reactiveStreamsVersion"
+  testFixturesImplementation testFixtures(project(":servicetalk-concurrent-internal"))
 }
 
 // We need testng for the reactive-streams-tck

@@ -21,7 +21,7 @@ import io.servicetalk.concurrent.api.Single;
 import org.testng.annotations.Test;
 
 @Test
-public class SingleSubscribeOnTckTest extends SingleAbstractOffloaderTckTest {
+public class SingleSubscribeOnTckTest extends AbstractSingleOffloaderTckTest {
     @Override
     Single<Integer> applyOffload(final Single<Integer> original, final Executor executor) {
         return original.subscribeOn(executor);

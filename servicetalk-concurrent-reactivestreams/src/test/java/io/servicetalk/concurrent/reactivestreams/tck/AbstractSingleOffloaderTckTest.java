@@ -15,15 +15,15 @@
  */
 package io.servicetalk.concurrent.reactivestreams.tck;
 
-import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.concurrent.api.Single;
 
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 
-public abstract class CompletableAbstractOffloaderTckTest extends AbstractCompletableOperatorTckTest {
+abstract class AbstractSingleOffloaderTckTest extends AbstractSingleOperatorTckTest<Integer> {
     private static Executor executor;
 
     @BeforeClass
@@ -37,9 +37,9 @@ public abstract class CompletableAbstractOffloaderTckTest extends AbstractComple
     }
 
     @Override
-    protected Completable composeCompletable(final Completable completable) {
-        return applyOffload(completable, executor);
+    protected final Single<Integer> composeSingle(final Single<Integer> single) {
+        return applyOffload(single, executor);
     }
 
-    abstract Completable applyOffload(Completable original, Executor executor);
+    abstract Single<Integer> applyOffload(Single<Integer> original, Executor executor);
 }
