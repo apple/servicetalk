@@ -20,7 +20,7 @@ import io.servicetalk.concurrent.internal.ThrowableUtils;
 import java.nio.channels.ClosedChannelException;
 
 /**
- * {@link ClosedChannelException} that will not fill in the stacktrace but use a cheaper way of producing
+ * {@link ClosedChannelException} that will not not fill in the stacktrace but use a cheaper way of producing
  * limited stacktrace details for the user.
  */
 public final class StacklessClosedChannelException extends ClosedChannelException {
