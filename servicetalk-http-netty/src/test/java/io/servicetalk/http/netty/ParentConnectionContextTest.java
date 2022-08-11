@@ -158,6 +158,7 @@ class ParentConnectionContextTest {
                             parent.localAddress(), is(sameInstance(ctx.localAddress())));
                     assertThat("Unexpected remoteAddress",
                             parent.remoteAddress(), is(sameInstance(ctx.remoteAddress())));
+                    assertThat("Unexpected parent.parent()", parent.parent(), is(nullValue()));
                     break;
                 default:
                     throw new IllegalArgumentException(

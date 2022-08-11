@@ -43,6 +43,7 @@ import static java.util.Collections.singleton;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 
 class ParentConnectionContextTest {
@@ -135,6 +136,7 @@ class ParentConnectionContextTest {
                     parent.localAddress(), is(sameInstance(ctx.localAddress())));
             assertThat("Unexpected remoteAddress",
                     parent.remoteAddress(), is(sameInstance(ctx.remoteAddress())));
+            assertThat("Unexpected parent.parent()", parent.parent(), is(nullValue()));
         } catch (Throwable t) {
             errors.add(t);
         }
