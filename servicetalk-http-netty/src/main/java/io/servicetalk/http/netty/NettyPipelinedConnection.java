@@ -22,6 +22,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ConcurrentUtils;
+import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
@@ -164,6 +165,12 @@ final class NettyPipelinedConnection<Req, Resp> implements NettyConnectionContex
     @Override
     public Protocol protocol() {
         return connection.protocol();
+    }
+
+    @Nullable
+    @Override
+    public ConnectionContext parent() {
+        return connection.parent();
     }
 
     @Override

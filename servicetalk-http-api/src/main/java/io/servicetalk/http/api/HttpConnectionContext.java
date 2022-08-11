@@ -27,4 +27,9 @@ public interface HttpConnectionContext extends ConnectionContext {
 
     @Override
     HttpProtocolVersion protocol();
+
+    // Do not override the return type of parent() method to HttpConnectionContext as there is a possibility to have an
+    // HttpConnectionContext over a non-HTTP ConnectionContext. Also, with HttpConnectionContext as a return type it
+    // makes implementation a lot harder because we receive a non-HTTP NettyConnectionContext from the transport and
+    // wrap it later.
 }

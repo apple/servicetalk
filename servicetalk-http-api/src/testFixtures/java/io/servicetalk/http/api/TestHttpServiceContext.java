@@ -16,6 +16,7 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.netty.internal.AddressUtils;
 
@@ -98,6 +99,12 @@ public class TestHttpServiceContext extends HttpServiceContext {
     @Override
     public HttpProtocolVersion protocol() {
         return HTTP_1_0;
+    }
+
+    @Nullable
+    @Override
+    public ConnectionContext parent() {
+        return null;
     }
 
     @Override

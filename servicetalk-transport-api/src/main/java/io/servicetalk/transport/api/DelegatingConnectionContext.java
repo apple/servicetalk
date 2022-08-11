@@ -87,6 +87,12 @@ public class DelegatingConnectionContext implements ConnectionContext {
         return delegate.protocol();
     }
 
+    @Nullable
+    @Override
+    public ConnectionContext parent() {
+        return delegate.parent();
+    }
+
     @Override
     public Completable onClose() {
         return delegate.onClose();
