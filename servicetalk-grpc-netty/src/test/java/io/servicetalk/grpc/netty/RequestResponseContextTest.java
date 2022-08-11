@@ -65,16 +65,16 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class RequestResponseContextTest {
 
-    private static final Key<CharSequence> CLIENT_META = newKey("CLIENT_META", CharSequence.class);
-    private static final Key<CharSequence> CLIENT_FILTER_OUT_META =
-            newKey("CLIENT_FILTER_OUT_META", CharSequence.class);
-    private static final Key<CharSequence> CLIENT_FILTER_IN_META =
-            newKey("CLIENT_FILTER_IN_META", CharSequence.class);
-    private static final Key<CharSequence> SERVER_FILTER_IN_META =
-            newKey("SERVER_FILTER_IN_META", CharSequence.class);
-    private static final Key<CharSequence> SERVER_META = newKey("SERVER_META", CharSequence.class);
-    private static final Key<CharSequence> SERVER_FILTER_OUT_META =
-            newKey("SERVER_FILTER_OUT_META", CharSequence.class);
+    private static final Key<CharSequence> CLIENT_CTX = newKey("CLIENT_CTX", CharSequence.class);
+    private static final Key<CharSequence> CLIENT_FILTER_OUT_CTX =
+            newKey("CLIENT_FILTER_OUT_CTX", CharSequence.class);
+    private static final Key<CharSequence> CLIENT_FILTER_IN_CTX =
+            newKey("CLIENT_FILTER_IN_CTX", CharSequence.class);
+    private static final Key<CharSequence> SERVER_FILTER_IN_CTX =
+            newKey("SERVER_FILTER_IN_CTX", CharSequence.class);
+    private static final Key<CharSequence> SERVER_CTX = newKey("SERVER_CTX", CharSequence.class);
+    private static final Key<CharSequence> SERVER_FILTER_OUT_CTX =
+            newKey("SERVER_FILTER_OUT_CTX", CharSequence.class);
 
     private static final TestRequest REQUEST = TestRequest.newBuilder().setName("name").build();
 
@@ -149,22 +149,22 @@ class RequestResponseContextTest {
                                                                 StreamingHttpRequest request,
                                                                 StreamingHttpResponseFactory responseFactory) {
                         // Take the first two values from headers
-                        request.context().put(CLIENT_META, request.headers().get(header(CLIENT_META)));
-                        request.context().put(CLIENT_FILTER_OUT_META,
-                                request.headers().get(header(CLIENT_FILTER_OUT_META)));
+                        request.context().put(CLIENT_CTX, request.headers().get(header(CLIENT_CTX)));
+                        request.context().put(CLIENT_FILTER_OUT_CTX,
+                                request.headers().get(header(CLIENT_FILTER_OUT_CTX)));
                         // Set the last value to context only
-                        request.context().put(SERVER_FILTER_IN_META, value(SERVER_FILTER_IN_META));
+                        request.context().put(SERVER_FILTER_IN_CTX, value(SERVER_FILTER_IN_CTX));
                         return delegate().handle(ctx, request, responseFactory)
                                 .whenOnSuccess(response -> {
                                     // Take the first two values from context
-                                    response.headers().set(header(SERVER_FILTER_IN_META),
-                                            requireNonNull(response.context().get(SERVER_FILTER_IN_META)));
-                                    response.headers().set(header(SERVER_META),
-                                            requireNonNull(response.context().get(SERVER_META)));
+                                    response.headers().set(header(SERVER_FILTER_IN_CTX),
+                                            requireNonNull(response.context().get(SERVER_FILTER_IN_CTX)));
+                                    response.headers().set(header(SERVER_CTX),
+                                            requireNonNull(response.context().get(SERVER_CTX)));
                                     // Set the last value to headers only
-                                    assertThat(response.context().containsKey(SERVER_FILTER_OUT_META), is(false));
-                                    response.headers().set(header(SERVER_FILTER_OUT_META),
-                                            value(SERVER_FILTER_OUT_META));
+                                    assertThat(response.context().containsKey(SERVER_FILTER_OUT_CTX), is(false));
+                                    response.headers().set(header(SERVER_FILTER_OUT_CTX),
+                                            value(SERVER_FILTER_OUT_CTX));
                                 });
                     }
                 }))
@@ -176,23 +176,23 @@ class RequestResponseContextTest {
                                  protected Single<StreamingHttpResponse> request(StreamingHttpRequester delegate,
                                                                                  StreamingHttpRequest request) {
                                      return Single.defer(() -> {
-                                         request.headers().set(header(CLIENT_META),
-                                                 requireNonNull(request.context().get(CLIENT_META)));
-                                         request.context().put(CLIENT_FILTER_OUT_META, value(CLIENT_FILTER_OUT_META));
-                                         request.headers().set(header(CLIENT_FILTER_OUT_META),
-                                                 requireNonNull(request.context().get(CLIENT_FILTER_OUT_META)));
+                                         request.headers().set(header(CLIENT_CTX),
+                                                 requireNonNull(request.context().get(CLIENT_CTX)));
+                                         request.context().put(CLIENT_FILTER_OUT_CTX, value(CLIENT_FILTER_OUT_CTX));
+                                         request.headers().set(header(CLIENT_FILTER_OUT_CTX),
+                                                 requireNonNull(request.context().get(CLIENT_FILTER_OUT_CTX)));
                                          return delegate.request(request).shareContextOnSubscribe()
                                                  .whenOnSuccess(response -> {
                                                      // Take the first three values from headers
-                                                     response.context().put(SERVER_FILTER_IN_META,
-                                                             response.headers().get(header(SERVER_FILTER_IN_META)));
-                                                     response.context().put(SERVER_META,
-                                                             response.headers().get(header(SERVER_META)));
-                                                     response.context().put(SERVER_FILTER_OUT_META,
-                                                             response.headers().get(header(SERVER_FILTER_OUT_META)));
+                                                     response.context().put(SERVER_FILTER_IN_CTX,
+                                                             response.headers().get(header(SERVER_FILTER_IN_CTX)));
+                                                     response.context().put(SERVER_CTX,
+                                                             response.headers().get(header(SERVER_CTX)));
+                                                     response.context().put(SERVER_FILTER_OUT_CTX,
+                                                             response.headers().get(header(SERVER_FILTER_OUT_CTX)));
                                                      // Set the last value to context only
-                                                     response.context().put(CLIENT_FILTER_IN_META,
-                                                             value(CLIENT_FILTER_IN_META));
+                                                     response.context().put(CLIENT_FILTER_IN_CTX,
+                                                             value(CLIENT_FILTER_IN_CTX));
                                                  });
                                      });
                                  }
@@ -200,7 +200,7 @@ class RequestResponseContextTest {
                      .build(new TesterProto.Tester.ClientFactory())) {
 
             GrpcClientMetadata metadata = new DefaultGrpcClientMetadata();
-            metadata.requestContext().put(CLIENT_META, value(CLIENT_META));
+            metadata.requestContext().put(CLIENT_CTX, value(CLIENT_CTX));
 
             if (error) {
                 GrpcStatusException e = assertThrows(GrpcStatusException.class, () -> exchange.send(client, metadata));
@@ -208,18 +208,18 @@ class RequestResponseContextTest {
             } else {
                 TestResponse response = exchange.send(client, metadata);
                 assertThat(response.getMessage(), is(contentEqualTo(
-                        join(":", value(CLIENT_META), value(CLIENT_FILTER_OUT_META), value(SERVER_FILTER_IN_META)))));
+                        join(":", value(CLIENT_CTX), value(CLIENT_FILTER_OUT_CTX), value(SERVER_FILTER_IN_CTX)))));
             }
 
             ContextMap requestContext = metadata.requestContext();
-            assertThat(requestContext.get(CLIENT_META), is(contentEqualTo(value(CLIENT_META))));
-            assertThat(requestContext.get(CLIENT_FILTER_OUT_META), is(contentEqualTo(value(CLIENT_FILTER_OUT_META))));
+            assertThat(requestContext.get(CLIENT_CTX), is(contentEqualTo(value(CLIENT_CTX))));
+            assertThat(requestContext.get(CLIENT_FILTER_OUT_CTX), is(contentEqualTo(value(CLIENT_FILTER_OUT_CTX))));
 
             ContextMap responseContext = metadata.responseContext();
-            assertThat(responseContext.get(CLIENT_FILTER_IN_META), is(contentEqualTo(value(CLIENT_FILTER_IN_META))));
-            assertThat(responseContext.get(SERVER_FILTER_IN_META), is(contentEqualTo(value(SERVER_FILTER_IN_META))));
-            assertThat(responseContext.get(SERVER_META), is(contentEqualTo(value(SERVER_META))));
-            assertThat(responseContext.get(SERVER_FILTER_OUT_META), is(contentEqualTo(value(SERVER_FILTER_OUT_META))));
+            assertThat(responseContext.get(CLIENT_FILTER_IN_CTX), is(contentEqualTo(value(CLIENT_FILTER_IN_CTX))));
+            assertThat(responseContext.get(SERVER_FILTER_IN_CTX), is(contentEqualTo(value(SERVER_FILTER_IN_CTX))));
+            assertThat(responseContext.get(SERVER_CTX), is(contentEqualTo(value(SERVER_CTX))));
+            assertThat(responseContext.get(SERVER_FILTER_OUT_CTX), is(contentEqualTo(value(SERVER_FILTER_OUT_CTX))));
         }
     }
 
@@ -232,16 +232,16 @@ class RequestResponseContextTest {
     }
 
     private static void setContext(GrpcServiceContext ctx) {
-        ctx.responseContext().put(SERVER_FILTER_IN_META, ctx.requestContext().get(SERVER_FILTER_IN_META));
-        ctx.responseContext().put(SERVER_META, value(SERVER_META));
+        ctx.responseContext().put(SERVER_FILTER_IN_CTX, ctx.requestContext().get(SERVER_FILTER_IN_CTX));
+        ctx.responseContext().put(SERVER_CTX, value(SERVER_CTX));
     }
 
     private static TestResponse newResponse(ContextMap requestContext) {
         return TestResponse.newBuilder()
                 .setMessage(join(":",
-                        requestContext.get(CLIENT_META),
-                        requestContext.get(CLIENT_FILTER_OUT_META),
-                        requestContext.get(SERVER_FILTER_IN_META)))
+                        requestContext.get(CLIENT_CTX),
+                        requestContext.get(CLIENT_FILTER_OUT_CTX),
+                        requestContext.get(SERVER_FILTER_IN_CTX)))
                 .build();
     }
 
