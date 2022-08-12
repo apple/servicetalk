@@ -16,13 +16,15 @@
 package io.servicetalk.grpc.api;
 
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.encoding.api.ContentCodec;
 import io.servicetalk.http.api.HttpProtocolVersion;
+import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.TrailersTransformer;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import java.util.List;
+import java.util.function.Supplier;
 
 /**
  * A <a href="https://www.grpc.io">gRPC</a> service context.
@@ -46,10 +48,20 @@ public interface GrpcServiceContext extends ConnectionContext, GrpcMetadata {
     /**
      * {@inheritDoc}
      * <p>
-     * <b>Note</b>: for asynchronous endpoints that return a {@link Single} or a {@link Publisher} the response context
-     * must be modified before the async source emits an item or completes. As soon as an item is emitted, the HTTP
-     * response will be send back the the client and any later modifications for this context won't be visible in an
-     * HTTP filter chain.
+     * <b>Notes</b>:
+     * <ol>
+     *     <li>For asynchronous endpoints that operate with a {@link Publisher} either for reading or writing data back,
+     *     only modifications to the {@link #responseContext()} made before the endpoint method returns are visible for
+     *     HTTP {@link StreamingHttpResponse#headers() headers}. Any other modifications made from inside the
+     *     asynchronous chain of operators or from inside the {@link Publisher#defer(Supplier)} operator will be visible
+     *     only for HTTP {@link StreamingHttpResponse#transform(TrailersTransformer) trailers}.</li>
+     *     <li>For synchronous endpoints that operate with {@link BlockingStreamingGrpcServerResponse}, only
+     *     modifications to the {@link #responseContext()} made before invocation of
+     *     {@link BlockingStreamingGrpcServerResponse#sendMetaData()} method are visible for HTTP
+     *     {@link StreamingHttpResponse#headers() headers}. Any other modifications made later (while operating with
+     *     {@link GrpcPayloadWriter}) will be visible only for HTTP
+     *     {@link StreamingHttpResponse#transform(TrailersTransformer) trailers}.</li>
+     * </ol>
      */
     @Override
     default ContextMap responseContext() {
