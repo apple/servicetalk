@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,22 +15,17 @@
  */
 package io.servicetalk.concurrent.api;
 
-import javax.annotation.Nullable;
+/**
+ * Used to distinguish between a real object and a {@link Throwable} from terminal error.
+ */
+final class ThrowableWrapper {
+    private final Throwable throwable;
 
-final class SubscriberApiUtils {
-    private static final Object NULL_TOKEN = new Object();
-
-    private SubscriberApiUtils() {
-        // no instances
+    ThrowableWrapper(final Throwable throwable) {
+        this.throwable = throwable;
     }
 
-    static Object wrapNull(@Nullable Object o) {
-        return o == null ? NULL_TOKEN : o;
-    }
-
-    @SuppressWarnings("unchecked")
-    @Nullable
-    static <T> T unwrapNullUnchecked(Object o) {
-        return o == NULL_TOKEN ? null : (T) o;
+    Throwable unwrap() {
+        return throwable;
     }
 }

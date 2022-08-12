@@ -25,6 +25,8 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.defer;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.concurrent.api.SubscriberApiUtils.unwrapNullUnchecked;
+import static io.servicetalk.concurrent.api.SubscriberApiUtils.wrapNull;
 import static io.servicetalk.concurrent.internal.ConcurrentUtils.releaseLock;
 import static io.servicetalk.concurrent.internal.ConcurrentUtils.tryAcquireLock;
 import static io.servicetalk.utils.internal.PlatformDependent.newUnboundedSpscQueue;
@@ -134,31 +136,27 @@ final class PublisherFlatMapConcatUtils {
         SingleSource.Subscriber<? super R> subscriber;
         @Nullable
         private Object result;
-        // 0 = not terminated, 1 = success, 2 = error
-        private byte terminalState;
 
         void onError(Throwable cause) {
-            terminalState = 2;
-            result = cause;
+            result = new ThrowableWrapper(cause);
         }
 
         void onSuccess(@Nullable R r) {
-            terminalState = 1;
-            result = r;
+            result = wrapNull(r);
         }
 
-        @SuppressWarnings("unchecked")
         boolean tryTerminate() {
-            assert subscriber != null; // if terminated, must have a subscriber
-            if (terminalState == 1) {
-                subscriber.onSuccess((R) result);
-                return true;
-            } else if (terminalState == 2) {
-                assert result != null;
-                subscriber.onError((Throwable) result);
-                return true;
+            final Object localResult = result;
+            if (localResult == null) {
+                return false;
+            } else if (ThrowableWrapper.class.equals(localResult.getClass())) {
+                assert subscriber != null; // if terminated, must have a subscriber
+                subscriber.onError(((ThrowableWrapper) localResult).unwrap());
+            } else {
+                assert subscriber != null; // if terminated, must have a subscriber
+                subscriber.onSuccess(unwrapNullUnchecked(localResult));
             }
-            return false;
+            return true;
         }
     }
 }
