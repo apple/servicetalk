@@ -25,6 +25,8 @@ import com.google.protobuf.Parser;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -40,6 +42,7 @@ public final class ProtobufSerializerFactory {
     public static final ProtobufSerializerFactory PROTOBUF = new ProtobufSerializerFactory();
     private static final MethodType PARSER_METHOD_TYPE = MethodType.methodType(Parser.class);
     private static final String PARSER_METHOD_NAME = "parser";
+    private static final String PARSER_FIELD_NAME = "PARSER";
     private final Map<Class<?>, Parser<?>> parserMap = new ConcurrentHashMap<>();
     @SuppressWarnings("rawtypes")
     private final Map<Parser<?>, SerializerDeserializer> serializerMap = new ConcurrentHashMap<>();
@@ -109,8 +112,20 @@ public final class ProtobufSerializerFactory {
         final MethodHandle mh;
         try {
             mh = MethodHandles.publicLookup().findStatic(clazz, PARSER_METHOD_NAME, PARSER_METHOD_TYPE);
-        } catch (IllegalAccessException | NoSuchMethodException e) {
+        } catch (IllegalAccessException e) {
             throw new IllegalArgumentException("Unable to find " + clazz + "." + PARSER_METHOD_NAME, e);
+        } catch (NoSuchMethodException nsme) {
+            // perhaps the class is a protobuf 2.x generated class
+            try {
+                Field parserStatic = clazz.getDeclaredField(PARSER_FIELD_NAME);
+                int fieldModifiers = parserStatic.getModifiers();
+                if (Modifier.isPublic(fieldModifiers) && Modifier.isStatic(fieldModifiers)) {
+                    return (Parser<T>) parserStatic.get(null);
+                }
+                throw new IllegalArgumentException(clazz + "." + PARSER_FIELD_NAME + "is null");
+            } catch (NoSuchFieldException | IllegalAccessException e) {
+                throw new IllegalArgumentException("Unable to access " + clazz + "." + PARSER_FIELD_NAME, e);
+            }
         }
         try {
             return (Parser<T>) mh.invokeExact();
