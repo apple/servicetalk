@@ -134,6 +134,13 @@ final class PublisherFlatMapConcatUtils {
     private static final class Item<R> {
         @Nullable
         SingleSource.Subscriber<? super R> subscriber;
+        /**
+         * Visibility is provided by {@link OrderedMapper#consumerLockUpdater}. There are multiple producer threads
+         * modifying independent {@link Item}s, but only a single thread consumes and calls {@link #tryTerminate()}.
+         * Since the state is a single reference either the consumer thread sees the state, or it doesn't. If it does
+         * then the item can be consumed and we are done. If it doesn't then the
+         * {@link OrderedMapper#consumerLockUpdater} requires another lock attempt and the state becomes visible.
+         */
         @Nullable
         private Object result;
 
