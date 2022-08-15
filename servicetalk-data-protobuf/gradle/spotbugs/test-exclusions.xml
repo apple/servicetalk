@@ -27,4 +27,8 @@
     <Source name="~.*Test\.java"/>
     <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_THROWABLE"/>
   </Match>
+  <Match>
+    <Source name="~.*Test\.java"/>
+    <Bug pattern="CN_IDIOM_NO_SUPER_CALL,EI_EXPOSE_REP,MS_SHOULD_BE_FINAL"/>
+  </Match>
 </FindBugsFilter>

@@ -20,21 +20,18 @@ import io.servicetalk.data.protobuf.test.TestProtos.DummyMessage;
 import io.servicetalk.serializer.api.SerializerDeserializer;
 import io.servicetalk.serializer.api.StreamingSerializerDeserializer;
 
-import com.google.protobuf.ByteString;
+import com.google.protobuf.AbstractMessageLite;
+import com.google.protobuf.AbstractParser;
 import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.CodedOutputStream;
 import com.google.protobuf.ExtensionRegistryLite;
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.google.protobuf.MessageLite;
 import com.google.protobuf.Parser;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -164,151 +161,26 @@ class ProtobufSerializerFactoryTest {
     }
 
     @SuppressWarnings("PMD.MutableStaticState")
-    public static class Protobuf2Message implements MessageLite {
+    public static class Protobuf2Message extends AbstractMessageLite<Protobuf2Message, Protobuf2Message.Builder> {
 
-        static final Protobuf2Message MESSAGE = new Protobuf2Message();
-        public static Parser<Protobuf2Message> PARSER = new Parser<Protobuf2Message>() {
-
+        static final Protobuf2Message MESSAGE = new Protobuf2Message() {
             @Override
-            public Protobuf2Message parseFrom(final CodedInputStream input) {
-                return MESSAGE;
+            public boolean isInitialized() {
+                return true;
             }
+        };
 
-            @Override
-            public Protobuf2Message parseFrom(final CodedInputStream input,
-                                              final ExtensionRegistryLite extensionRegistry) {
-                return MESSAGE;
-            }
-
-            @Override
-            public Protobuf2Message parsePartialFrom(final CodedInputStream input) {
-                return MESSAGE;
-            }
+        /**
+         * This declaration is intended to be compatible with how protoc 2.5 generated message classes.
+         */
+        public static Parser<Protobuf2Message> PARSER = new AbstractParser<Protobuf2Message>() {
 
             @Override
             public Protobuf2Message parsePartialFrom(final CodedInputStream input,
                                                      final ExtensionRegistryLite extensionRegistry) {
                 return MESSAGE;
             }
-
-            @Override
-            public Protobuf2Message parseFrom(final ByteBuffer data) {
-                return MESSAGE;
-            }
-
-            @Override
-            public Protobuf2Message parseFrom(final ByteBuffer data, final ExtensionRegistryLite extensionRegistry) {
-                return MESSAGE;
-            }
-
-            @Override
-            public Protobuf2Message parseFrom(final ByteString data) {
-                return MESSAGE;
-            }
-
-            @Override
-            public Protobuf2Message parseFrom(final ByteString data, final ExtensionRegistryLite extensionRegistry) {
-                return MESSAGE;
-            }
-
-            @Override
-            public Protobuf2Message parsePartialFrom(final ByteString data) {
-                return MESSAGE;
-            }
-
-            @Override
-            public Protobuf2Message parsePartialFrom(final ByteString data,
-                                                     final ExtensionRegistryLite extensionRegistry) {
-                return MESSAGE;
-            }
-
-            @Override
-            public Protobuf2Message parseFrom(final byte[] data, final int off, final int len)
-                    throws InvalidProtocolBufferException {
-                return MESSAGE;
-            }
-
-            @Override
-            public Protobuf2Message parseFrom(final byte[] data, final int off, final int len,
-                                              final ExtensionRegistryLite extensionRegistry) {
-                return MESSAGE;
-            }
-
-            @Override
-            public Protobuf2Message parseFrom(final byte[] data) {
-                return MESSAGE;
-            }
-
-            @Override
-            public Protobuf2Message parseFrom(final byte[] data, final ExtensionRegistryLite extensionRegistry) {
-                return MESSAGE;
-            }
-
-            @Override
-            public Protobuf2Message parsePartialFrom(final byte[] data, final int off, final int len) {
-                return MESSAGE;
-            }
-
-            @Override
-            public Protobuf2Message parsePartialFrom(final byte[] data, final int off, final int len,
-                                                     final ExtensionRegistryLite extensionRegistry) {
-                return MESSAGE;
-            }
-
-            @Override
-            public Protobuf2Message parsePartialFrom(final byte[] data) {
-                return MESSAGE;
-            }
-
-            @Override
-            public Protobuf2Message parsePartialFrom(final byte[] data, final ExtensionRegistryLite extensionRegistry) {
-                return MESSAGE;
-            }
-
-            @Override
-            public Protobuf2Message parseFrom(final InputStream input) {
-                return MESSAGE;
-            }
-
-            @Override
-            public Protobuf2Message parseFrom(final InputStream input, final ExtensionRegistryLite extensionRegistry) {
-                return MESSAGE;
-            }
-
-            @Override
-            public Protobuf2Message parsePartialFrom(final InputStream input) {
-                return MESSAGE;
-            }
-
-            @Override
-            public Protobuf2Message parsePartialFrom(final InputStream input,
-                                                     final ExtensionRegistryLite extensionRegistry) {
-                return MESSAGE;
-            }
-
-            @Override
-            public Protobuf2Message parseDelimitedFrom(final InputStream input) {
-                return MESSAGE;
-            }
-
-            @Override
-            public Protobuf2Message parseDelimitedFrom(final InputStream input,
-                                                       final ExtensionRegistryLite extensionRegistry) {
-                return MESSAGE;
-            }
-
-            @Override
-            public Protobuf2Message parsePartialDelimitedFrom(final InputStream input) {
-                return MESSAGE;
-            }
-
-            @Override
-            public Protobuf2Message parsePartialDelimitedFrom(final InputStream input,
-                                                              final ExtensionRegistryLite extensionRegistry) {
-                return MESSAGE;
-            }
         };
-
         @Override
         public void writeTo(final CodedOutputStream output) {
             throw new UnsupportedOperationException();
@@ -320,48 +192,71 @@ class ProtobufSerializerFactoryTest {
         }
 
         @Override
-        public Parser<? extends MessageLite> getParserForType() {
-            throw new UnsupportedOperationException();
+        public Parser<Protobuf2Message> getParserForType() {
+            return PARSER;
         }
 
         @Override
-        public ByteString toByteString() {
-            throw new UnsupportedOperationException();
+        public Protobuf2Message.Builder newBuilderForType() {
+            return new Builder();
         }
 
         @Override
-        public byte[] toByteArray() {
-            throw new UnsupportedOperationException();
+        public Protobuf2Message.Builder toBuilder() {
+            return new Builder();
         }
 
         @Override
-        public void writeTo(final OutputStream output) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void writeDelimitedTo(final OutputStream output) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Builder newBuilderForType() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Builder toBuilder() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public MessageLite getDefaultInstanceForType() {
-            throw new UnsupportedOperationException();
+        public Protobuf2Message getDefaultInstanceForType() {
+            return MESSAGE;
         }
 
         @Override
         public boolean isInitialized() {
             return false;
+        }
+
+        public static class Builder extends AbstractMessageLite.Builder<Protobuf2Message, Protobuf2Message.Builder> {
+
+            @Override
+            public Builder clear() {
+                return this;
+            }
+
+            @Override
+            public Protobuf2Message build() {
+                return MESSAGE;
+            }
+
+            @Override
+            public Protobuf2Message buildPartial() {
+                return MESSAGE;
+            }
+
+            @Override
+            public Builder clone() {
+                return this;
+            }
+
+            @Override
+            public Builder mergeFrom(final CodedInputStream input, final ExtensionRegistryLite extensionRegistry) {
+                return this;
+            }
+
+            @Override
+            protected Builder internalMergeFrom(final Protobuf2Message message) {
+                return this;
+            }
+
+            @Override
+            public Protobuf2Message getDefaultInstanceForType() {
+                return MESSAGE;
+            }
+
+            @Override
+            public boolean isInitialized() {
+                return true;
+            }
         }
     }
 }

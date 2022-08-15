@@ -24,4 +24,8 @@
             files="io[\\/]servicetalk[\\/]data[\\/]protobuf[\\/]ProtobufSerializerFactoryTest.java"/>
   <suppress checks="VisibilityModifier"
             files="io[\\/]servicetalk[\\/]data[\\/]protobuf[\\/]ProtobufSerializerFactoryTest.java"/>
+  <suppress checks="SuperClone"
+            files="io[\\/]servicetalk[\\/]data[\\/]protobuf[\\/]ProtobufSerializerFactoryTest.java"/>
+  <suppress checks="NoClone"
+            files="io[\\/]servicetalk[\\/]data[\\/]protobuf[\\/]ProtobufSerializerFactoryTest.java"/>
 </suppressions>
