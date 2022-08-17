@@ -35,6 +35,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
+import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -75,8 +76,8 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends LoadBalancedConnection>
         implements LoadBalancerFactory<ResolvedAddress, C> {
 
-    private static final Duration DEFAULT_HEALTH_CHECK_INTERVAL = Duration.ofSeconds(5);
-    private static final Duration DEFAULT_HEALTH_CHECK_JITTER = Duration.ofSeconds(3);
+    private static final Duration DEFAULT_HEALTH_CHECK_INTERVAL = ofSeconds(5);
+    private static final Duration DEFAULT_HEALTH_CHECK_JITTER = ofSeconds(3);
     static final int DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD = 5; // higher than default for AutoRetryStrategy
 
     private final int linearSearchSpace;

@@ -46,7 +46,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import java.time.Duration;
 import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.Collection;
@@ -88,7 +87,6 @@ import static io.servicetalk.concurrent.internal.TestTimeoutConstants.DEFAULT_TI
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory.DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD;
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancerTest.UnhealthyHostConnectionFactory.UNHEALTHY_HOST_EXCEPTION;
 import static java.time.Duration.ofMillis;
-import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toSet;
