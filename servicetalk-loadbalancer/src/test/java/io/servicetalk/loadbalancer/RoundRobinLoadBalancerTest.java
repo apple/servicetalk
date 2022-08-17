@@ -87,6 +87,8 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static io.servicetalk.concurrent.internal.TestTimeoutConstants.DEFAULT_TIMEOUT_SECONDS;
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory.DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD;
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancerTest.UnhealthyHostConnectionFactory.UNHEALTHY_HOST_EXCEPTION;
+import static java.time.Duration.ofMillis;
+import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toSet;
@@ -525,6 +527,7 @@ abstract class RoundRobinLoadBalancerTest {
         final AtomicInteger scheduleCnt = new AtomicInteger();
         lb = (RoundRobinLoadBalancer<String, TestLoadBalancedConnection>)
                 new RoundRobinLoadBalancerFactory.Builder<String, TestLoadBalancedConnection>()
+                        .healthCheckInterval(ofMillis(50), ofMillis(10))
                         .healthCheckFailedConnectionsThreshold(1)
                         .backgroundExecutor(new DelegatingExecutor(testExecutor) {
 
@@ -599,7 +602,7 @@ abstract class RoundRobinLoadBalancerTest {
                                 // but we still wait until the health check is scheduled and only then stop retrying.
                                 t instanceof DeliberateException || testExecutor.scheduledTasksPending() == 0,
                         // try to prevent stack overflow
-                        Duration.ofMillis(30), executorForRetries)));
+                        ofMillis(30), executorForRetries)));
             } catch (Exception e) {
                 assertThat(e.getCause(), instanceOf(NoAvailableHostException.class));
             } finally {
@@ -636,6 +639,7 @@ abstract class RoundRobinLoadBalancerTest {
 
         lb = (RoundRobinLoadBalancer<String, TestLoadBalancedConnection>)
                 new RoundRobinLoadBalancerFactory.Builder<String, TestLoadBalancedConnection>()
+                        .healthCheckInterval(ofMillis(50), ofMillis(10))
                         .backgroundExecutor(testExecutor)
                         .build()
                         .newLoadBalancer("test-service", serviceDiscoveryPublisher, connectionFactory);
@@ -707,6 +711,7 @@ abstract class RoundRobinLoadBalancerTest {
         final DelegatingConnectionFactory connectionFactory) {
         return (RoundRobinLoadBalancer<String, TestLoadBalancedConnection>)
                 new RoundRobinLoadBalancerFactory.Builder<String, TestLoadBalancedConnection>()
+                        .healthCheckInterval(ofMillis(50), ofMillis(10))
                         .backgroundExecutor(testExecutor)
                         .build()
                         .newLoadBalancer("test-service", serviceDiscoveryPublisher, connectionFactory);
