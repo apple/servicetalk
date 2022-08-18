@@ -41,10 +41,4 @@ public class BeforeFinallyHttpOperatorTckTest extends AbstractPublisherOperatorT
                 .liftSync(new BeforeFinallyHttpOperator(() -> { /* noop */ }))
                 .flatMapPublisher(StreamingHttpResponse::payloadBody);
     }
-
-    @Override
-    public void required_spec313_cancelMustMakeThePublisherEventuallyDropAllReferencesToTheSubscriber() {
-        // FIXME: unskip this test
-        notVerified();
-    }
 }
