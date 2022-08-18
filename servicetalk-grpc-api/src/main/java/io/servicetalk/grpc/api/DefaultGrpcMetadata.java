@@ -33,6 +33,8 @@ class DefaultGrpcMetadata implements GrpcMetadata {
      * Construct a new instance.
      *
      * @param path The path for the associated <a href="https://www.grpc.io">gRPC</a> method.
+     * @param requestContext {@link Supplier} that returns the same {@link ContextMap} on each invocation.
+     * @param responseContext {@link Supplier} that returns the same {@link ContextMap} on each invocation.
      */
     DefaultGrpcMetadata(final String path,
                         final Supplier<ContextMap> requestContext,
@@ -60,8 +62,7 @@ class DefaultGrpcMetadata implements GrpcMetadata {
 
     boolean responseContext(final ContextMap context) {
         if (responseContext instanceof LazyContextMapSupplier) {
-            ((LazyContextMapSupplier) responseContext).initialize(context);
-            return true;
+            return ((LazyContextMapSupplier) responseContext).initialize(context);
         }
         return false;
     }
@@ -83,8 +84,12 @@ class DefaultGrpcMetadata implements GrpcMetadata {
             return context != null;
         }
 
-        void initialize(final ContextMap context) {
-            this.context = requireNonNull(context);
+        boolean initialize(final ContextMap context) {
+            if (!isInitialized()) {
+                this.context = requireNonNull(context);
+                return true;
+            }
+            return false;
         }
     }
 }
