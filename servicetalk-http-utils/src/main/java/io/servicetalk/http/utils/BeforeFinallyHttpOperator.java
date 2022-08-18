@@ -117,8 +117,22 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
         private static final int TERMINATED = 4;
         private static final AtomicIntegerFieldUpdater<ResponseCompletionSubscriber> stateUpdater =
                 newUpdater(ResponseCompletionSubscriber.class, "state");
+        private static final SingleSource.Subscriber<StreamingHttpResponse> NOOP_SUBSCRIBER =
+                new SingleSource.Subscriber<StreamingHttpResponse>() {
+            @Override
+            public void onSubscribe(final Cancellable cancellable) {
+            }
 
-        private final SingleSource.Subscriber<? super StreamingHttpResponse> subscriber;
+            @Override
+            public void onSuccess(@Nullable final StreamingHttpResponse result) {
+            }
+
+            @Override
+            public void onError(final Throwable t) {
+            }
+        };
+
+        private SingleSource.Subscriber<? super StreamingHttpResponse> subscriber;
         private final TerminalSignalConsumer beforeFinally;
         private final boolean discardEventsAfterCancel;
         private volatile int state;
@@ -388,6 +402,7 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
                     return Publisher.failed(new CancellationException("Received response post cancel."));
                 }));
             }
+            dereferenceSubscriber();
         }
 
         @Override
@@ -402,6 +417,7 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
                 addSuppressed(t, cause);
             }
             subscriber.onError(t);
+            dereferenceSubscriber();
         }
 
         private void sendNullResponse() {
@@ -414,9 +430,18 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
                 }
             } catch (Throwable cause) {
                 subscriber.onError(cause);
+                dereferenceSubscriber();
                 return;
             }
             subscriber.onSuccess(null);
+            dereferenceSubscriber();
+        }
+
+        private void dereferenceSubscriber() {
+            // After terminating the Single subscriber we need to dereference the Single subscriber as otherwise
+            // we may retain a reference to a downstream Subscriber and violate RS 3.13.
+            // https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.4/README.md#3.13
+            subscriber = NOOP_SUBSCRIBER;
         }
     }
 }
