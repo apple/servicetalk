@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,7 +65,7 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.toAsyncCloseable;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Processors.newPublisherProcessorDropHeadOnOverflow;
 import static io.servicetalk.concurrent.api.Publisher.from;
-import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoffFullJitter;
+import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoffDeltaJitter;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
@@ -456,12 +456,15 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
     static final class HealthCheckConfig {
         private final Executor executor;
         private final Duration healthCheckInterval;
+        private final Duration jitter;
         private final int failedThreshold;
 
-        HealthCheckConfig(final Executor executor, final Duration healthCheckInterval, final int failedThreshold) {
+        HealthCheckConfig(final Executor executor, final Duration healthCheckInterval, final Duration healthCheckJitter,
+                          final int failedThreshold) {
             this.executor = executor;
             this.healthCheckInterval = healthCheckInterval;
             this.failedThreshold = failedThreshold;
+            this.jitter = healthCheckJitter;
         }
     }
 
@@ -773,9 +776,9 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
                 assert host.healthCheckConfig != null;
                 delayedCancellable(
                         // Use retry strategy to utilize jitter.
-                        retryWithConstantBackoffFullJitter(cause -> true,
-
+                        retryWithConstantBackoffDeltaJitter(cause -> true,
                                 host.healthCheckConfig.healthCheckInterval,
+                                host.healthCheckConfig.jitter,
                                 host.healthCheckConfig.executor)
                                 .apply(0, originalCause)
                                 // Remove any state from async context
@@ -783,13 +786,14 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
                                 .concat(connectionFactory.newConnection(host.address, null, null)
                                         // There is no risk for StackOverflowError because result of each connection
                                         // attempt will be invoked on IoExecutor as a new task.
-                                        .retryWhen(retryWithConstantBackoffFullJitter(
+                                        .retryWhen(retryWithConstantBackoffDeltaJitter(
                                                 cause -> {
                                                     LOGGER.debug("Load balancer for {}: health check failed for {}.",
                                                             host.targetResource, host, cause);
                                                     return true;
                                                 },
                                                 host.healthCheckConfig.healthCheckInterval,
+                                                host.healthCheckConfig.jitter,
                                                 host.healthCheckConfig.executor)))
                                 .flatMapCompletable(newCnx -> {
                                     if (host.addConnection(newCnx)) {

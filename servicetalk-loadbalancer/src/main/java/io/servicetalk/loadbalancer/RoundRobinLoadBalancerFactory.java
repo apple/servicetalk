@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021-2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
+import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -75,7 +76,8 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends LoadBalancedConnection>
         implements LoadBalancerFactory<ResolvedAddress, C> {
 
-    private static final Duration DEFAULT_HEALTH_CHECK_INTERVAL = Duration.ofSeconds(1);
+    private static final Duration DEFAULT_HEALTH_CHECK_INTERVAL = ofSeconds(5);
+    private static final Duration DEFAULT_HEALTH_CHECK_JITTER = ofSeconds(3);
     static final int DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD = 5; // higher than default for AutoRetryStrategy
 
     private final int linearSearchSpace;
@@ -114,6 +116,7 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
         @Nullable
         private Executor backgroundExecutor;
         private Duration healthCheckInterval = DEFAULT_HEALTH_CHECK_INTERVAL;
+        private Duration healthCheckJitter = DEFAULT_HEALTH_CHECK_JITTER;
         private int healthCheckFailedConnectionsThreshold = DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD;
 
         /**
@@ -174,12 +177,39 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
          * @param interval interval at which a background health check will be scheduled.
          * @return {@code this}.
          * @see #healthCheckFailedConnectionsThreshold(int)
+         * @deprecated Use {@link #healthCheckInterval(Duration, Duration)}.
          */
+        @Deprecated
         public RoundRobinLoadBalancerFactory.Builder<ResolvedAddress, C> healthCheckInterval(Duration interval) {
+            return healthCheckInterval(interval,
+                    interval.compareTo(DEFAULT_HEALTH_CHECK_INTERVAL) <= 0 ? interval.dividedBy(2) :
+                            DEFAULT_HEALTH_CHECK_JITTER);
+        }
+
+        /**
+         * Configure an interval for health checking a host that failed to open connections. If no interval is provided
+         * using this method, a default value will be used.
+         * <p>
+         * {@link #healthCheckFailedConnectionsThreshold(int)} can be used to disable the health checking mechanism
+         * and always consider all hosts for establishing new connections.
+         * @param interval interval at which a background health check will be scheduled.
+         * @param jitter the amount of jitter to apply to each retry {@code interval}.
+         * @return {@code this}.
+         * @see #healthCheckFailedConnectionsThreshold(int)
+         */
+        public RoundRobinLoadBalancerFactory.Builder<ResolvedAddress, C> healthCheckInterval(Duration interval,
+                                                                                             Duration jitter) {
             if (interval.isNegative() || interval.isZero()) {
                 throw new IllegalArgumentException("Health check interval should be greater than 0");
             }
+            if (jitter.isNegative() || jitter.isZero()) {
+                throw new IllegalArgumentException("Jitter interval should be greater than 0");
+            }
+            if (interval.minus(jitter).isNegative() || interval.plus(jitter).isNegative()) {
+                throw new IllegalArgumentException("Jitter plus/minus interval underflow/overflow");
+            }
             this.healthCheckInterval = interval;
+            this.healthCheckJitter = jitter;
             return this;
         }
 
@@ -218,7 +248,7 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
 
             HealthCheckConfig healthCheckConfig = new HealthCheckConfig(
                             this.backgroundExecutor == null ? SharedExecutor.getInstance() : this.backgroundExecutor,
-                    healthCheckInterval, healthCheckFailedConnectionsThreshold);
+                    healthCheckInterval, healthCheckJitter, healthCheckFailedConnectionsThreshold);
 
             return new RoundRobinLoadBalancerFactory<>(linearSearchSpace, healthCheckConfig);
         }
