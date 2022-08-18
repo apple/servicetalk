@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-core"
 apply plugin: "java-platform"
 
@@ -40,8 +39,6 @@ dependencies {
 
     // Ideally these come from the Netty BOM
     api "io.netty.incubator:netty-incubator-transport-native-io_uring:$nettyIoUringVersion"
-    api "io.netty.incubator:netty-incubator-transport-native-io_uring:$nettyIoUringVersion:linux-x86_64"
-    api "io.netty.incubator:netty-incubator-transport-native-io_uring:$nettyIoUringVersion:linux-aarch_64"
 
     api "io.opentracing:opentracing-api:$openTracingVersion"
     api "io.zipkin.reporter2:zipkin-reporter:$zipkinReporterVersion"
@@ -96,6 +93,16 @@ publishing {
           system = 'ServiceTalk CI'
           url = "${ciManagementUrl}"
         }
+        // Gradle ignores dependencies constraints with classifiers when it generates pom.xml. To workaround it, we are
+        // forced to use withXml. See https://github.com/gradle/gradle/issues/8561
+        withXml {
+          Node pomNode = asNode()
+          Node dependencies = pomNode.dependencyManagement.dependencies.get(0)
+          addDependency(dependencies, "io.netty.incubator", "netty-incubator-transport-native-io_uring",
+              "${nettyIoUringVersion}", "linux-x86_64")
+          addDependency(dependencies, "io.netty.incubator", "netty-incubator-transport-native-io_uring",
+              "${nettyIoUringVersion}", "linux-aarch_64")
+        }
       }
     }
   }
@@ -124,4 +131,12 @@ if (!!findProperty("signingKey") && !!findProperty("signingPassword")) {
     useInMemoryPgpKeys(signingKey, signingPassword)
     sign publishing.publications.mavenJava
   }
+}
+
+def addDependency(Node dependencies, String groupId, String artifactId, String version, String classifier) {
+  Node dependency = dependencies.appendNode("dependency")
+  dependency.appendNode("groupId", groupId)
+  dependency.appendNode("artifactId", artifactId)
+  dependency.appendNode("version", version)
+  dependency.appendNode("classifier", classifier)
 }
