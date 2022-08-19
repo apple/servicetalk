@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@ package io.servicetalk.concurrent.reactivestreams.tck;
 
 import io.servicetalk.concurrent.api.Publisher;
 
-import org.testng.annotations.Test;
-
 import static io.servicetalk.concurrent.reactivestreams.ReactiveStreamsAdapters.toReactiveStreamsPublisher;
 
 /**
@@ -29,7 +27,6 @@ import static io.servicetalk.concurrent.reactivestreams.ReactiveStreamsAdapters.
  * {@link #createServiceTalkPublisher(long)} by yourself you should extend this class, otherwise most of the times you
  * want to extend {@link AbstractPublisherOperatorTckTest}.
  */
-@Test
 public abstract class AbstractPublisherTckTest<T> extends AbstractTckTest<T> {
 
     @Override
@@ -37,7 +34,13 @@ public abstract class AbstractPublisherTckTest<T> extends AbstractTckTest<T> {
         return toReactiveStreamsPublisher(createServiceTalkPublisher(elements));
     }
 
-    public abstract Publisher<T> createServiceTalkPublisher(long elements);
+    /**
+     * Creates a {@link Publisher} with the specified number of elements.
+     *
+     * @param elements number of elements in the {@link Publisher}
+     * @return {@link Publisher} that will emit the specified number of elements
+     */
+    protected abstract Publisher<T> createServiceTalkPublisher(long elements);
 
     @Override
     public org.reactivestreams.Publisher<T> createFailedPublisher() {

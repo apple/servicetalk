@@ -17,8 +17,11 @@ package io.servicetalk.concurrent.reactivestreams.tck;
 
 import io.servicetalk.concurrent.api.Completable;
 
+import org.testng.annotations.Test;
+
 import static io.servicetalk.concurrent.api.Completable.completed;
 
+@Test
 public class CompletableMergeOneDelayErrorTckTest extends AbstractCompletableOperatorTckTest {
     @Override
     protected Completable composeCompletable(Completable completable) {

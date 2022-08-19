@@ -46,6 +46,7 @@ dependencies {
   testImplementation testFixtures(project(":servicetalk-buffer-api"))
   testImplementation testFixtures(project(":servicetalk-concurrent-api"))
   testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
+  testImplementation testFixtures(project(":servicetalk-concurrent-reactivestreams"))
   testImplementation testFixtures(project(":servicetalk-http-api"))
   testImplementation testFixtures(project(":servicetalk-transport-netty-internal"))
   testImplementation project(":servicetalk-concurrent-api-test")
@@ -65,6 +66,7 @@ dependencies {
   testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
   testImplementation "org.mockito:mockito-junit-jupiter:$mockitoCoreVersion"
+  testImplementation "org.testng:testng:$testngVersion"
 
   testFixturesImplementation testFixtures(project(":servicetalk-transport-netty-internal"))
   testFixturesImplementation project(":servicetalk-http-utils")
@@ -72,3 +74,10 @@ dependencies {
   testFixturesImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
   testFixturesRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
 }
+
+// We need testng for the reactive-streams-tck
+task tck(type: Test) {
+  useTestNG()
+}
+
+test.dependsOn tck

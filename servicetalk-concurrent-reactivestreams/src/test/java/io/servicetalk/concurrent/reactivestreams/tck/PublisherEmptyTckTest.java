@@ -22,7 +22,7 @@ import org.testng.annotations.Test;
 @Test
 public class PublisherEmptyTckTest extends AbstractPublisherTckTest<Integer> {
     @Override
-    public Publisher<Integer> createServiceTalkPublisher(long elements) {
+    protected Publisher<Integer> createServiceTalkPublisher(long elements) {
         return Publisher.empty();
     }
 

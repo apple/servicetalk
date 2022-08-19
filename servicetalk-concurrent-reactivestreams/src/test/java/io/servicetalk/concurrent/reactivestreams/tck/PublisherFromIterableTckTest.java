@@ -26,7 +26,7 @@ import static java.util.stream.IntStream.range;
 @Test
 public class PublisherFromIterableTckTest extends AbstractPublisherTckTest<Integer> {
     @Override
-    public Publisher<Integer> createServiceTalkPublisher(final long elements) {
+    protected Publisher<Integer> createServiceTalkPublisher(final long elements) {
         return fromIterable(() -> range(0, requestNToInt(elements)).iterator());
     }
 

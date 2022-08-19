@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,6 @@ package io.servicetalk.concurrent.reactivestreams.tck;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 
-import org.testng.annotations.Test;
-
 /**
  * Abstract base class for testing operators provided by {@link Single} for compliance with the
  * <a href="https://github.com/reactive-streams/reactive-streams-jvm/tree/v1.0.1/tck">Reactive Streams TCK</a>.
@@ -27,13 +25,18 @@ import org.testng.annotations.Test;
  * If you need the flexibility to create the {@link Single} by yourself you may need to extend
  * {@link AbstractSingleTckTest} directly.
  */
-@Test
 public abstract class AbstractSingleOperatorTckTest<T> extends AbstractSingleTckTest<T> {
 
     @Override
-    public Publisher<T> createServiceTalkPublisher(long elements) {
+    protected final Publisher<T> createServiceTalkPublisher(long elements) {
         return composeSingle(Single.succeeded(1)).toPublisher();
     }
 
+    /**
+     * Applies composition operators for the provided {@link Single}.
+     *
+     * @param single the provided {@link Single}
+     * @return composed {@link Single}
+     */
     protected abstract Single<T> composeSingle(Single<Integer> single);
 }

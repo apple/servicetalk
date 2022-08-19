@@ -18,10 +18,13 @@ package io.servicetalk.concurrent.reactivestreams.tck;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 
+import org.testng.annotations.Test;
+
+@Test
 public class SingleSupplierTckTest extends AbstractSingleTckTest<Integer> {
 
     @Override
-    public Publisher<Integer> createServiceTalkPublisher(long elements) {
+    protected Publisher<Integer> createServiceTalkPublisher(long elements) {
         return Single.fromSupplier(() -> 1).toPublisher();
     }
 }

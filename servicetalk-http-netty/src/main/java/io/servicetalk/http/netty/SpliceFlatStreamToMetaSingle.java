@@ -177,7 +177,7 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> implements Pub
 
         @SuppressWarnings("unchecked")
         @Override
-        public void onNext(Object obj) {
+        public void onNext(@Nullable Object obj) {
             if (metaSeenInOnNext) {
                 Payload payload = (Payload) obj;
                 if (payloadSubscriber != null) {
@@ -185,16 +185,12 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> implements Pub
                 } else {
                     final Object subscriber = maybePayloadSub;
                     if (subscriber instanceof PublisherSource.Subscriber) {
-                        payloadSubscriber = ((PublisherSource.Subscriber<Payload>) subscriber);
+                        payloadSubscriber = (PublisherSource.Subscriber<Payload>) subscriber;
                         payloadSubscriber.onNext(payload);
                     }
                 }
             } else {
-                if (!onSubscribeSent) {
-                    onSubscribeSent = true;
-                    // Since we are going to deliver data after this, there is no need for this to be cancellable.
-                    dataSubscriber.onSubscribe(IGNORE_CANCEL);
-                }
+                ensureResultSubscriberOnSubscribe();
                 MetaData meta = (MetaData) obj;
                 // When the upstream Publisher is canceled we don't give it to any Payload Subscribers
                 metaSeenInOnNext = true;
@@ -203,6 +199,7 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> implements Pub
                     data = parent.packer.apply(meta, maybePayloadSubUpdater.compareAndSet(this, null, PENDING) ?
                             newPayloadPublisher() : Publisher.failed(StacklessCancellationException.newInstance(
                                     "Canceled prematurely from Data", SplicingSubscriber.class, "cancelData(..)")));
+                    assert data != null : "Packer function must return non-null Data";
                 } catch (Throwable t) {
                     assert rawSubscription != null;
                     // We know that there is nothing else that can happen on this stream as we are not sending the
@@ -264,6 +261,7 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> implements Pub
             } else {
                 final Object maybeSubscriber = maybePayloadSubUpdater.getAndSet(this, t);
                 if (maybeSubscriber == CANCELED || !metaSeenInOnNext) {
+                    ensureResultSubscriberOnSubscribe();
                     dataSubscriber.onError(t);
                 } else if (maybeSubscriber instanceof PublisherSource.Subscriber) {
                     if (maybePayloadSubUpdater.compareAndSet(SplicingSubscriber.this, t, EMPTY_COMPLETED_DELIVERED)) {
@@ -297,8 +295,20 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> implements Pub
                                         ", failed the race with a duplicate, but neither has seen onNext()"));
                     }
                 } else if (!metaSeenInOnNext) {
-                    dataSubscriber.onError(new IllegalStateException("Empty stream"));
+                    ensureResultSubscriberOnSubscribe();
+                    dataSubscriber.onError(new IllegalStateException(
+                            "Stream unexpectedly completed without emitting any items"));
                 }
+            }
+        }
+
+        private void ensureResultSubscriberOnSubscribe() {
+            assert !metaSeenInOnNext;
+            if (!onSubscribeSent) {
+                onSubscribeSent = true;
+                // Since we are going to deliver data or a terminal signal right after this,
+                // there is no need for this to be cancellable.
+                dataSubscriber.onSubscribe(IGNORE_CANCEL);
             }
         }
     }

@@ -23,7 +23,7 @@ import org.testng.annotations.Test;
 @Test
 public class CompletableNeverTckTest extends AbstractCompletableTckTest {
     @Override
-    public Publisher<Object> createServiceTalkPublisher(long elements) {
+    protected Publisher<Object> createServiceTalkPublisher(long elements) {
         return Completable.never().toPublisher();
     }
 }

@@ -17,8 +17,11 @@ package io.servicetalk.concurrent.reactivestreams.tck;
 
 import io.servicetalk.concurrent.api.Publisher;
 
+import org.testng.annotations.Test;
+
 import static java.util.concurrent.TimeUnit.HOURS;
 
+@Test
 public class PublisherTimeoutTerminalTckTest extends AbstractPublisherOperatorTckTest<Integer> {
     @Override
     protected Publisher<Integer> composePublisher(Publisher<Integer> publisher, int elements) {

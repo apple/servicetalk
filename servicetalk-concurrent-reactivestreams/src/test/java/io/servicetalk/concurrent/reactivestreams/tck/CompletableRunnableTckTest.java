@@ -18,10 +18,13 @@ package io.servicetalk.concurrent.reactivestreams.tck;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 
+import org.testng.annotations.Test;
+
+@Test
 public class CompletableRunnableTckTest extends AbstractCompletableTckTest {
 
     @Override
-    public Publisher<Object> createServiceTalkPublisher(long elements) {
+    protected Publisher<Object> createServiceTalkPublisher(long elements) {
         return Completable.fromRunnable(() -> {
             // do nothing
         }).toPublisher();

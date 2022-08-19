@@ -27,7 +27,7 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 @Test
 public class SingleRepeatBiPredicateTckTest extends AbstractPublisherTckTest<Integer> {
     @Override
-    public Publisher<Integer> createServiceTalkPublisher(final long elements) {
+    protected Publisher<Integer> createServiceTalkPublisher(final long elements) {
         final AtomicInteger value = new AtomicInteger();
         return defer(() -> succeeded(value.incrementAndGet()))
                 .repeat((i, __) -> i < elements);

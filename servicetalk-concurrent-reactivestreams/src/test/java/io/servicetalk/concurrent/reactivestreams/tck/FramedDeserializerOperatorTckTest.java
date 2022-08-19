@@ -26,7 +26,7 @@ import static java.util.function.Function.identity;
 @Test
 public class FramedDeserializerOperatorTckTest extends AbstractPublisherTckTest<Integer> {
     @Override
-    public Publisher<Integer> createServiceTalkPublisher(final long elements) {
+    protected Publisher<Integer> createServiceTalkPublisher(final long elements) {
         return Publisher.range(0, TckUtils.requestNToInt(elements))
                 .map(i -> DEFAULT_ALLOCATOR.newBuffer().writeInt(i))
                 .liftSync(new FramedDeserializerOperator<>(

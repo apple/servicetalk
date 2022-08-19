@@ -21,7 +21,7 @@ import io.servicetalk.concurrent.api.Executor;
 import org.testng.annotations.Test;
 
 @Test
-public class CompletablePublishOnTckTest extends CompletableAbstractOffloaderTckTest {
+public class CompletablePublishOnTckTest extends AbstractCompletableOffloaderTckTest {
     @Override
     Completable applyOffload(final Completable original, final Executor executor) {
         return original.publishOn(executor);
