@@ -91,18 +91,18 @@ class DefaultHttpSetCookiesTest {
 
     @Test
     void decodeDifferentCookieNames() {
-        final HttpHeaders headers = new ReadOnlyHttpHeaders("set-cookie",
-                "foo=12345; Domain=somecompany.co.uk; Path=/; HttpOnly",
-                "set-cookie",
-                "bar=abcd; Domain=somecompany.co.uk; Path=/2; Max-Age=3000");
+        final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
+        headers.add("set-cookie", "foo=12345; Domain=somecompany.co.uk; Path=/; HttpOnly");
+        headers.add("set-cookie", "bar=abcd; Domain=somecompany.co.uk; Path=/2; Max-Age=3000");
         decodeDifferentCookieNames(headers);
     }
 
     @Test
     void decodeDifferentCookieNamesRO() {
-        final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
-        headers.add("set-cookie", "foo=12345; Domain=somecompany.co.uk; Path=/; HttpOnly");
-        headers.add("set-cookie", "bar=abcd; Domain=somecompany.co.uk; Path=/2; Max-Age=3000");
+        final HttpHeaders headers = new ReadOnlyHttpHeaders("set-cookie",
+                "foo=12345; Domain=somecompany.co.uk; Path=/; HttpOnly",
+                "set-cookie",
+                "bar=abcd; Domain=somecompany.co.uk; Path=/2; Max-Age=3000");
         decodeDifferentCookieNames(headers);
     }
 
@@ -244,7 +244,7 @@ class DefaultHttpSetCookiesTest {
 
         cookieItr = headers.getSetCookiesIterator("qwerty");
         assertTrue(cookieItr.hasNext());
-        assertTrue(areSetCookiesEqual(new TestSetCookie("qwerty", "12345", null, "somecompany.co.uk", null,
+        assertTrue(areSetCookiesEqual(new TestSetCookie("qwerty", "12345", "", "somecompany.co.uk", null,
                 null, null, false, false, false), cookieItr.next()));
         assertFalse(cookieItr.hasNext());
     }
@@ -767,6 +767,58 @@ class DefaultHttpSetCookiesTest {
         final Iterator<? extends HttpSetCookie> itr = headers.getSetCookiesIterator("qwerty");
         assertTrue(itr.hasNext());
         itr.remove();
+    }
+
+    @Test
+    void throwIfNoSpaceBeforeCookieAttributeValue() {
+        final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
+        headers.add("set-cookie", "first=12345;Extension");
+        headers.add("set-cookie", "second=12345;Expires=Mon, 22 Aug 2022 20:12:35 GMT");
+        throwIfNoSpaceBeforeCookieAttributeValue(headers);
+    }
+
+    @Test
+    void throwIfNoSpaceBeforeCookieAttributeValueRO() {
+        final HttpHeaders headers = new ReadOnlyHttpHeaders(true,
+                "set-cookie", "first=12345;Extension",
+                "set-cookie", "second=12345;Expires=Mon, 22 Aug 2022 20:12:35 GMT");
+        throwIfNoSpaceBeforeCookieAttributeValue(headers);
+    }
+
+    private static void throwIfNoSpaceBeforeCookieAttributeValue(HttpHeaders headers) {
+        Exception exception;
+
+        exception = assertThrows(IllegalArgumentException.class, () -> headers.getSetCookie("first"));
+        assertThat(exception.getMessage(), containsString("space is required after ;"));
+
+        exception = assertThrows(IllegalArgumentException.class, () -> headers.getSetCookie("second"));
+        assertThat(exception.getMessage(), containsString("space is required after ;"));
+    }
+
+    @Test
+    void parseLenientlyIfNoSpaceBeforeCookieAttributeValue() {
+        final HttpHeaders headers = new DefaultHttpHeaders(16, false, false, false);
+        headers.add("set-cookie", "first=12345;Extension");
+        headers.add("set-cookie", "second=12345;Expires=Mon, 22 Aug 2022 20:12:35 GMT");
+        parseLenientlyIfNoSpaceBeforeCookieAttributeValue(headers);
+    }
+
+    @Test
+    void parseLenientlyIfNoSpaceBeforeCookieAttributeValueRO() {
+        final HttpHeaders headers = new ReadOnlyHttpHeaders(false,
+                "set-cookie", "first=12345;Extension",
+                "set-cookie", "second=12345;Expires=Mon, 22 Aug 2022 20:12:35 GMT");
+        parseLenientlyIfNoSpaceBeforeCookieAttributeValue(headers);
+    }
+
+    private static void parseLenientlyIfNoSpaceBeforeCookieAttributeValue(HttpHeaders headers) {
+        HttpSetCookie first = headers.getSetCookie("first");
+        areSetCookiesEqual(new TestSetCookie("first", "12345", null, null, null, null, null, false, false, false),
+                first);
+
+        HttpSetCookie second = headers.getSetCookie("second");
+        areSetCookiesEqual(new TestSetCookie("second", "12345", null, null, "Mon, 22 Aug 2022 20:12:35 GMT", null,
+                null, false, false, false), second);
     }
 
     @Test

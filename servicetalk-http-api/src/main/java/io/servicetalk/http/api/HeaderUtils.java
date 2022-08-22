@@ -341,7 +341,7 @@ public final class HeaderUtils {
     public static boolean isSetCookieNameMatches(final CharSequence setCookieString,
                                                  final CharSequence setCookieName) {
         int equalsIndex = indexOf(setCookieString, '=', 0);
-        return equalsIndex > 0 && setCookieString.length() - 1 > equalsIndex &&
+        return equalsIndex > 0 &&
                 equalsIndex == setCookieName.length() &&
                 regionMatches(setCookieName, true, 0, setCookieString, 0, equalsIndex);
     }
@@ -535,7 +535,7 @@ public final class HeaderUtils {
          * @return the next {@link HttpCookiePair} value for {@link #next()}, or {@code null} if all have been parsed.
          */
         private HttpCookiePair findNext(CharSequence cookieHeaderValue) {
-            int semiIndex = indexOf(cookieHeaderValue, ';', nextNextStart);
+            int semiIndex = nextDelimiter(cookieHeaderValue);
             HttpCookiePair next = DefaultHttpCookiePair.parseCookiePair(cookieHeaderValue, nextNextStart, semiIndex);
             if (semiIndex > 0) {
                 if (cookieHeaderValue.length() - 2 <= semiIndex) {
@@ -550,6 +550,23 @@ public final class HeaderUtils {
                 nextNextStart = 0;
             }
             return next;
+        }
+
+        private int nextDelimiter(CharSequence cookieHeaderValue) {
+            boolean inQuotes = false;
+            int len = cookieHeaderValue.length();
+            for (int i = nextNextStart; i < len; i++) {
+                char value = cookieHeaderValue.charAt(i);
+                if (value == ';') {
+                    if (inQuotes) {
+                        throw new IllegalArgumentException("The ; character cannot appear in quoted cookie values");
+                    }
+                    return i;
+                } else if (value == '"') {
+                    inQuotes = !inQuotes;
+                }
+            }
+            return -1;
         }
     }
 
