@@ -31,7 +31,7 @@ public class PublisherProcessorTckTest extends AbstractPublisherTckTest<Integer>
     private static final int MAX_ITEMS = 128;
 
     @Override
-    public Publisher<Integer> createServiceTalkPublisher(long elements) {
+    protected Publisher<Integer> createServiceTalkPublisher(long elements) {
         assert elements <= MAX_ITEMS;
         Processor<Integer, Integer> processor = newPublisherProcessor(max(1, (int) elements));
         for (int i = 0; i < elements; i++) {

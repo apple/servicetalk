@@ -18,8 +18,6 @@ package io.servicetalk.concurrent.reactivestreams.tck;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 
-import org.testng.annotations.Test;
-
 import static io.servicetalk.concurrent.reactivestreams.ReactiveStreamsAdapters.toReactiveStreamsPublisher;
 
 /**
@@ -29,10 +27,9 @@ import static io.servicetalk.concurrent.reactivestreams.ReactiveStreamsAdapters.
  * If you need the flexibility to create the {@link Single} by yourself you may need to extend
  * {@link AbstractSingleTckTest} directly.
  */
-@Test
-public abstract class AbstractPublisherToSingleOperatorTckTest<T> extends AbstractTckTest<T> {
+abstract class AbstractPublisherToSingleOperatorTckTest<T> extends AbstractTckTest<T> {
 
-    public Publisher<T> createServiceTalkPublisher(long elements) {
+    private Publisher<T> createServiceTalkPublisher(long elements) {
         int numElements = TckUtils.requestNToInt(elements);
         return composePublisher(TckUtils.newPublisher(numElements), numElements).toPublisher();
     }

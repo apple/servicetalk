@@ -17,8 +17,11 @@ package io.servicetalk.concurrent.reactivestreams.tck;
 
 import io.servicetalk.concurrent.api.Publisher;
 
+import org.testng.annotations.Test;
+
 import static java.lang.String.valueOf;
 
+@Test
 public class PublisherScanWithTckTest extends AbstractPublisherOperatorTckTest<String> {
     @Override
     protected Publisher<String> composePublisher(Publisher<Integer> publisher, int elements) {

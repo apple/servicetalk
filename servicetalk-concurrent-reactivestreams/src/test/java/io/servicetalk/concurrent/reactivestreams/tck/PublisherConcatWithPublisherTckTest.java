@@ -23,7 +23,7 @@ import org.testng.annotations.Test;
 public class PublisherConcatWithPublisherTckTest extends AbstractPublisherOperatorTckTest<Integer> {
 
     @Override
-    public Publisher<Integer> createServiceTalkPublisher(long elements) {
+    protected Publisher<Integer> createServiceTalkPublisher(long elements) {
         int numElements = TckUtils.requestNToInt(elements);
 
         if (numElements <= 1) {

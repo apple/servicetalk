@@ -25,7 +25,7 @@ import static io.servicetalk.concurrent.api.Single.zip;
 @Test
 public class SingleZip3TckTest extends AbstractSingleTckTest<Integer> {
     @Override
-    public Publisher<Integer> createServiceTalkPublisher(long elements) {
+    protected Publisher<Integer> createServiceTalkPublisher(long elements) {
         return zip(succeeded(1), succeeded(null), succeeded(null), (result, ignore1, ignore2) -> result).toPublisher();
     }
 }

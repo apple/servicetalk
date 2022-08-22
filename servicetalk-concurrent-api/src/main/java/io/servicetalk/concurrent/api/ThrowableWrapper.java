@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,14 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.concurrent.reactivestreams.tck;
+package io.servicetalk.concurrent.api;
 
-import org.reactivestreams.tck.PublisherVerification;
-import org.reactivestreams.tck.TestEnvironment;
+/**
+ * Used to distinguish between a real object and a {@link Throwable} from terminal error.
+ */
+final class ThrowableWrapper {
+    private final Throwable throwable;
 
-abstract class AbstractTckTest<T> extends PublisherVerification<T> {
+    ThrowableWrapper(final Throwable throwable) {
+        this.throwable = throwable;
+    }
 
-    AbstractTckTest() {
-        super(new TestEnvironment(5000, 50, 50));
+    Throwable unwrap() {
+        return throwable;
     }
 }

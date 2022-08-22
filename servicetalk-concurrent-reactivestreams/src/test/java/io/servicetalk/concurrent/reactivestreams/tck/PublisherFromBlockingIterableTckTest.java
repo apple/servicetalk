@@ -18,14 +18,17 @@ package io.servicetalk.concurrent.reactivestreams.tck;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestIterableToBlockingIterable;
 
+import org.testng.annotations.Test;
+
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
 import static io.servicetalk.concurrent.reactivestreams.tck.TckUtils.requestNToInt;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.IntStream.range;
 
+@Test
 public class PublisherFromBlockingIterableTckTest extends AbstractPublisherTckTest<Integer> {
     @Override
-    public Publisher<Integer> createServiceTalkPublisher(final long elements) {
+    protected Publisher<Integer> createServiceTalkPublisher(final long elements) {
         return fromIterable(new TestIterableToBlockingIterable<>(
                 range(0, requestNToInt(elements)).boxed().collect(toList()),
                 (timeout, unit) -> { }, (timeout, unit) -> { }, () -> { }));

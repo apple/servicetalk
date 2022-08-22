@@ -24,7 +24,7 @@ import static io.servicetalk.concurrent.api.Publisher.from;
 @Test
 public class PublisherFrom3TckTest extends AbstractPublisherTckTest<Integer> {
     @Override
-    public Publisher<Integer> createServiceTalkPublisher(long elements) {
+    protected Publisher<Integer> createServiceTalkPublisher(long elements) {
         return elements == 1 ? from(1) : elements == 2 ? from(1, 2) : from(1, 2, 3);
     }
 

@@ -25,7 +25,7 @@ import static io.servicetalk.concurrent.reactivestreams.tck.TckUtils.requestNToI
 @Test
 public class PublisherRangeStrideTckTest extends AbstractPublisherTckTest<Integer> {
     @Override
-    public Publisher<Integer> createServiceTalkPublisher(final long elements) {
+    protected Publisher<Integer> createServiceTalkPublisher(final long elements) {
         return range(0, requestNToInt(elements) * 2, 2);
     }
 

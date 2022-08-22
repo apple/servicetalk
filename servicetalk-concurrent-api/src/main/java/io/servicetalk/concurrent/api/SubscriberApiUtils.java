@@ -19,9 +19,6 @@ import javax.annotation.Nullable;
 
 final class SubscriberApiUtils {
     private static final Object NULL_TOKEN = new Object();
-    static final int SUBSCRIBER_STATE_IDLE = 0;
-    static final int SUBSCRIBER_STATE_ON_NEXT = 1;
-    static final int SUBSCRIBER_STATE_TERMINATED = 2;
 
     private SubscriberApiUtils() {
         // no instances

@@ -16,14 +16,14 @@
 package io.servicetalk.concurrent.reactivestreams.tck;
 
 import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.Publisher;
 
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 
-public abstract class SingleAbstractOffloaderTckTest extends AbstractSingleOperatorTckTest<Integer> {
+abstract class AbstractPublisherOffloaderTckTest extends AbstractPublisherOperatorTckTest<Integer> {
     private static Executor executor;
 
     @BeforeClass
@@ -37,9 +37,9 @@ public abstract class SingleAbstractOffloaderTckTest extends AbstractSingleOpera
     }
 
     @Override
-    protected Single<Integer> composeSingle(final Single<Integer> single) {
-        return applyOffload(single, executor);
+    protected final Publisher<Integer> composePublisher(Publisher<Integer> publisher, int elements) {
+        return applyOffload(publisher, executor);
     }
 
-    abstract Single<Integer> applyOffload(Single<Integer> original, Executor executor);
+    abstract Publisher<Integer> applyOffload(Publisher<Integer> original, Executor executor);
 }

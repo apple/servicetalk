@@ -24,7 +24,7 @@ import org.testng.annotations.Test;
 public class CompletableConcatWithPublisherTckTest extends AbstractPublisherTckTest<Integer> {
 
     @Override
-    public Publisher<Integer> createServiceTalkPublisher(long elements) {
+    protected Publisher<Integer> createServiceTalkPublisher(long elements) {
         int numElements = TckUtils.requestNToInt(elements);
         return Completable.completed().concat(TckUtils.newPublisher(numElements));
     }

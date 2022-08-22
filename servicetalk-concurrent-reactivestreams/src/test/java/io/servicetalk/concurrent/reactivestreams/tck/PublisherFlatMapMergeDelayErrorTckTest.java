@@ -17,8 +17,11 @@ package io.servicetalk.concurrent.reactivestreams.tck;
 
 import io.servicetalk.concurrent.api.Publisher;
 
+import org.testng.annotations.Test;
+
 import static java.lang.Math.max;
 
+@Test
 public class PublisherFlatMapMergeDelayErrorTckTest extends AbstractPublisherOperatorTckTest<Integer> {
     @Override
     protected Publisher<Integer> composePublisher(final Publisher<Integer> publisher, final int elements) {

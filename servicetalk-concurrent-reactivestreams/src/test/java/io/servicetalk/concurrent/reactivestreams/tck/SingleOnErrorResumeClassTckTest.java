@@ -27,7 +27,7 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 @Test
 public class SingleOnErrorResumeClassTckTest extends AbstractSingleTckTest<Integer> {
     @Override
-    public Publisher<Integer> createServiceTalkPublisher(long elements) {
+    protected Publisher<Integer> createServiceTalkPublisher(long elements) {
         return Single.<Integer>failed(DELIBERATE_EXCEPTION)
                 .onErrorResume(DeliberateException.class, cause -> succeeded(1)).toPublisher();
     }

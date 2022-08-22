@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,15 +15,12 @@
  */
 package io.servicetalk.concurrent.reactivestreams.tck;
 
-import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.Executor;
+import org.reactivestreams.tck.PublisherVerification;
+import org.reactivestreams.tck.TestEnvironment;
 
-import org.testng.annotations.Test;
+abstract class AbstractTckTest<T> extends PublisherVerification<T> {
 
-@Test
-public class CompletablePublishOnTckTest extends AbstractCompletableOffloaderTckTest {
-    @Override
-    Completable applyOffload(final Completable original, final Executor executor) {
-        return original.publishOn(executor);
+    AbstractTckTest() {
+        super(new TestEnvironment(5000, 50, 50));
     }
 }

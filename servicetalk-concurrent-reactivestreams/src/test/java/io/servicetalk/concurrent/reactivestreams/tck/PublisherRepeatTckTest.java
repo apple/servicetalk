@@ -24,7 +24,7 @@ import static io.servicetalk.concurrent.api.Publisher.from;
 @Test
 public class PublisherRepeatTckTest extends AbstractPublisherTckTest<Integer> {
     @Override
-    public Publisher<Integer> createServiceTalkPublisher(long elements) {
+    protected Publisher<Integer> createServiceTalkPublisher(long elements) {
         return from(1).repeat(i -> i < elements);
     }
 

@@ -145,7 +145,7 @@ abstract class SourceToFuture<T> implements Future<T> {
             if (result == null) {
                 setValue(NULL);
             } else if (result instanceof Throwable) {
-                setValue(new ThrowableWrapper(result));
+                setValue(new ThrowableWrapper((Throwable) result));
             } else {
                 setValue(result);
             }
@@ -166,22 +166,6 @@ abstract class SourceToFuture<T> implements Future<T> {
         @Override
         public void onComplete() {
             setValue(NULL);
-        }
-    }
-
-    /**
-     * Used to distinguish succeeded {@code Single<Throwable>} vs failed {@code Single<T>}.
-     */
-    private static final class ThrowableWrapper {
-
-        private final Object throwable;
-
-        ThrowableWrapper(final Object throwable) {
-            this.throwable = throwable;
-        }
-
-        Object unwrap() {
-            return throwable;
         }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,9 +28,20 @@ import io.servicetalk.concurrent.api.Publisher;
 public abstract class AbstractCompletableOperatorTckTest extends AbstractCompletableTckTest {
 
     @Override
-    public Publisher<Object> createServiceTalkPublisher(long elements) {
+    protected final Publisher<Object> createServiceTalkPublisher(long elements) {
         return composeCompletable(Completable.completed()).toPublisher();
     }
 
+    /**
+     * Applies composition operators for the provided {@link Completable}.
+     *
+     * @param completable the provided {@link Completable}
+     * @return composed {@link Completable}
+     */
     protected abstract Completable composeCompletable(Completable completable);
+
+    @Override
+    public final long maxElementsFromPublisher() {
+        return 0;
+    }
 }

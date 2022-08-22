@@ -21,7 +21,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import org.testng.annotations.Test;
 
 @Test
-public class PublisherPublishOnTckTest extends PublisherAbstractOffloaderTckTest {
+public class PublisherPublishOnTckTest extends AbstractPublisherOffloaderTckTest {
 
     @Override
     Publisher<Integer> applyOffload(final Publisher<Integer> original, final Executor executor) {
