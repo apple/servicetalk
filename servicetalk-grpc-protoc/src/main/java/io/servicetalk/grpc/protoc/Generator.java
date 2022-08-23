@@ -842,9 +842,8 @@ final class Generator {
                     .addModifiers(PUBLIC, STATIC, FINAL)
                     .superclass(DefaultGrpcClientMetadata)
                     .addField(FieldSpec.builder(metaDataClassName, INSTANCE)
-                            .addJavadoc(JAVADOC_DEPRECATED +
-                                    "This class will be removed in the future in favor of direct usage of {@link $T}."
-                                            + lineSeparator(), GrpcClientMetadata)
+                            .addJavadoc(JAVADOC_DEPRECATED + "Use {@link $T}." + lineSeparator(),
+                                    DefaultGrpcClientMetadata)
                             .addAnnotation(Deprecated.class)
                             .addModifiers(PUBLIC, STATIC, FINAL) // redundant, default for interface field
                             .initializer("new $T()", metaDataClassName)
@@ -855,7 +854,7 @@ final class Generator {
                             .addStatement("super($T.$L, $L)", rpcInterface.className, PATH, metadata)
                             .build())
                     .addMethod(constructorBuilder()
-                            .addModifiers(PUBLIC)
+                            .addModifiers(PRIVATE)
                             .addStatement("super($T.$L)", rpcInterface.className, PATH)
                             .build())
                     .addMethod(constructorBuilder()

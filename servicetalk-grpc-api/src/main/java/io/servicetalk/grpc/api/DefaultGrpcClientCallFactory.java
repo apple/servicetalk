@@ -457,6 +457,9 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
     private static void extractResponseContext(HttpResponseMetaData responseMetaData, GrpcClientMetadata grpcMetadata) {
         if (grpcMetadata instanceof DefaultGrpcMetadata) {
             final DefaultGrpcMetadata defaultGrpcMetadata = (DefaultGrpcMetadata) grpcMetadata;
+            if (defaultGrpcMetadata.contextUnsupported()) {
+                return;
+            }
             if (defaultGrpcMetadata.responseContext(responseMetaData.context())) {
                 return;
             }

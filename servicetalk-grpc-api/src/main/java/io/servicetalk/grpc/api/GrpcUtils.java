@@ -174,6 +174,12 @@ final class GrpcUtils {
             headers.set(GRPC_MESSAGE_ACCEPT_ENCODING, acceptedEncoding);
         }
         assignStrategy(request, metadata);
+
+        // FIXME: 0.43 - remove below if and always set the context
+        // Verify that this is not DefaultGrpcClientMetadata.INSTANCE constant:
+        if (metadata instanceof DefaultGrpcMetadata && ((DefaultGrpcMetadata) metadata).contextUnsupported()) {
+            return;
+        }
         request.context(metadata.requestContext());
     }
 

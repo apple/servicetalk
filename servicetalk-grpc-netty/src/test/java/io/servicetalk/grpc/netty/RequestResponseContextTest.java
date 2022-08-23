@@ -33,6 +33,10 @@ import io.servicetalk.grpc.netty.TesterProto.TestRequest;
 import io.servicetalk.grpc.netty.TesterProto.TestResponse;
 import io.servicetalk.grpc.netty.TesterProto.Tester;
 import io.servicetalk.grpc.netty.TesterProto.Tester.BlockingTesterService;
+import io.servicetalk.grpc.netty.TesterProto.Tester.TestBiDiStreamMetadata;
+import io.servicetalk.grpc.netty.TesterProto.Tester.TestMetadata;
+import io.servicetalk.grpc.netty.TesterProto.Tester.TestRequestStreamMetadata;
+import io.servicetalk.grpc.netty.TesterProto.Tester.TestResponseStreamMetadata;
 import io.servicetalk.grpc.netty.TesterProto.Tester.TesterClient;
 import io.servicetalk.grpc.netty.TesterProto.Tester.TesterService;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
@@ -50,6 +54,7 @@ import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import io.servicetalk.transport.api.ServerContext;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -91,6 +96,20 @@ class RequestResponseContextTest {
             newKey("CLIENT_FILTER_IN_TRAILER_CTX", CharSequence.class);
 
     private static final TestRequest REQUEST = TestRequest.newBuilder().setName("name").build();
+
+    @Test
+    void clientMetaDataConstantsThrow() {
+        assertThrows(UnsupportedOperationException.class, DefaultGrpcClientMetadata.INSTANCE::requestContext);
+        assertThrows(UnsupportedOperationException.class, DefaultGrpcClientMetadata.INSTANCE::responseContext);
+        assertThrows(UnsupportedOperationException.class, TestMetadata.INSTANCE::requestContext);
+        assertThrows(UnsupportedOperationException.class, TestMetadata.INSTANCE::responseContext);
+        assertThrows(UnsupportedOperationException.class, TestBiDiStreamMetadata.INSTANCE::requestContext);
+        assertThrows(UnsupportedOperationException.class, TestBiDiStreamMetadata.INSTANCE::responseContext);
+        assertThrows(UnsupportedOperationException.class, TestResponseStreamMetadata.INSTANCE::requestContext);
+        assertThrows(UnsupportedOperationException.class, TestResponseStreamMetadata.INSTANCE::responseContext);
+        assertThrows(UnsupportedOperationException.class, TestRequestStreamMetadata.INSTANCE::requestContext);
+        assertThrows(UnsupportedOperationException.class, TestRequestStreamMetadata.INSTANCE::responseContext);
+    }
 
     @ParameterizedTest(name = "{displayName} [{index}] error={0}")
     @ValueSource(booleans = {false, true})

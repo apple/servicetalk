@@ -67,6 +67,12 @@ class DefaultGrpcMetadata implements GrpcMetadata {
         return false;
     }
 
+    @Deprecated
+    boolean contextUnsupported() {  // FIXME: 0.43 - remove deprecated method
+        return UnsupportedContextMapSupplier.class.equals(requestContext.getClass()) ||
+                UnsupportedContextMapSupplier.class.equals(responseContext.getClass());
+    }
+
     static final class LazyContextMapSupplier implements Supplier<ContextMap> {
 
         @Nullable
@@ -90,6 +96,22 @@ class DefaultGrpcMetadata implements GrpcMetadata {
                 return true;
             }
             return false;
+        }
+    }
+
+    @Deprecated // FIXME: 0.43 - remove deprecated class
+    static final class UnsupportedContextMapSupplier implements Supplier<ContextMap> {
+
+        static final Supplier<ContextMap> INSTANCE = new UnsupportedContextMapSupplier();
+
+        private UnsupportedContextMapSupplier() {
+            // Singleton
+        }
+
+        @Override
+        public ContextMap get() {
+            throw new UnsupportedOperationException("Context is not supported by a constant meta-data, " +
+                    "consider creating a new GrpcClientMetadata per-request");
         }
     }
 }
