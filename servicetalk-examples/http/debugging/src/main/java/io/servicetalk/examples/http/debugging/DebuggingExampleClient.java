@@ -170,7 +170,7 @@ public final class DebuggingExampleClient {
                  * 3. Enables detailed logging of I/O events and I/O states.
                  *
                  * Be sure to also enable the TRACE logger in your logging config file (log4j2.xml for this
-                 * example) or rise the configured logging level (2nd argument) to INFO/WARNING to get
+                 * example) or raise the configured logging level (2nd argument) to INFO/WARNING to get
                  * visibility without modifying the logger config.
                  * Dumping of protocol bodies is disabled to reduce output but can be enabled by using
                  * {@code Boolean.TRUE::booleanValue} as the 3rd argument. Note that logging all data may leak
@@ -184,7 +184,7 @@ public final class DebuggingExampleClient {
                  * Use this only if your client communicates over HTTP/2. For HTTP/1.1 use-cases skip this.
                  *
                  * Be sure to also enable the TRACE logger in your logging config file (log4j2.xml for this
-                 * example) or rise the configured logging level (2nd argument) to INFO/WARNING to get
+                 * example) or raise the configured logging level (2nd argument) to INFO/WARNING to get
                  * visibility without modifying the logger config.
                  * Dumping of protocol bodies is disabled to reduce output but can be enabled by using
                  * {@code Boolean.TRUE::booleanValue} as the 3rd argument. Note that logging all data may leak
