@@ -152,9 +152,9 @@ public final class DebuggingClient {
                         /*
                          * 4. Enables detailed logging of HTTP/2 frames.
                          *
-                         * Be sure to also enable the TRACE logger in your logging config file (log4j2.xml for this
-                         * example) or rise the configured logging level (2nd argument) to INFO/WARNING to get
-                         * visibility without modifying the logger config.
+                         * Be sure to also enable the {@code TRACE} logger in your logging config file (log4j2.xml
+                         *  for this example) or raise the configured logging level (2nd argument) to
+                         *  {@code INFO/WARNING} to get visibility without modifying the logger config.
                          * Dumping of protocol bodies is disabled to reduce output but can be enabled by using
                          * {@code Boolean.TRUE::booleanValue} as the 3rd argument. Note that logging all data may leak
                          * sensitive information into logs output. Be careful enabling data logging in production
