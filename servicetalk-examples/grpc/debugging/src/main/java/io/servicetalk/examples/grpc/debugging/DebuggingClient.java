@@ -129,25 +129,36 @@ public final class DebuggingClient {
         try (BlockingGreeterClient client = GrpcClients.forAddress("localhost", 8080)
                 .initializeHttp(builder -> builder
                         /*
-                         * 2. Disables most asynchronous offloading to simplify execution tracing. Changing this may
-                         * significantly change application behavior and introduce unexpected blocking. It is most
-                         * useful for being able to directly trace through situations that would normally involve a
+                         * 2. (optional) Disables most asynchronous offloading to simplify execution tracing. Changing
+                         * this may significantly change application behavior and introduce unexpected blocking. It is
+                         * most useful for being able to directly trace through situations that would normally involve a
                          * thread handoff.
                          */
-                        // .executionStrategy(HHttpExecutionStrategies.offloadNever())
+                        // .executionStrategy(HttpExecutionStrategies.offloadNever())
+
                         /*
-                         * 3. Enables detailed logging of I/O and I/O states, but not payload bodies.
-                         * Be sure to also enable the logger in your logging config file,
-                         * {@code log4j2.xml} for this example.
+                         * 3. Enables detailed logging of I/O events and I/O states.
+                         *
+                         * Be sure to also enable the TRACE logger in your logging config file (log4j2.xml for this
+                         * example) or raise the configured logging level (2nd argument) to INFO/WARNING to get
+                         * visibility without modifying the logger config.
                          * Dumping of protocol bodies is disabled to reduce output but can be enabled by using
-                         * {@code Boolean.TRUE::booleanValue}.
+                         * {@code Boolean.TRUE::booleanValue} as the 3rd argument. Note that logging all data may leak
+                         * sensitive information into logs output. Be careful enabling data logging in production
+                         * environments.
                          */
                         .enableWireLogging("servicetalk-examples-wire-logger", TRACE, LOG_USER_DATA)
 
                         /*
-                         * 4. Enables detailed logging of HTTP2 frames, but not frame contents.
-                         * Be sure to also enable the logger in your logging config file,
-                         * {@code log4j2.xml} for this example.
+                         * 4. Enables detailed logging of HTTP/2 frames.
+                         *
+                         * Be sure to also enable the TRACE logger in your logging config file (log4j2.xml for this
+                         * example) or raise the configured logging level (2nd argument) to INFO/WARNING to get
+                         * visibility without modifying the logger config.
+                         * Dumping of protocol bodies is disabled to reduce output but can be enabled by using
+                         * {@code Boolean.TRUE::booleanValue} as the 3rd argument. Note that logging all data may leak
+                         * sensitive information into logs output. Be careful enabling data logging in production
+                         * environments.
                          */
                         .protocols(HttpProtocolConfigs.h2()
                                 .enableFrameLogging(

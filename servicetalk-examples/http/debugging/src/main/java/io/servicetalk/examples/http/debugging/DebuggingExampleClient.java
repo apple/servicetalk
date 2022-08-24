@@ -159,25 +159,49 @@ public final class DebuggingExampleClient {
     public static void main(String... args) throws Exception {
         try (HttpClient client = HttpClients.forSingleAddress("localhost", 8080)
                 /*
-                 * 2. Disables most asynchronous offloading to simplify execution tracing. Changing this may
-                 * significantly change application behavior and introduce unexpected blocking. It is most useful for
-                 * being able to directly trace through situations that would normally involve a thread handoff.
+                 * 2. (optional) Disables most asynchronous offloading to simplify execution tracing. Changing
+                 * this may significantly change application behavior and introduce unexpected blocking. It is
+                 * most useful for being able to directly trace through situations that would normally involve a
+                 * thread handoff.
                  */
                 // .executionStrategy(HttpExecutionStrategies.offloadNever())
 
                 /*
-                 * 3. Enables detailed logging of I/O and I/O states.
-                 * Be sure to also enable the logger in your logging config file (log4j2.xml for this example).
+                 * 3. Enables detailed logging of I/O events and I/O states.
+                 *
+                 * Be sure to also enable the TRACE logger in your logging config file (log4j2.xml for this
+                 * example) or raise the configured logging level (2nd argument) to INFO/WARNING to get
+                 * visibility without modifying the logger config.
+                 * Dumping of protocol bodies is disabled to reduce output but can be enabled by using
+                 * {@code Boolean.TRUE::booleanValue} as the 3rd argument. Note that logging all data may leak
+                 * sensitive information into logs output. Be careful enabling data logging in production
+                 * environments.
                  */
                 .enableWireLogging("servicetalk-examples-wire-logger", TRACE, LOG_USER_DATA)
 
                 /*
-                 * 4. Enables detailed logging of HTTP2 frames.
-                 * Be sure to also enable the logger in your logging config file (log4j2.xml for this example).
+                 * 4. (optional) Enables detailed logging of HTTP/2 frames.
+                 * Use this only if your client communicates over HTTP/2. For HTTP/1.1 use-cases skip this.
+                 *
+                 * Be sure to also enable the TRACE logger in your logging config file (log4j2.xml for this
+                 * example) or raise the configured logging level (2nd argument) to INFO/WARNING to get
+                 * visibility without modifying the logger config.
+                 * Dumping of protocol bodies is disabled to reduce output but can be enabled by using
+                 * {@code Boolean.TRUE::booleanValue} as the 3rd argument. Note that logging all data may leak
+                 * sensitive information into logs output. Be careful enabling data logging in production
+                 * environments.
                  */
                 .protocols(HttpProtocolConfigs.h2()
                         .enableFrameLogging("servicetalk-examples-h2-frame-logger", TRACE, LOG_USER_DATA)
                         .build())
+                /*
+                 * For ALPN, make sure to supply both HTTP/2 and HTTP/1.X HttpProtocolConfigs and SslConfig.
+                 */
+                // .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem).build())
+                // .protocols(HttpProtocolConfigs.h2()
+                //         .enableFrameLogging("servicetalk-examples-h2-frame-logger", TRACE, LOG_USER_DATA)
+                //         .build(),
+                //         HttpProtocolConfigs.h1Default())
                 .build()) {
             client.request(client.post("/sayHello").payloadBody("George", textSerializerUtf8()))
                     .whenOnSuccess(resp -> {

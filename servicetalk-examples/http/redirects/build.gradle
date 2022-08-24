@@ -26,7 +26,7 @@ dependencies {
   implementation "com.google.code.findbugs:jsr305:$jsr305Version"
 
   // This dependency brings self-signed TLS certificates for demonstration purposes.
-  // Users have to use their own certificates instead.
+  // In real applications users have to provide their own certificates instead.
   implementation project(":servicetalk-test-resources")
 
   runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
