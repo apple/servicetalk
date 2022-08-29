@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Executors;
@@ -26,6 +27,8 @@ import io.netty.channel.Channel;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
+import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
+import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
@@ -44,7 +47,8 @@ public class NettyChannelListenableAsyncCloseable implements PrivilegedListenabl
     private final Channel channel;
     @SuppressWarnings("unused")
     private volatile int state;
-    private final Completable onCloseNoOffload;
+    private final CompletableSource.Processor onClosing;
+    private final SubscribableCompletable onCloseNoOffload;
     private final Completable onClose;
 
     /**
@@ -57,6 +61,7 @@ public class NettyChannelListenableAsyncCloseable implements PrivilegedListenabl
      */
     public NettyChannelListenableAsyncCloseable(Channel channel, Executor offloadingExecutor) {
         this.channel = requireNonNull(channel);
+        onClosing = newCompletableProcessor();
         onCloseNoOffload = new SubscribableCompletable() {
             @Override
             protected void handleSubscribe(final Subscriber subscriber) {
@@ -71,6 +76,25 @@ public class NettyChannelListenableAsyncCloseable implements PrivilegedListenabl
         };
         // Since onClose termination will come from EventLoop, offload those signals to avoid blocking EventLoop
         onClose = onCloseNoOffload.publishOn(offloadingExecutor);
+        // Users may depend on onClosing to be notified for all kinds of closures and not just manual close.
+        // So, we should make sure that onClosing at least terminates with the channel.
+        // Since, onClose is guaranteed to be notified for any kind of closures, we cascade it to onClosing.
+        // An alternative would be to intercept channelInactive() or close() in the pipeline but adding a pipeline
+        // handler in the pipeline may race with closure as we have already created the channel. If that happens,
+        // we may miss a pipeline event.
+        // "onClosing" is an internal API. Therefore, it does not require offloading.
+        onCloseNoOffload.subscribe(onClosing);
+    }
+
+    /**
+     * Used to notify onClosing ASAP to notify the LoadBalancer to stop using the connection.
+     */
+    protected final void notifyOnClosing() {
+        onClosing.onComplete();
+    }
+
+    public final Completable onClosing() {
+        return fromSource(onClosing);
     }
 
     @Override
@@ -99,6 +123,7 @@ public class NettyChannelListenableAsyncCloseable implements PrivilegedListenabl
             protected void handleSubscribe(final Subscriber subscriber) {
                 toSource(source).subscribe(subscriber);
                 if (stateUpdater.getAndSet(NettyChannelListenableAsyncCloseable.this, CLOSING) != CLOSING) {
+                    notifyOnClosing();
                     channel.close();
                 }
             }
@@ -111,6 +136,7 @@ public class NettyChannelListenableAsyncCloseable implements PrivilegedListenabl
             protected void handleSubscribe(final Subscriber subscriber) {
                 if (stateUpdater.compareAndSet(NettyChannelListenableAsyncCloseable.this,
                         OPEN, GRACEFULLY_CLOSING)) {
+                    notifyOnClosing();
                     try {
                         doCloseAsyncGracefully();
                     } catch (Throwable t) {

@@ -34,7 +34,6 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
-import io.servicetalk.http.netty.LoadBalancedStreamingHttpClient.OnStreamClosedRunnable;
 import io.servicetalk.http.netty.ReservableRequestConcurrencyControllers.IgnoreConsumedEvent;
 import io.servicetalk.transport.api.IoThreadFactory;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
@@ -136,34 +135,23 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
 
                     @Override
                     public void cancel() {
-                        // If the request gets cancelled before termination, we pessimistically assume that the
+                        // If the HTTP/1.X request gets cancelled before termination, we pessimistically assume that the
                         // transport will close the connection since the Subscriber did not read the entire response and
                         // cancelled. This reduces the time window during which a connection is eligible for selection
                         // by the load balancer post cancel and the connection being closed by the transport.
                         // Transport MAY not close the connection if cancel raced with completion and completion was
                         // seen by the transport before cancel. We have no way of knowing at this layer if this indeed
-                        // happen.
+                        // happen. Therefore, we close the connection manually to guarantee closure.
                         //
                         // For H2 and above, connection are multiplexed and use virtual streams for each
-                        // request-response exchange. Because we don't have access to the stream at this level
-                        // we cannot close it. Instead, we use a OnStreamClosedRunnable which will be registered for the
-                        // stream and executed when it closes. However, cancellation can happen before transport
-                        // creates a stream. We check the ownership of the OnStreamClosedRunnable and if it was not
-                        // owned by the transport, we mark request as finished immediately bcz
-                        // H2ClientParentConnectionContext won't even try to open a new stream without owning the
-                        // OnStreamClosedRunnable.
-                        @Nullable
-                        final OnStreamClosedRunnable onStreamClosed =
-                                requestMetaData.context().get(OnStreamClosedRunnable.KEY);
-                        if (onStreamClosed == null) {
+                        // request-response exchange. At the time users own a Cancellable, the stream already owns
+                        // OnStreamClosedRunnable in H2ClientParentConnectionContext. It will update the concurrency
+                        // controller state if cancellation results in stream closure instead of completion.
+                        if (connectionContext().protocol().major() < 2) {
                             LOGGER.debug("{} {} request was cancelled before receiving the full response, " +
                                             "closing this {} connection to stop receiving more data",
                                     connectionContext, requestMetaData, connectionContext.protocol());
                             closeAsync().subscribe();
-                        } else if (onStreamClosed.own()) {
-                            LOGGER.debug("{} request was cancelled before a stream is created, stream won't be open",
-                                    connectionContext);
-                            onStreamClosed.run();
                         }
                     }
                 })

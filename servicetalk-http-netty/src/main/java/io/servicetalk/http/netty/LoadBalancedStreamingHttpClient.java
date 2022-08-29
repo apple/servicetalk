@@ -36,6 +36,9 @@ import io.servicetalk.http.utils.BeforeFinallyHttpOperator;
 import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.IoThreadFactory.IoThread;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -51,10 +54,14 @@ import static java.util.function.Function.identity;
 
 final class LoadBalancedStreamingHttpClient implements FilterableStreamingHttpClient {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(LoadBalancedStreamingHttpClient.class);
+
     private static final Predicate<FilterableStreamingHttpLoadBalancedConnection>
             SELECTOR_FOR_REQUEST = conn -> conn.tryRequest() == Accepted;
     private static final Predicate<FilterableStreamingHttpLoadBalancedConnection>
             SELECTOR_FOR_RESERVE = FilterableStreamingHttpLoadBalancedConnection::tryReserve;
+
+    private static boolean onStreamClosedWarningLogged;
 
     // TODO Proto specific LB after upgrade and worry about SSL
     private final HttpExecutionContext executionContext;
@@ -104,8 +111,23 @@ final class LoadBalancedStreamingHttpClient implements FilterableStreamingHttpCl
 
                             @Override
                             public void cancel() {
-                                // Cancellation is handled in AbstractStreamingHttpConnection, check only onStreamClosed
+                                // For HTTP/1.x cancellation is handled in AbstractStreamingHttpConnection.
+                                // For HTTP/2 cancellation is handled by OnStreamClosedRunnable owned by the actual
+                                // Stream. To avoid leaking the resource in case users wiped/modified the
+                                // request.context() before OnStreamClosedRunnable was propagated to the
+                                // H2ClientParentConnectionContext, we double-check ownership here and mark the request
+                                // as "finished". In normal circumstances, ownership will be taken by
+                                // H2ClientParentConnectionContext prior propagation of the Cancellable down.
                                 if (onStreamClosed != null && onStreamClosed.own()) {
+                                    if (!onStreamClosedWarningLogged) {
+                                        //noinspection AssignmentToStaticFieldFromInstanceMethod
+                                        onStreamClosedWarningLogged = true;
+                                        LOGGER.warn("HttpRequestMetaData#context() was cleared by one of the " +
+                                                "user-defined connection filters. This may result in incorrect " +
+                                                "control of the maximum concurrent streams. Double-check that none " +
+                                                "of the custom filters clear the request.context() or contact " +
+                                                "support for assistance.");
+                                    }
                                     c.requestFinished();
                                 }
                             }

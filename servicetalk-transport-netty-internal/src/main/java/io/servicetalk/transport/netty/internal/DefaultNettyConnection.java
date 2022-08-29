@@ -17,7 +17,6 @@ package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
@@ -76,7 +75,6 @@ import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSession;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
-import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
@@ -113,8 +111,6 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     private final NettyChannelPublisher<Read> nettyChannelPublisher;
     private final Publisher<Read> readPublisher;
     private final ExecutionContext<?> executionContext;
-    @Nullable
-    private final CompletableSource.Processor onClosing;
     private final SingleSource.Processor<Throwable, Throwable> transportError = newSingleProcessor();
     private final FlushStrategyHolder flushStrategyHolder;
     private final long idleTimeoutMs;
@@ -186,28 +182,15 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         this.flushStrategyHolder = new FlushStrategyHolder(flushStrategy);
         this.idleTimeoutMs = idleTimeoutMs;
         if (closeHandler != UNSUPPORTED_PROTOCOL_CLOSE_HANDLER) {
-            onClosing = newCompletableProcessor();
             closeHandler.registerEventHandler(channel, evt -> {
                 assert channel.eventLoop().inEventLoop();
                 if (closeReason == null) {
                     closeReason = evt;
-                    // Notify onClosing ASAP to notify the LoadBalancer to stop using the connection.
-                    onClosing.onComplete();
+                    notifyOnClosing();
                     transportError.onSuccess(evt.wrapError(null, channel));
                     LOGGER.debug("{} Emitted CloseEvent: {}", channel, evt);
                 }
             });
-            // Users may depend on onClosing to be notified for all kinds of closures and not just graceful close.
-            // So, we should make sure that onClosing at least terminates with the channel.
-            // Since, onClose is guaranteed to be notified for any kind of closures, we cascade it to onClosing.
-            // An alternative would be to intercept channelInactive() or close() in the pipeline but adding a pipeline
-            // handler in the pipeline may race with closure as we have already created the channel. If that happens,
-            // we may miss a pipeline event.
-            // "onClosing" is an internal API. Therefore, it does not require offloading.
-            toSource(onCloseNoOffload())
-                    .subscribe(onClosing);
-        } else {
-            onClosing = null;
         }
         this.sslConfig = sslConfig;
         this.sslSession = sslSession;
@@ -681,11 +664,6 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     }
 
     @Override
-    public Completable onClosing() {
-        return onClosing == null ? onClose() : fromSource(onClosing);
-    }
-
-    @Override
     public Channel nettyChannel() {
         return channel();
     }
@@ -941,6 +919,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
 
         @Override
         public void channelInactive(ChannelHandlerContext ctx) {
+            connection.notifyOnClosing();
             Throwable closedChannelException = StacklessClosedChannelException.newInstance(
                     DefaultNettyConnection.class, "channelInactive(...)");
             tryFailSubscriber(closedChannelException);

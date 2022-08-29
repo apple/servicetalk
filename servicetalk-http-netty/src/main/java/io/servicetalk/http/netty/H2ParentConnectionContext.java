@@ -16,9 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.SingleSource;
-import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.http.api.DefaultHttpExecutionContext;
@@ -53,7 +51,6 @@ import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
 import static io.netty.util.ReferenceCountUtil.release;
-import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
@@ -68,7 +65,6 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
     final FlushStrategyHolder flushStrategyHolder;
     private final HttpExecutionContext executionContext;
     private final SingleSource.Processor<Throwable, Throwable> transportError = newSingleProcessor();
-    private final Processor onClosing = newCompletableProcessor();
     private final KeepAliveManager keepAliveManager;
     @Nullable
     private final SslConfig sslConfig;
@@ -88,8 +84,6 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
         this.sslConfig = sslConfig;
         this.idleTimeoutMs = idleTimeoutMs;
         this.keepAliveManager = keepAliveManager;
-        // Just in case the channel abruptly closes, we should complete the onClosing Completable.
-        onClose().subscribe(onClosing::onComplete);
     }
 
     @Override
@@ -105,11 +99,6 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
     @Override
     public final Single<Throwable> transportError() {
         return fromSource(transportError);
-    }
-
-    @Override
-    public final Completable onClosing() {
-        return fromSource(onClosing);
     }
 
     @Override
@@ -168,7 +157,10 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
 
     @Override
     protected final void doCloseAsyncGracefully() {
-        keepAliveManager.initiateGracefulClose(onClosing::onComplete);
+        keepAliveManager.initiateGracefulClose(() -> {
+            // no need to notifyOnClosing bcz it's already notified in NettyChannelListenableAsyncCloseable before
+            // invoking this method
+        });
     }
 
     final void trackActiveStream(Channel streamChannel) {
@@ -236,8 +228,7 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
         }
 
         private void doChannelClosed(final String method) {
-            // Notify onClosing ASAP to notify the LoadBalancer to stop using the connection.
-            parentContext.onClosing.onComplete();
+            parentContext.notifyOnClosing();
 
             if (hasSubscriber()) {
                 tryFailSubscriber(StacklessClosedChannelException.newInstance(H2ParentConnectionContext.class, method));
@@ -285,7 +276,7 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
                 // We trigger the graceful close process here (with no timeout) to make sure the socket is closed once
                 // the existing streams are closed. The MultiplexCodec may simulate a GOAWAY when the stream IDs are
                 // exhausted so we shouldn't rely upon our peer to close the transport.
-                parentContext.keepAliveManager.initiateGracefulClose(parentContext.onClosing::onComplete);
+                parentContext.keepAliveManager.initiateGracefulClose(parentContext::notifyOnClosing);
             } else if (msg instanceof Http2PingFrame) {
                 parentContext.keepAliveManager.pingReceived((Http2PingFrame) msg);
             } else if (!(msg instanceof Http2SettingsAckFrame)) { // we ignore SETTINGS(ACK)
