@@ -39,38 +39,6 @@ public final class DefaultHttpSetCookie implements HttpSetCookie {
     private static final String ENCODED_LABEL_SECURE = "; secure";
     private static final String ENCODED_LABEL_SAMESITE = "; samesite=";
 
-    private static ParseState parseStateOf(CharSequence fieldName) {
-        // Try a binary search based on length. We can read length without bounds checks.
-        int len = fieldName.length();
-        if (len >= 4 && len <= 8) {
-            if (len < 7) {
-                if (len == 4) {
-                    if (contentEqualsIgnoreCase("path", fieldName)) {
-                        return ParseState.ParsingPath;
-                    }
-                } else if (len == 6) {
-                    if (contentEqualsIgnoreCase("domain", fieldName)) {
-                        return ParseState.ParsingDomain;
-                    }
-                }
-            } else {
-                if (len == 7) {
-                    if (contentEqualsIgnoreCase("expires", fieldName)) {
-                        return ParseState.ParsingExpires;
-                    }
-                    if (contentEqualsIgnoreCase("max-age", fieldName)) {
-                        return ParseState.ParsingMaxAge;
-                    }
-                } else {
-                    if (contentEqualsIgnoreCase("samesite", fieldName)) {
-                        return ParseState.ParsingSameSite;
-                    }
-                }
-            }
-        }
-        return ParseState.Unknown;
-    }
-
     private final CharSequence name;
     private final CharSequence value;
     @Nullable
@@ -210,7 +178,7 @@ public final class DefaultHttpSetCookie implements HttpSetCookie {
                                 i += 3;
                             } else {
                                 // When validation is disabled, we need to check if there's an SP to skip
-                                i += i + 2 < length && setCookieString.charAt(i + 2) == ' '? 3 : 2;
+                                i += i + 2 < length && setCookieString.charAt(i + 2) == ' ' ? 3 : 2;
                             }
                         } else {
                             isWrapped = true;
@@ -510,6 +478,38 @@ public final class DefaultHttpSetCookie implements HttpSetCookie {
         ParsingMaxAge,
         ParsingSameSite,
         Unknown
+    }
+
+    private static ParseState parseStateOf(CharSequence fieldName) {
+        // Try a binary search based on length. We can read length without bounds checks.
+        int len = fieldName.length();
+        if (len >= 4 && len <= 8) {
+            if (len < 7) {
+                if (len == 4) {
+                    if (contentEqualsIgnoreCase("path", fieldName)) {
+                        return ParseState.ParsingPath;
+                    }
+                } else if (len == 6) {
+                    if (contentEqualsIgnoreCase("domain", fieldName)) {
+                        return ParseState.ParsingDomain;
+                    }
+                }
+            } else {
+                if (len == 7) {
+                    if (contentEqualsIgnoreCase("expires", fieldName)) {
+                        return ParseState.ParsingExpires;
+                    }
+                    if (contentEqualsIgnoreCase("max-age", fieldName)) {
+                        return ParseState.ParsingMaxAge;
+                    }
+                } else {
+                    if (contentEqualsIgnoreCase("samesite", fieldName)) {
+                        return ParseState.ParsingSameSite;
+                    }
+                }
+            }
+        }
+        return ParseState.Unknown;
     }
 
     @Nullable
