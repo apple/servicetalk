@@ -15,13 +15,11 @@
  */
 package io.servicetalk.grpc.api;
 
-import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.encoding.api.BufferEncoder;
 import io.servicetalk.encoding.api.ContentCodec;
 import io.servicetalk.encoding.api.internal.ContentCodecToBufferEncoder;
 
 import java.time.Duration;
-import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.encoding.api.Identity.identity;
@@ -33,22 +31,9 @@ import static java.util.Objects.requireNonNull;
 /**
  * Default implementation for {@link DefaultGrpcClientMetadata}.
  */
-// FIXME: 0.43 - consider making this class final or pkg-private (introduce a builder instead)
 public class DefaultGrpcClientMetadata extends DefaultGrpcMetadata implements GrpcClientMetadata {
     private static final String UNKNOWN_PATH = "";
-
-    /**
-     * Constant with a {@link #DefaultGrpcClientMetadata() default characteristics}.
-     *
-     * @deprecated Use {@link #DefaultGrpcClientMetadata()} to create a new instance instead.
-     * {@link GrpcClientMetadata} contains modifiable {@link GrpcClientMetadata#requestContext()} and
-     * {@link GrpcClientMetadata#responseContext()} now. Using this constant there will be no access to the actual
-     * context and both mentioned methods will throw {@link UnsupportedOperationException}.
-     */
-    @Deprecated
-    public static final GrpcClientMetadata INSTANCE = new DefaultGrpcClientMetadata(
-            UnsupportedContextMapSupplier.INSTANCE, UnsupportedContextMapSupplier.INSTANCE, null, null, null);
-
+    public static final GrpcClientMetadata INSTANCE = new DefaultGrpcClientMetadata();
     @Nullable
     private final GrpcExecutionStrategy strategy;
     @Nullable
@@ -62,11 +47,7 @@ public class DefaultGrpcClientMetadata extends DefaultGrpcMetadata implements Gr
     @Nullable
     private final Duration timeout;
 
-    /**
-     * Creates a new instance with default characteristics and empty
-     * {@link #requestContext() request}/{@link #responseContext() response} contexts.
-     */
-    public DefaultGrpcClientMetadata() {
+    private DefaultGrpcClientMetadata() {
         this((GrpcExecutionStrategy) null, null, null);
     }
 
@@ -78,8 +59,7 @@ public class DefaultGrpcClientMetadata extends DefaultGrpcMetadata implements Gr
      */
     @Deprecated
     protected DefaultGrpcClientMetadata(final String path) {
-        this(path, UnsupportedContextMapSupplier.INSTANCE, UnsupportedContextMapSupplier.INSTANCE,
-                null, identity(), null);
+        this(path, null, identity(), null);
     }
 
     /**
@@ -222,17 +202,7 @@ public class DefaultGrpcClientMetadata extends DefaultGrpcMetadata implements Gr
                                         @Nullable final GrpcExecutionStrategy strategy,
                                         final ContentCodec requestEncoding,
                                         @Nullable final Duration timeout) {
-        this(path, new LazyContextMapSupplier(), new LazyContextMapSupplier(), strategy, requestEncoding, timeout);
-    }
-
-    @Deprecated
-    protected DefaultGrpcClientMetadata(final String path,
-                                        final Supplier<ContextMap> requestContext,
-                                        final Supplier<ContextMap> responseContext,
-                                        @Nullable final GrpcExecutionStrategy strategy,
-                                        final ContentCodec requestEncoding,
-                                        @Nullable final Duration timeout) {
-        super(path, requestContext, responseContext);
+        super(path);
         this.strategy = strategy;
         this.requestEncoding = requireNonNull(requestEncoding);
         this.requestEncoder = requestEncoding == identity() ? null : new ContentCodecToBufferEncoder(requestEncoding);
@@ -251,7 +221,7 @@ public class DefaultGrpcClientMetadata extends DefaultGrpcMetadata implements Gr
     @Deprecated
     protected DefaultGrpcClientMetadata(final String path,
                                         final GrpcClientMetadata rhs) {
-        super(path, new LazyContextMapSupplier(), new LazyContextMapSupplier());
+        super(path);
         this.strategy = rhs.strategy();
         this.requestEncoding = rhs.requestEncoding();
         this.requestEncoder = rhs.requestCompressor();
@@ -263,7 +233,7 @@ public class DefaultGrpcClientMetadata extends DefaultGrpcMetadata implements Gr
      * @param rhs Right hand side to copy from.
      */
     protected DefaultGrpcClientMetadata(final DefaultGrpcClientMetadata rhs) {
-        super(UNKNOWN_PATH, new LazyContextMapSupplier(), new LazyContextMapSupplier());
+        super(UNKNOWN_PATH);
         this.strategy = rhs.strategy;
         this.requestEncoding = rhs.requestEncoding();
         this.requestEncoder = rhs.requestCompressor();
@@ -280,15 +250,7 @@ public class DefaultGrpcClientMetadata extends DefaultGrpcMetadata implements Gr
     public DefaultGrpcClientMetadata(@Nullable final GrpcExecutionStrategy strategy,
                                      @Nullable final BufferEncoder requestEncoding,
                                      @Nullable final Duration timeout) {
-        this(new LazyContextMapSupplier(), new LazyContextMapSupplier(), strategy, requestEncoding, timeout);
-    }
-
-    DefaultGrpcClientMetadata(final Supplier<ContextMap> requestContext,
-                              final Supplier<ContextMap> responseContext,
-                              @Nullable final GrpcExecutionStrategy strategy,
-                              @Nullable final BufferEncoder requestEncoding,
-                              @Nullable final Duration timeout) {
-        super(UNKNOWN_PATH, requestContext, responseContext);
+        super(UNKNOWN_PATH);
         this.strategy = strategy;
         this.requestEncoding = identity();
         this.requestEncoder = requestEncoding;

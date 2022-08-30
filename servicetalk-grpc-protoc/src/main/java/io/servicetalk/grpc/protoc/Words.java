@@ -32,9 +32,7 @@ final class Words {
     static final String onClose = "onClose";
     static final String metadata = "metadata";
     static final String request = "request";
-    static final String response = "response";
     static final String responseWriter = "responseWriter";
-    static final String route = "route";
     static final String routes = "routes";
     static final String rpc = "rpc";
     static final String initSerializationProvider = "initSerializationProvider";
@@ -52,8 +50,6 @@ final class Words {
     static final String strategyFactory = strategy + "Factory";
     static final String methodDescriptor = "methodDescriptor";
     static final String methodDescriptors = methodDescriptor + "s";
-    static final String javaMethodName = "javaMethodName";
-    static final String handle = "handle";
     static final String Service = "Service";
     static final String Client = "Client";
     static final String Blocking = "Blocking";
@@ -68,7 +64,7 @@ final class Words {
     static final String PROTO_CONTENT_TYPE = "+proto";
     static final String INSTANCE = "INSTANCE";
     static final String PROTOBUF = "PROTOBUF";
-    static final String PATH = "PATH";
+    static final String RPC_PATH = "PATH";
     static final String COMMENT_PRE_TAG = "<pre>";
     static final String COMMENT_POST_TAG = "</pre>";
     static final String JAVADOC_CONSTRUCTOR_DEFAULT_STATEMENT = "Create a new instance." + lineSeparator();

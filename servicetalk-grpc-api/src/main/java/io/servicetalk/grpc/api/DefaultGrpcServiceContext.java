@@ -16,7 +16,6 @@
 package io.servicetalk.grpc.api;
 
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.encoding.api.ContentCodec;
 import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpServiceContext;
@@ -26,7 +25,6 @@ import io.servicetalk.transport.api.SslConfig;
 import java.net.SocketAddress;
 import java.net.SocketOption;
 import java.util.List;
-import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
@@ -41,11 +39,8 @@ final class DefaultGrpcServiceContext extends DefaultGrpcMetadata implements Grp
     @Deprecated
     private final List<ContentCodec> supportedMessageCodings;
 
-    DefaultGrpcServiceContext(final String path,
-                              final Supplier<ContextMap> requestContext,
-                              final Supplier<ContextMap> responseContext,
-                              final HttpServiceContext httpServiceContext) {
-        super(path, requestContext, responseContext);
+    DefaultGrpcServiceContext(final String path, final HttpServiceContext httpServiceContext) {
+        super(path);
         connectionContext = requireNonNull(httpServiceContext);
         executionContext = new DefaultGrpcExecutionContext(httpServiceContext.executionContext());
         protocol = new DefaultGrpcProtocol(httpServiceContext.protocol());
