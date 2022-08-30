@@ -306,7 +306,6 @@ class ResponseCancelTest {
         @SuppressWarnings("unchecked")
         void resume() {
             if (err != null) {
-
                 subscriber.onError(err);
             } else {
                 subscriber.onSuccess(response);
