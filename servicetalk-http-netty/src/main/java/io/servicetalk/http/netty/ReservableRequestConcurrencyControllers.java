@@ -124,11 +124,13 @@ final class ReservableRequestConcurrencyControllers {
 
                 @Override
                 public void onComplete() {
+                    assert pendingRequests != STATE_QUIT;
                     pendingRequests = STATE_QUIT;
                 }
 
                 @Override
                 public void onError(Throwable ignored) {
+                    assert pendingRequests != STATE_QUIT;
                     pendingRequests = STATE_QUIT;
                 }
             });

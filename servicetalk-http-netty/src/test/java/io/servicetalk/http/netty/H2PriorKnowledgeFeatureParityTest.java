@@ -59,7 +59,6 @@ import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.DelegatingConnectionAcceptor;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
-import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
@@ -141,6 +140,7 @@ import static io.servicetalk.http.api.HttpResponseStatus.EXPECTATION_FAILED;
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
+import static io.servicetalk.http.netty.CloseUtils.onGracefulClosureStarted;
 import static io.servicetalk.http.netty.H2ToStH1Utils.PROXY_CONNECTION;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
@@ -1577,8 +1577,7 @@ class H2PriorKnowledgeFeatureParityTest {
             serverBuilder.appendConnectionAcceptorFilter(original -> new DelegatingConnectionAcceptor(original) {
                 @Override
                 public Completable accept(final ConnectionContext context) {
-                    ((NettyConnectionContext) context).onClosing()
-                            .whenFinally(connectionOnClosingLatch::countDown).subscribe();
+                    onGracefulClosureStarted(context, connectionOnClosingLatch);
                     return completed();
                 }
             });

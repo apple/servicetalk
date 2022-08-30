@@ -272,9 +272,16 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                                 return;
                             }
                         }
-                        // If OwnedRunnable is null, it means a user wiped/modified the request context after
-                        // LoadBalancedStreamingHttpClient => as a fallback, OwnedRunnable will always be owned by
-                        // originator.
+                        // OnStreamClosedRunnable is null in the following cases:
+                        // 1. This is a reserved connection, meaning that the concurrency control is not applied. There
+                        //    is nothing to do in this case.
+                        // 2. User could wipe/modify the request context after LoadBalancedStreamingHttpClient in a
+                        //    processing chain. The LoadBalancedStreamingHttpClient always double-checks ownership of
+                        //    the runnable to mitigate this use-case. Users risk to see "Maximum concurrent streams
+                        //    violated for this endpoint" from Netty bcz the request will be marked as "finished" before
+                        //    Netty actually closes the stream and may race with new requests on the same connection.
+                        //    This is an acceptable thread-off taking into account users intentionally modified the
+                        //    request.context().
                         bs.open(promise);
                         sequentialCancellable = new SequentialCancellable(() -> promise.cancel(true));
                     } catch (Throwable cause) {

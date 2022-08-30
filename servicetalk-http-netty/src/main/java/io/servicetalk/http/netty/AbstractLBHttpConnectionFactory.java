@@ -38,6 +38,9 @@ import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
@@ -48,6 +51,10 @@ import static java.util.Objects.requireNonNull;
 
 abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
         implements ConnectionFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractLBHttpConnectionFactory.class);
+
+    private static boolean onClosingWarningLogged;
 
     @Nullable
     private final StreamingHttpConnectionFilterFactory connectionFilterFunction;
@@ -130,9 +137,17 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
      */
     private static Completable onClosing(final FilterableStreamingHttpConnection connection) {
         ConnectionContext ctx = connection.connectionContext();
-        return ctx instanceof NettyConnectionContext ? ((NettyConnectionContext) ctx).onClosing() :
-                // Fallback to onClose callback
-                connection.onClose();
+        if (ctx instanceof NettyConnectionContext) {
+            return ((NettyConnectionContext) ctx).onClosing();
+        }
+        if (!onClosingWarningLogged) {
+            onClosingWarningLogged = true;
+            LOGGER.warn("{} connection was wrapped in the way concurrency controller can not access the early " +
+                    "onClosing() event. Fallback to onClose(), this may cause a race between closing a connection " +
+                    "and selecting it for the next request. Reconsider how connection filters do wrapping of " +
+                    "FilterableStreamingHttpConnection#connectionContext() and/or contact support.", ctx);
+        }
+        return connection.onClose();
     }
 
     /**

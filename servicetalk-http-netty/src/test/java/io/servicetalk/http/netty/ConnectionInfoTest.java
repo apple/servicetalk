@@ -26,7 +26,6 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
-import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -70,8 +69,7 @@ class ConnectionInfoTest extends AbstractNettyHttpServerTest {
         assertThat(ctxStr, endsWith(client || protocol == HTTP_1 ? "]" : ")"));
     }
 
-    private static final class CtxInterceptingServiceFilterFactory implements StreamingHttpServiceFilterFactory,
-            ExecutionStrategyInfluencer<HttpExecutionStrategy> {
+    private static final class CtxInterceptingServiceFilterFactory implements StreamingHttpServiceFilterFactory {
 
         final BlockingQueue<String> queue = new LinkedBlockingDeque<>();
 
