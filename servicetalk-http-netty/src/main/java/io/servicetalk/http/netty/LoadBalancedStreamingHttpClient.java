@@ -110,6 +110,7 @@ final class LoadBalancedStreamingHttpClient implements FilterableStreamingHttpCl
                             }
 
                             @Override
+                            @SuppressWarnings("AssignmentToStaticFieldFromInstanceMethod")
                             public void cancel() {
                                 // For HTTP/1.x cancellation is handled in AbstractStreamingHttpConnection.
                                 // For HTTP/2 cancellation is handled by OnStreamClosedRunnable owned by the actual
@@ -120,7 +121,6 @@ final class LoadBalancedStreamingHttpClient implements FilterableStreamingHttpCl
                                 // H2ClientParentConnectionContext prior propagation of the Cancellable down.
                                 if (onStreamClosed != null && onStreamClosed.own()) {
                                     if (!onStreamClosedWarningLogged) {
-                                        //noinspection AssignmentToStaticFieldFromInstanceMethod
                                         onStreamClosedWarningLogged = true;
                                         LOGGER.warn("HttpRequestMetaData#context() was cleared by one of the " +
                                                 "user-defined connection filters. This may result in incorrect " +
