@@ -193,5 +193,10 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
         public StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
             return delegate.newRequest(method, requestTarget);
         }
+
+        @Override
+        public String toString() {
+            return delegate.toString();
+        }
     }
 }
