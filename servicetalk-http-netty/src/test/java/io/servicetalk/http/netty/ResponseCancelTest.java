@@ -318,7 +318,7 @@ class ResponseCancelTest {
             ClientTerminationSignal signal = signals.take();
             if (signal.err != null) {
                 signal.subscriber.onError(signal.err);
-                throw signal.err;
+                throw new AssertionError("Response terminated with an error", signal.err);
             } else {
                 signal.subscriber.onSuccess(signal.response);
             }
