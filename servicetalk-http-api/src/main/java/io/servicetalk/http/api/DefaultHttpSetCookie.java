@@ -489,10 +489,8 @@ public final class DefaultHttpSetCookie implements HttpSetCookie {
                     if (contentEqualsIgnoreCase("path", fieldName)) {
                         return ParseState.ParsingPath;
                     }
-                } else if (len == 6) {
-                    if (contentEqualsIgnoreCase("domain", fieldName)) {
-                        return ParseState.ParsingDomain;
-                    }
+                } else if (len == 6 && contentEqualsIgnoreCase("domain", fieldName)) {
+                    return ParseState.ParsingDomain;
                 }
             } else {
                 if (len == 7) {
