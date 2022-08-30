@@ -205,7 +205,7 @@ class ResponseCancelTest {
         sendSecondRequestUsingClient();
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] finishRequest={0}")
+    @ParameterizedTest
     @ValueSource(booleans = {false, true})
     void connectionCancelWaitingForPayloadBody(boolean finishRequest) throws Throwable {
         HttpConnection connection = client.reserveConnection(client.get("/")).toFuture().get();
@@ -318,7 +318,7 @@ class ResponseCancelTest {
             ClientTerminationSignal signal = signals.take();
             if (signal.err != null) {
                 signal.subscriber.onError(signal.err);
-                throw new AssertionError("Response terminated with an error", signal.err);
+                throw signal.err;
             } else {
                 signal.subscriber.onSuccess(signal.response);
             }
