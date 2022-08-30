@@ -93,6 +93,14 @@ public class NettyChannelListenableAsyncCloseable implements PrivilegedListenabl
         onClosing.onComplete();
     }
 
+    /**
+     * Returns a {@link Completable} that notifies when the connection has begun its closing sequence.
+     * <p>
+     * <b>Note:</b>The {@code Completable} is not required to be blocking-safe and should be offloaded if the
+     * {@link CompletableSource.Subscriber} may block.
+     *
+     * @return a {@link Completable} that notifies when the connection has begun its closing sequence.
+     */
     public final Completable onClosing() {
         return fromSource(onClosing);
     }
