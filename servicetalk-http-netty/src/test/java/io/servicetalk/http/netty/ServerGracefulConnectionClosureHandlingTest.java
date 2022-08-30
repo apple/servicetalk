@@ -41,7 +41,6 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpSerializers.stringStreamingSerializer;
 import static io.servicetalk.http.netty.HttpServers.forAddress;
-import static io.servicetalk.http.netty.NettyHttpServer.NettyHttpServerConnection;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static java.lang.String.valueOf;
 import static java.nio.charset.StandardCharsets.US_ASCII;
@@ -78,8 +77,9 @@ class ServerGracefulConnectionClosureHandlingTest {
             .appendConnectionAcceptorFilter(original -> new DelegatingConnectionAcceptor(original) {
                 @Override
                 public Completable accept(final ConnectionContext context) {
-                    ((NettyHttpServerConnection) context).onClosing()
-                        .whenFinally(serverConnectionClosing::countDown).subscribe();
+                    CloseUtils.onGracefulClosureStarted(context, serverConnectionClosing);
+                    // ((NettyHttpServerConnection) context).onClosing()
+                    //     .whenFinally(serverConnectionClosing::countDown).subscribe();
                     context.onClose().whenFinally(serverConnectionClosed::countDown).subscribe();
                     return completed();
                 }
@@ -119,13 +119,14 @@ class ServerGracefulConnectionClosureHandlingTest {
             while (in.read() >= 0) {
                 total++;
             }
+            // 55 is the total size of exactly 1 response from the server
             assertThat(total, is(55));
         }
 
         awaitServerConnectionClosed();
     }
 
-    private byte[] newRequestAsBytes(String path) {
+    private static byte[] newRequestAsBytes(String path) {
         return ("POST " + path + " HTTP/1.1\r\n" +
                 "host: localhost\r\n" +
                 "content-type: text/plain\r\n" +

@@ -205,7 +205,7 @@ class ResponseCancelTest {
         sendSecondRequestUsingClient();
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{displayName} [{index}] finishRequest={0}")
     @ValueSource(booleans = {false, true})
     void connectionCancelWaitingForPayloadBody(boolean finishRequest) throws Throwable {
         HttpConnection connection = client.reserveConnection(client.get("/")).toFuture().get();

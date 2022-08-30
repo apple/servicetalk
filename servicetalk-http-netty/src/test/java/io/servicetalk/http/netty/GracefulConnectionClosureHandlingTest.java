@@ -45,7 +45,6 @@ import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent;
 import io.servicetalk.transport.netty.internal.CloseHandler.CloseEventObservedException;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
-import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
@@ -79,6 +78,7 @@ import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializers.stringStreamingSerializer;
+import static io.servicetalk.http.netty.CloseUtils.onGracefulClosureStarted;
 import static io.servicetalk.http.netty.HttpClients.forResolvedAddress;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.http.netty.HttpProtocol.HTTP_2;
@@ -173,8 +173,7 @@ class GracefulConnectionClosureHandlingTest {
                     @Override
                     public Completable accept(final ConnectionContext context) {
                         if (!initiateClosureFromClient) {
-                            ((NettyConnectionContext) context).onClosing()
-                                    .whenFinally(onClosing::countDown).subscribe();
+                            onGracefulClosureStarted(context, onClosing);
                         }
                         context.onClose().whenFinally(serverConnectionClosed::countDown).subscribe();
                         connectionAccepted.countDown();
@@ -591,10 +590,7 @@ class GracefulConnectionClosureHandlingTest {
                                                                        @Nullable final ContextMap context,
                                                                        @Nullable final TransportObserver observer) {
             return delegate().newConnection(address, context, observer).whenOnSuccess(connection ->
-                    ((NettyConnectionContext) connection
-                            .connectionContext()).onClosing()
-                            .whenFinally(onClosing::countDown)
-                            .subscribe());
+                    onGracefulClosureStarted(connection.connectionContext(), onClosing));
         }
     }
 }

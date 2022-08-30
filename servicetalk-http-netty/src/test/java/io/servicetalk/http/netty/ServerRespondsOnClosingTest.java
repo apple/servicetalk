@@ -35,6 +35,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayDeque;
 import java.util.Queue;
+import java.util.concurrent.CountDownLatch;
 
 import static io.netty.buffer.ByteBufUtil.writeAscii;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
@@ -47,6 +48,7 @@ import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderValues.CLOSE;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
+import static io.servicetalk.http.netty.CloseUtils.onGracefulClosureStarted;
 import static io.servicetalk.http.netty.NettyHttpServer.initChannel;
 import static io.servicetalk.logging.api.LogLevel.TRACE;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.fromNettyEventLoop;
@@ -151,7 +153,9 @@ class ServerRespondsOnClosingTest {
         sendRequest("/first", false);
         sendRequest("/second", false);
         serverConnection.closeAsyncGracefully().subscribe();
-        serverConnection.onClosing().toFuture().get();
+        CountDownLatch onClosing = new CountDownLatch(1);
+        onGracefulClosureStarted(serverConnection, onClosing);
+        onClosing.await();
         sendRequest("/third", false);   // should be discarded
         handleRequests();
         verifyResponse("/first");
@@ -167,7 +171,9 @@ class ServerRespondsOnClosingTest {
         // Send only initial line with CRLF that should hang in ByteToMessage cumulation buffer and will be discarded:
         channel.writeInbound(writeAscii(PooledByteBufAllocator.DEFAULT, "GET /second HTTP/1.1"));
         serverConnection.closeAsyncGracefully().subscribe();
-        serverConnection.onClosing().toFuture().get();
+        CountDownLatch onClosing = new CountDownLatch(1);
+        onGracefulClosureStarted(serverConnection, onClosing);
+        onClosing.await();
         handleRequests();
         verifyResponse("/first");
         respondWithFIN();
@@ -180,7 +186,9 @@ class ServerRespondsOnClosingTest {
         sendRequest("/first?serverShouldClose=true", false);    // PROTOCOL_CLOSING_OUTBOUND
         sendRequest("/second", false);
         serverConnection.closeAsyncGracefully().subscribe();
-        serverConnection.onClosing().toFuture().get();
+        CountDownLatch onClosing = new CountDownLatch(1);
+        onGracefulClosureStarted(serverConnection, onClosing);
+        onClosing.await();
         sendRequest("/third", false);   // should be discarded
         handleRequests();
         verifyResponse("/first");

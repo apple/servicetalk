@@ -160,7 +160,7 @@ class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
         setUp(CACHED, CACHED_SERVER);
     }
 
-    @ParameterizedTest(name = "protocol={0}")
+    @ParameterizedTest(name = "{displayName} [{index}] protocol={0}")
     @EnumSource(HttpProtocol.class)
     void connectionEstablished(HttpProtocol httpProtocol) throws Exception {
         setUp(httpProtocol);
@@ -196,7 +196,7 @@ class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
         }
     }
 
-    @ParameterizedTest(name = "protocol={0}")
+    @ParameterizedTest(name = "{displayName} [{index}] protocol={0}")
     @EnumSource(HttpProtocol.class)
     void echoRequestResponse(HttpProtocol httpProtocol) throws Exception {
         setUp(httpProtocol);
@@ -206,7 +206,7 @@ class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
                 .payloadBody(getChunkPublisherFromStrings(requestContent)), OK, requestContent.length());
     }
 
-    @ParameterizedTest(name = "protocol={0}")
+    @ParameterizedTest(name = "{displayName} [{index}] protocol={0}")
     @EnumSource(HttpProtocol.class)
     void serverHandlerError(HttpProtocol httpProtocol) throws Exception {
         setUp(httpProtocol);
@@ -252,14 +252,14 @@ class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
         }
     }
 
-    @ParameterizedTest(name = "protocol={0}")
+    @ParameterizedTest(name = "{displayName} [{index}] protocol={0}")
     @EnumSource(HttpProtocol.class)
     void serverFailsResponsePayloadBodyBeforeRead(HttpProtocol httpProtocol) throws Exception {
         setUp(httpProtocol);
         testServerFailsResponsePayloadBody(SVC_ERROR_BEFORE_READ, true);
     }
 
-    @ParameterizedTest(name = "protocol={0}")
+    @ParameterizedTest(name = "{displayName} [{index}] protocol={0}")
     @EnumSource(HttpProtocol.class)
     void serverFailsResponsePayloadBodyDuringRead(HttpProtocol httpProtocol) throws Exception {
         setUp(httpProtocol);
@@ -328,7 +328,7 @@ class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
                 serverDataObserver, serverMultiplexedObserver, serverReadObserver, serverWriteObserver);
     }
 
-    @ParameterizedTest(name = "protocol={0}")
+    @ParameterizedTest(name = "{displayName} [{index}] protocol={0}")
     @EnumSource(HttpProtocol.class)
     void clientFailsRequestPayloadBody(HttpProtocol httpProtocol) throws Exception {
         setUp(httpProtocol);
