@@ -163,6 +163,10 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
         });
     }
 
+    private void notifyOnClosingImpl() {    // For access from AbstractH2ParentConnection
+        notifyOnClosing();
+    }
+
     final void trackActiveStream(Channel streamChannel) {
         keepAliveManager.trackActiveStream(streamChannel);
     }
@@ -228,7 +232,7 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
         }
 
         private void doChannelClosed(final String method) {
-            parentContext.notifyOnClosing();
+            parentContext.notifyOnClosingImpl();
 
             if (hasSubscriber()) {
                 tryFailSubscriber(StacklessClosedChannelException.newInstance(H2ParentConnectionContext.class, method));
@@ -276,7 +280,7 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
                 // We trigger the graceful close process here (with no timeout) to make sure the socket is closed once
                 // the existing streams are closed. The MultiplexCodec may simulate a GOAWAY when the stream IDs are
                 // exhausted so we shouldn't rely upon our peer to close the transport.
-                parentContext.keepAliveManager.initiateGracefulClose(parentContext::notifyOnClosing);
+                parentContext.keepAliveManager.initiateGracefulClose(parentContext::notifyOnClosingImpl);
             } else if (msg instanceof Http2PingFrame) {
                 parentContext.keepAliveManager.pingReceived((Http2PingFrame) msg);
             } else if (!(msg instanceof Http2SettingsAckFrame)) { // we ignore SETTINGS(ACK)
