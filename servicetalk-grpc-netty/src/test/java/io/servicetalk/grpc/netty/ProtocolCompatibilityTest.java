@@ -768,7 +768,7 @@ class ProtocolCompatibilityTest {
                                                     @Nullable final String compression) throws Exception {
         try {
             final BufferEncoder compressor = serviceTalkCompression(compression);
-            final GrpcClientMetadata metadata = compressor == null ? DefaultGrpcClientMetadata.INSTANCE :
+            final GrpcClientMetadata metadata = compressor == null ? new DefaultGrpcClientMetadata() :
                     new DefaultGrpcClientMetadata(compressor);
             if (!streaming) {
                 final CompatResponse response1 = client.scalarCall(metadata,
@@ -817,7 +817,7 @@ class ProtocolCompatibilityTest {
                                             @Nullable final String compression) throws Exception {
         try {
             final BufferEncoder compressor = serviceTalkCompression(compression);
-            final GrpcClientMetadata metadata = compressor == null ? DefaultGrpcClientMetadata.INSTANCE :
+            final GrpcClientMetadata metadata = compressor == null ? new DefaultGrpcClientMetadata() :
                     new DefaultGrpcClientMetadata(compressor);
 
             if (!streaming) {
@@ -913,7 +913,7 @@ class ProtocolCompatibilityTest {
             throws Exception {
         try {
             BufferEncoder encoder = serviceTalkCompression(compression);
-            GrpcClientMetadata metadata = encoder == null ? DefaultGrpcClientMetadata.INSTANCE :
+            GrpcClientMetadata metadata = encoder == null ? new DefaultGrpcClientMetadata() :
                     new DefaultGrpcClientMetadata(encoder);
 
             final Publisher<CompatResponse> streamingResponse = client.bidirectionalStreamingCall(metadata,
@@ -935,7 +935,7 @@ class ProtocolCompatibilityTest {
             throws Exception {
         try {
             BufferEncoder encoder = serviceTalkCompression(compression);
-            GrpcClientMetadata metadata = encoder == null ? DefaultGrpcClientMetadata.INSTANCE :
+            GrpcClientMetadata metadata = encoder == null ? new DefaultGrpcClientMetadata() :
                     new DefaultGrpcClientMetadata(encoder);
 
             final Single<CompatResponse> scalarResponse =
