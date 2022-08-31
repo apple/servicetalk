@@ -144,10 +144,20 @@ loadScripts(document, 'script');</script>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Initiate graceful closure.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="../../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onClose()" class="member-name-link">onClose</a>()</code></div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>protected final void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#notifyOnClosing()" class="member-name-link">notifyOnClosing</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Used to notify onClosing ASAP to notify the LoadBalancer to stop using the connection.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="../../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onClose()" class="member-name-link">onClose</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns a <a href="../../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that is notified once the <a href="../../../concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api"><code>ListenableAsyncCloseable</code></a> was closed.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="../../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onClosing()" class="member-name-link">onClosing</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Returns a <a href="../../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that notifies when the connection has begun its closing sequence.</div>
 </div>
 </div>
 </div>
@@ -189,6 +199,27 @@ loadScripts(document, 'script');</script>
 <section class="method-details" id="method-detail">
 <h2>Method Details</h2>
 <ul class="member-list">
+<li>
+<section class="detail" id="notifyOnClosing()">
+<h3>notifyOnClosing</h3>
+<div class="member-signature"><span class="modifiers">protected final</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">notifyOnClosing</span>()</div>
+<div class="block">Used to notify onClosing ASAP to notify the LoadBalancer to stop using the connection.</div>
+</section>
+</li>
+<li>
+<section class="detail" id="onClosing()">
+<h3>onClosing</h3>
+<div class="member-signature"><span class="modifiers">public final</span>&nbsp;<span class="return-type"><a href="../../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></span>&nbsp;<span class="element-name">onClosing</span>()</div>
+<div class="block">Returns a <a href="../../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that notifies when the connection has begun its closing sequence.
+ <p>
+ <b>Note:</b>The <code>Completable</code> is not required to be blocking-safe and should be offloaded if the
+ <a href="../../../concurrent/CompletableSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>CompletableSource.Subscriber</code></a> may block.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>a <a href="../../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that notifies when the connection has begun its closing sequence.</dd>
+</dl>
+</section>
+</li>
 <li>
 <section class="detail" id="closeAsync()">
 <h3>closeAsync</h3>

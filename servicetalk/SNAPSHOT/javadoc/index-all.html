@@ -12894,6 +12894,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Create a new <a href="io/servicetalk/http/api/HttpResponseStatus.html#NOT_FOUND"><code>HttpResponseStatus.NOT_FOUND</code></a> response.</div>
 </dd>
+<dt><a href="io/servicetalk/transport/netty/internal/NettyChannelListenableAsyncCloseable.html#notifyOnClosing()" class="member-name-link">notifyOnClosing()</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NettyChannelListenableAsyncCloseable.html" title="class in io.servicetalk.transport.netty.internal">NettyChannelListenableAsyncCloseable</a></dt>
+<dd>
+<div class="block">Used to notify onClosing ASAP to notify the LoadBalancer to stop using the connection.</div>
+</dd>
 <dt><a href="io/servicetalk/http/api/BlockingStreamingHttpResponseFactory.html#notImplemented()" class="member-name-link">notImplemented()</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/BlockingStreamingHttpResponseFactory.html" title="interface in io.servicetalk.http.api">BlockingStreamingHttpResponseFactory</a></dt>
 <dd>
 <div class="block">Create a new <a href="io/servicetalk/http/api/HttpResponseStatus.html#NOT_IMPLEMENTED"><code>HttpResponseStatus.NOT_IMPLEMENTED</code></a> response.</div>
@@ -13184,8 +13188,10 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/transport/netty/internal/NettyServerContext.html#onClose()" class="member-name-link">onClose()</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NettyServerContext.html" title="class in io.servicetalk.transport.netty.internal">NettyServerContext</a></dt>
 <dd>&nbsp;</dd>
-<dt><a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html#onClosing()" class="member-name-link">onClosing()</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal">DefaultNettyConnection</a></dt>
-<dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/transport/netty/internal/NettyChannelListenableAsyncCloseable.html#onClosing()" class="member-name-link">onClosing()</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NettyChannelListenableAsyncCloseable.html" title="class in io.servicetalk.transport.netty.internal">NettyChannelListenableAsyncCloseable</a></dt>
+<dd>
+<div class="block">Returns a <a href="io/servicetalk/concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that notifies when the connection has begun its closing sequence.</div>
+</dd>
 <dt><a href="io/servicetalk/transport/netty/internal/NettyConnectionContext.html#onClosing()" class="member-name-link">onClosing()</a> - Method in interface io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NettyConnectionContext.html" title="interface in io.servicetalk.transport.netty.internal">NettyConnectionContext</a></dt>
 <dd>
 <div class="block">Returns a <a href="io/servicetalk/concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that notifies when the connection has begun its closing sequence.</div>
