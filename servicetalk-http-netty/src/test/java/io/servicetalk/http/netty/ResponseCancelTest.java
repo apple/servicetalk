@@ -27,10 +27,12 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.context.api.ContextMap;
+import io.servicetalk.context.api.ContextMap.Key;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategies;
+import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpRequester;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -51,6 +53,7 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
@@ -58,11 +61,13 @@ import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
 import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
+import static io.servicetalk.context.api.ContextMap.Key.newKey;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.http.netty.HttpServers.forAddress;
 import static io.servicetalk.logging.api.LogLevel.TRACE;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
+import static java.util.Objects.requireNonNull;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 
@@ -76,6 +81,9 @@ class ResponseCancelTest {
     static final ExecutionContextExtension CLIENT_CTX =
             ExecutionContextExtension.cached("client-io", "client-executor")
                     .setClassLevel(true);
+
+    private static final Key<Integer> REQUEST_ID = newKey("REQUEST_ID", Integer.class);
+    private static final AtomicInteger REQUEST_ID_GENERATOR = new AtomicInteger();
 
     private final BlockingQueue<Processor<StreamingHttpResponse, StreamingHttpResponse>> serverResponses;
     private final BlockingQueue<Cancellable> delayedClientCancels;
@@ -114,6 +122,8 @@ class ResponseCancelTest {
                 .appendConnectionFilter(connection -> new StreamingHttpConnectionFilter(connection) {
                     @Override
                     public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+                        final Integer requestId = request.context().get(REQUEST_ID);
+                        assert requestId != null;
                         return delegate().request(request)
                                 .liftSync(target -> new Subscriber<StreamingHttpResponse>() {
                                     @Override
@@ -123,12 +133,13 @@ class ResponseCancelTest {
 
                                     @Override
                                     public void onSuccess(final StreamingHttpResponse result) {
-                                        delayedClientTermination.add(new ClientTerminationSignal(target, result));
+                                        delayedClientTermination.add(
+                                                new ClientTerminationSignal(requestId, target, result));
                                     }
 
                                     @Override
                                     public void onError(final Throwable t) {
-                                        delayedClientTermination.add(new ClientTerminationSignal(target, t));
+                                        delayedClientTermination.add(new ClientTerminationSignal(requestId, target, t));
                                     }
                                 });
                     }
@@ -205,7 +216,7 @@ class ResponseCancelTest {
         sendSecondRequestUsingClient();
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{displayName} [{index}] finishRequest={0}")
     @ValueSource(booleans = {false, true})
     void connectionCancelWaitingForPayloadBody(boolean finishRequest) throws Throwable {
         HttpConnection connection = client.reserveConnection(client.get("/")).toFuture().get();
@@ -238,16 +249,26 @@ class ResponseCancelTest {
     private void sendSecondRequestUsingClient() throws Throwable {
         assertActiveConnectionsCount(0);
         // Validate client can still communicate with a server using a new connection.
+        int requestId = REQUEST_ID_GENERATOR.incrementAndGet();
         CountDownLatch latch = new CountDownLatch(1);
-        sendRequest(client, latch);
+        sendRequest(client, requestId, latch);
         serverResponses.take().onSuccess(client.asStreamingClient().httpResponseFactory().ok());
-        ClientTerminationSignal.resume(delayedClientTermination, latch);
+        ClientTerminationSignal.resume(delayedClientTermination, requestId, latch);
         assertActiveConnectionsCount(1);
     }
 
-    private static Cancellable sendRequest(final HttpRequester requester, @Nullable final CountDownLatch latch) {
-        return (latch == null ? requester.request(requester.get("/")) :
-                requester.request(requester.get("/"))
+    private static Cancellable sendRequest(HttpRequester requester,
+                                           @Nullable CountDownLatch latch) {
+        return sendRequest(requester, REQUEST_ID_GENERATOR.incrementAndGet(), latch);
+    }
+
+    private static Cancellable sendRequest(HttpRequester requester,
+                                           int requestId,
+                                           @Nullable CountDownLatch latch) {
+        HttpRequest request = requester.get("/");
+        request.context().put(REQUEST_ID, requestId);
+        return (latch == null ? requester.request(request) :
+                requester.request(request)
                         .afterOnSuccess(__ -> latch.countDown())
                         .afterOnError(__ -> latch.countDown())
         ).subscribe(__ -> { });
@@ -283,27 +304,31 @@ class ResponseCancelTest {
     }
 
     private static final class ClientTerminationSignal {
-        @SuppressWarnings("rawtypes")
-        private final Subscriber subscriber;
+        private final int requestId;
+        private final Subscriber<? super StreamingHttpResponse> subscriber;
         @Nullable
         private final Throwable err;
         @Nullable
         private final StreamingHttpResponse response;
 
-        ClientTerminationSignal(@SuppressWarnings("rawtypes") final Subscriber subscriber, final Throwable err) {
-            this.subscriber = subscriber;
-            this.err = err;
+        ClientTerminationSignal(int requestId,
+                                Subscriber<? super StreamingHttpResponse> subscriber,
+                                Throwable err) {
+            this.requestId = requestId;
+            this.subscriber = requireNonNull(subscriber);
+            this.err = requireNonNull(err);
             response = null;
         }
 
-        ClientTerminationSignal(@SuppressWarnings("rawtypes") final Subscriber subscriber,
-                                final StreamingHttpResponse response) {
-            this.subscriber = subscriber;
+        ClientTerminationSignal(int requestId,
+                                Subscriber<? super StreamingHttpResponse> subscriber,
+                                StreamingHttpResponse response) {
+            this.requestId = requestId;
+            this.subscriber = requireNonNull(subscriber);
             err = null;
-            this.response = response;
+            this.response = requireNonNull(response);
         }
 
-        @SuppressWarnings("unchecked")
         void resume() {
             if (err != null) {
                 subscriber.onError(err);
@@ -312,13 +337,19 @@ class ResponseCancelTest {
             }
         }
 
-        @SuppressWarnings("unchecked")
         static void resume(BlockingQueue<ClientTerminationSignal> signals,
-                           final CountDownLatch latch) throws Throwable {
-            ClientTerminationSignal signal = signals.take();
+                           int requestId,
+                           CountDownLatch latch) throws Throwable {
+            ClientTerminationSignal signal;
+            do {
+                // In case of cancel, a terminal signal may or may not arrive to the subscriber. The requestId helps
+                // to make sure we discard optional signals of all previous requests and resuming only for the current
+                // request.
+                signal = signals.take();
+            } while (signal.requestId != requestId);
             if (signal.err != null) {
                 signal.subscriber.onError(signal.err);
-                throw signal.err;
+                throw new AssertionError("Response terminated with an error", signal.err);
             } else {
                 signal.subscriber.onSuccess(signal.response);
             }
