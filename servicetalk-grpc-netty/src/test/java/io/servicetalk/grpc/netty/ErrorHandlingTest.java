@@ -393,9 +393,9 @@ class ErrorHandlingTest {
     private void setupForBlockingServiceThrows(final BlockingTesterService blockingService, final Throwable toThrow)
             throws Exception {
         when(blockingService.test(any(), any())).thenThrow(toThrow);
-        doThrow(toThrow).when(blockingService).testBiDiStream(any(), any(), any(GrpcPayloadWriter.class));
+        doThrow(toThrow).when(blockingService).testBiDiStream(any(), any(), any());
         when(blockingService.testRequestStream(any(), any())).thenThrow(toThrow);
-        doThrow(toThrow).when(blockingService).testResponseStream(any(), any(), any(GrpcPayloadWriter.class));
+        doThrow(toThrow).when(blockingService).testResponseStream(any(), any(), any());
     }
 
     private ServiceFactory setupForBlockingServiceWritesThenThrows(final Throwable toThrow) throws Exception {
@@ -411,13 +411,13 @@ class ErrorHandlingTest {
             GrpcPayloadWriter<TestResponse> responseWriter = invocation.getArgument(2);
             responseWriter.write(cannedResponse);
             throw toThrow;
-        }).when(blockingService).testBiDiStream(any(), any(), any(GrpcPayloadWriter.class));
+        }).when(blockingService).testBiDiStream(any(), any(), any());
         when(blockingService.testRequestStream(any(), any())).thenThrow(toThrow);
         doAnswer(invocation -> {
             GrpcPayloadWriter<TestResponse> responseWriter = invocation.getArgument(2);
             responseWriter.write(cannedResponse);
             throw toThrow;
-        }).when(blockingService).testResponseStream(any(), any(), any(GrpcPayloadWriter.class));
+        }).when(blockingService).testResponseStream(any(), any(), any());
     }
 
     static Collection<Arguments> data() {

@@ -23,7 +23,6 @@ import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterizedTypeName;
-import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
 
 import java.time.Duration;
@@ -32,20 +31,17 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import javax.lang.model.element.Modifier;
 
 import static com.squareup.javapoet.MethodSpec.constructorBuilder;
 import static com.squareup.javapoet.MethodSpec.methodBuilder;
 import static com.squareup.javapoet.TypeName.BOOLEAN;
-import static com.squareup.javapoet.TypeSpec.anonymousClassBuilder;
 import static com.squareup.javapoet.TypeSpec.classBuilder;
 import static com.squareup.javapoet.TypeSpec.interfaceBuilder;
 import static io.servicetalk.grpc.protoc.Generator.NewRpcMethodFlag.BLOCKING;
 import static io.servicetalk.grpc.protoc.Generator.NewRpcMethodFlag.CLIENT;
 import static io.servicetalk.grpc.protoc.Generator.NewRpcMethodFlag.INTERFACE;
-import static io.servicetalk.grpc.protoc.Generator.NewRpcMethodFlag.SERVER_RESPONSE;
 import static io.servicetalk.grpc.protoc.NoopServiceCommentsMap.NOOP_MAP;
 import static io.servicetalk.grpc.protoc.StringUtils.escapeJavaDoc;
 import static io.servicetalk.grpc.protoc.StringUtils.sanitizeIdentifier;
@@ -62,7 +58,6 @@ import static io.servicetalk.grpc.protoc.Types.BlockingResponseStreamingClientCa
 import static io.servicetalk.grpc.protoc.Types.BlockingResponseStreamingRoute;
 import static io.servicetalk.grpc.protoc.Types.BlockingRoute;
 import static io.servicetalk.grpc.protoc.Types.BlockingStreamingClientCall;
-import static io.servicetalk.grpc.protoc.Types.BlockingStreamingGrpcServerResponse;
 import static io.servicetalk.grpc.protoc.Types.BlockingStreamingRoute;
 import static io.servicetalk.grpc.protoc.Types.BufferDecoderGroup;
 import static io.servicetalk.grpc.protoc.Types.BufferEncoderList;
@@ -123,9 +118,9 @@ import static io.servicetalk.grpc.protoc.Words.JAVADOC_PARAM;
 import static io.servicetalk.grpc.protoc.Words.JAVADOC_RETURN;
 import static io.servicetalk.grpc.protoc.Words.JAVADOC_THROWS;
 import static io.servicetalk.grpc.protoc.Words.Metadata;
-import static io.servicetalk.grpc.protoc.Words.PATH;
 import static io.servicetalk.grpc.protoc.Words.PROTOBUF;
 import static io.servicetalk.grpc.protoc.Words.PROTO_CONTENT_TYPE;
+import static io.servicetalk.grpc.protoc.Words.RPC_PATH;
 import static io.servicetalk.grpc.protoc.Words.Rpc;
 import static io.servicetalk.grpc.protoc.Words.Service;
 import static io.servicetalk.grpc.protoc.Words.To;
@@ -145,10 +140,8 @@ import static io.servicetalk.grpc.protoc.Words.closeable;
 import static io.servicetalk.grpc.protoc.Words.ctx;
 import static io.servicetalk.grpc.protoc.Words.executionContext;
 import static io.servicetalk.grpc.protoc.Words.factory;
-import static io.servicetalk.grpc.protoc.Words.handle;
 import static io.servicetalk.grpc.protoc.Words.initSerializationProvider;
 import static io.servicetalk.grpc.protoc.Words.isSupportedMessageCodingsEmpty;
-import static io.servicetalk.grpc.protoc.Words.javaMethodName;
 import static io.servicetalk.grpc.protoc.Words.metadata;
 import static io.servicetalk.grpc.protoc.Words.methodDescriptor;
 import static io.servicetalk.grpc.protoc.Words.methodDescriptors;
@@ -156,9 +149,7 @@ import static io.servicetalk.grpc.protoc.Words.onClose;
 import static io.servicetalk.grpc.protoc.Words.registerRoutes;
 import static io.servicetalk.grpc.protoc.Words.request;
 import static io.servicetalk.grpc.protoc.Words.requestEncoding;
-import static io.servicetalk.grpc.protoc.Words.response;
 import static io.servicetalk.grpc.protoc.Words.responseWriter;
-import static io.servicetalk.grpc.protoc.Words.route;
 import static io.servicetalk.grpc.protoc.Words.routes;
 import static io.servicetalk.grpc.protoc.Words.rpc;
 import static io.servicetalk.grpc.protoc.Words.service;
@@ -367,7 +358,7 @@ final class Generator {
                 methodProto.getClientStreaming(), methodProto.getServerStreaming(), methodHttpPath,
                 methodDescriptorType, methodDescFieldName, isAsync));
 
-        final FieldSpec.Builder pathSpecBuilder = FieldSpec.builder(String.class, PATH)
+        final FieldSpec.Builder pathSpecBuilder = FieldSpec.builder(String.class, RPC_PATH)
                 .addJavadoc(JAVADOC_DEPRECATED + "Use {@link #$L}." + lineSeparator(), methodDescriptor)
                 .addAnnotation(Deprecated.class)
                 .addModifiers(PUBLIC, STATIC, FINAL) // redundant, default for interface field
@@ -375,7 +366,6 @@ final class Generator {
         final TypeSpec.Builder interfaceSpecBuilder = interfaceBuilder(name)
                 .addAnnotation(FunctionalInterface.class)
                 .addModifiers(PUBLIC)
-                .addSuperinterface(isAsync ? GrpcService : BlockingGrpcService)
                 .addField(pathSpecBuilder.build())
                 .addMethod(methodBuilder(methodDescriptor)
                         .addModifiers(PUBLIC, STATIC)
@@ -392,23 +382,8 @@ final class Generator {
                                         " context associated with this service and request." + lineSeparator());
                             }
                             return b;
-                        }));
-
-        if (!isAsync && methodProto.getServerStreaming()) {
-            interfaceSpecBuilder.addMethod(newRpcMethodSpec(inClass, outClass, javaMethodName,
-                    methodProto.getClientStreaming(), methodProto.getServerStreaming(),
-                    EnumSet.of(INTERFACE, BLOCKING, SERVER_RESPONSE), printJavaDocs,
-                    (__, b) -> {
-                        b.addModifiers(DEFAULT).addParameter(GrpcServiceContext, ctx);
-                        if (printJavaDocs) {
-                            extractJavaDocComments(state, methodIndex, b);
-                            b.addJavadoc(JAVADOC_PARAM + ctx +
-                                    " context associated with this service and request." + lineSeparator());
-                        }
-                        b.addStatement("$L($L, $L, $L.sendMetaData())", javaMethodName, ctx, request, response);
-                        return b;
-                    }));
-        }
+                        }))
+                .addSuperinterface(isAsync ? GrpcService : BlockingGrpcService);
 
         if (methodProto.hasOptions() && methodProto.getOptions().getDeprecated()) {
             interfaceSpecBuilder.addAnnotation(Deprecated.class);
@@ -585,34 +560,29 @@ final class Generator {
             final String routeName = routeName(rpcInterface.methodProto);
             final String methodName = routeName + (rpcInterface.blocking ? Blocking : "");
             final String addRouteMethodName = addRouteMethodName(rpcInterface.methodProto, rpcInterface.blocking);
+            final ClassName routeInterfaceClass = routeInterfaceClass(rpcInterface.methodProto, rpcInterface.blocking);
 
             CodeBlock addRouteCode = CodeBlock.builder()
-                    .add(routeDefinition(rpcInterface, routeName, inClass, outClass))
                     .beginControlFlow("if ($L.isEmpty())", supportedMessageCodings)
-                    .addStatement("$L($L.getClass(), $T.$L(), $L, $L, $L)",
-                            addRouteMethodName, rpc,
+                    .addStatement("$L($L.getClass(), $T.$L(), $L, $L, $L.wrap($L::$L, $L))", addRouteMethodName, rpc,
                             rpcInterface.className, methodDescriptor, bufferDecoderGroup, bufferEncoders,
-                            route)
+                            routeInterfaceClass, rpc, routeName, rpc)
                     .nextControlFlow("else")
-                    .addStatement("$L($T.$L, $L.getClass(), $T.$L().$L(), $L, $T.class, $T.class, $L($L))",
-                            addRouteMethodName, rpcInterface.className, PATH, rpc,
-                            rpcInterface.className, methodDescriptor, javaMethodName,
-                            route,
-                            inClass, outClass, initSerializationProvider, supportedMessageCodings)
+                    .addStatement("$L($T.$L, $L.getClass(), $S, $L.wrap($L::$L, $L), $T.class, $T.class, " +
+                                    "$L($L))", addRouteMethodName, rpcInterface.className, RPC_PATH, rpc,
+                            routeName, routeInterfaceClass, rpc, routeName, rpc, inClass, outClass,
+                            initSerializationProvider, supportedMessageCodings)
                     .endControlFlow().build();
 
             CodeBlock addRouteExecCode = CodeBlock.builder()
-                    .add(routeDefinition(rpcInterface, routeName, inClass, outClass))
                     .beginControlFlow("if ($L.isEmpty())", supportedMessageCodings)
-                    .addStatement("$L($L, $T.$L(), $L, $L, $L)",
-                            addRouteMethodName, strategy,
+                    .addStatement("$L($L, $T.$L(), $L, $L, $L.wrap($L::$L, $L))", addRouteMethodName, strategy,
                             rpcInterface.className, methodDescriptor, bufferDecoderGroup, bufferEncoders,
-                            route)
+                            routeInterfaceClass, rpc, routeName, rpc)
                     .nextControlFlow("else")
-                    .addStatement("$L($T.$L, $L, $L, $T.class, $T.class, $L($L))",
-                            addRouteMethodName, rpcInterface.className, PATH, strategy,
-                            route,
-                            inClass, outClass, initSerializationProvider, supportedMessageCodings)
+                    .addStatement("$L($T.$L, $L, $L.wrap($L::$L, $L), $T.class, $T.class, $L($L))",
+                            addRouteMethodName, rpcInterface.className, RPC_PATH, strategy, routeInterfaceClass,
+                            rpc, routeName, rpc, inClass, outClass, initSerializationProvider, supportedMessageCodings)
                     .endControlFlow().build();
 
             serviceBuilderSpecBuilder
@@ -842,8 +812,9 @@ final class Generator {
                     .addModifiers(PUBLIC, STATIC, FINAL)
                     .superclass(DefaultGrpcClientMetadata)
                     .addField(FieldSpec.builder(metaDataClassName, INSTANCE)
-                            .addJavadoc(JAVADOC_DEPRECATED + "Use {@link $T}." + lineSeparator(),
-                                    DefaultGrpcClientMetadata)
+                            .addJavadoc(JAVADOC_DEPRECATED +
+                                    "This class will be removed in the future in favor of direct usage of {@link $T}."
+                                            + lineSeparator(), GrpcClientMetadata)
                             .addAnnotation(Deprecated.class)
                             .addModifiers(PUBLIC, STATIC, FINAL) // redundant, default for interface field
                             .initializer("new $T()", metaDataClassName)
@@ -851,33 +822,33 @@ final class Generator {
                     .addMethod(constructorBuilder()
                             .addModifiers(PRIVATE)
                             .addParameter(GrpcClientMetadata, metadata, FINAL)
-                            .addStatement("super($T.$L, $L)", rpcInterface.className, PATH, metadata)
+                            .addStatement("super($T.$L, $L)", rpcInterface.className, RPC_PATH, metadata)
                             .build())
                     .addMethod(constructorBuilder()
                             .addModifiers(PRIVATE)
-                            .addStatement("super($T.$L)", rpcInterface.className, PATH)
+                            .addStatement("super($T.$L)", rpcInterface.className, RPC_PATH)
                             .build())
                     .addMethod(constructorBuilder()
                             .addModifiers(PUBLIC)
                             .addParameter(ContentCodec, requestEncoding, FINAL)
-                            .addStatement("super($T.$L, $L)", rpcInterface.className, PATH, requestEncoding)
+                            .addStatement("super($T.$L, $L)", rpcInterface.className, RPC_PATH, requestEncoding)
                             .build())
                     .addMethod(constructorBuilder()
                             .addModifiers(PUBLIC)
                             .addParameter(GrpcExecutionStrategy, strategy, FINAL)
-                            .addStatement("super($T.$L, $L)", rpcInterface.className, PATH, strategy)
+                            .addStatement("super($T.$L, $L)", rpcInterface.className, RPC_PATH, strategy)
                             .build())
                     .addMethod(constructorBuilder()
                             .addModifiers(PUBLIC)
                             .addParameter(Duration.class, timeout, FINAL)
                             .addStatement("super($T.$L, $L)",
-                                    rpcInterface.className, PATH, timeout)
+                                    rpcInterface.className, RPC_PATH, timeout)
                             .build())
                     .addMethod(constructorBuilder()
                             .addModifiers(PUBLIC)
                             .addParameter(GrpcExecutionStrategy, strategy, FINAL)
                             .addParameter(ContentCodec, requestEncoding, FINAL)
-                            .addStatement("super($T.$L, $L, $L)", rpcInterface.className, PATH,
+                            .addStatement("super($T.$L, $L, $L)", rpcInterface.className, RPC_PATH,
                                     strategy, requestEncoding)
                             .build())
                     .addMethod(constructorBuilder()
@@ -885,7 +856,7 @@ final class Generator {
                             .addParameter(GrpcExecutionStrategy, strategy, FINAL)
                             .addParameter(ContentCodec, requestEncoding, FINAL)
                             .addParameter(Duration.class, timeout, FINAL)
-                            .addStatement("super($T.$L, $L, $L, $L)", rpcInterface.className, PATH,
+                            .addStatement("super($T.$L, $L, $L, $L)", rpcInterface.className, RPC_PATH,
                                     strategy, requestEncoding, timeout)
                             .build())
                     .build();
@@ -1061,7 +1032,7 @@ final class Generator {
                     inClass, outClass), routeName, PRIVATE, FINAL);
 
             serviceFromRoutesConstructorBuilder.addStatement("$L = $L.$L($T.$L)", routeName, routes,
-                    routeFactoryMethodName(methodProto), rpc.className, PATH);
+                    routeFactoryMethodName(methodProto), rpc.className, RPC_PATH);
 
             serviceFromRoutesSpecBuilder.addMethod(newRpcMethodSpec(methodProto, noneOf(NewRpcMethodFlag.class), false,
                     (name, builder) ->
@@ -1079,7 +1050,7 @@ final class Generator {
     }
 
     enum NewRpcMethodFlag {
-        BLOCKING, INTERFACE, CLIENT, SERVER_RESPONSE
+        BLOCKING, INTERFACE, CLIENT
     }
 
     private MethodSpec newRpcMethodSpec(
@@ -1102,7 +1073,6 @@ final class Generator {
         final Modifier[] mods = flags.contains(INTERFACE) ? new Modifier[0] : new Modifier[]{FINAL};
 
         if (flags.contains(BLOCKING)) {
-            Consumer<MethodSpec.Builder> lastJavadoc = __ -> { /* noop */ };
             if (clientStreaming) {
                 if (flags.contains(CLIENT)) {
                     methodSpecBuilder.addParameter(ParameterizedTypeName.get(Types.Iterable, inClass), request, mods);
@@ -1133,35 +1103,14 @@ final class Generator {
                                 JAVADOC_RETURN + "used to read the response stream of type {@link $T} from the server."
                                         + lineSeparator(), outClass);
                     }
-                } else if (flags.contains(SERVER_RESPONSE)) {
-                    methodSpecBuilder.addParameter(
-                            ParameterizedTypeName.get(BlockingStreamingGrpcServerResponse, outClass), response, mods);
-                    if (printJavaDocs) {
-                        methodSpecBuilder.addJavadoc(JAVADOC_PARAM + response +
-                                " used to send response meta-data and continue writing a stream of type {@link $T} " +
-                                "to the client." + lineSeparator() +
-                                "The implementation of this method is responsible for calling {@link $T#close()}." +
-                                lineSeparator(), outClass, GrpcPayloadWriter);
-                    }
                 } else {
-                    methodSpecBuilder.addAnnotation(Deprecated.class);
                     methodSpecBuilder.addParameter(ParameterizedTypeName.get(GrpcPayloadWriter, outClass),
                             responseWriter, mods);
                     if (printJavaDocs) {
                         methodSpecBuilder.addJavadoc(JAVADOC_PARAM + responseWriter +
-                                " used to write a stream of type {@link $T} to the client." + lineSeparator() +
+                                " used to write a stream of type {@link $T} to the server." + lineSeparator() +
                                 "The implementation of this method is responsible for calling {@link $T#close()}." +
                                 lineSeparator(), outClass, GrpcPayloadWriter);
-                        lastJavadoc = b -> b.addJavadoc(JAVADOC_DEPRECATED + "Use {@link #$L($T, $T, $T)}." +
-                                        lineSeparator() +
-                                        "In the next release, this method will have a default implementation but " +
-                                        "the new overload won't." + lineSeparator() +
-                                        "To avoid breaking API changes, make sure to implement both methods. The " +
-                                        "release after next will remove this method." + lineSeparator() +
-                                        "This intermediate step is necessary to maintain {@link FunctionalInterface} " +
-                                        "contract that requires to have a single non-default method." + lineSeparator(),
-                                methodName, GrpcServiceContext, clientStreaming ? BlockingIterable : inClass,
-                                BlockingStreamingGrpcServerResponse);
                     }
                 }
             } else {
@@ -1178,8 +1127,7 @@ final class Generator {
                                 lineSeparator(), Exception.class)
                         .addJavadoc(JAVADOC_THROWS +
                                 "$T if an expected application exception occurs. Its contents will be serialized and " +
-                                "propagated to the peer." + lineSeparator(), GrpcStatusException);
-                lastJavadoc.accept(methodSpecBuilder);
+                                "propagated to the peer.", GrpcStatusException);
             }
         } else {
             if (clientStreaming) {
@@ -1319,9 +1267,9 @@ final class Generator {
                             inClass, outClass), callFieldName, PRIVATE, FINAL)
                     .addMethod(newRpcMethodSpec(clientMetaData.methodProto, rpcMethodSpecsFlags, false,
                             (n, b) -> b.addAnnotation(Override.class)
-                                    .addStatement("return $L($L.isEmpty() ? new $T() : new $T(), $L)", n,
-                                            supportedMessageCodings, DefaultGrpcClientMetadata,
-                                            clientMetaData.className, request)))
+                                    .addStatement("return $L($L.isEmpty() ? $T.$L : $T.$L, $L)", n,
+                                            supportedMessageCodings, DefaultGrpcClientMetadata, INSTANCE,
+                                            clientMetaData.className, INSTANCE, request)))
                     .addMethod(newRpcMethodSpec(clientMetaData.methodProto, rpcMethodSpecsFlags, false,
                             (__, b) -> b.addAnnotation(Deprecated.class)
                                     .addAnnotation(Override.class)
@@ -1353,6 +1301,7 @@ final class Generator {
                 .addSuperinterface(state.blockingClientClass)
                 .addField(state.clientClass, client, PRIVATE, FINAL)
                 .addMethod(constructorBuilder()
+                        .addModifiers(PRIVATE)
                         .addParameter(state.clientClass, client, FINAL)
                         .addStatement("this.$L = $L", client, client)
                         .build())
@@ -1454,63 +1403,6 @@ final class Generator {
                         blocking ? BlockingRequestStreamingRoute : RequestStreamingRoute) :
                 (methodProto.getServerStreaming() ? blocking ? BlockingResponseStreamingRoute : ResponseStreamingRoute
                         : blocking ? BlockingRoute : Route);
-    }
-
-    private static CodeBlock routeDefinition(final RpcInterface rpcInterface, final String routeName,
-                                             final ClassName inClass, final ClassName outClass) {
-        final ClassName routeInterfaceClass = routeInterfaceClass(rpcInterface.methodProto, rpcInterface.blocking);
-        final TypeName routeType = ParameterizedTypeName.get(routeInterfaceClass, inClass, outClass);
-        if (rpcInterface.blocking && rpcInterface.methodProto.getServerStreaming()) {
-            return CodeBlock.builder()
-                    .addStatement("final $T $N = $L",
-                            routeType, route, anonymousClassBuilder("")
-                                    .addSuperinterface(routeType)
-                                    .addMethod(methodBuilder(handle)
-                                            .addAnnotation(Override.class)
-                                            .addAnnotation(Deprecated.class)
-                                            .addModifiers(PUBLIC)
-                                            .addException(Exception.class)
-                                            .addParameter(GrpcServiceContext, ctx)
-                                            .addParameter(rpcInterface.methodProto.getClientStreaming() ?
-                                                    ParameterizedTypeName.get(BlockingIterable, inClass) : inClass,
-                                                    request)
-                                            .addParameter(ParameterizedTypeName.get(GrpcPayloadWriter, outClass),
-                                                    responseWriter)
-                                            .addStatement("$L.$L($L, $L, $L)",
-                                                    rpc, routeName, ctx, request, responseWriter)
-                                            .build())
-                                    .addMethod(methodBuilder(handle)
-                                            .addAnnotation(Override.class)
-                                            .addModifiers(PUBLIC)
-                                            .addException(Exception.class)
-                                            .addParameter(GrpcServiceContext, ctx)
-                                            .addParameter(rpcInterface.methodProto.getClientStreaming() ?
-                                                    ParameterizedTypeName.get(BlockingIterable, inClass) : inClass,
-                                                    request)
-                                            .addParameter(ParameterizedTypeName.get(BlockingStreamingGrpcServerResponse,
-                                                    outClass), response)
-                                            .addStatement("$L.$L($L, $L, $L)",
-                                                    rpc, routeName, ctx, request, response)
-                                            .build())
-                                    .addMethod(methodBuilder(close)
-                                            .addAnnotation(Override.class)
-                                            .addModifiers(PUBLIC)
-                                            .addException(Exception.class)
-                                            .addStatement("$L.$L()", rpc, close)
-                                            .build())
-                                    .addMethod(methodBuilder(closeGracefully)
-                                            .addAnnotation(Override.class)
-                                            .addModifiers(PUBLIC)
-                                            .addException(Exception.class)
-                                            .addStatement("$L.$L()", rpc, closeGracefully)
-                                            .build())
-                                    .build())
-                    .build();
-        }
-        return CodeBlock.builder()
-                .addStatement("final $T $N = $T.wrap($L::$L, $L)",
-                        routeType, route, routeInterfaceClass, rpc, routeName, rpc)
-                .build();
     }
 
     private static String routeFactoryMethodName(final MethodDescriptorProto methodProto) {

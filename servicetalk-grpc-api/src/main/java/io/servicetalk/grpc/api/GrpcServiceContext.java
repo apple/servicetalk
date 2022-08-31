@@ -15,16 +15,11 @@
  */
 package io.servicetalk.grpc.api;
 
-import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.encoding.api.ContentCodec;
 import io.servicetalk.http.api.HttpProtocolVersion;
-import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.http.api.TrailersTransformer;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import java.util.List;
-import java.util.function.Supplier;
 
 /**
  * A <a href="https://www.grpc.io">gRPC</a> service context.
@@ -44,29 +39,6 @@ public interface GrpcServiceContext extends ConnectionContext, GrpcMetadata {
      */
     @Deprecated
     List<ContentCodec> supportedMessageCodings();
-
-    /**
-     * {@inheritDoc}
-     * <p>
-     * <b>Notes</b>:
-     * <ol>
-     *     <li>For asynchronous endpoints that operate with a {@link Publisher} either for reading or writing data back,
-     *     only modifications to the {@link #responseContext()} made before the endpoint method returns are visible for
-     *     HTTP {@link StreamingHttpResponse#headers() headers}. Any other modifications made from inside the
-     *     asynchronous chain of operators or from inside the {@link Publisher#defer(Supplier)} operator will be visible
-     *     only for HTTP {@link StreamingHttpResponse#transform(TrailersTransformer) trailers}.</li>
-     *     <li>For synchronous endpoints that operate with {@link BlockingStreamingGrpcServerResponse}, only
-     *     modifications to the {@link #responseContext()} made before invocation of
-     *     {@link BlockingStreamingGrpcServerResponse#sendMetaData()} method are visible for HTTP
-     *     {@link StreamingHttpResponse#headers() headers}. Any other modifications made later (while operating with
-     *     {@link GrpcPayloadWriter}) will be visible only for HTTP
-     *     {@link StreamingHttpResponse#transform(TrailersTransformer) trailers}.</li>
-     * </ol>
-     */
-    @Override
-    default ContextMap responseContext() {
-        return GrpcMetadata.super.responseContext();
-    }
 
     interface GrpcProtocol extends Protocol {
 

@@ -16,7 +16,6 @@
 package io.servicetalk.grpc.api;
 
 import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.CompletableSource;
@@ -27,11 +26,9 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.encoding.api.BufferDecoder;
 import io.servicetalk.encoding.api.BufferDecoderGroup;
 import io.servicetalk.encoding.api.BufferEncoder;
-import io.servicetalk.grpc.api.DefaultGrpcMetadata.LazyContextMapSupplier;
 import io.servicetalk.grpc.api.GrpcRoutes.BlockingRequestStreamingRoute;
 import io.servicetalk.grpc.api.GrpcRoutes.BlockingResponseStreamingRoute;
 import io.servicetalk.grpc.api.GrpcRoutes.BlockingRoute;
@@ -48,7 +45,6 @@ import io.servicetalk.http.api.BlockingStreamingHttpService;
 import io.servicetalk.http.api.HttpApiConversions.ServiceAdapterHolder;
 import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpPayloadWriter;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
@@ -92,7 +88,6 @@ import static io.servicetalk.grpc.api.GrpcUtils.setStatus;
 import static io.servicetalk.grpc.api.GrpcUtils.setStatusOk;
 import static io.servicetalk.grpc.api.GrpcUtils.validateContentType;
 import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
-import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadAll;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
@@ -106,8 +101,7 @@ import static java.util.Objects.requireNonNull;
  */
 final class GrpcRouter {
     private static final Logger LOGGER = LoggerFactory.getLogger(GrpcRouter.class);
-    private static final HttpExecutionStrategy DEFAULT_RESPONSE_STREAMING_ROUTE_EXECUTION_STRATEGY =
-            customStrategyBuilder().offloadReceiveData().offloadSend().offloadEvent().offloadClose().build();
+
     private final Map<String, RouteProvider> routes;
     private final Map<String, RouteProvider> streamingRoutes;
     private final Map<String, RouteProvider> blockingRoutes;
@@ -117,7 +111,7 @@ final class GrpcRouter {
     private static final GrpcStatus STATUS_UNIMPLEMENTED = fromCodeValue(UNIMPLEMENTED.value());
     private static final StreamingHttpService NOT_FOUND_SERVICE = (ctx, request, responseFactory) -> {
         final StreamingHttpResponse response = newErrorResponse(responseFactory, APPLICATION_GRPC,
-                STATUS_UNIMPLEMENTED.asException(), ctx.executionContext().bufferAllocator(), null);
+                STATUS_UNIMPLEMENTED.asException(), ctx.executionContext().bufferAllocator());
         response.version(request.version());
         return succeeded(response);
     };
@@ -348,37 +342,34 @@ final class GrpcRouter {
                         @Override
                         public Single<HttpResponse> handle(final HttpServiceContext ctx, final HttpRequest request,
                                                            final HttpResponseFactory responseFactory) {
-                            final BufferAllocator allocator = ctx.executionContext().bufferAllocator();
-                            LazyContextMapSupplier nullableResponseContext = null;
                             try {
                                 validateContentType(request.headers(), requestContentType);
-                                final GrpcDeserializer<Req> deserializer = readGrpcMessageEncodingRaw(
+                                GrpcDeserializer<Req> deserializer = readGrpcMessageEncodingRaw(
                                         request.headers(), deserializerIdentity, deserializers,
                                         GrpcDeserializer::messageEncoding);
-                                final LazyContextMapSupplier responseContext = nullableResponseContext =
-                                        new LazyContextMapSupplier();
-                                return route.handle(new DefaultGrpcServiceContext(methodDescriptor.httpPath(),
-                                                        request::context, responseContext, ctx),
-                                        deserializer.deserialize(request.payloadBody(), allocator))
+                                return route.handle(new DefaultGrpcServiceContext(methodDescriptor.httpPath(), ctx),
+                                        deserializer.deserialize(request.payloadBody(),
+                                                ctx.executionContext().bufferAllocator()))
                                         .map(rawResp -> {
-                                            final GrpcSerializer<Resp> serializer = negotiateAcceptedEncodingRaw(
+                                            GrpcSerializer<Resp> serializer = negotiateAcceptedEncodingRaw(
                                                     request.headers(), serializerIdentity, serializers,
                                                     GrpcSerializer::messageEncoding);
                                             return newResponse(responseFactory, responseContentType,
-                                                    responseContext, serializer.messageEncoding(), acceptedEncoding)
-                                                    .payloadBody(serializer.serialize(rawResp, allocator));
+                                                    serializer.messageEncoding(), acceptedEncoding)
+                                                    .payloadBody(serializer.serialize(rawResp,
+                                                            ctx.executionContext().bufferAllocator()));
                                         })
                                         .onErrorReturn(cause -> {
                                             LOGGER.debug("Unexpected exception from aggregated response for path : {}",
                                                     methodDescriptor.httpPath(), cause);
                                             return newErrorResponse(responseFactory, responseContentType, cause,
-                                                    allocator, responseContext);
+                                                    ctx.executionContext().bufferAllocator());
                                         });
                             } catch (Throwable t) {
                                 LOGGER.debug("Unexpected exception from aggregated endpoint for path: {}",
                                         methodDescriptor.httpPath(), t);
-                                return succeeded(newErrorResponse(responseFactory, responseContentType, t, allocator,
-                                        nullableResponseContext));
+                                return succeeded(newErrorResponse(responseFactory, responseContentType, t,
+                                        ctx.executionContext().bufferAllocator()));
                             }
                         }
 
@@ -423,30 +414,26 @@ final class GrpcRouter {
                             public Single<StreamingHttpResponse> handle(
                                     final HttpServiceContext ctx, final StreamingHttpRequest request,
                                     final StreamingHttpResponseFactory responseFactory) {
-                                final BufferAllocator allocator = ctx.executionContext().bufferAllocator();
-                                LazyContextMapSupplier nullableResponseContext = null;
                                 try {
                                     validateContentType(request.headers(), requestContentType);
-                                    final GrpcStreamingSerializer<Resp> serializer = negotiateAcceptedEncodingRaw(
+                                    GrpcStreamingSerializer<Resp> serializer = negotiateAcceptedEncodingRaw(
                                             request.headers(), serializerIdentity, serializers,
                                             GrpcStreamingSerializer::messageEncoding);
-                                    final GrpcStreamingDeserializer<Req> deserializer = readGrpcMessageEncodingRaw(
+                                    GrpcStreamingDeserializer<Req> deserializer = readGrpcMessageEncodingRaw(
                                             request.headers(), deserializerIdentity, deserializers,
                                             GrpcStreamingDeserializer::messageEncoding);
-                                    final LazyContextMapSupplier responseContext = nullableResponseContext =
-                                            new LazyContextMapSupplier();
-                                    final Publisher<Resp> payload = route.handle(
-                                            new DefaultGrpcServiceContext(methodDescriptor.httpPath(), request::context,
-                                                    responseContext, ctx),
-                                            deserializer.deserialize(request.payloadBody(), allocator));
+                                    final Publisher<Resp> response = route.handle(
+                                            new DefaultGrpcServiceContext(methodDescriptor.httpPath(), ctx),
+                                            deserializer.deserialize(request.payloadBody(),
+                                                    ctx.executionContext().bufferAllocator()));
                                     return succeeded(newResponse(responseFactory, responseContentType,
-                                            serializer.messageEncoding(), acceptedEncoding, responseContext, payload,
-                                            serializer, allocator));
+                                            serializer.messageEncoding(), acceptedEncoding, response, serializer,
+                                            ctx.executionContext().bufferAllocator()));
                                 } catch (Throwable t) {
                                     LOGGER.debug("Unexpected exception from streaming endpoint for path: {}",
                                             methodDescriptor.httpPath(), t);
                                     return succeeded(newErrorResponse(responseFactory, responseContentType, t,
-                                            allocator, nullableResponseContext));
+                                            ctx.executionContext().bufferAllocator()));
                                 }
                             }
 
@@ -512,99 +499,36 @@ final class GrpcRouter {
                 MethodDescriptor<Req, Resp> methodDescriptor,
                 BufferDecoderGroup decompressors, List<BufferEncoder> compressors,
                 @Nullable GrpcExecutionStrategy executionStrategy, ResponseStreamingRoute<Req, Resp> route) {
-            GrpcStreamingSerializer<Resp> serializerIdentity = streamingSerializer(methodDescriptor);
-            List<GrpcStreamingSerializer<Resp>> serializers = streamingSerializers(methodDescriptor, compressors);
-            GrpcStreamingDeserializer<Req> deserializerIdentity = streamingDeserializer(methodDescriptor);
-            List<GrpcStreamingDeserializer<Req>> deserializers =
-                    streamingDeserializers(methodDescriptor, decompressors.decoders());
-            CharSequence acceptedEncoding = decompressors.advertisedMessageEncoding();
-            CharSequence requestContentType = grpcContentType(methodDescriptor.requestDescriptor()
-                    .serializerDescriptor().contentType());
-            CharSequence responseContentType = grpcContentType(methodDescriptor.responseDescriptor()
-                    .serializerDescriptor().contentType());
-            verifyNoOverrides(streamingRoutes.put(methodDescriptor.httpPath(), new RouteProvider(
-                    new ServiceAdapterHolder() {
-                        private final StreamingHttpService service = new StreamingHttpService() {
-                            @Override
-                            public Single<StreamingHttpResponse> handle(
-                                    final HttpServiceContext ctx, final StreamingHttpRequest request,
-                                    final StreamingHttpResponseFactory responseFactory) {
-                                final BufferAllocator allocator = ctx.executionContext().bufferAllocator();
-                                try {
-                                    validateContentType(request.headers(), requestContentType);
-                                    final GrpcStreamingDeserializer<Req> deserializer = readGrpcMessageEncodingRaw(
-                                            request.headers(), deserializerIdentity, deserializers,
-                                            GrpcStreamingDeserializer::messageEncoding);
-                                    final LazyContextMapSupplier responseContext = new LazyContextMapSupplier();
-                                    return deserializer.deserialize(request.payloadBody(), allocator).firstOrError()
-                                            .onErrorMap(t -> {
-                                                if (t instanceof NoSuchElementException) {
-                                                    return new GrpcStatus(INVALID_ARGUMENT, t,
-                                                            SINGLE_MESSAGE_EXPECTED_NONE_RECEIVED_MSG).asException();
-                                                } else if (t instanceof IllegalArgumentException) {
-                                                    return new GrpcStatus(INVALID_ARGUMENT, t,
-                                                            MORE_THAN_ONE_MESSAGE_RECEIVED_MSG).asException();
-                                                } else {
-                                                    return t;
-                                                }
-                                            }).map(rawReq -> {
-                                                final DefaultGrpcServiceContext grpcCtx = new DefaultGrpcServiceContext(
-                                                        methodDescriptor.httpPath(), request::context, responseContext,
-                                                        ctx);
-                                                final Publisher<Resp> payload = route.handle(grpcCtx, rawReq);
-                                                final GrpcStreamingSerializer<Resp> serializer =
-                                                        negotiateAcceptedEncodingRaw(request.headers(),
-                                                                serializerIdentity, serializers,
-                                                                GrpcStreamingSerializer::messageEncoding);
-                                                return newResponse(responseFactory, responseContentType,
-                                                        serializer.messageEncoding(), acceptedEncoding, responseContext,
-                                                        payload, serializer, allocator);
-                                            }).onErrorReturn(cause -> {
-                                                LOGGER.debug("Unexpected exception from response-streaming endpoint " +
-                                                                "for path : {}", methodDescriptor.httpPath(), cause);
-                                                return newErrorResponse(responseFactory, responseContentType, cause,
-                                                        allocator, responseContext);
-                                            });
-                                } catch (Throwable t) {
-                                    LOGGER.debug("Unexpected exception from response-streaming route for path: {}",
-                                            methodDescriptor.httpPath(), t);
-                                    return succeeded(newErrorResponse(responseFactory, responseContentType, t,
-                                            allocator, null));
-                                }
-                            }
-
-                            @Override
-                            public HttpExecutionStrategy requiredOffloads() {
-                                return DEFAULT_RESPONSE_STREAMING_ROUTE_EXECUTION_STRATEGY;
-                            }
-
-                            @Override
-                            public Completable closeAsync() {
-                                return route.closeAsync();
-                            }
-
-                            @Override
-                            public Completable closeAsyncGracefully() {
-                                return route.closeAsyncGracefully();
-                            }
-                        };
-
+            addStreamingRoute(methodDescriptor, decompressors, compressors, executionStrategy,
+                    new StreamingRoute<Req, Resp>() {
                         @Override
-                        public StreamingHttpService adaptor() {
-                            return service;
+                        public Publisher<Resp> handle(final GrpcServiceContext ctx, final Publisher<Req> request) {
+                            return request.firstOrError()
+                                    .onErrorMap(t -> {
+                                        if (t instanceof NoSuchElementException) {
+                                            return new GrpcStatus(INVALID_ARGUMENT, t,
+                                                    SINGLE_MESSAGE_EXPECTED_NONE_RECEIVED_MSG)
+                                                    .asException();
+                                        } else if (t instanceof IllegalArgumentException) {
+                                            return new GrpcStatus(INVALID_ARGUMENT, t,
+                                                    MORE_THAN_ONE_MESSAGE_RECEIVED_MSG).asException();
+                                        } else {
+                                            return t;
+                                        }
+                                    })
+                                    .flatMapPublisher(rawReq -> route.handle(ctx, rawReq));
                         }
 
                         @Override
-                        public HttpExecutionStrategy serviceInvocationStrategy() {
-                            return executionStrategy == null ? DEFAULT_RESPONSE_STREAMING_ROUTE_EXECUTION_STRATEGY :
-                                    executionStrategy;
+                        public Completable closeAsync() {
+                            return route.closeAsync();
                         }
-                    }, route)),
-                    // We only assume duplication across blocking and async variant of the same API and not between
-                    // aggregated and streaming. Therefore, verify that there is no blocking-streaming route registered
-                    // for the same path:
-                    methodDescriptor.httpPath(), blockingStreamingRoutes);
-            executionStrategies.put(methodDescriptor.httpPath(), executionStrategy);
+
+                        @Override
+                        public Completable closeAsyncGracefully() {
+                            return route.closeAsyncGracefully();
+                        }
+                    });
         }
 
         /**
@@ -628,29 +552,27 @@ final class GrpcRouter {
                         @Override
                         public HttpResponse handle(final HttpServiceContext ctx, final HttpRequest request,
                                                    final HttpResponseFactory responseFactory) {
-                            final BufferAllocator allocator = ctx.executionContext().bufferAllocator();
-                            LazyContextMapSupplier responseContext = null;
                             try {
                                 validateContentType(request.headers(), requestContentType);
-                                final GrpcDeserializer<Req> deserializer = readGrpcMessageEncodingRaw(
+                                GrpcDeserializer<Req> deserializer = readGrpcMessageEncodingRaw(
                                         request.headers(), deserializerIdentity, deserializers,
                                         GrpcDeserializer::messageEncoding);
-                                responseContext = new LazyContextMapSupplier();
                                 final Resp rawResp = route.handle(
-                                        new DefaultGrpcServiceContext(methodDescriptor.httpPath(), request::context,
-                                                responseContext, ctx),
-                                        deserializer.deserialize(request.payloadBody(), allocator));
-                                final GrpcSerializer<Resp> serializer = negotiateAcceptedEncodingRaw(
+                                        new DefaultGrpcServiceContext(methodDescriptor.httpPath(), ctx),
+                                        deserializer.deserialize(request.payloadBody(),
+                                                ctx.executionContext().bufferAllocator()));
+                                GrpcSerializer<Resp> serializer = negotiateAcceptedEncodingRaw(
                                         request.headers(), serializerIdentity, serializers,
                                         GrpcSerializer::messageEncoding);
-                                return newResponse(responseFactory, responseContentType, responseContext,
+                                return newResponse(responseFactory, responseContentType,
                                         serializer.messageEncoding(), acceptedEncoding)
-                                        .payloadBody(serializer.serialize(rawResp, allocator));
+                                        .payloadBody(serializer.serialize(rawResp,
+                                                ctx.executionContext().bufferAllocator()));
                             } catch (Throwable t) {
                                 LOGGER.debug("Unexpected exception from blocking aggregated endpoint for path: {}",
                                         methodDescriptor.httpPath(), t);
-                                return newErrorResponse(responseFactory, responseContentType, t, allocator,
-                                        responseContext);
+                                return newErrorResponse(responseFactory, responseContentType, t,
+                                        ctx.executionContext().bufferAllocator());
                             }
                         }
 
@@ -693,35 +615,31 @@ final class GrpcRouter {
                         @Override
                         public void handle(final HttpServiceContext ctx, final BlockingStreamingHttpRequest request,
                                            final BlockingStreamingHttpServerResponse response) throws Exception {
-                            final BufferAllocator allocator = ctx.executionContext().bufferAllocator();
-                            DefaultBlockingStreamingGrpcServerResponse<Resp> grpcResponse = null;
+                            validateContentType(request.headers(), requestContentType);
+                            GrpcStreamingSerializer<Resp> serializer = negotiateAcceptedEncodingRaw(
+                                    request.headers(), serializerIdentity, serializers,
+                                    GrpcStreamingSerializer::messageEncoding);
+                            GrpcStreamingDeserializer<Req> deserializer = readGrpcMessageEncodingRaw(
+                                    request.headers(), deserializerIdentity, deserializers,
+                                    GrpcStreamingDeserializer::messageEncoding);
+                            final GrpcServiceContext serviceContext =
+                                    new DefaultGrpcServiceContext(request.path(), ctx);
+                            initResponse(response, responseContentType, serializer.messageEncoding(), acceptedEncoding);
+                            final HttpPayloadWriter<Buffer> bufferWriter = response.sendMetaData();
+                            final DefaultGrpcPayloadWriter<Resp> grpcPayloadWriter =
+                                    new DefaultGrpcPayloadWriter<>(serializer.serialize(bufferWriter,
+                                            ctx.executionContext().bufferAllocator()));
                             try {
-                                validateContentType(request.headers(), requestContentType);
-                                final GrpcStreamingSerializer<Resp> serializer = negotiateAcceptedEncodingRaw(
-                                        request.headers(), serializerIdentity, serializers,
-                                        GrpcStreamingSerializer::messageEncoding);
-                                final GrpcStreamingDeserializer<Req> deserializer = readGrpcMessageEncodingRaw(
-                                        request.headers(), deserializerIdentity, deserializers,
-                                        GrpcStreamingDeserializer::messageEncoding);
-                                grpcResponse = new DefaultBlockingStreamingGrpcServerResponse<>(response, serializer,
-                                        allocator);
-                                initResponse(response, responseContentType, serializer.messageEncoding(),
-                                        acceptedEncoding);
-                                final GrpcServiceContext serviceContext = new DefaultGrpcServiceContext(request.path(),
-                                        request::context, grpcResponse::context, ctx);
+                                // Set status OK before invoking handle methods because users can close PayloadWriter
+                                setStatusOk(bufferWriter.trailers());
                                 route.handle(serviceContext, deserializer.deserialize(request.payloadBody(),
-                                        allocator), grpcResponse);
+                                        ctx.executionContext().bufferAllocator()), grpcPayloadWriter);
                             } catch (Throwable t) {
-                                LOGGER.debug("Unexpected exception from blocking streaming endpoint for path: {}",
-                                        methodDescriptor.httpPath(), t);
-                                HttpHeaders trailers;
-                                if (grpcResponse == null || (trailers = grpcResponse.trailers()) == null) {
-                                    setStatus(response.headers(), t, allocator);
-                                    // Use HTTP response to avoid setting "OK" in trailers and allocating a serializer
-                                    response.sendMetaData().close();
-                                } else {
-                                    setStatus(trailers, t, allocator);
-                                    grpcResponse.close();
+                                try {
+                                    setStatus(bufferWriter.trailers(), t, ctx.executionContext().bufferAllocator());
+                                } finally {
+                                    // Error is propagated in trailers, payload should close normally.
+                                    grpcPayloadWriter.close();
                                 }
                             }
                         }
@@ -758,15 +676,6 @@ final class GrpcRouter {
                         }
 
                         @Override
-                        public void handle(final GrpcServiceContext ctx, final BlockingIterable<Req> request,
-                                           final BlockingStreamingGrpcServerResponse<Resp> response) throws Exception {
-                            final Resp resp = route.handle(ctx, request);
-                            final GrpcPayloadWriter<Resp> responseWriter = response.sendMetaData();
-                            responseWriter.write(resp);
-                            responseWriter.close();
-                        }
-
-                        @Override
                         public void close() throws Exception {
                             route.close();
                         }
@@ -785,8 +694,9 @@ final class GrpcRouter {
                 final BlockingResponseStreamingRoute<Req, Resp> route) {
             addBlockingStreamingRoute(methodDescriptor, decompressors, compressors, executionStrategy,
                     new BlockingStreamingRoute<Req, Resp>() {
-
-                        private Req firstItem(final BlockingIterable<Req> request) throws Exception {
+                        @Override
+                        public void handle(final GrpcServiceContext ctx, final BlockingIterable<Req> request,
+                                           final GrpcPayloadWriter<Resp> responseWriter) throws Exception {
                             final Req firstItem;
                             try (BlockingIterator<Req> requestIterator = request.iterator()) {
                                 if (!requestIterator.hasNext()) {
@@ -802,19 +712,7 @@ final class GrpcRouter {
                                             MORE_THAN_ONE_MESSAGE_RECEIVED_MSG).asException();
                                 }
                             }
-                            return firstItem;
-                        }
-
-                        @Override
-                        public void handle(final GrpcServiceContext ctx, final BlockingIterable<Req> request,
-                                           final GrpcPayloadWriter<Resp> responseWriter) throws Exception {
-                            route.handle(ctx, firstItem(request), responseWriter);
-                        }
-
-                        @Override
-                        public void handle(final GrpcServiceContext ctx, final BlockingIterable<Req> request,
-                                           final BlockingStreamingGrpcServerResponse<Resp> response) throws Exception {
-                            route.handle(ctx, firstItem(request), response);
+                            route.handle(ctx, firstItem, responseWriter);
                         }
 
                         @Override
@@ -891,52 +789,6 @@ final class GrpcRouter {
 
     private static <Req> GrpcDeserializer<Req> deserializer(MethodDescriptor<Req, ?> methodDescriptor) {
         return new GrpcDeserializer<>(methodDescriptor.requestDescriptor().serializerDescriptor().serializer());
-    }
-
-    private static final class DefaultBlockingStreamingGrpcServerResponse<Resp>
-            implements BlockingStreamingGrpcServerResponse<Resp> {
-
-        private final BlockingStreamingHttpServerResponse httpResponse;
-        private final GrpcStreamingSerializer<Resp> serializer;
-        private final BufferAllocator allocator;
-        @Nullable
-        private volatile HttpPayloadWriter<Buffer> httpWriter;
-
-        DefaultBlockingStreamingGrpcServerResponse(final BlockingStreamingHttpServerResponse httpResponse,
-                                                   final GrpcStreamingSerializer<Resp> serializer,
-                                                   final BufferAllocator allocator) {
-            this.httpResponse = httpResponse;
-            this.serializer = serializer;
-            this.allocator = allocator;
-        }
-
-        @Override
-        public ContextMap context() {
-            return httpResponse.context();
-        }
-
-        @Override
-        public GrpcPayloadWriter<Resp> sendMetaData() {
-            final HttpPayloadWriter<Buffer> httpWriter = httpResponse.sendMetaData();
-            this.httpWriter = httpWriter;
-            final GrpcPayloadWriter<Resp> grpcPayloadWriter = new DefaultGrpcPayloadWriter<>(
-                    serializer.serialize(httpWriter, allocator));
-            // Set status OK before returning PayloadWriter because users can close it right away
-            setStatusOk(httpWriter.trailers());
-            return grpcPayloadWriter;
-        }
-
-        @Nullable
-        HttpHeaders trailers() {
-            final HttpPayloadWriter<Buffer> httpWriter = this.httpWriter;
-            return httpWriter != null ? httpWriter.trailers() : null;
-        }
-
-        void close() throws IOException {
-            final HttpPayloadWriter<Buffer> httpWriter = this.httpWriter;
-            assert httpWriter != null;
-            httpWriter.close();
-        }
     }
 
     private static final class DefaultGrpcPayloadWriter<Resp> implements GrpcPayloadWriter<Resp> {

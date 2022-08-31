@@ -29,8 +29,8 @@ import io.servicetalk.http.api.BlockingStreamingHttpRequest;
 import io.servicetalk.http.api.BlockingStreamingHttpResponse;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpRequest;
+import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponse;
-import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
 
@@ -53,6 +53,7 @@ import static io.servicetalk.grpc.api.GrpcUtils.serializerDeserializer;
 import static io.servicetalk.grpc.api.GrpcUtils.toGrpcException;
 import static io.servicetalk.grpc.api.GrpcUtils.validateResponseAndGetPayload;
 import static io.servicetalk.grpc.internal.DeadlineUtils.GRPC_DEADLINE_KEY;
+import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
 import static java.util.Objects.requireNonNull;
 
 final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
@@ -102,17 +103,13 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
                     metadata.requestCompressor());
             String mdPath = methodDescriptor.httpPath();
             HttpRequest httpRequest = client.post(UNKNOWN_PATH.equals(mdPath) ? metadata.path() : mdPath);
-            initRequest(httpRequest, metadata, requestContentType, serializer.messageEncoding(), acceptedEncoding,
-                    timeout);
+            initRequest(httpRequest, requestContentType, serializer.messageEncoding(), acceptedEncoding, timeout);
             httpRequest.payloadBody(serializer.serialize(request, client.executionContext().bufferAllocator()));
+            assignStrategy(httpRequest, metadata);
             return client.request(httpRequest)
-                    .map(response -> {
-                        extractResponseContext(response, metadata);
-                        return validateResponseAndGetPayload(response, responseContentType,
-                                client.executionContext().bufferAllocator(),
-                                readGrpcMessageEncodingRaw(response.headers(), deserializerIdentity, deserializers,
-                                        GrpcDeserializer::messageEncoding));
-                    })
+                    .map(response -> validateResponseAndGetPayload(response, responseContentType,
+                            client.executionContext().bufferAllocator(), readGrpcMessageEncodingRaw(response.headers(),
+                                    deserializerIdentity, deserializers, GrpcDeserializer::messageEncoding)))
                     .onErrorMap(GrpcUtils::toGrpcException);
         };
     }
@@ -149,18 +146,15 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
             String mdPath = methodDescriptor.httpPath();
             StreamingHttpRequest httpRequest = streamingHttpClient.post(UNKNOWN_PATH.equals(mdPath) ?
                     metadata.path() : mdPath);
-            initRequest(httpRequest, metadata, requestContentType, serializer.messageEncoding(), acceptedEncoding,
-                    timeout);
+            initRequest(httpRequest, requestContentType, serializer.messageEncoding(), acceptedEncoding, timeout);
             httpRequest.payloadBody(serializer.serialize(request,
                     streamingHttpClient.executionContext().bufferAllocator()));
+            assignStrategy(httpRequest, metadata);
             return streamingHttpClient.request(httpRequest)
-                    .flatMapPublisher(response -> {
-                        extractResponseContext(response, metadata);
-                        return validateResponseAndGetPayload(response, responseContentType,
-                                streamingHttpClient.executionContext().bufferAllocator(),
-                                readGrpcMessageEncodingRaw(response.headers(), deserializerIdentity, deserializers,
-                                        GrpcStreamingDeserializer::messageEncoding), httpRequest.requestTarget());
-                    })
+                    .flatMapPublisher(response -> validateResponseAndGetPayload(response, responseContentType,
+                            streamingHttpClient.executionContext().bufferAllocator(), readGrpcMessageEncodingRaw(
+                                    response.headers(), deserializerIdentity, deserializers,
+                                    GrpcStreamingDeserializer::messageEncoding), httpRequest.requestTarget()))
                     .onErrorMap(GrpcUtils::toGrpcException);
         };
     }
@@ -238,12 +232,11 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
                     metadata.requestCompressor());
             String mdPath = methodDescriptor.httpPath();
             HttpRequest httpRequest = client.post(UNKNOWN_PATH.equals(mdPath) ? metadata.path() : mdPath);
-            initRequest(httpRequest, metadata, requestContentType, serializer.messageEncoding(), acceptedEncoding,
-                    timeout);
+            initRequest(httpRequest, requestContentType, serializer.messageEncoding(), acceptedEncoding, timeout);
             httpRequest.payloadBody(serializer.serialize(request, client.executionContext().bufferAllocator()));
             try {
+                assignStrategy(httpRequest, metadata);
                 final HttpResponse response = client.request(httpRequest);
-                extractResponseContext(response, metadata);
                 return validateResponseAndGetPayload(response, responseContentType,
                         client.executionContext().bufferAllocator(), readGrpcMessageEncodingRaw(response.headers(),
                                 deserializerIdentity, deserializers, GrpcDeserializer::messageEncoding));
@@ -286,13 +279,12 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
             String mdPath = methodDescriptor.httpPath();
             BlockingStreamingHttpRequest httpRequest = client.post(UNKNOWN_PATH.equals(mdPath) ?
                     metadata.path() : mdPath);
-            initRequest(httpRequest, metadata, requestContentType, serializer.messageEncoding(), acceptedEncoding,
-                    timeout);
+            initRequest(httpRequest, requestContentType, serializer.messageEncoding(), acceptedEncoding, timeout);
             httpRequest.payloadBody(serializer.serialize(request,
                     streamingHttpClient.executionContext().bufferAllocator()));
             try {
+                assignStrategy(httpRequest, metadata);
                 final BlockingStreamingHttpResponse response = client.request(httpRequest);
-                extractResponseContext(response, metadata);
                 return validateResponseAndGetPayload(response.toStreamingResponse(), responseContentType,
                         client.executionContext().bufferAllocator(), readGrpcMessageEncodingRaw(
                                 response.headers(), deserializerIdentity, deserializers,
@@ -454,17 +446,11 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
         return new GrpcDeserializer<>(methodDescriptor.responseDescriptor().serializerDescriptor().serializer());
     }
 
-    private static void extractResponseContext(HttpResponseMetaData responseMetaData, GrpcClientMetadata grpcMetadata) {
-        if (grpcMetadata instanceof DefaultGrpcMetadata) {
-            final DefaultGrpcMetadata defaultGrpcMetadata = (DefaultGrpcMetadata) grpcMetadata;
-            if (defaultGrpcMetadata.contextUnsupported()) {
-                return;
-            }
-            if (defaultGrpcMetadata.responseContext(responseMetaData.context())) {
-                return;
-            }
+    private static void assignStrategy(HttpRequestMetaData requestMetaData, GrpcClientMetadata grpcMetadata) {
+        @Nullable
+        final GrpcExecutionStrategy strategy = grpcMetadata.strategy();
+        if (strategy != null) {
+            requestMetaData.context().put(HTTP_EXECUTION_STRATEGY_KEY, strategy);
         }
-        // fallback:
-        grpcMetadata.responseContext().putAll(responseMetaData.context());
     }
 }

@@ -81,7 +81,7 @@ public final class GrpcExceptionMapperServiceFilter implements StreamingHttpServ
                                                                     final StreamingHttpResponseFactory responseFactory,
                                                                     final Throwable cause) {
         final StreamingHttpResponse response = newErrorResponse(responseFactory, APPLICATION_GRPC, cause,
-                ctx.executionContext().bufferAllocator(), null);
+                ctx.executionContext().bufferAllocator());
         final CharSequence codeValue = response.headers().get(GRPC_STATUS);
         assert codeValue != null;
         LOGGER.error("Unexpected exception during a {} processing for connection={}, request='{} {} {}' was mapped " +

@@ -57,8 +57,6 @@ final class Types {
 
     static final ClassName BlockingGrpcClient = ClassName.get(grpcApiPkg, "BlockingGrpcClient");
     static final ClassName BlockingGrpcService = ClassName.get(grpcApiPkg, "BlockingGrpcService");
-    static final ClassName BlockingStreamingGrpcServerResponse =
-            ClassName.get(grpcApiPkg, "BlockingStreamingGrpcServerResponse");
     static final ClassName GrpcClientMetadata = ClassName.get(grpcApiPkg, "GrpcClientMetadata");
     static final ClassName DefaultGrpcClientMetadata = ClassName.get(grpcApiPkg, "DefaultGrpcClientMetadata");
     static final ClassName GrpcClient = ClassName.get(grpcApiPkg, "GrpcClient");
