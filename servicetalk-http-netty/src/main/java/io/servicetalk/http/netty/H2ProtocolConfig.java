@@ -19,6 +19,7 @@ import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.logging.api.UserDataLoggerConfig;
 
 import java.time.Duration;
+import java.util.Map;
 import java.util.function.BiPredicate;
 import javax.annotation.Nullable;
 
@@ -59,6 +60,21 @@ public interface H2ProtocolConfig extends HttpProtocolConfig {
      */
     @Nullable
     KeepAlivePolicy keepAlivePolicy();
+
+    /**
+     * Get a {@link Map} which provides a hint for the initial settings for any h2 connection. Note that some settings
+     * may be ignored if not supported (e.g. push promise).
+     * @return a {@link Map} which provides a hint for the initial settings for any h2 connection. Note that some
+     * settings may be ignored if not supported (e.g. push promise).
+     */
+    Map<Character, Integer> initialSettings();
+
+    /**
+     * Provide a hint on the number of bytes that the flow controller will attempt to give to a stream for each
+     * allocation (assuming the stream has this much eligible data).
+     * @return number of bytes.
+     */
+    int flowControlQuantum();
 
     /**
      * A policy for sending <a href="https://tools.ietf.org/html/rfc7540#section-6.7">PING frames</a> to the peer.

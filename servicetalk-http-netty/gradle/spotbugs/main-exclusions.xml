@@ -131,4 +131,14 @@
     <Method name="handlerAdded"/>
     <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
   </Match>
+  <Match>
+    <Class name="io.servicetalk.http.netty.H2ProtocolConfigBuilder"/>
+    <Field name="h2Settings"/>
+    <Bug pattern="EI_EXPOSE_REP2"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.netty.Http2SettingsBuilder"/>
+    <Method name="build"/>
+    <Bug pattern="EI_EXPOSE_REP"/>
+  </Match>
 </FindBugsFilter>

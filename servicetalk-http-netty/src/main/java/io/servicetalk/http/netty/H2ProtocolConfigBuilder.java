@@ -22,10 +22,12 @@ import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.logging.api.UserDataLoggerConfig;
 import io.servicetalk.logging.slf4j.internal.DefaultUserDataLoggerConfig;
 
+import java.util.Map;
 import java.util.function.BiPredicate;
 import java.util.function.BooleanSupplier;
 import javax.annotation.Nullable;
 
+import static io.netty.handler.codec.http2.Http2CodecUtil.DEFAULT_HEADER_LIST_SIZE;
 import static io.servicetalk.http.netty.H2KeepAlivePolicies.DISABLE_KEEP_ALIVE;
 import static java.util.Objects.requireNonNull;
 
@@ -35,15 +37,15 @@ import static java.util.Objects.requireNonNull;
  * @see HttpProtocolConfigs#h2()
  */
 public final class H2ProtocolConfigBuilder {
-
     private static final BiPredicate<CharSequence, CharSequence> DEFAULT_SENSITIVITY_DETECTOR = (name, value) -> false;
-
+    private Map<Character, Integer> h2Settings = newDefaultSettingsBuilder().build();
     private HttpHeadersFactory headersFactory = H2HeadersFactory.INSTANCE;
     private BiPredicate<CharSequence, CharSequence> headersSensitivityDetector = DEFAULT_SENSITIVITY_DETECTOR;
     @Nullable
     private UserDataLoggerConfig frameLoggerConfig;
     @Nullable
     private KeepAlivePolicy keepAlivePolicy;
+    private int flowControlQuantum = defaultFlowControlQuantum();
 
     H2ProtocolConfigBuilder() {
     }
@@ -104,32 +106,78 @@ public final class H2ProtocolConfigBuilder {
     }
 
     /**
+     * Sets the initial <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-6.5.1">HTTP/2 Setting</a> to for
+     * each h2 connection.
+     * @param settings the initial settings to for each h2 connection.
+     * @return {@code this}
+     * @see Http2SettingsBuilder
+     */
+    public H2ProtocolConfigBuilder initialSettings(Map<Character, Integer> settings) {
+        this.h2Settings = requireNonNull(settings);
+        return this;
+    }
+
+    /**
+     * Provide a hint on the number of bytes that the flow controller will attempt to give to a stream for each
+     * allocation (assuming the stream has this much eligible data).
+     * @param flowControlQuantum a hint on the number of bytes that the flow controller will attempt to give to a
+     * stream for each allocation (assuming the stream has this much eligible data).
+     * @return {@code this}
+     */
+    public H2ProtocolConfigBuilder flowControlQuantum(int flowControlQuantum) {
+        if (flowControlQuantum <= 0) {
+            throw new IllegalArgumentException("flowControlQuantum " + flowControlQuantum + " (expected >0)");
+        }
+        this.flowControlQuantum = flowControlQuantum;
+        return this;
+    }
+
+    /**
      * Builds {@link H2ProtocolConfig}.
      *
      * @return {@link H2ProtocolConfig}
      */
     public H2ProtocolConfig build() {
-        return new DefaultH2ProtocolConfig(headersFactory, headersSensitivityDetector, frameLoggerConfig,
-                keepAlivePolicy);
+        return new DefaultH2ProtocolConfig(h2Settings, headersFactory, headersSensitivityDetector, frameLoggerConfig,
+                keepAlivePolicy, flowControlQuantum);
+    }
+
+    static Http2SettingsBuilder newDefaultSettingsBuilder() {
+        return new Http2SettingsBuilder()
+                .initialWindowSize(1048576) // 1mb default window size
+                .maxHeaderListSize((int) DEFAULT_HEADER_LIST_SIZE);
+    }
+
+    /**
+     * Default allocation quantum to use for the remote flow controller.
+     * @return Default allocation quantum to use for the remote flow controller.
+     */
+    private static int defaultFlowControlQuantum() {
+        return 1024 * 16;
     }
 
     private static final class DefaultH2ProtocolConfig implements H2ProtocolConfig {
-
+        private final Map<Character, Integer> h2Settings;
         private final HttpHeadersFactory headersFactory;
         private final BiPredicate<CharSequence, CharSequence> headersSensitivityDetector;
         @Nullable
         private final UserDataLoggerConfig frameLoggerConfig;
         @Nullable
         private final KeepAlivePolicy keepAlivePolicy;
+        private final int flowControlQuantum;
 
-        DefaultH2ProtocolConfig(final HttpHeadersFactory headersFactory,
+        DefaultH2ProtocolConfig(final Map<Character, Integer> h2Settings,
+                                final HttpHeadersFactory headersFactory,
                                 final BiPredicate<CharSequence, CharSequence> headersSensitivityDetector,
                                 @Nullable final UserDataLoggerConfig frameLoggerConfig,
-                                @Nullable final KeepAlivePolicy keepAlivePolicy) {
+                                @Nullable final KeepAlivePolicy keepAlivePolicy,
+                                final int flowControlQuantum) {
+            this.h2Settings = h2Settings;
             this.headersFactory = headersFactory;
             this.headersSensitivityDetector = headersSensitivityDetector;
             this.frameLoggerConfig = frameLoggerConfig;
             this.keepAlivePolicy = keepAlivePolicy;
+            this.flowControlQuantum = flowControlQuantum;
         }
 
         @Override
@@ -155,15 +203,26 @@ public final class H2ProtocolConfigBuilder {
         }
 
         @Override
+        public Map<Character, Integer> initialSettings() {
+            return h2Settings;
+        }
+
+        @Override
+        public int flowControlQuantum() {
+            return flowControlQuantum;
+        }
+
+        @Override
         public String toString() {
             return getClass().getSimpleName() +
                     "{alpnId=" + alpnId() +
                     ", headersFactory=" + headersFactory +
                     ", headersSensitivityDetector=" + (headersSensitivityDetector == DEFAULT_SENSITIVITY_DETECTOR ?
-                            "DEFAULT_SENSITIVITY_DETECTOR" : headersSensitivityDetector.toString()) +
+                    "DEFAULT_SENSITIVITY_DETECTOR" : headersSensitivityDetector.toString()) +
                     ", frameLoggerConfig=" + frameLoggerConfig +
                     ", keepAlivePolicy=" + keepAlivePolicy +
-                    '}';
+                    ", flowControlQuantum=" + flowControlQuantum +
+                    ", h2Settings=" + h2Settings + '}';
         }
     }
 }

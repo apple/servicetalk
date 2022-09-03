@@ -24,23 +24,31 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.codec.http2.DefaultHttp2GoAwayFrame;
 import io.netty.handler.codec.http2.Http2FrameCodecBuilder;
 import io.netty.handler.codec.http2.Http2MultiplexHandler;
+import io.netty.handler.codec.http2.Http2Settings;
 
-import java.util.function.BiPredicate;
+import java.util.Map;
 
 import static io.netty.handler.codec.http2.Http2Error.PROTOCOL_ERROR;
 import static io.servicetalk.http.netty.H2ServerParentChannelInitializer.initFrameLogger;
+import static io.servicetalk.http.netty.H2ServerParentChannelInitializer.toNettySettings;
 
 final class H2ClientParentChannelInitializer implements ChannelInitializer {
-
+    private static final Http2Settings DEFAULT_NETTY_SETTINGS =
+            applyClientDefaultSettings(Http2Settings.defaultSettings());
     private final H2ProtocolConfig config;
+    private final io.netty.handler.codec.http2.Http2Settings nettySettings;
 
     H2ClientParentChannelInitializer(final H2ProtocolConfig config) {
         this.config = config;
+        final Map<Character, Integer> h2Settings = config.initialSettings();
+        nettySettings = h2Settings.isEmpty() ?
+                DEFAULT_NETTY_SETTINGS : applyClientDefaultSettings(toNettySettings(h2Settings));
     }
 
     @Override
     public void init(final Channel channel) {
-        final Http2FrameCodecBuilder multiplexCodecBuilder = new OptimizedHttp2FrameCodecBuilder(false)
+        final Http2FrameCodecBuilder multiplexCodecBuilder =
+                new OptimizedHttp2FrameCodecBuilder(false, config.flowControlQuantum())
                 // We do not want close to trigger graceful closure (go away), instead when user triggers a graceful
                 // close, we do the appropriate go away handling.
                 .decoupleCloseAndGoAway(true)
@@ -51,18 +59,13 @@ final class H2ClientParentChannelInitializer implements ChannelInitializer {
                 .autoAckPingFrame(false)
                 // We don't want to rely upon Netty to manage the graceful close timeout, because we expect
                 // the user to apply their own timeout at the call site.
-                .gracefulShutdownTimeoutMillis(-1);
-
-        // Notify server that this client does not support server push and request it to be disabled.
-        multiplexCodecBuilder.initialSettings().pushEnabled(false).maxConcurrentStreams(0L);
-
-        final BiPredicate<CharSequence, CharSequence> headersSensitivityDetector =
-                config.headersSensitivityDetector();
-        multiplexCodecBuilder.headerSensitivityDetector(headersSensitivityDetector::test);
+                .gracefulShutdownTimeoutMillis(-1)
+                .initialSettings(nettySettings)
+                .headerSensitivityDetector(config.headersSensitivityDetector()::test);
 
         initFrameLogger(multiplexCodecBuilder, config.frameLoggerConfig());
 
-        // TODO(scott): more configuration. header validation, settings stream, etc...
+        // TODO(scott): more configuration. header validation, etc...
 
         channel.pipeline().addLast(multiplexCodecBuilder.build(),
                 new Http2MultiplexHandler(H2PushStreamHandler.INSTANCE));
@@ -83,5 +86,10 @@ final class H2ClientParentChannelInitializer implements ChannelInitializer {
             ctx.writeAndFlush(new DefaultHttp2GoAwayFrame(PROTOCOL_ERROR));
             // Http2ConnectionHandler.processGoAwayWriteResult will close the connection after GO_AWAY is flushed
         }
+    }
+
+    private static Http2Settings applyClientDefaultSettings(Http2Settings settings) {
+        // Notify server that this client does not support server push and request it to be disabled.
+        return settings.pushEnabled(false).maxConcurrentStreams(0L);
     }
 }
