@@ -42,7 +42,13 @@ enum HttpKeepAlive {
     // In the interest of performance we are not accommodating for the spec allowing multiple header fields
     // or comma-separated values for the Connection header. See: https://tools.ietf.org/html/rfc7230#section-3.2.2
     static HttpKeepAlive responseKeepAlive(final HttpMetaData metaData) {
-        if (HTTP_1_1.equals(metaData.version())) {
+        // If multiple protocols are supported we don't know which protocol will be negotiated. Treat any major
+        // protocol >= 2 the same.
+        if (metaData.version().major() >= 2) {
+            // https://www.rfc-editor.org/rfc/rfc7540#section-8.1.2.2
+            // HTTP/2 does not use the Connection header field to indicate connection-specific header fields...
+            return KEEP_ALIVE_NO_HEADER;
+        } else if (HTTP_1_1.equals(metaData.version())) {
             return metaData.headers().containsIgnoreCase(CONNECTION, CLOSE) ?
                     CLOSE_ADD_HEADER : KEEP_ALIVE_NO_HEADER;
         } else if (HTTP_1_0.equals(metaData.version())) {

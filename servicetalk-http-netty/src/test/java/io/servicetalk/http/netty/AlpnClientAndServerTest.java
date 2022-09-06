@@ -186,6 +186,10 @@ class AlpnClientAndServerTest {
             assertThat(connection.connectionContext().sslSession(), is(notNullValue()));
 
             assertResponseAndServiceContext(connection.request(client.get("/")));
+            // When using ALPN the request factory selection is deferred until after the connection is established, so
+            // the protocol on the requests may be "http/1.x" but we may actually be speaking http/2. In either case
+            // keep-alive should be enabled, the connection shouldn't be closed, and subsequent requests should succeed.
+            assertResponseAndServiceContext(connection.request(client.get("/")));
         }
     }
 
