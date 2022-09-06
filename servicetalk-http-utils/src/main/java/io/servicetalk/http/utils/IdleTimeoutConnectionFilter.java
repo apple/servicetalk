@@ -72,7 +72,7 @@ public final class IdleTimeoutConnectionFilter implements StreamingHttpConnectio
      *
      * @param timeout timeout duration after which an idle connection is closed
      */
-    IdleTimeoutConnectionFilter(final Duration timeout) {
+    public IdleTimeoutConnectionFilter(final Duration timeout) {
         this.timeoutNs = ensurePositive(timeout).toNanos();
         this.timeoutExecutor = null;
     }
@@ -83,7 +83,7 @@ public final class IdleTimeoutConnectionFilter implements StreamingHttpConnectio
      * @param timeout timeout duration after which an idle connection is closed
      * @param timeoutExecutor the {@link Executor} to use for scheduling the timer notifications
      */
-    IdleTimeoutConnectionFilter(final Duration timeout, final Executor timeoutExecutor) {
+    public IdleTimeoutConnectionFilter(final Duration timeout, final Executor timeoutExecutor) {
         this.timeoutNs = ensurePositive(timeout).toNanos();
         this.timeoutExecutor = requireNonNull(timeoutExecutor);
     }
@@ -126,10 +126,8 @@ public final class IdleTimeoutConnectionFilter implements StreamingHttpConnectio
         private final long timeoutNs;
         private final Executor timeoutExecutor;
 
-        // While it may look like "volatile" is not required for this variable for "happens-before" visibility because
-        // we always write to "requests" after updating "lastResponseTime" and read "requests" before reading
-        // "lastResponseTime", non-volatile writes to "long" variables are not atomic and may result in incorrect
-        // reading of the value when 2 threads race.
+        // The "volatile" here is not for general visibility but to prevent non-atomic treatment of long:
+        // https://docs.oracle.com/javase/specs/jls/se8/html/jls-17.html#jls-17.7
         private volatile long lastResponseTime;
 
         ConnectionIdleTimeoutFilterImpl(final FilterableStreamingHttpConnection connection,
