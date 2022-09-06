@@ -86,29 +86,29 @@ class IdleTimeoutConnectionFilterTest {
     }
 
     @AfterEach
-    public void tearDown() throws Exception {
+    void tearDown() throws Exception {
         executor.closeAsync().toFuture().get();
     }
 
     @Test
-    public void negativeTimeout() {
+    void negativeTimeout() {
         assertThrows(IllegalArgumentException.class, () -> new IdleTimeoutConnectionFilter(ofMillis(-1)));
     }
 
     @Test
-    public void zeroTimeout() {
+    void zeroTimeout() {
         assertThrows(IllegalArgumentException.class, () -> new IdleTimeoutConnectionFilter(Duration.ZERO));
     }
 
     @Test
-    public void noRequests() {
+    void noRequests() {
         executor.advanceTimeBy(TIMEOUT_MILLIS, MILLISECONDS);
         assertClosedOnce();
         assertClosedChannelException();
     }
 
     @Test
-    public void closedManually() {
+    void closedManually() {
         filteredConnection.closeAsync().subscribe();
 
         executor.advanceTimeBy(TIMEOUT_MILLIS, MILLISECONDS);
@@ -116,7 +116,7 @@ class IdleTimeoutConnectionFilterTest {
     }
 
     @Test
-    public void hadSuccessfulResponse() {
+    void hadSuccessfulResponse() {
         executor.advanceTimeByNoExecuteTasks(TIMEOUT_MILLIS / 2, MILLISECONDS);
         assertSuccessfulResponse();
 
@@ -130,7 +130,7 @@ class IdleTimeoutConnectionFilterTest {
     }
 
     @Test
-    public void hadFailedResponse() {
+    void hadFailedResponse() {
         executor.advanceTimeByNoExecuteTasks(TIMEOUT_MILLIS / 2, MILLISECONDS);
         assertFailedResponse();
 
@@ -144,7 +144,7 @@ class IdleTimeoutConnectionFilterTest {
     }
 
     @Test
-    public void twoConcurrentRequests() {
+    void twoConcurrentRequests() {
         executor.advanceTimeByNoExecuteTasks(TIMEOUT_MILLIS / 2, MILLISECONDS);
 
         // Send the 1st request that doesn't receive a response:
@@ -174,7 +174,7 @@ class IdleTimeoutConnectionFilterTest {
     }
 
     @Test
-    public void inFlightRequest() {
+    void inFlightRequest() {
         executor.advanceTimeByNoExecuteTasks(TIMEOUT_MILLIS / 2, MILLISECONDS);
 
         Processor<StreamingHttpResponse, StreamingHttpResponse> responseProcessor = newSingleProcessor();
