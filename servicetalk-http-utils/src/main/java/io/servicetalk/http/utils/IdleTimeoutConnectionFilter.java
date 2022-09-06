@@ -58,6 +58,7 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
  *     <li>Connections that have in-flight requests are considered "in-use".</li>
  *     <li>If response payload body was not consumed, the connection is still considered "in-use" and does not start
  *     counting the timer.</li>
+ *     <li>A single connection can not process more than {@link Integer#MAX_VALUE} concurrent requests.</li>
  * </ul>
  */
 public final class IdleTimeoutConnectionFilter implements StreamingHttpConnectionFilterFactory {
