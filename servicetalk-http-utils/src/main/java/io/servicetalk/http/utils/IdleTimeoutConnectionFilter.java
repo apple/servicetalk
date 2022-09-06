@@ -15,9 +15,11 @@
  */
 package io.servicetalk.http.utils;
 
+import io.servicetalk.client.api.RequestRejectedException;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.Executor;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.internal.FlowControlUtils;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
@@ -40,6 +42,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
+import static java.lang.Integer.MAX_VALUE;
 import static java.lang.Integer.MIN_VALUE;
 import static java.time.Duration.ZERO;
 import static java.util.Objects.requireNonNull;
@@ -155,26 +158,25 @@ public final class IdleTimeoutConnectionFilter implements StreamingHttpConnectio
         @Override
         public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
             return defer(() -> {
-                final int inFlightRequests = requestsUpdater.incrementAndGet(this);
-                if (inFlightRequests < 0) {
-                    // To mitigate the tiny risk of going into positive numbers with Integer.MAX_VALUE concurrent
-                    // requests (unrealistic), reset the counter back to MIN_VALUE.
-                    requests = MIN_VALUE;
+                final int prevInFlightRequests = requestsUpdater.getAndAccumulate(this, 1,
+                        FlowControlUtils::addWithOverflowProtectionIfNotNegative);
+                if (prevInFlightRequests < 0) {
                     return failed(new RetryableClosedChannelException(delegate(), timeoutNs));
+                }
+                if (prevInFlightRequests == MAX_VALUE) {
+                    return failed(new RequestRejectedException("Connection " + delegate() +
+                            " already processes Integer.MAX_VALUE other requests, it can not process more."));
                 }
                 return delegate().request(request)
                         .liftSync(new BeforeFinallyHttpOperator(() -> {
+                            final int remainingRequests = requestsUpdater.decrementAndGet(this);
+                            assert remainingRequests >= 0 : "Unexpected remaining requests value: " + remainingRequests;
                             // It's acceptable to use 2 volatile variables instead of a single object state here. Even
-                            // if 2 threads race between updating "lastResponseTime" and "requests", the delay for a new
-                            // timer task will be close to "timeoutNs".
-                            requestsUpdater.updateAndGet(this, prev -> {
-                                if (prev > 1) {
-                                    return prev - 1;
-                                }
-                                assert prev == 1 : "Unexpected requests value: " + prev;
+                            // if 2 threads race between updating "requests" and "lastResponseTime", the delay for a new
+                            // timer task will be close to "timeoutNs", the difference is negligible.
+                            if (remainingRequests == 0) {
                                 lastResponseTime = nanoTime();
-                                return 0;
-                            });
+                            }
                         })).shareContextOnSubscribe();
             });
         }
@@ -216,6 +218,7 @@ public final class IdleTimeoutConnectionFilter implements StreamingHttpConnectio
                     }
                 } else {
                     // Should never happen. Keep it just in case to prevent infinite loop.
+                    LOGGER.warn("{} Unexpected concurrent requests value {}", delegate(), requests);
                     return;
                 }
             }
