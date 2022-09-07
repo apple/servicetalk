@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2021-2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import io.netty.incubator.channel.uring.IOUringEventLoopGroup;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_ECHO;
@@ -38,13 +39,14 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.junit.jupiter.api.condition.OS.LINUX;
 import static org.junit.jupiter.api.condition.OS.MAC;
 
 class IoUringTest {
 
     @Test
-    @EnabledOnOs(value = { MAC })
+    @EnabledOnOs(MAC)
     void ioUringIsNotAvailableOnMacOs() {
         assertFalse(IOUring.isAvailable());
         try {
@@ -58,12 +60,13 @@ class IoUringTest {
     }
 
     @Test
-    @EnabledOnOs(value = { LINUX })
+    @EnabledOnOs(LINUX)
     void ioUringIsAvailableOnLinux() throws Exception {
         EventLoopAwareNettyIoExecutor ioUringExecutor = null;
         try {
             IoUringUtils.tryIoUring(true);
-            assertTrue(IoUringUtils.isAvailable());
+            assumeTrue(IoUringUtils.isAvailable(), "io_uring is unavailable on " +
+                    System.getProperty("os.name") + ' ' + System.getProperty("os.version"));
             IOUring.ensureAvailability();
 
             ioUringExecutor = NettyIoExecutors.createIoExecutor(2, "io-uring");
@@ -71,9 +74,11 @@ class IoUringTest {
 
             try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
                     .ioExecutor(ioUringExecutor)
+                    .executionStrategy(offloadNone())
                     .listenStreamingAndAwait(new TestServiceStreaming());
                  BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
                          .ioExecutor(ioUringExecutor)
+                         .executionStrategy(offloadNone())
                          .buildBlocking()) {
                 HttpRequest request = client.post(SVC_ECHO).payloadBody("bonjour!", textSerializerUtf8());
                 HttpResponse response = client.request(request);
