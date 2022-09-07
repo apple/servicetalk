@@ -29,7 +29,7 @@ public interface Http2Settings {
      * <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-6.5.2">SETTINGS_HEADER_TABLE_SIZE</a>.
      */
     @Nullable
-    Integer headerTableSize();
+    Long headerTableSize();
 
     /**
      * Get the value for
@@ -38,7 +38,7 @@ public interface Http2Settings {
      * <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-6.5.2">SETTINGS_MAX_CONCURRENT_STREAMS</a>.
      */
     @Nullable
-    Integer maxConcurrentStreams();
+    Long maxConcurrentStreams();
 
     /**
      * Get the value for
@@ -65,7 +65,7 @@ public interface Http2Settings {
      * <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-6.5.2">SETTINGS_MAX_HEADER_LIST_SIZE</a>.
      */
     @Nullable
-    Integer maxHeaderListSize();
+    Long maxHeaderListSize();
 
     /**
      * Get the setting value associated with an
@@ -74,11 +74,11 @@ public interface Http2Settings {
      * @return {@code null} if no setting value corresponding {@code identifier} exists, otherwise the value.
      */
     @Nullable
-    Integer settingValue(char identifier);
+    Long settingValue(char identifier);
 
     /**
      * Iterate over all the &lt;identifier, value&gt; tuple in this settings object.
      * @param action Invoked on each &lt;identifier, value&gt; tuple.
      */
-    void forEach(BiConsumer<? super Character, ? super Integer> action);
+    void forEach(BiConsumer<? super Character, ? super Long> action);
 }

@@ -84,6 +84,13 @@ public interface H2ProtocolConfig extends HttpProtocolConfig {
     int flowControlQuantum();
 
     /**
+     * Increment to apply to {@link Http2Settings#initialWindowSize()} for the connection stream. This expands the
+     * connection flow control window so a single stream can't consume all the flow control credits.
+     * @return The number of bytes to increment the local flow control window for the connection stream.
+     */
+    int flowControlWindowIncrement();
+
+    /**
      * A policy for sending <a href="https://tools.ietf.org/html/rfc7540#section-6.7">PING frames</a> to the peer.
      */
     interface KeepAlivePolicy {

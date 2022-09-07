@@ -25,6 +25,9 @@ import javax.annotation.Nullable;
  * <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-6.5.1">HTTP/2 Setting</a>.
  */
 public final class Http2SettingsBuilder {
+    private static final long MAX_UNSIGNED_INT = 0xffffffffL;
+    private static final int MAX_FRAME_SIZE_LOWER_BOUND = 0x4000;
+    private static final int MAX_FRAME_SIZE_UPPER_BOUND = 0xffffff;
     /**
      * Identifier <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-6.5.2">SETTINGS_HEADER_TABLE_SIZE</a>.
      */
@@ -48,7 +51,7 @@ public final class Http2SettingsBuilder {
      *     SETTINGS_MAX_HEADER_LIST_SIZE</a>.
      */
     private static final char MAX_HEADER_LIST_SIZE = 0x6;
-    private final Map<Character, Integer> settings;
+    private final Map<Character, Long> settings;
 
     /**
      * Create a new instance.
@@ -72,7 +75,8 @@ public final class Http2SettingsBuilder {
      * @param value The value.
      * @return {@code this}.
      */
-    public Http2SettingsBuilder headerTableSize(int value) {
+    public Http2SettingsBuilder headerTableSize(long value) {
+        validate32Unsigned(value);
         settings.put(HEADER_TABLE_SIZE, value);
         return this;
     }
@@ -84,7 +88,8 @@ public final class Http2SettingsBuilder {
      * @param value The value.
      * @return {@code this}.
      */
-    public Http2SettingsBuilder maxConcurrentStreams(int value) {
+    public Http2SettingsBuilder maxConcurrentStreams(long value) {
+        validate32Unsigned(value);
         settings.put(MAX_CONCURRENT_STREAMS, value);
         return this;
     }
@@ -96,7 +101,8 @@ public final class Http2SettingsBuilder {
      * @param value The value.
      * @return {@code this}.
      */
-    public Http2SettingsBuilder initialWindowSize(int value) {
+    public Http2SettingsBuilder initialWindowSize(long value) {
+        validate31Unsigned(value);
         settings.put(INITIAL_WINDOW_SIZE, value);
         return this;
     }
@@ -109,7 +115,11 @@ public final class Http2SettingsBuilder {
      * @return {@code this}.
      */
     public Http2SettingsBuilder maxFrameSize(int value) {
-        settings.put(MAX_FRAME_SIZE, value);
+        if (value < MAX_FRAME_SIZE_LOWER_BOUND || value > MAX_FRAME_SIZE_UPPER_BOUND) {
+            throw new IllegalArgumentException("value: " + value + "(expected [" + MAX_FRAME_SIZE_LOWER_BOUND + ", " +
+                    MAX_FRAME_SIZE_UPPER_BOUND + "]");
+        }
+        settings.put(MAX_FRAME_SIZE, (long) value);
         return this;
     }
 
@@ -120,7 +130,8 @@ public final class Http2SettingsBuilder {
      * @param value The value.
      * @return {@code this}.
      */
-    public Http2SettingsBuilder maxHeaderListSize(int value) {
+    public Http2SettingsBuilder maxHeaderListSize(long value) {
+        validate32Unsigned(value);
         settings.put(MAX_HEADER_LIST_SIZE, value);
         return this;
     }
@@ -132,54 +143,66 @@ public final class Http2SettingsBuilder {
      * <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-6.5.1">HTTP/2 Setting</a>.
      */
     public Http2Settings build() {
-        return new DefaultHttp2Settings(settings);
+        return new DefaultHttp2Settings(new HashMap<>(settings));
+    }
+
+    private static void validate32Unsigned(long value) {
+        if (value < 0 || value >= MAX_UNSIGNED_INT) {
+            throw new IllegalArgumentException("value: " + value + "(expected [0, " + MAX_UNSIGNED_INT + "]");
+        }
+    }
+
+    private static void validate31Unsigned(long value) {
+        if (value < 0 || value >= Integer.MAX_VALUE) {
+            throw new IllegalArgumentException("value: " + value + "(expected [0, " + Integer.MAX_VALUE + "]");
+        }
     }
 
     private static final class DefaultHttp2Settings implements Http2Settings {
-        private final Map<Character, Integer> settings;
+        private final Map<Character, Long> settings;
 
-        private DefaultHttp2Settings(final Map<Character, Integer> settings) {
+        private DefaultHttp2Settings(final Map<Character, Long> settings) {
             this.settings = settings;
         }
 
         @Nullable
         @Override
-        public Integer headerTableSize() {
+        public Long headerTableSize() {
             return settings.get(HEADER_TABLE_SIZE);
         }
 
         @Nullable
         @Override
-        public Integer maxConcurrentStreams() {
+        public Long maxConcurrentStreams() {
             return settings.get(MAX_CONCURRENT_STREAMS);
         }
 
         @Nullable
         @Override
         public Integer initialWindowSize() {
-            return settings.get(INITIAL_WINDOW_SIZE);
+            return toInteger(settings.get(INITIAL_WINDOW_SIZE));
         }
 
         @Nullable
         @Override
         public Integer maxFrameSize() {
-            return settings.get(MAX_FRAME_SIZE);
+            return toInteger(settings.get(MAX_FRAME_SIZE));
         }
 
         @Nullable
         @Override
-        public Integer maxHeaderListSize() {
+        public Long maxHeaderListSize() {
             return settings.get(MAX_HEADER_LIST_SIZE);
         }
 
         @Nullable
         @Override
-        public Integer settingValue(final char identifier) {
+        public Long settingValue(final char identifier) {
             return settings.get(identifier);
         }
 
         @Override
-        public void forEach(final BiConsumer<? super Character, ? super Integer> action) {
+        public void forEach(final BiConsumer<? super Character, ? super Long> action) {
             settings.forEach(action);
         }
 
@@ -196,6 +219,11 @@ public final class Http2SettingsBuilder {
         @Override
         public boolean equals(Object o) {
             return o instanceof DefaultHttp2Settings && settings.equals(((DefaultHttp2Settings) o).settings);
+        }
+
+        @Nullable
+        private static Integer toInteger(@Nullable Long value) {
+            return value == null ? null : value.intValue();
         }
     }
 }

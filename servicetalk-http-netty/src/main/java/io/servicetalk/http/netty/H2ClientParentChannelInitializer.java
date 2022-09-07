@@ -22,6 +22,8 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.codec.http2.DefaultHttp2GoAwayFrame;
+import io.netty.handler.codec.http2.DefaultHttp2WindowUpdateFrame;
+import io.netty.handler.codec.http2.Http2ConnectionPrefaceAndSettingsFrameWrittenEvent;
 import io.netty.handler.codec.http2.Http2FrameCodecBuilder;
 import io.netty.handler.codec.http2.Http2MultiplexHandler;
 import io.netty.handler.codec.http2.Http2Settings;
@@ -64,6 +66,20 @@ final class H2ClientParentChannelInitializer implements ChannelInitializer {
 
         channel.pipeline().addLast(multiplexCodecBuilder.build(),
                 new Http2MultiplexHandler(H2PushStreamHandler.INSTANCE));
+        if (config.flowControlWindowIncrement() > 0) {
+            // Must be after Http2ConnectionHandler does its initialization. The client must wait until after
+            // the connection preface and settings are sent.
+            channel.pipeline().addLast(new ChannelInboundHandlerAdapter() {
+                @Override
+                public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
+                    if (evt instanceof Http2ConnectionPrefaceAndSettingsFrameWrittenEvent) {
+                        ctx.write(new DefaultHttp2WindowUpdateFrame(config.flowControlWindowIncrement()));
+                        ctx.pipeline().remove(this);
+                    }
+                    ctx.fireUserEventTriggered(evt);
+                }
+            });
+        }
     }
 
     @ChannelHandler.Sharable
@@ -90,6 +106,13 @@ final class H2ClientParentChannelInitializer implements ChannelInitializer {
             settings.pushEnabled(false);
         } else if (pushEnabled) {
             throw new IllegalArgumentException("push is enabled but not supported. settings=" + settings);
+        }
+        final Long maxConcurrentStreams = settings.maxConcurrentStreams();
+        if (maxConcurrentStreams == null) {
+            settings.maxConcurrentStreams(0);
+        } else if (maxConcurrentStreams != 0) {
+            throw new IllegalArgumentException("maxConcurrentStreams is " + maxConcurrentStreams +
+                    " but push is not supported. settings=" + settings);
         }
         return settings;
     }

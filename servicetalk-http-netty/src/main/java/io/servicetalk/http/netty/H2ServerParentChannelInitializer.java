@@ -20,6 +20,9 @@ import io.servicetalk.logging.api.UserDataLoggerConfig;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.handler.codec.http2.DefaultHttp2WindowUpdateFrame;
 import io.netty.handler.codec.http2.Http2CodecUtil;
 import io.netty.handler.codec.http2.Http2FrameCodecBuilder;
 import io.netty.handler.codec.http2.Http2MultiplexHandler;
@@ -63,6 +66,17 @@ final class H2ServerParentChannelInitializer implements ChannelInitializer {
         // TODO(scott): more configuration. header validation, etc...
 
         channel.pipeline().addLast(multiplexCodecBuilder.build(), new Http2MultiplexHandler(streamChannelInitializer));
+        if (config.flowControlWindowIncrement() > 0) {
+            // Must be after Http2ConnectionHandler does its initialization in handlerAdded above.
+            // The server will not send a connection preface so we are good to send a window update.
+            channel.pipeline().addLast(new ChannelInboundHandlerAdapter() {
+                @Override
+                public void channelActive(ChannelHandlerContext ctx) {
+                    ctx.write(new DefaultHttp2WindowUpdateFrame(config.flowControlWindowIncrement()));
+                    ctx.pipeline().remove(this);
+                }
+            });
+        }
     }
 
     static void initFrameLogger(final Http2FrameCodecBuilder multiplexCodecBuilder,
@@ -88,16 +102,16 @@ final class H2ServerParentChannelInitializer implements ChannelInitializer {
                     nettySettings.maxConcurrentStreams(value);
                     break;
                 case Http2CodecUtil.SETTINGS_INITIAL_WINDOW_SIZE:
-                    nettySettings.initialWindowSize(value);
+                    nettySettings.initialWindowSize(value.intValue());
                     break;
                 case Http2CodecUtil.SETTINGS_MAX_FRAME_SIZE:
-                    nettySettings.maxFrameSize(value);
+                    nettySettings.maxFrameSize(value.intValue());
                     break;
                 case Http2CodecUtil.SETTINGS_MAX_HEADER_LIST_SIZE:
                     nettySettings.maxHeaderListSize(value);
                     break;
                 default:
-                    nettySettings.put(identifier, Long.valueOf(value));
+                    nettySettings.put(identifier, value);
                     break;
             }
         });
