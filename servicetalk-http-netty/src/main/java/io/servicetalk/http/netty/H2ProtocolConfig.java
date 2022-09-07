@@ -15,11 +15,11 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.http.api.Http2Settings;
 import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.logging.api.UserDataLoggerConfig;
 
 import java.time.Duration;
-import java.util.Map;
 import java.util.function.BiPredicate;
 import javax.annotation.Nullable;
 
@@ -62,16 +62,23 @@ public interface H2ProtocolConfig extends HttpProtocolConfig {
     KeepAlivePolicy keepAlivePolicy();
 
     /**
-     * Get a {@link Map} which provides a hint for the initial settings for any h2 connection. Note that some settings
-     * may be ignored if not supported (e.g. push promise).
-     * @return a {@link Map} which provides a hint for the initial settings for any h2 connection. Note that some
-     * settings may be ignored if not supported (e.g. push promise).
+     * Get the {@link Http2Settings} that provides a hint for the initial settings. Note that some settings may be
+     * ignored if not supported (e.g. push promise).
+     * @return the {@link Http2Settings} that provides a hint for the initial settings. Note that some settings may be
+     * ignored if not supported (e.g. push promise).
      */
-    Map<Character, Integer> initialSettings();
+    Http2Settings initialSettings();
 
     /**
      * Provide a hint on the number of bytes that the flow controller will attempt to give to a stream for each
      * allocation (assuming the stream has this much eligible data).
+     * <p>
+     * This maybe useful because the amount of bytes the local peer is permitted to write is limited based upon the
+     * remote peer's flow control window for each stream. Some flow controllers iterate over all streams (and may
+     * consider <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-5.3">stream priority</a>) that have data
+     * pending to write and allow them to write a subset of the available flow control window (aka a "quantum"). The
+     * larger this value may result in increased goodput/throughput on the connection, but increase latency on some
+     * streams (if flow control windows become constrained).
      * @return number of bytes.
      */
     int flowControlQuantum();

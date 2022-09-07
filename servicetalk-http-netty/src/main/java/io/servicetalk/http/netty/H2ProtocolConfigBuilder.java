@@ -15,6 +15,8 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.http.api.Http2Settings;
+import io.servicetalk.http.api.Http2SettingsBuilder;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.netty.H2ProtocolConfig.KeepAlivePolicy;
@@ -22,7 +24,6 @@ import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.logging.api.UserDataLoggerConfig;
 import io.servicetalk.logging.slf4j.internal.DefaultUserDataLoggerConfig;
 
-import java.util.Map;
 import java.util.function.BiPredicate;
 import java.util.function.BooleanSupplier;
 import javax.annotation.Nullable;
@@ -38,7 +39,7 @@ import static java.util.Objects.requireNonNull;
  */
 public final class H2ProtocolConfigBuilder {
     private static final BiPredicate<CharSequence, CharSequence> DEFAULT_SENSITIVITY_DETECTOR = (name, value) -> false;
-    private Map<Character, Integer> h2Settings = newDefaultSettingsBuilder().build();
+    private Http2Settings h2Settings = newDefaultSettingsBuilder().build();
     private HttpHeadersFactory headersFactory = H2HeadersFactory.INSTANCE;
     private BiPredicate<CharSequence, CharSequence> headersSensitivityDetector = DEFAULT_SENSITIVITY_DETECTOR;
     @Nullable
@@ -112,7 +113,7 @@ public final class H2ProtocolConfigBuilder {
      * @return {@code this}
      * @see Http2SettingsBuilder
      */
-    public H2ProtocolConfigBuilder initialSettings(Map<Character, Integer> settings) {
+    public H2ProtocolConfigBuilder initialSettings(Http2Settings settings) {
         this.h2Settings = requireNonNull(settings);
         return this;
     }
@@ -157,7 +158,7 @@ public final class H2ProtocolConfigBuilder {
     }
 
     private static final class DefaultH2ProtocolConfig implements H2ProtocolConfig {
-        private final Map<Character, Integer> h2Settings;
+        private final Http2Settings h2Settings;
         private final HttpHeadersFactory headersFactory;
         private final BiPredicate<CharSequence, CharSequence> headersSensitivityDetector;
         @Nullable
@@ -166,7 +167,7 @@ public final class H2ProtocolConfigBuilder {
         private final KeepAlivePolicy keepAlivePolicy;
         private final int flowControlQuantum;
 
-        DefaultH2ProtocolConfig(final Map<Character, Integer> h2Settings,
+        DefaultH2ProtocolConfig(final Http2Settings h2Settings,
                                 final HttpHeadersFactory headersFactory,
                                 final BiPredicate<CharSequence, CharSequence> headersSensitivityDetector,
                                 @Nullable final UserDataLoggerConfig frameLoggerConfig,
@@ -203,7 +204,7 @@ public final class H2ProtocolConfigBuilder {
         }
 
         @Override
-        public Map<Character, Integer> initialSettings() {
+        public Http2Settings initialSettings() {
             return h2Settings;
         }
 

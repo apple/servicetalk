@@ -136,9 +136,4 @@
     <Field name="h2Settings"/>
     <Bug pattern="EI_EXPOSE_REP2"/>
   </Match>
-  <Match>
-    <Class name="io.servicetalk.http.netty.Http2SettingsBuilder"/>
-    <Method name="build"/>
-    <Bug pattern="EI_EXPOSE_REP"/>
-  </Match>
 </FindBugsFilter>

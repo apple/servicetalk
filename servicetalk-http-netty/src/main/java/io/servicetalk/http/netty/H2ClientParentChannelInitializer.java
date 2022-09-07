@@ -26,23 +26,18 @@ import io.netty.handler.codec.http2.Http2FrameCodecBuilder;
 import io.netty.handler.codec.http2.Http2MultiplexHandler;
 import io.netty.handler.codec.http2.Http2Settings;
 
-import java.util.Map;
-
 import static io.netty.handler.codec.http2.Http2Error.PROTOCOL_ERROR;
 import static io.servicetalk.http.netty.H2ServerParentChannelInitializer.initFrameLogger;
 import static io.servicetalk.http.netty.H2ServerParentChannelInitializer.toNettySettings;
 
 final class H2ClientParentChannelInitializer implements ChannelInitializer {
-    private static final Http2Settings DEFAULT_NETTY_SETTINGS =
-            applyClientDefaultSettings(Http2Settings.defaultSettings());
     private final H2ProtocolConfig config;
     private final io.netty.handler.codec.http2.Http2Settings nettySettings;
 
     H2ClientParentChannelInitializer(final H2ProtocolConfig config) {
         this.config = config;
-        final Map<Character, Integer> h2Settings = config.initialSettings();
-        nettySettings = h2Settings.isEmpty() ?
-                DEFAULT_NETTY_SETTINGS : applyClientDefaultSettings(toNettySettings(h2Settings));
+        final io.servicetalk.http.api.Http2Settings h2Settings = config.initialSettings();
+        nettySettings = validateClientSettings(toNettySettings(h2Settings));
     }
 
     @Override
@@ -88,8 +83,14 @@ final class H2ClientParentChannelInitializer implements ChannelInitializer {
         }
     }
 
-    private static Http2Settings applyClientDefaultSettings(Http2Settings settings) {
-        // Notify server that this client does not support server push and request it to be disabled.
-        return settings.pushEnabled(false).maxConcurrentStreams(0L);
+    private static Http2Settings validateClientSettings(Http2Settings settings) {
+        final Boolean pushEnabled = settings.pushEnabled();
+        if (pushEnabled == null) {
+            // Notify server that this client does not support server push and request it to be disabled.
+            settings.pushEnabled(false);
+        } else if (pushEnabled) {
+            throw new IllegalArgumentException("push is enabled but not supported. settings=" + settings);
+        }
+        return settings;
     }
 }

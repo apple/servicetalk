@@ -15,9 +15,8 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.http.api.Http2Settings;
 import io.servicetalk.http.api.HttpProtocolConfig;
-
-import java.util.Map;
 
 /**
  * Factory methods for {@link HttpProtocolConfig}s and builders for their customization.
@@ -74,7 +73,7 @@ public final class HttpProtocolConfigs {
      * default values as described in
      * <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-6.5.2">HTTP/2 Settings</a>. Some identifiers
      * maybe overridden for safety or performance reasons and are subject to change. For more control use
-     * {@link H2ProtocolConfigBuilder#initialSettings(Map)}.
+     * {@link H2ProtocolConfigBuilder#initialSettings(Http2Settings)}.
      *
      * @return {@link H2ProtocolConfigBuilder}
      */

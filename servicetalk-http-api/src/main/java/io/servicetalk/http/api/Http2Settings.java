@@ -15,43 +15,70 @@
  */
 package io.servicetalk.http.api;
 
+import java.util.function.BiConsumer;
+import javax.annotation.Nullable;
+
 /**
- * Utilities for <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-6.5.1">HTTP/2 Setting</a>.
+ * Object representing a <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-6.5.1">HTTP/2 Setting</a> frame.
  */
-public final class Http2Settings {
+public interface Http2Settings {
     /**
-     * Identifier <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-6.5.2">SETTINGS_HEADER_TABLE_SIZE</a>.
+     * Get the value for
+     * <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-6.5.2">SETTINGS_HEADER_TABLE_SIZE</a>.
+     * @return the value for
+     * <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-6.5.2">SETTINGS_HEADER_TABLE_SIZE</a>.
      */
-    public static final char HEADER_TABLE_SIZE = 0x1;
+    @Nullable
+    Integer headerTableSize();
 
     /**
-     * Identifier <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-6.5.2">SETTINGS_ENABLE_PUSH</a>.
+     * Get the value for
+     * <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-6.5.2">SETTINGS_MAX_CONCURRENT_STREAMS</a>.
+     * @return the value for
+     * <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-6.5.2">SETTINGS_MAX_CONCURRENT_STREAMS</a>.
      */
-    public static final char ENABLE_PUSH = 0x2;
+    @Nullable
+    Integer maxConcurrentStreams();
 
     /**
-     * Identifier <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-6.5.2">
-     *     SETTINGS_MAX_CONCURRENT_STREAMS</a>.
+     * Get the value for
+     * <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-6.5.2">SETTINGS_INITIAL_WINDOW_SIZE</a>.
+     * @return the value for
+     * <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-6.5.2">SETTINGS_INITIAL_WINDOW_SIZE</a>.
      */
-    public static final char MAX_CONCURRENT_STREAMS = 0x3;
+    @Nullable
+    Integer initialWindowSize();
 
     /**
-     * Identifier <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-6.5.2">
-     *     SETTINGS_INITIAL_WINDOW_SIZE</a>.
+     * Get the value for
+     * <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-6.5.2">SETTINGS_MAX_FRAME_SIZE</a>.
+     * @return the value for
+     * <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-6.5.2">SETTINGS_MAX_FRAME_SIZE</a>.
      */
-    public static final char INITIAL_WINDOW_SIZE = 0x4;
+    @Nullable
+    Integer maxFrameSize();
 
     /**
-     * Identifier <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-6.5.2">SETTINGS_MAX_FRAME_SIZE</a>.
+     * Get the value for
+     * <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-6.5.2">SETTINGS_MAX_HEADER_LIST_SIZE</a>.
+     * @return the value for
+     * <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-6.5.2">SETTINGS_MAX_HEADER_LIST_SIZE</a>.
      */
-    public static final char MAX_FRAME_SIZE = 0x5;
+    @Nullable
+    Integer maxHeaderListSize();
 
     /**
-     * Identifier <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-6.5.2">
-     *     SETTINGS_MAX_HEADER_LIST_SIZE</a>.
+     * Get the setting value associated with an
+     * <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-6.5.1">identifier</a>.
+     * @param identifier the <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-6.5.1">identifier</a>.
+     * @return {@code null} if no setting value corresponding {@code identifier} exists, otherwise the value.
      */
-    public static final char MAX_HEADER_LIST_SIZE = 0x6;
+    @Nullable
+    Integer settingValue(char identifier);
 
-    private Http2Settings() {
-    }
+    /**
+     * Iterate over all the &lt;identifier, value&gt; tuple in this settings object.
+     * @param action Invoked on each &lt;identifier, value&gt; tuple.
+     */
+    void forEach(BiConsumer<? super Character, ? super Integer> action);
 }
