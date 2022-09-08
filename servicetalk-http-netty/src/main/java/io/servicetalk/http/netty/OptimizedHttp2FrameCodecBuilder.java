@@ -28,7 +28,7 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.utils.internal.PlatformDependent.throwException;
+import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
 import static java.lang.invoke.MethodType.methodType;
 
 /**
@@ -61,14 +61,18 @@ final class OptimizedHttp2FrameCodecBuilder extends Http2FrameCodecBuilder {
     }
 
     private final boolean server;
+    private final int flowControlQuantum;
 
     /**
      * Creates a new instance.
      *
      * @param server {@code true} if for server, {@code false} otherwise
+     * @param flowControlQuantum a hint on the number of bytes that the flow controller will attempt to give to a
+     * stream for each allocation.
      */
-    OptimizedHttp2FrameCodecBuilder(final boolean server) {
+    OptimizedHttp2FrameCodecBuilder(final boolean server, final int flowControlQuantum) {
         this.server = server;
+        this.flowControlQuantum = flowControlQuantum;
         disableFlushPreface(FLUSH_PREFACE, this);
     }
 
@@ -80,8 +84,9 @@ final class OptimizedHttp2FrameCodecBuilder extends Http2FrameCodecBuilder {
     @Override
     public Http2FrameCodec build() {
         final DefaultHttp2Connection connection = new DefaultHttp2Connection(isServer(), maxReservedStreams());
-        connection.remote().flowController(new DefaultHttp2RemoteFlowController(connection,
-                new UniformStreamByteDistributor(connection)));
+        UniformStreamByteDistributor distributor = new UniformStreamByteDistributor(connection);
+        distributor.minAllocationChunk(flowControlQuantum);
+        connection.remote().flowController(new DefaultHttp2RemoteFlowController(connection, distributor));
         connection(connection);
         return super.build();
     }

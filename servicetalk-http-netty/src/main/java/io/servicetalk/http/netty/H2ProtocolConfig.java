@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.http.api.Http2Settings;
 import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.logging.api.UserDataLoggerConfig;
 
@@ -59,6 +60,37 @@ public interface H2ProtocolConfig extends HttpProtocolConfig {
      */
     @Nullable
     KeepAlivePolicy keepAlivePolicy();
+
+    /**
+     * Get the {@link Http2Settings} that provides a hint for the initial settings. Note that some settings may be
+     * ignored if not supported (e.g. push promise).
+     * @return the {@link Http2Settings} that provides a hint for the initial settings. Note that some settings may be
+     * ignored if not supported (e.g. push promise).
+     */
+    Http2Settings initialSettings();
+
+    /**
+     * Provide a hint on the number of bytes that the flow controller will attempt to give to a stream for each
+     * allocation (assuming the stream has this much eligible data).
+     * <p>
+     * This maybe useful because the amount of bytes the local peer is permitted to write is limited based upon the
+     * remote peer's flow control window for each stream. Some flow controllers iterate over all streams (and may
+     * consider <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-5.3">stream priority</a>) that have data
+     * pending to write and allow them to write a subset of the available flow control window (aka a "quantum"). The
+     * larger this value may result in increased goodput/throughput on the connection, but increase latency on some
+     * streams (if flow control windows become constrained).
+     * @return number of bytes.
+     */
+    int flowControlQuantum();
+
+    /**
+     * Number of bytes to increment via <a href="https://www.rfc-editor.org/rfc/rfc7540#section-6.9">WINDOW_UPDATE</a>
+     * for the connection. This value is applied on top of {@link Http2Settings#initialWindowSize()} from
+     * {@link #initialSettings()} for the connection (as opposed to individual request streams). This can be helpful to
+     * avoid a single stream consuming all the flow control credits.
+     * @return The number of bytes to increment the local flow control window for the connection.
+     */
+    int flowControlWindowIncrement();
 
     /**
      * A policy for sending <a href="https://tools.ietf.org/html/rfc7540#section-6.7">PING frames</a> to the peer.

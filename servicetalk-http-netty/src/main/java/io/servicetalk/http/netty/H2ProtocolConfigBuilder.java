@@ -15,6 +15,8 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.http.api.Http2Settings;
+import io.servicetalk.http.api.Http2SettingsBuilder;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.netty.H2ProtocolConfig.KeepAlivePolicy;
@@ -26,6 +28,7 @@ import java.util.function.BiPredicate;
 import java.util.function.BooleanSupplier;
 import javax.annotation.Nullable;
 
+import static io.netty.handler.codec.http2.Http2CodecUtil.DEFAULT_HEADER_LIST_SIZE;
 import static io.servicetalk.http.netty.H2KeepAlivePolicies.DISABLE_KEEP_ALIVE;
 import static java.util.Objects.requireNonNull;
 
@@ -35,15 +38,32 @@ import static java.util.Objects.requireNonNull;
  * @see HttpProtocolConfigs#h2()
  */
 public final class H2ProtocolConfigBuilder {
-
     private static final BiPredicate<CharSequence, CharSequence> DEFAULT_SENSITIVITY_DETECTOR = (name, value) -> false;
-
+    /**
+     * 1mb default window size.
+     */
+    private static final int INITIAL_FLOW_CONTROL_WINDOW = 1048576;
+    /**
+     * Netty currently doubles the connection window by default so a single stream doesn't exhaust all flow control
+     * bytes.
+     */
+    private static final int CONNECTION_STREAM_FLOW_CONTROL_INCREMENT = 0;
+    /**
+     * Default allocation quantum to use for the remote flow controller.
+     */
+    private static final int DEFAULT_FLOW_CONTROL_QUANTUM = 1024 * 16;
+    private Http2Settings h2Settings = new Http2SettingsBuilder()
+            .initialWindowSize(INITIAL_FLOW_CONTROL_WINDOW)
+            .maxHeaderListSize((int) DEFAULT_HEADER_LIST_SIZE)
+            .build();
     private HttpHeadersFactory headersFactory = H2HeadersFactory.INSTANCE;
     private BiPredicate<CharSequence, CharSequence> headersSensitivityDetector = DEFAULT_SENSITIVITY_DETECTOR;
     @Nullable
     private UserDataLoggerConfig frameLoggerConfig;
     @Nullable
     private KeepAlivePolicy keepAlivePolicy;
+    private int flowControlQuantum = DEFAULT_FLOW_CONTROL_QUANTUM;
+    private int flowControlIncrement = CONNECTION_STREAM_FLOW_CONTROL_INCREMENT;
 
     H2ProtocolConfigBuilder() {
     }
@@ -104,32 +124,83 @@ public final class H2ProtocolConfigBuilder {
     }
 
     /**
+     * Sets the initial <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-6.5.1">HTTP/2 Setting</a> to for
+     * each h2 connection.
+     * @param settings the initial settings to for each h2 connection.
+     * @return {@code this}
+     * @see Http2SettingsBuilder
+     */
+    public H2ProtocolConfigBuilder initialSettings(Http2Settings settings) {
+        this.h2Settings = requireNonNull(settings);
+        return this;
+    }
+
+    /**
+     * Provide a hint on the number of bytes that the flow controller will attempt to give to a stream for each
+     * allocation (assuming the stream has this much eligible data).
+     * @param flowControlQuantum a hint on the number of bytes that the flow controller will attempt to give to a
+     * stream for each allocation (assuming the stream has this much eligible data).
+     * @return {@code this}
+     */
+    public H2ProtocolConfigBuilder flowControlQuantum(int flowControlQuantum) {
+        if (flowControlQuantum <= 0) {
+            throw new IllegalArgumentException("flowControlQuantum " + flowControlQuantum + " (expected >0)");
+        }
+        this.flowControlQuantum = flowControlQuantum;
+        return this;
+    }
+
+    /**
+     * Increment to apply to {@link Http2Settings#initialWindowSize()} for the connection stream. This expands the
+     * connection flow control window so a single stream can't consume all the flow control credits.
+     * @param connectionWindowIncrement The number of bytes to increment the local flow control window for the
+     * connection stream.
+     * @return {@code this}
+     */
+    public H2ProtocolConfigBuilder flowControlWindowIncrement(int connectionWindowIncrement) {
+        if (connectionWindowIncrement <= 0) {
+            throw new IllegalArgumentException("connectionWindowIncrement " + connectionWindowIncrement +
+                    " (expected >0)");
+        }
+        this.flowControlIncrement = connectionWindowIncrement;
+        return this;
+    }
+
+    /**
      * Builds {@link H2ProtocolConfig}.
      *
      * @return {@link H2ProtocolConfig}
      */
     public H2ProtocolConfig build() {
-        return new DefaultH2ProtocolConfig(headersFactory, headersSensitivityDetector, frameLoggerConfig,
-                keepAlivePolicy);
+        return new DefaultH2ProtocolConfig(h2Settings, headersFactory, headersSensitivityDetector, frameLoggerConfig,
+                keepAlivePolicy, flowControlQuantum, flowControlIncrement);
     }
 
     private static final class DefaultH2ProtocolConfig implements H2ProtocolConfig {
-
+        private final Http2Settings h2Settings;
         private final HttpHeadersFactory headersFactory;
         private final BiPredicate<CharSequence, CharSequence> headersSensitivityDetector;
         @Nullable
         private final UserDataLoggerConfig frameLoggerConfig;
         @Nullable
         private final KeepAlivePolicy keepAlivePolicy;
+        private final int flowControlQuantum;
+        private final int flowControlIncrement;
 
-        DefaultH2ProtocolConfig(final HttpHeadersFactory headersFactory,
+        DefaultH2ProtocolConfig(final Http2Settings h2Settings,
+                                final HttpHeadersFactory headersFactory,
                                 final BiPredicate<CharSequence, CharSequence> headersSensitivityDetector,
                                 @Nullable final UserDataLoggerConfig frameLoggerConfig,
-                                @Nullable final KeepAlivePolicy keepAlivePolicy) {
+                                @Nullable final KeepAlivePolicy keepAlivePolicy,
+                                final int flowControlQuantum,
+                                final int flowControlIncrement) {
+            this.h2Settings = h2Settings;
             this.headersFactory = headersFactory;
             this.headersSensitivityDetector = headersSensitivityDetector;
             this.frameLoggerConfig = frameLoggerConfig;
             this.keepAlivePolicy = keepAlivePolicy;
+            this.flowControlQuantum = flowControlQuantum;
+            this.flowControlIncrement = flowControlIncrement;
         }
 
         @Override
@@ -155,15 +226,32 @@ public final class H2ProtocolConfigBuilder {
         }
 
         @Override
+        public Http2Settings initialSettings() {
+            return h2Settings;
+        }
+
+        @Override
+        public int flowControlQuantum() {
+            return flowControlQuantum;
+        }
+
+        @Override
+        public int flowControlWindowIncrement() {
+            return flowControlIncrement;
+        }
+
+        @Override
         public String toString() {
             return getClass().getSimpleName() +
                     "{alpnId=" + alpnId() +
                     ", headersFactory=" + headersFactory +
                     ", headersSensitivityDetector=" + (headersSensitivityDetector == DEFAULT_SENSITIVITY_DETECTOR ?
-                            "DEFAULT_SENSITIVITY_DETECTOR" : headersSensitivityDetector.toString()) +
+                    "DEFAULT_SENSITIVITY_DETECTOR" : headersSensitivityDetector.toString()) +
                     ", frameLoggerConfig=" + frameLoggerConfig +
                     ", keepAlivePolicy=" + keepAlivePolicy +
-                    '}';
+                    ", flowControlQuantum=" + flowControlQuantum +
+                    ", flowControlIncrement=" + flowControlIncrement +
+                    ", h2Settings=" + h2Settings + '}';
         }
     }
 }

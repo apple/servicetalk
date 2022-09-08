@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.http.api.Http2Settings;
 import io.servicetalk.http.api.HttpProtocolConfig;
 
 /**
@@ -52,6 +53,11 @@ public final class HttpProtocolConfigs {
     /**
      * Returns {@link H2ProtocolConfig} with the default configuration for
      * <a href="https://tools.ietf.org/html/rfc7540">HTTP/2</a>.
+     * <p>
+     * Note this doesn't necessarily provide {@link H2ProtocolConfig#initialSettings()} that corresponds to
+     * default values as described in
+     * <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-6.5.2">HTTP/2 Settings</a>. Some identifiers
+     * maybe overridden for safety or performance reasons and are subject to change. For more control use {@link #h2()}.
      *
      * @return {@link H2ProtocolConfig} with the default configuration for
      * <a href="https://tools.ietf.org/html/rfc7540">HTTP/2</a>
@@ -62,6 +68,12 @@ public final class HttpProtocolConfigs {
 
     /**
      * Returns a builder for {@link H2ProtocolConfig}.
+     * <p>
+     * Note this doesn't necessarily provide {@link H2ProtocolConfig#initialSettings()} that corresponds to
+     * default values as described in
+     * <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-6.5.2">HTTP/2 Settings</a>. Some identifiers
+     * maybe overridden for safety or performance reasons and are subject to change. For more control use
+     * {@link H2ProtocolConfigBuilder#initialSettings(Http2Settings)}.
      *
      * @return {@link H2ProtocolConfigBuilder}
      */

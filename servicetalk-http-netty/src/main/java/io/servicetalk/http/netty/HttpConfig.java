@@ -15,11 +15,13 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.http.api.Http2Settings;
 import io.servicetalk.http.api.HttpProtocolConfig;
 
 import java.util.List;
 import javax.annotation.Nullable;
 
+import static io.netty.handler.codec.http2.Http2CodecUtil.SETTINGS_ENABLE_PUSH;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
@@ -105,6 +107,12 @@ final class HttpConfig {
         if (this.h2Config != null) {
             throw new IllegalArgumentException("Duplicated configuration for HTTP/2 was found");
         }
+        final Http2Settings settings = h2Config.initialSettings();
+        final Long pushEnabled = settings.settingValue(SETTINGS_ENABLE_PUSH);
+        if (pushEnabled != null && pushEnabled != 0) {
+            throw new IllegalArgumentException("Http2Settings push is enabled but not supported. settings=" + settings);
+        }
+
         this.h2Config = h2Config;
         supportedAlpnProtocols = h1Config == null ? singletonList(h2Config.alpnId()) :
                 unmodifiableList(asList(h1Config.alpnId(), h2Config.alpnId()));
