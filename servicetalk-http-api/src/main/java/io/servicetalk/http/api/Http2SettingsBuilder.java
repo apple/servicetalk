@@ -20,6 +20,8 @@ import java.util.Map;
 import java.util.function.BiConsumer;
 import javax.annotation.Nullable;
 
+import static java.lang.Integer.toHexString;
+
 /**
  * Builder to help create a {@link Map} for
  * <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-6.5.1">HTTP/2 Setting</a>.
@@ -155,6 +157,8 @@ public final class Http2SettingsBuilder {
     }
 
     private static final class DefaultHttp2Settings implements Http2Settings {
+        private static final String SEPARATOR = ", ";
+
         private final Map<Character, Long> settings;
 
         private DefaultHttp2Settings(final Map<Character, Long> settings) {
@@ -204,13 +208,12 @@ public final class Http2SettingsBuilder {
 
         @Override
         public String toString() {
-            final StringBuilder sb = new StringBuilder(settings.size() * 10);
-            final String separator = ", ";
+            final StringBuilder sb = new StringBuilder(settings.size() * 30);
             sb.append('{');
             settings.forEach((identity, value) ->
-                    sb.append(identityToString(identity)).append('=').append(value).append(separator));
-            if (sb.length() > separator.length()) {
-                sb.setLength(sb.length() - separator.length());
+                    sb.append(identityToString(identity)).append('=').append(value).append(SEPARATOR));
+            if (sb.length() > SEPARATOR.length()) {
+                sb.setLength(sb.length() - SEPARATOR.length());
             }
             return sb.append('}').toString();
         }
@@ -240,7 +243,7 @@ public final class Http2SettingsBuilder {
                 case MAX_HEADER_LIST_SIZE:
                     return "MAX_HEADER_LIST_SIZE";
                 default:
-                    return identity.toString();
+                    return "(0x" + toHexString(identity) + ')';
             }
         }
 
