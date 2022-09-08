@@ -26,7 +26,6 @@ import io.netty.handler.codec.http2.DefaultHttp2WindowUpdateFrame;
 import io.netty.handler.codec.http2.Http2ConnectionPrefaceAndSettingsFrameWrittenEvent;
 import io.netty.handler.codec.http2.Http2FrameCodecBuilder;
 import io.netty.handler.codec.http2.Http2MultiplexHandler;
-import io.netty.handler.codec.http2.Http2Settings;
 
 import static io.netty.handler.codec.http2.Http2Error.PROTOCOL_ERROR;
 import static io.servicetalk.http.netty.H2ServerParentChannelInitializer.initFrameLogger;
@@ -39,7 +38,7 @@ final class H2ClientParentChannelInitializer implements ChannelInitializer {
     H2ClientParentChannelInitializer(final H2ProtocolConfig config) {
         this.config = config;
         final io.servicetalk.http.api.Http2Settings h2Settings = config.initialSettings();
-        nettySettings = validateClientSettings(toNettySettings(h2Settings));
+        nettySettings = toNettySettings(h2Settings);
     }
 
     @Override
@@ -97,23 +96,5 @@ final class H2ClientParentChannelInitializer implements ChannelInitializer {
             ctx.writeAndFlush(new DefaultHttp2GoAwayFrame(PROTOCOL_ERROR));
             // Http2ConnectionHandler.processGoAwayWriteResult will close the connection after GO_AWAY is flushed
         }
-    }
-
-    private static Http2Settings validateClientSettings(Http2Settings settings) {
-        final Boolean pushEnabled = settings.pushEnabled();
-        if (pushEnabled == null) {
-            // Notify server that this client does not support server push and request it to be disabled.
-            settings.pushEnabled(false);
-        } else if (pushEnabled) {
-            throw new IllegalArgumentException("push is enabled but not supported. settings=" + settings);
-        }
-        final Long maxConcurrentStreams = settings.maxConcurrentStreams();
-        if (maxConcurrentStreams == null) {
-            settings.maxConcurrentStreams(0);
-        } else if (maxConcurrentStreams != 0) {
-            throw new IllegalArgumentException("maxConcurrentStreams is " + maxConcurrentStreams +
-                    " but push is not supported. settings=" + settings);
-        }
-        return settings;
     }
 }

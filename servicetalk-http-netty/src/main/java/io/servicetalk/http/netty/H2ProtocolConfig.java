@@ -84,9 +84,11 @@ public interface H2ProtocolConfig extends HttpProtocolConfig {
     int flowControlQuantum();
 
     /**
-     * Increment to apply to {@link Http2Settings#initialWindowSize()} for the connection stream. This expands the
-     * connection flow control window so a single stream can't consume all the flow control credits.
-     * @return The number of bytes to increment the local flow control window for the connection stream.
+     * Number of bytes to increment via <a href="https://www.rfc-editor.org/rfc/rfc7540#section-6.9">WINDOW_UPDATE</a>
+     * for the connection. This value is applied on top of {@link Http2Settings#initialWindowSize()} from
+     * {@link #initialSettings()} for the connection (as opposed to individual request streams). This can be helpful to
+     * avoid a single stream consuming all the flow control credits.
+     * @return The number of bytes to increment the local flow control window for the connection.
      */
     int flowControlWindowIncrement();
 

@@ -33,6 +33,10 @@ public final class Http2SettingsBuilder {
      */
     private static final char HEADER_TABLE_SIZE = 0x1;
     /**
+     * Identifier <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-6.5.2">SETTINGS_ENABLE_PUSH</a>.
+     */
+    private static final char ENABLE_PUSH = 0x2;
+    /**
      * Identifier <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-6.5.2">
      *     SETTINGS_MAX_CONCURRENT_STREAMS</a>.
      */
@@ -57,15 +61,7 @@ public final class Http2SettingsBuilder {
      * Create a new instance.
      */
     public Http2SettingsBuilder() {
-        this(8);
-    }
-
-    /**
-     * Create a new instance.
-     * @param initialSize The initial size of the map.
-     */
-    Http2SettingsBuilder(int initialSize) {
-        settings = new HashMap<>(initialSize);
+        settings = new HashMap<>(6);
     }
 
     /**
@@ -208,7 +204,15 @@ public final class Http2SettingsBuilder {
 
         @Override
         public String toString() {
-            return settings.toString();
+            final StringBuilder sb = new StringBuilder(settings.size() * 10);
+            final String separator = ", ";
+            sb.append('{');
+            settings.forEach((identity, value) ->
+                    sb.append(identityToString(identity)).append('=').append(value).append(separator));
+            if (sb.length() > separator.length()) {
+                sb.setLength(sb.length() - separator.length());
+            }
+            return sb.append('}').toString();
         }
 
         @Override
@@ -219,6 +223,25 @@ public final class Http2SettingsBuilder {
         @Override
         public boolean equals(Object o) {
             return o instanceof DefaultHttp2Settings && settings.equals(((DefaultHttp2Settings) o).settings);
+        }
+
+        private static String identityToString(Character identity) {
+            switch (identity) {
+                case HEADER_TABLE_SIZE:
+                    return "HEADER_TABLE_SIZE";
+                case ENABLE_PUSH:
+                    return "ENABLE_PUSH";
+                case MAX_CONCURRENT_STREAMS:
+                    return "MAX_CONCURRENT_STREAMS";
+                case INITIAL_WINDOW_SIZE:
+                    return "INITIAL_WINDOW_SIZE";
+                case MAX_FRAME_SIZE:
+                    return "MAX_FRAME_SIZE";
+                case MAX_HEADER_LIST_SIZE:
+                    return "MAX_HEADER_LIST_SIZE";
+                default:
+                    return identity.toString();
+            }
         }
 
         @Nullable
