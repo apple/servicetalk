@@ -261,7 +261,7 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
     }
 
     @Override
-    public String toString() {
+    public final String toString() {
         return getClass().getName() + '(' + connectionContext + ')';
     }
 }

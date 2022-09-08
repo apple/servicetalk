@@ -230,5 +230,10 @@ public interface HttpLoadBalancerFactory<ResolvedAddress>
         public ReservedBlockingHttpConnection asBlockingConnection() {
             return toReservedBlockingConnection(this, executionContext().executionStrategy());
         }
+
+        @Override
+        public String toString() {
+            return delegate.toString();
+        }
     }
 }
