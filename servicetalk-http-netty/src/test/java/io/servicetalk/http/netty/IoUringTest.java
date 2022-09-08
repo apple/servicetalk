@@ -27,7 +27,10 @@ import io.netty.incubator.channel.uring.IOUring;
 import io.netty.incubator.channel.uring.IOUringEventLoopGroup;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
@@ -59,9 +62,10 @@ class IoUringTest {
         }
     }
 
-    @Test
+    @ParameterizedTest(name = "{displayName} [{index}] noOffloading={0}")
+    @ValueSource(booleans = {false, true})
     @EnabledOnOs(LINUX)
-    void ioUringIsAvailableOnLinux() throws Exception {
+    void ioUringIsAvailableOnLinux(boolean noOffloading) throws Exception {
         EventLoopAwareNettyIoExecutor ioUringExecutor = null;
         try {
             IoUringUtils.tryIoUring(true);
@@ -74,11 +78,11 @@ class IoUringTest {
 
             try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
                     .ioExecutor(ioUringExecutor)
-                    .executionStrategy(offloadNone())
+                    .executionStrategy(noOffloading ? offloadNone() : defaultStrategy())
                     .listenStreamingAndAwait(new TestServiceStreaming());
                  BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
                          .ioExecutor(ioUringExecutor)
-                         .executionStrategy(offloadNone())
+                         .executionStrategy(noOffloading ? offloadNone() : defaultStrategy())
                          .buildBlocking()) {
                 HttpRequest request = client.post(SVC_ECHO).payloadBody("bonjour!", textSerializerUtf8());
                 HttpResponse response = client.request(request);
