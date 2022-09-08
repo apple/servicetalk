@@ -27,6 +27,7 @@ import io.netty.handler.codec.http2.Http2ConnectionPrefaceAndSettingsFrameWritte
 import io.netty.handler.codec.http2.Http2FrameCodecBuilder;
 import io.netty.handler.codec.http2.Http2MultiplexHandler;
 
+import static io.netty.buffer.ByteBufUtil.writeAscii;
 import static io.netty.handler.codec.http2.Http2Error.PROTOCOL_ERROR;
 import static io.servicetalk.http.netty.H2ServerParentChannelInitializer.initFrameLogger;
 import static io.servicetalk.http.netty.H2ServerParentChannelInitializer.toNettySettings;
@@ -37,8 +38,7 @@ final class H2ClientParentChannelInitializer implements ChannelInitializer {
 
     H2ClientParentChannelInitializer(final H2ProtocolConfig config) {
         this.config = config;
-        final io.servicetalk.http.api.Http2Settings h2Settings = config.initialSettings();
-        nettySettings = toNettySettings(h2Settings);
+        nettySettings = toNettySettings(config.initialSettings()).pushEnabled(false).maxConcurrentStreams(0L);
     }
 
     @Override
@@ -93,7 +93,8 @@ final class H2ClientParentChannelInitializer implements ChannelInitializer {
         @Override
         public void channelRegistered(final ChannelHandlerContext ctx) {
             // See SETTINGS_ENABLE_PUSH in https://tools.ietf.org/html/rfc7540#section-6.5.2
-            ctx.writeAndFlush(new DefaultHttp2GoAwayFrame(PROTOCOL_ERROR));
+            ctx.writeAndFlush(new DefaultHttp2GoAwayFrame(PROTOCOL_ERROR,
+                    writeAscii(ctx.alloc(), "Server Push is not supported")));
             // Http2ConnectionHandler.processGoAwayWriteResult will close the connection after GO_AWAY is flushed
         }
     }

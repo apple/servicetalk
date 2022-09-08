@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.http.api.Http2Settings;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 import io.servicetalk.transport.api.ClientSslConfig;
 import io.servicetalk.transport.api.DelegatingClientSslConfig;
@@ -22,6 +23,7 @@ import io.servicetalk.transport.api.DelegatingClientSslConfig;
 import java.util.List;
 import javax.annotation.Nullable;
 
+import static io.netty.handler.codec.http2.Http2CodecUtil.SETTINGS_ENABLE_PUSH;
 import static io.servicetalk.http.netty.HttpServerConfig.httpAlpnProtocols;
 import static io.servicetalk.utils.internal.NetworkUtils.isValidIpV4Address;
 import static io.servicetalk.utils.internal.NetworkUtils.isValidIpV6Address;
@@ -41,7 +43,19 @@ final class HttpClientConfig {
 
     HttpClientConfig() {
         tcpConfig = new TcpClientConfig();
-        protocolConfigs = new HttpConfig();
+        protocolConfigs = new HttpConfig(h2Config -> {
+            final Http2Settings settings = h2Config.initialSettings();
+            final Long pushEnabled = settings.settingValue(SETTINGS_ENABLE_PUSH);
+            if (pushEnabled != null && pushEnabled != 0) {
+                throw new IllegalArgumentException("Server Push is not supported by the client, " +
+                        "expected SETTINGS_ENABLE_PUSH value is null or 0, settings=" + settings);
+            }
+            final Long maxConcurrentStreams = settings.maxConcurrentStreams();
+            if (maxConcurrentStreams != null && maxConcurrentStreams != 0) {
+                throw new IllegalArgumentException("Server Push is not supported by the client, " +
+                        "expected MAX_CONCURRENT_STREAMS value is null or 0, settings=" + settings);
+            }
+        });
     }
 
     HttpClientConfig(final HttpClientConfig from) {
