@@ -48,6 +48,7 @@ import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.utils.HostHeaderHttpRequesterFilter;
+import io.servicetalk.http.utils.IdleTimeoutConnectionFilter;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ClientSslConfig;
 import io.servicetalk.transport.api.ExecutionStrategy;
@@ -79,6 +80,7 @@ import static io.servicetalk.http.netty.AlpnIds.HTTP_2;
 import static io.servicetalk.http.netty.StrategyInfluencerAwareConversions.toConditionalClientFilterFactory;
 import static io.servicetalk.http.netty.StrategyInfluencerAwareConversions.toConditionalConnectionFilterFactory;
 import static java.lang.Integer.parseInt;
+import static java.time.Duration.ofMinutes;
 import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
 
@@ -96,6 +98,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultSingleAddressHttpClientBuilder.class);
     private static final RetryingHttpRequesterFilter DEFAULT_AUTO_RETRIES =
             new RetryingHttpRequesterFilter.Builder().build();
+    private static final StreamingHttpConnectionFilterFactory DEFAULT_IDLE_TIMEOUT_FILTER =
+            new IdleTimeoutConnectionFilter(ofMinutes(5));
 
     static final Duration SD_RETRY_STRATEGY_INIT_DURATION = ofSeconds(10);
     static final Duration SD_RETRY_STRATEGY_JITTER = ofSeconds(5);
@@ -112,6 +116,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     private Function<U, CharSequence> hostToCharSequenceFunction =
             DefaultSingleAddressHttpClientBuilder::toAuthorityForm;
     private boolean addHostHeaderFallbackFilter = true;
+    private boolean addIdleTimeoutConnectionFilter = true;
     @Nullable
     private BiIntFunction<Throwable, ? extends Completable> serviceDiscovererRetryStrategy;
     @Nullable
@@ -150,6 +155,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         connectionFilterFactory = from.connectionFilterFactory;
         hostToCharSequenceFunction = from.hostToCharSequenceFunction;
         addHostHeaderFallbackFilter = from.addHostHeaderFallbackFilter;
+        addIdleTimeoutConnectionFilter = from.addIdleTimeoutConnectionFilter;
         connectionFactoryFilter = from.connectionFactoryFilter;
         retryingHttpRequesterFilter = from.retryingHttpRequesterFilter;
     }
@@ -252,18 +258,22 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
             final StreamingHttpRequestResponseFactory reqRespFactory = defaultReqRespFactory(roConfig,
                     executionContext.bufferAllocator());
 
+            final StreamingHttpConnectionFilterFactory connectionFilterFactory =
+                    ctx.builder.addIdleTimeoutConnectionFilter ?
+                            appendConnectionFilter(ctx.builder.connectionFilterFactory, DEFAULT_IDLE_TIMEOUT_FILTER) :
+                            ctx.builder.connectionFilterFactory;
             if (roConfig.isH2PriorKnowledge()) {
                 H2ProtocolConfig h2Config = roConfig.h2Config();
                 assert h2Config != null;
                 connectionFactory = new H2LBHttpConnectionFactory<>(roConfig, executionContext,
-                        ctx.builder.connectionFilterFactory, reqRespFactory,
+                        connectionFilterFactory, reqRespFactory,
                         connectionFactoryStrategy, connectionFactoryFilter,
                         ctx.builder.loadBalancerFactory::toLoadBalancedConnection);
             } else if (roConfig.tcpConfig().preferredAlpnProtocol() != null) {
                 H1ProtocolConfig h1Config = roConfig.h1Config();
                 H2ProtocolConfig h2Config = roConfig.h2Config();
                 connectionFactory = new AlpnLBHttpConnectionFactory<>(roConfig, executionContext,
-                        ctx.builder.connectionFilterFactory, new AlpnReqRespFactoryFunc(
+                        connectionFilterFactory, new AlpnReqRespFactoryFunc(
                                 executionContext.bufferAllocator(),
                                 h1Config == null ? null : h1Config.headersFactory(),
                                 h2Config == null ? null : h2Config.headersFactory()),
@@ -273,7 +283,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                 H1ProtocolConfig h1Config = roConfig.h1Config();
                 assert h1Config != null;
                 connectionFactory = new PipelinedLBHttpConnectionFactory<>(roConfig, executionContext,
-                        ctx.builder.connectionFilterFactory, reqRespFactory,
+                        connectionFilterFactory, reqRespFactory,
                         connectionFactoryStrategy, connectionFactoryFilter,
                         ctx.builder.loadBalancerFactory::toLoadBalancedConnection);
             }
@@ -474,6 +484,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         connectionFilterFactory = appendConnectionFilter(connectionFilterFactory, factory);
         strategyComputation.add(factory);
         ifHostHeaderHttpRequesterFilter(factory);
+        ifIdleTimeoutConnectionFilter(factory);
         return this;
     }
 
@@ -482,12 +493,19 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
             final Predicate<StreamingHttpRequest> predicate, final StreamingHttpConnectionFilterFactory factory) {
         appendConnectionFilter(toConditionalConnectionFilterFactory(predicate, factory));
         ifHostHeaderHttpRequesterFilter(factory);
+        ifIdleTimeoutConnectionFilter(factory);
         return this;
     }
 
     private void ifHostHeaderHttpRequesterFilter(final Object filter) {
         if (filter instanceof HostHeaderHttpRequesterFilter) {
             addHostHeaderFallbackFilter = false;
+        }
+    }
+
+    private void ifIdleTimeoutConnectionFilter(final StreamingHttpConnectionFilterFactory factory) {
+        if (factory instanceof IdleTimeoutConnectionFilter) {
+            addIdleTimeoutConnectionFilter = false;
         }
     }
 
@@ -521,19 +539,19 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> appendClientFilter(
             final Predicate<StreamingHttpRequest> predicate, final StreamingHttpClientFilterFactory factory) {
-        if (factory instanceof RetryingHttpRequesterFilter) {
-            ensureSingleRetryFilter();
-            retryingHttpRequesterFilter = (RetryingHttpRequesterFilter) factory;
-        }
+        ifRetryingHttpRequesterFilter(factory);
         appendClientFilter(toConditionalClientFilterFactory(predicate, factory));
         ifHostHeaderHttpRequesterFilter(factory);
         return this;
     }
 
-    private void ensureSingleRetryFilter() {
-        if (retryingHttpRequesterFilter != null) {
-            throw new IllegalStateException("Retrying HTTP requester filter was already found in " +
-                    "the filter chain, only a single instance of that is allowed.");
+    private void ifRetryingHttpRequesterFilter(final StreamingHttpClientFilterFactory factory) {
+        if (factory instanceof RetryingHttpRequesterFilter) {
+            if (retryingHttpRequesterFilter != null) {
+                throw new IllegalStateException("Retrying HTTP requester filter was already found in " +
+                        "the filter chain, only a single instance of that is allowed.");
+            }
+            retryingHttpRequesterFilter = (RetryingHttpRequesterFilter) factory;
         }
     }
 
@@ -548,10 +566,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     public DefaultSingleAddressHttpClientBuilder<U, R> appendClientFilter(
             final StreamingHttpClientFilterFactory factory) {
         requireNonNull(factory);
-        if (factory instanceof RetryingHttpRequesterFilter) {
-            ensureSingleRetryFilter();
-            retryingHttpRequesterFilter = (RetryingHttpRequesterFilter) factory;
-        }
+        ifRetryingHttpRequesterFilter(factory);
         clientFilterFactory = appendFilter(clientFilterFactory, factory);
         strategyComputation.add(factory);
         ifHostHeaderHttpRequesterFilter(factory);

@@ -45,7 +45,7 @@ abstract class AbstractTcpConfig<SslConfigType> {
     @Nullable
     @SuppressWarnings("rawtypes")
     private Map<ChannelOption, Object> options;
-    private long idleTimeoutMs = 300_000L;  // 5 min
+    private long idleTimeoutMs;
     private FlushStrategy flushStrategy = defaultFlushStrategy();
     @Nullable
     private UserDataLoggerConfig wireLoggerConfig;

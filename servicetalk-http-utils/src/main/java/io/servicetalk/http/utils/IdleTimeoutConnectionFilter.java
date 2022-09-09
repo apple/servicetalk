@@ -44,7 +44,6 @@ import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static java.lang.Integer.MAX_VALUE;
 import static java.lang.Integer.MIN_VALUE;
-import static java.time.Duration.ZERO;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
@@ -59,6 +58,7 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
  *     <li>If response payload body was not consumed, the connection is still considered "in-use" and does not start
  *     counting the timer.</li>
  *     <li>A single connection can not process more than {@link Integer#MAX_VALUE} concurrent requests.</li>
+ *     <li>If filter is configured with {@link Duration#ZERO} timeout, it disables the timeout.</li>
  * </ul>
  */
 public final class IdleTimeoutConnectionFilter implements StreamingHttpConnectionFilterFactory {
@@ -74,27 +74,29 @@ public final class IdleTimeoutConnectionFilter implements StreamingHttpConnectio
     /**
      * Creates a new instance.
      *
-     * @param timeout timeout duration after which an idle connection is closed
+     * @param timeout timeout duration after which an idle connection is closed, if {@link Duration#ZERO} the timeout is
+     * disabled
      */
     public IdleTimeoutConnectionFilter(final Duration timeout) {
-        this.timeoutNs = ensurePositive(timeout).toNanos();
+        this.timeoutNs = ensureNotNegative(timeout).toNanos();
         this.timeoutExecutor = null;
     }
 
     /**
      * Creates a new instance.
      *
-     * @param timeout timeout duration after which an idle connection is closed
+     * @param timeout timeout duration after which an idle connection is closed, if {@link Duration#ZERO} the timeout is
+     * disabled
      * @param timeoutExecutor the {@link Executor} to use for scheduling the timer notifications
      */
     public IdleTimeoutConnectionFilter(final Duration timeout, final Executor timeoutExecutor) {
-        this.timeoutNs = ensurePositive(timeout).toNanos();
+        this.timeoutNs = ensureNotNegative(timeout).toNanos();
         this.timeoutExecutor = requireNonNull(timeoutExecutor);
     }
 
-    private static Duration ensurePositive(final Duration timeout) {
-        if (ZERO.compareTo(timeout) >= 0) {
-            throw new IllegalArgumentException("timeout: " + timeout.toNanos() + " ns (expected: >0)");
+    private static Duration ensureNotNegative(final Duration timeout) {
+        if (timeout.isNegative()) {
+            throw new IllegalArgumentException("Negative timeout: " + timeout.toNanos() + " ns (expected: >=0)");
         }
         return timeout;
     }
@@ -105,7 +107,10 @@ public final class IdleTimeoutConnectionFilter implements StreamingHttpConnectio
 
     @Override
     public StreamingHttpConnectionFilter create(final FilterableStreamingHttpConnection connection) {
-        return new ConnectionIdleTimeoutFilterImpl(connection, timeoutNs,
+        if (timeoutNs == 0) {
+            return new DisabledIdleTimeoutConnectionFilter(connection);
+        }
+        return new IdleTimeoutConnectionFilterImpl(connection, timeoutNs,
                 timeoutExecutor != null ? timeoutExecutor : contextExecutor(connection.executionContext()));
     }
 
@@ -114,13 +119,21 @@ public final class IdleTimeoutConnectionFilter implements StreamingHttpConnectio
         return offloadNone();
     }
 
-    private static final class ConnectionIdleTimeoutFilterImpl extends StreamingHttpConnectionFilter
+    @Override
+    public String toString() {
+        return getClass().getName() +
+                "{timeoutNs=" + timeoutNs +
+                ", timeoutExecutor=" + timeoutExecutor +
+                '}';
+    }
+
+    private static final class IdleTimeoutConnectionFilterImpl extends StreamingHttpConnectionFilter
             implements Runnable {
 
-        private static final AtomicIntegerFieldUpdater<ConnectionIdleTimeoutFilterImpl> requestsUpdater =
-                AtomicIntegerFieldUpdater.newUpdater(ConnectionIdleTimeoutFilterImpl.class, "requests");
-        private static final AtomicReferenceFieldUpdater<ConnectionIdleTimeoutFilterImpl, Cancellable>
-                timeoutTaskUpdater = AtomicReferenceFieldUpdater.newUpdater(ConnectionIdleTimeoutFilterImpl.class,
+        private static final AtomicIntegerFieldUpdater<IdleTimeoutConnectionFilterImpl> requestsUpdater =
+                AtomicIntegerFieldUpdater.newUpdater(IdleTimeoutConnectionFilterImpl.class, "requests");
+        private static final AtomicReferenceFieldUpdater<IdleTimeoutConnectionFilterImpl, Cancellable>
+                timeoutTaskUpdater = AtomicReferenceFieldUpdater.newUpdater(IdleTimeoutConnectionFilterImpl.class,
                 Cancellable.class, "timeoutTask");
 
         private volatile int requests;
@@ -134,7 +147,7 @@ public final class IdleTimeoutConnectionFilter implements StreamingHttpConnectio
         // https://docs.oracle.com/javase/specs/jls/se8/html/jls-17.html#jls-17.7
         private volatile long lastResponseTime;
 
-        ConnectionIdleTimeoutFilterImpl(final FilterableStreamingHttpConnection connection,
+        IdleTimeoutConnectionFilterImpl(final FilterableStreamingHttpConnection connection,
                                         final long timeoutNs,
                                         final Executor timeoutExecutor) {
             super(connection);
@@ -223,6 +236,21 @@ public final class IdleTimeoutConnectionFilter implements StreamingHttpConnectio
                     return;
                 }
             }
+        }
+        @Override
+        public String toString() {
+            return getClass().getSimpleName() + '[' + NANOSECONDS.toMillis(timeoutNs) + " ms](" + delegate() + ')';
+        }
+    }
+
+    private static final class DisabledIdleTimeoutConnectionFilter extends StreamingHttpConnectionFilter {
+        DisabledIdleTimeoutConnectionFilter(final FilterableStreamingHttpConnection delegate) {
+            super(delegate);
+        }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName() + '(' + delegate() + ')';
         }
     }
 
