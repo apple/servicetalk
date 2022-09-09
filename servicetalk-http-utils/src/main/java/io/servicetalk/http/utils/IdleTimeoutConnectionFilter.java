@@ -237,6 +237,7 @@ public final class IdleTimeoutConnectionFilter implements StreamingHttpConnectio
                 }
             }
         }
+
         @Override
         public String toString() {
             return getClass().getSimpleName() + '[' + NANOSECONDS.toMillis(timeoutNs) + " ms](" + delegate() + ')';
