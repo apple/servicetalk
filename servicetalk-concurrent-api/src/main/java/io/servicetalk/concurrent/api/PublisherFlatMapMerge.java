@@ -45,7 +45,7 @@ import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.concurrent.internal.TerminalNotification.error;
 import static io.servicetalk.concurrent.internal.ThrowableUtils.catchUnexpected;
 import static io.servicetalk.utils.internal.PlatformDependent.newUnboundedMpscQueue;
-import static io.servicetalk.utils.internal.PlatformDependent.throwException;
+import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.util.Objects.requireNonNull;
@@ -289,15 +289,14 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
             }
         }
 
-        private void tryEmitItem(Object item, FlatMapPublisherSubscriber<T, R> subscriber) {
+        private void tryEmitItem(Object item, final boolean needsDemand, FlatMapPublisherSubscriber<T, R> subscriber) {
             // We can skip the queue if the following conditions are meet:
             // 1. There is downstream requestN demand.
             // 2. The mapped subscriber doesn't have any signals already in the queue. We only need to preserve the
             //    ordering for each mapped source, and there is no "overall" ordering.
             // 3. We don't concurrently invoke the downstream subscriber. Concurrency control is provided by the
             //    emitting lock.
-            final boolean needsDemand;
-            if (subscriber.hasSignalsQueued() || ((needsDemand = needsDemand(item)) && !tryDecrementPendingDemand())) {
+            if (subscriber.hasSignalsQueued() || (needsDemand && !tryDecrementPendingDemand())) {
                 subscriber.markSignalsQueued();
                 enqueueAndDrain(item);
             } else if (item == MAPPED_SOURCE_COMPLETE) {
@@ -305,7 +304,7 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
             } else if (tryAcquireLock(emittingLockUpdater, this)) { // fast path. no concurrency, try to skip the queue.
                 try {
                     final boolean demandConsumed = sendToTarget(item);
-                    assert demandConsumed == needsDemand;
+                    assert demandConsumed == needsDemand || targetTerminated;
                 } finally {
                     if (!releaseLock(emittingLockUpdater, this)) {
                         drainPending();
@@ -420,11 +419,6 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
             subscription.request(mappedSourcesCompleted);
         }
 
-        private static boolean needsDemand(Object item) {
-            return item != MAPPED_SOURCE_COMPLETE &&
-                    !(item instanceof FlatMapPublisherSubscriber) && !(item instanceof TerminalNotification);
-        }
-
         private boolean sendToTarget(Object item) {
             assert item != MAPPED_SOURCE_COMPLETE;
             if (targetTerminated) {
@@ -497,7 +491,11 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
             @SuppressWarnings("rawtypes")
             private static final AtomicIntegerFieldUpdater<FlatMapPublisherSubscriber> pendingDemandUpdater =
                     AtomicIntegerFieldUpdater.newUpdater(FlatMapPublisherSubscriber.class, "innerPendingDemand");
-
+            /**
+             * This value must be greater than {@link Integer#MIN_VALUE} and less than {@code -1} to allow for handling
+             * invalid demand, and onNext after terminal signals.
+             */
+            private static final int TERMINATED = -2;
             private final FlatMapSubscriber<T, R> parent;
             private final DelayedSubscription subscription;
             private volatile int innerPendingDemand;
@@ -522,10 +520,13 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
 
             boolean request(int n) {
                 assert n > 0;
+                // Write to signalsQueued BEFORE pendingDemand so this value is guaranteed to be visible in Subscriber
+                // methods (onNext). There should be an implicit "happens before" because we need to request upstream
+                // in order to get signals, but this way we don't have to rely upon external factors.
+                signalsQueued = false;
                 if (!pendingDemandUpdater.compareAndSet(this, 0, n)) {
                     return false;
                 }
-                signalsQueued = false;
                 subscription.request(n);
                 return true;
             }
@@ -552,24 +553,28 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
 
             @Override
             public void onNext(@Nullable final R r) {
-                final int pendingDemand;
+                // Write to pendingDemand BEFORE calling tryEmitItem because signalsQueued will be read by tryEmitItem
+                // and we want the value written to signalsQueued in request(..) to be visible.
+                final int pendingDemand = pendingDemandUpdater.decrementAndGet(this);
+                if (pendingDemand < 0) {
+                    handleInvalidDemand(pendingDemand, r);
+                }
                 try {
-                    parent.tryEmitItem(wrapNull(r), this);
+                    parent.tryEmitItem(wrapNull(r), true, this);
                 } finally {
-                    pendingDemand = pendingDemandUpdater.decrementAndGet(this);
                     if (pendingDemand == 0) {
                         // Emit this item to signify this Subscriber is hungry for more demand when it is available.
-                        parent.tryEmitItem(this, this);
+                        parent.tryEmitItem(this, false, this);
                     }
-                }
-                if (pendingDemand < 0) { // avoid putting this in finally block because it throws.
-                    throwInvalidDemand(pendingDemand);
                 }
             }
 
-            private void throwInvalidDemand(int pendingDemand) {
+            private void handleInvalidDemand(int pendingDemand, @Nullable final R r) {
+                // Reset pendingDemand because we want to allow for a terminal event to be propagated. This is safe
+                // because request(..) won't be called until demand is exhausted.
+                innerPendingDemand = (pendingDemand > TERMINATED) ? 0 : TERMINATED;
                 throw new IllegalStateException("Too many onNext signals for Subscriber: " + this +
-                        " pendingDemand: " + pendingDemand);
+                        " pendingDemand: " + pendingDemand + " discarding: " + r);
             }
 
             @Override
@@ -581,7 +586,7 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
                             parent.doCancel(true);
                         } finally {
                             // Emit the error to preserve ordering relative to onNext signals for this source.
-                            parent.tryEmitItem(error(t), this);
+                            parent.tryEmitItem(error(t), false, this);
                         }
                     }
                 } else {
@@ -598,23 +603,23 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
                         addPendingError(pendingErrorCountUpdater, parent,
                                 parent.source.maxDelayedErrors, currPendingError, t);
                     }
-                    if (parent.removeSubscriber(this, pendingDemandUpdater.getAndSet(this, -1))) {
+                    if (parent.removeSubscriber(this, pendingDemandUpdater.getAndSet(this, TERMINATED))) {
                         parent.enqueueAndDrain(error(currPendingError));
                     } else {
-                        parent.tryEmitItem(MAPPED_SOURCE_COMPLETE, this);
+                        parent.tryEmitItem(MAPPED_SOURCE_COMPLETE, false, this);
                     }
                 }
             }
 
             @Override
             public void onComplete() {
-                final int unusedDemand = pendingDemandUpdater.getAndSet(this, -1);
+                final int unusedDemand = pendingDemandUpdater.getAndSet(this, TERMINATED);
                 if (unusedDemand < 0) {
                     SubscriberUtils.logDuplicateTerminal(this);
                 } else if (parent.removeSubscriber(this, unusedDemand)) {
                     parent.enqueueAndDrain(complete());
                 } else {
-                    parent.tryEmitItem(MAPPED_SOURCE_COMPLETE, this);
+                    parent.tryEmitItem(MAPPED_SOURCE_COMPLETE, false, this);
                 }
             }
         }

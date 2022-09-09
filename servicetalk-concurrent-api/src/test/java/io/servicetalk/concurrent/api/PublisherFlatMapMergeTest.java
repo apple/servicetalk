@@ -25,6 +25,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.ArrayDeque;
@@ -56,7 +57,7 @@ import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.EmptySubscriptions.EMPTY_SUBSCRIPTION;
-import static io.servicetalk.utils.internal.PlatformDependent.throwException;
+import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
 import static java.lang.Math.min;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -280,6 +281,55 @@ class PublisherFlatMapMergeTest {
         publisher.onNext(1);
         publisher.onComplete();
         verify(mockSubscriber).onComplete();
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] delayError={0} mapErrorToComplete={1}")
+    @CsvSource(value = {"true,true", "true,false", "false,true", "false,false"})
+    void testDemandNotRespectedPropagatesTerminal(boolean delayError, boolean mapErrorToComplete)
+            throws InterruptedException {
+        TestSubscription upstreamSubscription = new TestSubscription();
+        publisher = new TestPublisher.Builder<Integer>()
+                .disableAutoOnSubscribe().build(subscriber1 -> {
+                    subscriber1.onSubscribe(upstreamSubscription);
+                    return subscriber1;
+                });
+        TestSubscription mappedSubscription = new TestSubscription();
+        TestPublisher<Integer> mappedPublisher = new TestPublisher.Builder<Integer>()
+                .disableAutoOnSubscribe().build(subscriber1 -> {
+                    subscriber1.onSubscribe(mappedSubscription);
+                    return subscriber1;
+                });
+        Function<Integer, Publisher<Integer>> mapper =
+                i -> mapErrorToComplete ? mappedPublisher.onErrorComplete() : mappedPublisher;
+        toSource(delayError ? publisher.flatMapMergeDelayError(mapper, 1) : publisher.flatMapMerge(mapper, 1))
+                .subscribe(subscriber);
+        Subscription subscription = subscriber.awaitSubscription();
+        subscription.request(1);
+        publisher.onNext(1);
+
+        mappedSubscription.awaitRequestN(1);
+        mappedPublisher.onNext(2);
+        assertEquals(2, subscriber.takeOnNext());
+
+        // We issued request(1) on the outer publisher and so the inner publisher is allowed to request more to avoid
+        // potential deadlocks.
+        mappedSubscription.awaitRequestN(2);
+        mappedPublisher.onNext(3);
+        assertThat(subscriber.pollOnNext(10, MILLISECONDS), is(nullValue())); // no demand means no delivery.
+        assertThat(mappedSubscription.requestedEquals(2), is(true));
+        mappedPublisher.onNext(4); // intentionally deliver an item without demand!
+        publisher.onComplete();
+
+        // Drain the item in the queue in order to have the terminal event delivered.
+        subscription.request(1);
+        assertEquals(3, subscriber.takeOnNext());
+
+        if (mapErrorToComplete) {
+            subscriber.awaitOnComplete();
+        } else {
+            assertThat(subscriber.awaitOnError(), instanceOf(IllegalStateException.class));
+        }
+        assertThat(upstreamSubscription.isCancelled(), is(!mapErrorToComplete && !delayError));
     }
 
     @Test
