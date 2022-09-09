@@ -571,8 +571,9 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
 
             private void handleInvalidDemand(int pendingDemand, @Nullable final R r) {
                 // Reset pendingDemand because we want to allow for a terminal event to be propagated. This is safe
-                // because request(..) won't be called until demand is exhausted.
-                innerPendingDemand = (pendingDemand > TERMINATED) ? 0 : TERMINATED;
+                // because request(..) won't be called until demand is exhausted. If the atomic operation fails
+                // something is wrong but don't override as it may have been terminated in another thread.
+                pendingDemandUpdater.compareAndSet(this, pendingDemand, (pendingDemand > TERMINATED) ? 0 : TERMINATED);
                 throw new IllegalStateException("Too many onNext signals for Subscriber: " + this +
                         " pendingDemand: " + pendingDemand + " discarding: " + r);
             }
