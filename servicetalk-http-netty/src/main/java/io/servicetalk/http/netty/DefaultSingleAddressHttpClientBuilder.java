@@ -483,8 +483,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         requireNonNull(factory);
         connectionFilterFactory = appendConnectionFilter(connectionFilterFactory, factory);
         strategyComputation.add(factory);
-        ifHostHeaderHttpRequesterFilter(factory);
-        ifIdleTimeoutConnectionFilter(factory);
+        checkIfHostHeaderHttpRequesterFilter(factory);
+        checkIfIdleTimeoutConnectionFilter(factory);
         return this;
     }
 
@@ -492,18 +492,18 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     public DefaultSingleAddressHttpClientBuilder<U, R> appendConnectionFilter(
             final Predicate<StreamingHttpRequest> predicate, final StreamingHttpConnectionFilterFactory factory) {
         appendConnectionFilter(toConditionalConnectionFilterFactory(predicate, factory));
-        ifHostHeaderHttpRequesterFilter(factory);
-        ifIdleTimeoutConnectionFilter(factory);
+        checkIfHostHeaderHttpRequesterFilter(factory);
+        checkIfIdleTimeoutConnectionFilter(factory);
         return this;
     }
 
-    private void ifHostHeaderHttpRequesterFilter(final Object filter) {
+    private void checkIfHostHeaderHttpRequesterFilter(final Object filter) {
         if (filter instanceof HostHeaderHttpRequesterFilter) {
             addHostHeaderFallbackFilter = false;
         }
     }
 
-    private void ifIdleTimeoutConnectionFilter(final StreamingHttpConnectionFilterFactory factory) {
+    private void checkIfIdleTimeoutConnectionFilter(final StreamingHttpConnectionFilterFactory factory) {
         if (factory instanceof IdleTimeoutConnectionFilter) {
             addIdleTimeoutConnectionFilter = false;
         }
@@ -539,13 +539,13 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> appendClientFilter(
             final Predicate<StreamingHttpRequest> predicate, final StreamingHttpClientFilterFactory factory) {
-        ifRetryingHttpRequesterFilter(factory);
+        checkIfRetryingHttpRequesterFilter(factory);
         appendClientFilter(toConditionalClientFilterFactory(predicate, factory));
-        ifHostHeaderHttpRequesterFilter(factory);
+        checkIfHostHeaderHttpRequesterFilter(factory);
         return this;
     }
 
-    private void ifRetryingHttpRequesterFilter(final StreamingHttpClientFilterFactory factory) {
+    private void checkIfRetryingHttpRequesterFilter(final StreamingHttpClientFilterFactory factory) {
         if (factory instanceof RetryingHttpRequesterFilter) {
             if (retryingHttpRequesterFilter != null) {
                 throw new IllegalStateException("Retrying HTTP requester filter was already found in " +
@@ -566,10 +566,10 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     public DefaultSingleAddressHttpClientBuilder<U, R> appendClientFilter(
             final StreamingHttpClientFilterFactory factory) {
         requireNonNull(factory);
-        ifRetryingHttpRequesterFilter(factory);
+        checkIfRetryingHttpRequesterFilter(factory);
         clientFilterFactory = appendFilter(clientFilterFactory, factory);
         strategyComputation.add(factory);
-        ifHostHeaderHttpRequesterFilter(factory);
+        checkIfHostHeaderHttpRequesterFilter(factory);
         return this;
     }
 
