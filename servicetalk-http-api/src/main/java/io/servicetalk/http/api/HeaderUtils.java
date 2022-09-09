@@ -393,7 +393,7 @@ public final class HeaderUtils {
                 break;
             }
             int nameLen = equalsIndex - start;
-            int semiIndex = indexOf(cookieString, ';', equalsIndex + 1);
+            int semiIndex = nextCookieDelimiter(cookieString, equalsIndex + 1);
             if (nameLen == cookiePairName.length() &&
                     regionMatches(cookiePairName, true, 0, cookieString, start, nameLen)) {
                 return DefaultHttpCookiePair.parseCookiePair(cookieString, start, nameLen, semiIndex);
@@ -439,7 +439,7 @@ public final class HeaderUtils {
                 break;
             }
             int nameLen = equalsIndex - start;
-            int semiIndex = indexOf(cookieString, ';', equalsIndex + 1);
+            int semiIndex = nextCookieDelimiter(cookieString, equalsIndex + 1);
             if (nameLen == cookiePairName.length() &&
                     regionMatches(cookiePairName, true, 0, cookieString, start, nameLen)) {
                 if (beginCopyIndex != start) {
@@ -535,7 +535,7 @@ public final class HeaderUtils {
          * @return the next {@link HttpCookiePair} value for {@link #next()}, or {@code null} if all have been parsed.
          */
         private HttpCookiePair findNext(CharSequence cookieHeaderValue) {
-            int semiIndex = nextDelimiter(cookieHeaderValue);
+            int semiIndex = nextCookieDelimiter(cookieHeaderValue, nextNextStart);
             HttpCookiePair next = DefaultHttpCookiePair.parseCookiePair(cookieHeaderValue, nextNextStart, semiIndex);
             if (semiIndex > 0) {
                 if (cookieHeaderValue.length() - 2 <= semiIndex) {
@@ -550,23 +550,6 @@ public final class HeaderUtils {
                 nextNextStart = 0;
             }
             return next;
-        }
-
-        private int nextDelimiter(CharSequence cookieHeaderValue) {
-            boolean inQuotes = false;
-            int len = cookieHeaderValue.length();
-            for (int i = nextNextStart; i < len; i++) {
-                char value = cookieHeaderValue.charAt(i);
-                if (value == ';') {
-                    if (inQuotes) {
-                        throw new IllegalArgumentException("The ; character cannot appear in quoted cookie values");
-                    }
-                    return i;
-                } else if (value == '"') {
-                    inQuotes = !inQuotes;
-                }
-            }
-            return -1;
         }
     }
 
@@ -642,7 +625,7 @@ public final class HeaderUtils {
                     break;
                 }
                 int nameLen = equalsIndex - nextNextStart;
-                int semiIndex = indexOf(cookieHeaderValue, ';', equalsIndex + 1);
+                int semiIndex = nextCookieDelimiter(cookieHeaderValue, equalsIndex + 1);
                 if (nameLen == cookiePairName.length() &&
                         regionMatches(cookiePairName, true, 0, cookieHeaderValue, nextNextStart, nameLen)) {
                     HttpCookiePair next = DefaultHttpCookiePair.parseCookiePair(cookieHeaderValue, nextNextStart,
@@ -677,6 +660,23 @@ public final class HeaderUtils {
             }
             return null;
         }
+    }
+
+    private static int nextCookieDelimiter(CharSequence cookieHeaderValue, int startIndex) {
+        boolean inQuotes = false;
+        int len = cookieHeaderValue.length();
+        for (int i = startIndex; i < len; i++) {
+            char value = cookieHeaderValue.charAt(i);
+            if (value == ';') {
+                if (inQuotes) {
+                    throw new IllegalArgumentException("The ; character cannot appear in quoted cookie values");
+                }
+                return i;
+            } else if (value == '"') {
+                inQuotes = !inQuotes;
+            }
+        }
+        return -1;
     }
 
     /**

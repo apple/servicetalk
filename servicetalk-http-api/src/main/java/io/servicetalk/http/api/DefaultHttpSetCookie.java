@@ -15,6 +15,8 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.buffer.api.CharSequences;
+
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.CharSequences.caseInsensitiveHashCode;
@@ -545,7 +547,7 @@ public final class DefaultHttpSetCookie implements HttpSetCookie {
     }
 
     private static boolean equalsIgnoreCaseLower(char c, char k) {
-        return c == k || c >= 'A' && c <= 'Z' && c == k - 32;
+        return CharSequences.equalsIgnoreCaseLower(c, k);
     }
 
     /**
@@ -581,6 +583,6 @@ public final class DefaultHttpSetCookie implements HttpSetCookie {
 
     private static IllegalArgumentException unexpectedHexValue(int hexValue, int index) {
         return new IllegalArgumentException(
-                "Unexpected hex value at index " + index + ": " + Integer.toHexString(hexValue));
+                "Unexpected hex value at index " + index + ": 0x" + Integer.toHexString(hexValue));
     }
 }
