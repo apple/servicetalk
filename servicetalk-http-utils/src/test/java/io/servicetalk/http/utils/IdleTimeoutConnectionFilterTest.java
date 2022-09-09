@@ -23,6 +23,7 @@ import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
 import org.junit.jupiter.api.AfterEach;
@@ -43,6 +44,7 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.StreamingHttpResponses.newResponse;
+import static java.time.Duration.ZERO;
 import static java.time.Duration.ofMillis;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -67,7 +69,6 @@ class IdleTimeoutConnectionFilterTest {
     private final TestExecutor executor = new TestExecutor();
     private final FilterableStreamingHttpConnection connection = mock(FilterableStreamingHttpConnection.class);
     private final AtomicInteger closedTimes = new AtomicInteger();
-    private final FilterableStreamingHttpConnection filteredConnection;
 
     IdleTimeoutConnectionFilterTest() {
         CompletableSource.Processor onClose = newCompletableProcessor();
@@ -79,10 +80,17 @@ class IdleTimeoutConnectionFilterTest {
         HttpExecutionContext ctx = mock(HttpExecutionContext.class);
         when(ctx.executor()).thenReturn(executor);
         when(connection.executionContext()).thenReturn(ctx);
-        filteredConnection = new IdleTimeoutConnectionFilter(ofMillis(TIMEOUT_MILLIS), executor).create(connection);
 
         when(connection.request(REQUEST_SUCCESS)).thenReturn(succeeded(RESPONSE));
         when(connection.request(REQUEST_FAIL)).thenReturn(failed(DELIBERATE_EXCEPTION));
+    }
+
+    private StreamingHttpRequester applyTimeout() {
+        return applyTimeout(ofMillis(TIMEOUT_MILLIS));
+    }
+
+    private StreamingHttpRequester applyTimeout(Duration timeout) {
+        return new IdleTimeoutConnectionFilter(timeout, executor).create(connection);
     }
 
     @AfterEach
@@ -97,19 +105,22 @@ class IdleTimeoutConnectionFilterTest {
 
     @Test
     void zeroTimeout() {
-        assertThrows(IllegalArgumentException.class, () -> new IdleTimeoutConnectionFilter(Duration.ZERO));
+        applyTimeout(ZERO);
+        executor.advanceTimeBy(TIMEOUT_MILLIS, MILLISECONDS);
+        assertNotClosed();
     }
 
     @Test
     void noRequests() {
+        StreamingHttpRequester requester = applyTimeout();
         executor.advanceTimeBy(TIMEOUT_MILLIS, MILLISECONDS);
         assertClosedOnce();
-        assertClosedChannelException();
+        assertClosedChannelException(requester);
     }
 
     @Test
     void closedManually() {
-        filteredConnection.closeAsync().subscribe();
+        applyTimeout().closeAsync().subscribe();
 
         executor.advanceTimeBy(TIMEOUT_MILLIS, MILLISECONDS);
         assertClosedOnce();
@@ -117,8 +128,9 @@ class IdleTimeoutConnectionFilterTest {
 
     @Test
     void hadSuccessfulResponse() {
+        StreamingHttpRequester requester = applyTimeout();
         executor.advanceTimeByNoExecuteTasks(TIMEOUT_MILLIS / 2, MILLISECONDS);
-        assertSuccessfulResponse();
+        assertSuccessfulResponse(requester);
 
         executor.advanceTimeBy(TIMEOUT_MILLIS / 2, MILLISECONDS);
         assertNotClosed();
@@ -126,13 +138,14 @@ class IdleTimeoutConnectionFilterTest {
         executor.advanceTimeBy(TIMEOUT_MILLIS / 2, MILLISECONDS);
         assertClosedOnce();
 
-        assertClosedChannelException();
+        assertClosedChannelException(requester);
     }
 
     @Test
     void hadFailedResponse() {
+        StreamingHttpRequester requester = applyTimeout();
         executor.advanceTimeByNoExecuteTasks(TIMEOUT_MILLIS / 2, MILLISECONDS);
-        assertFailedResponse();
+        assertFailedResponse(requester);
 
         executor.advanceTimeBy(TIMEOUT_MILLIS / 2, MILLISECONDS);
         assertNotClosed();
@@ -140,22 +153,23 @@ class IdleTimeoutConnectionFilterTest {
         executor.advanceTimeBy(TIMEOUT_MILLIS / 2, MILLISECONDS);
         assertClosedOnce();
 
-        assertClosedChannelException();
+        assertClosedChannelException(requester);
     }
 
     @Test
     void twoConcurrentRequests() {
+        StreamingHttpRequester requester = applyTimeout();
         executor.advanceTimeByNoExecuteTasks(TIMEOUT_MILLIS / 2, MILLISECONDS);
 
         // Send the 1st request that doesn't receive a response:
         Processor<StreamingHttpResponse, StreamingHttpResponse> firstResponseProcessor = newSingleProcessor();
         when(connection.request(REQUEST)).thenReturn(fromSource(firstResponseProcessor));
         TestSingleSubscriber<StreamingHttpResponse> responseSubscriber = new TestSingleSubscriber<>();
-        toSource(filteredConnection.request(REQUEST)).subscribe(responseSubscriber);
+        toSource(requester.request(REQUEST)).subscribe(responseSubscriber);
         assertThat(responseSubscriber.pollTerminal(1, MILLISECONDS), is(nullValue()));
 
         // Send the 2nd request:
-        assertSuccessfulResponse();
+        assertSuccessfulResponse(requester);
 
         executor.advanceTimeBy(TIMEOUT_MILLIS, MILLISECONDS);
         assertNotClosed();  // we still have the 1st "in-flight" request
@@ -170,17 +184,18 @@ class IdleTimeoutConnectionFilterTest {
         executor.advanceTimeBy(TIMEOUT_MILLIS / 2, MILLISECONDS);
         assertClosedOnce();
 
-        assertClosedChannelException();
+        assertClosedChannelException(requester);
     }
 
     @Test
     void inFlightRequest() {
+        StreamingHttpRequester requester = applyTimeout();
         executor.advanceTimeByNoExecuteTasks(TIMEOUT_MILLIS / 2, MILLISECONDS);
 
         Processor<StreamingHttpResponse, StreamingHttpResponse> responseProcessor = newSingleProcessor();
         when(connection.request(REQUEST)).thenReturn(fromSource(responseProcessor));
         TestSingleSubscriber<StreamingHttpResponse> responseSubscriber = new TestSingleSubscriber<>();
-        toSource(filteredConnection.request(REQUEST)).subscribe(responseSubscriber);
+        toSource(requester.request(REQUEST)).subscribe(responseSubscriber);
         assertThat(responseSubscriber.pollTerminal(1, MILLISECONDS), is(nullValue()));
 
         executor.advanceTimeBy(TIMEOUT_MILLIS, MILLISECONDS);
@@ -195,7 +210,7 @@ class IdleTimeoutConnectionFilterTest {
         executor.advanceTimeBy(TIMEOUT_MILLIS / 2, MILLISECONDS);
         assertClosedOnce();
 
-        assertClosedChannelException();
+        assertClosedChannelException(requester);
     }
 
     private void assertClosedOnce() {
@@ -206,9 +221,9 @@ class IdleTimeoutConnectionFilterTest {
         assertThat(closedTimes.get(), is(0));
     }
 
-    private void assertSuccessfulResponse() {
+    private static void assertSuccessfulResponse(StreamingHttpRequester requester) {
         TestSingleSubscriber<StreamingHttpResponse> responseSubscriber = new TestSingleSubscriber<>();
-        toSource(filteredConnection.request(REQUEST_SUCCESS)).subscribe(responseSubscriber);
+        toSource(requester.request(REQUEST_SUCCESS)).subscribe(responseSubscriber);
         assertResponse(responseSubscriber);
     }
 
@@ -219,15 +234,15 @@ class IdleTimeoutConnectionFilterTest {
         response.payloadBody().ignoreElements().subscribe();
     }
 
-    private void assertFailedResponse() {
+    private static void assertFailedResponse(StreamingHttpRequester requester) {
         TestSingleSubscriber<StreamingHttpResponse> responseSubscriber = new TestSingleSubscriber<>();
-        toSource(filteredConnection.request(REQUEST_FAIL)).subscribe(responseSubscriber);
+        toSource(requester.request(REQUEST_FAIL)).subscribe(responseSubscriber);
         assertThat(responseSubscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
     }
 
-    private void assertClosedChannelException() {
+    private static void assertClosedChannelException(StreamingHttpRequester requester) {
         TestSingleSubscriber<StreamingHttpResponse> responseSubscriber = new TestSingleSubscriber<>();
-        toSource(filteredConnection.request(REQUEST)).subscribe(responseSubscriber);
+        toSource(requester.request(REQUEST)).subscribe(responseSubscriber);
         assertThat(responseSubscriber.awaitOnError(), instanceOf(ClosedChannelException.class));
     }
 }
