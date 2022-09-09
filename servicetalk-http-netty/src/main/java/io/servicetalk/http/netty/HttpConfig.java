@@ -15,13 +15,12 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.http.api.Http2Settings;
 import io.servicetalk.http.api.HttpProtocolConfig;
 
 import java.util.List;
+import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
-import static io.netty.handler.codec.http2.Http2CodecUtil.SETTINGS_ENABLE_PUSH;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
@@ -30,6 +29,7 @@ import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 
 final class HttpConfig {
+    private final Consumer<H2ProtocolConfig> h2ConfigValidator;
     @Nullable
     private H1ProtocolConfig h1Config;
     @Nullable
@@ -37,13 +37,15 @@ final class HttpConfig {
     private List<String> supportedAlpnProtocols;
     private boolean allowDropTrailers;
 
-    HttpConfig() {
+    HttpConfig(final Consumer<H2ProtocolConfig> h2ConfigValidator) {
+        this.h2ConfigValidator = requireNonNull(h2ConfigValidator);
         h1Config = h1Default();
         h2Config = null;
         supportedAlpnProtocols = emptyList();
     }
 
     HttpConfig(final HttpConfig from) {
+        this.h2ConfigValidator = from.h2ConfigValidator;
         this.h1Config = from.h1Config;
         this.h2Config = from.h2Config;
         this.supportedAlpnProtocols = from.supportedAlpnProtocols;
@@ -107,12 +109,7 @@ final class HttpConfig {
         if (this.h2Config != null) {
             throw new IllegalArgumentException("Duplicated configuration for HTTP/2 was found");
         }
-        final Http2Settings settings = h2Config.initialSettings();
-        final Long pushEnabled = settings.settingValue(SETTINGS_ENABLE_PUSH);
-        if (pushEnabled != null && pushEnabled != 0) {
-            throw new IllegalArgumentException("Http2Settings push is enabled but not supported. settings=" + settings);
-        }
-
+        h2ConfigValidator.accept(h2Config);
         this.h2Config = h2Config;
         supportedAlpnProtocols = h1Config == null ? singletonList(h2Config.alpnId()) :
                 unmodifiableList(asList(h1Config.alpnId(), h2Config.alpnId()));

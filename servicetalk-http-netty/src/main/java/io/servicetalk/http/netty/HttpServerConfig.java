@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.http.api.Http2Settings;
 import io.servicetalk.http.api.HttpLifecycleObserver;
 import io.servicetalk.tcp.netty.internal.TcpServerConfig;
 import io.servicetalk.transport.api.DelegatingServerSslConfig;
@@ -26,6 +27,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import javax.annotation.Nullable;
 
+import static io.netty.handler.codec.http2.Http2CodecUtil.SETTINGS_ENABLE_PUSH;
 import static java.util.Objects.requireNonNull;
 
 final class HttpServerConfig {
@@ -37,7 +39,14 @@ final class HttpServerConfig {
 
     HttpServerConfig() {
         tcpConfig = new TcpServerConfig();
-        httpConfig = new HttpConfig();
+        httpConfig = new HttpConfig(h2Config -> {
+            final Http2Settings settings = h2Config.initialSettings();
+            final Long pushEnabled = settings.settingValue(SETTINGS_ENABLE_PUSH);
+            if (pushEnabled != null && pushEnabled != 0) {
+                throw new IllegalArgumentException(
+                        "Server cannot set SETTINGS_ENABLE_PUSH value other than 0, settings=" + settings);
+            }
+        });
     }
 
     TcpServerConfig tcpConfig() {
