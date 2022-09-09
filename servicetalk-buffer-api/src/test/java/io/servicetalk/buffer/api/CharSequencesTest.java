@@ -22,6 +22,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.function.Function;
 
+import static io.servicetalk.buffer.api.CharSequences.indexOf;
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.buffer.api.CharSequences.split;
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
@@ -204,5 +205,28 @@ class CharSequencesTest {
         Buffer buffer = DEFAULT_RO_ALLOCATOR.fromAscii("text42text");
         assertThat("Unexpected result for AsciiBuffer representation",
                 CharSequences.parseLong(newAsciiString(buffer.slice(4, 2))), is(42L));
+    }
+
+    @Test
+    void indexOfAsciiString() {
+        testIndexOf(newAsciiString("text42text"));
+    }
+
+    @Test
+    void indexOfString() {
+        testIndexOf("text42text");
+    }
+
+    @Test
+    void indexOfStringBuilder() {
+        testIndexOf(new StringBuilder().append("text42text"));
+    }
+
+    private static void testIndexOf(CharSequence cs) {
+        assertThat(indexOf(cs, '5', 0), is(-1));
+        assertThat(indexOf(cs, '2', cs.length() - 3), is(-1));
+        assertThat(indexOf(cs, '2', 0), is(5));
+        char twoBytesChar = ('2' << 8) | '2';
+        assertThat(indexOf(cs, twoBytesChar, 0), is(-1));
     }
 }
