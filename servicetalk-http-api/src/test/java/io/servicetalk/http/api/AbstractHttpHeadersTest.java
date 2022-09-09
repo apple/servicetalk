@@ -16,13 +16,16 @@
 package io.servicetalk.http.api;
 
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.Set;
@@ -258,13 +261,32 @@ public abstract class AbstractHttpHeadersTest {
 
     @Test
     void testAddHeadersSlowPath() {
-        final HttpHeaders headers = new ReadOnlyHttpHeaders("name", "value");
+        // Using mocks here, because it's important for the test that 'headers' is not a MultiMap subclass.
+        final HttpHeaders headers = Mockito.mock(HttpHeaders.class);
+        Mockito.when(headers.iterator()).thenAnswer(inv -> {
+            return Collections.singletonList(new Map.Entry<CharSequence, CharSequence>() {
+                @Override
+                public CharSequence getKey() {
+                    return "name";
+                }
+
+                @Override
+                public CharSequence getValue() {
+                    return "value";
+                }
+
+                @Override
+                public CharSequence setValue(CharSequence value) {
+                    throw new UnsupportedOperationException();
+                }
+            }).iterator();
+        });
 
         final HttpHeaders headers2 = newHeaders().add(headers);
 
         assertTrue(headers2.contains("name", "value"));
         assertFalse(headers2.contains("name", "value1"));
-        assertEquals(headers, headers2);
+        assertEquals(newHeaders().add("name", "value"), headers2);
     }
 
     @Test
