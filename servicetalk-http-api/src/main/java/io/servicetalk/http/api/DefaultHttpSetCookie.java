@@ -15,13 +15,12 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.buffer.api.CharSequences;
-
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.CharSequences.caseInsensitiveHashCode;
 import static io.servicetalk.buffer.api.CharSequences.contentEquals;
 import static io.servicetalk.buffer.api.CharSequences.contentEqualsIgnoreCase;
+import static io.servicetalk.buffer.api.CharSequences.equalsIgnoreCaseLower;
 import static io.servicetalk.buffer.api.CharSequences.parseLong;
 import static io.servicetalk.http.api.HeaderUtils.validateCookieNameAndValue;
 import static io.servicetalk.http.api.HeaderUtils.validateToken;
@@ -544,10 +543,6 @@ public final class DefaultHttpSetCookie implements HttpSetCookie {
                 break;
         }
         return null;
-    }
-
-    private static boolean equalsIgnoreCaseLower(char c, char k) {
-        return CharSequences.equalsIgnoreCaseLower(c, k);
     }
 
     /**
