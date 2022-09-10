@@ -38,6 +38,9 @@ import static io.servicetalk.http.api.BlockingStreamingHttpMessageBodyUtils.newM
 final class DefaultBlockingStreamingHttpRequest extends AbstractDelegatingHttpRequest
         implements BlockingStreamingHttpRequest {
 
+    @Nullable
+    private InputStream inputStream;
+
     DefaultBlockingStreamingHttpRequest(final DefaultStreamingHttpRequest original) {
         super(original);
     }
@@ -154,6 +157,14 @@ final class DefaultBlockingStreamingHttpRequest extends AbstractDelegatingHttpRe
     @Override
     public BlockingIterable<Buffer> payloadBody() {
         return original.payloadBody().toIterable();
+    }
+
+    @Override
+    public InputStream payloadBodyInputStream() {
+        if (inputStream == null) {
+            inputStream = BlockingStreamingHttpRequest.super.payloadBodyInputStream();
+        }
+        return inputStream;
     }
 
     @Override
