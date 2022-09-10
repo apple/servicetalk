@@ -283,10 +283,44 @@ class PublisherFlatMapMergeTest {
         verify(mockSubscriber).onComplete();
     }
 
+    @ParameterizedTest(name = "{displayName} [{index}] delayError={0} queuedSignals={1}")
+    @CsvSource(value = {"true,true", "true,false", "false,true", "false,false"})
+    void testInvalidDemand(boolean delayError, boolean queuedSignals) throws InterruptedException {
+        final int firstItem = 1;
+        Publisher<Integer> publisher = Publisher.range(firstItem, firstItem + 10);
+        TestSubscription mappedSubscription = new TestSubscription();
+        TestPublisher<Integer> mappedPublisher = new TestPublisher.Builder<Integer>()
+                .disableAutoOnSubscribe().build(subscriber1 -> {
+                    subscriber1.onSubscribe(mappedSubscription);
+                    return subscriber1;
+                });
+        Function<Integer, Publisher<Integer>> mapper = i -> i == firstItem ? mappedPublisher : never();
+        toSource(delayError ? publisher.flatMapMergeDelayError(mapper, 1) : publisher.flatMapMerge(mapper, 1))
+                .subscribe(subscriber);
+        Subscription subscription = subscriber.awaitSubscription();
+        subscription.request(1);
+
+        mappedSubscription.awaitRequestN(1);
+        mappedPublisher.onNext(2);
+        assertEquals(2, subscriber.takeOnNext());
+
+        if (queuedSignals) {
+            // We issued request(1) on the outer publisher and so the inner publisher is allowed to request more to
+            // avoid potential deadlocks.
+            mappedSubscription.awaitRequestN(2);
+            mappedPublisher.onNext(3);
+        }
+
+        subscription.request(-1);
+
+        assertThat(subscriber.awaitOnError(), instanceOf(IllegalArgumentException.class));
+    }
+
     @ParameterizedTest(name = "{displayName} [{index}] delayError={0} mapErrorToComplete={1}")
     @CsvSource(value = {"true,true", "true,false", "false,true", "false,false"})
     void testDemandNotRespectedPropagatesTerminal(boolean delayError, boolean mapErrorToComplete)
             throws InterruptedException {
+        final int firstItem = 1;
         TestSubscription upstreamSubscription = new TestSubscription();
         publisher = new TestPublisher.Builder<Integer>()
                 .disableAutoOnSubscribe().build(subscriber1 -> {
@@ -299,13 +333,15 @@ class PublisherFlatMapMergeTest {
                     subscriber1.onSubscribe(mappedSubscription);
                     return subscriber1;
                 });
-        Function<Integer, Publisher<Integer>> mapper =
-                i -> mapErrorToComplete ? mappedPublisher.onErrorComplete() : mappedPublisher;
+        Function<Integer, Publisher<Integer>> mapper = i -> i == firstItem ?
+                (mapErrorToComplete ? mappedPublisher.onErrorComplete() : mappedPublisher) :
+                never();
         toSource(delayError ? publisher.flatMapMergeDelayError(mapper, 1) : publisher.flatMapMerge(mapper, 1))
                 .subscribe(subscriber);
         Subscription subscription = subscriber.awaitSubscription();
         subscription.request(1);
-        publisher.onNext(1);
+        upstreamSubscription.awaitRequestN(1);
+        publisher.onNext(firstItem);
 
         mappedSubscription.awaitRequestN(1);
         mappedPublisher.onNext(2);
