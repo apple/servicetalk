@@ -237,6 +237,13 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
             }
         }
 
+        /**
+         * Process an error while holding the {@link #emitting} lock. We cannot re-throw here because sources have
+         * already terminated. This means the source cannot deliver another terminal or else it will violate the
+         * reactive stream spec. The best we can do is cancel upstream and mapped subscribers, and propagate the error
+         * downstream.
+         * @param cause The cause that occurred while delivering signals down stream.
+         */
         private void onErrorHoldingLock(Throwable cause) {
             try {
                 doCancel(true);
@@ -372,17 +379,31 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
 
             @Override
             public void onSuccess(@Nullable R result) {
+                if (singleCancellable == null) {
+                    SubscriberUtils.logDuplicateTerminalOnSuccess(this, result);
+                    return;
+                }
+                cancellableSet.remove(singleCancellable);
+                singleCancellable = null;
+
                 // First enqueue the result and then decrement active count. Since onComplete() checks for active count,
                 // if we decrement count before enqueuing, onComplete() may emit the terminal event without emitting
                 // the result.
                 tryEmitItem(wrapNull(result));
-                if (onSingleTerminated()) {
+                if (decrementActiveMappedSources()) {
                     enqueueAndDrain(complete());
                 }
             }
 
             @Override
             public void onError(Throwable t) {
+                if (singleCancellable == null) {
+                    SubscriberUtils.logDuplicateTerminal(this, t);
+                    return;
+                }
+                cancellableSet.remove(singleCancellable);
+                singleCancellable = null;
+
                 Throwable currPendingError = pendingError;
                 if (source.maxDelayedErrors == 0) {
                     if (currPendingError == null &&
@@ -403,23 +424,13 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
                         addPendingError(pendingErrorCountUpdater, FlatMapSubscriber.this, source.maxDelayedErrors,
                                 currPendingError, t);
                     }
-                    if (onSingleTerminated()) {
+                    if (decrementActiveMappedSources()) {
                         enqueueAndDrain(error(currPendingError));
                     } else {
                         // Queueing/draining may result in requestN more data.
                         tryEmitItem(SINGLE_ERROR);
                     }
                 }
-            }
-
-            private boolean onSingleTerminated() {
-                if (singleCancellable == null) {
-                    SubscriberUtils.logDuplicateTerminal(this);
-                    return false;
-                }
-                cancellableSet.remove(singleCancellable);
-                singleCancellable = null;
-                return decrementActiveMappedSources();
             }
         }
     }

@@ -25,6 +25,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.ArrayDeque;
@@ -220,21 +221,36 @@ class PublisherFlatMapSingleTest {
         assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
-    @Test
-    void testDuplicateTerminal() {
+    @ParameterizedTest(name = "{displayName} [{index}] errorFirst={0} errorSecond={1}")
+    @CsvSource(value = {"true,true", "true,false", "false,true", "false,false"})
+    void testDuplicateTerminal(boolean errorFirst, boolean errorSecond) {
         SingleSource<Integer> single = subscriber -> {
             subscriber.onSubscribe(IGNORE_CANCEL);
-            subscriber.onSuccess(2);
+            if (errorFirst) {
+                subscriber.onError(DELIBERATE_EXCEPTION);
+            } else {
+                subscriber.onSuccess(2);
+            }
+
             // intentionally violate the RS spec to verify the operator's behavior.
             // [1] https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#1.7
-            subscriber.onSuccess(3);
+            if (errorSecond) {
+                subscriber.onError(new IllegalStateException("duplicate terminal should be discarded!"));
+            } else {
+                subscriber.onSuccess(3);
+            }
         };
         @SuppressWarnings("unchecked")
         Subscriber<Integer> mockSubscriber = mock(Subscriber.class);
         toSource(source.flatMapMergeSingle(integer1 -> fromSource(single), 2)).subscribe(mockSubscriber);
         source.onNext(1);
-        source.onComplete();
-        verify(mockSubscriber).onComplete();
+
+        if (errorFirst) {
+            verify(mockSubscriber).onError(DELIBERATE_EXCEPTION);
+        } else {
+            source.onComplete();
+            verify(mockSubscriber).onComplete();
+        }
     }
 
     @Test

@@ -338,7 +338,18 @@ public final class SubscriberUtils {
      * @param <T> The type of {@link PublisherSource.Subscriber}.
      */
     public static <T> void logDuplicateTerminal(PublisherSource.Subscriber<T> subscriber) {
-        logDuplicateTerminal0(subscriber);
+        logDuplicateTerminal0(subscriber, null);
+    }
+
+    /**
+     * Log if the ReactiveStreams specification has been violated related to out of order
+     * {@link PublisherSource.Subscriber#onSubscribe(PublisherSource.Subscription)} or duplicate terminal signals.
+     * @param subscriber The {@link PublisherSource.Subscriber}.
+     * @param cause The cause from {@link PublisherSource.Subscriber#onError(Throwable)}.
+     * @param <T> The type of {@link PublisherSource.Subscriber}.
+     */
+    public static <T> void logDuplicateTerminal(PublisherSource.Subscriber<T> subscriber, Throwable cause) {
+        logDuplicateTerminal0(subscriber, cause);
     }
 
     /**
@@ -348,15 +359,37 @@ public final class SubscriberUtils {
      * @param <T> The type of {@link SingleSource.Subscriber}.
      */
     public static <T> void logDuplicateTerminal(SingleSource.Subscriber<T> subscriber) {
-        logDuplicateTerminal0(subscriber);
+        logDuplicateTerminal0(subscriber, null);
     }
 
-    private static void logDuplicateTerminal0(Object subscriber) {
+    /**
+     * Log if the ReactiveStreams specification has been violated related to out of order
+     * {@link SingleSource.Subscriber#onSubscribe(Cancellable)} or duplicate terminal signals.
+     * @param subscriber The {@link SingleSource.Subscriber}.
+     * @param onSuccess The signal delivered to {@link SingleSource.Subscriber#onSuccess(Object)}.
+     * @param <T> The type of {@link SingleSource.Subscriber}.
+     */
+    public static <T> void logDuplicateTerminalOnSuccess(SingleSource.Subscriber<T> subscriber, @Nullable T onSuccess) {
+        logDuplicateTerminal0(subscriber, new IllegalStateException("ignoring onSuccess: " + onSuccess));
+    }
+
+    /**
+     * Log if the ReactiveStreams specification has been violated related to out of order
+     * {@link SingleSource.Subscriber#onSubscribe(Cancellable)} or duplicate terminal signals.
+     * @param subscriber The {@link SingleSource.Subscriber}.
+     * @param cause The cause from {@link SingleSource.Subscriber#onError(Throwable)}.
+     * @param <T> The type of {@link SingleSource.Subscriber}.
+     */
+    public static <T> void logDuplicateTerminal(SingleSource.Subscriber<T> subscriber, Throwable cause) {
+        logDuplicateTerminal0(subscriber, cause);
+    }
+
+    private static void logDuplicateTerminal0(Object subscriber, @Nullable Throwable cause) {
         LOGGER.warn("onSubscribe not called before terminal or duplicate terminal on Subscriber {}", subscriber,
                 new IllegalStateException(
                         "onSubscribe not called before terminal or duplicate terminal on Subscriber " + subscriber +
                         " forbidden see: " +
                         "https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#1.9" +
-                        "https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#1.7"));
+                        "https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#1.7", cause));
     }
 }
