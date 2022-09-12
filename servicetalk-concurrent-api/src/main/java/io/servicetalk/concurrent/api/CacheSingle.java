@@ -18,6 +18,7 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.internal.ArrayUtils;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
+import io.servicetalk.concurrent.internal.SubscriberUtils;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 import io.servicetalk.context.api.ContextMap;
 
@@ -293,7 +294,7 @@ final class CacheSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
                         break;
                     }
                 } else {
-                    logDuplicateTerminal(this);
+                    SubscriberUtils.logDuplicateTerminalOnSuccess(this, result);
                     break;
                 }
             }
@@ -318,7 +319,7 @@ final class CacheSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
                         break;
                     }
                 } else {
-                    logDuplicateTerminal(this);
+                    logDuplicateTerminal(this, t);
                     break;
                 }
             }
