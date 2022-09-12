@@ -67,7 +67,7 @@ public interface H2ProtocolConfig extends HttpProtocolConfig {
      * @return the {@link Http2Settings} that provides a hint for the initial settings. Note that some settings may be
      * ignored if not supported (e.g. push promise).
      */
-    default Http2Settings initialSettings() {   // FIXME: 0.43 - considere remoting default impl
+    default Http2Settings initialSettings() {   // FIXME: 0.43 - consider removing default impl
         throw new UnsupportedOperationException("H2ProtocolConfig#initialSettings() is not supported by " + getClass());
     }
 
@@ -83,7 +83,7 @@ public interface H2ProtocolConfig extends HttpProtocolConfig {
      * streams (if flow control windows become constrained).
      * @return number of bytes.
      */
-    default int flowControlQuantum() {   // FIXME: 0.43 - considere remoting default impl
+    default int flowControlQuantum() {   // FIXME: 0.43 - consider removing default impl
         throw new UnsupportedOperationException("H2ProtocolConfig#flowControlQuantum() is not supported by " +
                 getClass());
     }
@@ -95,7 +95,7 @@ public interface H2ProtocolConfig extends HttpProtocolConfig {
      * avoid a single stream consuming all the flow control credits.
      * @return The number of bytes to increment the local flow control window for the connection.
      */
-    default int flowControlWindowIncrement() {   // FIXME: 0.43 - considere remoting default impl
+    default int flowControlWindowIncrement() {   // FIXME: 0.43 - consider removing default impl
         throw new UnsupportedOperationException("H2ProtocolConfig#flowControlWindowIncrement() is not supported by " +
                 getClass());
     }
