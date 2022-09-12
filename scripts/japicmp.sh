@@ -67,7 +67,7 @@ XSLTDOC
 MVN_REPO="$(mvn help:evaluate -Dexpression=settings.localRepository -q -DforceStdout)"
 
 JAVA_VERSION=$(./gradlew --no-daemon -version | grep ^JVM: | awk -F\. '{gsub(/^JVM:[ \t]*/,"",$1); print $1"."$2}')
-JAPICMP_VERSION="0.15.3"
+JAPICMP_VERSION="0.16.0"
 JAR_DIR="${MVN_REPO}/com/github/siom79/japicmp/japicmp/${JAPICMP_VERSION}"
 JAR_FILE="${JAR_DIR}/japicmp-${JAPICMP_VERSION}-jar-with-dependencies.jar"
 if [ ! -f "${JAR_FILE}" ]; then
@@ -83,7 +83,7 @@ GROUP_ID="${3:-$(./gradlew properties | grep '^group: ' | cut -f 2 -d ' ')}"
 BUILD_DIR="${4:-build}"
 
 GROUP_PATH=$(echo "${GROUP_ID}" | tr '.' '/')
-BASEPATH="${MVN_REPO}/${GROUP_PATH}/"
+BASEPATH="${MVN_REPO}/${GROUP_PATH}"
 
 if [ -z "${OLD_ST_VERSION}" ]; then
   echo "# Error: Old version not specified."
