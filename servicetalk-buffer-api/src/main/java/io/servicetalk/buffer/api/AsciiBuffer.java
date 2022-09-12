@@ -114,10 +114,7 @@ final class AsciiBuffer implements CharSequence {
      * @throws NullPointerException if {@code subString} is {@code null}.
      */
     int indexOf(char ch, int start) {
-        if (!singleByte(ch)) {
-            return -1;
-        }
-        return buffer.indexOf(start, buffer.writerIndex(), (byte) ch);
+        return singleByte(ch) ? buffer.indexOf(start, buffer.writerIndex(), (byte) ch) : -1;
     }
 
     private static boolean singleByte(char ch) {
