@@ -67,7 +67,9 @@ public interface H2ProtocolConfig extends HttpProtocolConfig {
      * @return the {@link Http2Settings} that provides a hint for the initial settings. Note that some settings may be
      * ignored if not supported (e.g. push promise).
      */
-    Http2Settings initialSettings();
+    default Http2Settings initialSettings() {   // FIXME: 0.43 - considere remoting default impl
+        throw new UnsupportedOperationException("H2ProtocolConfig#initialSettings() is not supported by " + getClass());
+    }
 
     /**
      * Provide a hint on the number of bytes that the flow controller will attempt to give to a stream for each
@@ -81,7 +83,10 @@ public interface H2ProtocolConfig extends HttpProtocolConfig {
      * streams (if flow control windows become constrained).
      * @return number of bytes.
      */
-    int flowControlQuantum();
+    default int flowControlQuantum() {   // FIXME: 0.43 - considere remoting default impl
+        throw new UnsupportedOperationException("H2ProtocolConfig#flowControlQuantum() is not supported by " +
+                getClass());
+    }
 
     /**
      * Number of bytes to increment via <a href="https://www.rfc-editor.org/rfc/rfc7540#section-6.9">WINDOW_UPDATE</a>
@@ -90,7 +95,10 @@ public interface H2ProtocolConfig extends HttpProtocolConfig {
      * avoid a single stream consuming all the flow control credits.
      * @return The number of bytes to increment the local flow control window for the connection.
      */
-    int flowControlWindowIncrement();
+    default int flowControlWindowIncrement() {   // FIXME: 0.43 - considere remoting default impl
+        throw new UnsupportedOperationException("H2ProtocolConfig#flowControlWindowIncrement() is not supported by " +
+                getClass());
+    }
 
     /**
      * A policy for sending <a href="https://tools.ietf.org/html/rfc7540#section-6.7">PING frames</a> to the peer.
