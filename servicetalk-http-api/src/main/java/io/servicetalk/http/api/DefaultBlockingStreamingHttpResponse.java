@@ -25,6 +25,7 @@ import java.io.InputStream;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.defer;
 import static io.servicetalk.concurrent.api.Publisher.from;
@@ -35,6 +36,9 @@ import static io.servicetalk.http.api.BlockingStreamingHttpMessageBodyUtils.newM
 final class DefaultBlockingStreamingHttpResponse extends AbstractDelegatingHttpResponse
         implements BlockingStreamingHttpResponse {
 
+    @Nullable
+    private InputStream inputStream;
+
     DefaultBlockingStreamingHttpResponse(final DefaultStreamingHttpResponse original) {
         super(original);
     }
@@ -42,6 +46,14 @@ final class DefaultBlockingStreamingHttpResponse extends AbstractDelegatingHttpR
     @Override
     public BlockingIterable<Buffer> payloadBody() {
         return original.payloadBody().toIterable();
+    }
+
+    @Override
+    public InputStream payloadBodyInputStream() {
+        if (inputStream == null) {
+            inputStream = BlockingStreamingHttpResponse.super.payloadBodyInputStream();
+        }
+        return inputStream;
     }
 
     @Override

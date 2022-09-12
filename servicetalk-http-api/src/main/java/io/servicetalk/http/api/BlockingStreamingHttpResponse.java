@@ -38,7 +38,7 @@ public interface BlockingStreamingHttpResponse extends HttpResponseMetaData {
     BlockingIterable<Buffer> payloadBody();
 
     /**
-     * Gets the underlying payload as a {@link InputStream}.
+     * Gets the underlying payload as an {@link InputStream}.
      * @return The {@link InputStream} representation of the underlying payload body.
      */
     default InputStream payloadBodyInputStream() {
