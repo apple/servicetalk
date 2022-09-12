@@ -211,7 +211,9 @@ public final class CharSequences {
      * @param c The character to find.
      * @param fromIndex The index to start searching (inclusive).
      * @return The index of {@code c} or {@code -1} otherwise.
+     * @deprecated Use {@link #indexOf(CharSequence, char, int)}.
      */
+    @Deprecated // FIXME: 0.43 - make this method private
     public static int asciiStringIndexOf(final CharSequence sequence, char c, int fromIndex) {
         return ((AsciiBuffer) sequence).indexOf(c, fromIndex);
     }
