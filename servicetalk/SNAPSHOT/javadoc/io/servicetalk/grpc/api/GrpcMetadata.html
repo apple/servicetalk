@@ -91,7 +91,7 @@ loadScripts(document, 'script');</script>
 <section class="method-summary" id="method-summary">
 <h2>Method Summary</h2>
 <div id="method-summary-table">
-<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab3" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab3', 3)" class="table-tab">Abstract Methods</button><button id="method-summary-table-tab6" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab6', 3)" class="table-tab">Deprecated Methods</button></div>
+<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab3" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab3', 3)" class="table-tab">Abstract Methods</button><button id="method-summary-table-tab5" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab5', 3)" class="table-tab">Default Methods</button><button id="method-summary-table-tab6" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab6', 3)" class="table-tab">Deprecated Methods</button></div>
 <div id="method-summary-table.tabpanel" role="tabpanel">
 <div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
 <div class="table-header col-first">Modifier and Type</div>
@@ -103,6 +103,18 @@ loadScripts(document, 'script');</script>
 <div class="block"><span class="deprecated-label">Deprecated.</span>
 <div class="deprecation-comment">Use <a href="MethodDescriptor.html#httpPath()"><code>MethodDescriptor.httpPath()</code></a>.</div>
 </div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api">ContextMap</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#requestContext()" class="member-name-link">requestContext</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
+<div class="block">A request context associated with this <a href="GrpcMetadata.html" title="interface in io.servicetalk.grpc.api"><code>GrpcMetadata</code></a> that translates into
+ <a href="../../http/api/HttpMetaData.html#context()"><code>HttpMetaData.context()</code></a>.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api">ContextMap</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#responseContext()" class="member-name-link">responseContext</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
+<div class="block">A response context associated with this <a href="GrpcMetadata.html" title="interface in io.servicetalk.grpc.api"><code>GrpcMetadata</code></a> that translates into
+ <a href="../../http/api/HttpMetaData.html#context()"><code>HttpMetaData.context()</code></a>.</div>
 </div>
 </div>
 </div>
@@ -130,6 +142,38 @@ loadScripts(document, 'script');</script>
 <dl class="notes">
 <dt>Returns:</dt>
 <dd>The path for the associated <a href="https://www.grpc.io">gRPC</a> method.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="requestContext()">
+<h3>requestContext</h3>
+<div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api">ContextMap</a></span>&nbsp;<span class="element-name">requestContext</span>()</div>
+<div class="block">A request context associated with this <a href="GrpcMetadata.html" title="interface in io.servicetalk.grpc.api"><code>GrpcMetadata</code></a> that translates into
+ <a href="../../http/api/HttpMetaData.html#context()"><code>HttpMetaData.context()</code></a>.
+ <p>
+ Context can be used to associate a state with a request without serializing its state on the wire or transmit a
+ state between HTTP and gRPC layers.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>a request context associated with this <a href="GrpcMetadata.html" title="interface in io.servicetalk.grpc.api"><code>GrpcMetadata</code></a> that translates into
+ <a href="../../http/api/HttpMetaData.html#context()"><code>HttpMetaData.context()</code></a>.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="responseContext()">
+<h3>responseContext</h3>
+<div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api">ContextMap</a></span>&nbsp;<span class="element-name">responseContext</span>()</div>
+<div class="block">A response context associated with this <a href="GrpcMetadata.html" title="interface in io.servicetalk.grpc.api"><code>GrpcMetadata</code></a> that translates into
+ <a href="../../http/api/HttpMetaData.html#context()"><code>HttpMetaData.context()</code></a>.
+ <p>
+ Context can be used to associate a state with a response without serializing its state on the wire or transmit a
+ state between HTTP and gRPC layers.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>a response context associated with this <a href="GrpcMetadata.html" title="interface in io.servicetalk.grpc.api"><code>GrpcMetadata</code></a> that translates into
+ <a href="../../http/api/HttpMetaData.html#context()"><code>HttpMetaData.context()</code></a>.</dd>
 </dl>
 </section>
 </li>

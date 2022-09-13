@@ -102,7 +102,7 @@ extends <a href="../../concurrent/GracefulAutoCloseable.html" title="interface i
 <section class="method-summary" id="method-summary">
 <h2>Method Summary</h2>
 <div id="method-summary-table">
-<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab1" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab1', 3)" class="table-tab">Static Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab3" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab3', 3)" class="table-tab">Abstract Methods</button><button id="method-summary-table-tab5" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab5', 3)" class="table-tab">Default Methods</button></div>
+<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab1" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab1', 3)" class="table-tab">Static Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab3" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab3', 3)" class="table-tab">Abstract Methods</button><button id="method-summary-table-tab5" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab5', 3)" class="table-tab">Default Methods</button><button id="method-summary-table-tab6" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab6', 3)" class="table-tab">Deprecated Methods</button></div>
 <div id="method-summary-table.tabpanel" role="tabpanel">
 <div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
 <div class="table-header col-first">Modifier and Type</div>
@@ -111,18 +111,27 @@ extends <a href="../../concurrent/GracefulAutoCloseable.html" title="interface i
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default void</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#close()" class="member-name-link">close</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">&nbsp;</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#handle(io.servicetalk.grpc.api.GrpcServiceContext,Req,io.servicetalk.grpc.api.GrpcPayloadWriter)" class="member-name-link">handle</a><wbr>(<a href="GrpcServiceContext.html" title="interface in io.servicetalk.grpc.api">GrpcServiceContext</a>&nbsp;ctx,
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#handle(io.servicetalk.grpc.api.GrpcServiceContext,Req,io.servicetalk.grpc.api.BlockingStreamingGrpcServerResponse)" class="member-name-link">handle</a><wbr>(<a href="GrpcServiceContext.html" title="interface in io.servicetalk.grpc.api">GrpcServiceContext</a>&nbsp;ctx,
  <a href="GrpcRoutes.BlockingResponseStreamingRoute.html" title="type parameter in GrpcRoutes.BlockingResponseStreamingRoute">Req</a>&nbsp;request,
- <a href="GrpcPayloadWriter.html" title="interface in io.servicetalk.grpc.api">GrpcPayloadWriter</a>&lt;<a href="GrpcRoutes.BlockingResponseStreamingRoute.html" title="type parameter in GrpcRoutes.BlockingResponseStreamingRoute">Resp</a>&gt;&nbsp;responseWriter)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+ <a href="BlockingStreamingGrpcServerResponse.html" title="interface in io.servicetalk.grpc.api">BlockingStreamingGrpcServerResponse</a>&lt;<a href="GrpcRoutes.BlockingResponseStreamingRoute.html" title="type parameter in GrpcRoutes.BlockingResponseStreamingRoute">Resp</a>&gt;&nbsp;response)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
 <div class="block">Handles the passed <a href="GrpcRoutes.BlockingResponseStreamingRoute.html" title="interface in io.servicetalk.grpc.api"><code>GrpcRoutes.BlockingResponseStreamingRoute</code></a>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab1"><code>static &lt;Req,<wbr>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code>void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code><a href="#handle(io.servicetalk.grpc.api.GrpcServiceContext,Req,io.servicetalk.grpc.api.GrpcPayloadWriter)" class="member-name-link">handle</a><wbr>(<a href="GrpcServiceContext.html" title="interface in io.servicetalk.grpc.api">GrpcServiceContext</a>&nbsp;ctx,
+ <a href="GrpcRoutes.BlockingResponseStreamingRoute.html" title="type parameter in GrpcRoutes.BlockingResponseStreamingRoute">Req</a>&nbsp;request,
+ <a href="GrpcPayloadWriter.html" title="interface in io.servicetalk.grpc.api">GrpcPayloadWriter</a>&lt;<a href="GrpcRoutes.BlockingResponseStreamingRoute.html" title="type parameter in GrpcRoutes.BlockingResponseStreamingRoute">Resp</a>&gt;&nbsp;responseWriter)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="#handle(io.servicetalk.grpc.api.GrpcServiceContext,Req,io.servicetalk.grpc.api.BlockingStreamingGrpcServerResponse)"><code>handle(GrpcServiceContext, Object, BlockingStreamingGrpcServerResponse)</code></a>.</div>
+</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1"><code>static &lt;Req,<wbr>
 Resp&gt;&nbsp;<a href="GrpcRoutes.BlockingResponseStreamingRoute.html" title="interface in io.servicetalk.grpc.api">GrpcRoutes.BlockingResponseStreamingRoute</a>&lt;Req,<wbr>Resp&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab1"><code><a href="#wrap(io.servicetalk.grpc.api.GrpcRoutes.BlockingResponseStreamingRoute,io.servicetalk.concurrent.GracefulAutoCloseable)" class="member-name-link">wrap</a><wbr>(<a href="GrpcRoutes.BlockingResponseStreamingRoute.html" title="interface in io.servicetalk.grpc.api">GrpcRoutes.BlockingResponseStreamingRoute</a>&lt;Req,<wbr>Resp&gt;&nbsp;rawRoute,
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1"><code><a href="#wrap(io.servicetalk.grpc.api.GrpcRoutes.BlockingResponseStreamingRoute,io.servicetalk.concurrent.GracefulAutoCloseable)" class="member-name-link">wrap</a><wbr>(<a href="GrpcRoutes.BlockingResponseStreamingRoute.html" title="interface in io.servicetalk.grpc.api">GrpcRoutes.BlockingResponseStreamingRoute</a>&lt;Req,<wbr>Resp&gt;&nbsp;rawRoute,
  <a href="../../concurrent/GracefulAutoCloseable.html" title="interface in io.servicetalk.concurrent">GracefulAutoCloseable</a>&nbsp;closeable)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab1">
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1">
 <div class="block">Convenience method to wrap a raw <a href="GrpcRoutes.BlockingResponseStreamingRoute.html" title="interface in io.servicetalk.grpc.api"><code>GrpcRoutes.BlockingResponseStreamingRoute</code></a> instance with a passed detached close
  implementation of <a href="../../concurrent/GracefulAutoCloseable.html" title="interface in io.servicetalk.concurrent"><code>GracefulAutoCloseable</code></a>.</div>
 </div>
@@ -146,16 +155,48 @@ Resp&gt;&nbsp;<a href="GrpcRoutes.BlockingResponseStreamingRoute.html" title="in
 <li>
 <section class="detail" id="handle(io.servicetalk.grpc.api.GrpcServiceContext,Req,io.servicetalk.grpc.api.GrpcPayloadWriter)">
 <h3 id="handle(io.servicetalk.grpc.api.GrpcServiceContext,java.lang.Object,io.servicetalk.grpc.api.GrpcPayloadWriter)">handle</h3>
-<div class="member-signature"><span class="return-type">void</span>&nbsp;<span class="element-name">handle</span><wbr><span class="parameters">(<a href="GrpcServiceContext.html" title="interface in io.servicetalk.grpc.api">GrpcServiceContext</a>&nbsp;ctx,
+<div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="return-type">void</span>&nbsp;<span class="element-name">handle</span><wbr><span class="parameters">(<a href="GrpcServiceContext.html" title="interface in io.servicetalk.grpc.api">GrpcServiceContext</a>&nbsp;ctx,
  <a href="GrpcRoutes.BlockingResponseStreamingRoute.html" title="type parameter in GrpcRoutes.BlockingResponseStreamingRoute">Req</a>&nbsp;request,
  <a href="GrpcPayloadWriter.html" title="interface in io.servicetalk.grpc.api">GrpcPayloadWriter</a>&lt;<a href="GrpcRoutes.BlockingResponseStreamingRoute.html" title="type parameter in GrpcRoutes.BlockingResponseStreamingRoute">Resp</a>&gt;&nbsp;responseWriter)</span>
      throws <span class="exceptions"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Exception.html" title="class or interface in java.lang" class="external-link">Exception</a></span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="#handle(io.servicetalk.grpc.api.GrpcServiceContext,Req,io.servicetalk.grpc.api.BlockingStreamingGrpcServerResponse)"><code>handle(GrpcServiceContext, Object, BlockingStreamingGrpcServerResponse)</code></a>.
+ In the next release, this method will have a default implementation but the new overload won't. To avoid
+ breaking API changes, make sure to implement both methods. The release after next will remove this method.
+ This intermediate step is necessary to maintain <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/FunctionalInterface.html" title="class or interface in java.lang" class="external-link"><code>FunctionalInterface</code></a> contract that requires to have a
+ single non-default method.
+ <b>Note</b>: if you also use <a href="#wrap(io.servicetalk.grpc.api.GrpcRoutes.BlockingResponseStreamingRoute,io.servicetalk.concurrent.GracefulAutoCloseable)"><code>wrap(GrpcRoutes.BlockingResponseStreamingRoute, GracefulAutoCloseable)</code></a> method, make sure to pass there an
+ implementation of <a href="GrpcRoutes.BlockingResponseStreamingRoute.html" title="interface in io.servicetalk.grpc.api"><code>GrpcRoutes.BlockingResponseStreamingRoute</code></a> that implements both overloads instead of a lambda.
+ Otherwise, the default <a href="#handle(io.servicetalk.grpc.api.GrpcServiceContext,Req,io.servicetalk.grpc.api.BlockingStreamingGrpcServerResponse)"><code>handle(GrpcServiceContext, Object, BlockingStreamingGrpcServerResponse)</code></a>
+ implementation will be used.</div>
+</div>
 <div class="block">Handles the passed <a href="GrpcRoutes.BlockingResponseStreamingRoute.html" title="interface in io.servicetalk.grpc.api"><code>GrpcRoutes.BlockingResponseStreamingRoute</code></a>.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>ctx</code> - <a href="GrpcServiceContext.html" title="interface in io.servicetalk.grpc.api"><code>GrpcServiceContext</code></a> for this call.</dd>
 <dd><code>request</code> - <a href="GrpcRoutes.BlockingResponseStreamingRoute.html" title="interface in io.servicetalk.grpc.api"><code>GrpcRoutes.BlockingResponseStreamingRoute</code></a> to handle.</dd>
-<dd><code>responseWriter</code> - <a href="GrpcPayloadWriter.html" title="interface in io.servicetalk.grpc.api"><code>GrpcPayloadWriter</code></a> to write the response.</dd>
+<dd><code>responseWriter</code> - <a href="GrpcPayloadWriter.html" title="interface in io.servicetalk.grpc.api"><code>GrpcPayloadWriter</code></a> to write the response.
+ The implementation of this method is responsible for calling <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/Closeable.html#close()" title="class or interface in java.io" class="external-link"><code>Closeable.close()</code></a>.</dd>
+<dt>Throws:</dt>
+<dd><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Exception.html" title="class or interface in java.lang" class="external-link">Exception</a></code> - If an exception occurs during request processing.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="handle(io.servicetalk.grpc.api.GrpcServiceContext,Req,io.servicetalk.grpc.api.BlockingStreamingGrpcServerResponse)">
+<h3 id="handle(io.servicetalk.grpc.api.GrpcServiceContext,java.lang.Object,io.servicetalk.grpc.api.BlockingStreamingGrpcServerResponse)">handle</h3>
+<div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">handle</span><wbr><span class="parameters">(<a href="GrpcServiceContext.html" title="interface in io.servicetalk.grpc.api">GrpcServiceContext</a>&nbsp;ctx,
+ <a href="GrpcRoutes.BlockingResponseStreamingRoute.html" title="type parameter in GrpcRoutes.BlockingResponseStreamingRoute">Req</a>&nbsp;request,
+ <a href="BlockingStreamingGrpcServerResponse.html" title="interface in io.servicetalk.grpc.api">BlockingStreamingGrpcServerResponse</a>&lt;<a href="GrpcRoutes.BlockingResponseStreamingRoute.html" title="type parameter in GrpcRoutes.BlockingResponseStreamingRoute">Resp</a>&gt;&nbsp;response)</span>
+             throws <span class="exceptions"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Exception.html" title="class or interface in java.lang" class="external-link">Exception</a></span></div>
+<div class="block">Handles the passed <a href="GrpcRoutes.BlockingResponseStreamingRoute.html" title="interface in io.servicetalk.grpc.api"><code>GrpcRoutes.BlockingResponseStreamingRoute</code></a>.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>ctx</code> - <a href="GrpcServiceContext.html" title="interface in io.servicetalk.grpc.api"><code>GrpcServiceContext</code></a> for this call.</dd>
+<dd><code>request</code> - <a href="GrpcRoutes.BlockingResponseStreamingRoute.html" title="interface in io.servicetalk.grpc.api"><code>GrpcRoutes.BlockingResponseStreamingRoute</code></a> to handle.</dd>
+<dd><code>response</code> - <a href="BlockingStreamingGrpcServerResponse.html" title="interface in io.servicetalk.grpc.api"><code>BlockingStreamingGrpcServerResponse</code></a> to send the response.
+ The implementation of this method is responsible for calling <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/Closeable.html#close()" title="class or interface in java.io" class="external-link"><code>Closeable.close()</code></a>.</dd>
 <dt>Throws:</dt>
 <dd><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Exception.html" title="class or interface in java.lang" class="external-link">Exception</a></code> - If an exception occurs during request processing.</dd>
 </dl>
@@ -182,7 +223,11 @@ Resp&gt;</span>
 <span class="return-type"><a href="GrpcRoutes.BlockingResponseStreamingRoute.html" title="interface in io.servicetalk.grpc.api">GrpcRoutes.BlockingResponseStreamingRoute</a>&lt;Req,<wbr>Resp&gt;</span>&nbsp;<span class="element-name">wrap</span><wbr><span class="parameters">(<a href="GrpcRoutes.BlockingResponseStreamingRoute.html" title="interface in io.servicetalk.grpc.api">GrpcRoutes.BlockingResponseStreamingRoute</a>&lt;Req,<wbr>Resp&gt;&nbsp;rawRoute,
  <a href="../../concurrent/GracefulAutoCloseable.html" title="interface in io.servicetalk.concurrent">GracefulAutoCloseable</a>&nbsp;closeable)</span></div>
 <div class="block">Convenience method to wrap a raw <a href="GrpcRoutes.BlockingResponseStreamingRoute.html" title="interface in io.servicetalk.grpc.api"><code>GrpcRoutes.BlockingResponseStreamingRoute</code></a> instance with a passed detached close
- implementation of <a href="../../concurrent/GracefulAutoCloseable.html" title="interface in io.servicetalk.concurrent"><code>GracefulAutoCloseable</code></a>.</div>
+ implementation of <a href="../../concurrent/GracefulAutoCloseable.html" title="interface in io.servicetalk.concurrent"><code>GracefulAutoCloseable</code></a>.
+ <p>
+ <b>Note</b>: make sure to pass there an implementation of <a href="GrpcRoutes.BlockingResponseStreamingRoute.html" title="interface in io.servicetalk.grpc.api"><code>GrpcRoutes.BlockingResponseStreamingRoute</code></a> that
+ implements both overloads instead of a lambda. Otherwise, the default
+ <a href="#handle(io.servicetalk.grpc.api.GrpcServiceContext,Req,io.servicetalk.grpc.api.BlockingStreamingGrpcServerResponse)"><code>handle(GrpcServiceContext, Object, BlockingStreamingGrpcServerResponse)</code></a> implementation will be used.</div>
 <dl class="notes">
 <dt>Type Parameters:</dt>
 <dd><code>Req</code> - Type of request.</dd>

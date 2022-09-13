@@ -108,7 +108,7 @@ loadScripts(document, 'script');</script>
 <div class="col-second even-row-color"><code><a href="#INSTANCE" class="member-name-link">INSTANCE</a></code></div>
 <div class="col-last even-row-color">
 <div class="block"><span class="deprecated-label">Deprecated.</span>
-<div class="deprecation-comment">This class will be removed in the future in favor of direct usage of <a href="../../grpc/api/GrpcClientMetadata.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClientMetadata</code></a>.</div>
+<div class="deprecation-comment">Use <a href="../../grpc/api/DefaultGrpcClientMetadata.html" title="class in io.servicetalk.grpc.api"><code>DefaultGrpcClientMetadata</code></a>.</div>
 </div>
 </div>
 </div>
@@ -164,6 +164,18 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
 <div class="block"><span class="deprecated-label">Deprecated.</span></div>
 </div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api">ContextMap</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#requestContext()" class="member-name-link">requestContext</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block">A request context associated with this <a href="../../grpc/api/GrpcMetadata.html" title="interface in io.servicetalk.grpc.api"><code>GrpcMetadata</code></a> that translates into
+ <a href="../../http/api/HttpMetaData.html#context()"><code>HttpMetaData.context()</code></a>.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api">ContextMap</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#responseContext()" class="member-name-link">responseContext</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block">A response context associated with this <a href="../../grpc/api/GrpcMetadata.html" title="interface in io.servicetalk.grpc.api"><code>GrpcMetadata</code></a> that translates into
+ <a href="../../http/api/HttpMetaData.html#context()"><code>HttpMetaData.context()</code></a>.</div>
+</div>
 </div>
 </div>
 </div>
@@ -175,7 +187,7 @@ loadScripts(document, 'script');</script>
 <code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#clone()" title="class or interface in java.lang" class="external-link">clone</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#equals(java.lang.Object)" title="class or interface in java.lang" class="external-link">equals</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#finalize()" title="class or interface in java.lang" class="external-link">finalize</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#getClass()" title="class or interface in java.lang" class="external-link">getClass</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#hashCode()" title="class or interface in java.lang" class="external-link">hashCode</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#notify()" title="class or interface in java.lang" class="external-link">notify</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#notifyAll()" title="class or interface in java.lang" class="external-link">notifyAll</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#toString()" title="class or interface in java.lang" class="external-link">toString</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait()" title="class or interface in java.lang" class="external-link">wait</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait(long)" title="class or interface in java.lang" class="external-link">wait</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait(long,int)" title="class or interface in java.lang" class="external-link">wait</a></code></div>
 <div class="inherited-list">
 <h3 id="methods-inherited-from-class-io.servicetalk.grpc.api.GrpcMetadata">Methods inherited from interface&nbsp;io.servicetalk.grpc.api.<a href="../../grpc/api/GrpcMetadata.html" title="interface in io.servicetalk.grpc.api">GrpcMetadata</a></h3>
-<code><a href="../../grpc/api/GrpcMetadata.html#path()">path</a></code></div>
+<code><a href="../../grpc/api/GrpcMetadata.html#path()">path</a>, <a href="../../grpc/api/GrpcMetadata.html#requestContext()">requestContext</a>, <a href="../../grpc/api/GrpcMetadata.html#responseContext()">responseContext</a></code></div>
 </section>
 </li>
 </ul>
@@ -193,7 +205,7 @@ loadScripts(document, 'script');</script>
 <div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
 </span><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="Health.CheckMetadata.html" title="class in io.servicetalk.health.v1">Health.CheckMetadata</a></span>&nbsp;<span class="element-name">INSTANCE</span></div>
 <div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
-<div class="deprecation-comment">This class will be removed in the future in favor of direct usage of <a href="../../grpc/api/GrpcClientMetadata.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClientMetadata</code></a>.</div>
+<div class="deprecation-comment">Use <a href="../../grpc/api/DefaultGrpcClientMetadata.html" title="class in io.servicetalk.grpc.api"><code>DefaultGrpcClientMetadata</code></a>.</div>
 </div>
 </section>
 </li>
@@ -264,6 +276,44 @@ loadScripts(document, 'script');</script>
 <dd><code><a href="../../grpc/api/GrpcMetadata.html#path()">path</a></code>&nbsp;in interface&nbsp;<code><a href="../../grpc/api/GrpcMetadata.html" title="interface in io.servicetalk.grpc.api">GrpcMetadata</a></code></dd>
 <dt>Returns:</dt>
 <dd>The path for the associated <a href="https://www.grpc.io">gRPC</a> method.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="requestContext()">
+<h3>requestContext</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api">ContextMap</a></span>&nbsp;<span class="element-name">requestContext</span>()</div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="../../grpc/api/GrpcMetadata.html#requestContext()">GrpcMetadata</a></code></span></div>
+<div class="block">A request context associated with this <a href="../../grpc/api/GrpcMetadata.html" title="interface in io.servicetalk.grpc.api"><code>GrpcMetadata</code></a> that translates into
+ <a href="../../http/api/HttpMetaData.html#context()"><code>HttpMetaData.context()</code></a>.
+ <p>
+ Context can be used to associate a state with a request without serializing its state on the wire or transmit a
+ state between HTTP and gRPC layers.</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="../../grpc/api/GrpcMetadata.html#requestContext()">requestContext</a></code>&nbsp;in interface&nbsp;<code><a href="../../grpc/api/GrpcMetadata.html" title="interface in io.servicetalk.grpc.api">GrpcMetadata</a></code></dd>
+<dt>Returns:</dt>
+<dd>a request context associated with this <a href="../../grpc/api/GrpcMetadata.html" title="interface in io.servicetalk.grpc.api"><code>GrpcMetadata</code></a> that translates into
+ <a href="../../http/api/HttpMetaData.html#context()"><code>HttpMetaData.context()</code></a>.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="responseContext()">
+<h3>responseContext</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api">ContextMap</a></span>&nbsp;<span class="element-name">responseContext</span>()</div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="../../grpc/api/GrpcMetadata.html#responseContext()">GrpcMetadata</a></code></span></div>
+<div class="block">A response context associated with this <a href="../../grpc/api/GrpcMetadata.html" title="interface in io.servicetalk.grpc.api"><code>GrpcMetadata</code></a> that translates into
+ <a href="../../http/api/HttpMetaData.html#context()"><code>HttpMetaData.context()</code></a>.
+ <p>
+ Context can be used to associate a state with a response without serializing its state on the wire or transmit a
+ state between HTTP and gRPC layers.</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="../../grpc/api/GrpcMetadata.html#responseContext()">responseContext</a></code>&nbsp;in interface&nbsp;<code><a href="../../grpc/api/GrpcMetadata.html" title="interface in io.servicetalk.grpc.api">GrpcMetadata</a></code></dd>
+<dt>Returns:</dt>
+<dd>a response context associated with this <a href="../../grpc/api/GrpcMetadata.html" title="interface in io.servicetalk.grpc.api"><code>GrpcMetadata</code></a> that translates into
+ <a href="../../http/api/HttpMetaData.html#context()"><code>HttpMetaData.context()</code></a>.</dd>
 </dl>
 </section>
 </li>

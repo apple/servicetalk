@@ -114,6 +114,17 @@ loadScripts(document, 'script');</script>
 <div class="block">Enables a logger for HTTP/2 frames.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="H2ProtocolConfigBuilder.html" title="class in io.servicetalk.http.netty">H2ProtocolConfigBuilder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#flowControlQuantum(int)" class="member-name-link">flowControlQuantum</a><wbr>(int&nbsp;flowControlQuantum)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Provide a hint on the number of bytes that the flow controller will attempt to give to a stream for each
+ allocation (assuming the stream has this much eligible data).</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="H2ProtocolConfigBuilder.html" title="class in io.servicetalk.http.netty">H2ProtocolConfigBuilder</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#flowControlWindowIncrement(int)" class="member-name-link">flowControlWindowIncrement</a><wbr>(int&nbsp;connectionWindowIncrement)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Increment to apply to <a href="../api/Http2Settings.html#initialWindowSize()"><code>Http2Settings.initialWindowSize()</code></a> for the connection stream.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="H2ProtocolConfigBuilder.html" title="class in io.servicetalk.http.netty">H2ProtocolConfigBuilder</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#headersFactory(io.servicetalk.http.api.HttpHeadersFactory)" class="member-name-link">headersFactory</a><wbr>(<a href="../api/HttpHeadersFactory.html" title="interface in io.servicetalk.http.api">HttpHeadersFactory</a>&nbsp;headersFactory)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Sets the <a href="../api/HttpHeadersFactory.html" title="interface in io.servicetalk.http.api"><code>HttpHeadersFactory</code></a> to be used for creating <a href="../api/HttpHeaders.html" title="interface in io.servicetalk.http.api"><code>HttpHeaders</code></a> when decoding HTTP messages.</div>
@@ -125,8 +136,14 @@ loadScripts(document, 'script');</script>
  <a href="https://tools.ietf.org/html/rfc7541#section-7.1.3">sensitive</a>.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="H2ProtocolConfigBuilder.html" title="class in io.servicetalk.http.netty">H2ProtocolConfigBuilder</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#keepAlivePolicy(io.servicetalk.http.netty.H2ProtocolConfig.KeepAlivePolicy)" class="member-name-link">keepAlivePolicy</a><wbr>(<a href="H2ProtocolConfig.KeepAlivePolicy.html" title="interface in io.servicetalk.http.netty">H2ProtocolConfig.KeepAlivePolicy</a>&nbsp;policy)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#initialSettings(io.servicetalk.http.api.Http2Settings)" class="member-name-link">initialSettings</a><wbr>(<a href="../api/Http2Settings.html" title="interface in io.servicetalk.http.api">Http2Settings</a>&nbsp;settings)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Sets the initial <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-6.5.1">HTTP/2 Setting</a> to for
+ each h2 connection.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="H2ProtocolConfigBuilder.html" title="class in io.servicetalk.http.netty">H2ProtocolConfigBuilder</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#keepAlivePolicy(io.servicetalk.http.netty.H2ProtocolConfig.KeepAlivePolicy)" class="member-name-link">keepAlivePolicy</a><wbr>(<a href="H2ProtocolConfig.KeepAlivePolicy.html" title="interface in io.servicetalk.http.netty">H2ProtocolConfig.KeepAlivePolicy</a>&nbsp;policy)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Sets the <a href="H2ProtocolConfig.KeepAlivePolicy.html" title="interface in io.servicetalk.http.netty"><code>H2ProtocolConfig.KeepAlivePolicy</code></a> to use.</div>
 </div>
 </div>
@@ -210,6 +227,56 @@ loadScripts(document, 'script');</script>
 <li><a href="H2KeepAlivePolicies.html" title="class in io.servicetalk.http.netty"><code>H2KeepAlivePolicies</code></a></li>
 </ul>
 </dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="initialSettings(io.servicetalk.http.api.Http2Settings)">
+<h3>initialSettings</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="H2ProtocolConfigBuilder.html" title="class in io.servicetalk.http.netty">H2ProtocolConfigBuilder</a></span>&nbsp;<span class="element-name">initialSettings</span><wbr><span class="parameters">(<a href="../api/Http2Settings.html" title="interface in io.servicetalk.http.api">Http2Settings</a>&nbsp;settings)</span></div>
+<div class="block">Sets the initial <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-6.5.1">HTTP/2 Setting</a> to for
+ each h2 connection.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>settings</code> - the initial settings to for each h2 connection.</dd>
+<dt>Returns:</dt>
+<dd><code>this</code></dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list">
+<li><a href="../api/Http2SettingsBuilder.html" title="class in io.servicetalk.http.api"><code>Http2SettingsBuilder</code></a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="flowControlQuantum(int)">
+<h3>flowControlQuantum</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="H2ProtocolConfigBuilder.html" title="class in io.servicetalk.http.netty">H2ProtocolConfigBuilder</a></span>&nbsp;<span class="element-name">flowControlQuantum</span><wbr><span class="parameters">(int&nbsp;flowControlQuantum)</span></div>
+<div class="block">Provide a hint on the number of bytes that the flow controller will attempt to give to a stream for each
+ allocation (assuming the stream has this much eligible data).</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>flowControlQuantum</code> - a hint on the number of bytes that the flow controller will attempt to give to a
+ stream for each allocation (assuming the stream has this much eligible data).</dd>
+<dt>Returns:</dt>
+<dd><code>this</code></dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="flowControlWindowIncrement(int)">
+<h3>flowControlWindowIncrement</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="H2ProtocolConfigBuilder.html" title="class in io.servicetalk.http.netty">H2ProtocolConfigBuilder</a></span>&nbsp;<span class="element-name">flowControlWindowIncrement</span><wbr><span class="parameters">(int&nbsp;connectionWindowIncrement)</span></div>
+<div class="block">Increment to apply to <a href="../api/Http2Settings.html#initialWindowSize()"><code>Http2Settings.initialWindowSize()</code></a> for the connection stream. This expands the
+ connection flow control window so a single stream can't consume all the flow control credits.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>connectionWindowIncrement</code> - The number of bytes to increment the local flow control window for the
+ connection stream.</dd>
+<dt>Returns:</dt>
+<dd><code>this</code></dd>
 </dl>
 </section>
 </li>

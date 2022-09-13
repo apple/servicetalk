@@ -161,7 +161,12 @@ loadScripts(document, 'script');</script>
 <h3>h2Default</h3>
 <div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="H2ProtocolConfig.html" title="interface in io.servicetalk.http.netty">H2ProtocolConfig</a></span>&nbsp;<span class="element-name">h2Default</span>()</div>
 <div class="block">Returns <a href="H2ProtocolConfig.html" title="interface in io.servicetalk.http.netty"><code>H2ProtocolConfig</code></a> with the default configuration for
- <a href="https://tools.ietf.org/html/rfc7540">HTTP/2</a>.</div>
+ <a href="https://tools.ietf.org/html/rfc7540">HTTP/2</a>.
+ <p>
+ Note this doesn't necessarily provide <a href="H2ProtocolConfig.html#initialSettings()"><code>H2ProtocolConfig.initialSettings()</code></a> that corresponds to
+ default values as described in
+ <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-6.5.2">HTTP/2 Settings</a>. Some identifiers
+ maybe overridden for safety or performance reasons and are subject to change. For more control use <a href="#h2()"><code>h2()</code></a>.</div>
 <dl class="notes">
 <dt>Returns:</dt>
 <dd><a href="H2ProtocolConfig.html" title="interface in io.servicetalk.http.netty"><code>H2ProtocolConfig</code></a> with the default configuration for
@@ -173,7 +178,13 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="h2()">
 <h3>h2</h3>
 <div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="H2ProtocolConfigBuilder.html" title="class in io.servicetalk.http.netty">H2ProtocolConfigBuilder</a></span>&nbsp;<span class="element-name">h2</span>()</div>
-<div class="block">Returns a builder for <a href="H2ProtocolConfig.html" title="interface in io.servicetalk.http.netty"><code>H2ProtocolConfig</code></a>.</div>
+<div class="block">Returns a builder for <a href="H2ProtocolConfig.html" title="interface in io.servicetalk.http.netty"><code>H2ProtocolConfig</code></a>.
+ <p>
+ Note this doesn't necessarily provide <a href="H2ProtocolConfig.html#initialSettings()"><code>H2ProtocolConfig.initialSettings()</code></a> that corresponds to
+ default values as described in
+ <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-6.5.2">HTTP/2 Settings</a>. Some identifiers
+ maybe overridden for safety or performance reasons and are subject to change. For more control use
+ <a href="H2ProtocolConfigBuilder.html#initialSettings(io.servicetalk.http.api.Http2Settings)"><code>H2ProtocolConfigBuilder.initialSettings(Http2Settings)</code></a>.</div>
 <dl class="notes">
 <dt>Returns:</dt>
 <dd><a href="H2ProtocolConfigBuilder.html" title="class in io.servicetalk.http.netty"><code>H2ProtocolConfigBuilder</code></a></dd>

@@ -124,6 +124,18 @@ extends <a href="../api/HttpProtocolConfig.html" title="interface in io.servicet
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
 <div class="block">TLS Application-Layer Protocol Negotiation (ALPN) Protocol ID of the protocol this configuration is for.</div>
 </div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default int</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#flowControlQuantum()" class="member-name-link">flowControlQuantum</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
+<div class="block">Provide a hint on the number of bytes that the flow controller will attempt to give to a stream for each
+ allocation (assuming the stream has this much eligible data).</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default int</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#flowControlWindowIncrement()" class="member-name-link">flowControlWindowIncrement</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
+<div class="block">Number of bytes to increment via <a href="https://www.rfc-editor.org/rfc/rfc7540#section-6.9">WINDOW_UPDATE</a>
+ for the connection.</div>
+</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="../../logging/api/UserDataLoggerConfig.html" title="interface in io.servicetalk.logging.api">UserDataLoggerConfig</a></code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#frameLoggerConfig()" class="member-name-link">frameLoggerConfig</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
@@ -135,9 +147,14 @@ extends <a href="../api/HttpProtocolConfig.html" title="interface in io.servicet
 <div class="block">Sensitivity detector to determine if a header <code>name</code>/<code>value</code> pair should be treated as
  <a href="https://tools.ietf.org/html/rfc7541#section-7.1.3">sensitive</a>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="H2ProtocolConfig.KeepAlivePolicy.html" title="interface in io.servicetalk.http.netty">H2ProtocolConfig.KeepAlivePolicy</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#keepAlivePolicy()" class="member-name-link">keepAlivePolicy</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="../api/Http2Settings.html" title="interface in io.servicetalk.http.api">Http2Settings</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#initialSettings()" class="member-name-link">initialSettings</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
+<div class="block">Get the <a href="../api/Http2Settings.html" title="interface in io.servicetalk.http.api"><code>Http2Settings</code></a> that provides a hint for the initial settings.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="H2ProtocolConfig.KeepAlivePolicy.html" title="interface in io.servicetalk.http.netty">H2ProtocolConfig.KeepAlivePolicy</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#keepAlivePolicy()" class="member-name-link">keepAlivePolicy</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">Configured <a href="H2ProtocolConfig.KeepAlivePolicy.html" title="interface in io.servicetalk.http.netty"><code>H2ProtocolConfig.KeepAlivePolicy</code></a>.</div>
 </div>
 </div>
@@ -213,6 +230,52 @@ extends <a href="../api/HttpProtocolConfig.html" title="interface in io.servicet
 <dl class="notes">
 <dt>Returns:</dt>
 <dd>configured <a href="H2ProtocolConfig.KeepAlivePolicy.html" title="interface in io.servicetalk.http.netty"><code>H2ProtocolConfig.KeepAlivePolicy</code></a> or <code>null</code> if none is configured.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="initialSettings()">
+<h3>initialSettings</h3>
+<div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="../api/Http2Settings.html" title="interface in io.servicetalk.http.api">Http2Settings</a></span>&nbsp;<span class="element-name">initialSettings</span>()</div>
+<div class="block">Get the <a href="../api/Http2Settings.html" title="interface in io.servicetalk.http.api"><code>Http2Settings</code></a> that provides a hint for the initial settings. Note that some settings may be
+ ignored if not supported (e.g. push promise).</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>the <a href="../api/Http2Settings.html" title="interface in io.servicetalk.http.api"><code>Http2Settings</code></a> that provides a hint for the initial settings. Note that some settings may be
+ ignored if not supported (e.g. push promise).</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="flowControlQuantum()">
+<h3>flowControlQuantum</h3>
+<div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type">int</span>&nbsp;<span class="element-name">flowControlQuantum</span>()</div>
+<div class="block">Provide a hint on the number of bytes that the flow controller will attempt to give to a stream for each
+ allocation (assuming the stream has this much eligible data).
+ <p>
+ This maybe useful because the amount of bytes the local peer is permitted to write is limited based upon the
+ remote peer's flow control window for each stream. Some flow controllers iterate over all streams (and may
+ consider <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-5.3">stream priority</a>) that have data
+ pending to write and allow them to write a subset of the available flow control window (aka a "quantum"). The
+ larger this value may result in increased goodput/throughput on the connection, but increase latency on some
+ streams (if flow control windows become constrained).</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>number of bytes.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="flowControlWindowIncrement()">
+<h3>flowControlWindowIncrement</h3>
+<div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type">int</span>&nbsp;<span class="element-name">flowControlWindowIncrement</span>()</div>
+<div class="block">Number of bytes to increment via <a href="https://www.rfc-editor.org/rfc/rfc7540#section-6.9">WINDOW_UPDATE</a>
+ for the connection. This value is applied on top of <a href="../api/Http2Settings.html#initialWindowSize()"><code>Http2Settings.initialWindowSize()</code></a> from
+ <a href="#initialSettings()"><code>initialSettings()</code></a> for the connection (as opposed to individual request streams). This can be helpful to
+ avoid a single stream consuming all the flow control credits.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>The number of bytes to increment the local flow control window for the connection.</dd>
 </dl>
 </section>
 </li>

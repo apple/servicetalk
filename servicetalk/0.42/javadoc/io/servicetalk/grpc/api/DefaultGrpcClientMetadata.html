@@ -102,7 +102,11 @@ implements <a href="GrpcClientMetadata.html" title="interface in io.servicetalk.
 <div class="table-header col-last">Description</div>
 <div class="col-first even-row-color"><code>static final <a href="GrpcClientMetadata.html" title="interface in io.servicetalk.grpc.api">GrpcClientMetadata</a></code></div>
 <div class="col-second even-row-color"><code><a href="#INSTANCE" class="member-name-link">INSTANCE</a></code></div>
-<div class="col-last even-row-color">&nbsp;</div>
+<div class="col-last even-row-color">
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="#%3Cinit%3E()"><code>DefaultGrpcClientMetadata()</code></a> to create a new instance instead.</div>
+</div>
+</div>
 </div>
 </section>
 </li>
@@ -116,109 +120,125 @@ implements <a href="GrpcClientMetadata.html" title="interface in io.servicetalk.
 <div class="table-header col-second">Constructor</div>
 <div class="table-header col-last">Description</div>
 <div class="col-first even-row-color"><code>&nbsp;</code></div>
-<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(io.servicetalk.encoding.api.BufferEncoder)" class="member-name-link">DefaultGrpcClientMetadata</a><wbr>(<a href="../../encoding/api/BufferEncoder.html" title="interface in io.servicetalk.encoding.api">BufferEncoder</a>&nbsp;requestEncoding)</code></div>
+<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E()" class="member-name-link">DefaultGrpcClientMetadata</a>()</code></div>
 <div class="col-last even-row-color">
-<div class="block">Creates a new instance.</div>
+<div class="block">Creates a new instance with default characteristics and empty
+ <a href="GrpcMetadata.html#requestContext()"><code>request</code></a>/<a href="GrpcMetadata.html#responseContext()"><code>response</code></a> contexts.</div>
 </div>
 <div class="col-first odd-row-color"><code>&nbsp;</code></div>
-<div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(io.servicetalk.encoding.api.BufferEncoder,java.time.Duration)" class="member-name-link">DefaultGrpcClientMetadata</a><wbr>(<a href="../../encoding/api/BufferEncoder.html" title="interface in io.servicetalk.encoding.api">BufferEncoder</a>&nbsp;requestEncoding,
- <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;timeout)</code></div>
+<div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(io.servicetalk.encoding.api.BufferEncoder)" class="member-name-link">DefaultGrpcClientMetadata</a><wbr>(<a href="../../encoding/api/BufferEncoder.html" title="interface in io.servicetalk.encoding.api">BufferEncoder</a>&nbsp;requestEncoding)</code></div>
 <div class="col-last odd-row-color">
 <div class="block">Creates a new instance.</div>
-</div>
-<div class="col-first even-row-color"><code>protected </code></div>
-<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(io.servicetalk.grpc.api.DefaultGrpcClientMetadata)" class="member-name-link">DefaultGrpcClientMetadata</a><wbr>(<a href="DefaultGrpcClientMetadata.html" title="class in io.servicetalk.grpc.api">DefaultGrpcClientMetadata</a>&nbsp;rhs)</code></div>
-<div class="col-last even-row-color">
-<div class="block">Create a new instance, by copying an existing instance.</div>
-</div>
-<div class="col-first odd-row-color"><code>&nbsp;</code></div>
-<div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.encoding.api.BufferEncoder)" class="member-name-link">DefaultGrpcClientMetadata</a><wbr>(<a href="GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api">GrpcExecutionStrategy</a>&nbsp;strategy,
- <a href="../../encoding/api/BufferEncoder.html" title="interface in io.servicetalk.encoding.api">BufferEncoder</a>&nbsp;requestEncoding)</code></div>
-<div class="col-last odd-row-color">
-<div class="block">Create a new instance.</div>
 </div>
 <div class="col-first even-row-color"><code>&nbsp;</code></div>
-<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.encoding.api.BufferEncoder,java.time.Duration)" class="member-name-link">DefaultGrpcClientMetadata</a><wbr>(<a href="GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api">GrpcExecutionStrategy</a>&nbsp;strategy,
- <a href="../../encoding/api/BufferEncoder.html" title="interface in io.servicetalk.encoding.api">BufferEncoder</a>&nbsp;requestEncoding,
+<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(io.servicetalk.encoding.api.BufferEncoder,java.time.Duration)" class="member-name-link">DefaultGrpcClientMetadata</a><wbr>(<a href="../../encoding/api/BufferEncoder.html" title="interface in io.servicetalk.encoding.api">BufferEncoder</a>&nbsp;requestEncoding,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;timeout)</code></div>
+<div class="col-last even-row-color">
+<div class="block">Creates a new instance.</div>
+</div>
+<div class="col-first odd-row-color"><code>protected </code></div>
+<div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(io.servicetalk.grpc.api.DefaultGrpcClientMetadata)" class="member-name-link">DefaultGrpcClientMetadata</a><wbr>(<a href="DefaultGrpcClientMetadata.html" title="class in io.servicetalk.grpc.api">DefaultGrpcClientMetadata</a>&nbsp;rhs)</code></div>
+<div class="col-last odd-row-color">
+<div class="block">Create a new instance, by copying an existing instance.</div>
+</div>
+<div class="col-first even-row-color"><code>&nbsp;</code></div>
+<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.encoding.api.BufferEncoder)" class="member-name-link">DefaultGrpcClientMetadata</a><wbr>(<a href="GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api">GrpcExecutionStrategy</a>&nbsp;strategy,
+ <a href="../../encoding/api/BufferEncoder.html" title="interface in io.servicetalk.encoding.api">BufferEncoder</a>&nbsp;requestEncoding)</code></div>
 <div class="col-last even-row-color">
 <div class="block">Create a new instance.</div>
 </div>
-<div class="col-first odd-row-color"><code>protected </code></div>
-<div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(java.lang.String)" class="member-name-link">DefaultGrpcClientMetadata</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;path)</code></div>
+<div class="col-first odd-row-color"><code>&nbsp;</code></div>
+<div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.encoding.api.BufferEncoder,java.time.Duration)" class="member-name-link">DefaultGrpcClientMetadata</a><wbr>(<a href="GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api">GrpcExecutionStrategy</a>&nbsp;strategy,
+ <a href="../../encoding/api/BufferEncoder.html" title="interface in io.servicetalk.encoding.api">BufferEncoder</a>&nbsp;requestEncoding,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;timeout)</code></div>
 <div class="col-last odd-row-color">
-<div class="block"><span class="deprecated-label">Deprecated.</span>
-<div class="deprecation-comment">Use <code>DefaultGrpcClientMetadata()</code>.</div>
-</div>
+<div class="block">Create a new instance.</div>
 </div>
 <div class="col-first even-row-color"><code>protected </code></div>
-<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(java.lang.String,io.servicetalk.encoding.api.ContentCodec)" class="member-name-link">DefaultGrpcClientMetadata</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;path,
- <a href="../../encoding/api/ContentCodec.html" title="interface in io.servicetalk.encoding.api">ContentCodec</a>&nbsp;requestEncoding)</code></div>
+<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(java.lang.String)" class="member-name-link">DefaultGrpcClientMetadata</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;path)</code></div>
 <div class="col-last even-row-color">
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="#%3Cinit%3E()"><code>DefaultGrpcClientMetadata()</code></a>.</div>
+</div>
+</div>
+<div class="col-first odd-row-color"><code>protected </code></div>
+<div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(java.lang.String,io.servicetalk.encoding.api.ContentCodec)" class="member-name-link">DefaultGrpcClientMetadata</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;path,
+ <a href="../../encoding/api/ContentCodec.html" title="interface in io.servicetalk.encoding.api">ContentCodec</a>&nbsp;requestEncoding)</code></div>
+<div class="col-last odd-row-color">
 <div class="block"><span class="deprecated-label">Deprecated.</span>
 <div class="deprecation-comment">Use <a href="#%3Cinit%3E(io.servicetalk.encoding.api.BufferEncoder)"><code>DefaultGrpcClientMetadata(BufferEncoder)</code></a></div>
 </div>
 </div>
-<div class="col-first odd-row-color"><code>protected </code></div>
-<div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(java.lang.String,io.servicetalk.encoding.api.ContentCodec,java.time.Duration)" class="member-name-link">DefaultGrpcClientMetadata</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;path,
+<div class="col-first even-row-color"><code>protected </code></div>
+<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(java.lang.String,io.servicetalk.encoding.api.ContentCodec,java.time.Duration)" class="member-name-link">DefaultGrpcClientMetadata</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;path,
  <a href="../../encoding/api/ContentCodec.html" title="interface in io.servicetalk.encoding.api">ContentCodec</a>&nbsp;requestEncoding,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;timeout)</code></div>
-<div class="col-last odd-row-color">
+<div class="col-last even-row-color">
 <div class="block"><span class="deprecated-label">Deprecated.</span>
 <div class="deprecation-comment">Use <a href="#%3Cinit%3E(io.servicetalk.encoding.api.BufferEncoder,java.time.Duration)"><code>DefaultGrpcClientMetadata(BufferEncoder, Duration)</code></a>.</div>
 </div>
 </div>
-<div class="col-first even-row-color"><code>protected </code></div>
-<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(java.lang.String,io.servicetalk.grpc.api.GrpcClientMetadata)" class="member-name-link">DefaultGrpcClientMetadata</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;path,
+<div class="col-first odd-row-color"><code>protected </code></div>
+<div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(java.lang.String,io.servicetalk.grpc.api.GrpcClientMetadata)" class="member-name-link">DefaultGrpcClientMetadata</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;path,
  <a href="GrpcClientMetadata.html" title="interface in io.servicetalk.grpc.api">GrpcClientMetadata</a>&nbsp;rhs)</code></div>
-<div class="col-last even-row-color">
+<div class="col-last odd-row-color">
 <div class="block"><span class="deprecated-label">Deprecated.</span>
 <div class="deprecation-comment">Use <a href="#%3Cinit%3E(io.servicetalk.grpc.api.DefaultGrpcClientMetadata)"><code>DefaultGrpcClientMetadata(DefaultGrpcClientMetadata)</code></a>.</div>
 </div>
 </div>
-<div class="col-first odd-row-color"><code>protected </code></div>
-<div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(java.lang.String,io.servicetalk.grpc.api.GrpcExecutionStrategy)" class="member-name-link">DefaultGrpcClientMetadata</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;path,
- <a href="GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api">GrpcExecutionStrategy</a>&nbsp;strategy)</code></div>
-<div class="col-last odd-row-color">
-<div class="block"><span class="deprecated-label">Deprecated.</span>
-<div class="deprecation-comment">Use <a href="#%3Cinit%3E(io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.encoding.api.BufferEncoder)"><code>DefaultGrpcClientMetadata(GrpcExecutionStrategy, BufferEncoder)</code></a>.</div>
-</div>
-</div>
 <div class="col-first even-row-color"><code>protected </code></div>
-<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(java.lang.String,io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.encoding.api.ContentCodec)" class="member-name-link">DefaultGrpcClientMetadata</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;path,
- <a href="GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api">GrpcExecutionStrategy</a>&nbsp;strategy,
- <a href="../../encoding/api/ContentCodec.html" title="interface in io.servicetalk.encoding.api">ContentCodec</a>&nbsp;requestEncoding)</code></div>
+<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(java.lang.String,io.servicetalk.grpc.api.GrpcExecutionStrategy)" class="member-name-link">DefaultGrpcClientMetadata</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;path,
+ <a href="GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api">GrpcExecutionStrategy</a>&nbsp;strategy)</code></div>
 <div class="col-last even-row-color">
 <div class="block"><span class="deprecated-label">Deprecated.</span>
 <div class="deprecation-comment">Use <a href="#%3Cinit%3E(io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.encoding.api.BufferEncoder)"><code>DefaultGrpcClientMetadata(GrpcExecutionStrategy, BufferEncoder)</code></a>.</div>
 </div>
 </div>
 <div class="col-first odd-row-color"><code>protected </code></div>
-<div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(java.lang.String,io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.encoding.api.ContentCodec,java.time.Duration)" class="member-name-link">DefaultGrpcClientMetadata</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;path,
+<div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(java.lang.String,io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.encoding.api.ContentCodec)" class="member-name-link">DefaultGrpcClientMetadata</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;path,
+ <a href="GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api">GrpcExecutionStrategy</a>&nbsp;strategy,
+ <a href="../../encoding/api/ContentCodec.html" title="interface in io.servicetalk.encoding.api">ContentCodec</a>&nbsp;requestEncoding)</code></div>
+<div class="col-last odd-row-color">
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="#%3Cinit%3E(io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.encoding.api.BufferEncoder)"><code>DefaultGrpcClientMetadata(GrpcExecutionStrategy, BufferEncoder)</code></a>.</div>
+</div>
+</div>
+<div class="col-first even-row-color"><code>protected </code></div>
+<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(java.lang.String,io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.encoding.api.ContentCodec,java.time.Duration)" class="member-name-link">DefaultGrpcClientMetadata</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;path,
+ <a href="GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api">GrpcExecutionStrategy</a>&nbsp;strategy,
+ <a href="../../encoding/api/ContentCodec.html" title="interface in io.servicetalk.encoding.api">ContentCodec</a>&nbsp;requestEncoding,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;timeout)</code></div>
+<div class="col-last even-row-color">
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="#%3Cinit%3E(io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.encoding.api.BufferEncoder,java.time.Duration)"><code>DefaultGrpcClientMetadata(GrpcExecutionStrategy, BufferEncoder, Duration)</code></a>.</div>
+</div>
+</div>
+<div class="col-first odd-row-color"><code>protected </code></div>
+<div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(java.lang.String,io.servicetalk.grpc.api.GrpcExecutionStrategy,java.time.Duration)" class="member-name-link">DefaultGrpcClientMetadata</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;path,
+ <a href="GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api">GrpcExecutionStrategy</a>&nbsp;strategy,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;timeout)</code></div>
+<div class="col-last odd-row-color">
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="#%3Cinit%3E(io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.encoding.api.BufferEncoder,java.time.Duration)"><code>DefaultGrpcClientMetadata(GrpcExecutionStrategy, BufferEncoder, Duration)</code></a>.</div>
+</div>
+</div>
+<div class="col-first even-row-color"><code>protected </code></div>
+<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(java.lang.String,java.time.Duration)" class="member-name-link">DefaultGrpcClientMetadata</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;path,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;timeout)</code></div>
+<div class="col-last even-row-color">
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="#%3Cinit%3E(io.servicetalk.encoding.api.BufferEncoder,java.time.Duration)"><code>DefaultGrpcClientMetadata(BufferEncoder, Duration)</code></a>.</div>
+</div>
+</div>
+<div class="col-first odd-row-color"><code>protected </code></div>
+<div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(java.lang.String,java.util.function.Supplier,java.util.function.Supplier,io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.encoding.api.ContentCodec,java.time.Duration)" class="member-name-link">DefaultGrpcClientMetadata</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;path,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Supplier.html" title="class or interface in java.util.function" class="external-link">Supplier</a>&lt;<a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api">ContextMap</a>&gt;&nbsp;requestContext,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Supplier.html" title="class or interface in java.util.function" class="external-link">Supplier</a>&lt;<a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api">ContextMap</a>&gt;&nbsp;responseContext,
  <a href="GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api">GrpcExecutionStrategy</a>&nbsp;strategy,
  <a href="../../encoding/api/ContentCodec.html" title="interface in io.servicetalk.encoding.api">ContentCodec</a>&nbsp;requestEncoding,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;timeout)</code></div>
 <div class="col-last odd-row-color">
-<div class="block"><span class="deprecated-label">Deprecated.</span>
-<div class="deprecation-comment">Use <a href="#%3Cinit%3E(io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.encoding.api.BufferEncoder,java.time.Duration)"><code>DefaultGrpcClientMetadata(GrpcExecutionStrategy, BufferEncoder, Duration)</code></a>.</div>
-</div>
-</div>
-<div class="col-first even-row-color"><code>protected </code></div>
-<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(java.lang.String,io.servicetalk.grpc.api.GrpcExecutionStrategy,java.time.Duration)" class="member-name-link">DefaultGrpcClientMetadata</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;path,
- <a href="GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api">GrpcExecutionStrategy</a>&nbsp;strategy,
- <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;timeout)</code></div>
-<div class="col-last even-row-color">
-<div class="block"><span class="deprecated-label">Deprecated.</span>
-<div class="deprecation-comment">Use <a href="#%3Cinit%3E(io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.encoding.api.BufferEncoder,java.time.Duration)"><code>DefaultGrpcClientMetadata(GrpcExecutionStrategy, BufferEncoder, Duration)</code></a>.</div>
-</div>
-</div>
-<div class="col-first odd-row-color"><code>protected </code></div>
-<div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(java.lang.String,java.time.Duration)" class="member-name-link">DefaultGrpcClientMetadata</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;path,
- <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;timeout)</code></div>
-<div class="col-last odd-row-color">
-<div class="block"><span class="deprecated-label">Deprecated.</span>
-<div class="deprecation-comment">Use <a href="#%3Cinit%3E(io.servicetalk.encoding.api.BufferEncoder,java.time.Duration)"><code>DefaultGrpcClientMetadata(BufferEncoder, Duration)</code></a>.</div>
-</div>
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 </div>
 <div class="col-first even-row-color"><code>&nbsp;</code></div>
 <div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(java.time.Duration)" class="member-name-link">DefaultGrpcClientMetadata</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;timeout)</code></div>
@@ -249,10 +269,22 @@ implements <a href="GrpcClientMetadata.html" title="interface in io.servicetalk.
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Get the <a href="../../encoding/api/BufferEncoder.html" title="interface in io.servicetalk.encoding.api"><code>BufferEncoder</code></a> to use to compress the request associated with this object.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="../../encoding/api/ContentCodec.html" title="interface in io.servicetalk.encoding.api">ContentCodec</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#requestEncoding()" class="member-name-link">requestEncoding</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api">ContextMap</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#requestContext()" class="member-name-link">requestContext</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">A request context associated with this <a href="GrpcMetadata.html" title="interface in io.servicetalk.grpc.api"><code>GrpcMetadata</code></a> that translates into
+ <a href="../../http/api/HttpMetaData.html#context()"><code>HttpMetaData.context()</code></a>.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="../../encoding/api/ContentCodec.html" title="interface in io.servicetalk.encoding.api">ContentCodec</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#requestEncoding()" class="member-name-link">requestEncoding</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
 <div class="block"><span class="deprecated-label">Deprecated.</span></div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api">ContextMap</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#responseContext()" class="member-name-link">responseContext</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">A response context associated with this <a href="GrpcMetadata.html" title="interface in io.servicetalk.grpc.api"><code>GrpcMetadata</code></a> that translates into
+ <a href="../../http/api/HttpMetaData.html#context()"><code>HttpMetaData.context()</code></a>.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api">GrpcExecutionStrategy</a></code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#strategy()" class="member-name-link">strategy</a>()</code></div>
@@ -273,7 +305,7 @@ implements <a href="GrpcClientMetadata.html" title="interface in io.servicetalk.
 <code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#clone()" title="class or interface in java.lang" class="external-link">clone</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#equals(java.lang.Object)" title="class or interface in java.lang" class="external-link">equals</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#finalize()" title="class or interface in java.lang" class="external-link">finalize</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#getClass()" title="class or interface in java.lang" class="external-link">getClass</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#hashCode()" title="class or interface in java.lang" class="external-link">hashCode</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#notify()" title="class or interface in java.lang" class="external-link">notify</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#notifyAll()" title="class or interface in java.lang" class="external-link">notifyAll</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#toString()" title="class or interface in java.lang" class="external-link">toString</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait()" title="class or interface in java.lang" class="external-link">wait</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait(long)" title="class or interface in java.lang" class="external-link">wait</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait(long,int)" title="class or interface in java.lang" class="external-link">wait</a></code></div>
 <div class="inherited-list">
 <h3 id="methods-inherited-from-class-io.servicetalk.grpc.api.GrpcMetadata">Methods inherited from interface&nbsp;io.servicetalk.grpc.api.<a href="GrpcMetadata.html" title="interface in io.servicetalk.grpc.api">GrpcMetadata</a></h3>
-<code><a href="GrpcMetadata.html#path()">path</a></code></div>
+<code><a href="GrpcMetadata.html#path()">path</a>, <a href="GrpcMetadata.html#requestContext()">requestContext</a>, <a href="GrpcMetadata.html#responseContext()">responseContext</a></code></div>
 </section>
 </li>
 </ul>
@@ -288,7 +320,15 @@ implements <a href="GrpcClientMetadata.html" title="interface in io.servicetalk.
 <li>
 <section class="detail" id="INSTANCE">
 <h3>INSTANCE</h3>
-<div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="GrpcClientMetadata.html" title="interface in io.servicetalk.grpc.api">GrpcClientMetadata</a></span>&nbsp;<span class="element-name">INSTANCE</span></div>
+<div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="GrpcClientMetadata.html" title="interface in io.servicetalk.grpc.api">GrpcClientMetadata</a></span>&nbsp;<span class="element-name">INSTANCE</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="#%3Cinit%3E()"><code>DefaultGrpcClientMetadata()</code></a> to create a new instance instead.
+ <a href="GrpcClientMetadata.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClientMetadata</code></a> contains modifiable <a href="GrpcMetadata.html#requestContext()"><code>GrpcMetadata.requestContext()</code></a> and
+ <a href="GrpcMetadata.html#responseContext()"><code>GrpcMetadata.responseContext()</code></a> now. Using this constant there will be no access to the actual
+ context and both mentioned methods will throw <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/UnsupportedOperationException.html" title="class or interface in java.lang" class="external-link"><code>UnsupportedOperationException</code></a>.</div>
+</div>
+<div class="block">Constant with a <a href="#%3Cinit%3E()"><code>default characteristics</code></a>.</div>
 </section>
 </li>
 </ul>
@@ -300,12 +340,20 @@ implements <a href="GrpcClientMetadata.html" title="interface in io.servicetalk.
 <h2>Constructor Details</h2>
 <ul class="member-list">
 <li>
+<section class="detail" id="&lt;init&gt;()">
+<h3>DefaultGrpcClientMetadata</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">DefaultGrpcClientMetadata</span>()</div>
+<div class="block">Creates a new instance with default characteristics and empty
+ <a href="GrpcMetadata.html#requestContext()"><code>request</code></a>/<a href="GrpcMetadata.html#responseContext()"><code>response</code></a> contexts.</div>
+</section>
+</li>
+<li>
 <section class="detail" id="&lt;init&gt;(java.lang.String)">
 <h3>DefaultGrpcClientMetadata</h3>
 <div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
 </span><span class="modifiers">protected</span>&nbsp;<span class="element-name">DefaultGrpcClientMetadata</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;path)</span></div>
 <div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
-<div class="deprecation-comment">Use <code>DefaultGrpcClientMetadata()</code>.</div>
+<div class="deprecation-comment">Use <a href="#%3Cinit%3E()"><code>DefaultGrpcClientMetadata()</code></a>.</div>
 </div>
 <div class="block">Creates a new instance using provided parameters and defaults for
  <a href="#%3Cinit%3E(java.lang.String,io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.encoding.api.ContentCodec,java.time.Duration)"><code>DefaultGrpcClientMetadata(String, GrpcExecutionStrategy, ContentCodec, Duration)</code></a>.</div>
@@ -516,6 +564,21 @@ implements <a href="GrpcClientMetadata.html" title="interface in io.servicetalk.
 </section>
 </li>
 <li>
+<section class="detail" id="&lt;init&gt;(java.lang.String,java.util.function.Supplier,java.util.function.Supplier,io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.encoding.api.ContentCodec,java.time.Duration)">
+<h3>DefaultGrpcClientMetadata</h3>
+<div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">protected</span>&nbsp;<span class="element-name">DefaultGrpcClientMetadata</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;path,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Supplier.html" title="class or interface in java.util.function" class="external-link">Supplier</a>&lt;<a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api">ContextMap</a>&gt;&nbsp;requestContext,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Supplier.html" title="class or interface in java.util.function" class="external-link">Supplier</a>&lt;<a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api">ContextMap</a>&gt;&nbsp;responseContext,
+ @Nullable
+ <a href="GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api">GrpcExecutionStrategy</a>&nbsp;strategy,
+ <a href="../../encoding/api/ContentCodec.html" title="interface in io.servicetalk.encoding.api">ContentCodec</a>&nbsp;requestEncoding,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;timeout)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+</section>
+</li>
+<li>
 <section class="detail" id="&lt;init&gt;(java.lang.String,io.servicetalk.grpc.api.GrpcClientMetadata)">
 <h3>DefaultGrpcClientMetadata</h3>
 <div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
@@ -651,6 +714,44 @@ implements <a href="GrpcClientMetadata.html" title="interface in io.servicetalk.
 <dd><code><a href="GrpcMetadata.html#path()">path</a></code>&nbsp;in interface&nbsp;<code><a href="GrpcMetadata.html" title="interface in io.servicetalk.grpc.api">GrpcMetadata</a></code></dd>
 <dt>Returns:</dt>
 <dd>The path for the associated <a href="https://www.grpc.io">gRPC</a> method.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="requestContext()">
+<h3>requestContext</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api">ContextMap</a></span>&nbsp;<span class="element-name">requestContext</span>()</div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="GrpcMetadata.html#requestContext()">GrpcMetadata</a></code></span></div>
+<div class="block">A request context associated with this <a href="GrpcMetadata.html" title="interface in io.servicetalk.grpc.api"><code>GrpcMetadata</code></a> that translates into
+ <a href="../../http/api/HttpMetaData.html#context()"><code>HttpMetaData.context()</code></a>.
+ <p>
+ Context can be used to associate a state with a request without serializing its state on the wire or transmit a
+ state between HTTP and gRPC layers.</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="GrpcMetadata.html#requestContext()">requestContext</a></code>&nbsp;in interface&nbsp;<code><a href="GrpcMetadata.html" title="interface in io.servicetalk.grpc.api">GrpcMetadata</a></code></dd>
+<dt>Returns:</dt>
+<dd>a request context associated with this <a href="GrpcMetadata.html" title="interface in io.servicetalk.grpc.api"><code>GrpcMetadata</code></a> that translates into
+ <a href="../../http/api/HttpMetaData.html#context()"><code>HttpMetaData.context()</code></a>.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="responseContext()">
+<h3>responseContext</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api">ContextMap</a></span>&nbsp;<span class="element-name">responseContext</span>()</div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="GrpcMetadata.html#responseContext()">GrpcMetadata</a></code></span></div>
+<div class="block">A response context associated with this <a href="GrpcMetadata.html" title="interface in io.servicetalk.grpc.api"><code>GrpcMetadata</code></a> that translates into
+ <a href="../../http/api/HttpMetaData.html#context()"><code>HttpMetaData.context()</code></a>.
+ <p>
+ Context can be used to associate a state with a response without serializing its state on the wire or transmit a
+ state between HTTP and gRPC layers.</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="GrpcMetadata.html#responseContext()">responseContext</a></code>&nbsp;in interface&nbsp;<code><a href="GrpcMetadata.html" title="interface in io.servicetalk.grpc.api">GrpcMetadata</a></code></dd>
+<dt>Returns:</dt>
+<dd>a response context associated with this <a href="GrpcMetadata.html" title="interface in io.servicetalk.grpc.api"><code>GrpcMetadata</code></a> that translates into
+ <a href="../../http/api/HttpMetaData.html#context()"><code>HttpMetaData.context()</code></a>.</dd>
 </dl>
 </section>
 </li>

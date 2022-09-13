@@ -1057,7 +1057,7 @@
 <div class="sectionbody">
 <div class="paragraph">
 <p>A core abstraction in ServiceTalk is its
-<a href="https://github.com/apple/servicetalk/blob/0.42.15/servicetalk-client-api/src/main/java/io/servicetalk/client/api/ServiceDiscoverer.java">ServiceDiscoverer</a>
+<a href="https://github.com/apple/servicetalk/blob/0.42.16/servicetalk-client-api/src/main/java/io/servicetalk/client/api/ServiceDiscoverer.java">ServiceDiscoverer</a>
 used by the protocol <em>Clients</em> (eg. HTTP/1.1, HTTP/2, gRPC, etc.).</p>
 </div>
 <div class="paragraph">
@@ -1066,7 +1066,7 @@ A ServiceTalk client leverages <em>ServiceDiscoverer</em> to find server instanc
 <em>ServiceDiscoverer</em> finds server instances associated with a logical name. ServiceTalk assumes that the client operates
 in a dynamic ephemeral environment and the server instances associated with a logical name may change over time. So, a
 <em>ServiceDiscoverer</em> returns a <em>Publisher</em> of
-<a href="https://github.com/apple/servicetalk/blob/0.42.15/servicetalk-client-api/src/main/java/io/servicetalk/client/api/ServiceDiscovererEvent.java">ServiceDiscovererEvent</a>(s)
+<a href="https://github.com/apple/servicetalk/blob/0.42.16/servicetalk-client-api/src/main/java/io/servicetalk/client/api/ServiceDiscovererEvent.java">ServiceDiscovererEvent</a>(s)
 that provide information about server instances, their current relationship to the logical name (i.e. whether it is
 added or removed from the logical name), and any additional information that is supported by a <em>ServiceDiscoverer</em>
 implementation. Using this information the <a href="../../servicetalk-loadbalancer/0.42/index.html" class="page">LoadBalancer</a> of a
@@ -1103,14 +1103,14 @@ a.k.a in the background.</p>
 <h2 id="implementations"><a class="anchor" href="#implementations"></a><a class="link" href="#implementations">Implementations</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p><a href="https://github.com/apple/servicetalk/blob/0.42.15/servicetalk-client-api/src/main/java/io/servicetalk/client/api/ServiceDiscoverer.java">ServiceDiscoverer</a>
+<p><a href="https://github.com/apple/servicetalk/blob/0.42.16/servicetalk-client-api/src/main/java/io/servicetalk/client/api/ServiceDiscoverer.java">ServiceDiscoverer</a>
 abstraction allows for various protocol-independent <em>Service Discovery</em> mechanisms to be implemented. This section will
 discuss the various implementations offered in ServiceTalk.</p>
 </div>
 <div class="sect2">
 <h3 id="domain-name-system-dns"><a class="anchor" href="#domain-name-system-dns"></a><a class="link" href="#domain-name-system-dns">Domain Name System (DNS)</a></h3>
 <div class="paragraph">
-<p><a href="https://github.com/apple/servicetalk/blob/0.42.15/servicetalk-dns-discovery-netty/src/main/java/io/servicetalk/dns/discovery/netty/DefaultDnsServiceDiscovererBuilder.java">DefaultDnsServiceDiscovererBuilder</a>
+<p><a href="https://github.com/apple/servicetalk/blob/0.42.16/servicetalk-dns-discovery-netty/src/main/java/io/servicetalk/dns/discovery/netty/DefaultDnsServiceDiscovererBuilder.java">DefaultDnsServiceDiscovererBuilder</a>
 is used to configure and build instances of <em>ServiceDiscoverer</em> that use
 <a href="https://tools.ietf.org/html/rfc1035">Domain Name System (DNS)</a> to resolve hosts represented by domain name into a
 set of IP-addresses needed for <em>Clients</em> to connect to the remote servers. Resolution happens every

@@ -171,55 +171,76 @@ loadScripts(document, 'script');</script>
  <a href="../PublisherSource.Subscriber.html#onSubscribe(io.servicetalk.concurrent.PublisherSource.Subscription)"><code>PublisherSource.Subscriber.onSubscribe(PublisherSource.Subscription)</code></a> or duplicate terminal signals.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static &lt;T&gt;&nbsp;void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#logDuplicateTerminal(io.servicetalk.concurrent.SingleSource.Subscriber)" class="member-name-link">logDuplicateTerminal</a><wbr>(<a href="../SingleSource.Subscriber.html" title="interface in io.servicetalk.concurrent">SingleSource.Subscriber</a>&lt;T&gt;&nbsp;subscriber)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#logDuplicateTerminal(io.servicetalk.concurrent.PublisherSource.Subscriber,java.lang.Throwable)" class="member-name-link">logDuplicateTerminal</a><wbr>(<a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent">PublisherSource.Subscriber</a>&lt;T&gt;&nbsp;subscriber,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&nbsp;cause)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">Log if the ReactiveStreams specification has been violated related to out of order
+ <a href="../PublisherSource.Subscriber.html#onSubscribe(io.servicetalk.concurrent.PublisherSource.Subscription)"><code>PublisherSource.Subscriber.onSubscribe(PublisherSource.Subscription)</code></a> or duplicate terminal signals.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static &lt;T&gt;&nbsp;void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#logDuplicateTerminal(io.servicetalk.concurrent.SingleSource.Subscriber)" class="member-name-link">logDuplicateTerminal</a><wbr>(<a href="../SingleSource.Subscriber.html" title="interface in io.servicetalk.concurrent">SingleSource.Subscriber</a>&lt;T&gt;&nbsp;subscriber)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">Log if the ReactiveStreams specification has been violated related to out of order
+ <a href="../SingleSource.Subscriber.html#onSubscribe(io.servicetalk.concurrent.Cancellable)"><code>SingleSource.Subscriber.onSubscribe(Cancellable)</code></a> or duplicate terminal signals.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static &lt;T&gt;&nbsp;void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#logDuplicateTerminal(io.servicetalk.concurrent.SingleSource.Subscriber,java.lang.Throwable)" class="member-name-link">logDuplicateTerminal</a><wbr>(<a href="../SingleSource.Subscriber.html" title="interface in io.servicetalk.concurrent">SingleSource.Subscriber</a>&lt;T&gt;&nbsp;subscriber,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&nbsp;cause)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Log if the ReactiveStreams specification has been violated related to out of order
  <a href="../SingleSource.Subscriber.html#onSubscribe(io.servicetalk.concurrent.Cancellable)"><code>SingleSource.Subscriber.onSubscribe(Cancellable)</code></a> or duplicate terminal signals.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/IllegalArgumentException.html" title="class or interface in java.lang" class="external-link">IllegalArgumentException</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#newExceptionForInvalidRequestN(long)" class="member-name-link">newExceptionForInvalidRequestN</a><wbr>(long&nbsp;n)</code></div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static &lt;T&gt;&nbsp;void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#logDuplicateTerminalOnSuccess(io.servicetalk.concurrent.SingleSource.Subscriber,T)" class="member-name-link">logDuplicateTerminalOnSuccess</a><wbr>(<a href="../SingleSource.Subscriber.html" title="interface in io.servicetalk.concurrent">SingleSource.Subscriber</a>&lt;T&gt;&nbsp;subscriber,
+ T&nbsp;onSuccess)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">Log if the ReactiveStreams specification has been violated related to out of order
+ <a href="../SingleSource.Subscriber.html#onSubscribe(io.servicetalk.concurrent.Cancellable)"><code>SingleSource.Subscriber.onSubscribe(Cancellable)</code></a> or duplicate terminal signals.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/IllegalArgumentException.html" title="class or interface in java.lang" class="external-link">IllegalArgumentException</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#newExceptionForInvalidRequestN(long)" class="member-name-link">newExceptionForInvalidRequestN</a><wbr>(long&nbsp;n)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Create a new exception for an invalid amount of <a href="../PublisherSource.Subscription.html#request(long)"><code>PublisherSource.Subscription.request(long)</code></a> according to
  <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.1/README.md#3.9">Reactive Streams,
  Rule 3.9</a>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#safeCancel(io.servicetalk.concurrent.Cancellable)" class="member-name-link">safeCancel</a><wbr>(<a href="../Cancellable.html" title="interface in io.servicetalk.concurrent">Cancellable</a>&nbsp;cancellable)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#safeCancel(io.servicetalk.concurrent.Cancellable)" class="member-name-link">safeCancel</a><wbr>(<a href="../Cancellable.html" title="interface in io.servicetalk.concurrent">Cancellable</a>&nbsp;cancellable)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Invokes <a href="../Cancellable.html#cancel()"><code>Cancellable.cancel()</code></a> ignoring any exceptions that are thrown.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#safeOnComplete(io.servicetalk.concurrent.CompletableSource.Subscriber)" class="member-name-link">safeOnComplete</a><wbr>(<a href="../CompletableSource.Subscriber.html" title="interface in io.servicetalk.concurrent">CompletableSource.Subscriber</a>&nbsp;subscriber)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#safeOnComplete(io.servicetalk.concurrent.CompletableSource.Subscriber)" class="member-name-link">safeOnComplete</a><wbr>(<a href="../CompletableSource.Subscriber.html" title="interface in io.servicetalk.concurrent">CompletableSource.Subscriber</a>&nbsp;subscriber)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Invokes <a href="../CompletableSource.Subscriber.html#onComplete()"><code>CompletableSource.Subscriber.onComplete()</code></a> ignoring an occurred exception if any.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static &lt;T&gt;&nbsp;void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#safeOnComplete(io.servicetalk.concurrent.PublisherSource.Subscriber)" class="member-name-link">safeOnComplete</a><wbr>(<a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent">PublisherSource.Subscriber</a>&lt;T&gt;&nbsp;subscriber)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static &lt;T&gt;&nbsp;void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#safeOnComplete(io.servicetalk.concurrent.PublisherSource.Subscriber)" class="member-name-link">safeOnComplete</a><wbr>(<a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent">PublisherSource.Subscriber</a>&lt;T&gt;&nbsp;subscriber)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Invokes <a href="../PublisherSource.Subscriber.html#onComplete()"><code>PublisherSource.Subscriber.onComplete()</code></a> ignoring an occurred exception if any.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#safeOnError(io.servicetalk.concurrent.CompletableSource.Subscriber,java.lang.Throwable)" class="member-name-link">safeOnError</a><wbr>(<a href="../CompletableSource.Subscriber.html" title="interface in io.servicetalk.concurrent">CompletableSource.Subscriber</a>&nbsp;subscriber,
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#safeOnError(io.servicetalk.concurrent.CompletableSource.Subscriber,java.lang.Throwable)" class="member-name-link">safeOnError</a><wbr>(<a href="../CompletableSource.Subscriber.html" title="interface in io.servicetalk.concurrent">CompletableSource.Subscriber</a>&nbsp;subscriber,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&nbsp;cause)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Invokes <a href="../CompletableSource.Subscriber.html#onError(java.lang.Throwable)"><code>CompletableSource.Subscriber.onError(Throwable)</code></a> ignoring an occurred exception if any.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static &lt;T&gt;&nbsp;void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#safeOnError(io.servicetalk.concurrent.PublisherSource.Subscriber,java.lang.Throwable)" class="member-name-link">safeOnError</a><wbr>(<a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent">PublisherSource.Subscriber</a>&lt;T&gt;&nbsp;subscriber,
- <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&nbsp;cause)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
-<div class="block">Invokes <a href="../PublisherSource.Subscriber.html#onError(java.lang.Throwable)"><code>PublisherSource.Subscriber.onError(Throwable)</code></a> ignoring an occurred exception if any.</div>
-</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static &lt;T&gt;&nbsp;void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#safeOnError(io.servicetalk.concurrent.SingleSource.Subscriber,java.lang.Throwable)" class="member-name-link">safeOnError</a><wbr>(<a href="../SingleSource.Subscriber.html" title="interface in io.servicetalk.concurrent">SingleSource.Subscriber</a>&lt;T&gt;&nbsp;subscriber,
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#safeOnError(io.servicetalk.concurrent.PublisherSource.Subscriber,java.lang.Throwable)" class="member-name-link">safeOnError</a><wbr>(<a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent">PublisherSource.Subscriber</a>&lt;T&gt;&nbsp;subscriber,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&nbsp;cause)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
-<div class="block">Invokes <a href="../SingleSource.Subscriber.html#onError(java.lang.Throwable)"><code>SingleSource.Subscriber.onError(Throwable)</code></a> ignoring an occurred exception if any.</div>
+<div class="block">Invokes <a href="../PublisherSource.Subscriber.html#onError(java.lang.Throwable)"><code>PublisherSource.Subscriber.onError(Throwable)</code></a> ignoring an occurred exception if any.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static &lt;T&gt;&nbsp;void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#safeOnSuccess(io.servicetalk.concurrent.SingleSource.Subscriber,T)" class="member-name-link">safeOnSuccess</a><wbr>(<a href="../SingleSource.Subscriber.html" title="interface in io.servicetalk.concurrent">SingleSource.Subscriber</a>&lt;T&gt;&nbsp;subscriber,
- T&nbsp;value)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#safeOnError(io.servicetalk.concurrent.SingleSource.Subscriber,java.lang.Throwable)" class="member-name-link">safeOnError</a><wbr>(<a href="../SingleSource.Subscriber.html" title="interface in io.servicetalk.concurrent">SingleSource.Subscriber</a>&lt;T&gt;&nbsp;subscriber,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&nbsp;cause)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">Invokes <a href="../SingleSource.Subscriber.html#onError(java.lang.Throwable)"><code>SingleSource.Subscriber.onError(Throwable)</code></a> ignoring an occurred exception if any.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static &lt;T&gt;&nbsp;void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#safeOnSuccess(io.servicetalk.concurrent.SingleSource.Subscriber,T)" class="member-name-link">safeOnSuccess</a><wbr>(<a href="../SingleSource.Subscriber.html" title="interface in io.servicetalk.concurrent">SingleSource.Subscriber</a>&lt;T&gt;&nbsp;subscriber,
+ T&nbsp;value)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Invokes <a href="../SingleSource.Subscriber.html#onSuccess(T)"><code>SingleSource.Subscriber.onSuccess(Object)</code></a> ignoring an occurred exception if any.</div>
 </div>
 </div>
@@ -536,6 +557,22 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
+<section class="detail" id="logDuplicateTerminal(io.servicetalk.concurrent.PublisherSource.Subscriber,java.lang.Throwable)">
+<h3>logDuplicateTerminal</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="type-parameters">&lt;T&gt;</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">logDuplicateTerminal</span><wbr><span class="parameters">(<a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent">PublisherSource.Subscriber</a>&lt;T&gt;&nbsp;subscriber,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&nbsp;cause)</span></div>
+<div class="block">Log if the ReactiveStreams specification has been violated related to out of order
+ <a href="../PublisherSource.Subscriber.html#onSubscribe(io.servicetalk.concurrent.PublisherSource.Subscription)"><code>PublisherSource.Subscriber.onSubscribe(PublisherSource.Subscription)</code></a> or duplicate terminal signals.</div>
+<dl class="notes">
+<dt>Type Parameters:</dt>
+<dd><code>T</code> - The type of <a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a>.</dd>
+<dt>Parameters:</dt>
+<dd><code>subscriber</code> - The <a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a>.</dd>
+<dd><code>cause</code> - The cause from <a href="../PublisherSource.Subscriber.html#onError(java.lang.Throwable)"><code>PublisherSource.Subscriber.onError(Throwable)</code></a>.</dd>
+</dl>
+</section>
+</li>
+<li>
 <section class="detail" id="logDuplicateTerminal(io.servicetalk.concurrent.SingleSource.Subscriber)">
 <h3>logDuplicateTerminal</h3>
 <div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="type-parameters">&lt;T&gt;</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">logDuplicateTerminal</span><wbr><span class="parameters">(<a href="../SingleSource.Subscriber.html" title="interface in io.servicetalk.concurrent">SingleSource.Subscriber</a>&lt;T&gt;&nbsp;subscriber)</span></div>
@@ -546,6 +583,39 @@ loadScripts(document, 'script');</script>
 <dd><code>T</code> - The type of <a href="../SingleSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>SingleSource.Subscriber</code></a>.</dd>
 <dt>Parameters:</dt>
 <dd><code>subscriber</code> - The <a href="../SingleSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>SingleSource.Subscriber</code></a>.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="logDuplicateTerminalOnSuccess(io.servicetalk.concurrent.SingleSource.Subscriber,T)">
+<h3 id="logDuplicateTerminalOnSuccess(io.servicetalk.concurrent.SingleSource.Subscriber,java.lang.Object)">logDuplicateTerminalOnSuccess</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="type-parameters">&lt;T&gt;</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">logDuplicateTerminalOnSuccess</span><wbr><span class="parameters">(<a href="../SingleSource.Subscriber.html" title="interface in io.servicetalk.concurrent">SingleSource.Subscriber</a>&lt;T&gt;&nbsp;subscriber,
+ @Nullable
+ T&nbsp;onSuccess)</span></div>
+<div class="block">Log if the ReactiveStreams specification has been violated related to out of order
+ <a href="../SingleSource.Subscriber.html#onSubscribe(io.servicetalk.concurrent.Cancellable)"><code>SingleSource.Subscriber.onSubscribe(Cancellable)</code></a> or duplicate terminal signals.</div>
+<dl class="notes">
+<dt>Type Parameters:</dt>
+<dd><code>T</code> - The type of <a href="../SingleSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>SingleSource.Subscriber</code></a>.</dd>
+<dt>Parameters:</dt>
+<dd><code>subscriber</code> - The <a href="../SingleSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>SingleSource.Subscriber</code></a>.</dd>
+<dd><code>onSuccess</code> - The signal delivered to <a href="../SingleSource.Subscriber.html#onSuccess(T)"><code>SingleSource.Subscriber.onSuccess(Object)</code></a>.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="logDuplicateTerminal(io.servicetalk.concurrent.SingleSource.Subscriber,java.lang.Throwable)">
+<h3>logDuplicateTerminal</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="type-parameters">&lt;T&gt;</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">logDuplicateTerminal</span><wbr><span class="parameters">(<a href="../SingleSource.Subscriber.html" title="interface in io.servicetalk.concurrent">SingleSource.Subscriber</a>&lt;T&gt;&nbsp;subscriber,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&nbsp;cause)</span></div>
+<div class="block">Log if the ReactiveStreams specification has been violated related to out of order
+ <a href="../SingleSource.Subscriber.html#onSubscribe(io.servicetalk.concurrent.Cancellable)"><code>SingleSource.Subscriber.onSubscribe(Cancellable)</code></a> or duplicate terminal signals.</div>
+<dl class="notes">
+<dt>Type Parameters:</dt>
+<dd><code>T</code> - The type of <a href="../SingleSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>SingleSource.Subscriber</code></a>.</dd>
+<dt>Parameters:</dt>
+<dd><code>subscriber</code> - The <a href="../SingleSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>SingleSource.Subscriber</code></a>.</dd>
+<dd><code>cause</code> - The cause from <a href="../SingleSource.Subscriber.html#onError(java.lang.Throwable)"><code>SingleSource.Subscriber.onError(Throwable)</code></a>.</dd>
 </dl>
 </section>
 </li>
