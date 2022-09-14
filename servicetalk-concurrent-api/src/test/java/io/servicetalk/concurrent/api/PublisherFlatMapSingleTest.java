@@ -15,6 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.SingleSource;
@@ -45,6 +46,7 @@ import java.util.function.Function;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
 import static io.servicetalk.concurrent.api.Single.failed;
+import static io.servicetalk.concurrent.api.Single.never;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
@@ -54,6 +56,7 @@ import static java.time.Duration.ofMillis;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.ThreadLocalRandom.current;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.IntStream.range;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -69,6 +72,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -250,6 +254,89 @@ class PublisherFlatMapSingleTest {
         } else {
             source.onComplete();
             verify(mockSubscriber).onComplete();
+        }
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] delayError={0}")
+    @ValueSource(booleans = {true, false})
+    void mappedSourceIsSubscribedAfterCancel(boolean delayError) throws InterruptedException {
+        final int item1 = 1;
+        final int item2 = 2;
+        TestSubscription upstreamSubscription = new TestSubscription();
+        source = new TestPublisher.Builder<Integer>()
+                .disableAutoOnSubscribe().build(subscriber1 -> {
+                    subscriber1.onSubscribe(upstreamSubscription);
+                    return subscriber1;
+                });
+        CountDownLatch latch = new CountDownLatch(1);
+        TestCancellable mappedCancellable = new TestCancellable();
+        TestSingle<Integer> mappedSingle = new TestSingle.Builder<Integer>()
+                .disableAutoOnSubscribe().build(subscriber1 -> {
+                    subscriber1.onSubscribe(mappedCancellable);
+                    latch.countDown();
+                    return subscriber1;
+                });
+        TestCancellable mappedCancellable2 = new TestCancellable();
+        TestSingle<Integer> mappedSingle2 = new TestSingle.Builder<Integer>()
+                .disableAutoOnSubscribe().build(subscriber1 -> {
+                    subscriber1.onSubscribe(mappedCancellable2);
+                    return subscriber1;
+                });
+        Function<Integer, Single<Integer>> mapper =
+                i -> i == item1 ? mappedSingle : i == item2 ? mappedSingle2 : never();
+        toSource(delayError ? source.flatMapMergeSingleDelayError(mapper, 2) : source.flatMapMergeSingle(mapper, 2))
+                .subscribe(subscriber);
+        Subscription subscription = subscriber.awaitSubscription();
+        subscription.request(2);
+        upstreamSubscription.awaitRequestN(2);
+        source.onNext(item1);
+
+        // Wait for the first mapped publisher to be subscribed to, then cancel.
+        latch.await();
+        subscription.cancel();
+        source.onNext(item2);
+        mappedCancellable2.awaitCancelled();
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] onError={0} delayError={1}")
+    @CsvSource(value = {"true,true", "true,false", "false,true", "false,false"})
+    void onNextAfterTerminalThrows(boolean onError, boolean delayError) {
+        PublisherSource<Single<Integer>> mappedPublisher = subscriber -> subscriber.onSubscribe(new Subscription() {
+            private boolean terminated;
+            @Override
+            public void request(final long n) {
+                if (n > 0 && !terminated) {
+                    terminated = true;
+                    subscriber.onNext(never());
+
+                    if (onError) {
+                        subscriber.onError(DELIBERATE_EXCEPTION);
+                    } else {
+                        subscriber.onComplete();
+                    }
+
+                    // intentionally violate the RS spec to verify the operator's behavior.
+                    subscriber.onNext(succeeded(2));
+                }
+            }
+
+            @Override
+            public void cancel() {
+                // noop
+            }
+        });
+        Publisher<Single<Integer>> publisher = fromSource(mappedPublisher);
+        toSource(delayError ?
+                publisher.flatMapMergeSingleDelayError(identity()) :
+                publisher.flatMapMergeSingle(identity()))
+                .subscribe(subscriber);
+        if (onError) {
+            // If an error has already been delivered flatMap internal state doesn't need to be invalidated to track
+            // the last publisher that terminates, so we expect the original exception to be propagated.
+            subscriber.awaitSubscription().request(1);
+            assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
+        } else {
+            assertThrows(IllegalStateException.class, () -> subscriber.awaitSubscription().request(1));
         }
     }
 

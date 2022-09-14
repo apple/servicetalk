@@ -64,6 +64,7 @@ import static java.lang.Math.min;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.function.Function.identity;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -353,6 +354,88 @@ class PublisherFlatMapMergeTest {
             publisher.onComplete();
             verify(mockSubscriber).onComplete();
         }
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] onError={0} delayError={1}")
+    @CsvSource(value = {/*"true,true", "true,false",*/ "false,true"/*, "false,false"*/})
+    void onNextAfterTerminalThrows(boolean onError, boolean delayError) {
+        PublisherSource<Publisher<Integer>> mappedPublisher = subscriber -> subscriber.onSubscribe(new Subscription() {
+            private boolean terminated;
+            @Override
+            public void request(final long n) {
+                if (n > 0 && !terminated) {
+                    terminated = true;
+                    subscriber.onNext(never());
+
+                    if (onError) {
+                        subscriber.onError(DELIBERATE_EXCEPTION);
+                    } else {
+                        subscriber.onComplete();
+                    }
+
+                    // intentionally violate the RS spec to verify the operator's behavior.
+                    subscriber.onNext(from(2));
+                }
+            }
+
+            @Override
+            public void cancel() {
+                // noop
+            }
+        });
+        Publisher<Publisher<Integer>> publisher = fromSource(mappedPublisher);
+        toSource(delayError ? publisher.flatMapMergeDelayError(identity()) : publisher.flatMapMerge(identity()))
+                .subscribe(subscriber);
+        subscriber.awaitSubscription().request(1);
+
+        if (onError) {
+            // If an error has already been delivered flatMap internal state doesn't need to be invalidated to track
+            // the last publisher that terminates, so we expect the original exception to be propagated.
+            assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
+        } else {
+            // flatMap eagerly requests demand in onSubscribe, so the handleSubscribe catch all in Publisher propagates
+            // the exception to the subscriber.
+            assertThat(subscriber.awaitOnError(), instanceOf(IllegalStateException.class));
+        }
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] delayError={0}")
+    @ValueSource(booleans = {true, false})
+    void mappedSourceIsSubscribedAfterCancel(boolean delayError) throws InterruptedException {
+        final int item1 = 1;
+        final int item2 = 2;
+        TestSubscription upstreamSubscription = new TestSubscription();
+        publisher = new TestPublisher.Builder<Integer>()
+                .disableAutoOnSubscribe().build(subscriber1 -> {
+                    subscriber1.onSubscribe(upstreamSubscription);
+                    return subscriber1;
+                });
+        TestSubscription mappedSubscription = new TestSubscription();
+        TestPublisher<Integer> mappedPublisher = new TestPublisher.Builder<Integer>()
+                .disableAutoOnSubscribe().build(subscriber1 -> {
+                    subscriber1.onSubscribe(mappedSubscription);
+                    return subscriber1;
+                });
+        TestSubscription mappedSubscription2 = new TestSubscription();
+        TestPublisher<Integer> mappedPublisher2 = new TestPublisher.Builder<Integer>()
+                .disableAutoOnSubscribe().build(subscriber1 -> {
+                    subscriber1.onSubscribe(mappedSubscription2);
+                    return subscriber1;
+                });
+        Function<Integer, Publisher<Integer>> mapper =
+                i -> i == item1 ? mappedPublisher : i == item2 ? mappedPublisher2 : never();
+        toSource(delayError ? publisher.flatMapMergeDelayError(mapper, 2) : publisher.flatMapMerge(mapper, 2))
+                .subscribe(subscriber);
+        Subscription subscription = subscriber.awaitSubscription();
+        subscription.request(2);
+        upstreamSubscription.awaitRequestN(2);
+        publisher.onNext(item1);
+
+        // Wait for the first mapped publisher to be subscribed to, then cancel.
+        mappedSubscription.awaitRequestN(1);
+        subscription.cancel();
+        publisher.onNext(item2);
+        mappedSubscription2.awaitCancelled();
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] delayError={0} queuedSignals={1}")
