@@ -15,9 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
-import io.servicetalk.concurrent.internal.DelayedSubscription;
 import io.servicetalk.concurrent.internal.FlowControlUtils;
 import io.servicetalk.concurrent.internal.QueueFullException;
 import io.servicetalk.concurrent.internal.SubscriberUtils;
@@ -198,11 +196,18 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
         public void onNext(@Nullable final T t) {
             final Publisher<? extends R> publisher = requireNonNull(source.mapper.apply(t),
                     () -> "Mapper " + source.mapper + " returned null");
-            FlatMapPublisherSubscriber<T, R> subscriber = new FlatMapPublisherSubscriber<>(this);
-            if (cancellableSet.add(subscriber) && activeMappedSourcesUpdater.incrementAndGet(this) > 0) {
-                publisher.subscribeInternal(subscriber);
+            for (;;) {
+                final int currValue = this.activeMappedSources;
+                if (currValue < 0) {
+                    throw new IllegalStateException("onNext(" + t + ") after terminal signal delivered to " + this);
+                } else if (currValue == Integer.MAX_VALUE) {
+                    // This shouldn't happen as maxConcurrency upstream is an integer.
+                    throw new IllegalStateException("Overflow of mapped Publishers for " + this);
+                } else if (activeMappedSourcesUpdater.compareAndSet(this, currValue, currValue + 1)) {
+                    publisher.subscribeInternal(new FlatMapPublisherSubscriber<>(this));
+                    break;
+                }
             }
-            // else if activeMapped <=0 after increment we have already terminated and onNext isn't valid!
         }
 
         @Override
@@ -506,7 +511,8 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
         }
 
         private boolean removeSubscriber(final FlatMapPublisherSubscriber<T, R> subscriber, int unusedDemand) {
-            if (cancellableSet.remove(subscriber) && decrementActiveMappedSources()) {
+            assert subscriber.subscription != null;
+            if (cancellableSet.remove(subscriber.subscription) && decrementActiveMappedSources()) {
                 return true;
             } else if (unusedDemand > 0) {
                 incMappedDemand(unusedDemand);
@@ -514,7 +520,7 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
             return false;
         }
 
-        private static final class FlatMapPublisherSubscriber<T, R> implements Subscriber<R>, Cancellable {
+        private static final class FlatMapPublisherSubscriber<T, R> implements Subscriber<R> {
             @SuppressWarnings("rawtypes")
             private static final AtomicIntegerFieldUpdater<FlatMapPublisherSubscriber> pendingDemandUpdater =
                     AtomicIntegerFieldUpdater.newUpdater(FlatMapPublisherSubscriber.class, "innerPendingDemand");
@@ -524,8 +530,9 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
              */
             private static final int TERMINATED = -2;
             private final FlatMapSubscriber<T, R> parent;
-            private final DelayedSubscription subscription;
             private volatile int innerPendingDemand;
+            @Nullable
+            private Subscription subscription;
             /**
              * visibility provided by the {@link Subscriber} thread in {@link #onNext(Object)}, and
              * demand is exhausted before {@link #request(long)} is called, and that method triggers
@@ -537,16 +544,11 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
 
             FlatMapPublisherSubscriber(FlatMapSubscriber<T, R> parent) {
                 this.parent = parent;
-                subscription = new DelayedSubscription();
-            }
-
-            @Override
-            public void cancel() {
-                subscription.cancel();
             }
 
             boolean request(int n) {
                 assert n > 0;
+                assert subscription != null;
                 // Write to signalsQueued BEFORE pendingDemand so this value is guaranteed to be visible in Subscriber
                 // methods (onNext). There should be an implicit "happens before" because we need to request upstream
                 // in order to get signals, but this way we don't have to rely upon external factors.
@@ -568,14 +570,16 @@ final class PublisherFlatMapMerge<T, R> extends AbstractAsynchronousPublisherOpe
 
             @Override
             public void onSubscribe(final Subscription s) {
-                subscription.delayedSubscription(ConcurrentSubscription.wrap(s));
+                subscription = ConcurrentSubscription.wrap(s);
                 // RequestN management for mapped sources is "approximate" as it is divided between mapped sources. More
                 // demand may be distributed than is requested from downstream in order to avoid deadlock scenarios.
                 // To accommodate for the "approximate" mapped demand we maintain a signal queue (bounded by the
                 // concurrency). This presents an opportunity to decouple downstream requestN requests from iterating
                 // all active mapped sources and instead optimistically give out demand here and replenish demand after
                 // signals are delivered to the downstream subscriber (based upon available demand).
-                parent.distributeMappedDemand(this);
+                if (parent.cancellableSet.add(subscription)) {
+                    parent.distributeMappedDemand(this);
+                }
             }
 
             @Override

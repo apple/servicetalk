@@ -186,10 +186,18 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
         public void onNext(T t) {
             final Single<? extends R> next = requireNonNull(source.mapper.apply(t),
                     () -> "Mapper " + source.mapper + " returned null");
-            if (activeMappedSourcesUpdater.incrementAndGet(this) > 0) {
-                next.subscribeInternal(new FlatMapSingleSubscriber());
+            for (;;) {
+                final int currValue = this.activeMappedSources;
+                if (currValue < 0) {
+                    throw new IllegalStateException("onNext(" + t + ") after terminal signal delivered to " + this);
+                } else if (currValue == Integer.MAX_VALUE) {
+                    // This shouldn't happen as maxConcurrency upstream is an integer.
+                    throw new IllegalStateException("Overflow of mapped Publishers for " + this);
+                } else if (activeMappedSourcesUpdater.compareAndSet(this, currValue, currValue + 1)) {
+                    next.subscribeInternal(new FlatMapSingleSubscriber());
+                    break;
+                }
             }
-            // else we have already terminated and onNext isn't valid!
         }
 
         @Override
