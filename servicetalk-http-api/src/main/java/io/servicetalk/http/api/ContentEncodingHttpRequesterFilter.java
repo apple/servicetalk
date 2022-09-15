@@ -27,6 +27,7 @@ import static io.servicetalk.http.api.ContentEncodingHttpServiceFilter.matchAndR
 import static io.servicetalk.http.api.HeaderUtils.addContentEncoding;
 import static io.servicetalk.http.api.HttpHeaderNames.ACCEPT_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_ENCODING;
+import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -94,6 +95,8 @@ public final class ContentEncodingHttpRequesterFilter implements
             final StreamingHttpRequest encodedRequest;
             if (encoder != null && !identityEncoder().equals(encoder)) {
                 addContentEncoding(request.headers(), encoder.encodingName());
+                // After we encode the content length is unlikely to still be correct, remove it!
+                request.headers().remove(CONTENT_LENGTH);
                 encodedRequest = request.transformPayloadBody(pub -> encoder.streamingEncoder().serialize(pub,
                         delegate.executionContext().bufferAllocator()));
             } else {
@@ -115,6 +118,8 @@ public final class ContentEncodingHttpRequesterFilter implements
                             "<null>").toString());
                 }
 
+                // After we decode the content length is unlikely to still be correct, remove it!
+                response.headers().remove(CONTENT_LENGTH);
                 return response.transformPayloadBody(pub -> decoder.streamingDecoder().deserialize(pub,
                         delegate.executionContext().bufferAllocator()));
             }) : respSingle).shareContextOnSubscribe();

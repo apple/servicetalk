@@ -92,6 +92,7 @@ public abstract class AbstractHttpRequesterFilterTest {
 
     protected void setUp(SecurityType security) {
         lenient().when(mockExecutionContext.executionStrategy()).thenReturn(defaultStrategy());
+        lenient().when(mockExecutionContext.bufferAllocator()).thenReturn(DEFAULT_ALLOCATOR);
         lenient().when(mockConnectionContext.sslSession()).thenAnswer(__ -> {
             switch (security) {
                 case Secure:
