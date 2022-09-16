@@ -35,6 +35,7 @@ import static io.servicetalk.encoding.api.internal.HeaderUtils.negotiateAccepted
 import static io.servicetalk.http.api.HeaderUtils.addContentEncoding;
 import static io.servicetalk.http.api.HttpHeaderNames.ACCEPT_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_ENCODING;
+import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
 import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
 import static io.servicetalk.http.api.HttpResponseStatus.NOT_MODIFIED;
@@ -99,6 +100,8 @@ public final class ContentEncodingHttpServiceFilter implements StreamingHttpServ
                             return succeeded(responseFactory.unsupportedMediaType()).shareContextOnSubscribe();
                         }
 
+                        // After we decode the content length is unlikely to still be correct, remove it!
+                        request.headers().remove(CONTENT_LENGTH);
                         requestDecompressed = request.transformPayloadBody(pub ->
                                 decoder.streamingDecoder().deserialize(pub, ctx.executionContext().bufferAllocator()));
                     } else {
@@ -119,6 +122,8 @@ public final class ContentEncodingHttpServiceFilter implements StreamingHttpServ
                         }
 
                         addContentEncoding(response.headers(), encoder.encodingName());
+                        // After we encode the content length is unlikely to still be correct, remove it!
+                        request.headers().remove(CONTENT_LENGTH);
                         return response.transformPayloadBody(bufPub ->
                                 encoder.streamingEncoder().serialize(bufPub, ctx.executionContext().bufferAllocator()));
                     }).shareContextOnSubscribe();
