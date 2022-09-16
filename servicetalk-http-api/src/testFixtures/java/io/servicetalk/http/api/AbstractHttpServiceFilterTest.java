@@ -54,6 +54,7 @@ public abstract class AbstractHttpServiceFilterTest {
     @BeforeEach
     void setUp() {
         lenient().when(mockConnectionContext.executionContext()).thenReturn(executionContext);
+        lenient().when(executionContext.bufferAllocator()).thenReturn(DEFAULT_ALLOCATOR);
         lenient().when(mockConnectionContext.remoteAddress()).thenAnswer(__ -> remoteAddress());
         lenient().when(mockConnectionContext.localAddress()).thenAnswer(__ -> localAddress());
     }

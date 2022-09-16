@@ -17,13 +17,12 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.CharSequences;
-import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.encoding.api.BufferDecoderGroupBuilder;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,17 +33,17 @@ import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.encoding.api.Identity.identityEncoder;
 import static io.servicetalk.encoding.netty.NettyBufferEncoders.gzipDefault;
+import static io.servicetalk.http.api.ContentEncodingHttpRequesterFilterTest.assertContentLength;
 import static io.servicetalk.http.api.ContentEncodingHttpServiceFilter.matchAndRemoveEncoding;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
+import static java.util.Arrays.asList;
 import static java.util.function.Function.identity;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
-class ContentEncodingHttpServiceFilterTest extends AbstractHttpRequesterFilterTest {
-
+class ContentEncodingHttpServiceFilterTest extends AbstractHttpServiceFilterTest {
     @Test
     void testMatchAndRemoveEncodingFirst() {
         List<CharSequence> supportedDecoders = new ArrayList<>();
@@ -88,45 +87,35 @@ class ContentEncodingHttpServiceFilterTest extends AbstractHttpRequesterFilterTe
                 contentEqualsIgnoreCase(contentEncoding, " deflate , foo , gzip "), is(true));
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] {0}-{1}")
-    @MethodSource("requesterTypes")
-    void contentLengthRemovedOnEncode(final RequesterType type,
-                                      final SecurityType security) throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] {0}")
+    @EnumSource(SecurityType.class)
+    void contentLengthRemovedOnEncode(final SecurityType security) throws Exception {
         setUp(security);
-        StreamingHttpRequester filter = createFilter(type, (respFactory, request) -> {
+        StreamingHttpRequester requester = createFilter((respFactory, request) -> {
             try {
                 assertContentLength(request.headers(), request.payloadBody());
             } catch (Exception e) {
                 return failed(e);
             }
 
-            // Simulate the server compressed reply, with CONTENT_LENGTH included.
             String responseStr = "aaaaaaaaaaaaaaaa";
             Buffer responseBuf = DEFAULT_ALLOCATOR.fromAscii(responseStr);
             Buffer encoded = gzipDefault().encoder().serialize(responseBuf, DEFAULT_ALLOCATOR);
             return Single.succeeded(respFactory.ok().payloadBody(from(encoded))
                     .addHeader(CONTENT_LENGTH, String.valueOf(encoded.readableBytes()))
                     .addHeader(CONTENT_ENCODING, gzipDefault().encodingName()));
-        }, new ContentEncodingHttpRequesterFilter(new BufferDecoderGroupBuilder()
-                .add(gzipDefault(), true)
-                .add(identityEncoder(), false)
-                .build()));
+        }, new ContentEncodingHttpServiceFilter(asList(gzipDefault(), identityEncoder()),
+                new BufferDecoderGroupBuilder()
+                        .add(gzipDefault())
+                        .add(identityEncoder(), false).build()));
 
         // Simulate the user (or earlier filter) setting the content length before compression.
-        StreamingHttpRequest request = filter.post("/foo");
+        StreamingHttpRequest request = requester.post("/foo");
         String payloadBody = "bbbbbbbbbbbbbbbbbbb";
-        request.payloadBody(from(filter.executionContext().bufferAllocator().fromAscii(payloadBody)));
+        request.payloadBody(from(requester.executionContext().bufferAllocator().fromAscii(payloadBody)));
         request.headers().add(CONTENT_LENGTH, String.valueOf(payloadBody.length()));
         request.contentEncoding(gzipDefault());
-        StreamingHttpResponse response = filter.request(request).toFuture().get();
+        StreamingHttpResponse response = requester.request(request).toFuture().get();
         assertContentLength(response.headers(), response.payloadBody());
-    }
-
-    private static void assertContentLength(HttpHeaders headers, Publisher<Buffer> publisher) throws Exception {
-        CharSequence reqLen = headers.get(CONTENT_LENGTH);
-        if (reqLen != null) {
-            final int len = publisher.collect(() -> 0, (sum, buff) -> sum + buff.readableBytes()).toFuture().get();
-            assertThat(Integer.parseInt(reqLen.toString()), equalTo(len));
-        }
     }
 }
