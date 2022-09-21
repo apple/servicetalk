@@ -55,7 +55,6 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
-import static io.servicetalk.transport.netty.internal.ExecutionContextExtension.immediate;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
@@ -64,7 +63,13 @@ import static org.hamcrest.Matchers.hasSize;
 class FlushStrategyOverrideTest {
 
     @RegisterExtension
-    final ExecutionContextExtension ctx = immediate();
+    static final ExecutionContextExtension SERVER_CTX =
+            ExecutionContextExtension.cached("server-io", "server-executor")
+                    .setClassLevel(true);
+    @RegisterExtension
+    static final ExecutionContextExtension CLIENT_CTX =
+            ExecutionContextExtension.cached("client-io", "client-executor")
+                    .setClassLevel(true);
 
     private StreamingHttpClient client;
     private ServerContext serverCtx;
@@ -75,14 +80,18 @@ class FlushStrategyOverrideTest {
     void setUp() throws Exception {
         service = new FlushingService();
         serverCtx = HttpServers.forAddress(localAddress(0))
-                .ioExecutor(ctx.ioExecutor())
+                .ioExecutor(SERVER_CTX.ioExecutor())
+                .executor(SERVER_CTX.executor())
+                .bufferAllocator(SERVER_CTX.bufferAllocator())
                 .executionStrategy(offloadNone())
                 .listenStreaming(service)
                 .toFuture().get();
         InetSocketAddress serverAddr = (InetSocketAddress) serverCtx.listenAddress();
         client = forSingleAddress(new NoopSD(serverAddr), serverAddr)
                 .hostHeaderFallback(false)
-                .ioExecutor(ctx.ioExecutor())
+                .ioExecutor(CLIENT_CTX.ioExecutor())
+                .executor(CLIENT_CTX.executor())
+                .bufferAllocator(CLIENT_CTX.bufferAllocator())
                 .executionStrategy(offloadNone())
                 .unresolvedAddressToHost(InetSocketAddress::getHostString)
                 .buildStreaming();
@@ -102,7 +111,7 @@ class FlushStrategyOverrideTest {
 
         CountDownLatch reqWritten = new CountDownLatch(1);
         StreamingHttpRequest req = client.get("/flush").payloadBody(from(1, 2, 3)
-                .map(count -> ctx.bufferAllocator().fromAscii("" + count))
+                .map(count -> client.executionContext().bufferAllocator().fromAscii("" + count))
                 .afterFinally(reqWritten::countDown));
 
         Future<? extends Collection<Object>> clientResp = conn.request(req)

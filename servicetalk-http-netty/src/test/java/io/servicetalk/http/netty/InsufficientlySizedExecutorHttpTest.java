@@ -24,9 +24,11 @@ import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -54,6 +56,16 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class InsufficientlySizedExecutorHttpTest {
+
+    @RegisterExtension
+    static final ExecutionContextExtension SERVER_CTX =
+            ExecutionContextExtension.cached("server-io", "server-executor")
+                    .setClassLevel(true);
+    @RegisterExtension
+    static final ExecutionContextExtension CLIENT_CTX =
+            ExecutionContextExtension.cached("client-io", "client-executor")
+                    .setClassLevel(true);
+
     @Nullable
     private Executor executor;
     @Nullable
@@ -107,8 +119,11 @@ class InsufficientlySizedExecutorHttpTest {
     private void initWhenClientUnderProvisioned(final int capacity) throws Exception {
         executor = getExecutorForCapacity(capacity);
         server = forAddress(localAddress(0))
+                .ioExecutor(SERVER_CTX.ioExecutor())
+                .executor(SERVER_CTX.executor())
                 .listenStreamingAndAwait((ctx, request, responseFactory) -> succeeded(responseFactory.ok()));
         client = forSingleAddress(serverHostAndPort(server))
+                .ioExecutor(CLIENT_CTX.ioExecutor())
                 .executor(executor)
                 .executionStrategy(offloadAllStrategy())
                 .buildStreaming();
@@ -123,9 +138,15 @@ class InsufficientlySizedExecutorHttpTest {
         if (addConnectionAcceptor) {
             serverBuilder.appendConnectionAcceptorFilter(identity());
         }
-        server = serverBuilder.executor(executor).executionStrategy(strategy)
+        server = serverBuilder
+                .ioExecutor(SERVER_CTX.ioExecutor())
+                .executor(executor)
+                .executionStrategy(strategy)
                 .listenStreamingAndAwait((ctx, request, respFactory) -> succeeded(respFactory.ok()));
-        client = forSingleAddress(serverHostAndPort(server)).buildStreaming();
+        client = forSingleAddress(serverHostAndPort(server))
+                .ioExecutor(CLIENT_CTX.ioExecutor())
+                .executor(CLIENT_CTX.executor())
+                .buildStreaming();
     }
 
     private HttpExecutionStrategy offloadAllStrategy() {

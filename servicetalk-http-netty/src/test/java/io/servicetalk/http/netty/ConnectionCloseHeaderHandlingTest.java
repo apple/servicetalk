@@ -75,7 +75,7 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.newSocketAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static io.servicetalk.transport.netty.internal.ExecutionContextExtension.cached;
-import static io.servicetalk.utils.internal.PlatformDependent.throwException;
+import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
 import static java.lang.String.valueOf;
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -319,7 +319,7 @@ final class ConnectionCloseHeaderHandlingTest {
             assertResponsePayloadBody(response);
             responsePayloadReceived.countDown();
             requestPayloadReceived.await();
-            assertThat(request.headers().get(CONTENT_LENGTH), contentEqualTo(valueOf(requestPayloadSize.get())));
+            assertThat(valueOf(requestPayloadSize.get()), contentEqualTo(request.headers().get(CONTENT_LENGTH)));
 
             awaitConnectionClosed();
             assertClosedChannelException("/second");

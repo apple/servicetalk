@@ -17,7 +17,6 @@ package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.test.StepVerifiers;
-import io.servicetalk.transport.netty.internal.CloseHandler.CloseEventObservedException;
 
 import org.junit.jupiter.api.Test;
 
@@ -25,10 +24,6 @@ import java.nio.channels.ClosedChannelException;
 
 import static io.servicetalk.concurrent.api.Processors.newPublisherProcessor;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
-import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.CHANNEL_CLOSED_INBOUND;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
 
 class SslCloseNotifyAlertServerHandlingTest extends AbstractSslCloseNotifyAlertHandlingTest {
 
@@ -46,11 +41,7 @@ class SslCloseNotifyAlertServerHandlingTest extends AbstractSslCloseNotifyAlertH
                     writeMsg(writeSource, END);
                     closeNotifyAndVerifyClosing();
                 })
-                .expectErrorConsumed(cause -> {
-                    assertThat("Unexpected write failure cause", cause, instanceOf(CloseEventObservedException.class));
-                    CloseEventObservedException ceoe = (CloseEventObservedException) cause;
-                    assertThat("Unexpected close event", ceoe.event(), is(CHANNEL_CLOSED_INBOUND));
-                })
+                .expectComplete()
                 .verify();
     }
 
