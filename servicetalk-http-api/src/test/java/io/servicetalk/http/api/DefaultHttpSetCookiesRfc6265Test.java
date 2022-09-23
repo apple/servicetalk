@@ -30,15 +30,15 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @Isolated
 @Execution(ExecutionMode.SAME_THREAD)
-public class DefaultHttpSetCookiesRfc6265Test {
+class DefaultHttpSetCookiesRfc6265Test {
 
     @BeforeAll
-    public static void enablePedantic() {
+    static void enablePedantic() {
         HeaderUtils.cookieParsingStrictRfc6265(true);
     }
 
     @AfterAll
-    public static void disablePedantic() {
+    static void disablePedantic() {
         HeaderUtils.cookieParsingStrictRfc6265(false);
     }
 
