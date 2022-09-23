@@ -19,6 +19,10 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.CharSequences;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.ScanWithMapper;
+import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.SingleTerminalSignalConsumer;
+import io.servicetalk.concurrent.api.TerminalSignalConsumer;
+import io.servicetalk.concurrent.internal.CancelImmediatelySubscriber;
 import io.servicetalk.http.api.EmptyHttpHeaders;
 import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.HttpHeaders;
@@ -40,6 +44,7 @@ import static io.servicetalk.buffer.api.CharSequences.parseLong;
 import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
 import static io.servicetalk.http.api.HttpApiConversions.isPayloadEmpty;
 import static io.servicetalk.http.api.HttpApiConversions.isSafeToAggregate;
@@ -219,8 +224,55 @@ final class HeaderUtils {
                         from(metadata, EmptyHttpHeaders.INSTANCE);
         return messageBody == empty() ? flatMessage :
                 // Subscribe to the messageBody publisher to trigger any applied transformations, but ignore its
-                // content because the PayloadInfo indicated it's effectively empty and does not contain trailers
-                flatMessage.concat(messageBody.ignoreElements());
+                // content because the PayloadInfo indicated it's effectively empty and does not contain trailers.
+                // Because `concat` won't subscribe to the messageBody in case of cancellation or an error, we use
+                // afterFinally to guarantee messageBody sees cancel too. Otherwise, observers won't complete exchange.
+                flatMessage.afterFinally(new TerminalSignalConsumer() {
+                    @Override
+                    public void onComplete() {
+                        // noop, rely on `concat`
+                    }
+
+                    @Override
+                    public void onError(final Throwable throwable) {
+                        cancelMessageBody();
+                    }
+
+                    @Override
+                    public void cancel() {
+                        cancelMessageBody();
+                    }
+
+                    private void cancelMessageBody() {
+                        toSource(messageBody).subscribe(CancelImmediatelySubscriber.INSTANCE);
+                    }
+                }).concat(messageBody.ignoreElements());
+    }
+
+    static Publisher<Object> flatMessage(final HttpMetaData metadata, final Publisher<Object> messageBody,
+                                         final boolean deferSubscribe) {
+        // Because `concat` won't subscribe to the messageBody in case of cancellation or an error, we use
+        // afterFinally to guarantee messageBody sees cancel too. Otherwise, observers won't complete exchange.
+        return Single.<Object>succeeded(metadata).afterFinally(new SingleTerminalSignalConsumer<Object>() {
+                    @Override
+                    public void onSuccess(@Nullable final Object result) {
+                        // noop, rely on `concat`
+                    }
+
+                    @Override
+                    public void onError(final Throwable throwable) {
+                        cancelMessageBody();
+                    }
+
+                    @Override
+                    public void cancel() {
+                        cancelMessageBody();
+                    }
+
+                    private void cancelMessageBody() {
+                        toSource(messageBody).subscribe(CancelImmediatelySubscriber.INSTANCE);
+                    }
+                }).concat(messageBody, deferSubscribe);
     }
 
     private static final class ContentLengthList<T> extends ArrayList<T> {
