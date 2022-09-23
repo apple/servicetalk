@@ -52,7 +52,9 @@ import static io.servicetalk.http.api.UriUtils.isBitSet;
 import static io.servicetalk.utils.internal.CharsetUtils.standardCharsets;
 import static io.servicetalk.utils.internal.NetworkUtils.isValidIpV4Address;
 import static io.servicetalk.utils.internal.NetworkUtils.isValidIpV6Address;
+import static java.lang.Boolean.parseBoolean;
 import static java.lang.Math.min;
+import static java.lang.System.getProperty;
 import static java.lang.System.lineSeparator;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
@@ -83,6 +85,16 @@ public final class HeaderUtils {
                 }
                 return "<filtered>";
             };
+    /**
+     * Whether cookie parsing should be strictly spec compliant with
+     * <a href="https://www.rfc-editor.org/rfc/rfc6265">RFC6265</a> ({@code true}), or allow some deviations that are
+     * commonly observed in practice and allowed by the obsolete
+     * <a href="https://www.rfc-editor.org/rfc/rfc2965">RFC2965</a>/
+     * <a href="https://www.rfc-editor.org/rfc/rfc2109">RFC2109</a> ({@code false}, the default).
+     */
+    // not final for testing
+    static boolean cookieParsingStrictRfc6265 = parseBoolean(getProperty(
+            "io.servicetalk.http.api.headers.cookieParsingStrictRfc6265", "false"));
     // ASCII symbols:
     private static final byte HT = 9;
     private static final byte DEL = 127;
