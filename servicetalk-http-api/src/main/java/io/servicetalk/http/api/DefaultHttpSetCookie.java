@@ -27,6 +27,7 @@ import static io.servicetalk.http.api.HeaderUtils.validateToken;
 import static io.servicetalk.http.api.HttpSetCookie.SameSite.Lax;
 import static io.servicetalk.http.api.HttpSetCookie.SameSite.None;
 import static io.servicetalk.http.api.HttpSetCookie.SameSite.Strict;
+import static java.lang.Integer.toHexString;
 
 /**
  * Default implementation of {@link HttpSetCookie}.
@@ -162,7 +163,8 @@ public final class DefaultHttpSetCookie implements HttpSetCookie {
                         ++i;
                         break;
                     } else {
-                        throw new IllegalArgumentException("unexpected = at index: " + i);
+                        throw new IllegalArgumentException(
+                                "set-cookie '" + name + "': unexpected = character at index " + i);
                     }
                     ++i;
                     begin = i;
@@ -172,14 +174,28 @@ public final class DefaultHttpSetCookie implements HttpSetCookie {
                         if (isWrapped) {
                             parseState = ParseState.Unknown;
                             value = setCookieString.subSequence(begin, i);
-                            if (validateContent) {
-                                // Increment by 3 because we are skipping DQUOTE SEMI SP
-                                // See https://www.rfc-editor.org/rfc/rfc6265#section-4.1.1
-                                // Specifically, how set-cookie-string interacts with quoted cookie-value.
-                                i += 3;
+                            // Increment by 3 because we are skipping DQUOTE SEMI SP
+                            // See https://www.rfc-editor.org/rfc/rfc6265#section-4.1.1
+                            // Specifically, how set-cookie-string interacts with quoted cookie-value.
+                            ++i;    // go to SEMI
+                            if (i < length && setCookieString.charAt(i) != ';') {
+                                throw new IllegalArgumentException(
+                                        "set-cookie '" + name + "': unexpected character 0x" +
+                                                toHexString(setCookieString.charAt(i)) + " at index " + i +
+                                                ", expected semicolon ';' after quoted value");
+                            }
+                            ++i;    // go to SP
+                            if (validateContent && HeaderUtils.cookieParsingStrictRfc6265()) {
+                                if (i < length && setCookieString.charAt(i) != ' ') {
+                                    throw new IllegalArgumentException("set-cookie '" + name +
+                                            "': a space is required after ; in cookie attribute-value lists");
+                                }
+                                ++i;    // skip SP
                             } else {
                                 // When validation is disabled, we need to check if there's an SP to skip
-                                i += i + 2 < length && setCookieString.charAt(i + 2) == ' ' ? 3 : 2;
+                                if (i < length && setCookieString.charAt(i) == ' ') {
+                                    ++i;
+                                }
                             }
                         } else {
                             isWrapped = true;
@@ -196,7 +212,8 @@ public final class DefaultHttpSetCookie implements HttpSetCookie {
                 case ';':
                     // end of value, or end of av-value
                     if (i + 1 == length && validateContent) {
-                        throw new IllegalArgumentException("unexpected trailing ';'");
+                        throw new IllegalArgumentException(
+                                "set-cookie '" + name + "' unexpected trailing semicolon ';'");
                     }
                     switch (parseState) {
                         case ParsingValue:
@@ -219,7 +236,7 @@ public final class DefaultHttpSetCookie implements HttpSetCookie {
                             break;
                         default:
                             if (name == null) {
-                                throw new IllegalArgumentException("cookie value not found at index " + i);
+                                throw new IllegalArgumentException("cookie name cannot be null or empty");
                             }
                             final CharSequence avName = setCookieString.subSequence(begin, i);
                             if (contentEqualsIgnoreCase(avName, "secure")) {
@@ -230,10 +247,10 @@ public final class DefaultHttpSetCookie implements HttpSetCookie {
                             break;
                     }
                     parseState = ParseState.Unknown;
-                    if (validateContent) {
+                    if (validateContent && HeaderUtils.cookieParsingStrictRfc6265()) {
                         if (i + 1 >= length || ' ' != setCookieString.charAt(i + 1)) {
-                            throw new IllegalArgumentException(
-                                    "a space is required after ; in cookie attribute-value lists");
+                            throw new IllegalArgumentException("set-cookie '" + name +
+                                    "': a space is required after ; in cookie attribute-value lists");
                         }
                         i += 2;
                     } else {
@@ -249,10 +266,10 @@ public final class DefaultHttpSetCookie implements HttpSetCookie {
                         if (parseState == ParseState.ParsingValue) {
                             // Cookie values need to conform to the cookie-octet rule of
                             // https://www.rfc-editor.org/rfc/rfc6265#section-4.1.1
-                            validateCookieOctetHexValue(c, i);
+                            validateCookieOctetHexValue(name, c, i);
                         } else {
                             // Cookie attribute-value rules are "any CHAR except CTLs or ';'"
-                            validateCookieAttributeValue(c, i);
+                            validateCookieAttributeValue(name, c, i);
                         }
                     }
                     ++i;
@@ -284,7 +301,7 @@ public final class DefaultHttpSetCookie implements HttpSetCookie {
                     break;
                 default:
                     if (name == null) {
-                        throw new IllegalArgumentException("cookie value not found at index " + i);
+                        throw new IllegalArgumentException("set-cookie value not found at index " + i);
                     }
                     final CharSequence avName = setCookieString.subSequence(begin, i);
                     if (contentEqualsIgnoreCase(avName, "secure")) {
@@ -552,13 +569,13 @@ public final class DefaultHttpSetCookie implements HttpSetCookie {
      * @param hexValue The decimal representation of the hexadecimal value.
      * @param index The index of the character in the inputs, for error reporting.
      */
-    private static void validateCookieOctetHexValue(final int hexValue, int index) {
+    private static void validateCookieOctetHexValue(final CharSequence name, final int hexValue, int index) {
         if (hexValue != 33 &&
                 (hexValue < 35 || hexValue > 43) &&
                 (hexValue < 45 || hexValue > 58) &&
                 (hexValue < 60 || hexValue > 91) &&
                 (hexValue < 93 || hexValue > 126)) {
-            throw unexpectedHexValue(hexValue, index);
+            throw unexpectedHexValue(name, hexValue, index);
         }
     }
 
@@ -570,14 +587,14 @@ public final class DefaultHttpSetCookie implements HttpSetCookie {
      * @param hexValue The decimal representation of the hexadecimal value.
      * @param index The index of the character in the inputs, for error reporting.
      */
-    private static void validateCookieAttributeValue(final int hexValue, int index) {
+    private static void validateCookieAttributeValue(final CharSequence name, final int hexValue, int index) {
         if (hexValue == ';' || hexValue == 0x7F || hexValue <= 0x1F) {
-            throw unexpectedHexValue(hexValue, index);
+            throw unexpectedHexValue(name, hexValue, index);
         }
     }
 
-    private static IllegalArgumentException unexpectedHexValue(int hexValue, int index) {
+    private static IllegalArgumentException unexpectedHexValue(CharSequence name, int hexValue, int index) {
         return new IllegalArgumentException(
-                "Unexpected hex value at index " + index + ": 0x" + Integer.toHexString(hexValue));
+                "set-cookie '" + name + "': unexpected hex value at index " + index + ": 0x" + toHexString(hexValue));
     }
 }
