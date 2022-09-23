@@ -185,7 +185,7 @@ public final class DefaultHttpSetCookie implements HttpSetCookie {
                                                 ", expected semicolon ';' after quoted value");
                             }
                             ++i;    // go to SP
-                            if (validateContent && HeaderUtils.cookieParsingStrictRfc6265) {
+                            if (validateContent && HeaderUtils.cookieParsingStrictRfc6265()) {
                                 if (i < length && setCookieString.charAt(i) != ' ') {
                                     throw new IllegalArgumentException("set-cookie '" + name +
                                             "': a space is required after ; in cookie attribute-value lists");
@@ -247,7 +247,7 @@ public final class DefaultHttpSetCookie implements HttpSetCookie {
                             break;
                     }
                     parseState = ParseState.Unknown;
-                    if (validateContent && HeaderUtils.cookieParsingStrictRfc6265) {
+                    if (validateContent && HeaderUtils.cookieParsingStrictRfc6265()) {
                         if (i + 1 >= length || ' ' != setCookieString.charAt(i + 1)) {
                             throw new IllegalArgumentException("set-cookie '" + name +
                                     "': a space is required after ; in cookie attribute-value lists");

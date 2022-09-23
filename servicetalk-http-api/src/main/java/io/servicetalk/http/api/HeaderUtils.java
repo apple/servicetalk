@@ -93,7 +93,7 @@ public final class HeaderUtils {
      * <a href="https://www.rfc-editor.org/rfc/rfc2109">RFC2109</a> ({@code false}, the default).
      */
     // not final for testing
-    static boolean cookieParsingStrictRfc6265 = parseBoolean(getProperty(
+    private static boolean cookieParsingStrictRfc6265 = parseBoolean(getProperty(
             "io.servicetalk.http.api.headers.cookieParsingStrictRfc6265", "false"));
     // ASCII symbols:
     private static final byte HT = 9;
@@ -110,6 +110,15 @@ public final class HeaderUtils {
 
     private HeaderUtils() {
         // no instances
+    }
+
+    static boolean cookieParsingStrictRfc6265() {
+        return cookieParsingStrictRfc6265;
+    }
+
+    // pkg-private for testing
+    static void cookieParsingStrictRfc6265(boolean value) {
+        cookieParsingStrictRfc6265 = value;
     }
 
     static String toString(final HttpHeaders headers,

@@ -34,12 +34,12 @@ public class DefaultHttpSetCookiesRfc6265Test {
 
     @BeforeAll
     public static void enablePedantic() {
-        HeaderUtils.cookieParsingStrictRfc6265 = true;
+        HeaderUtils.cookieParsingStrictRfc6265(true);
     }
 
     @AfterAll
     public static void disablePedantic() {
-        HeaderUtils.cookieParsingStrictRfc6265 = false;
+        HeaderUtils.cookieParsingStrictRfc6265(false);
     }
 
     @Test
