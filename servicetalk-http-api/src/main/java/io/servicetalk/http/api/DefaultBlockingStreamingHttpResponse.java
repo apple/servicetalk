@@ -90,8 +90,9 @@ final class DefaultBlockingStreamingHttpResponse extends AbstractDelegatingHttpR
         original.payloadHolder().messageBody(defer(() -> {
             HttpMessageBodyIterator<Buffer> body = messageBody.iterator();
             return fromIterable(() -> body)
-                    .map(o -> (Object) o)
-                    .concat(defer(() -> from(body.trailers()).filter(Objects::nonNull)));
+                    .cast(Object.class)
+                    .concat(defer(() -> from(body.trailers()).filter(Objects::nonNull)).shareContextOnSubscribe())
+                    .shareContextOnSubscribe();
         }));
         return this;
     }
@@ -102,8 +103,9 @@ final class DefaultBlockingStreamingHttpResponse extends AbstractDelegatingHttpR
         original.payloadHolder().messageBody(defer(() -> {
             HttpMessageBodyIterator<T> body = messageBody.iterator();
             return from(serializer.serialize(headers(), () -> body, original.payloadHolder().allocator()))
-                    .map(o -> (Object) o)
-                    .concat(defer(() -> from(body.trailers()).filter(Objects::nonNull)));
+                    .cast(Object.class)
+                    .concat(defer(() -> from(body.trailers()).filter(Objects::nonNull)).shareContextOnSubscribe())
+                    .shareContextOnSubscribe();
         }));
         return this;
     }
