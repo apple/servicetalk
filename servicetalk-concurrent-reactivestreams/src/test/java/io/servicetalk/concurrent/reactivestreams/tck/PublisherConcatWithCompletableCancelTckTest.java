@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,10 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.concurrent.api.publisher;
+package io.servicetalk.concurrent.reactivestreams.tck;
 
-class PublisherConcatWithCompletableTest extends AbstractPublisherConcatWithCompletableTest {
-    PublisherConcatWithCompletableTest() {
-        setup(false);
+import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Publisher;
+
+import org.testng.annotations.Test;
+
+@Test
+public class PublisherConcatWithCompletableCancelTckTest extends AbstractPublisherOperatorTckTest<Integer> {
+    @Override
+    protected Publisher<Integer> composePublisher(Publisher<Integer> publisher, int elements) {
+        return publisher.concat(Completable.completed(), true);
     }
 }
