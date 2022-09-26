@@ -89,6 +89,8 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseabl
 import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.defer;
+import static io.servicetalk.concurrent.api.Publisher.defer;
+import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
@@ -459,10 +461,13 @@ final class NettyHttpServer {
                 if (emptyMessageBody(response, messageBody)) {
                     flatResponse = flatEmptyMessage(protocolVersion, response, messageBody, true);
                 } else {
+                    // No need to wrap the state with `defer` because this method is executed inside `flatMapPublisher`.
+                    final AtomicBoolean messageBodySubscribed = new AtomicBoolean(false);
                     flatResponse = Single.<Object>succeeded(response)
                             // Because `concat` won't subscribe to the messageBody in case of cancellation or an error,
-                            // we use `afterFinally` to guarantee messageBody sees cancel too. Otherwise,
-                            // BeforeFinallyHttpOperator won't trigger, and observers won't complete the exchange.
+                            // we use `afterFinally` + `messageBodySubscribed` to guarantee messageBody sees cancel too.
+                            // Otherwise, BeforeFinallyHttpOperator won't trigger, and observers won't complete the
+                            // exchange.
                             .afterFinally(new SingleTerminalSignalConsumer<Object>() {
                                 @Override
                                 public void onSuccess(@Nullable final Object result) {
@@ -480,12 +485,15 @@ final class NettyHttpServer {
                                 }
 
                                 private void cancelMessageBody() {
-                                    toSource(messageBody).subscribe(CancelImmediatelySubscriber.INSTANCE);
+                                    if (messageBodySubscribed.compareAndSet(false, true)) {
+                                        toSource(messageBody).subscribe(CancelImmediatelySubscriber.INSTANCE);
+                                    }
                                 }
                             })
                             // Not necessary to defer subscribe to the messageBody because server does not retry
                             // responses, and we don't need to replay messageBody.
-                            .concat(messageBody, /* deferSubscribe */ false);
+                            .concat(defer(() -> messageBodySubscribed.compareAndSet(false, true) ?
+                                            messageBody : empty()), /* deferSubscribe */ false);
                     if (shouldAppendTrailers(protocolVersion, response)) {
                         flatResponse = flatResponse.scanWith(HeaderUtils::appendTrailersMapper);
                     }

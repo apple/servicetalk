@@ -35,10 +35,13 @@ import io.netty.util.AsciiString;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.CharSequences.parseLong;
+import static io.servicetalk.concurrent.api.Completable.completed;
+import static io.servicetalk.concurrent.api.Completable.defer;
 import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
@@ -223,35 +226,45 @@ final class HeaderUtils {
         final Publisher<Object> flatMessage =
                 protocolVersion.major() > 1 || !shouldAppendTrailers(protocolVersion, metadata) ? from(metadata) :
                         from(metadata, EmptyHttpHeaders.INSTANCE);
-        return messageBody == empty() ? flatMessage :
-                // 1. Subscribe to the messageBody publisher to trigger any applied transformations, but ignore its
-                // content because the PayloadInfo indicated it's effectively empty and does not contain trailers.
-                //
-                // 2. Because `concat` won't subscribe to the messageBody in case of cancellation or an error, we use
-                // `afterFinally` to guarantee messageBody sees cancel too. This is necessary when we have to preserve
-                // propagation of all signals through Reactive Streams chain. Otherwise, some state machines won't
-                // trigger. For example, BeforeFinallyHttpOperator on the server-side won't see any signals and
-                // observers won't complete the exchange.
-                (propagateCancel ? flatMessage.afterFinally(new TerminalSignalConsumer() {
-                    @Override
-                    public void onComplete() {
-                        // noop, rely on `concat`
-                    }
+        if (messageBody == empty()) {
+            return flatMessage;
+        }
+        // Subscribe to the messageBody publisher to trigger any applied transformations, but ignore its content because
+        // the PayloadInfo indicated it's effectively empty and does not contain trailers.
+        if (!propagateCancel) {
+            return flatMessage.concat(messageBody.ignoreElements());
+        }
+        // Because `concat` won't subscribe to the messageBody in case of cancellation or an error, we use
+        // `afterFinally` + `messageBodySubscribed` to guarantee messageBody sees cancel too. This is necessary when we
+        // have to preserve propagation of all signals through Reactive Streams chain. Otherwise, some state machines
+        // won't trigger. For example, BeforeFinallyHttpOperator on the server-side won't see any signals and observers
+        // won't complete the exchange.
+        // No need to wrap the state with `defer` because this method is executed inside either `flatMapPublisher` or
+        // `defer`.
+        final AtomicBoolean messageBodySubscribed = new AtomicBoolean(false);
+        return flatMessage.afterFinally(new TerminalSignalConsumer() {
+            @Override
+            public void onComplete() {
+                // noop, rely on `concat`
+            }
 
-                    @Override
-                    public void onError(final Throwable throwable) {
-                        cancelMessageBody();
-                    }
+            @Override
+            public void onError(final Throwable throwable) {
+                cancelMessageBody();
+            }
 
-                    @Override
-                    public void cancel() {
-                        cancelMessageBody();
-                    }
+            @Override
+            public void cancel() {
+                cancelMessageBody();
+            }
 
-                    private void cancelMessageBody() {
-                        toSource(messageBody).subscribe(CancelImmediatelySubscriber.INSTANCE);
-                    }
-                }) : flatMessage).concat(messageBody.ignoreElements());
+            private void cancelMessageBody() {
+                if (messageBodySubscribed.compareAndSet(false, true)) {
+                    toSource(messageBody).subscribe(CancelImmediatelySubscriber.INSTANCE);
+                }
+            }
+        }).concat(defer(() -> messageBodySubscribed.compareAndSet(false, true) ?
+                messageBody.ignoreElements() : completed()));
     }
 
     private static final class ContentLengthList<T> extends ArrayList<T> {
