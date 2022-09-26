@@ -58,7 +58,6 @@ import static io.servicetalk.http.netty.HeaderUtils.addRequestTransferEncodingIf
 import static io.servicetalk.http.netty.HeaderUtils.canAddRequestContentLength;
 import static io.servicetalk.http.netty.HeaderUtils.emptyMessageBody;
 import static io.servicetalk.http.netty.HeaderUtils.flatEmptyMessage;
-import static io.servicetalk.http.netty.HeaderUtils.flatMessage;
 import static io.servicetalk.http.netty.HeaderUtils.setRequestContentLength;
 import static io.servicetalk.http.netty.HeaderUtils.shouldAppendTrailers;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.flushOnEnd;
@@ -169,11 +168,14 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
             } else {
                 final Publisher<Object> messageBody = request.messageBody();
                 if (emptyMessageBody(request, messageBody)) {
-                    flatRequest = flatEmptyMessage(connectionContext().protocol(), request, messageBody);
+                    flatRequest = flatEmptyMessage(connectionContext().protocol(), request, messageBody, false);
                 } else {
-                    // Defer subscribe to the messageBody until transport requests it to allow clients retry failed
-                    // requests with non-replayable messageBody
-                    flatRequest = flatMessage(request, messageBody, true);
+                    // 1. Defer subscribe to the messageBody until transport requests it to allow clients retry failed
+                    // requests with non-replayable messageBody.
+                    // 2. There is no need to do anything with messageBody if the flat publisher was cancelled before
+                    // Single succeeded result is delivered. Client-side state machine does not depend on termination of
+                    // the message body until after transport subscribes to it.
+                    flatRequest = Single.<Object>succeeded(request).concat(messageBody, /* deferSubscribe */ true);
                     if (shouldAppendTrailers(connectionContext().protocol(), request)) {
                         flatRequest = flatRequest.scanWith(HeaderUtils::appendTrailersMapper);
                     }

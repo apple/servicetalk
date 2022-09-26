@@ -26,7 +26,9 @@ import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Processors;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.SingleTerminalSignalConsumer;
 import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
+import io.servicetalk.concurrent.internal.CancelImmediatelySubscriber;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.concurrent.internal.RejectedSubscribeError;
 import io.servicetalk.concurrent.internal.TerminalNotification;
@@ -100,7 +102,6 @@ import static io.servicetalk.http.netty.HeaderUtils.addResponseTransferEncodingI
 import static io.servicetalk.http.netty.HeaderUtils.canAddResponseContentLength;
 import static io.servicetalk.http.netty.HeaderUtils.emptyMessageBody;
 import static io.servicetalk.http.netty.HeaderUtils.flatEmptyMessage;
-import static io.servicetalk.http.netty.HeaderUtils.flatMessage;
 import static io.servicetalk.http.netty.HeaderUtils.setResponseContentLength;
 import static io.servicetalk.http.netty.HeaderUtils.shouldAppendTrailers;
 import static io.servicetalk.http.netty.HttpDebugUtils.showPipeline;
@@ -456,11 +457,35 @@ final class NettyHttpServer {
                 Publisher<Object> flatResponse;
                 final Publisher<Object> messageBody = response.messageBody();
                 if (emptyMessageBody(response, messageBody)) {
-                    flatResponse = flatEmptyMessage(protocolVersion, response, messageBody);
+                    flatResponse = flatEmptyMessage(protocolVersion, response, messageBody, true);
                 } else {
-                    // Not necessary to defer subscribe to the messageBody because server does not retry responses.
-                    // Threfore, we don't need to replay messageBody.
-                    flatResponse = flatMessage(response, messageBody, false);
+                    flatResponse = Single.<Object>succeeded(response)
+                            // Because `concat` won't subscribe to the messageBody in case of cancellation or an error,
+                            // we use `afterFinally` to guarantee messageBody sees cancel too. Otherwise,
+                            // BeforeFinallyHttpOperator won't trigger, and observers won't complete the exchange.
+                            .afterFinally(new SingleTerminalSignalConsumer<Object>() {
+                                @Override
+                                public void onSuccess(@Nullable final Object result) {
+                                    // noop, rely on `concat`
+                                }
+
+                                @Override
+                                public void onError(final Throwable throwable) {
+                                    cancelMessageBody();
+                                }
+
+                                @Override
+                                public void cancel() {
+                                    cancelMessageBody();
+                                }
+
+                                private void cancelMessageBody() {
+                                    toSource(messageBody).subscribe(CancelImmediatelySubscriber.INSTANCE);
+                                }
+                            })
+                            // Not necessary to defer subscribe to the messageBody because server does not retry
+                            // responses, and we don't need to replay messageBody.
+                            .concat(messageBody, /* deferSubscribe */ false);
                     if (shouldAppendTrailers(protocolVersion, response)) {
                         flatResponse = flatResponse.scanWith(HeaderUtils::appendTrailersMapper);
                     }

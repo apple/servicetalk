@@ -96,7 +96,7 @@ class RetryRequestWithNonRepeatablePayloadTest extends AbstractNettyHttpServerTe
                                 try {
                                     assertThat("Unexpected exception type", t,
                                             instanceOf(RetryableException.class));
-                                    assertThat("Unexpected exception type",
+                                    assertThat("Unexpected exception cause type",
                                             t.getCause(), instanceOf(DeliberateException.class));
                                     assertThat("Unexpected subscribe to payload body",
                                             payloadBody.isSubscribed(), is(false));
