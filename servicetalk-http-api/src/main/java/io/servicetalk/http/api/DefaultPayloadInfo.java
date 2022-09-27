@@ -143,8 +143,11 @@ final class DefaultPayloadInfo implements PayloadInfo {
 
     @Override
     public String toString() {
-        return "DefaultPayloadInfo{" +
-                "flags=" + flags +
+        return getClass().getSimpleName() +
+                "{isEmpty=" + isEmpty() +
+                ", isSafeToAggregate=" + isSafeToAggregate() +
+                ", mayHaveTrailers=" + mayHaveTrailers() +
+                ", isGenericTypeBuffer=" + isGenericTypeBuffer() +
                 '}';
     }
 }
