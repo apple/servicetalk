@@ -263,8 +263,8 @@ final class HeaderUtils {
                     toSource(messageBody).subscribe(CancelImmediatelySubscriber.INSTANCE);
                 }
             }
-        }).concat(defer(() -> messageBodySubscribed.compareAndSet(false, true) ?
-                messageBody.ignoreElements() : completed()));
+        }).concat(defer(() -> (messageBodySubscribed.compareAndSet(false, true) ?
+                messageBody.ignoreElements() : completed()).shareContextOnSubscribe()));
     }
 
     private static final class ContentLengthList<T> extends ArrayList<T> {

@@ -474,8 +474,9 @@ final class NettyHttpServer {
                             })
                             // Not necessary to defer subscribe to the messageBody because server does not retry
                             // responses, and we don't need to replay messageBody.
-                            .concat(defer(() -> messageBodySubscribed.compareAndSet(false, true) ?
-                                            messageBody : empty()), /* deferSubscribe */ false);
+                            .concat(defer(() -> (messageBodySubscribed.compareAndSet(false, true) ?
+                                            messageBody : empty()).shareContextOnSubscribe()),
+                                    /* deferSubscribe */ false);
                     if (shouldAppendTrailers(protocolVersion, response)) {
                         flatResponse = flatResponse.scanWith(HeaderUtils::appendTrailersMapper);
                     }
