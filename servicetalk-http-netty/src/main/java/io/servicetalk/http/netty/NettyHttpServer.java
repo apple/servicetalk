@@ -377,16 +377,19 @@ final class NettyHttpServer {
                                 c = updateFlushStrategy((prev, isOriginal) -> isOriginal ? flushStrategy : prev);
                             }
                             Publisher<Object> pub = handleResponse(protocol(), requestMethod, response);
-                            return c == null ? pub : pub.beforeFinally(c::cancel);
+                            return (c == null ? pub : pub.beforeFinally(c::cancel))
+                                    // No need to make a copy of the context while consuming response message body.
+                                    .shareContextOnSubscribe();
                         }));
 
                 if (drainRequestPayloadBody) {
-                    return responseWrite.concat(defer(() -> payloadSubscribed.get() ? requestCompletion :
-                            request.messageBody().ignoreElements()
+                    return responseWrite.concat(defer(() -> (payloadSubscribed.get() ?
                             // Discarding the request payload body is an operation which should not impact the state of
                             // request/response processing. It's appropriate to recover from any error here.
                             // ST may introduce RejectedSubscribeError if user already consumed the request payload body
-                            .onErrorComplete()));
+                            requestCompletion : request.messageBody().ignoreElements().onErrorComplete())
+                            // No need to make a copy of the context in both cases.
+                            .shareContextOnSubscribe()));
                 } else {
                     return responseWrite.concat(requestCompletion);
                 }
