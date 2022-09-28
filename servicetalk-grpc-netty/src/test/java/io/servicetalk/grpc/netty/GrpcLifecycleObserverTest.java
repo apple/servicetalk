@@ -173,10 +173,12 @@ class GrpcLifecycleObserverTest {
         try {
             if (client != null) {
                 client.close();
+                client = null;
             }
         } finally {
             if (server != null) {
                 server.close();
+                server = null;
             }
         }
     }
@@ -215,7 +217,10 @@ class GrpcLifecycleObserverTest {
             assertThat(executeRequest.call(), equalTo(CONTENT));
         }
 
+        // Await full termination to make sure no more callbacks will be invoked.
         bothTerminate.await();
+        tearDown();
+
         verifyObservers(true, error, aggregated, clientLifecycleObserver, clientExchangeObserver,
                 clientRequestObserver, clientResponseObserver, clientInOrder, clientRequestInOrder);
         verifyObservers(false, error, aggregated, serverLifecycleObserver, serverExchangeObserver,
