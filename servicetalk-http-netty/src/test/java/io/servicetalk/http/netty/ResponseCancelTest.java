@@ -34,6 +34,7 @@ import io.servicetalk.http.api.HttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpRequester;
+import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -45,6 +46,7 @@ import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -71,6 +73,7 @@ import static java.util.Objects.requireNonNull;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 
+@Timeout(3)
 class ResponseCancelTest {
 
     @RegisterExtension
@@ -220,12 +223,18 @@ class ResponseCancelTest {
     @ValueSource(booleans = {false, true})
     void connectionCancelWaitingForPayloadBody(boolean finishRequest) throws Throwable {
         HttpConnection connection = client.reserveConnection(client.get("/")).toFuture().get();
-        Cancellable cancellable = finishRequest ? sendRequest(connection, null) :
-                connection.asStreamingConnection().request(connection.asStreamingConnection().post("/")
-                                .payloadBody(never())).flatMapPublisher(StreamingHttpResponse::payloadBody)
-                        .collect(() -> connection.executionContext().bufferAllocator().newCompositeBuffer(),
-                                CompositeBuffer::addBuffer)
-                        .subscribe(__ -> { });
+        Cancellable cancellable;
+        if (finishRequest) {
+            cancellable = sendRequest(connection, null);
+        } else {
+            StreamingHttpConnection streamingConnection = connection.asStreamingConnection();
+            StreamingHttpRequest request = streamingConnection.post("/").payloadBody(never());
+            request.context().put(REQUEST_ID, REQUEST_ID_GENERATOR.incrementAndGet());
+            cancellable = streamingConnection.request(request).flatMapPublisher(StreamingHttpResponse::payloadBody)
+                    .collect(() -> connection.executionContext().bufferAllocator().newCompositeBuffer(),
+                            CompositeBuffer::addBuffer)
+                    .subscribe(__ -> { });
+        }
         // wait for server to receive request.
         Processor<StreamingHttpResponse, StreamingHttpResponse> serverResp = serverResponses.take();
         assertActiveConnectionsCount(1);
