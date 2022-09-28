@@ -50,6 +50,8 @@ import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.BlockingQueue;
@@ -85,6 +87,7 @@ class ResponseCancelTest {
             ExecutionContextExtension.cached("client-io", "client-executor")
                     .setClassLevel(true);
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(ResponseCancelTest.class);
     private static final Key<Integer> REQUEST_ID = newKey("REQUEST_ID", Integer.class);
     private static final AtomicInteger REQUEST_ID_GENERATOR = new AtomicInteger();
 
@@ -355,6 +358,9 @@ class ResponseCancelTest {
                 // to make sure we discard optional signals of all previous requests and resuming only for the current
                 // request.
                 signal = signals.take();
+                if (signal.requestId != requestId) {
+                    LOGGER.info("Skipping {} looking for requestId={}", signal, requestId);
+                }
             } while (signal.requestId != requestId);
             if (signal.err != null) {
                 signal.subscriber.onError(signal.err);
@@ -363,6 +369,16 @@ class ResponseCancelTest {
                 signal.subscriber.onSuccess(signal.response);
             }
             latch.await();
+        }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName() +
+                    "{requestId=" + requestId +
+                    ", subscriber=" + subscriber +
+                    ", err=" + err +
+                    ", response=" + response +
+                    '}';
         }
     }
 }
