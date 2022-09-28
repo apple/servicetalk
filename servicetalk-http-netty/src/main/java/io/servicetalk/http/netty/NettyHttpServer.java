@@ -358,10 +358,18 @@ final class NettyHttpServer {
                             };
                         }));
 
+                // Use additional flag to track completion of the flat response stream. We can not concat Publisher with
+                // `requestCompletion` or draining because by deferring stream completion we will defer flushing. We
+                // concat with `responseWrite` Completable instead to let the response go through. After `responseWrite`
+                // completes we can not immediately start draining the request message body because completion of the
+                // `responseWrite` is identified at protocol level but does not necessarily mean that the service
+                // business logic also completed.
+                final SingleSubscriberProcessor responseCompletion = new SingleSubscriberProcessor();
+                // Remember the original request method before users can modify it.
                 final HttpRequestMethod requestMethod = request.method();
-                // Don't expect any exceptions from service because it's already wrapped with
-                // HttpExceptionMapperServiceFilter
                 final Completable responseWrite = connection.write(
+                        // Don't expect any exceptions from service because it's already wrapped with
+                        // HttpExceptionMapperServiceFilter.
                         service.handle(this, request, streamingResponseFactory())
                         .flatMapPublisher(response -> {
                             if (responseSent != null) {
@@ -380,7 +388,7 @@ final class NettyHttpServer {
                             return (c == null ? pub : pub.beforeFinally(c::cancel))
                                     // No need to make a copy of the context while consuming response message body.
                                     .shareContextOnSubscribe();
-                        }));
+                        }).whenOnComplete(responseCompletion::onComplete)).concat(responseCompletion);
 
                 if (drainRequestPayloadBody) {
                     return responseWrite.concat(defer(() -> (payloadSubscribed.get() ?
@@ -393,7 +401,6 @@ final class NettyHttpServer {
                 } else {
                     return responseWrite.concat(requestCompletion);
                 }
-
             });
             return handleMultipleRequests ? exchange.repeat(__ -> true).ignoreElements() : exchange;
         }
