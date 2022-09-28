@@ -36,12 +36,9 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
-import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Future;
@@ -83,10 +80,7 @@ import static org.hamcrest.Matchers.is;
  *    emits response payload body (can be empty) -> waits until client receives the response ->
  *    drains request payload body. Processing of the "/second" request ensures the first transaction completed.
  */
-@Timeout(3)
 class ServerControlFlowTest {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(ServerControlFlowTest.class);
 
     @RegisterExtension
     static final ExecutionContextExtension SERVER_CTX =
@@ -119,8 +113,9 @@ class ServerControlFlowTest {
                     final boolean rtf = respondedToFirst.get();
                     final int cf = consumedFirst.get();
                     if (!rtf || cf == 0) {
-                        LOGGER.error("Server started processing the second request before the first one " +
-                                "is done: respondedToFirst={}, consumedFirst={}. Returning 500.", rtf, cf);
+                        asyncErrors.add(new AssertionError("Server started processing " + request +
+                                " before the previous request processing finished: respondedToFirst=" + rtf +
+                                ", consumedFirst=" + cf + ". Returning 500."));
                         response.status(INTERNAL_SERVER_ERROR);
                         response.sendMetaData().close();
                         if (!drainRequestPayloadBody) {
@@ -180,8 +175,9 @@ class ServerControlFlowTest {
                     final boolean rtf = respondedToFirst.get();
                     final int cf = consumedFirst.get();
                     if (!rtf || cf == 0) {
-                        LOGGER.error("Server started processing the second request before the first one " +
-                                "is done: respondedToFirst={}, consumedFirst={}. Returning 500.", rtf, cf);
+                        asyncErrors.add(new AssertionError("Server started processing " + request +
+                                " before the previous request processing finished: respondedToFirst=" + rtf +
+                                ", consumedFirst=" + cf + ". Returning 500."));
                         Single<StreamingHttpResponse> response = succeeded(responseFactory.internalServerError());
                         return drainRequestPayloadBody ? response :
                                 response.concat(request.payloadBody().ignoreElements());
@@ -261,6 +257,11 @@ class ServerControlFlowTest {
 
             assertResponse("first", first.get(), responseHasPayload);
             assertResponse("second", second.get(), responseHasPayload);
+        } catch (Throwable t) {
+            for (Throwable async : asyncErrors) {
+                t.addSuppressed(async);
+            }
+            throw t;
         }
         assertNoAsyncErrors(asyncErrors);
     }
