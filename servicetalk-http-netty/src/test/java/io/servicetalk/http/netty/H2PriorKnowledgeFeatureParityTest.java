@@ -1197,7 +1197,7 @@ class H2PriorKnowledgeFeatureParityTest {
         h1ServerContext.onClose().subscribe(onServerCloseLatch::countDown);
         h1ServerContext.closeAsyncGracefully().subscribe();
 
-        assertTrue(connectionOnClosingLatch.await(300, MILLISECONDS));
+        connectionOnClosingLatch.await();
 
         try (BlockingHttpClient client2 = forSingleAddress(HostAndPort.of(serverAddress))
             .protocols(h2PriorKnowledge ? h2Default() : h1Default())
