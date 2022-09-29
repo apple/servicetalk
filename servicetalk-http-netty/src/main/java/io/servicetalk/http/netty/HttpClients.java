@@ -131,7 +131,7 @@ public final class HttpClients {
      */
     @Deprecated // FIXME: 0.43 - remove deprecated method
     public static MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forMultiAddressUrl(
-            final ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>>
+            final ServiceDiscoverer<HostAndPort, InetSocketAddress, ? extends ServiceDiscovererEvent<InetSocketAddress>>
                     serviceDiscoverer) {
         return applyProviders(
                 new DefaultMultiAddressUrlHttpClientBuilder(address -> forSingleAddress(serviceDiscoverer, address)));
@@ -274,7 +274,7 @@ public final class HttpClients {
      * @see SingleAddressHttpClientBuilderProvider
      */
     public static <U, R> SingleAddressHttpClientBuilder<U, R> forSingleAddress(
-            final ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer,
+            final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer,
             final U address) {
         return applyProviders(address, new DefaultSingleAddressHttpClientBuilder<>(address, serviceDiscoverer));
     }

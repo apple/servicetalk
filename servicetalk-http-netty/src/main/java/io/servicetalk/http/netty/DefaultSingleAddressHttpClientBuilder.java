@@ -112,7 +112,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     final HttpExecutionContextBuilder executionContextBuilder;
     private final ClientStrategyInfluencerChainBuilder strategyComputation;
     private HttpLoadBalancerFactory<R> loadBalancerFactory;
-    private ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer;
+    private ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer;
     private Function<U, CharSequence> hostToCharSequenceFunction =
             DefaultSingleAddressHttpClientBuilder::toAuthorityForm;
     private boolean addHostHeaderFallbackFilter = true;
@@ -132,7 +132,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
 
     // Do not use this ctor directly, HttpClients is the entry point for creating a new builder.
     DefaultSingleAddressHttpClientBuilder(
-            final U address, final ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer) {
+            final U address, final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer) {
         this.address = requireNonNull(address);
         config = new HttpClientConfig();
         executionContextBuilder = new HttpExecutionContextBuilder();
@@ -170,7 +170,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
 
     private static final class HttpClientBuildContext<U, R> {
         final DefaultSingleAddressHttpClientBuilder<U, R> builder;
-        private final ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> sd;
+        private final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> sd;
         private final SdStatusCompletable sdStatus;
 
         @Nullable
@@ -180,7 +180,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
 
         HttpClientBuildContext(
                 final DefaultSingleAddressHttpClientBuilder<U, R> builder,
-                final ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> sd,
+                final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> sd,
                 @Nullable final BiIntFunction<Throwable, ? extends Completable> serviceDiscovererRetryStrategy,
                 @Nullable final U proxyAddress) {
             this.builder = builder;
