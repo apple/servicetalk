@@ -66,10 +66,10 @@ import static org.hamcrest.Matchers.is;
 
 /**
  * Test the following scenario:
- *  - Client sends 2 pipelined requests on the same connection;
+ *  - Client sends 3 pipelined requests on the same connection;
  *  - Server returns response meta-data -> subscribes to request payload body (to prevent auto-draining) ->
  *    emits response payload body (can be empty) -> waits until client receives the response ->
- *    drains request payload body. Processing of the "/second" request ensures the first transaction completed.
+ *    drains request payload body. Processing of the next request ensures the previous one completed.
  */
 class ServerControlFlowTest {
 
@@ -95,7 +95,7 @@ class ServerControlFlowTest {
                                           boolean responseHasPayload) throws Exception {
         test(builder -> builder.listenBlockingStreamingAndAwait((ctx, request, response) -> {
             boolean first = "/first".equals(request.requestTarget());
-            if ("/second".equals(request.requestTarget())) {
+            if (!first) {
                 final String rtf = respondedToFirstOn.get();
                 if (rtf == null) {
                     asyncErrors.add(new AssertionError("Server started processing " + request +
@@ -126,7 +126,7 @@ class ServerControlFlowTest {
                     requestPayloadReceived.add(sb.toString());
                 }).beforeOnError(asyncErrors::add).subscribe();
                 if (responseHasPayload) {
-                    writer.write(first ? "first_server_content" : "second_server_content");
+                    writer.write(request.requestTarget() + "_server_content");
                 }
             } catch (Exception e) {
                 asyncErrors.add(e);
@@ -146,7 +146,7 @@ class ServerControlFlowTest {
                                   boolean responseHasPayload) throws Exception {
         test(builder -> builder.listenStreamingAndAwait((ctx, request, responseFactory) -> {
             boolean first = "/first".equals(request.requestTarget());
-            if ("/second".equals(request.requestTarget())) {
+            if (!first) {
                 final String rtf = respondedToFirstOn.get();
                 if (rtf == null) {
                     asyncErrors.add(new AssertionError("Server started processing " + request +
@@ -160,7 +160,7 @@ class ServerControlFlowTest {
             return succeeded(responseFactory
                     .newResponse(responseHasPayload ? OK : NO_CONTENT)
                     .payloadBody(responseHasPayload ?
-                            from(first ? "first_server_content" : "second_server_content") : empty(),
+                            from(request.requestTarget() + "_server_content") : empty(),
                             RAW_STRING_SERIALIZER)
                     .transformPayloadBody(payload -> defer(() -> {
                         AtomicReference<Subscription> requestSubscription = new AtomicReference<>();
@@ -219,15 +219,17 @@ class ServerControlFlowTest {
                     .executionStrategy(serverHasOffloading ? defaultStrategy() : offloadNone())
                     .drainRequestPayloadBody(drainRequestPayloadBody));
                  StreamingHttpClient client = newClientWithConfigs(serverContext, CLIENT_CTX,
-                         new H1ProtocolConfigBuilder().maxPipelinedRequests(2).build())
+                         new H1ProtocolConfigBuilder().maxPipelinedRequests(3).build())
                          .buildStreaming();
                  StreamingHttpConnection connection = client.reserveConnection(client.get("/")).toFuture().get()) {
 
                 Future<StreamingHttpResponse> first = requestFuture(connection, "first");
                 Future<StreamingHttpResponse> second = requestFuture(connection, "second");
+                Future<StreamingHttpResponse> third = requestFuture(connection, "third");
 
                 assertResponse("first", first.get(), responseHasPayload);
                 assertResponse("second", second.get(), responseHasPayload);
+                assertResponse("third", third.get(), responseHasPayload);
             } catch (Throwable t) {
                 for (Throwable async : asyncErrors) {
                     t.addSuppressed(async);
@@ -254,7 +256,7 @@ class ServerControlFlowTest {
         String responsePayload = response.payloadBody()
                 .collect(StringBuilder::new, (sb, chunk) -> sb.append(chunk.toString(US_ASCII)))
                 .toFuture().get().toString();
-        assertThat(responsePayload, is(equalTo(responseHasPayload ? name + "_server_content" : "")));
+        assertThat(responsePayload, is(equalTo(responseHasPayload ? '/' + name + "_server_content" : "")));
         responsePayloadReceived.add(responsePayload);
         assertThat(requestPayloadReceived.take(), is(equalTo(name + "_request_content")));
     }
