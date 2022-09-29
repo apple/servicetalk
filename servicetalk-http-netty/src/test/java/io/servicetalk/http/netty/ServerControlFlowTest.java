@@ -43,8 +43,6 @@ import org.junit.jupiter.params.provider.CsvSource;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
 
@@ -94,6 +92,8 @@ class ServerControlFlowTest {
     private final BlockingQueue<Throwable> asyncErrors = new LinkedBlockingQueue<>();
     private final BlockingQueue<String> requestPayloadReceived = new LinkedBlockingQueue<>();
     private final BlockingQueue<String> responsePayloadReceived = new LinkedBlockingQueue<>();
+    private final AtomicReference<String> respondedToFirstOn = new AtomicReference<>();
+    private final AtomicReference<String> consumedFirstOn = new AtomicReference<>();
 
     @ParameterizedTest(name =
             "{displayName} [{index}] serverHasOffloading={0} drainRequestPayloadBody={1} responseHasPayload={2}")
@@ -102,20 +102,18 @@ class ServerControlFlowTest {
     void testBlockingStreamingHttpService(boolean serverHasOffloading, boolean drainRequestPayloadBody,
                                           boolean responseHasPayload) throws Exception {
         test(builder -> builder.listenBlockingStreamingAndAwait(new BlockingStreamingHttpService() {
-            private final AtomicBoolean respondedToFirst = new AtomicBoolean(false);
-            private final AtomicInteger consumedFirst = new AtomicInteger(0);
-
             @Override
             public void handle(HttpServiceContext ctx, BlockingStreamingHttpRequest request,
                                BlockingStreamingHttpServerResponse response) throws Exception {
                 boolean first = "/first".equals(request.requestTarget());
                 if ("/second".equals(request.requestTarget())) {
-                    final boolean rtf = respondedToFirst.get();
-                    final int cf = consumedFirst.get();
-                    if (!rtf || cf == 0) {
+                    final String rtf = respondedToFirstOn.get();
+                    final String cf = consumedFirstOn.get();
+                    if (rtf == null || cf == null) {
                         asyncErrors.add(new AssertionError("Server started processing " + request +
-                                " before the previous request processing finished: respondedToFirst=" + rtf +
-                                ", consumedFirst=" + cf + ". Returning 500."));
+                                " on thread " + Thread.currentThread().getName() +
+                                " before the previous request processing finished: respondedToFirstOn=" + rtf +
+                                ", consumedFirstOn=" + cf + ". Returning 500."));
                         response.status(INTERNAL_SERVER_ERROR);
                         response.sendMetaData().close();
                         if (!drainRequestPayloadBody) {
@@ -139,7 +137,7 @@ class ServerControlFlowTest {
                             sb.append(chunk.toString(US_ASCII));
                         }
                         if (first) {
-                            consumedFirst.addAndGet(sb.length());
+                            consumedFirstOn.set(Thread.currentThread().getName());
                         }
                         requestPayloadReceived.add(sb.toString());
                     }).beforeOnError(asyncErrors::add).subscribe();
@@ -151,7 +149,7 @@ class ServerControlFlowTest {
                     throw e;
                 }
                 if (first) {
-                    respondedToFirst.set(true);
+                    respondedToFirstOn.set(Thread.currentThread().getName());
                 }
             }
         }), serverHasOffloading, drainRequestPayloadBody, responseHasPayload);
@@ -164,20 +162,18 @@ class ServerControlFlowTest {
     void testStreamingHttpService(boolean serverHasOffloading, boolean drainRequestPayloadBody,
                                   boolean responseHasPayload) throws Exception {
         test(builder -> builder.listenStreamingAndAwait(new StreamingHttpService() {
-            private final AtomicBoolean respondedToFirst = new AtomicBoolean(false);
-            private final AtomicInteger consumedFirst = new AtomicInteger(0);
-
             @Override
             public Single<StreamingHttpResponse> handle(HttpServiceContext ctx, StreamingHttpRequest request,
                                                         StreamingHttpResponseFactory responseFactory) {
                 boolean first = "/first".equals(request.requestTarget());
                 if ("/second".equals(request.requestTarget())) {
-                    final boolean rtf = respondedToFirst.get();
-                    final int cf = consumedFirst.get();
-                    if (!rtf || cf == 0) {
+                    final String rtf = respondedToFirstOn.get();
+                    final String cf = consumedFirstOn.get();
+                    if (rtf == null || cf == null) {
                         asyncErrors.add(new AssertionError("Server started processing " + request +
-                                " before the previous request processing finished: respondedToFirst=" + rtf +
-                                ", consumedFirst=" + cf + ". Returning 500."));
+                                " on thread " + Thread.currentThread().getName() +
+                                " before the previous request processing finished: respondedToFirstOn=" + rtf +
+                                ", consumedFirstOn=" + cf + ". Returning 500."));
                         Single<StreamingHttpResponse> response = succeeded(responseFactory.internalServerError());
                         return drainRequestPayloadBody ? response :
                                 response.concat(request.payloadBody().ignoreElements());
@@ -220,7 +216,7 @@ class ServerControlFlowTest {
                                 @Override
                                 public void onComplete() {
                                     if (first) {
-                                        consumedFirst.addAndGet(sb.length());
+                                        consumedFirstOn.set(Thread.currentThread().getName());
                                     }
                                     requestPayloadReceived.add(sb.toString());
                                 }
@@ -228,7 +224,7 @@ class ServerControlFlowTest {
                             return fromSource(requestSubscriptionReceived).concat(payload)
                                     .beforeOnComplete(() -> {
                                         if (first) {
-                                            respondedToFirst.set(true);
+                                            respondedToFirstOn.set(Thread.currentThread().getName());
                                         }
                                         // Execute on a different thread to allow response payload to complete.
                                         ctx.executionContext().executor().execute(() -> {
@@ -244,26 +240,33 @@ class ServerControlFlowTest {
 
     private void test(HttpServerFactory serverFactory, boolean serverHasOffloading, boolean drainRequestPayloadBody,
                       boolean responseHasPayload) throws Exception {
-        try (HttpServerContext serverContext = serverFactory.create(newLocalServer(SERVER_CTX)
-                        .executionStrategy(serverHasOffloading ? defaultStrategy() : offloadNone())
-                        .drainRequestPayloadBody(drainRequestPayloadBody));
-             StreamingHttpClient client = newClientWithConfigs(serverContext, CLIENT_CTX,
-                     new H1ProtocolConfigBuilder().maxPipelinedRequests(2).build())
-                     .buildStreaming();
-             StreamingHttpConnection connection = client.reserveConnection(client.get("/")).toFuture().get()) {
+        try {
+            try (HttpServerContext serverContext = serverFactory.create(newLocalServer(SERVER_CTX)
+                    .executionStrategy(serverHasOffloading ? defaultStrategy() : offloadNone())
+                    .drainRequestPayloadBody(drainRequestPayloadBody));
+                 StreamingHttpClient client = newClientWithConfigs(serverContext, CLIENT_CTX,
+                         new H1ProtocolConfigBuilder().maxPipelinedRequests(2).build())
+                         .buildStreaming();
+                 StreamingHttpConnection connection = client.reserveConnection(client.get("/")).toFuture().get()) {
 
-            Future<StreamingHttpResponse> first = requestFuture(connection, "first");
-            Future<StreamingHttpResponse> second = requestFuture(connection, "second");
+                Future<StreamingHttpResponse> first = requestFuture(connection, "first");
+                Future<StreamingHttpResponse> second = requestFuture(connection, "second");
 
-            assertResponse("first", first.get(), responseHasPayload);
-            assertResponse("second", second.get(), responseHasPayload);
-        } catch (Throwable t) {
-            for (Throwable async : asyncErrors) {
-                t.addSuppressed(async);
+                assertResponse("first", first.get(), responseHasPayload);
+                assertResponse("second", second.get(), responseHasPayload);
+            } catch (Throwable t) {
+                for (Throwable async : asyncErrors) {
+                    t.addSuppressed(async);
+                }
+                throw t;
             }
-            throw t;
+            assertNoAsyncErrors(asyncErrors);
+        } catch (Throwable t) {
+            t.addSuppressed(new StacklessException("Final state: requestPayloadReceived=" + requestPayloadReceived +
+                    ", responsePayloadReceived=" + responsePayloadReceived +
+                    ", respondedToFirstOn=" + respondedToFirstOn +
+                    ", consumedFirstOn=" + consumedFirstOn));
         }
-        assertNoAsyncErrors(asyncErrors);
     }
 
     private static Future<StreamingHttpResponse> requestFuture(StreamingHttpConnection connection, String name) {
@@ -296,5 +299,13 @@ class ServerControlFlowTest {
     @FunctionalInterface
     private interface HttpServerFactory {
         HttpServerContext create(HttpServerBuilder builder) throws Exception;
+    }
+
+    private static final class StacklessException extends Exception {
+        private static final long serialVersionUID = 6439192160547836620L;
+
+        StacklessException(String msg) {
+            super(msg, null, false, false);
+        }
     }
 }
