@@ -575,7 +575,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
 
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> serviceDiscoverer(
-            final ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer) {
+            final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer) {
         this.serviceDiscoverer = requireNonNull(serviceDiscoverer);
         return this;
     }

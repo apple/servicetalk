@@ -306,7 +306,7 @@ public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<
      * @return {@code this}.
      */
     SingleAddressHttpClientBuilder<U, R> serviceDiscoverer(
-            ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer);
+            ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer);
 
     /**
      * Sets a retry strategy to retry errors emitted by {@link ServiceDiscoverer}.
