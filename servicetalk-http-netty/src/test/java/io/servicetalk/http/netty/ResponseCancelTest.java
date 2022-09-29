@@ -359,7 +359,7 @@ class ResponseCancelTest {
                 // request.
                 signal = signals.take();
                 if (signal.requestId != requestId) {
-                    LOGGER.info("Skipping {} looking for requestId={}", signal, requestId);
+                    LOGGER.info("Skipped {} because looking for requestId={}", signal, requestId);
                 }
             } while (signal.requestId != requestId);
             if (signal.err != null) {
