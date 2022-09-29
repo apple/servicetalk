@@ -21,19 +21,12 @@ import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.BlockingStreamingHttpRequest;
-import io.servicetalk.http.api.BlockingStreamingHttpServerResponse;
-import io.servicetalk.http.api.BlockingStreamingHttpService;
 import io.servicetalk.http.api.HttpPayloadWriter;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServerContext;
-import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpConnection;
-import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.http.api.StreamingHttpResponseFactory;
-import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -101,56 +94,52 @@ class ServerControlFlowTest {
             "true,false,false", "true,false,true", "true,true,false", "true,true,true"})
     void testBlockingStreamingHttpService(boolean serverHasOffloading, boolean drainRequestPayloadBody,
                                           boolean responseHasPayload) throws Exception {
-        test(builder -> builder.listenBlockingStreamingAndAwait(new BlockingStreamingHttpService() {
-            @Override
-            public void handle(HttpServiceContext ctx, BlockingStreamingHttpRequest request,
-                               BlockingStreamingHttpServerResponse response) throws Exception {
-                boolean first = "/first".equals(request.requestTarget());
-                if ("/second".equals(request.requestTarget())) {
-                    final String rtf = respondedToFirstOn.get();
-                    final String cf = consumedFirstOn.get();
-                    if (rtf == null || cf == null) {
-                        asyncErrors.add(new AssertionError("Server started processing " + request +
-                                " on thread " + Thread.currentThread().getName() +
-                                " before the previous request processing finished: respondedToFirstOn=" + rtf +
-                                ", consumedFirstOn=" + cf + ". Returning 500."));
-                        response.status(INTERNAL_SERVER_ERROR);
-                        response.sendMetaData().close();
-                        if (!drainRequestPayloadBody) {
-                            request.payloadBody().forEach(buffer -> { /* noop */ });
-                        }
-                        return;
+        test(builder -> builder.listenBlockingStreamingAndAwait((ctx, request, response) -> {
+            boolean first = "/first".equals(request.requestTarget());
+            if ("/second".equals(request.requestTarget())) {
+                final String rtf = respondedToFirstOn.get();
+                final String cf = consumedFirstOn.get();
+                if (rtf == null || cf == null) {
+                    asyncErrors.add(new AssertionError("Server started processing " + request +
+                            " on thread " + Thread.currentThread().getName() +
+                            " before the previous request processing finished: respondedToFirstOn=" + rtf +
+                            ", consumedFirstOn=" + cf + ". Returning 500."));
+                    response.status(INTERNAL_SERVER_ERROR);
+                    response.sendMetaData().close();
+                    if (!drainRequestPayloadBody) {
+                        request.payloadBody().forEach(buffer -> { /* noop */ });
                     }
+                    return;
                 }
-                response.status(responseHasPayload ? OK : NO_CONTENT);
-                try (HttpPayloadWriter<String> writer = response.sendMetaData(RAW_STRING_SERIALIZER)) {
-                    // Subscribe to the request payload body before response writer closes
-                    BlockingIterator<Buffer> iterator = request.payloadBody().iterator();
-                    // Consume request payload body asynchronously:
-                    ctx.executionContext().executor().submit(() -> {
-                        waitUntilClientReceivesResponsePayload();
+            }
+            response.status(responseHasPayload ? OK : NO_CONTENT);
+            try (HttpPayloadWriter<String> writer = response.sendMetaData(RAW_STRING_SERIALIZER)) {
+                // Subscribe to the request payload body before response writer closes
+                BlockingIterator<Buffer> iterator = request.payloadBody().iterator();
+                // Consume request payload body asynchronously:
+                ctx.executionContext().executor().submit(() -> {
+                    waitUntilClientReceivesResponsePayload();
 
-                        StringBuilder sb = new StringBuilder();
-                        while (iterator.hasNext()) {
-                            Buffer chunk = iterator.next();
-                            assert chunk != null;
-                            sb.append(chunk.toString(US_ASCII));
-                        }
-                        if (first) {
-                            consumedFirstOn.set(Thread.currentThread().getName());
-                        }
-                        requestPayloadReceived.add(sb.toString());
-                    }).beforeOnError(asyncErrors::add).subscribe();
-                    if (responseHasPayload) {
-                        writer.write(first ? "first_server_content" : "second_server_content");
+                    StringBuilder sb = new StringBuilder();
+                    while (iterator.hasNext()) {
+                        Buffer chunk = iterator.next();
+                        assert chunk != null;
+                        sb.append(chunk.toString(US_ASCII));
                     }
-                } catch (Exception e) {
-                    asyncErrors.add(e);
-                    throw e;
+                    if (first) {
+                        consumedFirstOn.set(Thread.currentThread().getName());
+                    }
+                    requestPayloadReceived.add(sb.toString());
+                }).beforeOnError(asyncErrors::add).subscribe();
+                if (responseHasPayload) {
+                    writer.write(first ? "first_server_content" : "second_server_content");
                 }
-                if (first) {
-                    respondedToFirstOn.set(Thread.currentThread().getName());
-                }
+            } catch (Exception e) {
+                asyncErrors.add(e);
+                throw e;
+            }
+            if (first) {
+                respondedToFirstOn.set(Thread.currentThread().getName());
             }
         }), serverHasOffloading, drainRequestPayloadBody, responseHasPayload);
     }
@@ -161,80 +150,76 @@ class ServerControlFlowTest {
             "true,false,false", "true,false,true", "true,true,false", "true,true,true"})
     void testStreamingHttpService(boolean serverHasOffloading, boolean drainRequestPayloadBody,
                                   boolean responseHasPayload) throws Exception {
-        test(builder -> builder.listenStreamingAndAwait(new StreamingHttpService() {
-            @Override
-            public Single<StreamingHttpResponse> handle(HttpServiceContext ctx, StreamingHttpRequest request,
-                                                        StreamingHttpResponseFactory responseFactory) {
-                boolean first = "/first".equals(request.requestTarget());
-                if ("/second".equals(request.requestTarget())) {
-                    final String rtf = respondedToFirstOn.get();
-                    final String cf = consumedFirstOn.get();
-                    if (rtf == null || cf == null) {
-                        asyncErrors.add(new AssertionError("Server started processing " + request +
-                                " on thread " + Thread.currentThread().getName() +
-                                " before the previous request processing finished: respondedToFirstOn=" + rtf +
-                                ", consumedFirstOn=" + cf + ". Returning 500."));
-                        Single<StreamingHttpResponse> response = succeeded(responseFactory.internalServerError());
-                        return drainRequestPayloadBody ? response :
-                                response.concat(request.payloadBody().ignoreElements());
-                    }
+        test(builder -> builder.listenStreamingAndAwait((ctx, request, responseFactory) -> {
+            boolean first = "/first".equals(request.requestTarget());
+            if ("/second".equals(request.requestTarget())) {
+                final String rtf = respondedToFirstOn.get();
+                final String cf = consumedFirstOn.get();
+                if (rtf == null || cf == null) {
+                    asyncErrors.add(new AssertionError("Server started processing " + request +
+                            " on thread " + Thread.currentThread().getName() +
+                            " before the previous request processing finished: respondedToFirstOn=" + rtf +
+                            ", consumedFirstOn=" + cf + ". Returning 500."));
+                    Single<StreamingHttpResponse> response = succeeded(responseFactory.internalServerError());
+                    return drainRequestPayloadBody ? response :
+                            response.concat(request.payloadBody().ignoreElements());
                 }
-                return succeeded(responseFactory
-                        .newResponse(responseHasPayload ? OK : NO_CONTENT)
-                        .payloadBody(responseHasPayload ?
-                                from(first ? "first_server_content" : "second_server_content") : empty(),
-                                RAW_STRING_SERIALIZER)
-                        .transformPayloadBody(payload -> defer(() -> {
-                            AtomicReference<Subscription> requestSubscription = new AtomicReference<>();
-                            CompletableSource.Processor requestSubscriptionReceived = newCompletableProcessor();
-                            // Subscribe to the request payload body before response payload body starts, but request
-                            // items only after response payload body completes.
-                            toSource(request.payloadBody()).subscribe(new Subscriber<Buffer>() {
-                                private final StringBuilder sb = new StringBuilder();
-
-                                @Override
-                                public void onSubscribe(Subscription subscription) {
-                                    requestSubscription.set(subscription);
-                                    requestSubscriptionReceived.onComplete();
-                                }
-
-                                @Override
-                                public void onNext(@Nullable Buffer buffer) {
-                                    if (buffer != null) {
-                                        sb.append(buffer.toString(US_ASCII));
-                                    } else {
-                                        asyncErrors.add(new IllegalArgumentException(
-                                                "Request payload body received a null Buffer"));
-                                    }
-                                }
-
-                                @Override
-                                public void onError(Throwable t) {
-                                    asyncErrors.add(t);
-                                }
-
-                                @Override
-                                public void onComplete() {
-                                    if (first) {
-                                        consumedFirstOn.set(Thread.currentThread().getName());
-                                    }
-                                    requestPayloadReceived.add(sb.toString());
-                                }
-                            });
-                            return fromSource(requestSubscriptionReceived).concat(payload)
-                                    .beforeOnComplete(() -> {
-                                        if (first) {
-                                            respondedToFirstOn.set(Thread.currentThread().getName());
-                                        }
-                                        // Execute on a different thread to allow response payload to complete.
-                                        ctx.executionContext().executor().execute(() -> {
-                                            waitUntilClientReceivesResponsePayload();
-                                            requestSubscription.get().request(MAX_VALUE);
-                                            // Do not wait for requestPayloadReceived, NettyHttpServer should wait.
-                                        });
-                                    });
-                        }).beforeOnError(asyncErrors::add)));
             }
+            return succeeded(responseFactory
+                    .newResponse(responseHasPayload ? OK : NO_CONTENT)
+                    .payloadBody(responseHasPayload ?
+                            from(first ? "first_server_content" : "second_server_content") : empty(),
+                            RAW_STRING_SERIALIZER)
+                    .transformPayloadBody(payload -> defer(() -> {
+                        AtomicReference<Subscription> requestSubscription = new AtomicReference<>();
+                        CompletableSource.Processor requestSubscriptionReceived = newCompletableProcessor();
+                        // Subscribe to the request payload body before response payload body starts, but request
+                        // items only after response payload body completes.
+                        toSource(request.payloadBody()).subscribe(new Subscriber<Buffer>() {
+                            private final StringBuilder sb = new StringBuilder();
+
+                            @Override
+                            public void onSubscribe(Subscription subscription) {
+                                requestSubscription.set(subscription);
+                                requestSubscriptionReceived.onComplete();
+                            }
+
+                            @Override
+                            public void onNext(@Nullable Buffer buffer) {
+                                if (buffer != null) {
+                                    sb.append(buffer.toString(US_ASCII));
+                                } else {
+                                    asyncErrors.add(new IllegalArgumentException(
+                                            "Request payload body received a null Buffer"));
+                                }
+                            }
+
+                            @Override
+                            public void onError(Throwable t) {
+                                asyncErrors.add(t);
+                            }
+
+                            @Override
+                            public void onComplete() {
+                                if (first) {
+                                    consumedFirstOn.set(Thread.currentThread().getName());
+                                }
+                                requestPayloadReceived.add(sb.toString());
+                            }
+                        });
+                        return fromSource(requestSubscriptionReceived).concat(payload)
+                                .beforeOnComplete(() -> {
+                                    if (first) {
+                                        respondedToFirstOn.set(Thread.currentThread().getName());
+                                    }
+                                    // Execute on a different thread to allow response payload to complete.
+                                    ctx.executionContext().executor().execute(() -> {
+                                        waitUntilClientReceivesResponsePayload();
+                                        requestSubscription.get().request(MAX_VALUE);
+                                        // Do not wait for requestPayloadReceived, NettyHttpServer should wait.
+                                    });
+                                });
+                    }).beforeOnError(asyncErrors::add)));
         }), serverHasOffloading, drainRequestPayloadBody, responseHasPayload);
     }
 
