@@ -17,17 +17,18 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.BlockingIterable;
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.encoding.api.ContentCodec;
 
 import java.io.InputStream;
-import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.defer;
+import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.fromInputStream;
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
@@ -91,7 +92,7 @@ final class DefaultBlockingStreamingHttpResponse extends AbstractDelegatingHttpR
             HttpMessageBodyIterator<Buffer> body = messageBody.iterator();
             return fromIterable(() -> body)
                     .cast(Object.class)
-                    .concat(defer(() -> from(body.trailers()).filter(Objects::nonNull)).shareContextOnSubscribe())
+                    .concat(defer(() -> fromFilterNull(body.trailers())).shareContextOnSubscribe())
                     .shareContextOnSubscribe();
         }));
         return this;
@@ -104,7 +105,7 @@ final class DefaultBlockingStreamingHttpResponse extends AbstractDelegatingHttpR
             HttpMessageBodyIterator<T> body = messageBody.iterator();
             return from(serializer.serialize(headers(), () -> body, original.payloadHolder().allocator()))
                     .cast(Object.class)
-                    .concat(defer(() -> from(body.trailers()).filter(Objects::nonNull)).shareContextOnSubscribe())
+                    .concat(defer(() -> fromFilterNull(body.trailers())).shareContextOnSubscribe())
                     .shareContextOnSubscribe();
         }));
         return this;
@@ -182,5 +183,9 @@ final class DefaultBlockingStreamingHttpResponse extends AbstractDelegatingHttpR
     public BlockingStreamingHttpResponse status(final HttpResponseStatus status) {
         original.status(status);
         return this;
+    }
+
+    static <T> Publisher<T> fromFilterNull(@Nullable T value) {
+        return value == null ? empty() : from(value);
     }
 }
