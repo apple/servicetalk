@@ -119,7 +119,6 @@ class ServerPipelineControlFlowTest {
 
                     StringBuilder sb = new StringBuilder();
                     while (iterator.hasNext()) {
-
                         Buffer chunk = iterator.next();
                         assert chunk != null;
                         sb.append(chunk.toString(US_ASCII));
