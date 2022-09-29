@@ -122,7 +122,6 @@ class ServerPipelineControlFlowTest {
                         Buffer chunk = iterator.next();
                         assert chunk != null;
                         sb.append(chunk.toString(US_ASCII));
-
                     }
                     requestPayloadReceived.add(sb.toString());
                 }).beforeOnError(asyncErrors::add).subscribe();
