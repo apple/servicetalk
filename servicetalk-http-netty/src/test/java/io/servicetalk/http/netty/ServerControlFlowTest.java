@@ -221,7 +221,6 @@ class ServerControlFlowTest {
                                 public void onComplete() {
                                     if (first) {
                                         consumedFirst.addAndGet(sb.length());
-
                                     }
                                     requestPayloadReceived.add(sb.toString());
                                 }
