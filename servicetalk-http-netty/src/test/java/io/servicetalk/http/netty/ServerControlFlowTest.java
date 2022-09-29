@@ -86,7 +86,6 @@ class ServerControlFlowTest {
     private final BlockingQueue<String> requestPayloadReceived = new LinkedBlockingQueue<>();
     private final BlockingQueue<String> responsePayloadReceived = new LinkedBlockingQueue<>();
     private final AtomicReference<String> respondedToFirstOn = new AtomicReference<>();
-    private final AtomicReference<String> consumedFirstOn = new AtomicReference<>();
 
     @ParameterizedTest(name =
             "{displayName} [{index}] serverHasOffloading={0} drainRequestPayloadBody={1} responseHasPayload={2}")
@@ -98,12 +97,10 @@ class ServerControlFlowTest {
             boolean first = "/first".equals(request.requestTarget());
             if ("/second".equals(request.requestTarget())) {
                 final String rtf = respondedToFirstOn.get();
-                final String cf = consumedFirstOn.get();
-                if (rtf == null || cf == null) {
+                if (rtf == null) {
                     asyncErrors.add(new AssertionError("Server started processing " + request +
-                            " on thread " + Thread.currentThread().getName() +
-                            " before the previous request processing finished: respondedToFirstOn=" + rtf +
-                            ", consumedFirstOn=" + cf + ". Returning 500."));
+                            " on thread " + Thread.currentThread().getName() + " before the previous request " +
+                            "processing finished: respondedToFirstOn=" + rtf + ". Returning 500."));
                     response.status(INTERNAL_SERVER_ERROR);
                     response.sendMetaData().close();
                     if (!drainRequestPayloadBody) {
@@ -125,9 +122,6 @@ class ServerControlFlowTest {
                         Buffer chunk = iterator.next();
                         assert chunk != null;
                         sb.append(chunk.toString(US_ASCII));
-                    }
-                    if (first) {
-                        consumedFirstOn.set(Thread.currentThread().getName());
                     }
                     requestPayloadReceived.add(sb.toString());
                 }).beforeOnError(asyncErrors::add).subscribe();
@@ -154,12 +148,10 @@ class ServerControlFlowTest {
             boolean first = "/first".equals(request.requestTarget());
             if ("/second".equals(request.requestTarget())) {
                 final String rtf = respondedToFirstOn.get();
-                final String cf = consumedFirstOn.get();
-                if (rtf == null || cf == null) {
+                if (rtf == null) {
                     asyncErrors.add(new AssertionError("Server started processing " + request +
-                            " on thread " + Thread.currentThread().getName() +
-                            " before the previous request processing finished: respondedToFirstOn=" + rtf +
-                            ", consumedFirstOn=" + cf + ". Returning 500."));
+                            " on thread " + Thread.currentThread().getName() + " before the previous request " +
+                            "processing finished: respondedToFirstOn=" + rtf + ". Returning 500."));
                     Single<StreamingHttpResponse> response = succeeded(responseFactory.internalServerError());
                     return drainRequestPayloadBody ? response :
                             response.concat(request.payloadBody().ignoreElements());
@@ -201,9 +193,6 @@ class ServerControlFlowTest {
 
                             @Override
                             public void onComplete() {
-                                if (first) {
-                                    consumedFirstOn.set(Thread.currentThread().getName());
-                                }
                                 requestPayloadReceived.add(sb.toString());
                             }
                         });
@@ -249,8 +238,7 @@ class ServerControlFlowTest {
         } catch (Throwable t) {
             t.addSuppressed(new StacklessException("Final state: requestPayloadReceived=" + requestPayloadReceived +
                     ", responsePayloadReceived=" + responsePayloadReceived +
-                    ", respondedToFirstOn=" + respondedToFirstOn +
-                    ", consumedFirstOn=" + consumedFirstOn));
+                    ", respondedToFirstOn=" + respondedToFirstOn));
         }
     }
 
