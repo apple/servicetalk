@@ -71,7 +71,7 @@ import static org.hamcrest.Matchers.is;
  *    emits response payload body (can be empty) -> waits until client receives the response ->
  *    drains request payload body. Processing of the next request ensures the previous one completed.
  */
-class ServerControlFlowTest {
+class ServerPipelineControlFlowTest {
 
     @RegisterExtension
     static final ExecutionContextExtension SERVER_CTX =
