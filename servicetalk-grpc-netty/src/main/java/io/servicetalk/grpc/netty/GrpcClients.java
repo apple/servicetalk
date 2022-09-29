@@ -182,8 +182,8 @@ public final class GrpcClients {
      * @see GrpcClientBuilderProvider
      */
     public static <U, R>
-    GrpcClientBuilder<U, R> forAddress(final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer,
-                                       final U address) {
+    GrpcClientBuilder<U, R> forAddress(
+            final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer, final U address) {
         return applyProviders(address,
                 new DefaultGrpcClientBuilder<>(() -> HttpClients.forSingleAddress(serviceDiscoverer, address)));
     }
