@@ -95,7 +95,7 @@ import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.GR
 import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.lang.Integer.parseInt;
 import static java.lang.String.valueOf;
-import static java.nio.charset.StandardCharsets.US_ASCII;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
 import static java.util.Objects.requireNonNull;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -110,8 +110,7 @@ class GracefulConnectionClosureHandlingTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(GracefulConnectionClosureHandlingTest.class);
     private static final Collection<Boolean> TRUE_FALSE = asList(true, false);
 
-    static final HttpStreamingSerializer<String> RAW_STRING_SERIALIZER =
-            stringStreamingSerializer(US_ASCII, hdr -> { });
+    static final HttpStreamingSerializer<String> RAW_STRING_SERIALIZER = stringStreamingSerializer(UTF_8, hdr -> { });
 
     @RegisterExtension
     static final ExecutionContextExtension SERVER_CTX =
