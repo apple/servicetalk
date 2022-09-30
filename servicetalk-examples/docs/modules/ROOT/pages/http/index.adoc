@@ -134,6 +134,17 @@ Client sends a `POST` request with a Protobuf payload `RequestMessage` and expec
 All serializers and deserializers defined in
 link:{source-root}/servicetalk-examples/http/serialization/protobuf/src/main/java/io/servicetalk/examples/http/serialization/protobuf/SerializerUtils.java[SerializerUtils].
 
+[#SerializationBytes]
+== Serialization: Bytes
+
+An example similar to "Hello World" examples, which demonstrates
+link:{source-root}/servicetalk-examples/http/serialization/bytes/src/main/java/io/servicetalk/examples/http/serialization/bytes/blocking[blocking-aggregated]
+client and server with `byte[]` serialization.
+
+Client sends a `GET` request and expects a response that can be deserialized as `byte[]`.
+All serializers and deserializers defined in
+link:{source-root}/servicetalk-examples/http/serialization/bytes/src/main/java/io/servicetalk/examples/http/serialization/bytes/SerializerUtils.java[SerializerUtils].
+
 [#JAXRS]
 == JAX-RS
 
