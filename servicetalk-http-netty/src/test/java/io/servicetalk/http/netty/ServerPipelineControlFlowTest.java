@@ -235,7 +235,7 @@ class ServerPipelineControlFlowTest {
     private static Future<StreamingHttpResponse> requestFuture(StreamingHttpConnection connection, String name) {
         return connection.request(connection.post('/' + name)
                         .payloadBody(connection.executionContext().executor().timer(ofMillis(50))
-                                .concat(from(name + "_request_content")), RAW_STRING_SERIALIZER)).toFuture();
+                                .concat(from("request_content")), RAW_STRING_SERIALIZER)).toFuture();
     }
 
     private void assertResponse(String name, StreamingHttpResponse response, boolean responseHasPayload)
@@ -246,7 +246,7 @@ class ServerPipelineControlFlowTest {
                 .toFuture().get().toString();
         assertThat(responsePayload, is(equalTo(responseHasPayload ? '/' + name + "_server_content" : "")));
         responsePayloadReceived.add(responsePayload);
-        assertThat(requestPayloadReceived.take(), is(equalTo(name + "_request_content")));
+        assertThat(requestPayloadReceived.take(), is(equalTo("request_content")));
     }
 
     private void waitUntilClientReceivesResponsePayload() {
