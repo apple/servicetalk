@@ -274,7 +274,7 @@ public final class HttpClients {
      * @see SingleAddressHttpClientBuilderProvider
      */
     public static <U, R> SingleAddressHttpClientBuilder<U, R> forSingleAddress(
-            final ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer,
+            final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer,
             final U address) {
         return applyProviders(address, new DefaultSingleAddressHttpClientBuilder<>(address, serviceDiscoverer));
     }

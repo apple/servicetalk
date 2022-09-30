@@ -171,7 +171,7 @@ public class DelegatingSingleAddressHttpClientBuilder<U, R> implements SingleAdd
 
     @Override
     public SingleAddressHttpClientBuilder<U, R> serviceDiscoverer(
-            final ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> serviceDiscoverer) {
+            final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer) {
         delegate = delegate.serviceDiscoverer(serviceDiscoverer);
         return this;
     }
