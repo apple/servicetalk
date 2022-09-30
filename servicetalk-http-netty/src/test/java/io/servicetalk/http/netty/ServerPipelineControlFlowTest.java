@@ -178,7 +178,7 @@ class ServerPipelineControlFlowTest {
                                     sb.append(buffer.toString(US_ASCII));
                                 } else {
                                     asyncErrors.add(new IllegalArgumentException(
-                                            "Request payload body received a null Buffer"));
+                                            "Request payload body received a null Buffer!"));
                                 }
                             }
 
