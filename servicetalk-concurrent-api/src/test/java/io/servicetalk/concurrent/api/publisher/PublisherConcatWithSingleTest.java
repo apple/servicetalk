@@ -127,6 +127,7 @@ class PublisherConcatWithSingleTest {
 
     @Test
     void sourceCancel() {
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         subscriber.awaitSubscription().cancel();
         assertThat("Source subscription not cancelled.", subscription.isCancelled(), is(true));
         assertThat("Next source subscribed on cancellation.", single.isSubscribed(), is(false));

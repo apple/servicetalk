@@ -86,7 +86,7 @@ class SingleConcatWithPublisherTest {
         return args;
     }
 
-    @ParameterizedTest(name = "deferSubscribe={0} requestN={1} singleCompletesFirst={2}")
+    @ParameterizedTest(name = "{displayName} [{index}] deferSubscribe={0} requestN={1} singleCompletesFirst={2}")
     @MethodSource("onNextErrorPropagatedParams")
     void onNextErrorPropagated(boolean deferSubscribe, long n, boolean singleCompletesFirst) {
         toSource(source.concat(next, deferSubscribe).<Integer>map(x -> {
@@ -105,7 +105,7 @@ class SingleConcatWithPublisherTest {
         assertThat(next.isSubscribed(), is(false));
     }
 
-    @ParameterizedTest(name = "deferSubscribe={0}")
+    @ParameterizedTest(name = "{displayName} [{index}] deferSubscribe={0}")
     @ValueSource(booleans = {false, true})
     void bothCompletion(boolean deferSubscribe) {
         setUp(deferSubscribe);
@@ -119,7 +119,7 @@ class SingleConcatWithPublisherTest {
         subscriber.awaitOnComplete();
     }
 
-    @ParameterizedTest(name = "deferSubscribe={0}")
+    @ParameterizedTest(name = "{displayName} [{index}] deferSubscribe={0}")
     @ValueSource(booleans = {false, true})
     void sourceCompletionNextError(boolean deferSubscribe) {
         setUp(deferSubscribe);
@@ -130,7 +130,7 @@ class SingleConcatWithPublisherTest {
         assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
-    @ParameterizedTest(name = "deferSubscribe={0} invalidRequestN={1}")
+    @ParameterizedTest(name = "{displayName} [{index}] deferSubscribe={0} invalidRequestN={1}")
     @MethodSource("invalidRequestN")
     void invalidRequestNBeforeNextSubscribe(boolean deferSubscribe, long invalidRequestN) {
         setUp(deferSubscribe);
@@ -139,7 +139,7 @@ class SingleConcatWithPublisherTest {
         assertThat(subscriber.awaitOnError(), instanceOf(IllegalArgumentException.class));
     }
 
-    @ParameterizedTest(name = "deferSubscribe={0}")
+    @ParameterizedTest(name = "{displayName} [{index}] deferSubscribe={0}")
     @ValueSource(booleans = {false, true})
     void invalidRequestNWithInlineSourceCompletion(boolean deferSubscribe) {
         toSource(succeeded(1).concat(empty(), deferSubscribe)).subscribe(subscriber);
@@ -147,7 +147,7 @@ class SingleConcatWithPublisherTest {
         assertThat(subscriber.awaitOnError(), instanceOf(IllegalArgumentException.class));
     }
 
-    @ParameterizedTest(name = "deferSubscribe={0}")
+    @ParameterizedTest(name = "{displayName} [{index}] deferSubscribe={0}")
     @ValueSource(booleans = {false, true})
     void invalidRequestAfterNextSubscribe(boolean deferSubscribe) {
         setUp(deferSubscribe);
@@ -156,7 +156,7 @@ class SingleConcatWithPublisherTest {
         assertThat("Invalid request-n not propagated.", subscription.requested(), is(lessThan(0L)));
     }
 
-    @ParameterizedTest(name = "deferSubscribe={0}")
+    @ParameterizedTest(name = "{displayName} [{index}] deferSubscribe={0}")
     @ValueSource(booleans = {false, true})
     void multipleInvalidRequest(boolean deferSubscribe) {
         setUp(deferSubscribe);
@@ -165,7 +165,7 @@ class SingleConcatWithPublisherTest {
         assertThat(subscriber.awaitOnError(), instanceOf(IllegalArgumentException.class));
     }
 
-    @ParameterizedTest(name = "deferSubscribe={0} invalidRequestN={1}")
+    @ParameterizedTest(name = "{displayName} [{index}] deferSubscribe={0} invalidRequestN={1}")
     @MethodSource("invalidRequestN")
     void invalidThenValidRequest(boolean deferSubscribe, long invalidRequestN) {
         setUp(deferSubscribe);
@@ -175,7 +175,7 @@ class SingleConcatWithPublisherTest {
         assertThat(cancellable.isCancelled(), is(true));
     }
 
-    @ParameterizedTest(name = "deferSubscribe={0}")
+    @ParameterizedTest(name = "{displayName} [{index}] deferSubscribe={0}")
     @ValueSource(booleans = {false, true})
     void request0PropagatedAfterSuccess(boolean deferSubscribe) {
         setUp(deferSubscribe);
@@ -189,7 +189,7 @@ class SingleConcatWithPublisherTest {
                 is(true));
     }
 
-    @ParameterizedTest(name = "deferSubscribe={0}")
+    @ParameterizedTest(name = "{displayName} [{index}] deferSubscribe={0}")
     @ValueSource(booleans = {false, true})
     void sourceError(boolean deferSubscribe) {
         setUp(deferSubscribe);
@@ -198,7 +198,7 @@ class SingleConcatWithPublisherTest {
         assertThat("Next source subscribed unexpectedly.", next.isSubscribed(), is(false));
     }
 
-    @ParameterizedTest(name = "deferSubscribe={0}")
+    @ParameterizedTest(name = "{displayName} [{index}] deferSubscribe={0}")
     @ValueSource(booleans = {false, true})
     void cancelSource(boolean deferSubscribe) {
         setUp(deferSubscribe);
@@ -206,9 +206,14 @@ class SingleConcatWithPublisherTest {
         subscriber.awaitSubscription().cancel();
         assertThat("Original single not cancelled.", cancellable.isCancelled(), is(true));
         assertThat("Next source subscribed unexpectedly.", next.isSubscribed(), is(false));
+        if (!deferSubscribe) {
+            triggerNextSubscribe(false);
+            assertThat("Next source not subscribed.", next.isSubscribed(), is(true));
+            assertThat("Next source not cancelled.", cancellable.isCancelled(), is(true));
+        }
     }
 
-    @ParameterizedTest(name = "deferSubscribe={0}")
+    @ParameterizedTest(name = "{displayName} [{index}] deferSubscribe={0}")
     @ValueSource(booleans = {false, true})
     void cancelSourcePostRequest(boolean deferSubscribe) {
         setUp(deferSubscribe);
@@ -219,7 +224,7 @@ class SingleConcatWithPublisherTest {
         assertThat("Next source subscribed unexpectedly.", next.isSubscribed(), is(false));
     }
 
-    @ParameterizedTest(name = "deferSubscribe={0}")
+    @ParameterizedTest(name = "{displayName} [{index}] deferSubscribe={0}")
     @ValueSource(booleans = {false, true})
     void cancelNext(boolean deferSubscribe) {
         setUp(deferSubscribe);
@@ -230,7 +235,7 @@ class SingleConcatWithPublisherTest {
         assertThat("Next source not cancelled.", subscription.isCancelled(), is(true));
     }
 
-    @ParameterizedTest(name = "deferSubscribe={0}")
+    @ParameterizedTest(name = "{displayName} [{index}] deferSubscribe={0}")
     @ValueSource(booleans = {false, true})
     void zeroIsNotRequestedOnTransitionToSubscription(boolean deferSubscribe) {
         setUp(deferSubscribe);
@@ -249,7 +254,7 @@ class SingleConcatWithPublisherTest {
         }
     }
 
-    @ParameterizedTest(name = "deferSubscribe={0}")
+    @ParameterizedTest(name = "{displayName} [{index}] deferSubscribe={0}")
     @ValueSource(booleans = {false, true})
     void publisherSubscribeBlockDemandMakesProgress(boolean deferSubscribe) {
         source = new TestSingle<>();
@@ -276,7 +281,7 @@ class SingleConcatWithPublisherTest {
         subscriber.awaitOnComplete();
     }
 
-    @ParameterizedTest(name = "deferSubscribe={0}")
+    @ParameterizedTest(name = "{displayName} [{index}] deferSubscribe={0}")
     @ValueSource(booleans = {false, true})
     void onErrorAfterInvalidRequestN(boolean deferSubscribe) {
         setUp(deferSubscribe);
@@ -297,7 +302,7 @@ class SingleConcatWithPublisherTest {
                 subscriber.awaitOnError(), instanceOf(IllegalArgumentException.class));
     }
 
-    @ParameterizedTest(name = "deferSubscribe={0}")
+    @ParameterizedTest(name = "{displayName} [{index}] deferSubscribe={0}")
     @ValueSource(booleans = {false, true})
     void singleCompletesWithNull(boolean deferSubscribe) {
         setUp(deferSubscribe);
@@ -310,7 +315,7 @@ class SingleConcatWithPublisherTest {
         subscriber.awaitOnComplete();
     }
 
-    @ParameterizedTest(name = "deferSubscribe={0}")
+    @ParameterizedTest(name = "{displayName} [{index}] deferSubscribe={0}")
     @ValueSource(booleans = {false, true})
     void demandAccumulatedBeforeSingleCompletes(boolean deferSubscribe) {
         setUp(deferSubscribe);
@@ -330,7 +335,7 @@ class SingleConcatWithPublisherTest {
         subscriber.awaitOnComplete();
     }
 
-    @ParameterizedTest(name = "deferSubscribe={0}")
+    @ParameterizedTest(name = "{displayName} [{index}] deferSubscribe={0}")
     @ValueSource(booleans = {false, true})
     void requestOneThenMore(boolean deferSubscribe) {
         setUp(deferSubscribe);
@@ -348,7 +353,7 @@ class SingleConcatWithPublisherTest {
         subscriber.awaitOnComplete();
     }
 
-    @ParameterizedTest(name = "deferSubscribe={0}")
+    @ParameterizedTest(name = "{displayName} [{index}] deferSubscribe={0}")
     @ValueSource(booleans = {false, true})
     void reentryWithMoreDemand(boolean deferSubscribe) {
         List<Integer> emitted = new ArrayList<>();
@@ -385,7 +390,7 @@ class SingleConcatWithPublisherTest {
         assertThat(completed[0], is(true));
     }
 
-    @ParameterizedTest(name = "deferSubscribe={0}")
+    @ParameterizedTest(name = "{displayName} [{index}] deferSubscribe={0}")
     @ValueSource(booleans = {false, true})
     void cancelledDuringFirstOnNext(boolean deferSubscribe) {
         List<Integer> emitted = new ArrayList<>();

@@ -150,7 +150,11 @@ final class SingleConcatWithPublisher<T> extends AbstractNoHandleSubscribePublis
                         next.subscribeInternal(this);
                     }
                     break;
-                } else if (oldValue == CANCELLED || mayBeResultUpdater.compareAndSet(this, INITIAL, result)) {
+                } else if (oldValue == CANCELLED) {
+                    // Subscribe to the next source to propagate cancellation
+                    next.subscribeInternal(this);
+                    break;
+                } else if (mayBeResultUpdater.compareAndSet(this, INITIAL, result)) {
                     break;
                 }
             }

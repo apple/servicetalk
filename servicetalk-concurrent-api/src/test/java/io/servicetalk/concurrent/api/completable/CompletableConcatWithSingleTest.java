@@ -74,10 +74,16 @@ class CompletableConcatWithSingleTest {
     void testCancelSource() {
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         subscriber.awaitSubscription().cancel();
-        TestCancellable cancellable = new TestCancellable();
-        source.onSubscribe(cancellable);
-        assertTrue(cancellable.isCancelled());
-        assertFalse(next.isSubscribed());
+        TestCancellable sourceCancellable = new TestCancellable();
+        source.onSubscribe(sourceCancellable);
+        assertTrue(sourceCancellable.isCancelled(), "Original completable not cancelled.");
+        assertFalse(next.isSubscribed(), "Next source subscribed unexpectedly.");
+
+        source.onComplete();
+        TestCancellable nextCancellable = new TestCancellable();
+        next.onSubscribe(nextCancellable);
+        assertTrue(next.isSubscribed(), "Next source not subscribed.");
+        assertTrue(nextCancellable.isCancelled(), "Next source not cancelled.");
     }
 
     @Test
