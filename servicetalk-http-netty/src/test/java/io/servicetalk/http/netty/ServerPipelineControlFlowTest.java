@@ -124,6 +124,7 @@ class ServerPipelineControlFlowTest {
                 }).beforeOnError(asyncErrors::add).subscribe();
                 if (responseHasPayload) {
                     writer.write(request.requestTarget() + "_server_content");
+
                 }
             } catch (Exception e) {
                 asyncErrors.add(e);
