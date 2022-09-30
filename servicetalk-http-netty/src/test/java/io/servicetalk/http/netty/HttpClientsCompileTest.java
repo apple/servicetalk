@@ -19,6 +19,7 @@ import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 
 import org.junit.jupiter.api.Test;
 
@@ -29,10 +30,19 @@ class HttpClientsCompileTest {
     private static final String IGNORE_ADDRESS = "";
 
     @Test
-    void testGrpcClientsAcceptsCustomServiceDiscovererEvents() {
-        HttpClients.forSingleAddress(
-                new NullServiceDiscoverer<ServiceDiscovererEvent<InetSocketAddress>>(), IGNORE_ADDRESS);
-        HttpClients.forSingleAddress(new NullServiceDiscoverer<CustomServiceDiscovererEvent>(), IGNORE_ADDRESS);
+    void testHttpClientsAcceptsBaseServiceDiscovererEvents() {
+        NullServiceDiscoverer<ServiceDiscovererEvent<InetSocketAddress>> discoverer = new NullServiceDiscoverer<>();
+        SingleAddressHttpClientBuilder<String, InetSocketAddress> builder = HttpClients.forSingleAddress(
+                discoverer, IGNORE_ADDRESS);
+        builder.serviceDiscoverer(discoverer);
+    }
+
+    @Test
+    void testHttpClientsAcceptsCustomServiceDiscovererEvents() {
+        NullServiceDiscoverer<CustomServiceDiscovererEvent> discoverer = new NullServiceDiscoverer<>();
+        SingleAddressHttpClientBuilder<String, InetSocketAddress> builder = HttpClients.forSingleAddress(
+                discoverer, IGNORE_ADDRESS);
+        builder.serviceDiscoverer(discoverer);
     }
 
     private interface CustomServiceDiscovererEvent extends ServiceDiscovererEvent<InetSocketAddress> { }
