@@ -95,19 +95,16 @@ class ServerPipelineControlFlowTest {
                                           boolean responseHasPayload) throws Exception {
         test(builder -> builder.listenBlockingStreamingAndAwait((ctx, request, response) -> {
             boolean first = "/first".equals(request.requestTarget());
-            if (!first) {
-                final String rtf = respondedToFirstOn.get();
-                if (rtf == null) {
-                    asyncErrors.add(new AssertionError("Server started processing " + request +
-                            " on thread " + Thread.currentThread().getName() + " before the previous request " +
-                            "processing finished: respondedToFirstOn=" + rtf + ". Returning 500."));
-                    response.status(INTERNAL_SERVER_ERROR);
-                    response.sendMetaData().close();
-                    if (!drainRequestPayloadBody) {
-                        request.payloadBody().forEach(buffer -> { /* noop */ });
-                    }
-                    return;
+            if (!first && respondedToFirstOn.get() == null) {
+                asyncErrors.add(new AssertionError("Server started processing " + request +
+                        " on thread " + Thread.currentThread().getName() + " before the previous request " +
+                        "processing finished. Returning 500."));
+                response.status(INTERNAL_SERVER_ERROR);
+                response.sendMetaData().close();
+                if (!drainRequestPayloadBody) {
+                    request.payloadBody().forEach(buffer -> { /* noop */ });
                 }
+                return;
             }
             response.status(responseHasPayload ? OK : NO_CONTENT);
             try (HttpPayloadWriter<String> writer = response.sendMetaData(RAW_STRING_SERIALIZER)) {
@@ -146,16 +143,13 @@ class ServerPipelineControlFlowTest {
                                   boolean responseHasPayload) throws Exception {
         test(builder -> builder.listenStreamingAndAwait((ctx, request, responseFactory) -> {
             boolean first = "/first".equals(request.requestTarget());
-            if (!first) {
-                final String rtf = respondedToFirstOn.get();
-                if (rtf == null) {
-                    asyncErrors.add(new AssertionError("Server started processing " + request +
-                            " on thread " + Thread.currentThread().getName() + " before the previous request " +
-                            "processing finished: respondedToFirstOn=" + rtf + ". Returning 500."));
-                    Single<StreamingHttpResponse> response = succeeded(responseFactory.internalServerError());
-                    return drainRequestPayloadBody ? response :
-                            response.concat(request.payloadBody().ignoreElements());
-                }
+            if (!first && respondedToFirstOn.get() == null) {
+                asyncErrors.add(new AssertionError("Server started processing " + request +
+                        " on thread " + Thread.currentThread().getName() + " before the previous request " +
+                        "processing finished. Returning 500."));
+                Single<StreamingHttpResponse> response = succeeded(responseFactory.internalServerError());
+                return drainRequestPayloadBody ? response :
+                        response.concat(request.payloadBody().ignoreElements());
             }
             return succeeded(responseFactory
                     .newResponse(responseHasPayload ? OK : NO_CONTENT)
@@ -240,7 +234,7 @@ class ServerPipelineControlFlowTest {
         } catch (Throwable t) {
             t.addSuppressed(new StacklessException("Final state: requestPayloadReceived=" + requestPayloadReceived +
                     ", responsePayloadReceived=" + responsePayloadReceived +
-                    ", respondedToFirstOn=" + respondedToFirstOn));
+                    ", respondedToFirstOn=" + respondedToFirstOn.get()));
         }
     }
 
