@@ -70,7 +70,7 @@ class NettyCompressionStreamingSerializerTest {
         }
     }
 
-    @ParameterizedTest(name = "{index}: type = {0}")
+    @ParameterizedTest(name = "{displayName} [{index}] type = {0}")
     @EnumSource(StreamingType.class)
     void streamingOverMultipleFrames(StreamingType type) throws Exception {
         BufferAllocator allocator = type.allocator;
@@ -83,7 +83,6 @@ class NettyCompressionStreamingSerializerTest {
 
         CompositeBuffer serializedBuf = serializedPub
                 .collect(DEFAULT_ALLOCATOR::newCompositeBuffer, CompositeBuffer::addBuffer).toFuture().get();
-
 
         assertThat(serializedBuf.readableBytes(), greaterThanOrEqualTo(4));
         CompositeBuffer result = serializer.deserialize(from(
@@ -98,7 +97,7 @@ class NettyCompressionStreamingSerializerTest {
         assertThat(result, equalTo(allocator.wrap(rawBytes)));
     }
 
-    @ParameterizedTest(name = "{index}: type = {0}")
+    @ParameterizedTest(name = "{displayName} [{index}] type = {0}")
     @EnumSource(AggType.class)
     void aggregatedRoundTrip(AggType type) {
         BufferAllocator allocator = type.allocator;
