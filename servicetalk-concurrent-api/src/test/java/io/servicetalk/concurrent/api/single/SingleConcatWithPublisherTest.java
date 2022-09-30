@@ -21,11 +21,13 @@ import io.servicetalk.concurrent.api.TestCancellable;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSingle;
 import io.servicetalk.concurrent.api.TestSubscription;
+import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.hamcrest.Matchers;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -60,7 +62,12 @@ class SingleConcatWithPublisherTest {
     private TestPublisher<Integer> next = new TestPublisher.Builder<Integer>().disableAutoOnSubscribe().build();
 
     void setUp(boolean deferSubscribe) {
-        toSource(source.concat(next, deferSubscribe)).subscribe(subscriber);
+        setUp(deferSubscribe, false);
+    }
+
+    void setUp(boolean deferSubscribe, boolean propagateCancel) {
+        toSource(propagateCancel ? source.concatPropagateCancel(next) : source.concat(next, deferSubscribe))
+                .subscribe(subscriber);
         source.onSubscribe(cancellable);
         subscriber.awaitSubscription();
     }
@@ -77,19 +84,23 @@ class SingleConcatWithPublisherTest {
     private static Collection<Arguments> onNextErrorPropagatedParams() {
         List<Arguments> args = new ArrayList<>();
         for (boolean deferSubscribe : asList(false, true)) {
-            for (long requestN : asList(1, 2)) {
-                for (boolean singleCompletesFirst : asList(false, true)) {
-                    args.add(Arguments.of(deferSubscribe, requestN, singleCompletesFirst));
+            for (boolean propagateCancel : asList(false, true)) {
+                for (long requestN : asList(1, 2)) {
+                    for (boolean singleCompletesFirst : asList(false, true)) {
+                        args.add(Arguments.of(deferSubscribe, propagateCancel, requestN, singleCompletesFirst));
+                    }
                 }
             }
         }
         return args;
     }
 
-    @ParameterizedTest(name = "deferSubscribe={0} requestN={1} singleCompletesFirst={2}")
+    @ParameterizedTest(name = "deferSubscribe={0} propagateCancel={1} requestN={2} singleCompletesFirst={3}")
     @MethodSource("onNextErrorPropagatedParams")
-    void onNextErrorPropagated(boolean deferSubscribe, long n, boolean singleCompletesFirst) {
-        toSource(source.concat(next, deferSubscribe).<Integer>map(x -> {
+    void onNextErrorPropagated(boolean deferSubscribe, boolean propagateCancel, long n, boolean singleCompletesFirst)
+            throws Exception {
+        toSource((propagateCancel ? source.concatPropagateCancel(next) : source.concat(next, deferSubscribe))
+                .<Integer>map(x -> {
             throw DELIBERATE_EXCEPTION;
         })).subscribe(subscriber);
         source.onSubscribe(cancellable);
@@ -102,7 +113,13 @@ class SingleConcatWithPublisherTest {
             source.onSuccess(1);
         }
         assertThat(subscriber.awaitOnError(), is(DELIBERATE_EXCEPTION));
-        assertThat(next.isSubscribed(), is(false));
+        if (propagateCancel) {
+            next.awaitSubscribed();
+            next.onSubscribe(subscription);
+            subscription.awaitCancelled();
+        } else {
+            assertThat(next.isSubscribed(), is(false));
+        }
     }
 
     @ParameterizedTest(name = "deferSubscribe={0}")
@@ -189,23 +206,61 @@ class SingleConcatWithPublisherTest {
                 is(true));
     }
 
-    @ParameterizedTest(name = "deferSubscribe={0}")
-    @ValueSource(booleans = {false, true})
-    void sourceError(boolean deferSubscribe) {
-        setUp(deferSubscribe);
+    @ParameterizedTest(name = "deferSubscribe={0} propagateCancel={1} error={2}")
+    @CsvSource(value = {"false,false,false", "false,true,false", "false,true,true", "true,false,false",
+            "true,true,false", "true,true,true"})
+    void sourceError(boolean deferSubscribe, boolean propagateCancel, boolean error) throws InterruptedException {
+        setUp(deferSubscribe, propagateCancel);
         source.onError(DELIBERATE_EXCEPTION);
-        assertThat("Unexpected subscriber termination.", subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
-        assertThat("Next source subscribed unexpectedly.", next.isSubscribed(), is(false));
+        assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
+        if (propagateCancel) {
+            next.awaitSubscribed();
+            next.onSubscribe(subscription);
+            subscription.awaitCancelled();
+
+            // Test that no duplicate terminal events are delivered.
+            if (error) {
+                next.onError(new DeliberateException());
+            } else {
+                next.onComplete();
+            }
+        } else {
+            assertThat(next.isSubscribed(), is(false));
+        }
     }
 
-    @ParameterizedTest(name = "deferSubscribe={0}")
-    @ValueSource(booleans = {false, true})
-    void cancelSource(boolean deferSubscribe) {
-        setUp(deferSubscribe);
+    @ParameterizedTest(name = "deferSubscribe={0} propagateCancel={1} error={2}")
+    @CsvSource(value = {"false,false,false", "false,true,false", "false,true,true", "true,false,false",
+            "true,true,false", "true,true,true"})
+    void cancelSource(boolean deferSubscribe, boolean propagateCancel, boolean error) throws InterruptedException {
+        setUp(deferSubscribe, propagateCancel);
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
-        subscriber.awaitSubscription().cancel();
+        Subscription subscription1 = subscriber.awaitSubscription();
+        subscription1.request(2);
+        subscription1.cancel();
         assertThat("Original single not cancelled.", cancellable.isCancelled(), is(true));
-        assertThat("Next source subscribed unexpectedly.", next.isSubscribed(), is(false));
+        if (propagateCancel) {
+            next.awaitSubscribed();
+            next.onSubscribe(subscription);
+            subscription.awaitCancelled();
+
+            if (error) {
+                next.onError(new DeliberateException());
+            } else {
+                next.onComplete();
+            }
+        } else {
+            assertThat(next.isSubscribed(), is(false));
+            if (error) {
+                source.onError(new DeliberateException());
+            } else {
+                source.onSuccess(1);
+            }
+            assertThat(next.isSubscribed(), is(false));
+        }
+        // It is not required that no terminal is delivered after cancel but verifies the current implementation for
+        // thread safety on the subscriber and to avoid duplicate terminals.
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
     }
 
     @ParameterizedTest(name = "deferSubscribe={0}")
