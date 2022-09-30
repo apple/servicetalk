@@ -123,7 +123,6 @@ class ServerPipelineControlFlowTest {
                     requestPayloadReceived.add(sb.toString());
                 }).beforeOnError(asyncErrors::add).subscribe();
                 if (responseHasPayload) {
-
                     writer.write(request.requestTarget() + "_server_content");
                 }
             } catch (Exception e) {
