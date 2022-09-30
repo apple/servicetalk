@@ -208,34 +208,28 @@ class ServerPipelineControlFlowTest {
 
     private void test(HttpServerFactory serverFactory, boolean serverHasOffloading, boolean drainRequestPayloadBody,
                       boolean responseHasPayload) throws Exception {
-        try {
-            try (HttpServerContext serverContext = serverFactory.create(newLocalServer(SERVER_CTX)
-                    .executionStrategy(serverHasOffloading ? defaultStrategy() : offloadNone())
-                    .drainRequestPayloadBody(drainRequestPayloadBody));
-                 StreamingHttpClient client = newClientWithConfigs(serverContext, CLIENT_CTX,
-                         new H1ProtocolConfigBuilder().maxPipelinedRequests(3).build())
-                         .buildStreaming();
-                 StreamingHttpConnection connection = client.reserveConnection(client.get("/")).toFuture().get()) {
+        try (HttpServerContext serverContext = serverFactory.create(newLocalServer(SERVER_CTX)
+                .executionStrategy(serverHasOffloading ? defaultStrategy() : offloadNone())
+                .drainRequestPayloadBody(drainRequestPayloadBody));
+             StreamingHttpClient client = newClientWithConfigs(serverContext, CLIENT_CTX,
+                     new H1ProtocolConfigBuilder().maxPipelinedRequests(3).build())
+                     .buildStreaming();
+             StreamingHttpConnection connection = client.reserveConnection(client.get("/")).toFuture().get()) {
 
-                Future<StreamingHttpResponse> first = requestFuture(connection, "first");
-                Future<StreamingHttpResponse> second = requestFuture(connection, "second");
-                Future<StreamingHttpResponse> third = requestFuture(connection, "third");
+            Future<StreamingHttpResponse> first = requestFuture(connection, "first");
+            Future<StreamingHttpResponse> second = requestFuture(connection, "second");
+            Future<StreamingHttpResponse> third = requestFuture(connection, "third");
 
-                assertResponse("first", first.get(), responseHasPayload);
-                assertResponse("second", second.get(), responseHasPayload);
-                assertResponse("third", third.get(), responseHasPayload);
-            } catch (Throwable t) {
-                for (Throwable async : asyncErrors) {
-                    t.addSuppressed(async);
-                }
-                throw t;
-            }
-            assertNoAsyncErrors(asyncErrors);
+            assertResponse("first", first.get(), responseHasPayload);
+            assertResponse("second", second.get(), responseHasPayload);
+            assertResponse("third", third.get(), responseHasPayload);
         } catch (Throwable t) {
-            t.addSuppressed(new StacklessException("Final state: requestPayloadReceived=" + requestPayloadReceived +
-                    ", responsePayloadReceived=" + responsePayloadReceived +
-                    ", processing=" + processing));
+            for (Throwable async : asyncErrors) {
+                t.addSuppressed(async);
+            }
+            throw t;
         }
+        assertNoAsyncErrors(asyncErrors);
     }
 
     private static Future<StreamingHttpResponse> requestFuture(StreamingHttpConnection connection, String name) {
