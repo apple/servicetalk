@@ -252,7 +252,7 @@ class ServerPipelineControlFlowTest {
     private void waitUntilClientReceivesResponsePayload() {
         try {
             if (responsePayloadReceived.poll(DEFAULT_TIMEOUT_SECONDS, SECONDS) == null) {
-                throw new AssertionError("Client didn't receive response payload body");
+                throw new AssertionError("Client didn't receive response payload body!");
             }
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
