@@ -1942,10 +1942,10 @@ public abstract class Publisher<T> {
      * completion of {@code next} {@link Completable}.
      *
      * @see <a href="https://reactivex.io/documentation/operators/concat.html">ReactiveX concat operator.</a>
-     * @see #concat(Completable, boolean)
+     * @see #concatPropagateCancel(Completable)
      */
     public final Publisher<T> concat(Completable next) {
-        return concat(next, false);
+        return new PublisherConcatWithCompletable<>(this, next, false);
     }
 
     /**
@@ -1962,17 +1962,15 @@ public abstract class Publisher<T> {
      * }</pre>
      *
      * @param next {@link Completable} to wait for completion after {@code this} {@link Publisher} terminates
-     * successfully.
-     * @param propagateCancel if {@code true} then {@code next} will be subscribed to and cancelled if this
-     * {@link Publisher} is cancelled or terminates with {@link Subscriber#onError(Throwable)}. if {@code false} this
-     * method is equivalent to {@link #concat(Completable)}.
+     * successfully. Will be subscribed to and cancelled if this {@link Publisher} is cancelled or terminates with
+     * {@link Subscriber#onError(Throwable)}.
      * @return A {@link Publisher} that emits all items from this {@link Publisher} and then awaits successful
      * completion of {@code next} {@link Completable}.
      * @see <a href="https://reactivex.io/documentation/operators/concat.html">ReactiveX concat operator.</a>
      * @see #concat(Completable)
      */
-    public final Publisher<T> concat(Completable next, boolean propagateCancel) {
-        return new PublisherConcatWithCompletable<>(this, next, propagateCancel);
+    public final Publisher<T> concatPropagateCancel(Completable next) {
+        return new PublisherConcatWithCompletable<>(this, next, true);
     }
 
     /**

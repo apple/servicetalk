@@ -48,6 +48,7 @@ final class PublisherConcatWithCompletable<T> extends AbstractAsynchronousPublis
     private static final class ConcatSubscriberCancel<T>
             implements CompletableSource.Subscriber, PublisherSource.Subscriber<T>, Subscription {
         private static final Cancellable CANCELLED = () -> { };
+        private static final Cancellable TERMINATED = () -> { };
         @SuppressWarnings("rawtypes")
         private static final AtomicReferenceFieldUpdater<ConcatSubscriberCancel, Cancellable> cancellableUpdater =
                 newUpdater(ConcatSubscriberCancel.class, Cancellable.class, "cancellable");
@@ -77,7 +78,7 @@ final class PublisherConcatWithCompletable<T> extends AbstractAsynchronousPublis
                 final Cancellable c = cancellable;
                 assert c != IGNORE_CANCEL;
                 if (FirstSubscription.class.equals(c.getClass())) {
-                    if (cancellableUpdater.compareAndSet(this, c, CANCELLED)) {
+                    if (cancellableUpdater.compareAndSet(this, c, TERMINATED)) {
                         try {
                             target.onError(t);
                         } finally {
@@ -85,14 +86,9 @@ final class PublisherConcatWithCompletable<T> extends AbstractAsynchronousPublis
                         }
                         break;
                     }
-                } else if (c == CANCELLED) {
-                    // CANCELLED means downstream doesn't care about being notified and internal state tracking also
-                    // uses this state if terminal has been propagated, so avoid duplicate terminal. We may subscribe
-                    // to both sources in parallel if cancellation occurs, so allowing terminal to propagate would mean
-                    // ordering and concurrency needs to be accounted for between Publisher and completed, because
-                    // cancel allows for no more future delivery we avoid future invocation of the target subscriber.
+                } else if (c == TERMINATED) {
                     break;
-                } else if (cancellableUpdater.compareAndSet(this, c, CANCELLED)) {
+                } else if (cancellableUpdater.compareAndSet(this, c, TERMINATED)) {
                     target.onError(t);
                     break;
                 }
@@ -103,7 +99,7 @@ final class PublisherConcatWithCompletable<T> extends AbstractAsynchronousPublis
         public void onSubscribe(final Cancellable cancellable) {
             for (;;) {
                 final Cancellable c = this.cancellable;
-                if (c == CANCELLED) {
+                if (c == TERMINATED || c == CANCELLED) {
                     cancellable.cancel();
                     break;
                 } else if (cancellableUpdater.compareAndSet(this, c, cancellable)) {
@@ -122,14 +118,9 @@ final class PublisherConcatWithCompletable<T> extends AbstractAsynchronousPublis
                         next.subscribeInternal(this);
                         break;
                     }
-                } else if (c == CANCELLED) {
-                    // CANCELLED means downstream doesn't care about being notified and internal state tracking also
-                    // uses this state if terminal has been propagated, so avoid duplicate terminal. We may subscribe
-                    // to both sources in parallel if cancellation occurs, so allowing terminal to propagate would mean
-                    // ordering and concurrency needs to be accounted for between Publisher and completed, because
-                    // cancel allows for no more future delivery we avoid future invocation of the target subscriber.
+                } else if (c == TERMINATED) {
                     break;
-                } else if (cancellableUpdater.compareAndSet(this, c, CANCELLED)) {
+                } else if (cancellableUpdater.compareAndSet(this, c, TERMINATED)) {
                     target.onComplete();
                     break;
                 }
@@ -146,16 +137,28 @@ final class PublisherConcatWithCompletable<T> extends AbstractAsynchronousPublis
 
         @Override
         public void cancel() {
-            final Cancellable c = cancellableUpdater.getAndSet(this, CANCELLED);
-            try {
-                c.cancel();
-            } finally {
-                if (FirstSubscription.class.equals(c.getClass())) {
-                    next.subscribeInternal(this);
+            for (;;) {
+                final Cancellable c = cancellable;
+                if (c == TERMINATED || c == CANCELLED) {
+                    break;
+                } else if (cancellableUpdater.compareAndSet(this, c, CANCELLED)) {
+                    try {
+                        c.cancel();
+                    } finally {
+                        if (FirstSubscription.class.equals(c.getClass())) {
+                            next.subscribeInternal(this);
+                        }
+                    }
+                    break;
                 }
             }
         }
 
+        /**
+         * We need to differentiate between the first {@link Subscriber#onSubscribe(Subscription)} and the second
+         * {@link CompletableSource.Subscriber#onSubscribe(Cancellable)}. This unique type allows distinguishing
+         * from a {@link Cancellable} that is also a {@link Subscription} passed to the second method.
+         */
         private static final class FirstSubscription implements Subscription {
             private final Subscription subscription;
 
