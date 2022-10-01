@@ -1949,9 +1949,8 @@ public abstract class Publisher<T> {
     }
 
     /**
-     * Listens for completion of {@code next} {@link Completable} after {@code this} {@link Publisher} terminates
-     * successfully. Any error from {@code this} {@link Publisher} and {@code next} {@link Completable} is forwarded to
-     * the returned {@link Publisher}.
+     * This method is like {@link #concat(Completable)} except {@code next} will be subscribed to and cancelled if this
+     * {@link Publisher} is cancelled or terminates with {@link Subscriber#onError(Throwable)}.
      * <p>
      * This method provides a means to sequence the execution of two asynchronous sources and in sequential programming
      * is similar to:
