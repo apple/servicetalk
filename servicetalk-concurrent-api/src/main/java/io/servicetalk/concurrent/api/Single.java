@@ -764,6 +764,7 @@ public abstract class Single<T> {
      * @return New {@link Publisher} that first emits the result of this {@link Single} and then subscribes and emits
      * all elements from {@code next} {@link Publisher}.
      * @see #concat(Publisher, boolean)
+     * @see #concatPropagateCancel(Publisher)
      */
     public final Publisher<T> concat(Publisher<? extends T> next) {
         return concat(next, false);
@@ -797,9 +798,8 @@ public abstract class Single<T> {
     }
 
     /**
-     * Returns a {@link Publisher} that first emits the result of this {@link Single} and then subscribes and emits all
-     * elements from {@code next} {@link Publisher}. Any error emitted by this {@link Single} or {@code next}
-     * {@link Publisher} is forwarded to the returned {@link Publisher}.
+     * This method is like {@link #concat(Completable)} except {@code next} will be subscribed to and cancelled if this
+     * {@link Publisher} is cancelled or terminates with {@link Subscriber#onError(Throwable)}.
      * <p>
      * This method provides a means to sequence the execution of two asynchronous sources and in sequential programming
      * is similar to:
@@ -809,10 +809,11 @@ public abstract class Single<T> {
      *     results.addAll(nextStream());
      *     return results;
      * }</pre>
-     * @param next {@link Publisher} to concat. will be subscribed to and cancelled if this {@link Publisher} is
+     * @param next {@link Publisher} to concat. Will be subscribed to and cancelled if this {@link Publisher} is
      * cancelled or terminates with {@link Subscriber#onError(Throwable)}.
      * @return New {@link Publisher} that first emits the result of this {@link Single} and then subscribes and emits
      * all elements from {@code next} {@link Publisher}.
+     * @see #concat(Completable)
      */
     public final Publisher<T> concatPropagateCancel(Publisher<? extends T> next) {
         return new SingleConcatWithPublisher<>(this, next, false, true);

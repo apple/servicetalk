@@ -18,7 +18,7 @@ package io.servicetalk.concurrent.reactivestreams.tck;
 import org.testng.annotations.Test;
 
 @Test
-public class SingleConcatWithPublisherDeferSubscribePropagateCancelTckTest extends SingleConcatWithPublisherTckTest {
+public class SingleConcatWithPublisherPropagateCancelTckTest extends SingleConcatWithPublisherTckTest {
 
     @Override
     boolean propagateCancel() {

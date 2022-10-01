@@ -51,7 +51,6 @@ final class SingleConcatWithPublisher<T> extends AbstractNoHandleSubscribePublis
 
     private abstract static class AbstractConcatSubscriber<T> extends DelayedCancellableThenSubscription
             implements SingleSource.Subscriber<T>, Subscriber<T> {
-
         /**
          * Initial state upon creation.
          */
@@ -61,6 +60,14 @@ final class SingleConcatWithPublisher<T> extends AbstractNoHandleSubscribePublis
          * delivered.
          */
         static final Object CANCELLED = new Object();
+        /**
+         * Cancelled after {@link #onSuccess(Object)} or terminal signal received (prevents duplicate terminals).
+         */
+        static final Object TERMINAL = new Object();
+        /**
+         * After {@link #onSuccess(Object)} and {@link #request(long)} but before subscribing to {@link #next}.
+         */
+        static final Object PUBLISHER_SUBSCRIBED = new Object();
 
         @SuppressWarnings("rawtypes")
         static final AtomicReferenceFieldUpdater<AbstractConcatSubscriber, Object> mayBeResultUpdater =
@@ -113,26 +120,21 @@ final class SingleConcatWithPublisher<T> extends AbstractNoHandleSubscribePublis
         private void onErrorPropagateCancel(Throwable t) {
             for (;;) {
                 final Object oldValue = mayBeResult;
-                if (oldValue == CANCELLED) {
-                    // CANCELLED means downstream doesn't care about being notified and internal state tracking also
-                    // uses this state if terminal has been propagated, so avoid duplicate terminal. We may
-                    // subscribe to both sources in parallel if cancellation occurs, so allowing terminal to
-                    // propagate would mean ordering and concurrency needs to be accounted for between Single and
-                    // Publisher, because cancel allows for no more future delivery we avoid future invocation of
-                    // the target subscriber.
+                if (oldValue == TERMINAL) {
+                    // Only propagate terminal if we were cancelled after the first source terminated. Otherwise,
+                    // we may deliver items out of order and fail the TCK tests by delivering terminal after cancel.
                     break;
-                } else if (finallyShouldSubscribeToNext(oldValue)) {
-                    if (mayBeResultUpdater.compareAndSet(this, oldValue, CANCELLED)) {
+                } else if (mayBeResultUpdater.compareAndSet(this, oldValue, TERMINAL)) {
+                    if (finallyShouldSubscribeToNext(oldValue)) {
                         forceCancelNextOnSubscribe();
                         try {
                             target.onError(t);
                         } finally {
                             next.subscribeInternal(this);
                         }
-                        break;
+                    } else {
+                        target.onError(t);
                     }
-                } else if (mayBeResultUpdater.compareAndSet(this, oldValue, CANCELLED)) {
-                    target.onError(t);
                     break;
                 }
             }
@@ -150,15 +152,11 @@ final class SingleConcatWithPublisher<T> extends AbstractNoHandleSubscribePublis
         private void onCompletePropagateCancel() {
             for (;;) {
                 final Object oldValue = mayBeResult;
-                if (oldValue == CANCELLED) {
-                    // CANCELLED means downstream doesn't care about being notified and internal state tracking also
-                    // uses this state if terminal has been propagated, so avoid duplicate terminal. We may
-                    // subscribe to both sources in parallel if cancellation occurs, so allowing terminal to
-                    // propagate would mean ordering and concurrency needs to be accounted for between Single and
-                    // Publisher, because cancel allows for no more future delivery we avoid future invocation of
-                    // the target subscriber.
+                if (oldValue == TERMINAL) {
+                    // Only propagate terminal if we were cancelled after the first source terminated. Otherwise,
+                    // we may deliver items out of order and fail the TCK tests by delivering terminal after cancel.
                     break;
-                } else if (mayBeResultUpdater.compareAndSet(this, oldValue, CANCELLED)) {
+                } else if (mayBeResultUpdater.compareAndSet(this, oldValue, TERMINAL)) {
                     // onComplete() can only be called after we subscribe to next Publisher, no need to check if we need
                     // to subscribe to next.
                     target.onComplete();
@@ -172,17 +170,24 @@ final class SingleConcatWithPublisher<T> extends AbstractNoHandleSubscribePublis
             // We track cancelled here because we need to make sure if cancel() happens subsequent calls to request(n)
             // are NOOPs [1].
             // [1] https://github.com/reactive-streams/reactive-streams-jvm#3.6
-            final Object oldValue = mayBeResultUpdater.getAndSet(this, CANCELLED);
-            try {
-                super.cancel(); // call cancel first, so if we do subscribe to next we won't propagate demand.
-            } finally {
-                if (propagateCancel && oldValue != CANCELLED && finallyShouldSubscribeToNext(oldValue)) {
-                    next.subscribeInternal(this);
+            for (;;) {
+                final Object oldValue = mayBeResult;
+                if (oldValue == CANCELLED || oldValue == TERMINAL) {
+                    break;
+                }
+                final boolean firstCancel = finallyShouldSubscribeToNext(oldValue);
+                if (mayBeResultUpdater.compareAndSet(this, oldValue, firstCancel ? TERMINAL : CANCELLED)) {
+                    try {
+                        super.cancel(); // call cancel first, so if we do subscribe to next we won't propagate demand.
+                    } finally {
+                        if (propagateCancel && firstCancel) {
+                            next.subscribeInternal(this);
+                        }
+                    }
+                    break;
                 }
             }
         }
-
-        abstract boolean finallyShouldSubscribeToNext(@Nullable Object oldState);
 
         /**
          * Helper method to invoke {@link DelayedCancellableThenSubscription#cancel()} from subclasses.
@@ -202,11 +207,15 @@ final class SingleConcatWithPublisher<T> extends AbstractNoHandleSubscribePublis
             }
         }
 
+        private boolean finallyShouldSubscribeToNext(@Nullable Object oldState) {
+            return oldState != PUBLISHER_SUBSCRIBED;
+        }
+
         private boolean handleOnNextThrowable(Throwable cause) {
-            // Switch state to CANCELLED to prevent any further interaction with target. For example if propagateCancel
+            // Switch state to TERMINAL to prevent any further interaction with target. For example if propagateCancel
             // then we will subscribe and the next subscriber may send another terminal without any demand. We don't
             // have to explicitly cancel here because the Single has already terminated.
-            mayBeResult = CANCELLED;
+            mayBeResult = TERMINAL;
             target.onError(cause);
             if (propagateCancel) {
                 forceCancelNextOnSubscribe();
@@ -227,7 +236,6 @@ final class SingleConcatWithPublisher<T> extends AbstractNoHandleSubscribePublis
          * If {@link #request(long)} (with a valid n) invoked before {@link #onSuccess(Object)}.
          */
         private static final Object REQUESTED = new Object();
-        private static final Object REQUESTED_SUBSCRIBED = new Object();
 
         ConcatSubscriber(final Subscriber<? super T> target, final Publisher<? extends T> next,
                          final boolean propagateCancel) {
@@ -235,23 +243,19 @@ final class SingleConcatWithPublisher<T> extends AbstractNoHandleSubscribePublis
         }
 
         @Override
-        boolean finallyShouldSubscribeToNext(@Nullable final Object oldState) {
-            return oldState != REQUESTED_SUBSCRIBED;
-        }
-
-        @Override
         public void onSuccess(@Nullable final T result) {
             for (;;) {
                 final Object oldValue = mayBeResult;
-                assert oldValue != REQUESTED_SUBSCRIBED;
+                assert oldValue != PUBLISHER_SUBSCRIBED;
                 if (oldValue == REQUESTED) {
-                    if (mayBeResultUpdater.compareAndSet(this, REQUESTED, REQUESTED_SUBSCRIBED)) {
+                    if (mayBeResultUpdater.compareAndSet(this, REQUESTED, PUBLISHER_SUBSCRIBED)) {
                         if (tryEmitSingleSuccessToTarget(result)) {
                             next.subscribeInternal(this);
                         }
                         break;
                     }
-                } else if (oldValue == CANCELLED || mayBeResultUpdater.compareAndSet(this, INITIAL, result)) {
+                } else if (oldValue == CANCELLED || oldValue == TERMINAL ||
+                        mayBeResultUpdater.compareAndSet(this, INITIAL, result)) {
                     break;
                 }
             }
@@ -261,13 +265,13 @@ final class SingleConcatWithPublisher<T> extends AbstractNoHandleSubscribePublis
         public void request(long n) {
             for (;;) {
                 final Object oldVal = mayBeResult;
-                if (oldVal == CANCELLED) {
+                if (oldVal == CANCELLED || oldVal == TERMINAL) {
                     break;
-                } else if (oldVal == REQUESTED || oldVal == REQUESTED_SUBSCRIBED) {
+                } else if (oldVal == REQUESTED || oldVal == PUBLISHER_SUBSCRIBED) {
                     super.request(n);
                     break;
                 } else if (!isRequestNValid(n)) {
-                    if (mayBeResultUpdater.compareAndSet(this, oldVal, CANCELLED)) {
+                    if (mayBeResultUpdater.compareAndSet(this, oldVal, TERMINAL)) {
                         try {
                             superCancel();
                         } finally {
@@ -276,7 +280,7 @@ final class SingleConcatWithPublisher<T> extends AbstractNoHandleSubscribePublis
                         break;
                     }
                 } else if (mayBeResultUpdater.compareAndSet(this, oldVal,
-                        oldVal != INITIAL ? REQUESTED_SUBSCRIBED : REQUESTED)) {
+                        oldVal != INITIAL ? PUBLISHER_SUBSCRIBED : REQUESTED)) {
                     // We need to ensure that the queued result is delivered in order (first). Upstream demand is
                     // delayed via DelayedSubscription until onSubscribe which preserves ordering, and there are some
                     // scenarios where subscribing to the concat Publisher may block on demand (e.g.
@@ -317,20 +321,10 @@ final class SingleConcatWithPublisher<T> extends AbstractNoHandleSubscribePublis
          * delivered to the target.
          */
         private static final Object SINGLE_DELIVERED = new Object();
-        /**
-         * If more than one item was {@link #request(long) requested}, {@link #onSuccess(Object)} invoked, and we
-         * subscribed to the next {@link Publisher}.
-         */
-        private static final Object PUBLISHER_SUBSCRIBED = new Object();
 
         ConcatDeferNextSubscriber(final Subscriber<? super T> target, final Publisher<? extends T> next,
                                   final boolean propagateCancel) {
             super(target, next, propagateCancel);
-        }
-
-        @Override
-        boolean finallyShouldSubscribeToNext(@Nullable final Object oldState) {
-            return oldState != PUBLISHER_SUBSCRIBED;
         }
 
         @Override
@@ -341,7 +335,7 @@ final class SingleConcatWithPublisher<T> extends AbstractNoHandleSubscribePublis
                 assert oldValue != SINGLE_DELIVERED;
                 assert oldValue != PUBLISHER_SUBSCRIBED;
 
-                if (oldValue == CANCELLED) {
+                if (oldValue == CANCELLED || oldValue == TERMINAL) {
                     break;
                 } else if (oldValue == INITIAL) {
                     if (mayBeResultUpdater.compareAndSet(this, INITIAL, result)) {
@@ -366,13 +360,13 @@ final class SingleConcatWithPublisher<T> extends AbstractNoHandleSubscribePublis
         public void request(long n) {
             for (;;) {
                 final Object oldVal = mayBeResult;
-                if (oldVal == CANCELLED) {
+                if (oldVal == CANCELLED || oldVal == TERMINAL) {
                     break;
                 } else if (oldVal == PUBLISHER_SUBSCRIBED || oldVal == REQUESTED_MORE) {
                     super.request(n);
                     break;
                 } else if (!isRequestNValid(n)) {
-                    if (mayBeResultUpdater.compareAndSet(this, oldVal, CANCELLED)) {
+                    if (mayBeResultUpdater.compareAndSet(this, oldVal, TERMINAL)) {
                         try {
                             superCancel();
                         } finally {
@@ -436,7 +430,8 @@ final class SingleConcatWithPublisher<T> extends AbstractNoHandleSubscribePublis
                     // more demand appeared while we were delivering the single result
                     next.subscribeInternal(this);
                 } else {
-                    assert mayBeResult == CANCELLED;
+                    final Object oldValue = mayBeResult;
+                    assert oldValue == CANCELLED || oldValue == TERMINAL;
                 }
             }
         }
