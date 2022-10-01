@@ -47,8 +47,8 @@ final class PublisherConcatWithCompletable<T> extends AbstractAsynchronousPublis
 
     private static final class ConcatSubscriberCancel<T>
             implements CompletableSource.Subscriber, PublisherSource.Subscriber<T>, Subscription {
-        private static final Cancellable CANCELLED = () -> { };
-        private static final Cancellable TERMINATED = () -> { };
+        private static final Cancellable TERMINAL = () -> { };
+        private static final Cancellable CANCEL_COMPLETABLE = () -> { };
         @SuppressWarnings("rawtypes")
         private static final AtomicReferenceFieldUpdater<ConcatSubscriberCancel, Cancellable> cancellableUpdater =
                 newUpdater(ConcatSubscriberCancel.class, Cancellable.class, "cancellable");
@@ -78,7 +78,7 @@ final class PublisherConcatWithCompletable<T> extends AbstractAsynchronousPublis
                 final Cancellable c = cancellable;
                 assert c != IGNORE_CANCEL;
                 if (FirstSubscription.class.equals(c.getClass())) {
-                    if (cancellableUpdater.compareAndSet(this, c, TERMINATED)) {
+                    if (cancellableUpdater.compareAndSet(this, c, TERMINAL)) {
                         try {
                             target.onError(t);
                         } finally {
@@ -86,9 +86,11 @@ final class PublisherConcatWithCompletable<T> extends AbstractAsynchronousPublis
                         }
                         break;
                     }
-                } else if (c == TERMINATED) {
+                } else if (c == TERMINAL) {
+                    // Only propagate terminal if we were cancelled after the first source terminated. Otherwise,
+                    // we may deliver items out of order and fail the TCK tests by delivering terminal after cancel.
                     break;
-                } else if (cancellableUpdater.compareAndSet(this, c, TERMINATED)) {
+                } else if (cancellableUpdater.compareAndSet(this, c, TERMINAL)) {
                     target.onError(t);
                     break;
                 }
@@ -99,7 +101,7 @@ final class PublisherConcatWithCompletable<T> extends AbstractAsynchronousPublis
         public void onSubscribe(final Cancellable cancellable) {
             for (;;) {
                 final Cancellable c = this.cancellable;
-                if (c == TERMINATED || c == CANCELLED) {
+                if (c == TERMINAL || c == CANCEL_COMPLETABLE) {
                     cancellable.cancel();
                     break;
                 } else if (cancellableUpdater.compareAndSet(this, c, cancellable)) {
@@ -118,9 +120,11 @@ final class PublisherConcatWithCompletable<T> extends AbstractAsynchronousPublis
                         next.subscribeInternal(this);
                         break;
                     }
-                } else if (c == TERMINATED) {
+                } else if (c == TERMINAL) {
+                    // Only propagate terminal if we were cancelled after the first source terminated. Otherwise,
+                    // we may deliver items out of order and fail the TCK tests by delivering terminal after cancel.
                     break;
-                } else if (cancellableUpdater.compareAndSet(this, c, TERMINATED)) {
+                } else if (cancellableUpdater.compareAndSet(this, c, TERMINAL)) {
                     target.onComplete();
                     break;
                 }
@@ -139,13 +143,15 @@ final class PublisherConcatWithCompletable<T> extends AbstractAsynchronousPublis
         public void cancel() {
             for (;;) {
                 final Cancellable c = cancellable;
-                if (c == TERMINATED || c == CANCELLED) {
+                if (c == TERMINAL || c == CANCEL_COMPLETABLE) {
                     break;
-                } else if (cancellableUpdater.compareAndSet(this, c, CANCELLED)) {
+                }
+                final boolean firstCancel = FirstSubscription.class.equals(c.getClass());
+                if (cancellableUpdater.compareAndSet(this, c, firstCancel ? TERMINAL : CANCEL_COMPLETABLE)) {
                     try {
                         c.cancel();
                     } finally {
-                        if (FirstSubscription.class.equals(c.getClass())) {
+                        if (firstCancel) {
                             next.subscribeInternal(this);
                         }
                     }

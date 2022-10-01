@@ -119,19 +119,23 @@ final class PublisherConcatWithCompletableTest {
         }
         if (propagateCancel) {
             completable.awaitSubscribed();
-            assertThat("Next cancellable not cancelled.", cancellable.isCancelled(), is(true));
+            assertThat(cancellable.isCancelled(), is(true));
+            if (onError) {
+                completable.onError(DELIBERATE_EXCEPTION);
+            } else {
+                completable.onComplete();
+            }
+            // Cancel before the publisher completes means we don't propagate terminals.
+            assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         } else {
             if (!onError) {
                 completable.awaitSubscribed();
+                completable.onComplete();
+                subscriber.awaitOnComplete();
+            } else {
+                verifySubscriberErrored();
             }
             assertThat("Next cancellable not cancelled.", cancellable.isCancelled(), is(!onError));
-        }
-
-        if (onError) {
-            verifySubscriberErrored();
-        } else {
-            completable.onComplete();
-            subscriber.awaitOnComplete();
         }
     }
 
