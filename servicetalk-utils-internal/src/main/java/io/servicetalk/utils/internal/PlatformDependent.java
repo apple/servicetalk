@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,16 +34,19 @@ import org.jctools.queues.MpscChunkedArrayQueue;
 import org.jctools.queues.MpscLinkedQueue;
 import org.jctools.queues.MpscUnboundedArrayQueue;
 import org.jctools.queues.SpscChunkedArrayQueue;
+import org.jctools.queues.SpscLinkedQueue;
 import org.jctools.queues.SpscUnboundedArrayQueue;
 import org.jctools.queues.atomic.MpscGrowableAtomicArrayQueue;
 import org.jctools.queues.atomic.MpscLinkedAtomicQueue;
 import org.jctools.queues.atomic.MpscUnboundedAtomicArrayQueue;
 import org.jctools.queues.atomic.SpscGrowableAtomicArrayQueue;
+import org.jctools.queues.atomic.SpscLinkedAtomicQueue;
 import org.jctools.queues.atomic.SpscUnboundedAtomicArrayQueue;
 import org.jctools.queues.ea.unpadded.MpscChunkedUnpaddedArrayQueue;
 import org.jctools.queues.ea.unpadded.MpscLinkedUnpaddedQueue;
 import org.jctools.queues.ea.unpadded.MpscUnboundedUnpaddedArrayQueue;
 import org.jctools.queues.ea.unpadded.SpscChunkedUnpaddedArrayQueue;
+import org.jctools.queues.ea.unpadded.SpscLinkedUnpaddedQueue;
 import org.jctools.queues.ea.unpadded.SpscUnboundedUnpaddedArrayQueue;
 import org.jctools.util.Pow2;
 import org.jctools.util.UnsafeAccess;
@@ -270,6 +273,16 @@ public final class PlatformDependent {
         return Queues.newUnboundedSpscQueue(initialCapacity);
     }
 
+    /**
+     * Create a new unbounded {@link Queue} that uses a linked data structure which is safe to use for single producer
+     * (one thread!) and a single consumer (one thread!).
+     * @param <T> Type of items stored in the queue.
+     * @return A new unbounded SPSC {@link Queue}.
+     */
+    public static <T> Queue<T> newLinkedSpscQueue() {
+        return Queues.newLinkedSpscQueue();
+    }
+
     private static final class Queues {
         private static final boolean USE_UNSAFE_QUEUES;
         private static final boolean USE_UNPADDED_QUEUES;
@@ -366,6 +379,14 @@ public final class PlatformDependent {
                         new SpscUnboundedUnpaddedArrayQueue<>(initialCapacity) :
                         new SpscUnboundedArrayQueue<>(initialCapacity)
                     : new SpscUnboundedAtomicArrayQueue<>(initialCapacity);
+        }
+
+        static <T> Queue<T> newLinkedSpscQueue() {
+            return USE_UNSAFE_QUEUES ?
+                    USE_UNPADDED_QUEUES ?
+                        new SpscLinkedUnpaddedQueue<>() :
+                        new SpscLinkedQueue<>()
+                    : new SpscLinkedAtomicQueue<>();
         }
     }
 }
