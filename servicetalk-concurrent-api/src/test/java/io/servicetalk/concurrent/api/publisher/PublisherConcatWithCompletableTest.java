@@ -148,16 +148,16 @@ final class PublisherConcatWithCompletableTest {
         } else {
             source.onComplete();
         }
-        assertThat("Next source not subscribed.", completable.isSubscribed(), is(propagateCancel || !onError));
-        subscriber.awaitSubscription().cancel();
-        if (propagateCancel) {
-            completable.awaitSubscribed();
+        if (propagateCancel || !onError) {
+            assertThat("Next source not subscribed.", completable.isSubscribed(), is(true));
+            subscriber.awaitSubscription().cancel();
+            assertThat("Source subscription unexpectedly cancelled.", subscription.isCancelled(), is(false));
             assertThat("Next cancellable not cancelled.", cancellable.isCancelled(), is(true));
         } else {
-            if (!onError) {
-                completable.awaitSubscribed();
-            }
-            assertThat("Next cancellable not cancelled.", cancellable.isCancelled(), is(!onError));
+            assertThat("Next source unexpectedly subscribed.", completable.isSubscribed(), is(false));
+            subscriber.awaitSubscription().cancel();
+            assertThat("Source subscription not cancelled.", subscription.isCancelled(), is(true));
+            assertThat("Next cancellable unexpectedly cancelled.", cancellable.isCancelled(), is(false));
         }
 
         if (onError) {

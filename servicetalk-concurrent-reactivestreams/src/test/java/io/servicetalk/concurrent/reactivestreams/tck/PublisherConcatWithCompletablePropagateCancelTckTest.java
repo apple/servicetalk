@@ -21,7 +21,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import org.testng.annotations.Test;
 
 @Test
-public class PublisherConcatWithCompletableCancelTckTest extends AbstractPublisherOperatorTckTest<Integer> {
+public class PublisherConcatWithCompletablePropagateCancelTckTest extends AbstractPublisherOperatorTckTest<Integer> {
     @Override
     protected Publisher<Integer> composePublisher(Publisher<Integer> publisher, int elements) {
         return publisher.concatPropagateCancel(Completable.completed());
