@@ -458,7 +458,7 @@ final class NettyHttpServer {
                 // execution of this method and wins, BeforeFinallyHttpOperator won't trigger and observers won't
                 // complete the exchange.
                 if (emptyMessageBody(response, messageBody)) {
-                    flatResponse = flatEmptyMessage(protocolVersion, response, messageBody, /* propagateCancel */ true);
+                    flatResponse = flatEmptyMessage(protocolVersion, response, messageBody, /* propagatCancel */ true);
                 } else {
                     flatResponse = Single.<Object>succeeded(response).concatPropagateCancel(messageBody);
                     if (shouldAppendTrailers(protocolVersion, response)) {
