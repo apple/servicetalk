@@ -112,10 +112,9 @@ class SingleConcatWithPublisherTest {
         return args;
     }
 
-    @ParameterizedTest(name = "mode={0} requestN={2} singleCompletesFirst={3}")
+    @ParameterizedTest(name = "{displayName} [{index}] mode={0} requestN={1} singleCompletesFirst={2}")
     @MethodSource("onNextErrorPropagatedParams")
-    void onNextErrorPropagated(ConcatMode mode, long n, boolean singleCompletesFirst)
-            throws Exception {
+    void onNextErrorPropagated(ConcatMode mode, long n, boolean singleCompletesFirst) throws Exception {
         toSource((mode == PROPAGATE_CANCEL ?
                 source.concatPropagateCancel(next) :
                 source.concat(next, mode == DEFER_SUBSCRIBE))
@@ -141,7 +140,7 @@ class SingleConcatWithPublisherTest {
         }
     }
 
-    @ParameterizedTest(name = "mode={0}")
+    @ParameterizedTest(name = "{displayName} [{index}] mode={0}")
     @EnumSource(ConcatMode.class)
     void bothCompletion(ConcatMode mode) {
         setUp(mode);
@@ -155,7 +154,7 @@ class SingleConcatWithPublisherTest {
         subscriber.awaitOnComplete();
     }
 
-    @ParameterizedTest(name = "mode={0}")
+    @ParameterizedTest(name = "{displayName} [{index}] mode={0}")
     @EnumSource(ConcatMode.class)
     void sourceCompletionNextError(ConcatMode mode) {
         setUp(mode);
@@ -166,7 +165,7 @@ class SingleConcatWithPublisherTest {
         assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
-    @ParameterizedTest(name = "mode={0} invalidRequestN={1}")
+    @ParameterizedTest(name = "{displayName} [{index}] mode={0} invalidRequestN={1}")
     @MethodSource("invalidRequestN")
     void invalidRequestNBeforeNextSubscribe(ConcatMode mode, long invalidRequestN) {
         setUp(mode);
@@ -175,7 +174,7 @@ class SingleConcatWithPublisherTest {
         assertThat(subscriber.awaitOnError(), instanceOf(IllegalArgumentException.class));
     }
 
-    @ParameterizedTest(name = "mode={0}")
+    @ParameterizedTest(name = "{displayName} [{index}] mode={0}")
     @EnumSource(ConcatMode.class)
     void invalidRequestNWithInlineSourceCompletion(ConcatMode mode) {
         toSource(mode == PROPAGATE_CANCEL ?
@@ -185,7 +184,7 @@ class SingleConcatWithPublisherTest {
         assertThat(subscriber.awaitOnError(), instanceOf(IllegalArgumentException.class));
     }
 
-    @ParameterizedTest(name = "mode={0}")
+    @ParameterizedTest(name = "{displayName} [{index}] mode={0}")
     @EnumSource(ConcatMode.class)
     void invalidRequestAfterNextSubscribe(ConcatMode mode) {
         setUp(mode);
@@ -194,7 +193,7 @@ class SingleConcatWithPublisherTest {
         assertThat("Invalid request-n not propagated.", subscription.requested(), is(lessThan(0L)));
     }
 
-    @ParameterizedTest(name = "mode={0}")
+    @ParameterizedTest(name = "{displayName} [{index}] mode={0}")
     @EnumSource(ConcatMode.class)
     void multipleInvalidRequest(ConcatMode mode) {
         setUp(mode);
@@ -203,7 +202,7 @@ class SingleConcatWithPublisherTest {
         assertThat(subscriber.awaitOnError(), instanceOf(IllegalArgumentException.class));
     }
 
-    @ParameterizedTest(name = "mode={0} invalidRequestN={1}")
+    @ParameterizedTest(name = "{displayName} [{index}] mode={0} invalidRequestN={1}")
     @MethodSource("invalidRequestN")
     void invalidThenValidRequest(ConcatMode mode, long invalidRequestN) {
         setUp(mode);
@@ -213,7 +212,7 @@ class SingleConcatWithPublisherTest {
         assertThat(cancellable.isCancelled(), is(true));
     }
 
-    @ParameterizedTest(name = "mode={0}")
+    @ParameterizedTest(name = "{displayName} [{index}] mode={0}")
     @EnumSource(ConcatMode.class)
     void request0PropagatedAfterSuccess(ConcatMode mode) {
         setUp(mode);
@@ -227,7 +226,7 @@ class SingleConcatWithPublisherTest {
                 is(true));
     }
 
-    @ParameterizedTest(name = "mode={0} error={1}")
+    @ParameterizedTest(name = "{displayName} [{index}] mode={0} error={1}")
     @MethodSource("modeAndError")
     void sourceError(ConcatMode mode, boolean error) throws InterruptedException {
         setUp(mode);
@@ -249,7 +248,7 @@ class SingleConcatWithPublisherTest {
         }
     }
 
-    @ParameterizedTest(name = "mode={0} error={1}")
+    @ParameterizedTest(name = "{displayName} [{index}] mode={0} error={1}")
     @MethodSource("modeAndError")
     void cancelSource(ConcatMode mode, boolean error) throws InterruptedException {
         setUp(mode);
@@ -299,7 +298,7 @@ class SingleConcatWithPublisherTest {
         }
     }
 
-    @ParameterizedTest(name = "mode={0}")
+    @ParameterizedTest(name = "{displayName} [{index}] mode={0}")
     @EnumSource(ConcatMode.class)
     void cancelSourcePostRequest(ConcatMode mode) {
         setUp(mode);
@@ -310,7 +309,7 @@ class SingleConcatWithPublisherTest {
         assertThat("Next source subscribed unexpectedly.", next.isSubscribed(), is(mode == PROPAGATE_CANCEL));
     }
 
-    @ParameterizedTest(name = "mode={0} error={1}")
+    @ParameterizedTest(name = "{displayName} [{index}] mode={0} error={1}")
     @MethodSource("modeAndError")
     void cancelNext(ConcatMode mode, boolean error) {
         setUp(mode);
@@ -330,7 +329,7 @@ class SingleConcatWithPublisherTest {
         }
     }
 
-    @ParameterizedTest(name = "mode={0}")
+    @ParameterizedTest(name = "{displayName} [{index}] mode={0}")
     @EnumSource(ConcatMode.class)
     void zeroIsNotRequestedOnTransitionToSubscription(ConcatMode mode) {
         setUp(mode);
@@ -349,7 +348,7 @@ class SingleConcatWithPublisherTest {
         }
     }
 
-    @ParameterizedTest(name = "mode={0}")
+    @ParameterizedTest(name = "{displayName} [{index}] mode={0}")
     @EnumSource(ConcatMode.class)
     void publisherSubscribeBlockDemandMakesProgress(ConcatMode mode) {
         source = new TestSingle<>();
@@ -376,7 +375,7 @@ class SingleConcatWithPublisherTest {
         subscriber.awaitOnComplete();
     }
 
-    @ParameterizedTest(name = "mode={0}")
+    @ParameterizedTest(name = "{displayName} [{index}] mode={0}")
     @EnumSource(ConcatMode.class)
     void onErrorAfterInvalidRequestN(ConcatMode mode) {
         setUp(mode);
@@ -397,7 +396,7 @@ class SingleConcatWithPublisherTest {
                 subscriber.awaitOnError(), instanceOf(IllegalArgumentException.class));
     }
 
-    @ParameterizedTest(name = "mode={0}")
+    @ParameterizedTest(name = "{displayName} [{index}] mode={0}")
     @EnumSource(ConcatMode.class)
     void singleCompletesWithNull(ConcatMode mode) {
         setUp(mode);
@@ -410,7 +409,7 @@ class SingleConcatWithPublisherTest {
         subscriber.awaitOnComplete();
     }
 
-    @ParameterizedTest(name = "mode={0}")
+    @ParameterizedTest(name = "{displayName} [{index}] mode={0}")
     @EnumSource(ConcatMode.class)
     void demandAccumulatedBeforeSingleCompletes(ConcatMode mode) {
         setUp(mode);
@@ -430,7 +429,7 @@ class SingleConcatWithPublisherTest {
         subscriber.awaitOnComplete();
     }
 
-    @ParameterizedTest(name = "mode={0}")
+    @ParameterizedTest(name = "{displayName} [{index}] mode={0}")
     @EnumSource(ConcatMode.class)
     void requestOneThenMore(ConcatMode mode) {
         setUp(mode);
@@ -448,7 +447,7 @@ class SingleConcatWithPublisherTest {
         subscriber.awaitOnComplete();
     }
 
-    @ParameterizedTest(name = "mode={0}")
+    @ParameterizedTest(name = "{displayName} [{index}] mode={0}")
     @EnumSource(ConcatMode.class)
     void reentryWithMoreDemand(ConcatMode mode) {
         List<Integer> emitted = new ArrayList<>();
@@ -487,7 +486,7 @@ class SingleConcatWithPublisherTest {
         assertThat(completed[0], is(true));
     }
 
-    @ParameterizedTest(name = "mode={0}")
+    @ParameterizedTest(name = "{displayName} [{index}] mode={0}")
     @EnumSource(ConcatMode.class)
     void cancelledDuringFirstOnNext(ConcatMode mode) {
         List<Integer> emitted = new ArrayList<>();
