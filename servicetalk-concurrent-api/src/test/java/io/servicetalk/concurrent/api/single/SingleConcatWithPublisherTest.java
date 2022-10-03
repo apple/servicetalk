@@ -253,25 +253,20 @@ class SingleConcatWithPublisherTest {
     void cancelSource(ConcatMode mode, boolean error) throws InterruptedException {
         setUp(mode);
         assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
-        Subscription subscription1 = subscriber.awaitSubscription();
-        subscription1.request(2);
-        subscription1.cancel();
+        subscriber.awaitSubscription().cancel();
         assertThat("Original single not cancelled.", cancellable.isCancelled(), is(true));
 
-        if (error) {
-            source.onError(DELIBERATE_EXCEPTION);
-        } else {
-            source.onSuccess(1);
-        }
-
         if (mode == PROPAGATE_CANCEL) {
-            next.awaitSubscribed();
+            assertThat("Next source not subscribed.", next.isSubscribed(), is(true));
             next.onSubscribe(subscription);
-            subscription.awaitCancelled();
+            assertThat("Next source not cancelled.", subscription.isCancelled(), is(true));
 
             if (error) {
+                source.onError(DELIBERATE_EXCEPTION);
                 next.onError(new DeliberateException());
             } else {
+                subscriber.awaitSubscription().request(1);
+                source.onSuccess(1);
                 next.onComplete();
             }
 
@@ -281,16 +276,26 @@ class SingleConcatWithPublisherTest {
         } else {
             assertThat("Next source subscribed unexpectedly.", next.isSubscribed(), is(false));
             assertThat("Next source cancelled unexpectedly.", subscription.isCancelled(), is(false));
+            assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
 
             if (error) {
+                source.onError(DELIBERATE_EXCEPTION);
+                assertThat("Next source subscribed unexpectedly.", next.isSubscribed(), is(false));
                 assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
             } else {
+                subscriber.awaitSubscription().request(mode == DEFER_SUBSCRIBE ? 2 : 1);
+                source.onSuccess(1);
                 if (mode == CONCAT) {
-                    triggerNextSubscribe(mode);
                     assertThat("Next source not subscribed.", next.isSubscribed(), is(true));
+                    next.onSubscribe(subscription);
                     assertThat("Next source not cancelled.", subscription.isCancelled(), is(true));
                     next.onComplete();
+                } else {
+                    assertThat("Next source not subscribed.", next.isSubscribed(), is(false));
+                    assertThat("Next source not cancelled.", subscription.isCancelled(), is(false));
                 }
+                // Demand is not expected to propagate after cancel.
+                assertThat("Unexpected next items.", subscriber.pollAllOnNext(), Matchers.empty());
                 // It is not required that no terminal is delivered after cancel but verifies the current implementation
                 // for thread safety on the subscriber and to avoid duplicate terminals.
                 assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));

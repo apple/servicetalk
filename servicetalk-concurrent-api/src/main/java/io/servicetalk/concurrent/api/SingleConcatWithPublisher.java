@@ -56,13 +56,12 @@ final class SingleConcatWithPublisher<T> extends AbstractNoHandleSubscribePublis
          */
         static final Object INITIAL = new Object();
         /**
-         * If {@link #cancel()} is called, or the terminal signal was already
-         * delivered.
+         * If {@link #cancel()} is called after subscrubed to the next Publisher.
          */
         static final Object CANCELLED = new Object();
         /**
-         * Cancelled after {@link #onSuccess(Object)}, the first call to request(n) is invalid, or terminal signal
-         * received (prevents duplicate terminals).
+         * If {@link #cancel()} is called before subscribed to the next Publisher, the first call to request(n) is
+         * invalid, or terminal signal received (prevents duplicate terminals).
          */
         static final Object TERMINAL = new Object();
         /**
@@ -90,6 +89,8 @@ final class SingleConcatWithPublisher<T> extends AbstractNoHandleSubscribePublis
             this.next = next;
             this.propagateCancel = propagateCancel;
         }
+
+        abstract boolean deferSubscribe();
 
         @Override
         public final void onSubscribe(final Cancellable cancellable) {
@@ -143,7 +144,7 @@ final class SingleConcatWithPublisher<T> extends AbstractNoHandleSubscribePublis
 
         @Override
         public final void onComplete() {
-            if (propagateCancel) {
+            if (propagateCancel || !deferSubscribe()) {
                 onCompletePropagateCancel();
             } else {
                 target.onComplete();
@@ -208,7 +209,7 @@ final class SingleConcatWithPublisher<T> extends AbstractNoHandleSubscribePublis
             }
         }
 
-        private boolean finallyShouldSubscribeToNext(@Nullable Object oldState) {
+        private static boolean finallyShouldSubscribeToNext(@Nullable Object oldState) {
             return oldState != PUBLISHER_SUBSCRIBED;
         }
 
@@ -244,6 +245,11 @@ final class SingleConcatWithPublisher<T> extends AbstractNoHandleSubscribePublis
         }
 
         @Override
+        boolean deferSubscribe() {
+            return false;
+        }
+
+        @Override
         public void onSuccess(@Nullable final T result) {
             for (;;) {
                 final Object oldValue = mayBeResult;
@@ -255,8 +261,12 @@ final class SingleConcatWithPublisher<T> extends AbstractNoHandleSubscribePublis
                         }
                         break;
                     }
-                } else if (oldValue == CANCELLED || oldValue == TERMINAL ||
-                        mayBeResultUpdater.compareAndSet(this, INITIAL, result)) {
+                } else if (oldValue == TERMINAL) {
+                    // This may happen only if returned Publisher was cancelled before Single terminates, subscribe to
+                    // the next source to propagate cancellation.
+                    next.subscribeInternal(this);
+                    break;
+                } else if (oldValue == CANCELLED || mayBeResultUpdater.compareAndSet(this, INITIAL, result)) {
                     break;
                 }
             }
@@ -326,6 +336,11 @@ final class SingleConcatWithPublisher<T> extends AbstractNoHandleSubscribePublis
         ConcatDeferNextSubscriber(final Subscriber<? super T> target, final Publisher<? extends T> next,
                                   final boolean propagateCancel) {
             super(target, next, propagateCancel);
+        }
+
+        @Override
+        boolean deferSubscribe() {
+            return true;
         }
 
         @Override
