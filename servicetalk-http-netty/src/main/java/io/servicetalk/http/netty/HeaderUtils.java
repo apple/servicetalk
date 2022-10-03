@@ -19,8 +19,6 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.CharSequences;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.ScanWithMapper;
-import io.servicetalk.concurrent.api.TerminalSignalConsumer;
-import io.servicetalk.concurrent.internal.CancelImmediatelySubscriber;
 import io.servicetalk.http.api.EmptyHttpHeaders;
 import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.HttpHeaders;
@@ -35,17 +33,13 @@ import io.netty.util.AsciiString;
 
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.CharSequences.parseLong;
-import static io.servicetalk.concurrent.api.Completable.completed;
-import static io.servicetalk.concurrent.api.Completable.defer;
 import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
-import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
 import static io.servicetalk.http.api.HttpApiConversions.isPayloadEmpty;
 import static io.servicetalk.http.api.HttpApiConversions.isSafeToAggregate;
@@ -231,40 +225,9 @@ final class HeaderUtils {
         }
         // Subscribe to the messageBody publisher to trigger any applied transformations, but ignore its content because
         // the PayloadInfo indicated it's effectively empty and does not contain trailers.
-        if (!propagateCancel) {
-            return flatMessage.concat(messageBody.ignoreElements());
-        }
-        // Because `concat` won't subscribe to the messageBody in case of cancellation or an error, we use
-        // `afterFinally` + `messageBodySubscribed` to guarantee messageBody sees cancel too. This is necessary when we
-        // have to preserve propagation of all signals through Reactive Streams chain. Otherwise, some state machines
-        // won't trigger. For example, BeforeFinallyHttpOperator on the server-side won't see any signals and observers
-        // won't complete the exchange.
-        // No need to wrap the state with `defer` because this method is executed inside either `flatMapPublisher` or
-        // `defer`.
-        final AtomicBoolean messageBodySubscribed = new AtomicBoolean(false);
-        return flatMessage.afterFinally(new TerminalSignalConsumer() {
-            @Override
-            public void onComplete() {
-                // noop, rely on `concat`
-            }
-
-            @Override
-            public void onError(final Throwable throwable) {
-                cancelMessageBody();
-            }
-
-            @Override
-            public void cancel() {
-                cancelMessageBody();
-            }
-
-            private void cancelMessageBody() {
-                if (messageBodySubscribed.compareAndSet(false, true)) {
-                    toSource(messageBody).subscribe(CancelImmediatelySubscriber.INSTANCE);
-                }
-            }
-        }).concat(defer(() -> (messageBodySubscribed.compareAndSet(false, true) ?
-                messageBody.ignoreElements() : completed()).shareContextOnSubscribe()));
+        return propagateCancel ?
+                flatMessage.concatPropagateCancel(messageBody.ignoreElements()) :
+                flatMessage.concat(messageBody.ignoreElements());
     }
 
     private static final class ContentLengthList<T> extends ArrayList<T> {

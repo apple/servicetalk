@@ -167,14 +167,16 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
                 flatRequest = setRequestContentLength(connectionContext().protocol(), request);
             } else {
                 final Publisher<Object> messageBody = request.messageBody();
+                // Do not propagate cancel to the messageBody if cancel arrives before meta-data completes. Client-side
+                // state machine does not depend on termination of the messageBody until after transport subscribes to
+                // it. It's preferable to avoid subscribe to the messageBody in case of cancellation to allow requests
+                // with non-replayable messageBody to retry.
                 if (emptyMessageBody(request, messageBody)) {
-                    flatRequest = flatEmptyMessage(connectionContext().protocol(), request, messageBody, false);
+                    flatRequest = flatEmptyMessage(connectionContext().protocol(), request, messageBody,
+                            /* propagateCancel */ false);
                 } else {
-                    // 1. Defer subscribe to the messageBody until transport requests it to allow clients retry failed
-                    // requests with non-replayable messageBody.
-                    // 2. There is no need to do anything with messageBody if the flat publisher was cancelled before
-                    // Single succeeded result is delivered. Client-side state machine does not depend on termination of
-                    // the message body until after transport subscribes to it.
+                    // Defer subscribe to the messageBody until transport requests it to allow clients retry failed
+                    // requests with non-replayable messageBody
                     flatRequest = Single.<Object>succeeded(request).concat(messageBody, /* deferSubscribe */ true);
                     if (shouldAppendTrailers(connectionContext().protocol(), request)) {
                         flatRequest = flatRequest.scanWith(HeaderUtils::appendTrailersMapper);

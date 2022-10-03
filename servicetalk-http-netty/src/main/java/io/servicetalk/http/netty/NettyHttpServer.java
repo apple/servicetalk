@@ -27,7 +27,6 @@ import io.servicetalk.concurrent.api.Processors;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
-import io.servicetalk.concurrent.internal.CancelImmediatelySubscriber;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.concurrent.internal.RejectedSubscribeError;
 import io.servicetalk.concurrent.internal.TerminalNotification;
@@ -88,8 +87,6 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseabl
 import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.defer;
-import static io.servicetalk.concurrent.api.Publisher.defer;
-import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
@@ -457,26 +454,13 @@ final class NettyHttpServer {
             } else {
                 Publisher<Object> flatResponse;
                 final Publisher<Object> messageBody = response.messageBody();
+                // Ensure cancel is propagated through the messageBody. Otherwise, if cancel from transport races with
+                // execution of this method and wins, BeforeFinallyHttpOperator won't trigger and observers won't
+                // complete the exchange.
                 if (emptyMessageBody(response, messageBody)) {
-                    flatResponse = flatEmptyMessage(protocolVersion, response, messageBody, true);
+                    flatResponse = flatEmptyMessage(protocolVersion, response, messageBody, /* propagateCancel */ true);
                 } else {
-                    // No need to wrap the state with `defer` because this method is executed inside `flatMapPublisher`.
-                    final AtomicBoolean messageBodySubscribed = new AtomicBoolean(false);
-                    flatResponse = Single.<Object>succeeded(response)
-                            // Because `concat` won't subscribe to the messageBody in case of cancellation or an error,
-                            // we use `afterCancel` + `messageBodySubscribed` to guarantee messageBody sees cancel too.
-                            // Otherwise, BeforeFinallyHttpOperator won't trigger, and observers won't complete the
-                            // exchange.
-                            .afterCancel(() -> {
-                                if (messageBodySubscribed.compareAndSet(false, true)) {
-                                    toSource(messageBody).subscribe(CancelImmediatelySubscriber.INSTANCE);
-                                }
-                            })
-                            // Not necessary to defer subscribe to the messageBody because server does not retry
-                            // responses, and we don't need to replay messageBody.
-                            .concat(defer(() -> (messageBodySubscribed.compareAndSet(false, true) ?
-                                            messageBody : empty()).shareContextOnSubscribe()),
-                                    /* deferSubscribe */ false);
+                    flatResponse = Single.<Object>succeeded(response).concatPropagateCancel(messageBody);
                     if (shouldAppendTrailers(protocolVersion, response)) {
                         flatResponse = flatResponse.scanWith(HeaderUtils::appendTrailersMapper);
                     }
