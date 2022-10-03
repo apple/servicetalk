@@ -24,7 +24,6 @@ import io.servicetalk.encoding.api.ContentCodec;
 
 import java.io.InputStream;
 import java.nio.charset.Charset;
-import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
@@ -34,6 +33,7 @@ import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.fromInputStream;
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
 import static io.servicetalk.http.api.BlockingStreamingHttpMessageBodyUtils.newMessageBody;
+import static io.servicetalk.http.api.DefaultBlockingStreamingHttpResponse.fromFilterNull;
 
 final class DefaultBlockingStreamingHttpRequest extends AbstractDelegatingHttpRequest
         implements BlockingStreamingHttpRequest {
@@ -201,8 +201,9 @@ final class DefaultBlockingStreamingHttpRequest extends AbstractDelegatingHttpRe
         original.payloadHolder().messageBody(defer(() -> {
             HttpMessageBodyIterator<Buffer> body = messageBody.iterator();
             return fromIterable(() -> body)
-                    .map(o -> (Object) o)
-                    .concat(defer(() -> from(body.trailers()).filter(Objects::nonNull)));
+                    .cast(Object.class)
+                    .concat(defer(() -> fromFilterNull(body.trailers()).shareContextOnSubscribe()))
+                    .shareContextOnSubscribe();
         }));
         return this;
     }
@@ -213,8 +214,9 @@ final class DefaultBlockingStreamingHttpRequest extends AbstractDelegatingHttpRe
         original.payloadHolder().messageBody(defer(() -> {
             HttpMessageBodyIterator<T> body = messageBody.iterator();
             return from(serializer.serialize(headers(), () -> body, original.payloadHolder().allocator()))
-                    .map(o -> (Object) o)
-                    .concat(defer(() -> from(body.trailers()).filter(Objects::nonNull)));
+                    .cast(Object.class)
+                    .concat(defer(() -> fromFilterNull(body.trailers()).shareContextOnSubscribe()))
+                    .shareContextOnSubscribe();
         }));
         return this;
     }

@@ -36,13 +36,13 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
-import static io.servicetalk.buffer.netty.BufferUtils.extractByteBufOrCreate;
 import static io.servicetalk.buffer.netty.BufferUtils.getByteBufAllocator;
 import static io.servicetalk.buffer.netty.BufferUtils.newBufferFrom;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.encoding.netty.NettyCompressionSerializer.cleanup;
 import static io.servicetalk.encoding.netty.NettyCompressionSerializer.preparePendingData;
 import static io.servicetalk.encoding.netty.NettyCompressionSerializer.safeCleanup;
+import static io.servicetalk.encoding.netty.NettyCompressionSerializer.writeAndUpdateIndex;
 import static java.util.Objects.requireNonNull;
 
 final class NettyCompressionStreamingSerializer implements StreamingSerializerDeserializer<Buffer> {
@@ -80,8 +80,7 @@ final class NettyCompressionStreamingSerializer implements StreamingSerializerDe
                 }
 
                 try { // onNext will produce AT-MOST N items (as received)
-                    channel.writeInbound(extractByteBufOrCreate(next));
-                    next.skipBytes(next.readableBytes());
+                    writeAndUpdateIndex(channel, next, true);
                     Buffer buffer = drainChannelQueueToSingleBuffer(channel.inboundMessages(), allocator);
                     if (buffer != null && buffer.readableBytes() > 0) {
                         subscriber.onNext(buffer);
@@ -148,8 +147,7 @@ final class NettyCompressionStreamingSerializer implements StreamingSerializerDe
                                     subscriber.onNext(buffer);
                                 }
                             } else {
-                                channel.writeOutbound(extractByteBufOrCreate(next));
-                                next.skipBytes(next.readableBytes());
+                                writeAndUpdateIndex(channel, next, false);
                                 Buffer buffer = drainChannelQueueToSingleBuffer(channel.outboundMessages(), allocator);
                                 if (buffer != null && buffer.readableBytes() > 0) {
                                     subscriber.onNext(buffer);

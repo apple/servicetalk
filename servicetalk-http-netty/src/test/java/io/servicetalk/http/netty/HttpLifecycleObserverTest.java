@@ -149,11 +149,11 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
         setUp(protocol);
         makeRequestAndAssertResponse(SVC_NO_CONTENT, protocol, NO_CONTENT, 0);
 
-        bothTerminate.await();
+        awaitFullTermination();
         verifyObservers(true, clientLifecycleObserver, clientExchangeObserver, clientRequestObserver,
-                clientResponseObserver, clientInOrder, clientRequestInOrder, false, false);
+                clientResponseObserver, clientInOrder, clientRequestInOrder, false, false, 0);
         verifyObservers(false, serverLifecycleObserver, serverExchangeObserver, serverRequestObserver,
-                serverResponseObserver, serverInOrder, serverRequestInOrder, false, false);
+                serverResponseObserver, serverInOrder, serverRequestInOrder, false, false, 0);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] protocol={0}")
@@ -162,11 +162,13 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
         setUp(protocol);
         makeRequestAndAssertResponse(SVC_ECHO, protocol, OK, CONTENT.readableBytes());
 
-        bothTerminate.await();
+        awaitFullTermination();
         verifyObservers(true, clientLifecycleObserver, clientExchangeObserver, clientRequestObserver,
-                clientResponseObserver, clientInOrder, clientRequestInOrder, true, true);
+                clientResponseObserver, clientInOrder, clientRequestInOrder, true, true,
+                CONTENT.readableBytes());
         verifyObservers(false, serverLifecycleObserver, serverExchangeObserver, serverRequestObserver,
-                serverResponseObserver, serverInOrder, serverRequestInOrder, true, true);
+                serverResponseObserver, serverInOrder, serverRequestInOrder, true, true,
+                CONTENT.readableBytes());
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] protocol={0}")
@@ -175,11 +177,11 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
         setUp(protocol);
         makeRequestAndAssertResponse(SVC_THROW_ERROR, protocol, INTERNAL_SERVER_ERROR, 0);
 
-        bothTerminate.await();
+        awaitFullTermination();
         verifyObservers(true, clientLifecycleObserver, clientExchangeObserver, clientRequestObserver,
-                clientResponseObserver, clientInOrder, clientRequestInOrder, false, false);
+                clientResponseObserver, clientInOrder, clientRequestInOrder, false, false, 0);
         verifyObservers(false, serverLifecycleObserver, serverExchangeObserver, serverRequestObserver,
-                serverResponseObserver, serverInOrder, serverRequestInOrder, false, false);
+                serverResponseObserver, serverInOrder, serverRequestInOrder, false, false, 0);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] protocol={0}")
@@ -188,11 +190,11 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
         setUp(protocol);
         makeRequestAndAssertResponse(SVC_SINGLE_ERROR, protocol, INTERNAL_SERVER_ERROR, 0);
 
-        bothTerminate.await();
+        awaitFullTermination();
         verifyObservers(true, clientLifecycleObserver, clientExchangeObserver, clientRequestObserver,
-                clientResponseObserver, clientInOrder, clientRequestInOrder, false, false);
+                clientResponseObserver, clientInOrder, clientRequestInOrder, false, false, 0);
         verifyObservers(false, serverLifecycleObserver, serverExchangeObserver, serverRequestObserver,
-                serverResponseObserver, serverInOrder, serverRequestInOrder, false, false);
+                serverResponseObserver, serverInOrder, serverRequestInOrder, false, false, 0);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] protocol={0}")
@@ -204,11 +206,11 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
         assertThat(e.getCause(), instanceOf(protocol == HttpProtocol.HTTP_2 ?
                 Http2Exception.class : ClosedChannelException.class));
 
-        bothTerminate.await();
+        awaitFullTermination();
         verifyError(true, clientLifecycleObserver, clientExchangeObserver, clientRequestObserver,
-                clientResponseObserver, clientInOrder, clientRequestInOrder);
+                clientResponseObserver, clientInOrder, clientRequestInOrder, 0);
         verifyError(false, serverLifecycleObserver, serverExchangeObserver, serverRequestObserver,
-                serverResponseObserver, serverInOrder, serverRequestInOrder);
+                serverResponseObserver, serverInOrder, serverRequestInOrder, 0);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] protocol={0}")
@@ -227,7 +229,7 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
         assertThat(e.getCause(), sameInstance(DELIBERATE_EXCEPTION));
 
         bothTerminate.countDown();  // server is not involved in this test, count down manually
-        bothTerminate.await();
+        awaitFullTermination();
 
         clientInOrder.verify(clientLifecycleObserver).onNewExchange();
         clientInOrder.verify(clientExchangeObserver).onRequest(any(StreamingHttpRequest.class));
@@ -262,7 +264,7 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
         requestReceived.await();
         responseFuture.cancel(true);
 
-        bothTerminate.await();
+        awaitFullTermination();
 
         verify(serverExchangeObserver, await()).onExchangeFinally();
 
@@ -326,7 +328,7 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
         serverResponsePayload.onNext(CONTENT.duplicate());
         serverResponsePayload.onNext(CONTENT.duplicate());
 
-        bothTerminate.await();
+        awaitFullTermination();
 
         clientInOrder.verify(clientLifecycleObserver).onNewExchange();
         clientInOrder.verify(clientExchangeObserver).onConnectionSelected(any(ConnectionInfo.class));
@@ -370,7 +372,7 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
     private static void verifyObservers(boolean client, HttpLifecycleObserver lifecycle, HttpExchangeObserver exchange,
                                         HttpRequestObserver request, HttpResponseObserver response,
                                         InOrder inOrder, InOrder requestInOrder, boolean hasMessageBody,
-                                        boolean hasTrailers) {
+                                        boolean hasTrailers, int contentLength) {
         inOrder.verify(lifecycle).onNewExchange();
         if (client) {
             inOrder.verify(exchange).onRequest(any(StreamingHttpRequest.class));
@@ -380,13 +382,13 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
             inOrder.verify(exchange).onRequest(any(StreamingHttpRequest.class));
         }
         inOrder.verify(exchange).onResponse(any(StreamingHttpResponse.class));
-        verify(response, atLeastOnce()).onResponseDataRequested(anyLong());
+        verify(response, contentLength > 0 ? atLeastOnce() : atMostOnce()).onResponseDataRequested(anyLong());
         inOrder.verify(response, hasMessageBody ? times(1) : never()).onResponseData(any(Buffer.class));
         inOrder.verify(response, hasTrailers && !client ? times(1) : never())
                 .onResponseTrailers(any(HttpHeaders.class));
         inOrder.verify(response).onResponseComplete();
 
-        verify(request, atLeastOnce()).onRequestDataRequested(anyLong());
+        verify(request, contentLength > 0 ? atLeastOnce() : atMostOnce()).onRequestDataRequested(anyLong());
         requestInOrder.verify(request, hasMessageBody ? times(1) : never()).onRequestData(any(Buffer.class));
         requestInOrder.verify(request, hasTrailers && client ? times(1) : never())
                 .onRequestTrailers(any(HttpHeaders.class));
@@ -398,7 +400,7 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
 
     private static void verifyError(boolean client, HttpLifecycleObserver lifecycle, HttpExchangeObserver exchange,
                                     HttpRequestObserver request, HttpResponseObserver response,
-                                    InOrder inOrder, InOrder requestInOrder) {
+                                    InOrder inOrder, InOrder requestInOrder, int contentLength) {
         inOrder.verify(lifecycle).onNewExchange();
         if (client) {
             inOrder.verify(exchange).onRequest(any(StreamingHttpRequest.class));
@@ -408,14 +410,20 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
             inOrder.verify(exchange).onRequest(any(StreamingHttpRequest.class));
         }
         inOrder.verify(exchange).onResponse(any(StreamingHttpResponse.class));
-        verify(response, atLeastOnce()).onResponseDataRequested(anyLong());
+        verify(response, contentLength > 0 ? atLeastOnce() : atMostOnce()).onResponseDataRequested(anyLong());
         inOrder.verify(response).onResponseError(!client ? DELIBERATE_EXCEPTION : any());
 
-        verify(request, atLeastOnce()).onRequestDataRequested(anyLong());
+        verify(request, contentLength > 0 ? atLeastOnce() : atMostOnce()).onRequestDataRequested(anyLong());
         requestInOrder.verify(request, never()).onRequestTrailers(any(HttpHeaders.class));
         requestInOrder.verify(request).onRequestComplete();
 
         inOrder.verify(exchange).onExchangeFinally();
         verifyNoMoreInteractions(request, response, exchange, lifecycle);
+    }
+
+    private void awaitFullTermination() throws Exception {
+        bothTerminate.await();
+        stopServer();
+        // No more callbacks will be invoked after this point.
     }
 }
