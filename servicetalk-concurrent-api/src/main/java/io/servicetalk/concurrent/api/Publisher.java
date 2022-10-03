@@ -1942,9 +1942,34 @@ public abstract class Publisher<T> {
      * completion of {@code next} {@link Completable}.
      *
      * @see <a href="https://reactivex.io/documentation/operators/concat.html">ReactiveX concat operator.</a>
+     * @see #concatPropagateCancel(Completable)
      */
     public final Publisher<T> concat(Completable next) {
-        return new PublisherConcatWithCompletable<>(this, next);
+        return new PublisherConcatWithCompletable<>(this, next, false);
+    }
+
+    /**
+     * This method is like {@link #concat(Completable)} except {@code next} will be subscribed to and cancelled if this
+     * {@link Publisher} is cancelled or terminates with {@link Subscriber#onError(Throwable)}.
+     * <p>
+     * This method provides a means to sequence the execution of two asynchronous sources and in sequential programming
+     * is similar to:
+     * <pre>{@code
+     *     List<T> results = resultOfThisPublisher();
+     *     resultOfCompletable(next);
+     *     return results;
+     * }</pre>
+     *
+     * @param next {@link Completable} to wait for completion after {@code this} {@link Publisher} terminates
+     * successfully. Will be subscribed to and cancelled if this {@link Publisher} is cancelled or terminates with
+     * {@link Subscriber#onError(Throwable)}.
+     * @return A {@link Publisher} that emits all items from this {@link Publisher} and then awaits successful
+     * completion of {@code next} {@link Completable}.
+     * @see <a href="https://reactivex.io/documentation/operators/concat.html">ReactiveX concat operator.</a>
+     * @see #concat(Completable)
+     */
+    public final Publisher<T> concatPropagateCancel(Completable next) {
+        return new PublisherConcatWithCompletable<>(this, next, true);
     }
 
     /**

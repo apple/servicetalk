@@ -56,9 +56,7 @@ final class NettyCompressionSerializer implements SerializerDeserializer<Buffer>
         final MessageToByteEncoder<ByteBuf> encoder = encoderSupplier.get();
         final EmbeddedChannel channel = newEmbeddedChannel(encoder, allocator);
         try {
-            channel.writeOutbound(extractByteBufOrCreate(toSerialize));
-            toSerialize.skipBytes(toSerialize.readableBytes());
-
+            writeAndUpdateIndex(channel, toSerialize, false);
             // May produce footer
             preparePendingData(channel);
             drainChannelQueueToSingleBuffer(channel.outboundMessages(), nettyDst);
@@ -84,9 +82,7 @@ final class NettyCompressionSerializer implements SerializerDeserializer<Buffer>
         final ByteToMessageDecoder decoder = decoderSupplier.get();
         final EmbeddedChannel channel = newEmbeddedChannel(decoder, allocator);
         try {
-            channel.writeInbound(toByteBuf(serializedData));
-            serializedData.skipBytes(serializedData.readableBytes());
-
+            writeAndUpdateIndex(channel, serializedData, true);
             drainChannelQueueToSingleBuffer(channel.inboundMessages(), nettyDst);
             // no need to advance writerIndex -> NettyBuffer's writerIndex reflects the underlying ByteBuf value.
             cleanup(channel);
@@ -94,6 +90,21 @@ final class NettyCompressionSerializer implements SerializerDeserializer<Buffer>
         } catch (Throwable e) {
             safeCleanup(channel);
             throw new BufferEncodingException("Unexpected exception during decoding", e);
+        }
+    }
+
+    static void writeAndUpdateIndex(EmbeddedChannel channel, Buffer toSerialize, boolean inbound) {
+        ByteBuf byteBuf = extractByteBufOrCreate(toSerialize);
+        final int beforeReadableBytes = byteBuf.readableBytes();
+        if (inbound) {
+            channel.writeInbound(byteBuf);
+        } else {
+            channel.writeOutbound(byteBuf);
+        }
+        // extractByteBufOrCreate may have to copy if it isn't able to unwrap NettyBuffer and in this case we have to
+        // manually advance the Buffer indexes to reflect what was consumed.
+        if (byteBuf.readableBytes() != toSerialize.readableBytes()) {
+            toSerialize.skipBytes(byteBuf.readableBytes() - beforeReadableBytes);
         }
     }
 

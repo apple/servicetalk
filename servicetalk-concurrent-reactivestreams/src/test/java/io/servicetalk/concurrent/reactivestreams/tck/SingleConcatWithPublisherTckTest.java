@@ -20,10 +20,16 @@ import io.servicetalk.concurrent.api.Single;
 
 import org.testng.annotations.Test;
 
+import static io.servicetalk.concurrent.reactivestreams.tck.TckUtils.newPublisher;
+
 @Test
 public class SingleConcatWithPublisherTckTest extends AbstractSingleTckTest<Integer> {
 
     boolean deferSubscribe() {
+        return false;
+    }
+
+    boolean propagateCancel() {
         return false;
     }
 
@@ -32,8 +38,9 @@ public class SingleConcatWithPublisherTckTest extends AbstractSingleTckTest<Inte
         if (elements < 2) {
             return Single.succeeded(1).toPublisher();
         }
-        return Single.succeeded(1)
-                .concat(TckUtils.newPublisher(TckUtils.requestNToInt(elements) - 1), deferSubscribe());
+        Single<Integer> s = Single.succeeded(1);
+        Publisher<Integer> p = newPublisher(TckUtils.requestNToInt(elements) - 1);
+        return propagateCancel() ? s.concatPropagateCancel(p) : s.concat(p, deferSubscribe());
     }
 
     @Override
