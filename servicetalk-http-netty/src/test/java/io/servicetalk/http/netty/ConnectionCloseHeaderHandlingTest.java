@@ -292,9 +292,10 @@ final class ConnectionCloseHeaderHandlingTest {
                                    boolean noRequestContent, boolean noResponseContent) throws Exception {
             setUp(useUds, viaProxy, awaitRequestPayload);
             String content = "request_content";
+            CharSequence contentLength = noRequestContent ? ZERO : valueOf(content.length());
             StreamingHttpRequest request = connection.newRequest(noRequestContent ? GET : POST, "/first")
                     .setQueryParameter("noResponseContent", valueOf(noResponseContent))
-                    .addHeader(CONTENT_LENGTH, noRequestContent ? ZERO : valueOf(content.length()));
+                    .addHeader(CONTENT_LENGTH, contentLength);
             if (!noRequestContent) {
                 request.payloadBody(connection.connectionContext().executionContext().executor().submit(() -> {
                     try {
@@ -319,7 +320,7 @@ final class ConnectionCloseHeaderHandlingTest {
             assertResponsePayloadBody(response);
             responsePayloadReceived.countDown();
             requestPayloadReceived.await();
-            assertThat(valueOf(requestPayloadSize.get()), contentEqualTo(request.headers().get(CONTENT_LENGTH)));
+            assertThat(valueOf(requestPayloadSize.get()), contentEqualTo(contentLength));
 
             awaitConnectionClosed();
             assertClosedChannelException("/second");

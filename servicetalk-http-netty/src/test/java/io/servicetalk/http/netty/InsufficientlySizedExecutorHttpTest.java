@@ -43,6 +43,8 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpResponseStatus.SERVICE_UNAVAILABLE;
+import static io.servicetalk.http.netty.BuilderUtils.newClientBuilder;
+import static io.servicetalk.http.netty.BuilderUtils.newServerBuilder;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.http.netty.HttpServers.forAddress;
 import static io.servicetalk.transport.api.ConnectionAcceptorFactory.identity;
@@ -118,12 +120,9 @@ class InsufficientlySizedExecutorHttpTest {
 
     private void initWhenClientUnderProvisioned(final int capacity) throws Exception {
         executor = getExecutorForCapacity(capacity);
-        server = forAddress(localAddress(0))
-                .ioExecutor(SERVER_CTX.ioExecutor())
-                .executor(SERVER_CTX.executor())
+        server = newServerBuilder(SERVER_CTX)
                 .listenStreamingAndAwait((ctx, request, responseFactory) -> succeeded(responseFactory.ok()));
-        client = forSingleAddress(serverHostAndPort(server))
-                .ioExecutor(CLIENT_CTX.ioExecutor())
+        client = newClientBuilder(server, CLIENT_CTX)
                 .executor(executor)
                 .executionStrategy(offloadAllStrategy())
                 .buildStreaming();

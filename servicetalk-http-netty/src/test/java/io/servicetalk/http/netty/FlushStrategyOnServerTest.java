@@ -57,10 +57,9 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
 import static io.servicetalk.http.api.StreamingHttpRequests.newTransportRequest;
-import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
+import static io.servicetalk.http.netty.BuilderUtils.newClientBuilder;
 import static io.servicetalk.http.netty.NettyHttpServer.initChannel;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
-import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
@@ -135,12 +134,7 @@ class FlushStrategyOnServerTest {
             fail(e);
         }
 
-        client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
-                .ioExecutor(CLIENT_CTX.ioExecutor())
-                .executor(CLIENT_CTX.executor())
-                .bufferAllocator(CLIENT_CTX.bufferAllocator())
-                .protocols(h1Default())
-                .buildBlocking();
+        client = newClientBuilder(serverContext, CLIENT_CTX).buildBlocking();
     }
 
     @AfterEach
