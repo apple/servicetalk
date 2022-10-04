@@ -139,12 +139,13 @@ final class HeaderUtils {
                                                      final StreamingHttpRequest request) {
         return setContentLength(request, request.messageBody(),
                 shouldAddZeroContentLength(request.method()) ? HeaderUtils::updateContentLength :
-                        HeaderUtils::updateRequestContentLengthNonZero, protocolVersion);
+                        HeaderUtils::updateRequestContentLengthNonZero, protocolVersion, /* propagateCancel */ false);
     }
 
     static Publisher<Object> setResponseContentLength(final HttpProtocolVersion protocolVersion,
                                                       final StreamingHttpResponse response) {
-        return setContentLength(response, response.messageBody(), HeaderUtils::updateContentLength, protocolVersion);
+        return setContentLength(response, response.messageBody(), HeaderUtils::updateContentLength, protocolVersion,
+                /* propagateCancel */ true);
     }
 
     private static void updateRequestContentLengthNonZero(final int contentLength, final HttpHeaders headers) {
@@ -210,16 +211,22 @@ final class HeaderUtils {
     }
 
     static Publisher<Object> flatEmptyMessage(final HttpProtocolVersion protocolVersion,
-                                              final HttpMetaData metadata, final Publisher<Object> messageBody) {
+                                              final HttpMetaData metadata,
+                                              final Publisher<Object> messageBody,
+                                              final boolean propagateCancel) {
         assert emptyMessageBody(metadata, messageBody);
         // HTTP/2 and above can write meta-data as a single frame with endStream=true flag. To check the version, use
         // HttpProtocolVersion from ConnectionInfo because HttpMetaData may have different version.
         final Publisher<Object> flatMessage =
                 protocolVersion.major() > 1 || !shouldAppendTrailers(protocolVersion, metadata) ? from(metadata) :
                         from(metadata, EmptyHttpHeaders.INSTANCE);
-        return messageBody == empty() ? flatMessage :
-                // Subscribe to the messageBody publisher to trigger any applied transformations, but ignore its
-                // content because the PayloadInfo indicated it's effectively empty and does not contain trailers
+        if (messageBody == empty()) {
+            return flatMessage;
+        }
+        // Subscribe to the messageBody publisher to trigger any applied transformations, but ignore its content because
+        // the PayloadInfo indicated it's effectively empty and does not contain trailers.
+        return propagateCancel ?
+                flatMessage.concatPropagateCancel(messageBody.ignoreElements()) :
                 flatMessage.concat(messageBody.ignoreElements());
     }
 
@@ -246,10 +253,11 @@ final class HeaderUtils {
     private static Publisher<Object> setContentLength(final HttpMetaData metadata,
                                                       final Publisher<Object> messageBody,
                                                       final BiIntConsumer<HttpHeaders> contentLengthUpdater,
-                                                      final HttpProtocolVersion protocolVersion) {
+                                                      final HttpProtocolVersion protocolVersion,
+                                                      final boolean propagateCancel) {
         if (emptyMessageBody(metadata, messageBody)) {
             contentLengthUpdater.apply(0, metadata.headers());
-            return flatEmptyMessage(protocolVersion, metadata, messageBody);
+            return flatEmptyMessage(protocolVersion, metadata, messageBody, propagateCancel);
         }
         return messageBody.collect(() -> null, (reduction, item) -> {
             if (reduction == null) {

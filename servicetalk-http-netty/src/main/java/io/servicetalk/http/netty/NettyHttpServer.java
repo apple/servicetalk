@@ -453,11 +453,14 @@ final class NettyHttpServer {
                 return setResponseContentLength(protocolVersion, response);
             } else {
                 Publisher<Object> flatResponse;
-                if (emptyMessageBody(response, response.messageBody())) {
-                    flatResponse = flatEmptyMessage(protocolVersion, response, response.messageBody());
+                final Publisher<Object> messageBody = response.messageBody();
+                // Ensure cancel is propagated through the messageBody. Otherwise, if cancel from transport races with
+                // execution of this method and wins, BeforeFinallyHttpOperator won't trigger and observers won't
+                // complete the exchange.
+                if (emptyMessageBody(response, messageBody)) {
+                    flatResponse = flatEmptyMessage(protocolVersion, response, messageBody, /* propagateCancel */ true);
                 } else {
-                    // Not necessary to defer subscribe to the messageBody because server does not retry responses
-                    flatResponse = Single.<Object>succeeded(response).concat(response.messageBody());
+                    flatResponse = Single.<Object>succeeded(response).concatPropagateCancel(messageBody);
                     if (shouldAppendTrailers(protocolVersion, response)) {
                         flatResponse = flatResponse.scanWith(HeaderUtils::appendTrailersMapper);
                     }
