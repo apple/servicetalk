@@ -414,7 +414,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
 
         void writeNext(Object msg) {
             assert eventLoop.inEventLoop();
-            assert isWritable() : channel + " Unexpected -writeNext: " + msg + " during non-writable state=" +
+            assert isWritable() : channel + " Unexpected writeNext: " + msg + " during non-writable state=" +
                     Integer.toString(state, 2);
             activeWrites++;
             listenersOnWriteBoundaries.addLast(WRITE_BOUNDARY);
