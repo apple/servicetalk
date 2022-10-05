@@ -620,7 +620,7 @@ final class NettyHttpServer {
 
         private static void logDecoderException(final DecoderException e,
                                                 final NettyConnection<Object, Object> connection) {
-            LOGGER.warn("{} Can not decode a message, no more requests will be received on this {}- {}.", connection,
+            LOGGER.warn("{} Can not decode a message, no more requests will be received on this {}-- {}.", connection,
                     connection.protocol(), HTTP_2_0.equals(connection.protocol()) ? "stream" : "connection", e);
         }
 
