@@ -17,6 +17,8 @@ package io.servicetalk.concurrent.api.single;
 
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
+import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestCancellable;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSingle;
@@ -68,11 +70,21 @@ class SingleConcatWithPublisherTest {
         CONCAT, DEFER_SUBSCRIBE, PROPAGATE_CANCEL
     }
 
+    private static Publisher<Integer> doConcat(ConcatMode mode, Single<Integer> source, Publisher<Integer> next) {
+        switch (mode) {
+            case CONCAT:
+                return source.concat(next);
+            case DEFER_SUBSCRIBE:
+                return source.concatDeferSubscribe(next);
+            case PROPAGATE_CANCEL:
+                return source.concatPropagateCancel(next);
+            default:
+                throw new AssertionError("Unexpected mode: " + mode);
+        }
+    }
+
     void setUp(ConcatMode mode) {
-        toSource(mode == PROPAGATE_CANCEL ?
-                source.concatPropagateCancel(next) :
-                source.concat(next, mode == DEFER_SUBSCRIBE))
-            .subscribe(subscriber);
+        toSource(doConcat(mode, source, next)).subscribe(subscriber);
         source.onSubscribe(cancellable);
         subscriber.awaitSubscription();
     }
@@ -116,10 +128,7 @@ class SingleConcatWithPublisherTest {
     @MethodSource("onNextErrorPropagatedParams")
     void onNextErrorPropagated(ConcatMode mode, long n, boolean singleCompletesFirst)
             throws Exception {
-        toSource((mode == PROPAGATE_CANCEL ?
-                source.concatPropagateCancel(next) :
-                source.concat(next, mode == DEFER_SUBSCRIBE))
-            .<Integer>map(x -> {
+        toSource(doConcat(mode, source, next).<Integer>map(x -> {
             throw DELIBERATE_EXCEPTION;
         })).subscribe(subscriber);
         source.onSubscribe(cancellable);
@@ -178,9 +187,7 @@ class SingleConcatWithPublisherTest {
     @ParameterizedTest(name = "mode={0}")
     @EnumSource(ConcatMode.class)
     void invalidRequestNWithInlineSourceCompletion(ConcatMode mode) {
-        toSource(mode == PROPAGATE_CANCEL ?
-                succeeded(1).concatPropagateCancel(empty()) :
-                succeeded(1).concat(empty(), mode == DEFER_SUBSCRIBE)).subscribe(subscriber);
+        toSource(doConcat(mode, succeeded(1), empty())).subscribe(subscriber);
         subscriber.awaitSubscription().request(-1);
         assertThat(subscriber.awaitOnError(), instanceOf(IllegalArgumentException.class));
     }
@@ -446,10 +453,7 @@ class SingleConcatWithPublisherTest {
     void reentryWithMoreDemand(ConcatMode mode) {
         List<Integer> emitted = new ArrayList<>();
         boolean[] completed = {false};
-        toSource(mode == PROPAGATE_CANCEL ?
-                succeeded(1).concatPropagateCancel(from(2)) :
-                succeeded(1).concat(from(2), mode == DEFER_SUBSCRIBE)
-        ).subscribe(new Subscriber<Integer>() {
+        toSource(doConcat(mode, succeeded(1), from(2))).subscribe(new Subscriber<Integer>() {
             @Nullable
             private Subscription subscription;
 
@@ -485,9 +489,7 @@ class SingleConcatWithPublisherTest {
     void cancelledDuringFirstOnNext(ConcatMode mode) {
         List<Integer> emitted = new ArrayList<>();
         boolean[] terminated = {false};
-        toSource(mode == PROPAGATE_CANCEL ?
-                succeeded(1).concatPropagateCancel(never()) :
-                succeeded(1).concat(never(), mode == DEFER_SUBSCRIBE)).subscribe(new Subscriber<Integer>() {
+        toSource(doConcat(mode, succeeded(1), never())).subscribe(new Subscriber<Integer>() {
             @Nullable
             private Subscription subscription;
 

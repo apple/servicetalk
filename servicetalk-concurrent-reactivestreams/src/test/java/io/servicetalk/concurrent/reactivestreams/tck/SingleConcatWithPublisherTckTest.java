@@ -40,7 +40,8 @@ public class SingleConcatWithPublisherTckTest extends AbstractSingleTckTest<Inte
         }
         Single<Integer> s = Single.succeeded(1);
         Publisher<Integer> p = newPublisher(TckUtils.requestNToInt(elements) - 1);
-        return propagateCancel() ? s.concatPropagateCancel(p) : s.concat(p, deferSubscribe());
+        return propagateCancel() ? s.concatPropagateCancel(p) :
+                deferSubscribe() ? s.concatDeferSubscribe(p) : s.concat(p);
     }
 
     @Override

@@ -748,8 +748,7 @@ public abstract class Single<T> {
      * elements from {@code next} {@link Publisher}. Any error emitted by this {@link Single} or {@code next}
      * {@link Publisher} is forwarded to the returned {@link Publisher}.
      * <p>
-     * Note: this method is an overload for {@link #concat(Publisher, boolean)} with {@code deferSubscribe} equal to
-     * {@code false}, which triggers subscribe to the {@code next} {@link Publisher} as soon as {@code this}
+     * Note: this operator triggers subscribe to the {@code next} {@link Publisher} as soon as {@code this}
      * {@link Single} completes successfully.
      * <p>
      * This method provides a means to sequence the execution of two asynchronous sources and in sequential programming
@@ -763,11 +762,11 @@ public abstract class Single<T> {
      * @param next {@link Publisher} to concat.
      * @return New {@link Publisher} that first emits the result of this {@link Single} and then subscribes and emits
      * all elements from {@code next} {@link Publisher}.
-     * @see #concat(Publisher, boolean)
+     * @see #concatDeferSubscribe(Publisher)
      * @see #concatPropagateCancel(Publisher)
      */
     public final Publisher<T> concat(Publisher<? extends T> next) {
-        return concat(next, false);
+        return new SingleConcatWithPublisher<>(this, next, false, false);
     }
 
     /**
@@ -792,13 +791,41 @@ public abstract class Single<T> {
      * replayable {@link Publisher}(s) or when eager subscribe is beneficial.
      * @return New {@link Publisher} that first emits the result of this {@link Single} and then subscribes and emits
      * all elements from {@code next} {@link Publisher}.
+     * @deprecated Use {@link #concat(Publisher)} or {@link #concatDeferSubscribe(Publisher)} instead.
      */
+    @Deprecated
     public final Publisher<T> concat(Publisher<? extends T> next, boolean deferSubscribe) {
         return new SingleConcatWithPublisher<>(this, next, deferSubscribe, false);
     }
 
     /**
-     * This method is like {@link #concat(Completable)} except {@code next} will be subscribed to and cancelled if this
+     * This method is like {@link #concat(Publisher)} subscribe to the {@code next} {@link Publisher} will be deferred
+     * until demand is received (at least 2 items requested).
+     * <p>
+     * Choosing the deferred behavior is important if the {@code next} {@link Publisher} does not or might not support
+     * multiple subscribers (non-replayable). Choosing the immediate subscribe ({@link #concat(Publisher)}) behavior may
+     * have better performance and may be a preferable choice for replayable {@link Publisher}(s) or when eager
+     * subscribe is beneficial.
+     * <p>
+     * This method provides a means to sequence the execution of two asynchronous sources and in sequential programming
+     * is similar to:
+     * <pre>{@code
+     *     List<T> results = new ...;
+     *     results.add(resultOfThisSingle());
+     *     results.addAll(nextStream());
+     *     return results;
+     * }</pre>
+     * @param next {@link Publisher} to concat.
+     * @return New {@link Publisher} that first emits the result of this {@link Single} and then subscribes and emits
+     * all elements from {@code next} {@link Publisher}.
+     * @see #concat(Publisher)
+     */
+    public final Publisher<T> concatDeferSubscribe(Publisher<? extends T> next) {
+        return new SingleConcatWithPublisher<>(this, next, true, false);
+    }
+
+    /**
+     * This method is like {@link #concat(Publisher)} except {@code next} will be subscribed to and cancelled if this
      * {@link Publisher} is cancelled or terminates with {@link Subscriber#onError(Throwable)}.
      * <p>
      * This method provides a means to sequence the execution of two asynchronous sources and in sequential programming
@@ -813,7 +840,7 @@ public abstract class Single<T> {
      * cancelled or terminates with {@link Subscriber#onError(Throwable)}.
      * @return New {@link Publisher} that first emits the result of this {@link Single} and then subscribes and emits
      * all elements from {@code next} {@link Publisher}.
-     * @see #concat(Completable)
+     * @see #concat(Publisher)
      */
     public final Publisher<T> concatPropagateCancel(Publisher<? extends T> next) {
         return new SingleConcatWithPublisher<>(this, next, false, true);
