@@ -22,7 +22,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -36,18 +37,10 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 public abstract class AbstractWriteTest {
 
-    protected EmbeddedChannel channel;
-    protected WriteDemandEstimator demandEstimator;
-    protected CompletableSource.Subscriber completableSubscriber;
-    protected FailingWriteHandler failingWriteHandler;
-
-    @BeforeEach
-    public void setUp() throws Exception {
-        completableSubscriber = mock(CompletableSource.Subscriber.class);
-        failingWriteHandler = new FailingWriteHandler();
-        channel = new EmbeddedChannel(failingWriteHandler);
-        demandEstimator = mock(WriteDemandEstimator.class);
-    }
+    protected final WriteDemandEstimator demandEstimator = mock(WriteDemandEstimator.class);
+    protected final CompletableSource.Subscriber completableSubscriber = mock(CompletableSource.Subscriber.class);
+    protected final FailingWriteHandler failingWriteHandler = new FailingWriteHandler();
+    protected final EmbeddedChannel channel = new EmbeddedChannel(failingWriteHandler);
 
     @AfterEach
     public void tearDown() throws Exception {
@@ -59,6 +52,9 @@ public abstract class AbstractWriteTest {
         channel.flushOutbound();
         if (items.length > 0) {
             assertThat("Message not written.", channel.outboundMessages(), contains((String[]) items));
+            for (int i = 0; i < items.length; ++i) {
+                channel.readOutbound(); // discard written items
+            }
         } else {
             assertThat("Unexpected message(s) written.", channel.outboundMessages(), is(empty()));
         }
@@ -68,6 +64,14 @@ public abstract class AbstractWriteTest {
         channel.flushOutbound();
         verify(completableSubscriber).onSubscribe(any());
         verify(completableSubscriber).onComplete();
+        verifyNoMoreInteractions(completableSubscriber);
+    }
+
+    protected void verifyListenerFailed(@Nullable Throwable t) {
+        channel.flushOutbound();
+        assertThat("Unexpected message(s) written.", channel.outboundMessages(), is(empty()));
+        verify(completableSubscriber).onSubscribe(any());
+        verify(completableSubscriber).onError(t != null ? t : any());
         verifyNoMoreInteractions(completableSubscriber);
     }
 
