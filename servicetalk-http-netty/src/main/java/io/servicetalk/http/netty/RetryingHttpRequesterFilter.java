@@ -195,13 +195,12 @@ public final class RetryingHttpRequesterFilter
                                                         final StreamingHttpRequest request) {
             Single<StreamingHttpResponse> single = delegate.request(request);
             if (responseMapper != null) {
-                single = single.map(resp -> {
+                single = single.flatMap(resp -> {
                     final HttpResponseException exception = responseMapper.apply(resp);
-                    if (exception != null) {
-                        throw exception;
-                    }
-
-                    return resp;
+                    return exception != null ?
+                            // Drain response payload body before discarding it:
+                            resp.payloadBody().ignoreElements().onErrorComplete().concat(Single.failed(exception)) :
+                            Single.succeeded(resp);
                 });
             }
 
@@ -244,7 +243,7 @@ public final class RetryingHttpRequesterFilter
 
         private static final long serialVersionUID = -7182949760823647710L;
 
-        // FIXME: 0.43 - remove deprecated method
+        // FIXME: 0.43 - make deprecated field private
         /**
          * {@link HttpResponseMetaData} of the response that caused this exception.
          *
@@ -253,7 +252,7 @@ public final class RetryingHttpRequesterFilter
         @Deprecated
         public final HttpResponseMetaData metaData;
 
-        // FIXME: 0.43 - remove deprecated method
+        // FIXME: 0.43 - remove deprecated field
         /**
          * Exception detail message.
          *
