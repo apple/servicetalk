@@ -116,8 +116,8 @@ final class DefaultGrpcClientBuilder<U, R> implements GrpcClientBuilder<U, R> {
     private GrpcClientCallFactory newGrpcClientCallFactory() {
         SingleAddressHttpClientBuilder<U, R> builder = httpClientBuilderSupplier.get().protocols(h2Default());
         builder.appendClientFilter(CatchAllHttpClientFilter.INSTANCE);
-        httpInitializer.initialize(builder);
         builder.appendClientFilter(new TimeoutHttpRequesterFilter(GRPC_TIMEOUT_REQHDR, true));
+        httpInitializer.initialize(builder);
         Duration timeout = isInfinite(defaultTimeout, GRPC_MAX_TIMEOUT) ? null : defaultTimeout;
         return GrpcClientCallFactory.from(builder.buildStreaming(), timeout);
     }
