@@ -35,8 +35,6 @@ import javax.annotation.Nullable;
 
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_LENGTH;
 import static io.netty.handler.codec.http.HttpHeaderNames.HOST;
-import static io.netty.handler.codec.http.HttpHeaderNames.TRANSFER_ENCODING;
-import static io.netty.handler.codec.http.HttpHeaderValues.CHUNKED;
 import static io.netty.handler.codec.http.HttpHeaderValues.ZERO;
 import static io.netty.handler.codec.http2.Http2Headers.PseudoHeaderName.AUTHORITY;
 import static io.netty.handler.codec.http2.Http2Headers.PseudoHeaderName.METHOD;
@@ -158,8 +156,6 @@ final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
                 if (!containsContentLength) {
                     if (fullRequest && shouldAddZeroContentLength(httpMethod)) {
                         h2Headers.set(CONTENT_LENGTH, ZERO);
-                    } else {
-                        h2Headers.add(TRANSFER_ENCODING, CHUNKED);
                     }
                 }
             } else if (containsContentLength) {
