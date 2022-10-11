@@ -377,7 +377,14 @@ class NettyBuffer<T extends ByteBuf> implements Buffer {
 
     @Override
     public int setBytes(int index, InputStream src, int length) throws IOException {
-        return buffer.setBytes(index, src, length);
+        int totalWritten = 0;
+        int bytesWritten;
+        while (length > 0 && (bytesWritten = buffer.setBytes(index, src, length)) >= 0) {
+            totalWritten += bytesWritten;
+            length -= bytesWritten;
+            index += bytesWritten;
+        }
+        return totalWritten;
     }
 
     @Override
@@ -680,7 +687,13 @@ class NettyBuffer<T extends ByteBuf> implements Buffer {
 
     @Override
     public int writeBytes(InputStream src, int length) throws IOException {
-        return buffer.writeBytes(src, length);
+        int totalWritten = 0;
+        int bytesWritten;
+        while (length > 0 && (bytesWritten = buffer.writeBytes(src, length)) >= 0) {
+            totalWritten += bytesWritten;
+            length -= bytesWritten;
+        }
+        return totalWritten;
     }
 
     @Override
