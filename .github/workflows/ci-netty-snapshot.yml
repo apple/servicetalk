@@ -1,0 +1,36 @@
+name: Test with the latest Netty 4.1.X-SNAPSHOT
+on:
+  schedule:
+    - cron: '0 15 * * 1-5'
+jobs:
+  build:
+    name: Netty snapshot on JDK ${{ matrix.java }} ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        java: [ 8 ]
+        os: [ ubuntu-latest ]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+      - name: Set up JDK ${{ matrix.java }}
+        uses: actions/setup-java@v3
+        with:
+          java-version: ${{ matrix.java }}
+          distribution: 'zulu'
+          cache: 'gradle'
+      - name: Print JDK Version
+        run: java -version
+      - name: Make gradlew Executable
+        run: chmod +x gradlew
+      - name: Build and Test
+        env:
+          JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF-8
+          ORG_GRADLE_PROJECT_nettyVersion: 4.1.+
+        run:  sudo -E env "PATH=$PATH" bash -c "ulimit -l 65536 && ulimit -a && ./gradlew --no-daemon --parallel clean test"
+      - name: Publish Test Results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results-${{ matrix.os }}-${{ matrix.java }}
+          path: '**/build/test-results/test/TEST-*.xml'
