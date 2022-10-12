@@ -83,6 +83,9 @@
     <a class="nav-link" href="#SerializationProtobuf">Serialization: Protobuf</a>
   </li>
   <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="#SerializationBytes">Serialization: Bytes</a>
+  </li>
+  <li class="nav-item" data-depth="3">
     <a class="nav-link" href="#JAXRS">JAX-RS</a>
   </li>
   <li class="nav-item" data-depth="3">
@@ -1272,6 +1275,21 @@ client and server with Protobuf serialization of simple proto objects.</p>
 (<a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/serialization/protobuf/src/main/proto/message.proto">message.proto</a>).
 All serializers and deserializers defined in
 <a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/serialization/protobuf/src/main/java/io/servicetalk/examples/http/serialization/protobuf/SerializerUtils.java">SerializerUtils</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="SerializationBytes"><a class="anchor" href="#SerializationBytes"></a><a class="link" href="#SerializationBytes">Serialization: Bytes</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>An example similar to "Hello World" examples, which demonstrates
+<a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/serialization/bytes/src/main/java/io/servicetalk/examples/http/serialization/bytes/blocking">blocking-aggregated</a>
+client and server with <code>byte[]</code> serialization.</p>
+</div>
+<div class="paragraph">
+<p>Client sends a <code>GET</code> request and expects a response that can be deserialized as <code>byte[]</code>.
+All serializers and deserializers defined in
+<a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/http/serialization/bytes/src/main/java/io/servicetalk/examples/http/serialization/bytes/SerializerUtils.java">SerializerUtils</a>.</p>
 </div>
 </div>
 </div>

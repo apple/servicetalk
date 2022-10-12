@@ -1075,7 +1075,7 @@ in the future.
 </div>
 <div class="paragraph">
 <p>One of the core abstractions in ServiceTalk is its <em>Client side</em>
-<a href="https://github.com/apple/servicetalk/blob/0.42.17/servicetalk-client-api/src/main/java/io/servicetalk/client/api/LoadBalancer.java">LoadBalancer</a>
+<a href="https://github.com/apple/servicetalk/blob/0.42.18/servicetalk-client-api/src/main/java/io/servicetalk/client/api/LoadBalancer.java">LoadBalancer</a>
 underpinning the various protocol <em>Clients</em> (eg. HTTP/1.1, HTTP/2, gRPC, etc.).</p>
 </div>
 <div class="paragraph">
@@ -1116,14 +1116,14 @@ resilient and performant system.</p>
 and can be influenced by protocol feedback. This enables building a rich set of features on top such as: intelligent
 capacity management, smart connection and host selection, circuit breaking, etc. The <em>Connection</em> abstraction which is
 the basis for all protocol-specific <em>Connections</em> allows the
-<a href="https://github.com/apple/servicetalk/blob/0.42.17/servicetalk-client-api/src/main/java/io/servicetalk/client/api/LoadBalancer.java">LoadBalancer</a>
+<a href="https://github.com/apple/servicetalk/blob/0.42.18/servicetalk-client-api/src/main/java/io/servicetalk/client/api/LoadBalancer.java">LoadBalancer</a>
 implementations to be reusable across all the protocols.</p>
 </div>
 <div class="paragraph">
 <p>The <em>LoadBalancer</em> is able to combine availability information from
-<a href="https://github.com/apple/servicetalk/blob/0.42.17/servicetalk-client-api/src/main/java/io/servicetalk/client/api/ServiceDiscoverer.java">ServiceDiscoverer</a>
+<a href="https://github.com/apple/servicetalk/blob/0.42.18/servicetalk-client-api/src/main/java/io/servicetalk/client/api/ServiceDiscoverer.java">ServiceDiscoverer</a>
 and protocol metrics from the
-<a href="https://github.com/apple/servicetalk/blob/0.42.17/servicetalk-client-api/src/main/java/io/servicetalk/client/api/ConnectionFactory.java">ConnectionFactory</a>
+<a href="https://github.com/apple/servicetalk/blob/0.42.18/servicetalk-client-api/src/main/java/io/servicetalk/client/api/ConnectionFactory.java">ConnectionFactory</a>
 (e.g. latency, &#8230;&#8203;) in order to pick a more optimal <em>Connection</em> for each request.</p>
 </div>
 </div>
@@ -1133,14 +1133,14 @@ and protocol metrics from the
 <div class="sectionbody">
 <div class="paragraph">
 <p>As mentioned earlier the <em>Client-Side</em>
-<a href="https://github.com/apple/servicetalk/blob/0.42.17/servicetalk-client-api/src/main/java/io/servicetalk/client/api/LoadBalancer.java">LoadBalancer</a>
+<a href="https://github.com/apple/servicetalk/blob/0.42.18/servicetalk-client-api/src/main/java/io/servicetalk/client/api/LoadBalancer.java">LoadBalancer</a>
 abstraction allows for various protocol-independent <em>LoadBalancing</em> algorithms to be implemented. This section will
 discuss the various implementations offered in ServiceTalk by highlighting their characteristics.</p>
 </div>
 <div class="sect2">
 <h3 id="round-robin"><a class="anchor" href="#round-robin"></a><a class="link" href="#round-robin">Round Robin</a></h3>
 <div class="paragraph">
-<p><a href="https://github.com/apple/servicetalk/blob/0.42.17/servicetalk-loadbalancer/src/main/java/io/servicetalk/loadbalancer/RoundRobinLoadBalancer.java">RoundRobinLoadBalancer</a>
+<p><a href="https://github.com/apple/servicetalk/blob/0.42.18/servicetalk-loadbalancer/src/main/java/io/servicetalk/loadbalancer/RoundRobinLoadBalancer.java">RoundRobinLoadBalancer</a>
 is a common and simple <em>LoadBalancer</em> implementation that is currently the default when creating <em>Clients</em>. Its
 main goal is to spread the load evenly between all known resolved addresses as provided by the
 <a href="../../servicetalk-client-api/0.42/service-discovery.html" class="page">Service Discovery</a> mechanism.</p>

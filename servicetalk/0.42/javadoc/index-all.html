@@ -3816,6 +3816,16 @@ loadScripts(document, 'script');</script>
 <div class="block">Returns a <a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> that first emits the result of this <a href="io/servicetalk/concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> and then subscribes and emits
  result of <code>next</code> <a href="io/servicetalk/concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>.</div>
 </dd>
+<dt><a href="io/servicetalk/concurrent/api/Publisher.html#concatPropagateCancel(io.servicetalk.concurrent.api.Completable)" class="member-name-link">concatPropagateCancel(Completable)</a> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a></dt>
+<dd>
+<div class="block">This method is like <a href="io/servicetalk/concurrent/api/Publisher.html#concat(io.servicetalk.concurrent.api.Completable)"><code>Publisher.concat(Completable)</code></a> except <code>next</code> will be subscribed to and cancelled if this
+ <a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> is cancelled or terminates with <a href="io/servicetalk/concurrent/PublisherSource.Subscriber.html#onError(java.lang.Throwable)"><code>PublisherSource.Subscriber.onError(Throwable)</code></a>.</div>
+</dd>
+<dt><a href="io/servicetalk/concurrent/api/Single.html#concatPropagateCancel(io.servicetalk.concurrent.api.Publisher)" class="member-name-link">concatPropagateCancel(Publisher&lt;? extends T&gt;)</a> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a></dt>
+<dd>
+<div class="block">This method is like <a href="io/servicetalk/concurrent/api/Single.html#concat(io.servicetalk.concurrent.api.Completable)"><code>Single.concat(Completable)</code></a> except <code>next</code> will be subscribed to and cancelled if this
+ <a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> is cancelled or terminates with <a href="io/servicetalk/concurrent/SingleSource.Subscriber.html#onError(java.lang.Throwable)"><code>SingleSource.Subscriber.onError(Throwable)</code></a>.</div>
+</dd>
 <dt><a href="io/servicetalk/concurrent/internal/ConcurrentSubscription.html" class="type-name-link" title="class in io.servicetalk.concurrent.internal">ConcurrentSubscription</a> - Class in <a href="io/servicetalk/concurrent/internal/package-summary.html">io.servicetalk.concurrent.internal</a></dt>
 <dd>
 <div class="block">This class prevents concurrent invocation of <a href="io/servicetalk/concurrent/PublisherSource.Subscription.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscription</code></a> methods and preserves the
@@ -7013,7 +7023,7 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Enables <a href="https://datatracker.ietf.org/doc/html/rfc7231#section-6.4">redirection</a>.</div>
 </dd>
-<dt><a href="io/servicetalk/grpc/netty/GrpcClients.html#forAddress(io.servicetalk.client.api.ServiceDiscoverer,U)" class="member-name-link">forAddress(ServiceDiscoverer&lt;U, R, ServiceDiscovererEvent&lt;R&gt;&gt;, U)</a> - Static method in class io.servicetalk.grpc.netty.<a href="io/servicetalk/grpc/netty/GrpcClients.html" title="class in io.servicetalk.grpc.netty">GrpcClients</a></dt>
+<dt><a href="io/servicetalk/grpc/netty/GrpcClients.html#forAddress(io.servicetalk.client.api.ServiceDiscoverer,U)" class="member-name-link">forAddress(ServiceDiscoverer&lt;U, R, ? extends ServiceDiscovererEvent&lt;R&gt;&gt;, U)</a> - Static method in class io.servicetalk.grpc.netty.<a href="io/servicetalk/grpc/netty/GrpcClients.html" title="class in io.servicetalk.grpc.netty">GrpcClients</a></dt>
 <dd>
 <div class="block">Creates a <a href="io/servicetalk/grpc/api/GrpcClientBuilder.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClientBuilder</code></a> for a custom address type with default <a href="io/servicetalk/client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> and user
  provided <a href="io/servicetalk/client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>.</div>
@@ -7311,7 +7321,7 @@ loadScripts(document, 'script');</script>
  <a href="io/servicetalk/client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> and a DNS <a href="io/servicetalk/client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> using
  <a href="https://tools.ietf.org/html/rfc2782">SRV record</a> lookups.</div>
 </dd>
-<dt><a href="io/servicetalk/http/netty/HttpClients.html#forSingleAddress(io.servicetalk.client.api.ServiceDiscoverer,U)" class="member-name-link">forSingleAddress(ServiceDiscoverer&lt;U, R, ServiceDiscovererEvent&lt;R&gt;&gt;, U)</a> - Static method in class io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/HttpClients.html" title="class in io.servicetalk.http.netty">HttpClients</a></dt>
+<dt><a href="io/servicetalk/http/netty/HttpClients.html#forSingleAddress(io.servicetalk.client.api.ServiceDiscoverer,U)" class="member-name-link">forSingleAddress(ServiceDiscoverer&lt;U, R, ? extends ServiceDiscovererEvent&lt;R&gt;&gt;, U)</a> - Static method in class io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/HttpClients.html" title="class in io.servicetalk.http.netty">HttpClients</a></dt>
 <dd>
 <div class="block">Creates a <a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api"><code>SingleAddressHttpClientBuilder</code></a> for a custom address type with default <a href="io/servicetalk/client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> and
  user provided <a href="io/servicetalk/client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>.</div>
@@ -17226,17 +17236,17 @@ loadScripts(document, 'script');</script>
 <div class="block">
  Used only by the Watch method.</div>
 </dd>
+<dt><a href="io/servicetalk/http/api/DelegatingSingleAddressHttpClientBuilder.html#serviceDiscoverer(io.servicetalk.client.api.ServiceDiscoverer)" class="member-name-link">serviceDiscoverer(ServiceDiscoverer&lt;U, R, ? extends ServiceDiscovererEvent&lt;R&gt;&gt;)</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/DelegatingSingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">DelegatingSingleAddressHttpClientBuilder</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html#serviceDiscoverer(io.servicetalk.client.api.ServiceDiscoverer)" class="member-name-link">serviceDiscoverer(ServiceDiscoverer&lt;U, R, ? extends ServiceDiscovererEvent&lt;R&gt;&gt;)</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a></dt>
+<dd>
+<div class="block">Sets a <a href="io/servicetalk/client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> to resolve addresses of remote servers to connect to.</div>
+</dd>
 <dt><a href="io/servicetalk/http/api/DelegatingPartitionedHttpClientBuilder.html#serviceDiscoverer(io.servicetalk.client.api.ServiceDiscoverer)" class="member-name-link">serviceDiscoverer(ServiceDiscoverer&lt;U, R, PartitionedServiceDiscovererEvent&lt;R&gt;&gt;)</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/DelegatingPartitionedHttpClientBuilder.html" title="class in io.servicetalk.http.api">DelegatingPartitionedHttpClientBuilder</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/api/PartitionedHttpClientBuilder.html#serviceDiscoverer(io.servicetalk.client.api.ServiceDiscoverer)" class="member-name-link">serviceDiscoverer(ServiceDiscoverer&lt;U, R, PartitionedServiceDiscovererEvent&lt;R&gt;&gt;)</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/PartitionedHttpClientBuilder.html" title="interface in io.servicetalk.http.api">PartitionedHttpClientBuilder</a></dt>
 <dd>
 <div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
-<div class="block">Sets a <a href="io/servicetalk/client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> to resolve addresses of remote servers to connect to.</div>
-</dd>
-<dt><a href="io/servicetalk/http/api/DelegatingSingleAddressHttpClientBuilder.html#serviceDiscoverer(io.servicetalk.client.api.ServiceDiscoverer)" class="member-name-link">serviceDiscoverer(ServiceDiscoverer&lt;U, R, ServiceDiscovererEvent&lt;R&gt;&gt;)</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/DelegatingSingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">DelegatingSingleAddressHttpClientBuilder</a></dt>
-<dd>&nbsp;</dd>
-<dt><a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html#serviceDiscoverer(io.servicetalk.client.api.ServiceDiscoverer)" class="member-name-link">serviceDiscoverer(ServiceDiscoverer&lt;U, R, ServiceDiscovererEvent&lt;R&gt;&gt;)</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a></dt>
-<dd>
 <div class="block">Sets a <a href="io/servicetalk/client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> to resolve addresses of remote servers to connect to.</div>
 </dd>
 <dt><a href="io/servicetalk/client/api/ServiceDiscoverer.html" class="type-name-link" title="interface in io.servicetalk.client.api">ServiceDiscoverer</a>&lt;<a href="io/servicetalk/client/api/ServiceDiscoverer.html" title="type parameter in ServiceDiscoverer">UnresolvedAddress</a>,<wbr><a href="io/servicetalk/client/api/ServiceDiscoverer.html" title="type parameter in ServiceDiscoverer">ResolvedAddress</a>,<wbr><a href="io/servicetalk/client/api/ServiceDiscoverer.html" title="type parameter in ServiceDiscoverer">E</a> extends <a href="io/servicetalk/client/api/ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;<a href="io/servicetalk/client/api/ServiceDiscoverer.html" title="type parameter in ServiceDiscoverer">ResolvedAddress</a>&gt;&gt; - Interface in <a href="io/servicetalk/client/api/package-summary.html">io.servicetalk.client.api</a></dt>
@@ -17521,7 +17531,7 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/buffer/api/Buffer.html#setBytes(int,java.io.InputStream,int)" class="member-name-link">setBytes(int, InputStream, int)</a> - Method in interface io.servicetalk.buffer.api.<a href="io/servicetalk/buffer/api/Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></dt>
 <dd>
-<div class="block">Transfers a fixed amount from the specified source InputStream's data to this buffer starting at
+<div class="block">Transfers a fixed amount from the specified source <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/InputStream.html" title="class or interface in java.io" class="external-link"><code>InputStream</code></a>'s data to this buffer starting at
  the specified absolute <code>index</code> until <code>length</code> bytes have been read, the end of stream
  is reached, or an exception is thrown.</div>
 </dd>
@@ -17539,7 +17549,7 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/buffer/api/Buffer.html#setBytesUntilEndStream(int,java.io.InputStream,int)" class="member-name-link">setBytesUntilEndStream(int, InputStream, int)</a> - Method in interface io.servicetalk.buffer.api.<a href="io/servicetalk/buffer/api/Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></dt>
 <dd>
-<div class="block">Transfers all the specified source InputStream's data to this buffer starting at
+<div class="block">Transfers all the specified source <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/InputStream.html" title="class or interface in java.io" class="external-link"><code>InputStream</code></a>'s data to this buffer starting at
  the specified absolute <code>index</code> until the end of stream is reached or an exception is thrown.</div>
 </dd>
 <dt><a href="io/servicetalk/buffer/api/EmptyBuffer.html#setBytesUntilEndStream(int,java.io.InputStream,int)" class="member-name-link">setBytesUntilEndStream(int, InputStream, int)</a> - Method in class io.servicetalk.buffer.api.<a href="io/servicetalk/buffer/api/EmptyBuffer.html" title="class in io.servicetalk.buffer.api">EmptyBuffer</a></dt>
@@ -21547,7 +21557,7 @@ the order they are declared.</div>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/buffer/api/Buffer.html#writeBytes(java.io.InputStream,int)" class="member-name-link">writeBytes(InputStream, int)</a> - Method in interface io.servicetalk.buffer.api.<a href="io/servicetalk/buffer/api/Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></dt>
 <dd>
-<div class="block">Transfers ta fixed amount from the specified source <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/InputStream.html" title="class or interface in java.io" class="external-link"><code>InputStream</code></a>'s data to this buffer starting at
+<div class="block">Transfers a fixed amount from the specified source <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/io/InputStream.html" title="class or interface in java.io" class="external-link"><code>InputStream</code></a>'s data to this buffer starting at
  the current <code>writerIndex</code> until <code>length</code> bytes have been read, the end of stream
  is reached, or an exception is thrown.</div>
 </dd>
