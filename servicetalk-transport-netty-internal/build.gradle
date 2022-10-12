@@ -16,6 +16,8 @@
 
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
+ext.isNettySnapshot = "$nettyVersion".endsWithAny("SNAPSHOT", "+")
+
 dependencies {
   api platform(project(":servicetalk-dependencies"))
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
@@ -38,8 +40,11 @@ dependencies {
   runtimeOnly( group:"io.netty", name:"netty-transport-native-epoll", classifier:"linux-x86_64")
   runtimeOnly( group:"io.netty", name:"netty-transport-native-epoll", classifier:"linux-aarch_64")
   implementation "io.netty:netty-transport-native-kqueue"
-  runtimeOnly( group:"io.netty", name:"netty-transport-native-kqueue", classifier:"osx-x86_64")
-  runtimeOnly( group:"io.netty", name:"netty-transport-native-kqueue", classifier:"osx-aarch_64")
+  if (!project.ext.isNettySnapshot) {
+    // Netty doesn't publish snapshots for macos artifacts
+    runtimeOnly( group:"io.netty", name:"netty-transport-native-kqueue", classifier:"osx-x86_64")
+    runtimeOnly( group:"io.netty", name:"netty-transport-native-kqueue", classifier:"osx-aarch_64")
+  }
   implementation "io.netty.incubator:netty-incubator-transport-native-io_uring"
   runtimeOnly( group:"io.netty.incubator", name:"netty-incubator-transport-native-io_uring", classifier:"linux-x86_64")
   runtimeOnly( group:"io.netty.incubator", name:"netty-incubator-transport-native-io_uring", classifier:"linux-aarch_64")

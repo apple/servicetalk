@@ -16,6 +16,8 @@
 
 apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
+ext.isNettySnapshot = "$nettyVersion".endsWithAny("SNAPSHOT", "+")
+
 dependencies {
   implementation platform(project(":servicetalk-dependencies"))
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
@@ -32,8 +34,11 @@ dependencies {
   implementation "io.netty:netty-resolver-dns"
   implementation "org.slf4j:slf4j-api"
 
-  runtimeOnly( group:"io.netty", name:"netty-resolver-dns-native-macos", classifier:"osx-x86_64")
-  runtimeOnly( group:"io.netty", name:"netty-resolver-dns-native-macos", classifier:"osx-aarch_64")
+  if (!project.ext.isNettySnapshot) {
+    // Netty doesn't publish snapshots for macos artifacts
+    runtimeOnly( group:"io.netty", name:"netty-resolver-dns-native-macos", classifier:"osx-x86_64")
+    runtimeOnly( group:"io.netty", name:"netty-resolver-dns-native-macos", classifier:"osx-aarch_64")
+  }
 
   testImplementation testFixtures(project(":servicetalk-concurrent-api"))
   testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
