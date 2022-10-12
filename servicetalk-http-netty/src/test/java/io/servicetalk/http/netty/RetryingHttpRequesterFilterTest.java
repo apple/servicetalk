@@ -30,6 +30,9 @@ import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
+import io.servicetalk.http.api.StreamingHttpConnectionFilter;
+import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory;
 import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.HostAndPort;
@@ -64,7 +67,6 @@ import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.fail;
 
 class RetryingHttpRequesterFilterTest {
 
@@ -123,13 +125,9 @@ class RetryingHttpRequesterFilterTest {
         failingClient = failingConnClientBuilder
                 .appendClientFilter(new Builder().maxTotalRetries(1).build())
                 .buildBlocking();
-        try {
-            failingClient.request(failingClient.get("/"));
-            fail("Request is expected to fail.");
-        } catch (Exception e) {
-            assertThat("Unexpected exception.", e, instanceOf(RetryableException.class));
-            assertThat("Unexpected calls to select.", lbSelectInvoked.get(), is(2));
-        }
+        Exception e = assertThrows(Exception.class, () -> failingClient.request(failingClient.get("/")));
+        assertThat("Unexpected exception.", e, instanceOf(RetryableException.class));
+        assertThat("Unexpected calls to select.", lbSelectInvoked.get(), is(2));
     }
 
     @Test
@@ -157,27 +155,21 @@ class RetryingHttpRequesterFilterTest {
     }
 
     private void assertRequestRetryingPred(final BlockingHttpClient client) {
-        try {
-            client.request(client.get("/"));
-            fail("Request is expected to fail.");
-        } catch (Exception e) {
-            assertThat("Unexpected exception.", e, instanceOf(RetryableException.class));
-            // Account for LB readiness
-            assertThat("Unexpected calls to select.", (double) lbSelectInvoked.get(), closeTo(1.0, 1.0));
-        }
+        Exception e = assertThrows(Exception.class, () -> client.request(client.get("/")));
+        assertThat("Unexpected exception.", e, instanceOf(RetryableException.class));
+        // Account for LB readiness
+        assertThat("Unexpected calls to select.", (double) lbSelectInvoked.get(), closeTo(1.0, 1.0));
 
-        try {
-            client.request(client.get("/retry"));
-            fail("Request is expected to fail.");
-        } catch (Exception e) {
-            assertThat("Unexpected exception.", e, instanceOf(RetryableException.class));
-            // 1 Run + 3 Retries + 1 residual count from previous request + account for LB readiness
-            assertThat("Unexpected calls to select.", (double) lbSelectInvoked.get(), closeTo(5.0, 1.0));
-        }
+        e = assertThrows(Exception.class, () -> client.request(client.get("/retry")));
+        assertThat("Unexpected exception.", e, instanceOf(RetryableException.class));
+        // 1 Run + 3 Retries + 1 residual count from previous request + account for LB readiness
+        assertThat("Unexpected calls to select.", (double) lbSelectInvoked.get(), closeTo(5.0, 1.0));
     }
 
     @Test
-    void responseRetryingPredicate() {
+    void testResponseMapper() {
+        AtomicInteger newConnectionCreated = new AtomicInteger();
+        AtomicInteger responseDrained = new AtomicInteger();
         normalClient = normalClientBuilder
                 .appendClientFilter(new Builder()
                         .responseMapper(metaData -> metaData.headers().contains(RETRYABLE_HEADER) ?
@@ -187,15 +179,24 @@ class RetryingHttpRequesterFilterTest {
                         // Retry only responses marked so
                         .retryResponses((requestMetaData, throwable) -> ofImmediate())
                         .build())
+                .appendConnectionFilter(c -> {
+                    newConnectionCreated.incrementAndGet();
+                    return new StreamingHttpConnectionFilter(c) {
+                        @Override
+                        public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+                            return delegate().request(request)
+                                    .map(response -> response.transformPayloadBody(payload -> payload
+                                            .whenFinally(responseDrained::incrementAndGet)));
+                        }
+                    };
+                })
                 .buildBlocking();
-        try {
-            normalClient.request(normalClient.get("/"));
-            fail("Request is expected to fail.");
-        } catch (Exception e) {
-            e.printStackTrace();
-            assertThat("Unexpected exception.", e, instanceOf(HttpResponseException.class));
-            assertThat("Unexpected calls to select.", lbSelectInvoked.get(), is(4));
-        }
+        HttpResponseException e = assertThrows(HttpResponseException.class,
+                () -> normalClient.request(normalClient.get("/")));
+        assertThat("Unexpected exception.", e, instanceOf(HttpResponseException.class));
+        assertThat("Unexpected calls to select.", lbSelectInvoked.get(), is(4));
+        assertThat("Response payload body was not drained on every mapping", responseDrained.get(), is(4));
+        assertThat("Unexpected number of connections was created", newConnectionCreated.get(), is(1));
     }
 
     @Test()

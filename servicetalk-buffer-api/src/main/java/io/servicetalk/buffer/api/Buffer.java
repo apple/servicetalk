@@ -924,7 +924,7 @@ public interface Buffer {
     Buffer setBytes(int index, ByteBuffer src);
 
     /**
-     * Transfers a fixed amount from the specified source InputStream's data to this buffer starting at
+     * Transfers a fixed amount from the specified source {@link InputStream}'s data to this buffer starting at
      * the specified absolute {@code index} until {@code length} bytes have been read, the end of stream
      * is reached, or an exception is thrown.
      * <p>
@@ -946,7 +946,7 @@ public interface Buffer {
     int setBytes(int index, InputStream src, int length) throws IOException;
 
     /**
-     * Transfers all the specified source InputStream's data to this buffer starting at
+     * Transfers all the specified source {@link InputStream}'s data to this buffer starting at
      * the specified absolute {@code index} until the end of stream is reached or an exception is thrown.
      * <p>
      * This method does not modify {@code readerIndex} or {@code writerIndex} of this buffer.
@@ -1579,7 +1579,7 @@ public interface Buffer {
     Buffer writeBytes(ByteBuffer src);
 
     /**
-     * Transfers ta fixed amount from the specified source {@link InputStream}'s data to this buffer starting at
+     * Transfers a fixed amount from the specified source {@link InputStream}'s data to this buffer starting at
      * the current {@code writerIndex} until {@code length} bytes have been read, the end of stream
      * is reached, or an exception is thrown.
      * If {@code this.writableBytes} is less than {@code length}, {@link #ensureWritable(int)}
