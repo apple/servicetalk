@@ -116,6 +116,7 @@ class SslCloseNotifyAlertClientHandlingTest extends AbstractSslCloseNotifyAlertH
                 .then(() -> {
                     writeMsg(writeSource, BEGIN);
                     writeMsg(writeSource, END);
+                    writeSource.onComplete();
                 })
                 .expectComplete()
                 .verify();
