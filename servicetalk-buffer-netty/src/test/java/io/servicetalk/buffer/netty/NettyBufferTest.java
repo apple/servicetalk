@@ -19,6 +19,7 @@ import io.servicetalk.buffer.api.Buffer;
 
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -29,19 +30,38 @@ import java.util.concurrent.ThreadLocalRandom;
 import static io.servicetalk.buffer.netty.BufferAllocators.PREFER_DIRECT_ALLOCATOR;
 import static io.servicetalk.buffer.netty.BufferAllocators.PREFER_HEAP_ALLOCATOR;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 
 class NettyBufferTest {
 
+    @ParameterizedTest(name = "{displayName} [{index}] write={0}")
+    @ValueSource(booleans = {true, false})
+    void writeBytesInputStreamZeroLength(boolean write) throws IOException {
+        Buffer buffer = buffer(true);
+        byte[] bytes = new byte[100];
+        InputStream is = inputStream(bytes, false);
+        Buffer dup = buffer.duplicate();
+        int readBytes;
+        if (write) {
+            readBytes = buffer.writeBytes(is, 0);
+        } else {
+            readBytes = buffer.setBytes(buffer.writerIndex(), is, 0);
+        }
+        assertThat("Read unexpected number of bytes", readBytes, is(0));
+        assertThat("Unexpected changes for the buffer", buffer, equalTo(dup));
+    }
+
     @ParameterizedTest(name = "{displayName} [{index}] heapBuffer={0} limitRead={1} write={2}")
     @CsvSource(value = {"false,false,false", "false,false,true", "false,true,false", "false,true,true",
             "true,false,false", "true,false,true", "true,true,false", "true,true,true"})
-    void writeBytesInputStream(boolean heapBuffer, boolean limitRead, boolean write) throws IOException {
+    void writeBytesInputStreamExactLength(boolean heapBuffer, boolean limitRead, boolean write) throws IOException {
         Buffer buffer = buffer(heapBuffer);
         byte[] bytes = new byte[100];
         InputStream is = inputStream(bytes, limitRead);
         writeOrSetBytes(buffer, is, bytes.length, write);
         assertBytes(buffer, bytes, is, bytes.length);
+        assertEOF(buffer, is, write);
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] heapBuffer={0} limitRead={1} write={2}")
@@ -64,6 +84,7 @@ class NettyBufferTest {
         InputStream is = inputStream(bytes, limitRead);
         writeOrSetBytes(buffer, is, bytes.length * 2, write);
         assertBytes(buffer, bytes, is, bytes.length);
+        assertEOF(buffer, is, write);
     }
 
     private static void writeOrSetBytes(Buffer buffer, InputStream is, int length, boolean write) throws IOException {
@@ -94,6 +115,7 @@ class NettyBufferTest {
             buffer.writerIndex(buffer.writerIndex() + written);
         }
         assertBytes(buffer, bytes, is, bytes.length);
+        assertEOF(buffer, is, write);
     }
 
     private static Buffer buffer(boolean heapBuffer) {
@@ -112,6 +134,15 @@ class NettyBufferTest {
         buffer.readBytes(tmp);
         assertThat("Unexpected bytes read", tmp, is(Arrays.copyOf(bytes, length)));
         assertThat("Unexpected available bytes", is.available(), is(bytes.length - length));
+    }
+
+    private static void assertEOF(Buffer buffer, InputStream is, boolean write) throws IOException {
+        assertThat("Unexpected data from InputStream", is.read(), is(-1));
+        if (write) {
+            assertThat("No EOF signal", buffer.writeBytes(is, 1), is(-1));
+        } else {
+            assertThat("No EOF signal", buffer.setBytes(buffer.writerIndex(), is, 1), is(-1));
+        }
     }
 
     private static final class TestInputStream extends InputStream {
