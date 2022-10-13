@@ -83,6 +83,9 @@
     <a class="nav-link" href="../../servicetalk-examples/0.42/http/index.html#SerializationProtobuf">Serialization: Protobuf</a>
   </li>
   <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/0.42/http/index.html#SerializationBytes">Serialization: Bytes</a>
+  </li>
+  <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/0.42/http/index.html#JAXRS">JAX-RS</a>
   </li>
   <li class="nav-item" data-depth="3">
@@ -1096,7 +1099,7 @@ in parallel.</p>
 </div>
 <div class="paragraph">
 <p><strong>By default, in ServiceTalk, signals are not executed on an EventLoop thread, but instead executed using an
-<a href="https://github.com/apple/servicetalk/blob/0.42.18/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Executor.java">Executor</a>
+<a href="https://github.com/apple/servicetalk/blob/0.42.19/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Executor.java">Executor</a>
 provided by the application in the order they are received.</strong></p>
 </div>
 <div class="sect3">
@@ -1154,7 +1157,7 @@ offloaded tasks. Often the <code>Executor</code> has a pool of threads, possibly
 is available. In particular, different threads may be used for each task executed and code running in tasks cannot
 depend upon a consistent thread being used for invoking program logic. This approach is generally the most scalable
 because it makes the best utilization of threads. If it is necessary to share state between tasks then
-`<a href="https://github.com/apple/servicetalk/blob/0.42.18/servicetalk-context-api/src/main/java/io/servicetalk/context/api/ContextMap.java">ContextMap</a>`s
+`<a href="https://github.com/apple/servicetalk/blob/0.42.19/servicetalk-context-api/src/main/java/io/servicetalk/context/api/ContextMap.java">ContextMap</a>`s
 can be used.</p>
 </div>
 <div class="paragraph">
