@@ -85,7 +85,6 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
     private static final byte CHANNEL_CLOSED = 1 << 1;
     private static final byte CLOSE_OUTBOUND_ON_SUBSCRIBER_TERMINATION = 1 << 2;
     private static final byte SUBSCRIBER_TERMINATED = 1 << 3;
-    private static final byte SOURCE_OUTBOUND_CLOSED = 1 << 4;
     private static final byte SUBSCRIBER_OR_SOURCE_TERMINATED = SOURCE_TERMINATED | SUBSCRIBER_TERMINATED;
     private static final Subscription CANCELLED = newEmptySubscription();
     private static final AtomicReferenceFieldUpdater<WriteStreamSubscriber, Subscription> subscriptionUpdater =
@@ -178,8 +177,8 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
             demandEstimator.onItemWrite(msg, capacityBefore, capacityAfter);
             // Client-side always starts a request with request(1) to probe a Channel with meta-data before continuing
             // to write the payload body, see https://github.com/apple/servicetalk/pull/1644.
-            // Requests that await feedback from the remote peer should not request more data from the publisher until
-            // they receive continueWriting() signal.
+            // Requests that await feedback from the remote peer should not request more until they receive
+            // continueWriting() signal.
             if (!isClient || !(shouldWaitFlag = shouldWait.test(msg))) {
                 requestMoreIfRequired(subscription, capacityAfter);
             }
@@ -247,7 +246,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
             // we may deadlock if we don't request enough onNext signals to see the terminal signal.
             sub.request(Long.MAX_VALUE);
         }
-        promise.outboundClosed();
+        promise.sourceTerminated(null, true);
     }
 
     @Override
@@ -255,12 +254,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
         assert eventLoop.inEventLoop();
         // Terminate the source only if it awaits continuation.
         if (shouldWaitFlag) {
-            assert promise.activeWrites == 0 :
-                    channel + " Unexpected activeWrites=" + promise.activeWrites + " while waiting for continuation";
-            // Cancel the passed write Publisher to signal transport is not interested in more data.
-            final Subscription sub = this.subscription;
-            assert sub != null : channel + " Unexpected subscription=null while waiting for continuation";
-            sub.cancel();
+            assert promise.activeWrites == 0;   // We never start sending payload body until we receive 100 (Continue)
             promise.sourceTerminated(null, true);
         }
     }
@@ -414,24 +408,12 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
 
         void writeNext(Object msg) {
             assert eventLoop.inEventLoop();
-            assert isWritable() : channel + " Unexpected writeNext: " + msg + " during non-writable state=" +
-                    Integer.toString(state, 2);
             activeWrites++;
             listenersOnWriteBoundaries.addLast(WRITE_BOUNDARY);
             channel.write(msg, this);
             if (!written) {
                 written = true;
             }
-        }
-
-        void outboundClosed() {
-            assert eventLoop.inEventLoop();
-            if (isAnySet(state, SUBSCRIBER_OR_SOURCE_TERMINATED)) {
-                // We have terminated prematurely perhaps due to write failure.
-                return;
-            }
-            state = set(state, SOURCE_OUTBOUND_CLOSED); // Assign a state to mark the promise as not writable.
-            markCancelled();
         }
 
         void sourceTerminated(@Nullable Throwable cause, boolean markCancelled) {
@@ -443,10 +425,15 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
             this.failureCause = cause;
             state = set(state, SOURCE_TERMINATED);
             if (markCancelled) {
-                markCancelled();
+                // When we know that the source is effectively terminated and won't emit any new items, mark the
+                // subscription as CANCELLED to prevent any further interactions with it, like propagating `cancel` from
+                // `channelClosed(Throwable)` or `request(MAX_VALUE)` from `channelOutboundClosed()`. At this point we
+                // always have a non-null subscription because this is reachable only if publisher emitted some signals.
+                WriteStreamSubscriber.this.subscription = CANCELLED;
             }
             if (activeWrites == 0) {
                 try {
+                    state = set(state, SUBSCRIBER_TERMINATED);
                     terminateSubscriber(cause);
                 } catch (Throwable t) {
                     tryFailureOrLog(t);
@@ -462,14 +449,6 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
             }
         }
 
-        void markCancelled() {
-            // When we know that the source is effectively terminated and won't emit any new items, mark the
-            // subscription as CANCELLED to prevent any further interactions with it, like propagating `cancel` from
-            // `channelClosed(Throwable)` or `request(MAX_VALUE)` from `channelOutboundClosed()`. At this point we
-            // always have a non-null subscription because this is reachable only if publisher emitted some signals.
-            WriteStreamSubscriber.this.subscription = CANCELLED;
-        }
-
         void close(Throwable cause, boolean closeOutboundIfIdle) {
             assert eventLoop.inEventLoop();
             if (isAllSet(state, CHANNEL_CLOSED)) {
@@ -482,7 +461,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
                     // just close the channel now.
                     closeHandler.closeChannelOutbound(channel);
                 }
-            } else if (activeWrites > 0 || isAllSet(state, SOURCE_OUTBOUND_CLOSED)) {
+            } else if (activeWrites > 0) {
                 // Writes are pending, we will close the channel once writes are done.
                 state = set(state, CLOSE_OUTBOUND_ON_SUBSCRIBER_TERMINATION);
             } else {
@@ -528,6 +507,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
             }
             observer.itemFlushed();
             if (--activeWrites == 0 && isAllSet(state, SOURCE_TERMINATED)) {
+                state = set(state, SUBSCRIBER_TERMINATED);
                 try {
                     terminateSubscriber(failureCause);
                 } catch (Throwable t) {
@@ -551,6 +531,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
             if (isAllSet(state, SUBSCRIBER_TERMINATED)) {
                 return nettySharedPromiseTryStatus();
             }
+            state = set(state, SUBSCRIBER_TERMINATED);
             Subscription oldVal = subscriptionUpdater.getAndSet(WriteStreamSubscriber.this, CANCELLED);
             if (oldVal != null && !isAllSet(state, SOURCE_TERMINATED)) {
                 oldVal.cancel();
@@ -573,7 +554,6 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
         }
 
         private void terminateSubscriber(@Nullable Throwable cause) {
-            state = set(state, SUBSCRIBER_TERMINATED);
             if (cause == null) {
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("{} Terminate subscriber, state: {}", channel, Integer.toString(state, 2));

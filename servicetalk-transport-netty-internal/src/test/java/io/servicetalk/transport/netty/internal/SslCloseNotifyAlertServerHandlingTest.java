@@ -44,23 +44,7 @@ class SslCloseNotifyAlertServerHandlingTest extends AbstractSslCloseNotifyAlertH
                 .then(() -> {
                     writeMsg(writeSource, BEGIN);
                     writeMsg(writeSource, END);
-                    writeSource.onComplete();
                     closeNotifyAndVerifyClosing();
-                })
-                .expectComplete()
-                .verify();
-    }
-
-    @Test
-    void afterRequestAndWritingResponseButBeforeCompletingWrite() {
-        receiveRequest();
-        PublisherSource.Processor<String, String> writeSource = newPublisherProcessor();
-        StepVerifiers.create(conn.write(fromSource(writeSource)))
-                .then(() -> {
-                    writeMsg(writeSource, BEGIN);
-                    writeMsg(writeSource, END);
-                    closeNotifyAndVerifyClosing();
-                    writeSource.onComplete();
                 })
                 .expectErrorConsumed(cause -> {
                     assertThat("Unexpected write failure cause", cause, instanceOf(CloseEventObservedException.class));
@@ -71,7 +55,7 @@ class SslCloseNotifyAlertServerHandlingTest extends AbstractSslCloseNotifyAlertH
     }
 
     @Test
-    void afterRequestBeforeWritingResponse() {
+    void afterRequestBeforeSendingResponse() {
         receiveRequest();
 
         PublisherSource.Processor<String, String> writeSource = newPublisherProcessor();
@@ -82,7 +66,7 @@ class SslCloseNotifyAlertServerHandlingTest extends AbstractSslCloseNotifyAlertH
     }
 
     @Test
-    void afterRequestWhileWritingResponse() {
+    void afterRequestWhileSendingResponse() {
         receiveRequest();
 
         PublisherSource.Processor<String, String> writeSource = newPublisherProcessor();
@@ -96,7 +80,7 @@ class SslCloseNotifyAlertServerHandlingTest extends AbstractSslCloseNotifyAlertH
     }
 
     @Test
-    void whileReadingRequestBeforeWritingResponse() {
+    void whileReadingRequestBeforeSendingResponse() {
         StepVerifiers.create(conn.write(fromSource(newPublisherProcessor())).merge(conn.read()))
                 .then(() -> {
                     // Start reading request
@@ -109,7 +93,7 @@ class SslCloseNotifyAlertServerHandlingTest extends AbstractSslCloseNotifyAlertH
     }
 
     @Test
-    void whileReadingRequestAndWritingResponse() {
+    void whileReadingRequestAndSendingResponse() {
         PublisherSource.Processor<String, String> writeSource = newPublisherProcessor();
         StepVerifiers.create(conn.write(fromSource(writeSource)).merge(conn.read()))
                 .then(() -> {
@@ -125,7 +109,7 @@ class SslCloseNotifyAlertServerHandlingTest extends AbstractSslCloseNotifyAlertH
     }
 
     @Test
-    void whileReadingRequestAfterWritingResponse() {
+    void whileReadingRequestAfterSendingResponse() {
         PublisherSource.Processor<String, String> writeSource = newPublisherProcessor();
         StepVerifiers.create(conn.write(fromSource(writeSource)).merge(conn.read()))
                 .then(() -> {
@@ -134,30 +118,9 @@ class SslCloseNotifyAlertServerHandlingTest extends AbstractSslCloseNotifyAlertH
                     // Send response
                     writeMsg(writeSource, BEGIN);
                     writeMsg(writeSource, END);
-                    writeSource.onComplete();
                 })
                 .expectNext(BEGIN)
                 .then(this::closeNotifyAndVerifyClosing)
-                .expectError(ClosedChannelException.class)
-                .verify();
-    }
-
-    @Test
-    void whileReadingRequestAfterWritingResponseButBeforeCompletingWrite() {
-        PublisherSource.Processor<String, String> writeSource = newPublisherProcessor();
-        StepVerifiers.create(conn.write(fromSource(writeSource)).merge(conn.read()))
-                .then(() -> {
-                    // Start reading request
-                    channel.writeInbound(BEGIN);
-                    // Send response
-                    writeMsg(writeSource, BEGIN);
-                    writeMsg(writeSource, END);
-                })
-                .expectNext(BEGIN)
-                .then(() -> {
-                    closeNotifyAndVerifyClosing();
-                    writeSource.onComplete();
-                })
                 .expectError(ClosedChannelException.class)
                 .verify();
     }
