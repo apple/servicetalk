@@ -17,11 +17,13 @@ package io.servicetalk.data.jackson;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.buffer.netty.BufferAllocators;
 import io.servicetalk.serializer.api.SerializerDeserializer;
 import io.servicetalk.serializer.api.StreamingSerializerDeserializer;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -46,10 +48,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class JacksonSerializerFactoryTest {
-    private static final TypeReference<TestPojo> TEST_POJO_TYPE_REFERENCE = new TypeReference<TestPojo>() { };
-    private static final TypeReference<String> STRING_TYPE_REFERENCE = new TypeReference<String>() { };
-    private static final TypeReference<Boolean> BOOLEAN_TYPE_REFERENCE = new TypeReference<Boolean>() { };
-    private static final TypeReference<Integer> INTEGER_TYPE_REFERENCE = new TypeReference<Integer>() { };
+    private static final TypeReference<TestPojo> TEST_POJO_TYPE_REFERENCE = new TypeReference<TestPojo>() {
+    };
+    private static final TypeReference<String> STRING_TYPE_REFERENCE = new TypeReference<String>() {
+    };
+    private static final TypeReference<Boolean> BOOLEAN_TYPE_REFERENCE = new TypeReference<Boolean>() {
+    };
+    private static final TypeReference<Integer> INTEGER_TYPE_REFERENCE = new TypeReference<Integer>() {
+    };
 
     @ParameterizedTest(name = "{index}, typeRef={0}, alloc={1}")
     @MethodSource("params")
@@ -104,7 +110,7 @@ class JacksonSerializerFactoryTest {
                 Long.MAX_VALUE, Float.MAX_VALUE, Double.MAX_VALUE, "foo", new String[] {"bar", "baz"}, null);
 
         assertThat(pojoStreamingSerializer(typeRef).deserialize(
-                    pojoStreamingSerializer(typeRef).serialize(singletonList(expected), alloc),
+                pojoStreamingSerializer(typeRef).serialize(singletonList(expected), alloc),
                 alloc), contains(expected));
     }
 
@@ -116,7 +122,7 @@ class JacksonSerializerFactoryTest {
         TestPojo expected2 = new TestPojo(false, (byte) 500, (short) 353, 'r', 100, 534, 33.25f, 888.5, null,
                 new String[] {"foo"}, expected1);
         assertThat(pojoStreamingSerializer(typeRef).deserialize(
-                pojoStreamingSerializer(typeRef).serialize(from(expected1, expected2), alloc), alloc)
+                        pojoStreamingSerializer(typeRef).serialize(from(expected1, expected2), alloc), alloc)
                 .toIterable(), contains(expected1, expected2));
     }
 
@@ -176,7 +182,7 @@ class JacksonSerializerFactoryTest {
         String json = "\"x\"";
         final Buffer buffer = alloc.fromAscii(json);
         assertThat(stringStreamingSerializer(typeRef).deserialize(from(buffer), alloc).toIterable(),
-                    contains("x"));
+                contains("x"));
     }
 
     @ParameterizedTest(name = "{index}, typeRef={0}, alloc={1}")
@@ -229,6 +235,24 @@ class JacksonSerializerFactoryTest {
         String json = "1";
         final Buffer buffer = alloc.fromAscii(json);
         assertThat(intStreamingSerializer(typeRef).deserialize(from(buffer), alloc).toIterable(), contains(1));
+    }
+
+    @Test
+    void streamingDeserializesFromDifferentBufferSources() {
+        final Buffer directBuffer = PREFER_DIRECT_ALLOCATOR.fromUtf8("\"b1\"");
+        final Buffer heapBuffer = PREFER_HEAP_ALLOCATOR.fromUtf8("\"b2\"");
+
+        assertThat(
+                stringStreamingSerializer(false)
+                        .deserialize(from(directBuffer, heapBuffer), BufferAllocators.DEFAULT_ALLOCATOR)
+                        .toIterable(),
+                contains("b1", "b2"));
+
+        assertThat(
+                stringStreamingSerializer(false)
+                        .deserialize(from(heapBuffer, directBuffer), BufferAllocators.DEFAULT_ALLOCATOR)
+                        .toIterable(),
+                contains("b2", "b1"));
     }
 
     private static Stream<Arguments> params() {

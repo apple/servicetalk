@@ -103,10 +103,10 @@ final class JacksonStreamingSerializer<T> implements StreamingSerializerDeserial
         public Subscriber<? super Buffer> apply(final Subscriber<? super Iterable<T>> subscriber) {
             final JsonParser parser;
             try {
-                // TODO(scott): ByteBufferFeeder is currently not supported by jackson, and the current API throws
-                // UnsupportedOperationException if not supported. When jackson does support two NonBlockingInputFeeder
-                // types we need an approach which doesn't involve catching UnsupportedOperationException to try to get
-                // ByteBufferFeeder and then ByteArrayFeeder.
+                // Note: Jackson 2.14 introduced a NonBlockingByteBufferParser, but after benchmarking
+                // it has been found that there is no noticeable benefit in using it, hence only the
+                // NonBlockingByteArrayParser is being used going forward. See the
+                // JacksonStreamingSerializerBenchmark for more details and numbers.
                 parser = reader.getFactory().createNonBlockingByteArrayParser();
             } catch (IOException e) {
                 throw new SerializationException(e);
@@ -126,7 +126,7 @@ final class JacksonStreamingSerializer<T> implements StreamingSerializerDeserial
             private ByteArrayDeserializeSubscriber(final Subscriber<? super Iterable<T>> subscriber,
                                                    final ObjectReader reader, final JsonParser parser,
                                                    final ByteArrayFeeder feeder) {
-                super(subscriber, reader, parser);
+                super(subscriber, reader, parser, feeder);
                 this.feeder = feeder;
             }
 
@@ -153,7 +153,7 @@ final class JacksonStreamingSerializer<T> implements StreamingSerializerDeserial
             private ByteBufferDeserializeSubscriber(final Subscriber<? super Iterable<T>> subscriber,
                                                     final ObjectReader reader, final JsonParser parser,
                                                     final ByteBufferFeeder feeder) {
-                super(subscriber, reader, parser);
+                super(subscriber, reader, parser, feeder);
                 this.feeder = feeder;
             }
 
@@ -162,11 +162,13 @@ final class JacksonStreamingSerializer<T> implements StreamingSerializerDeserial
                 feeder.feedInput(buffer.toNioBuffer());
                 return feeder.needMoreInput();
             }
+
         }
 
         private abstract static class DeserializeSubscriber<T> implements Subscriber<Buffer> {
             private final JsonParser parser;
             private final ObjectReader reader;
+            private final NonBlockingInputFeeder feeder;
             private final Deque<JsonNode> tokenStack = new ArrayDeque<>(8);
             private final Subscriber<? super Iterable<T>> subscriber;
             @Nullable
@@ -175,11 +177,12 @@ final class JacksonStreamingSerializer<T> implements StreamingSerializerDeserial
             private String fieldName;
 
             private DeserializeSubscriber(final Subscriber<? super Iterable<T>> subscriber,
-                                          final ObjectReader reader,
-                                          final JsonParser parser) {
+                                          final ObjectReader reader, final JsonParser parser,
+                                          final NonBlockingInputFeeder feeder) {
                 this.reader = reader;
                 this.parser = parser;
                 this.subscriber = subscriber;
+                this.feeder = feeder;
             }
 
             /**
@@ -237,12 +240,15 @@ final class JacksonStreamingSerializer<T> implements StreamingSerializerDeserial
             }
 
             @Override
-            public final void onError(final Throwable t) {
+            public void onError(final Throwable t) {
+                feeder.endOfInput();
                 subscriber.onError(t);
             }
 
             @Override
-            public final void onComplete() {
+            public void onComplete() {
+                feeder.endOfInput();
+
                 if (tokenStack.isEmpty()) {
                     subscriber.onComplete();
                 } else {
