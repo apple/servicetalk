@@ -418,13 +418,17 @@ public final class HeaderUtils {
             if (nameLen == cookiePairName.length() &&
                     regionMatches(cookiePairName, true, 0, cookieString, start, nameLen)) {
                 return DefaultHttpCookiePair.parseCookiePair(cookieString, start, nameLen, semiIndex);
-            }
-
-            if (semiIndex < 0 || cookieString.length() - 2 <= semiIndex) {
+            } else if (semiIndex < 0) {
                 break;
             }
+
             // skip 2 characters "; " (see https://tools.ietf.org/html/rfc6265#section-4.2.1)
-            start = semiIndex + 2;
+            start = cookieParsingStrictRfc6265 ||
+                    semiIndex + 1 < cookieString.length() && cookieString.charAt(semiIndex + 1) == ' ' ?
+                    semiIndex + 2 : semiIndex + 1;
+            if (start < 0 || start >= cookieString.length()) {
+                break;
+            }
         }
         return null;
     }

@@ -217,6 +217,27 @@ class H2PriorKnowledgeFeatureParityTest {
                          Arguments.of(DEFAULT, false));
     }
 
+    @SuppressWarnings("unused")
+    private static Stream<Arguments> clientExecutorsCookies() {
+        return Stream.of(
+                Arguments.of(NO_OFFLOAD, true, true, false),
+                Arguments.of(NO_OFFLOAD, true, false, false),
+                Arguments.of(NO_OFFLOAD, false, true, false),
+                Arguments.of(NO_OFFLOAD, false, false, false),
+                Arguments.of(DEFAULT, true, true, false),
+                Arguments.of(DEFAULT, true, false, false),
+                Arguments.of(DEFAULT, false, true, false),
+                Arguments.of(DEFAULT, false, false, false),
+                Arguments.of(NO_OFFLOAD, true, true, true),
+                Arguments.of(NO_OFFLOAD, true, false, true),
+                Arguments.of(NO_OFFLOAD, false, true, true),
+                Arguments.of(NO_OFFLOAD, false, false, true),
+                Arguments.of(DEFAULT, true, true, true),
+                Arguments.of(DEFAULT, true, false, true),
+                Arguments.of(DEFAULT, false, true, true),
+                Arguments.of(DEFAULT, false, false, true));
+    }
+
     @AfterEach
     void teardown() throws Exception {
         if (serverAcceptorChannel != null) {
@@ -296,16 +317,26 @@ class H2PriorKnowledgeFeatureParityTest {
         }
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
-    @MethodSource("clientExecutors")
-    void cookiesRoundTrip(HttpTestExecutionStrategy strategy, boolean h2PriorKnowledge) throws Exception {
+    @ParameterizedTest(
+            name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}, strictRfc6265={2}, endsWithSemi={3}")
+    @MethodSource("clientExecutorsCookies")
+    void cookiesRoundTrip(HttpTestExecutionStrategy strategy, boolean h2PriorKnowledge, boolean strictRfc6265,
+                          boolean endsWithSemi)
+            throws Exception {
         setUp(strategy, h2PriorKnowledge);
         InetSocketAddress serverAddress = bindHttpEchoServer();
+        final boolean beforeCookieParsingStrictRfc6265 = H2ToStH1Utils.cookieParsingStrictRfc6265();
+        H2ToStH1Utils.cookieParsingStrictRfc6265(strictRfc6265);
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
                 .protocols(h2PriorKnowledge ? h2Default() : h1Default())
                 .executionStrategy(clientExecutionStrategy).buildBlocking()) {
             HttpRequest request = client.get("/");
-            String requestCookie = "name1=value1; name2=value2; name3=value3";
+            String requestCookie = strictRfc6265 ?
+                    "name1=value1; name2=value2; name3=value3" :
+                    "name1=value1;name2=value2;name3=value3";
+            if (endsWithSemi) {
+                requestCookie = requestCookie + ';';
+            }
             request.addHeader(COOKIE, requestCookie);
             HttpResponse response = client.request(request);
             CharSequence responseCookie = response.headers().get(COOKIE);
@@ -319,6 +350,8 @@ class H2PriorKnowledgeFeatureParityTest {
             cookie = response.headers().getCookie("name3");
             assertNotNull(cookie);
             assertEquals("value3", cookie.value());
+        } finally {
+            H2ToStH1Utils.cookieParsingStrictRfc6265(beforeCookieParsingStrictRfc6265);
         }
     }
 
