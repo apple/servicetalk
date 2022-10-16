@@ -151,19 +151,35 @@ final class H2ToStH1Utils {
         Iterator<? extends CharSequence> teItr = h1Headers.valuesIterator(TE);
         boolean addTrailers = false;
         while (teItr.hasNext()) {
-            String teValue = teItr.next().toString();
-            int i = teValue.indexOf(',');
-            if (i != -1) {
-                int start = 0;
-                do {
-                    if (teValue.substring(start, i).compareToIgnoreCase(TRAILERS.toString()) == 0) {
+            final CharSequence teSequence = teItr.next();
+            if (addTrailers) {
+                teItr.remove();
+            } else {
+                final String teValue = teSequence.toString();
+                int i = teValue.indexOf(',');
+                if (i != -1) {
+                    int start = 0;
+                    do {
+                        if (teValue.substring(start, i).compareToIgnoreCase(TRAILERS.toString()) == 0) {
+                            addTrailers = true;
+                            break;
+                        }
+                        start = i + 1;
+                        // Check if we need to skip OWS
+                        // https://www.rfc-editor.org/rfc/rfc9110.html#section-10.1.4
+                        if (start < teValue.length() && teValue.charAt(start) == ' ') {
+                            ++start;
+                        }
+                    } while (start < teValue.length() && (i = teValue.indexOf(',', start)) != -1);
+
+                    if (!addTrailers && start < teValue.length() &&
+                            teValue.substring(start).compareToIgnoreCase(TRAILERS.toString()) == 0) {
                         addTrailers = true;
-                        break;
                     }
-                } while (start < teValue.length() && (i = teValue.indexOf(',', start)) != -1);
-                teItr.remove();
-            } else if (teValue.compareToIgnoreCase(TRAILERS.toString()) != 0) {
-                teItr.remove();
+                    teItr.remove();
+                } else if (teValue.compareToIgnoreCase(TRAILERS.toString()) != 0) {
+                    teItr.remove();
+                }
             }
         }
         if (addTrailers) { // add after iteration to avoid concurrent modification.
