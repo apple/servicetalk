@@ -167,6 +167,10 @@ final class H2ToStH1Utils {
                     do {
                         h1Headers.remove(connectionHeader.substring(start, i));
                         start = i + 1;
+                        // Skip OWS
+                        if (start < connectionHeader.length() && connectionHeader.charAt(start) == ' ') {
+                            ++start;
+                        }
                     } while (start < connectionHeader.length() && (i = connectionHeader.indexOf(',', start)) != -1);
                     h1Headers.remove(connectionHeader.substring(start));
                 } else {

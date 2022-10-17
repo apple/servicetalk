@@ -197,9 +197,14 @@ import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 class H2PriorKnowledgeFeatureParityTest {
-
     private static final CharSequence[] PROHIBITED_HEADERS = {CONNECTION, KEEP_ALIVE, TRANSFER_ENCODING, UPGRADE,
             PROXY_CONNECTION};
+    private static final String CONNECTION_HEADER1 = "conn1";
+    private static final String CONNECTION_HEADER2 = "conn2";
+    private static final String CONNECTION_HEADER3 = "conn3";
+    private static final String CONNECTION_HEADER4 = "conn4";
+    private static final CharSequence[] CONNECTION_HEADERS = {CONNECTION_HEADER1, CONNECTION_HEADER2,
+            CONNECTION_HEADER3, CONNECTION_HEADER4};
     private static final String EXPECT_FAIL_HEADER = "please_fail_expect";
     private static final ContextMap.Key<String> K1 = newKey("k1", String.class);
     private static final ContextMap.Key<String> K2 = newKey("k2", String.class);
@@ -1467,11 +1472,21 @@ class H2PriorKnowledgeFeatureParityTest {
                 assertThat("Unexpected headerName: " + headerName,
                         response.headers().contains(headerName), is(false));
             }
+            for (CharSequence headerName : CONNECTION_HEADERS) {
+                assertThat("Unexpected headerName: " + headerName,
+                        response.headers().contains(headerName), is(false));
+            }
         }
     }
 
     private static <T extends HttpMetaData> T addProhibitedHeaders(T metaData) {
         metaData.addHeader(CONNECTION, UPGRADE)
+                .addHeader(CONNECTION, CONNECTION_HEADER1 + "," + CONNECTION_HEADER2)
+                .addHeader(CONNECTION, CONNECTION_HEADER3 + ", " + CONNECTION_HEADER4)
+                .addHeader(CONNECTION_HEADER1, "foo")
+                .addHeader(CONNECTION_HEADER2, "bar")
+                .addHeader(CONNECTION_HEADER3, "baz")
+                .addHeader(CONNECTION_HEADER4, "boo")
                 .addHeader(KEEP_ALIVE, "timeout=5")
                 .addHeader(TRANSFER_ENCODING, CHUNKED)
                 .addHeader(UPGRADE, "foo/2")
@@ -2072,7 +2087,17 @@ class H2PriorKnowledgeFeatureParityTest {
             return !headers.contains(HttpHeaderNames.CONNECTION) && !headers.contains(HttpHeaderNames.KEEP_ALIVE)
                     && !headers.contains(HttpHeaderNames.TRANSFER_ENCODING)
                     && !headers.contains(HttpHeaderNames.UPGRADE)
-                    && !headers.contains(HttpHeaderNames.PROXY_CONNECTION);
+                    && !headers.contains(HttpHeaderNames.PROXY_CONNECTION) &&
+                    allConnHeadersSanitized(headers);
+        }
+
+        private static boolean allConnHeadersSanitized(Http2Headers headers) {
+            for (CharSequence headerName : CONNECTION_HEADERS) {
+                if (headers.contains(headerName)) {
+                    return false;
+                }
+            }
+            return true;
         }
     }
 
