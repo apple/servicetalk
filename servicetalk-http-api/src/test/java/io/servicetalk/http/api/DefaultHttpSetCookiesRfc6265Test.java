@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.api;
 
-import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -24,6 +23,7 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.api.parallel.Isolated;
 
 import static io.servicetalk.http.api.DefaultHttpSetCookiesTest.quotesInValuePreserved;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -55,15 +55,15 @@ class DefaultHttpSetCookiesRfc6265Test {
         Exception exception;
 
         exception = assertThrows(IllegalArgumentException.class, () -> headers.getSetCookie("first"));
-        MatcherAssert.assertThat(exception.getMessage(),
+        assertThat(exception.getMessage(),
                 allOf(containsString("first"), containsString("space is required after ;")));
 
         exception = assertThrows(IllegalArgumentException.class, () -> headers.getSetCookie("second"));
-        MatcherAssert.assertThat(exception.getMessage(),
+        assertThat(exception.getMessage(),
                 allOf(containsString("second"), containsString("space is required after ;")));
 
         exception = assertThrows(IllegalArgumentException.class, () -> headers.getSetCookie("third"));
-        MatcherAssert.assertThat(exception.getMessage(),
+        assertThat(exception.getMessage(),
                 allOf(containsString("third"), containsString("space is required after ;")));
     }
 
@@ -73,5 +73,14 @@ class DefaultHttpSetCookiesRfc6265Test {
         headers.add("set-cookie",
                 "qwerty=\"12345\"; Domain=somecompany.co.uk; Path=/; Expires=Wed, 30 Aug 2019 00:00:00 GMT");
         quotesInValuePreserved(headers);
+    }
+
+    @Test
+    void cookiesWithoutSpaceAfterSemicolon() {
+        final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
+        headers.add("cookie", "firstCookie=v1;b=v2");
+        Exception e = assertThrows(IllegalArgumentException.class, () -> headers.getCookies().forEach(c -> { }));
+        assertThat(e.getMessage(), allOf(containsString("a space is required after ;"),
+                containsString("firstCookie")));
     }
 }

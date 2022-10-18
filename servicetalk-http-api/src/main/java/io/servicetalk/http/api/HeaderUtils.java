@@ -313,7 +313,7 @@ public final class HeaderUtils {
         final int startIndex = cookieDomain.length() - requestDomain.length();
         if (startIndex == 0) {
             // The RFC has an ambiguous statement [1] related to case sensitivity here but since domain names are
-            // generally compared in a case insensitive fashion we do the same here.
+            // generally compared in a case-insensitive fashion we do the same here.
             // [1] https://tools.ietf.org/html/rfc6265#section-5.1.3
             // the domain string and the string will have been canonicalized to lower case at this point
             return contentEqualsIgnoreCase(cookieDomain, requestDomain);
@@ -557,14 +557,33 @@ public final class HeaderUtils {
          */
         private HttpCookiePair findNext(CharSequence cookieHeaderValue) {
             int semiIndex = nextCookieDelimiter(cookieHeaderValue, nextNextStart);
-            HttpCookiePair next = DefaultHttpCookiePair.parseCookiePair(cookieHeaderValue, nextNextStart, semiIndex);
+            int nameLength = indexOf(cookieHeaderValue, '=', nextNextStart) - nextNextStart;
+            if (nameLength < 0) {
+                throw new IllegalArgumentException("no cookie value found after index " + nextNextStart +
+                        (next == null ? " (there was no previous cookie)" :
+                                " (found after parsing the '" + next.name() + "' cookie)"));
+            }
+            HttpCookiePair next = DefaultHttpCookiePair.parseCookiePair(
+                    cookieHeaderValue, nextNextStart, nameLength, semiIndex);
             if (semiIndex > 0) {
                 if (cookieHeaderValue.length() - 2 <= semiIndex) {
-                    advanceCookieHeaderValue();
-                    nextNextStart = 0;
-                } else {
-                    // skip 2 characters "; " (see https://tools.ietf.org/html/rfc6265#section-4.2.1)
+                    if (cookieParsingStrictRfc6265()) {
+                        throw new IllegalArgumentException("cookie '" + next.name() +
+                                "': cookie is not allowed to end with ;");
+                    } else {
+                        advanceCookieHeaderValue();
+                        nextNextStart = 0;
+                    }
+                } else if (cookieParsingStrictRfc6265()) {
+                    // Skip 2 characters "; " (see https://tools.ietf.org/html/rfc6265#section-4.2.1)
+                    if (cookieHeaderValue.charAt(semiIndex + 1) != ' ') {
+                        throw new IllegalArgumentException("cookie '" + next.name() +
+                                "': a space is required after ; in cookie attribute-value lists");
+                    }
                     nextNextStart = semiIndex + 2;
+                } else {
+                    // Older cookie spec delimit with just semicolon. See https://www.rfc-editor.org/rfc/rfc2965
+                    nextNextStart = semiIndex + (cookieHeaderValue.charAt(semiIndex + 1) == ' ' ? 2 : 1);
                 }
             } else {
                 advanceCookieHeaderValue();
