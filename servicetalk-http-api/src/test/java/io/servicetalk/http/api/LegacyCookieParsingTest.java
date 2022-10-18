@@ -216,7 +216,7 @@ class LegacyCookieParsingTest {
 
     // Client cookie (SET_COOKIE header) decoder tests
     @Test
-    public void testDecodingSingleCookieV0() {
+    void testDecodingSingleCookieV0() {
         String cookieString = "myCookie=myValue;expires="
                 + DateFormatter.format(new Date(System.currentTimeMillis() + 50000))
                 + ";path=/apathsomewhere;domain=.adomainsomewhere;secure;SameSite=None";
@@ -237,7 +237,7 @@ class LegacyCookieParsingTest {
     }
 
     @Test
-    public void testDecodingSingleCookieV0ExtraParamsIgnored() {
+    void testDecodingSingleCookieV0ExtraParamsIgnored() {
         String cookieString = "myCookie=myValue;max-age=50;path=/apathsomewhere;" +
                 "domain=.adomainsomewhere;secure;comment=this is a comment;version=0;" +
                 "commentURL=http://aurl.com;port=\"80,8080\";discard;";
@@ -247,7 +247,7 @@ class LegacyCookieParsingTest {
     }
 
     @Test
-    public void testDecodingSingleCookieV1() {
+    void testDecodingSingleCookieV1() {
         String cookieString = "myCookie=myValue;max-age=50;path=/apathsomewhere;domain=.adomainsomewhere"
                 + ";secure;comment=this is a comment;version=1;";
         assertThat(headers.add(SET_COOKIE, cookieString).getSetCookies(), contains(new DefaultHttpSetCookie(
@@ -255,7 +255,7 @@ class LegacyCookieParsingTest {
     }
 
     @Test
-    public void testDecodingSingleCookieV1ExtraParamsIgnored() {
+    void testDecodingSingleCookieV1ExtraParamsIgnored() {
         String cookieString = "myCookie=myValue;max-age=50;path=/apathsomewhere;"
                 + "domain=.adomainsomewhere;secure;comment=this is a comment;version=1;"
                 + "commentURL=http://aurl.com;port='80,8080';discard;";
@@ -264,7 +264,7 @@ class LegacyCookieParsingTest {
     }
 
     @Test
-    public void testDecodingSingleCookieV2() {
+    void testDecodingSingleCookieV2() {
         String cookieString = "myCookie=myValue;max-age=50;path=/apathsomewhere;"
                 + "domain=.adomainsomewhere;secure;comment=this is a comment;version=2;"
                 + "commentURL=http://aurl.com;port=\"80,8080\";discard;";
@@ -273,7 +273,7 @@ class LegacyCookieParsingTest {
     }
 
     @Test
-    public void testDecodingComplexCookie() {
+    void testDecodingComplexCookie() {
         String cookieString = "myCookie=myValue;max-age=50;path=/apathsomewhere;"
                 + "domain=.adomainsomewhere;secure;comment=this is a comment;version=2;"
                 + "commentURL=\"http://aurl.com\";port='80,8080';discard;";
@@ -286,7 +286,7 @@ class LegacyCookieParsingTest {
      * Use of commas as delimiters is an RFC 2965 syntax, but it never allowed trailing commas
      */
     @Test
-    public void testDecodingQuotedCookie() {
+    void testDecodingQuotedCookie() {
         HttpSetCookie cookie = headers.add(SET_COOKIE, "a=\"\"").getSetCookie("a");
         assertEquals("a", cookie.name());
         assertEquals("", cookie.value());
@@ -297,7 +297,7 @@ class LegacyCookieParsingTest {
     }
 
     @Test
-    public void testDecodingGoogleAnalyticsCookie() {
+    void testDecodingGoogleAnalyticsCookie() {
         String source = "ARPT=LWUKQPSWRTUN04CKKJI; "
                 + "kw-2E343B92-B097-442c-BFA5-BE371E0325A2=unfinished furniture; "
                 + "__utma=48461872.1094088325.1258140131.1258140131.1258140131.1; "
@@ -312,7 +312,7 @@ class LegacyCookieParsingTest {
     }
 
     @Test
-    public void testDecodingLongDates() {
+    void testDecodingLongDates() {
         Calendar cookieDate = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
         cookieDate.set(9999, Calendar.DECEMBER, 31, 23, 59, 59);
         String source = "Format=EU; expires=Fri, 31-Dec-9999 23:59:59 GMT; path=/";
@@ -328,7 +328,7 @@ class LegacyCookieParsingTest {
      * and that means they are allowed in cookie values. Previously, parsing such a cookie would throw an exception.
      */
     @Test
-    public void testDecodingValueWithCommaDoesNotFail() {
+    void testDecodingValueWithCommaDoesNotFail() {
         String source = "UserCookie=timeZoneName=(GMT+04:00) Moscow, St. Petersburg, Volgograd&promocode=&region=BE;"
                 + " expires=Sat, 01-Dec-2012 10:53:31 GMT; path=/";
 
@@ -340,7 +340,7 @@ class LegacyCookieParsingTest {
     }
 
     @Test
-    public void testDecodingWeirdNames1() {
+    void testDecodingWeirdNames1() {
         String source = "path=; expires=Mon, 01-Jan-1990 00:00:00 GMT; path=/; domain=.www.google.com";
         headers.add(SET_COOKIE, source);
         HttpSetCookie cookie = headers.getSetCookie("path");
@@ -351,7 +351,7 @@ class LegacyCookieParsingTest {
     }
 
     @Test
-    public void testDecodingWeirdNames2() {
+    void testDecodingWeirdNames2() {
         String source = "HTTPOnly=";
         headers.add(SET_COOKIE, source);
         HttpSetCookie cookie = headers.getSetCookie("HTTPOnly");
@@ -361,7 +361,7 @@ class LegacyCookieParsingTest {
     }
 
     @Test
-    public void testDecodingValuesWithCommasAndEqualsFails() {
+    void testDecodingValuesWithCommasAndEqualsFails() {
         headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders(); // Enable validation
         String source = "A=v=1&lg=en-US,it-IT,it&intl=it&np=1;T=z=E";
         headers.add(SET_COOKIE, source);
@@ -369,7 +369,7 @@ class LegacyCookieParsingTest {
     }
 
     @Test
-    public void testDecodingInvalidValuesWithCommaAtStart() {
+    void testDecodingInvalidValuesWithCommaAtStart() {
         headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders(); // Enable validation
         headers.add(SET_COOKIE, ",");
         assertThrows(IllegalArgumentException.class, () -> headers.getSetCookies().iterator().next());
@@ -382,7 +382,7 @@ class LegacyCookieParsingTest {
     }
 
     @Test
-    public void testDecodingLongValue() {
+    void testDecodingLongValue() {
         String longValue =
                 "b___$Q__$ha__<NC=MN(F__%#4__<NC=MN(F__2_d____#=IvZB__2_F____'=KqtH__2-9____" +
                         "'=IvZM__3f:____$=HbQW__3g'____%=J^wI__3g-____%=J^wI__3g1____$=HbQW__3g2____" +
@@ -436,7 +436,7 @@ class LegacyCookieParsingTest {
     }
 
     @Test
-    public void testIgnoreEmptyDomain() {
+    void testIgnoreEmptyDomain() {
         String emptyDomain = "sessionid=OTY4ZDllNTgtYjU3OC00MWRjLTkzMWMtNGUwNzk4MTY0MTUw;Domain=;Path=/";
         headers.add(SET_COOKIE, emptyDomain);
         HttpSetCookie cookie = headers.getSetCookie("sessionid");
@@ -445,7 +445,7 @@ class LegacyCookieParsingTest {
     }
 
     @Test
-    public void testIgnoreEmptyPath() {
+    void testIgnoreEmptyPath() {
         String emptyPath = "sessionid=OTY4ZDllNTgtYjU3OC00MWRjLTkzMWMtNGUwNzk4MTY0MTUw;Domain=;Path=";
         headers.add(SET_COOKIE, emptyPath);
         HttpSetCookie cookie = headers.getSetCookie("sessionid");
