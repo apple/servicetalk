@@ -79,5 +79,28 @@ dependencies {
 task tck(type: Test) {
   useTestNG()
 }
-
 test.dependsOn tck
+
+sourceSets {
+  testProps {
+    java {
+      compileClasspath += main.output + test.output
+      runtimeClasspath += main.output + test.output
+      srcDirs("src/test")
+      include "**/H2PriorKnowledgeFeatureParityTest.java"
+    }
+  }
+}
+
+configurations {
+  testPropsImplementation.extendsFrom testImplementation
+  testPropsRuntimeOnly.extendsFrom testRuntimeOnly
+}
+
+task testProps(type: Test) {
+  useJUnitPlatform()
+  testClassesDirs = sourceSets.testProps.output.classesDirs
+  classpath = sourceSets.testProps.runtimeClasspath
+  systemProperty 'io.servicetalk.http.api.headers.cookieParsingStrictRfc6265', 'true'
+}
+test.dependsOn testProps

@@ -51,7 +51,7 @@ final class H2ToStH1Utils {
      * <a href="https://www.rfc-editor.org/rfc/rfc2109">RFC2109</a> ({@code false}, the default).
      */
     // not final for testing
-    private static boolean cookieParsingStrictRfc6265 = parseBoolean(getProperty(
+    static final boolean COOKIE_STRICT_RFC_6265 = parseBoolean(getProperty(
             "io.servicetalk.http.api.headers.cookieParsingStrictRfc6265", "false"));
 
     private H2ToStH1Utils() {
@@ -60,15 +60,6 @@ final class H2ToStH1Utils {
 
     static void h2HeadersSanitizeForH1(Http2Headers h2Headers) {
         h2HeadersCompressCookieCrumbs(h2Headers);
-    }
-
-    static boolean cookieParsingStrictRfc6265() {
-        return cookieParsingStrictRfc6265;
-    }
-
-    // pkg-private for testing
-    static void cookieParsingStrictRfc6265(boolean value) {
-        cookieParsingStrictRfc6265 = value;
     }
 
     /**
@@ -116,9 +107,13 @@ final class H2ToStH1Utils {
                     cookiesToAdd = new ArrayList<>(4);
                 }
                 int start = 0;
-                if (cookieParsingStrictRfc6265) {
+                if (COOKIE_STRICT_RFC_6265) {
                     do {
-                        cookiesToAdd.add(nextCookie.subSequence(start, i));
+                        final CharSequence cookieCrumb = nextCookie.subSequence(start, i);
+                        cookiesToAdd.add(cookieCrumb);
+                        if (i + 1 < nextCookie.length() && nextCookie.charAt(i + 1) != ' ') {
+                            throwNoSpaceAfterCookieCrumb(cookieCrumb);
+                        }
                         // skip 2 characters "; " (see https://tools.ietf.org/html/rfc6265#section-4.2.1).
                         start = i + 2;
                     } while (start >= 0 && start < nextCookie.length() &&
@@ -141,6 +136,13 @@ final class H2ToStH1Utils {
                 h1Headers.add(COOKIE, crumb);
             }
         }
+    }
+
+    private static void throwNoSpaceAfterCookieCrumb(CharSequence cookieCrumb) {
+        final int nameEnd = indexOf(cookieCrumb, '=', 0);
+        final CharSequence name = nameEnd > 0 ? cookieCrumb.subSequence(0, nameEnd) : cookieCrumb;
+        throw new IllegalArgumentException("cookie " + name +
+                " must have a space after ; in cookie attribute-value lists");
     }
 
     static Http2Headers h1HeadersToH2Headers(HttpHeaders h1Headers) {

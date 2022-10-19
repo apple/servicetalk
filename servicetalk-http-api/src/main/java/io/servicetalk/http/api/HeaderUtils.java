@@ -92,8 +92,7 @@ public final class HeaderUtils {
      * <a href="https://www.rfc-editor.org/rfc/rfc2965">RFC2965</a>/
      * <a href="https://www.rfc-editor.org/rfc/rfc2109">RFC2109</a> ({@code false}, the default).
      */
-    // not final for testing
-    private static boolean cookieParsingStrictRfc6265 = parseBoolean(getProperty(
+    static final boolean COOKIE_STRICT_RFC_6265 = parseBoolean(getProperty(
             "io.servicetalk.http.api.headers.cookieParsingStrictRfc6265", "false"));
     // ASCII symbols:
     private static final byte HT = 9;
@@ -110,15 +109,6 @@ public final class HeaderUtils {
 
     private HeaderUtils() {
         // no instances
-    }
-
-    static boolean cookieParsingStrictRfc6265() {
-        return cookieParsingStrictRfc6265;
-    }
-
-    // pkg-private for testing
-    static void cookieParsingStrictRfc6265(boolean value) {
-        cookieParsingStrictRfc6265 = value;
     }
 
     static String toString(final HttpHeaders headers,
@@ -422,10 +412,17 @@ public final class HeaderUtils {
                 break;
             }
 
-            // skip 2 characters "; " (see https://tools.ietf.org/html/rfc6265#section-4.2.1)
-            start = cookieParsingStrictRfc6265 ||
-                    semiIndex + 1 < cookieString.length() && cookieString.charAt(semiIndex + 1) == ' ' ?
-                    semiIndex + 2 : semiIndex + 1;
+            if (COOKIE_STRICT_RFC_6265) {
+                if (semiIndex + 1 < cookieString.length() && cookieString.charAt(semiIndex + 1) != ' ') {
+                    throw new IllegalArgumentException("cookie " + cookieString.subSequence(start, equalsIndex) +
+                            " must have a space after ; in cookie attribute-value lists");
+                }
+                // skip 2 characters "; " (see https://tools.ietf.org/html/rfc6265#section-4.2.1)
+                start = semiIndex + 2;
+            } else {
+                start = semiIndex + 1 < cookieString.length() && cookieString.charAt(semiIndex + 1) == ' ' ?
+                        semiIndex + 2 : semiIndex + 1;
+            }
             if (start < 0 || start >= cookieString.length()) {
                 break;
             }

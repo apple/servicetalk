@@ -151,6 +151,7 @@ import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.http.netty.CloseUtils.onGracefulClosureStarted;
+import static io.servicetalk.http.netty.H2ToStH1Utils.COOKIE_STRICT_RFC_6265;
 import static io.servicetalk.http.netty.H2ToStH1Utils.PROXY_CONNECTION;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
@@ -325,8 +326,6 @@ class H2PriorKnowledgeFeatureParityTest {
             throws Exception {
         setUp(strategy, h2PriorKnowledge);
         InetSocketAddress serverAddress = bindHttpEchoServer();
-        final boolean beforeCookieParsingStrictRfc6265 = H2ToStH1Utils.cookieParsingStrictRfc6265();
-        H2ToStH1Utils.cookieParsingStrictRfc6265(strictRfc6265);
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
                 .protocols(h2PriorKnowledge ? h2Default() : h1Default())
                 .executionStrategy(clientExecutionStrategy).buildBlocking()) {
@@ -338,20 +337,33 @@ class H2PriorKnowledgeFeatureParityTest {
                 requestCookie = requestCookie + ';';
             }
             request.addHeader(COOKIE, requestCookie);
-            HttpResponse response = client.request(request);
-            CharSequence responseCookie = response.headers().get(COOKIE);
-            assertNotNull(responseCookie);
-            HttpCookiePair cookie = response.headers().getCookie("name1");
-            assertNotNull(cookie);
-            assertEquals("value1", cookie.value());
-            cookie = response.headers().getCookie("name2");
-            assertNotNull(cookie);
-            assertEquals("value2", cookie.value());
-            cookie = response.headers().getCookie("name3");
-            assertNotNull(cookie);
-            assertEquals("value3", cookie.value());
-        } finally {
-            H2ToStH1Utils.cookieParsingStrictRfc6265(beforeCookieParsingStrictRfc6265);
+            if (COOKIE_STRICT_RFC_6265 && !strictRfc6265) {
+                if (h2PriorKnowledge) {
+                    // h2 does cookie parsing to expand/compress cookie crumbs.
+                    assertThat(
+                            assertThrows(IOException.class, () -> client.request(request)).getCause(),
+                            instanceOf(IllegalArgumentException.class));
+                } else {
+                    // h1 doesn't do cookie parsing to write/read, and is only done on demand.
+                    HttpResponse response = client.request(request);
+                    CharSequence responseCookie = response.headers().get(COOKIE);
+                    assertNotNull(responseCookie);
+                    assertThrows(IllegalArgumentException.class, () -> response.headers().getCookie("name2"));
+                }
+            } else {
+                HttpResponse response = client.request(request);
+                CharSequence responseCookie = response.headers().get(COOKIE);
+                assertNotNull(responseCookie);
+                HttpCookiePair cookie = response.headers().getCookie("name1");
+                assertNotNull(cookie);
+                assertEquals("value1", cookie.value());
+                cookie = response.headers().getCookie("name2");
+                assertNotNull(cookie);
+                assertEquals("value2", cookie.value());
+                cookie = response.headers().getCookie("name3");
+                assertNotNull(cookie);
+                assertEquals("value3", cookie.value());
+            }
         }
     }
 
