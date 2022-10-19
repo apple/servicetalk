@@ -28,6 +28,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.DefaultHttpCookiePair;
+import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.Http2Exception;
 import io.servicetalk.http.api.HttpCookiePair;
@@ -154,7 +155,9 @@ import static io.servicetalk.http.netty.CloseUtils.onGracefulClosureStarted;
 import static io.servicetalk.http.netty.H2ToStH1Utils.COOKIE_STRICT_RFC_6265;
 import static io.servicetalk.http.netty.H2ToStH1Utils.PROXY_CONNECTION;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
+import static io.servicetalk.http.netty.HttpProtocolConfigs.h1;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
+import static io.servicetalk.http.netty.HttpProtocolConfigs.h2;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 import static io.servicetalk.http.netty.HttpTestExecutionStrategy.DEFAULT;
 import static io.servicetalk.http.netty.HttpTestExecutionStrategy.NO_OFFLOAD;
@@ -221,22 +224,38 @@ class H2PriorKnowledgeFeatureParityTest {
     @SuppressWarnings("unused")
     private static Stream<Arguments> clientExecutorsCookies() {
         return Stream.of(
-                Arguments.of(NO_OFFLOAD, true, true, false),
-                Arguments.of(NO_OFFLOAD, true, false, false),
-                Arguments.of(NO_OFFLOAD, false, true, false),
-                Arguments.of(NO_OFFLOAD, false, false, false),
-                Arguments.of(DEFAULT, true, true, false),
-                Arguments.of(DEFAULT, true, false, false),
-                Arguments.of(DEFAULT, false, true, false),
-                Arguments.of(DEFAULT, false, false, false),
-                Arguments.of(NO_OFFLOAD, true, true, true),
-                Arguments.of(NO_OFFLOAD, true, false, true),
-                Arguments.of(NO_OFFLOAD, false, true, true),
-                Arguments.of(NO_OFFLOAD, false, false, true),
-                Arguments.of(DEFAULT, true, true, true),
-                Arguments.of(DEFAULT, true, false, true),
-                Arguments.of(DEFAULT, false, true, true),
-                Arguments.of(DEFAULT, false, false, true));
+                Arguments.of(NO_OFFLOAD, true, true, false, false),
+                Arguments.of(NO_OFFLOAD, true, false, false, false),
+                Arguments.of(NO_OFFLOAD, false, true, false, false),
+                Arguments.of(NO_OFFLOAD, false, false, false, false),
+                Arguments.of(DEFAULT, true, true, false, false),
+                Arguments.of(DEFAULT, true, false, false, false),
+                Arguments.of(DEFAULT, false, true, false, false),
+                Arguments.of(DEFAULT, false, false, false, false),
+                Arguments.of(NO_OFFLOAD, true, true, true, false),
+                Arguments.of(NO_OFFLOAD, true, false, true, false),
+                Arguments.of(NO_OFFLOAD, false, true, true, false),
+                Arguments.of(NO_OFFLOAD, false, false, true, false),
+                Arguments.of(DEFAULT, true, true, true, false),
+                Arguments.of(DEFAULT, true, false, true, false),
+                Arguments.of(DEFAULT, false, true, true, false),
+                Arguments.of(DEFAULT, false, false, true, false),
+                Arguments.of(NO_OFFLOAD, true, true, false, true),
+                Arguments.of(NO_OFFLOAD, true, false, false, true),
+                Arguments.of(NO_OFFLOAD, false, true, false, true),
+                Arguments.of(NO_OFFLOAD, false, false, false, true),
+                Arguments.of(DEFAULT, true, true, false, true),
+                Arguments.of(DEFAULT, true, false, false, true),
+                Arguments.of(DEFAULT, false, true, false, true),
+                Arguments.of(DEFAULT, false, false, false, true),
+                Arguments.of(NO_OFFLOAD, true, true, true, true),
+                Arguments.of(NO_OFFLOAD, true, false, true, true),
+                Arguments.of(NO_OFFLOAD, false, true, true, true),
+                Arguments.of(NO_OFFLOAD, false, false, true, true),
+                Arguments.of(DEFAULT, true, true, true, true),
+                Arguments.of(DEFAULT, true, false, true, true),
+                Arguments.of(DEFAULT, false, true, true, true),
+                Arguments.of(DEFAULT, false, false, true, true));
     }
 
     @AfterEach
@@ -318,16 +337,19 @@ class H2PriorKnowledgeFeatureParityTest {
         }
     }
 
-    @ParameterizedTest(
-            name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}, strictRfc6265={2}, endsWithSemi={3}")
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}, strictRfc6265={2}, " +
+                              "endsWithSemi={3}, swapHeaderFactories={4}")
     @MethodSource("clientExecutorsCookies")
     void cookiesRoundTrip(HttpTestExecutionStrategy strategy, boolean h2PriorKnowledge, boolean strictRfc6265,
-                          boolean endsWithSemi)
-            throws Exception {
+                          boolean endsWithSemi, boolean swapHeaderFactories) throws Exception {
         setUp(strategy, h2PriorKnowledge);
         InetSocketAddress serverAddress = bindHttpEchoServer();
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
-                .protocols(h2PriorKnowledge ? h2Default() : h1Default())
+                .protocols(h2PriorKnowledge ?
+                        swapHeaderFactories ? h2().headersFactory(DefaultHttpHeadersFactory.INSTANCE).build() :
+                                h2Default() :
+                        swapHeaderFactories ? h1().headersFactory(new H2HeadersFactory(true, true, false)).build() :
+                                h1Default())
                 .executionStrategy(clientExecutionStrategy).buildBlocking()) {
             HttpRequest request = client.get("/");
             String requestCookie = strictRfc6265 ?
