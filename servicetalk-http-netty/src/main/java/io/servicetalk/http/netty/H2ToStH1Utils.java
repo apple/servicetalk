@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.buffer.api.CharSequences;
 import io.servicetalk.http.api.HttpHeaders;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
