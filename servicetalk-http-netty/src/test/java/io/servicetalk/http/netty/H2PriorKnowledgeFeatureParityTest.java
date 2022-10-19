@@ -28,13 +28,16 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.DefaultHttpCookiePair;
+import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.Http2Exception;
 import io.servicetalk.http.api.HttpCookiePair;
 import io.servicetalk.http.api.HttpEventKey;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaders;
+import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpMetaData;
+import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponse;
@@ -156,7 +159,9 @@ import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.http.netty.CloseUtils.onGracefulClosureStarted;
 import static io.servicetalk.http.netty.H2ToStH1Utils.PROXY_CONNECTION;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
+import static io.servicetalk.http.netty.HttpProtocolConfigs.h1;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
+import static io.servicetalk.http.netty.HttpProtocolConfigs.h2;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 import static io.servicetalk.http.netty.HttpTestExecutionStrategy.DEFAULT;
 import static io.servicetalk.http.netty.HttpTestExecutionStrategy.NO_OFFLOAD;
@@ -329,9 +334,12 @@ class H2PriorKnowledgeFeatureParityTest {
     @MethodSource("clientExecutors")
     void teHeaderOnlyAllowsTrailers(HttpTestExecutionStrategy strategy, boolean h2PriorKnowledge) throws Exception {
         setUp(strategy, h2PriorKnowledge);
-        InetSocketAddress serverAddress = bindHttpEchoServer();
+        // Newer versions of Netty validate at addition time so for using ServiceTalk headers, so we can add invalid
+        // headers and assert that ServiceTalk filters them.
+        final HttpHeadersFactory headersFactory = DefaultHttpHeadersFactory.INSTANCE;
+        InetSocketAddress serverAddress = bindHttpEchoServer(null, null, headersFactory);
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
-                .protocols(h2PriorKnowledge ? h2Default() : h1Default())
+                .protocols(applyHeadersFactory(h2PriorKnowledge, headersFactory))
                 .executionStrategy(clientExecutionStrategy).buildBlocking()) {
             // Test individual headers
             HttpRequest request = client.get("/");
@@ -1732,8 +1740,21 @@ class H2PriorKnowledgeFeatureParityTest {
     private InetSocketAddress bindHttpEchoServer(@Nullable StreamingHttpServiceFilterFactory filterFactory,
                                                  @Nullable CountDownLatch connectionOnClosingLatch)
             throws Exception {
+        return bindHttpEchoServer(filterFactory, connectionOnClosingLatch, null);
+    }
+
+    private static HttpProtocolConfig applyHeadersFactory(boolean h2PriorKnowledge,
+                                                          @Nullable HttpHeadersFactory headersFactory) {
+        return h2PriorKnowledge ?
+                headersFactory == null ? h2Default() : h2().headersFactory(headersFactory).build() :
+                headersFactory == null ? h1Default() : h1().headersFactory(headersFactory).build();
+    }
+
+    private InetSocketAddress bindHttpEchoServer(@Nullable StreamingHttpServiceFilterFactory filterFactory,
+                                                 @Nullable CountDownLatch connectionOnClosingLatch,
+                                                 @Nullable HttpHeadersFactory headersFactory) throws Exception {
         HttpServerBuilder serverBuilder = HttpServers.forAddress(localAddress(0))
-                .protocols(h2PriorKnowledge ? h2Default() : h1Default());
+                .protocols(applyHeadersFactory(h2PriorKnowledge, headersFactory));
         if (filterFactory != null) {
             serverBuilder.appendServiceFilter(filterFactory);
         }
