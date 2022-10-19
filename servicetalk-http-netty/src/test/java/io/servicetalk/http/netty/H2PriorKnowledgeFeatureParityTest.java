@@ -1444,7 +1444,7 @@ class H2PriorKnowledgeFeatureParityTest {
                 }, __ -> { }, identity());
         InetSocketAddress serverAddress = (InetSocketAddress) serverAcceptorChannel.localAddress();
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
-                .protocols(HttpProtocol.HTTP_2.config)
+                .protocols(HttpProtocol.HTTP_2.configOtherHeaderFactory)
                 .enableWireLogging("servicetalk-tests-wire-logger", LogLevel.TRACE, () -> true)
                 .executionStrategy(clientExecutionStrategy)
                 .buildBlocking()) {
@@ -1458,7 +1458,7 @@ class H2PriorKnowledgeFeatureParityTest {
     void h2LayerFiltersOutProhibitedH1HeadersOnServerSide() throws Exception {
         setUp(DEFAULT, true);
         try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
-                .protocols(HttpProtocol.HTTP_2.config)
+                .protocols(HttpProtocol.HTTP_2.configOtherHeaderFactory)
                 .enableWireLogging("servicetalk-tests-wire-logger", LogLevel.TRACE, () -> true)
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> addProhibitedHeaders(responseFactory.ok()));
              BlockingHttpClient client = forSingleAddress(serverHostAndPort(serverContext))

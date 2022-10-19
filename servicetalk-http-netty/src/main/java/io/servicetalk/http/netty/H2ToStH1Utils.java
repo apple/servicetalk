@@ -159,20 +159,20 @@ final class H2ToStH1Utils {
         Iterator<? extends CharSequence> connectionItr = h1Headers.valuesIterator(CONNECTION);
         if (connectionItr.hasNext()) {
             do {
-                String connectionHeader = connectionItr.next().toString();
+                CharSequence connectionHeader = connectionItr.next();
                 connectionItr.remove();
-                int i = connectionHeader.indexOf(',');
+                int i = indexOf(connectionHeader, ',', 0);
                 if (i != -1) {
                     int start = 0;
                     do {
-                        h1Headers.remove(connectionHeader.substring(start, i));
+                        h1Headers.remove(connectionHeader.subSequence(start, i));
                         start = i + 1;
                         // Skip OWS
                         if (start < connectionHeader.length() && connectionHeader.charAt(start) == ' ') {
                             ++start;
                         }
-                    } while (start < connectionHeader.length() && (i = connectionHeader.indexOf(',', start)) != -1);
-                    h1Headers.remove(connectionHeader.substring(start));
+                    } while (start < connectionHeader.length() && (i = indexOf(connectionHeader, ',', start)) != -1);
+                    h1Headers.remove(connectionHeader.subSequence(start, connectionHeader.length()));
                 } else {
                     h1Headers.remove(connectionHeader);
                 }
