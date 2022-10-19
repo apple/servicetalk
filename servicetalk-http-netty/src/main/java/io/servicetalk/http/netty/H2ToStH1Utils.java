@@ -35,10 +35,23 @@ import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderNames.UPGRADE;
 import static io.servicetalk.http.api.HttpHeaderValues.KEEP_ALIVE;
 import static io.servicetalk.http.netty.HeaderUtils.indexOf;
+import static java.lang.Boolean.parseBoolean;
+import static java.lang.System.getProperty;
 
 final class H2ToStH1Utils {
 
     static final CharSequence PROXY_CONNECTION = newAsciiString("proxy-connection");
+    /**
+     * Keep consistent with {@link io.servicetalk.http.api.HeaderUtils}.
+     * <p>
+     * Whether cookie parsing should be strictly spec compliant with
+     * <a href="https://www.rfc-editor.org/rfc/rfc6265">RFC6265</a> ({@code true}), or allow some deviations that are
+     * commonly observed in practice and allowed by the obsolete
+     * <a href="https://www.rfc-editor.org/rfc/rfc2965">RFC2965</a>/
+     * <a href="https://www.rfc-editor.org/rfc/rfc2109">RFC2109</a> ({@code false}, the default).
+     */
+    static final boolean COOKIE_STRICT_RFC_6265 = parseBoolean(getProperty(
+            "io.servicetalk.http.api.headers.cookieParsingStrictRfc6265", "false"));
 
     private H2ToStH1Utils() {
         // no instances.
@@ -93,13 +106,27 @@ final class H2ToStH1Utils {
                     cookiesToAdd = new ArrayList<>(4);
                 }
                 int start = 0;
-                do {
-                    cookiesToAdd.add(nextCookie.subSequence(start, i));
-                    // skip 2 characters "; " (see https://tools.ietf.org/html/rfc6265#section-4.2.1)
-                    start = i + 2;
-                } while (start < nextCookie.length() &&
-                        (i = indexOf(nextCookie, ';', start)) >= 0);
-                cookiesToAdd.add(nextCookie.subSequence(start, nextCookie.length()));
+                if (COOKIE_STRICT_RFC_6265) {
+                    do {
+                        final CharSequence cookieCrumb = nextCookie.subSequence(start, i);
+                        cookiesToAdd.add(cookieCrumb);
+                        if (i + 1 < nextCookie.length() && nextCookie.charAt(i + 1) != ' ') {
+                            throwNoSpaceAfterCookieCrumb(cookieCrumb);
+                        }
+                        // skip 2 characters "; " (see https://tools.ietf.org/html/rfc6265#section-4.2.1).
+                        start = i + 2;
+                    } while (start >= 0 && start < nextCookie.length() &&
+                            (i = indexOf(nextCookie, ';', start)) >= 0);
+                } else {
+                    do {
+                        cookiesToAdd.add(nextCookie.subSequence(start, i));
+                        start = i + 1 < nextCookie.length() && nextCookie.charAt(i + 1) == ' ' ? i + 2 : i + 1;
+                    } while (start >= 0 && start < nextCookie.length() &&
+                            (i = indexOf(nextCookie, ';', start)) >= 0);
+                }
+                if (start >= 0 && start < nextCookie.length()) {
+                    cookiesToAdd.add(nextCookie.subSequence(start, nextCookie.length()));
+                }
                 cookieItr.remove();
             }
         }
@@ -108,6 +135,13 @@ final class H2ToStH1Utils {
                 h1Headers.add(COOKIE, crumb);
             }
         }
+    }
+
+    private static void throwNoSpaceAfterCookieCrumb(CharSequence cookieCrumb) {
+        final int nameEnd = indexOf(cookieCrumb, '=', 0);
+        final CharSequence name = nameEnd > 0 ? cookieCrumb.subSequence(0, nameEnd) : cookieCrumb;
+        throw new IllegalArgumentException("cookie " + name +
+                " must have a space after ; in cookie attribute-value lists");
     }
 
     static Http2Headers h1HeadersToH2Headers(HttpHeaders h1Headers) {

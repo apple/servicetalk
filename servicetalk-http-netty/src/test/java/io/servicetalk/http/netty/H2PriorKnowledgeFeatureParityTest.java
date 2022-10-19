@@ -28,6 +28,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.DefaultHttpCookiePair;
+import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.Http2Exception;
 import io.servicetalk.http.api.HttpCookiePair;
@@ -151,9 +152,12 @@ import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.http.netty.CloseUtils.onGracefulClosureStarted;
+import static io.servicetalk.http.netty.H2ToStH1Utils.COOKIE_STRICT_RFC_6265;
 import static io.servicetalk.http.netty.H2ToStH1Utils.PROXY_CONNECTION;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
+import static io.servicetalk.http.netty.HttpProtocolConfigs.h1;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
+import static io.servicetalk.http.netty.HttpProtocolConfigs.h2;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 import static io.servicetalk.http.netty.HttpTestExecutionStrategy.DEFAULT;
 import static io.servicetalk.http.netty.HttpTestExecutionStrategy.NO_OFFLOAD;
@@ -215,6 +219,43 @@ class H2PriorKnowledgeFeatureParityTest {
                          Arguments.of(NO_OFFLOAD, false),
                          Arguments.of(DEFAULT, true),
                          Arguments.of(DEFAULT, false));
+    }
+
+    @SuppressWarnings("unused")
+    private static Stream<Arguments> clientExecutorsCookies() {
+        return Stream.of(
+                Arguments.of(NO_OFFLOAD, true, true, false, false),
+                Arguments.of(NO_OFFLOAD, true, false, false, false),
+                Arguments.of(NO_OFFLOAD, false, true, false, false),
+                Arguments.of(NO_OFFLOAD, false, false, false, false),
+                Arguments.of(DEFAULT, true, true, false, false),
+                Arguments.of(DEFAULT, true, false, false, false),
+                Arguments.of(DEFAULT, false, true, false, false),
+                Arguments.of(DEFAULT, false, false, false, false),
+                Arguments.of(NO_OFFLOAD, true, true, true, false),
+                Arguments.of(NO_OFFLOAD, true, false, true, false),
+                Arguments.of(NO_OFFLOAD, false, true, true, false),
+                Arguments.of(NO_OFFLOAD, false, false, true, false),
+                Arguments.of(DEFAULT, true, true, true, false),
+                Arguments.of(DEFAULT, true, false, true, false),
+                Arguments.of(DEFAULT, false, true, true, false),
+                Arguments.of(DEFAULT, false, false, true, false),
+                Arguments.of(NO_OFFLOAD, true, true, false, true),
+                Arguments.of(NO_OFFLOAD, true, false, false, true),
+                Arguments.of(NO_OFFLOAD, false, true, false, true),
+                Arguments.of(NO_OFFLOAD, false, false, false, true),
+                Arguments.of(DEFAULT, true, true, false, true),
+                Arguments.of(DEFAULT, true, false, false, true),
+                Arguments.of(DEFAULT, false, true, false, true),
+                Arguments.of(DEFAULT, false, false, false, true),
+                Arguments.of(NO_OFFLOAD, true, true, true, true),
+                Arguments.of(NO_OFFLOAD, true, false, true, true),
+                Arguments.of(NO_OFFLOAD, false, true, true, true),
+                Arguments.of(NO_OFFLOAD, false, false, true, true),
+                Arguments.of(DEFAULT, true, true, true, true),
+                Arguments.of(DEFAULT, true, false, true, true),
+                Arguments.of(DEFAULT, false, true, true, true),
+                Arguments.of(DEFAULT, false, false, true, true));
     }
 
     @AfterEach
@@ -296,29 +337,55 @@ class H2PriorKnowledgeFeatureParityTest {
         }
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
-    @MethodSource("clientExecutors")
-    void cookiesRoundTrip(HttpTestExecutionStrategy strategy, boolean h2PriorKnowledge) throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}, strictRfc6265={2}, " +
+                              "endsWithSemi={3}, swapHeaderFactories={4}")
+    @MethodSource("clientExecutorsCookies")
+    void cookiesRoundTrip(HttpTestExecutionStrategy strategy, boolean h2PriorKnowledge, boolean strictRfc6265,
+                          boolean endsWithSemi, boolean swapHeaderFactories) throws Exception {
         setUp(strategy, h2PriorKnowledge);
         InetSocketAddress serverAddress = bindHttpEchoServer();
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
-                .protocols(h2PriorKnowledge ? h2Default() : h1Default())
+                .protocols(h2PriorKnowledge ?
+                        swapHeaderFactories ? h2().headersFactory(DefaultHttpHeadersFactory.INSTANCE).build() :
+                                h2Default() :
+                        swapHeaderFactories ? h1().headersFactory(new H2HeadersFactory(true, true, false)).build() :
+                                h1Default())
                 .executionStrategy(clientExecutionStrategy).buildBlocking()) {
             HttpRequest request = client.get("/");
-            String requestCookie = "name1=value1; name2=value2; name3=value3";
+            String requestCookie = strictRfc6265 ?
+                    "name1=value1; name2=value2; name3=value3" :
+                    "name1=value1;name2=value2;name3=value3";
+            if (endsWithSemi) {
+                requestCookie = requestCookie + ';';
+            }
             request.addHeader(COOKIE, requestCookie);
-            HttpResponse response = client.request(request);
-            CharSequence responseCookie = response.headers().get(COOKIE);
-            assertNotNull(responseCookie);
-            HttpCookiePair cookie = response.headers().getCookie("name1");
-            assertNotNull(cookie);
-            assertEquals("value1", cookie.value());
-            cookie = response.headers().getCookie("name2");
-            assertNotNull(cookie);
-            assertEquals("value2", cookie.value());
-            cookie = response.headers().getCookie("name3");
-            assertNotNull(cookie);
-            assertEquals("value3", cookie.value());
+            if (COOKIE_STRICT_RFC_6265 && !strictRfc6265) {
+                if (h2PriorKnowledge) {
+                    // h2 does cookie parsing to expand/compress cookie crumbs.
+                    assertThat(
+                            assertThrows(IOException.class, () -> client.request(request)).getCause(),
+                            instanceOf(IllegalArgumentException.class));
+                } else {
+                    // h1 doesn't do cookie parsing to write/read, and is only done on demand.
+                    HttpResponse response = client.request(request);
+                    CharSequence responseCookie = response.headers().get(COOKIE);
+                    assertNotNull(responseCookie);
+                    assertThrows(IllegalArgumentException.class, () -> response.headers().getCookie("name2"));
+                }
+            } else {
+                HttpResponse response = client.request(request);
+                CharSequence responseCookie = response.headers().get(COOKIE);
+                assertNotNull(responseCookie);
+                HttpCookiePair cookie = response.headers().getCookie("name1");
+                assertNotNull(cookie);
+                assertEquals("value1", cookie.value());
+                cookie = response.headers().getCookie("name2");
+                assertNotNull(cookie);
+                assertEquals("value2", cookie.value());
+                cookie = response.headers().getCookie("name3");
+                assertNotNull(cookie);
+                assertEquals("value3", cookie.value());
+            }
         }
     }
 
