@@ -104,3 +104,5 @@ task testProps(type: Test) {
   systemProperty 'io.servicetalk.http.api.headers.cookieParsingStrictRfc6265', 'true'
 }
 test.dependsOn testProps
+// ServiceTalkLibraryPlugin adds a spotbugs task for each sourceSet, we don't need it.
+spotbugsTestProps.enabled = false
