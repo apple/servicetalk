@@ -50,7 +50,6 @@ final class H2ToStH1Utils {
      * <a href="https://www.rfc-editor.org/rfc/rfc2965">RFC2965</a>/
      * <a href="https://www.rfc-editor.org/rfc/rfc2109">RFC2109</a> ({@code false}, the default).
      */
-    // not final for testing
     static final boolean COOKIE_STRICT_RFC_6265 = parseBoolean(getProperty(
             "io.servicetalk.http.api.headers.cookieParsingStrictRfc6265", "false"));
 
