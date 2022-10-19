@@ -29,5 +29,8 @@ dependencies {
   testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
 
+  testFixturesImplementation platform(project(":servicetalk-dependencies"))
+  testFixturesImplementation project(":servicetalk-annotations")
+  testFixturesImplementation "com.google.code.findbugs:jsr305"
   testFixturesImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
 }

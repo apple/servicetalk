@@ -35,7 +35,9 @@ import io.servicetalk.http.api.HttpCookiePair;
 import io.servicetalk.http.api.HttpEventKey;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaders;
+import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpMetaData;
+import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponse;
@@ -123,9 +125,11 @@ import javax.annotation.Nullable;
 
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_TYPE;
 import static io.netty.handler.codec.http.HttpHeaderNames.TRAILER;
+import static io.netty.handler.codec.http.HttpHeaderValues.TRAILERS;
 import static io.netty.handler.codec.http2.Http2CodecUtil.SMALLEST_MAX_CONCURRENT_STREAMS;
 import static io.netty.handler.codec.http2.Http2Error.PROTOCOL_ERROR;
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
+import static io.servicetalk.buffer.api.Matchers.containsIgnoreCase;
 import static io.servicetalk.buffer.api.Matchers.contentEqualTo;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Processors.newPublisherProcessor;
@@ -140,6 +144,7 @@ import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.COOKIE;
 import static io.servicetalk.http.api.HttpHeaderNames.EXPECT;
 import static io.servicetalk.http.api.HttpHeaderNames.SET_COOKIE;
+import static io.servicetalk.http.api.HttpHeaderNames.TE;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderNames.UPGRADE;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
@@ -386,6 +391,70 @@ class H2PriorKnowledgeFeatureParityTest {
                 assertNotNull(cookie);
                 assertEquals("value3", cookie.value());
             }
+        }
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void teHeaderOnlyAllowsTrailers(HttpTestExecutionStrategy strategy, boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
+        // Newer versions of Netty validate at addition time so for using ServiceTalk headers, so we can add invalid
+        // headers and assert that ServiceTalk filters them.
+        final HttpHeadersFactory headersFactory = DefaultHttpHeadersFactory.INSTANCE;
+        InetSocketAddress serverAddress = bindHttpEchoServer(null, null, headersFactory);
+        try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
+                .protocols(applyHeadersFactory(h2PriorKnowledge, headersFactory))
+                .executionStrategy(clientExecutionStrategy).buildBlocking()) {
+            // Test individual headers
+            HttpRequest request = client.get("/");
+            request.addHeader(TE, "foo");
+            request.addHeader(TE, TRAILERS);
+            request.addHeader(TE, "bar");
+            HttpResponse response = client.request(request);
+            assertThat(response.headers().values(TE), h2PriorKnowledge ?
+                    containsIgnoreCase(TRAILERS) : containsIgnoreCase("foo", TRAILERS, "bar"));
+
+            // Test single header value, comma separated trailers last
+            request = client.get("/");
+            request.addHeader(TE, "foo," + TRAILERS);
+            response = client.request(request);
+            assertThat(response.headers().values(TE), h2PriorKnowledge ?
+                    containsIgnoreCase(TRAILERS) : containsIgnoreCase("foo," + TRAILERS));
+
+            // Test single header value, comma separated trailers last with OWS
+            request = client.get("/");
+            request.addHeader(TE, "foo, " + TRAILERS);
+            response = client.request(request);
+            assertThat(response.headers().values(TE), h2PriorKnowledge ?
+                    containsIgnoreCase(TRAILERS) : containsIgnoreCase("foo, " + TRAILERS));
+
+            // Test single header value, comma separated trailers first
+            request = client.get("/");
+            request.addHeader(TE, TRAILERS + ",foo");
+            response = client.request(request);
+            assertThat(response.headers().values(TE), h2PriorKnowledge ?
+                    containsIgnoreCase(TRAILERS) : containsIgnoreCase(TRAILERS + ",foo"));
+
+            // Test single header value, comma separated trailers first with OWS
+            request = client.get("/");
+            request.addHeader(TE, TRAILERS + ", foo");
+            response = client.request(request);
+            assertThat(response.headers().values(TE), h2PriorKnowledge ?
+                    containsIgnoreCase(TRAILERS) : containsIgnoreCase(TRAILERS + ", foo"));
+
+            // Test single header value, comma separated trailers middle
+            request = client.get("/");
+            request.addHeader(TE, "foo," + TRAILERS + ",bar");
+            response = client.request(request);
+            assertThat(response.headers().values(TE), h2PriorKnowledge ?
+                    containsIgnoreCase(TRAILERS) : containsIgnoreCase("foo," + TRAILERS + ",bar"));
+
+            // Test single header value, comma separated trailers middle with OWS
+            request = client.get("/");
+            request.addHeader(TE, "foo, " + TRAILERS + ", bar");
+            response = client.request(request);
+            assertThat(response.headers().values(TE), h2PriorKnowledge ?
+                    containsIgnoreCase(TRAILERS) : containsIgnoreCase("foo, " + TRAILERS + ", bar"));
         }
     }
 
@@ -1735,8 +1804,21 @@ class H2PriorKnowledgeFeatureParityTest {
     private InetSocketAddress bindHttpEchoServer(@Nullable StreamingHttpServiceFilterFactory filterFactory,
                                                  @Nullable CountDownLatch connectionOnClosingLatch)
             throws Exception {
+        return bindHttpEchoServer(filterFactory, connectionOnClosingLatch, null);
+    }
+
+    private static HttpProtocolConfig applyHeadersFactory(boolean h2PriorKnowledge,
+                                                          @Nullable HttpHeadersFactory headersFactory) {
+        return h2PriorKnowledge ?
+                headersFactory == null ? h2Default() : h2().headersFactory(headersFactory).build() :
+                headersFactory == null ? h1Default() : h1().headersFactory(headersFactory).build();
+    }
+
+    private InetSocketAddress bindHttpEchoServer(@Nullable StreamingHttpServiceFilterFactory filterFactory,
+                                                 @Nullable CountDownLatch connectionOnClosingLatch,
+                                                 @Nullable HttpHeadersFactory headersFactory) throws Exception {
         HttpServerBuilder serverBuilder = HttpServers.forAddress(localAddress(0))
-                .protocols(h2PriorKnowledge ? h2Default() : h1Default());
+                .protocols(applyHeadersFactory(h2PriorKnowledge, headersFactory));
         if (filterFactory != null) {
             serverBuilder.appendServiceFilter(filterFactory);
         }
@@ -1779,6 +1861,7 @@ class H2PriorKnowledgeFeatureParityTest {
                         resp.setHeader(TRANSFER_ENCODING, transferEncoding);
                     }
                     resp.headers().set(COOKIE, request.headers().valuesIterator(COOKIE));
+                    resp.headers().set(TE, request.headers().valuesIterator(TE));
                     return succeeded(resp);
                 }).toFuture().get();
         return (InetSocketAddress) h1ServerContext.listenAddress();

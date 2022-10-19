@@ -28,6 +28,7 @@ import java.util.Map;
 
 import static io.netty.handler.codec.http.HttpHeaderNames.TE;
 import static io.netty.handler.codec.http.HttpHeaderValues.TRAILERS;
+import static io.servicetalk.buffer.api.CharSequences.contentEqualsIgnoreCase;
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderNames.COOKIE;
@@ -185,19 +186,34 @@ final class H2ToStH1Utils {
         Iterator<? extends CharSequence> teItr = h1Headers.valuesIterator(TE);
         boolean addTrailers = false;
         while (teItr.hasNext()) {
-            String teValue = teItr.next().toString();
-            int i = teValue.indexOf(',');
-            if (i != -1) {
-                int start = 0;
-                do {
-                    if (teValue.substring(start, i).compareToIgnoreCase(TRAILERS.toString()) == 0) {
+            final CharSequence teSequence = teItr.next();
+            if (addTrailers) {
+                teItr.remove();
+            } else {
+                int i = indexOf(teSequence, ',', 0);
+                if (i != -1) {
+                    int start = 0;
+                    do {
+                        if (contentEqualsIgnoreCase(teSequence.subSequence(start, i), TRAILERS)) {
+                            addTrailers = true;
+                            break;
+                        }
+                        start = i + 1;
+                        // Check if we need to skip OWS
+                        // https://www.rfc-editor.org/rfc/rfc9110.html#section-10.1.4
+                        if (start < teSequence.length() && teSequence.charAt(start) == ' ') {
+                            ++start;
+                        }
+                    } while (start < teSequence.length() && (i = indexOf(teSequence, ',', start)) != -1);
+
+                    if (!addTrailers && start < teSequence.length() &&
+                            contentEqualsIgnoreCase(teSequence.subSequence(start, teSequence.length()), TRAILERS)) {
                         addTrailers = true;
-                        break;
                     }
-                } while (start < teValue.length() && (i = teValue.indexOf(',', start)) != -1);
-                teItr.remove();
-            } else if (teValue.compareToIgnoreCase(TRAILERS.toString()) != 0) {
-                teItr.remove();
+                    teItr.remove();
+                } else if (!contentEqualsIgnoreCase(teSequence, TRAILERS)) {
+                    teItr.remove();
+                }
             }
         }
         if (addTrailers) { // add after iteration to avoid concurrent modification.
