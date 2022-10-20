@@ -306,7 +306,8 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
                                                         StreamingHttpRequest request,
                                                         StreamingHttpResponseFactory responseFactory) {
                 return request.payloadBody().ignoreElements()
-                        .concat(succeeded(responseFactory.ok().payloadBody(serverResponsePayload)));
+                        .concat(succeeded(responseFactory.ok().payloadBody(
+                                ctx.onClosing().concat(serverResponsePayload))));
             }
         });
         setUp(protocol);
@@ -319,13 +320,8 @@ class HttpLifecycleObserverTest extends AbstractNettyHttpServerTest {
         assertResponse(response, protocol.version, OK);
         Future<Collection<Buffer>> payload = response.payloadBody().toFuture();
         payload.cancel(true);
-        if (protocol == HttpProtocol.HTTP_1) {
-            // wait for cancellation to close the connection:
-            connection.onClose().toFuture().get();
-        }
-        // try to write server content to trigger write failure and close the server-side connection. depending on the
-        // OS, transport may observe write failure only on the 2nd write:
-        serverResponsePayload.onNext(CONTENT.duplicate());
+
+        // try to write server content to trigger write failure and close the server-side connection.
         serverResponsePayload.onNext(CONTENT.duplicate());
 
         awaitFullTermination();

@@ -51,9 +51,10 @@ import io.servicetalk.transport.netty.internal.WriteStreamSubscriber.AbortedFirs
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelConfig;
+import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelPipeline;
+import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoop;
 import io.netty.channel.socket.ChannelInputShutdownReadComplete;
 import io.netty.channel.socket.ChannelOutputShutdownEvent;
@@ -347,7 +348,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                 childExecutionContext,
                 closeHandler, flushStrategy, idleTimeoutMs, protocol, sslConfig, sslSession, parentChannelConfig,
                 streamObserver.streamEstablished(), isClient, shouldWait, enrichProtocolError);
-        channel.pipeline().addLast(new NettyToStChannelInboundHandler<>(connection, null,
+        channel.pipeline().addLast(new NettyToStChannelHandler<>(connection, null,
                 null, false, NoopConnectionObserver.INSTANCE));
         return connection;
     }
@@ -452,7 +453,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             @Override
             protected void handleSubscribe(
                     final SingleSource.Subscriber<? super DefaultNettyConnection<Read, Write>> subscriber) {
-                final NettyToStChannelInboundHandler<Read, Write> nettyInboundHandler;
+                final NettyToStChannelHandler<Read, Write> nettyInboundHandler;
                 final DelayedCancellable delayedCancellable;
                 try {
                     delayedCancellable = new DelayedCancellable();
@@ -471,7 +472,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                     // but not allow any other handlers to be after it.
                     initializer.init(channel);
                     ChannelPipeline pipeline = connection.channel().pipeline();
-                    nettyInboundHandler = new NettyToStChannelInboundHandler<>(connection, subscriber,
+                    nettyInboundHandler = new NettyToStChannelHandler<>(connection, subscriber,
                             delayedCancellable, NettyPipelineSslUtils.isSslEnabled(pipeline), observer);
                 } catch (Throwable cause) {
                     close(channel, cause);
@@ -782,7 +783,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         }
     }
 
-    private static final class NettyToStChannelInboundHandler<Read, Write> implements ChannelInboundHandler {
+    private static final class NettyToStChannelHandler<Read, Write> extends ChannelDuplexHandler {
         private final DefaultNettyConnection<Read, Write> connection;
         private final boolean waitForSslHandshake;
         @Nullable
@@ -791,18 +792,23 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         private SingleSource.Subscriber<? super DefaultNettyConnection<Read, Write>> subscriber;
         private final ConnectionObserver observer;
 
-        NettyToStChannelInboundHandler(DefaultNettyConnection<Read, Write> connection,
-                                       @Nullable
-                                       SingleSource.Subscriber<? super DefaultNettyConnection<Read, Write>> subscriber,
-                                       @Nullable
-                                       DelayedCancellable delayedCancellable,
-                                       boolean waitForSslHandshake,
-                                       ConnectionObserver observer) {
+        NettyToStChannelHandler(DefaultNettyConnection<Read, Write> connection,
+                                @Nullable
+                                SingleSource.Subscriber<? super DefaultNettyConnection<Read, Write>> subscriber,
+                                @Nullable DelayedCancellable delayedCancellable,
+                                boolean waitForSslHandshake,
+                                ConnectionObserver observer) {
             this.connection = connection;
             this.subscriber = subscriber;
             this.delayedCancellable = delayedCancellable;
             this.waitForSslHandshake = waitForSslHandshake;
             this.observer = observer;
+        }
+
+        @Override
+        public void close(ChannelHandlerContext ctx, ChannelPromise promise) {
+            connection.closeHandler.channelClose(ctx.channel());
+            ctx.close(promise);
         }
 
         @Override
@@ -947,7 +953,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
 
         private void tryFailSubscriber(Throwable cause) {
             if (subscriber != null) {
-                close(connection.channel(), cause);
+                ChannelCloseUtils.close(connection.channel(), cause);
                 SingleSource.Subscriber<? super DefaultNettyConnection<Read, Write>> subscriberCopy = subscriber;
                 subscriber = null;
                 subscriberCopy.onError(cause);

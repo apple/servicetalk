@@ -164,6 +164,14 @@ public abstract class CloseHandler {
     abstract void channelCloseNotify(ChannelHandlerContext ctx);
 
     /**
+     * Signal that {@link Channel#close()} is above to be called.
+     * @param channel The channel.
+     */
+    void channelClose(Channel channel) {
+        // FIXME: 0.43 make method abstract
+    }
+
+    /**
      * Request {@link Channel} inbound close, to be emitted from the {@link EventLoop} for the channel.
      * <p>
      * This method will not ensure graceful closure of the channel inbound and may abort reads.
@@ -304,6 +312,10 @@ public abstract class CloseHandler {
         }
 
         @Override
+        void channelClose(final Channel channel) {
+        }
+
+        @Override
         public void protocolPayloadBeginInbound(final ChannelHandlerContext ctx) {
         }
 
@@ -327,6 +339,15 @@ public abstract class CloseHandler {
 
         @Override
         public void protocolClosingOutbound(final ChannelHandlerContext ctx) {
+        }
+    }
+
+    static void setSocketResetOnClose(SocketChannel channel) {
+        try {
+            channel.config().setSoLinger(0);
+        } catch (Exception e) {
+            LOGGER.trace("{} set SO_LINGER=0 failed (expected when IN+OUT or IN+RST closed channel): {}", channel,
+                    e.getMessage());
         }
     }
 

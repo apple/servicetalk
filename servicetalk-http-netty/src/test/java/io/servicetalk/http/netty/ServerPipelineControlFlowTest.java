@@ -286,8 +286,11 @@ class ServerPipelineControlFlowTest {
             });
             switch (protocol) {
                 case HTTP_1:
-                    assertThat(e, instanceOf(CloseEventObservedException.class));
-                    assertThat(((CloseEventObservedException) e).event(), is(CHANNEL_CLOSED_INBOUND));
+                    if (e instanceof CloseEventObservedException) {
+                        assertThat(((CloseEventObservedException) e).event(), is(CHANNEL_CLOSED_INBOUND));
+                    } else {
+                        assertThat(e, instanceOf(IOException.class));
+                    }
                     break;
                 case HTTP_2:
                     assertThat(e, instanceOf(Http2Exception.class));

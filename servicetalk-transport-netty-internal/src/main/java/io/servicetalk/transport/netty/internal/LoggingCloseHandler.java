@@ -115,6 +115,12 @@ final class LoggingCloseHandler extends CloseHandler {
     }
 
     @Override
+    void channelClose(final Channel channel) {
+        logger.log("{} closeChannel {}", channel, delegate);
+        delegate.channelClose(channel);
+    }
+
+    @Override
     public String toString() {
         return getClass().getSimpleName() + '(' + delegate + ")";
     }

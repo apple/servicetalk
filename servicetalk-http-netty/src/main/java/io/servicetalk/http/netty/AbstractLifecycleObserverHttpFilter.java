@@ -139,7 +139,7 @@ abstract class AbstractLifecycleObserverHttpFilter implements HttpExecutionStrat
             try {
                 responseSingle = responseFunction.apply(transformed);
             } catch (Throwable t) {
-                onExchange.onResponseError(t);
+                exchangeContext.onError(t); // Go through exchange context so finally methods are invoked.
                 return Single.<StreamingHttpResponse>failed(t).shareContextOnSubscribe();
             }
             return responseSingle
@@ -249,6 +249,11 @@ abstract class AbstractLifecycleObserverHttpFilter implements HttpExecutionStrat
                 safeReport(onExchange::onExchangeFinally, onExchange, "onExchangeFinally");
                 clearContext.run();
             }
+        }
+
+        @Override
+        public String toString() {
+            return "remaining=" + remaining;
         }
     }
 
