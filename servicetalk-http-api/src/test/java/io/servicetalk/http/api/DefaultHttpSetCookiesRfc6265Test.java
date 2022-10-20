@@ -15,40 +15,39 @@
  */
 package io.servicetalk.http.api;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.parallel.Execution;
-import org.junit.jupiter.api.parallel.ExecutionMode;
-import org.junit.jupiter.api.parallel.Isolated;
 
+import static io.servicetalk.buffer.api.Matchers.contentEqualTo;
 import static io.servicetalk.http.api.DefaultHttpSetCookiesTest.quotesInValuePreserved;
+import static io.servicetalk.http.api.HeaderUtils.COOKIE_STRICT_RFC_6265;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@Isolated
-@Execution(ExecutionMode.SAME_THREAD)
 class DefaultHttpSetCookiesRfc6265Test {
-
-    @BeforeAll
-    static void enablePedantic() {
-        HeaderUtils.cookieParsingStrictRfc6265(true);
-    }
-
-    @AfterAll
-    static void disablePedantic() {
-        HeaderUtils.cookieParsingStrictRfc6265(false);
-    }
-
     @Test
     void throwIfNoSpaceBeforeCookieAttributeValue() {
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         headers.add("set-cookie", "first=12345;Extension");
         headers.add("set-cookie", "second=12345;Expires=Mon, 22 Aug 2022 20:12:35 GMT");
         headers.add("set-cookie", "third=\"12345\";Expires=Mon, 22 Aug 2022 20:12:35 GMT");
-        throwIfNoSpaceBeforeCookieAttributeValue(headers);
+        if (COOKIE_STRICT_RFC_6265) {
+            throwIfNoSpaceBeforeCookieAttributeValue(headers);
+        } else {
+            HttpSetCookie setCookie = headers.getSetCookie("first");
+            assertThat(setCookie, notNullValue());
+            assertThat(setCookie.value(), contentEqualTo("12345"));
+            setCookie = headers.getSetCookie("second");
+            assertThat(setCookie, notNullValue());
+            assertThat(setCookie.value(), contentEqualTo("12345"));
+            setCookie = headers.getSetCookie("third");
+            assertThat(setCookie, notNullValue());
+            assertThat(setCookie.value(), contentEqualTo("12345"));
+            assertThat(setCookie.isWrapped(), equalTo(true));
+        }
     }
 
     private static void throwIfNoSpaceBeforeCookieAttributeValue(HttpHeaders headers) {

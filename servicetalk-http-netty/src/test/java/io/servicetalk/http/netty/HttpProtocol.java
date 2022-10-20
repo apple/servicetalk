@@ -21,21 +21,25 @@ import io.servicetalk.http.api.HttpProtocolVersion;
 import java.util.Arrays;
 import java.util.Collection;
 
+import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
+import static io.servicetalk.http.netty.HttpProtocolConfigs.h1;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2;
 import static io.servicetalk.logging.api.LogLevel.TRACE;
 
 enum HttpProtocol {
-    HTTP_1(h1Default(), HTTP_1_1),
-    HTTP_2(h2().enableFrameLogging("servicetalk-tests-h2-frame-logger", TRACE, () -> true).build(), HTTP_2_0);
+    HTTP_1(h1Default(), h1().headersFactory(new H2HeadersFactory(true, true, false)).build(), HTTP_1_1),
+    HTTP_2(applyFrameLogger(h2()).build(), applyFrameLogger(h2()).headersFactory(INSTANCE).build(), HTTP_2_0);
 
+    final HttpProtocolConfig configOtherHeaderFactory;
     final HttpProtocolConfig config;
     final HttpProtocolVersion version;
 
-    HttpProtocol(HttpProtocolConfig config, HttpProtocolVersion version) {
+    HttpProtocol(HttpProtocolConfig config, HttpProtocolConfig configOtherHeaderFactory, HttpProtocolVersion version) {
         this.config = config;
+        this.configOtherHeaderFactory = configOtherHeaderFactory;
         this.version = version;
     }
 
@@ -45,5 +49,9 @@ enum HttpProtocol {
 
     static HttpProtocolConfig[] toConfigs(HttpProtocol[] protocols) {
         return Arrays.stream(protocols).map(p -> p.config).toArray(HttpProtocolConfig[]::new);
+    }
+
+    private static H2ProtocolConfigBuilder applyFrameLogger(H2ProtocolConfigBuilder builder) {
+        return builder.enableFrameLogging("servicetalk-tests-h2-frame-logger", TRACE, () -> true);
     }
 }

@@ -28,13 +28,16 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.DefaultHttpCookiePair;
+import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.Http2Exception;
 import io.servicetalk.http.api.HttpCookiePair;
 import io.servicetalk.http.api.HttpEventKey;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaders;
+import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpMetaData;
+import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponse;
@@ -122,9 +125,11 @@ import javax.annotation.Nullable;
 
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_TYPE;
 import static io.netty.handler.codec.http.HttpHeaderNames.TRAILER;
+import static io.netty.handler.codec.http.HttpHeaderValues.TRAILERS;
 import static io.netty.handler.codec.http2.Http2CodecUtil.SMALLEST_MAX_CONCURRENT_STREAMS;
 import static io.netty.handler.codec.http2.Http2Error.PROTOCOL_ERROR;
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
+import static io.servicetalk.buffer.api.Matchers.containsIgnoreCase;
 import static io.servicetalk.buffer.api.Matchers.contentEqualTo;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Processors.newPublisherProcessor;
@@ -139,6 +144,7 @@ import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.COOKIE;
 import static io.servicetalk.http.api.HttpHeaderNames.EXPECT;
 import static io.servicetalk.http.api.HttpHeaderNames.SET_COOKIE;
+import static io.servicetalk.http.api.HttpHeaderNames.TE;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderNames.UPGRADE;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
@@ -151,9 +157,12 @@ import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.http.netty.CloseUtils.onGracefulClosureStarted;
+import static io.servicetalk.http.netty.H2ToStH1Utils.COOKIE_STRICT_RFC_6265;
 import static io.servicetalk.http.netty.H2ToStH1Utils.PROXY_CONNECTION;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
+import static io.servicetalk.http.netty.HttpProtocolConfigs.h1;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
+import static io.servicetalk.http.netty.HttpProtocolConfigs.h2;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 import static io.servicetalk.http.netty.HttpTestExecutionStrategy.DEFAULT;
 import static io.servicetalk.http.netty.HttpTestExecutionStrategy.NO_OFFLOAD;
@@ -188,9 +197,14 @@ import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 class H2PriorKnowledgeFeatureParityTest {
-
     private static final CharSequence[] PROHIBITED_HEADERS = {CONNECTION, KEEP_ALIVE, TRANSFER_ENCODING, UPGRADE,
             PROXY_CONNECTION};
+    private static final String CONNECTION_HEADER1 = "conn1";
+    private static final String CONNECTION_HEADER2 = "conn2";
+    private static final String CONNECTION_HEADER3 = "conn3";
+    private static final String CONNECTION_HEADER4 = "conn4";
+    private static final CharSequence[] CONNECTION_HEADERS = {CONNECTION_HEADER1, CONNECTION_HEADER2,
+            CONNECTION_HEADER3, CONNECTION_HEADER4};
     private static final String EXPECT_FAIL_HEADER = "please_fail_expect";
     private static final ContextMap.Key<String> K1 = newKey("k1", String.class);
     private static final ContextMap.Key<String> K2 = newKey("k2", String.class);
@@ -215,6 +229,43 @@ class H2PriorKnowledgeFeatureParityTest {
                          Arguments.of(NO_OFFLOAD, false),
                          Arguments.of(DEFAULT, true),
                          Arguments.of(DEFAULT, false));
+    }
+
+    @SuppressWarnings("unused")
+    private static Stream<Arguments> clientExecutorsCookies() {
+        return Stream.of(
+                Arguments.of(NO_OFFLOAD, true, true, false, false),
+                Arguments.of(NO_OFFLOAD, true, false, false, false),
+                Arguments.of(NO_OFFLOAD, false, true, false, false),
+                Arguments.of(NO_OFFLOAD, false, false, false, false),
+                Arguments.of(DEFAULT, true, true, false, false),
+                Arguments.of(DEFAULT, true, false, false, false),
+                Arguments.of(DEFAULT, false, true, false, false),
+                Arguments.of(DEFAULT, false, false, false, false),
+                Arguments.of(NO_OFFLOAD, true, true, true, false),
+                Arguments.of(NO_OFFLOAD, true, false, true, false),
+                Arguments.of(NO_OFFLOAD, false, true, true, false),
+                Arguments.of(NO_OFFLOAD, false, false, true, false),
+                Arguments.of(DEFAULT, true, true, true, false),
+                Arguments.of(DEFAULT, true, false, true, false),
+                Arguments.of(DEFAULT, false, true, true, false),
+                Arguments.of(DEFAULT, false, false, true, false),
+                Arguments.of(NO_OFFLOAD, true, true, false, true),
+                Arguments.of(NO_OFFLOAD, true, false, false, true),
+                Arguments.of(NO_OFFLOAD, false, true, false, true),
+                Arguments.of(NO_OFFLOAD, false, false, false, true),
+                Arguments.of(DEFAULT, true, true, false, true),
+                Arguments.of(DEFAULT, true, false, false, true),
+                Arguments.of(DEFAULT, false, true, false, true),
+                Arguments.of(DEFAULT, false, false, false, true),
+                Arguments.of(NO_OFFLOAD, true, true, true, true),
+                Arguments.of(NO_OFFLOAD, true, false, true, true),
+                Arguments.of(NO_OFFLOAD, false, true, true, true),
+                Arguments.of(NO_OFFLOAD, false, false, true, true),
+                Arguments.of(DEFAULT, true, true, true, true),
+                Arguments.of(DEFAULT, true, false, true, true),
+                Arguments.of(DEFAULT, false, true, true, true),
+                Arguments.of(DEFAULT, false, false, true, true));
     }
 
     @AfterEach
@@ -296,29 +347,119 @@ class H2PriorKnowledgeFeatureParityTest {
         }
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
-    @MethodSource("clientExecutors")
-    void cookiesRoundTrip(HttpTestExecutionStrategy strategy, boolean h2PriorKnowledge) throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}, strictRfc6265={2}, " +
+                              "endsWithSemi={3}, swapHeaderFactories={4}")
+    @MethodSource("clientExecutorsCookies")
+    void cookiesRoundTrip(HttpTestExecutionStrategy strategy, boolean h2PriorKnowledge, boolean strictRfc6265,
+                          boolean endsWithSemi, boolean swapHeaderFactories) throws Exception {
         setUp(strategy, h2PriorKnowledge);
         InetSocketAddress serverAddress = bindHttpEchoServer();
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
-                .protocols(h2PriorKnowledge ? h2Default() : h1Default())
+                .protocols(h2PriorKnowledge ?
+                        swapHeaderFactories ? h2().headersFactory(DefaultHttpHeadersFactory.INSTANCE).build() :
+                                h2Default() :
+                        swapHeaderFactories ? h1().headersFactory(new H2HeadersFactory(true, true, false)).build() :
+                                h1Default())
                 .executionStrategy(clientExecutionStrategy).buildBlocking()) {
             HttpRequest request = client.get("/");
-            String requestCookie = "name1=value1; name2=value2; name3=value3";
+            String requestCookie = strictRfc6265 ?
+                    "name1=value1; name2=value2; name3=value3" :
+                    "name1=value1;name2=value2;name3=value3";
+            if (endsWithSemi) {
+                requestCookie = requestCookie + ';';
+            }
             request.addHeader(COOKIE, requestCookie);
+            if (COOKIE_STRICT_RFC_6265 && !strictRfc6265) {
+                if (h2PriorKnowledge) {
+                    // h2 does cookie parsing to expand/compress cookie crumbs.
+                    assertThat(
+                            assertThrows(IOException.class, () -> client.request(request)).getCause(),
+                            instanceOf(IllegalArgumentException.class));
+                } else {
+                    // h1 doesn't do cookie parsing to write/read, and is only done on demand.
+                    HttpResponse response = client.request(request);
+                    CharSequence responseCookie = response.headers().get(COOKIE);
+                    assertNotNull(responseCookie);
+                    assertThrows(IllegalArgumentException.class, () -> response.headers().getCookie("name2"));
+                }
+            } else {
+                HttpResponse response = client.request(request);
+                CharSequence responseCookie = response.headers().get(COOKIE);
+                assertNotNull(responseCookie);
+                HttpCookiePair cookie = response.headers().getCookie("name1");
+                assertNotNull(cookie);
+                assertEquals("value1", cookie.value());
+                cookie = response.headers().getCookie("name2");
+                assertNotNull(cookie);
+                assertEquals("value2", cookie.value());
+                cookie = response.headers().getCookie("name3");
+                assertNotNull(cookie);
+                assertEquals("value3", cookie.value());
+            }
+        }
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}")
+    @MethodSource("clientExecutors")
+    void teHeaderOnlyAllowsTrailers(HttpTestExecutionStrategy strategy, boolean h2PriorKnowledge) throws Exception {
+        setUp(strategy, h2PriorKnowledge);
+        // Newer versions of Netty validate at addition time so for using ServiceTalk headers, so we can add invalid
+        // headers and assert that ServiceTalk filters them.
+        final HttpHeadersFactory headersFactory = DefaultHttpHeadersFactory.INSTANCE;
+        InetSocketAddress serverAddress = bindHttpEchoServer(null, null, headersFactory);
+        try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
+                .protocols(applyHeadersFactory(h2PriorKnowledge, headersFactory))
+                .executionStrategy(clientExecutionStrategy).buildBlocking()) {
+            // Test individual headers
+            HttpRequest request = client.get("/");
+            request.addHeader(TE, "foo");
+            request.addHeader(TE, TRAILERS);
+            request.addHeader(TE, "bar");
             HttpResponse response = client.request(request);
-            CharSequence responseCookie = response.headers().get(COOKIE);
-            assertNotNull(responseCookie);
-            HttpCookiePair cookie = response.headers().getCookie("name1");
-            assertNotNull(cookie);
-            assertEquals("value1", cookie.value());
-            cookie = response.headers().getCookie("name2");
-            assertNotNull(cookie);
-            assertEquals("value2", cookie.value());
-            cookie = response.headers().getCookie("name3");
-            assertNotNull(cookie);
-            assertEquals("value3", cookie.value());
+            assertThat(response.headers().values(TE), h2PriorKnowledge ?
+                    containsIgnoreCase(TRAILERS) : containsIgnoreCase("foo", TRAILERS, "bar"));
+
+            // Test single header value, comma separated trailers last
+            request = client.get("/");
+            request.addHeader(TE, "foo," + TRAILERS);
+            response = client.request(request);
+            assertThat(response.headers().values(TE), h2PriorKnowledge ?
+                    containsIgnoreCase(TRAILERS) : containsIgnoreCase("foo," + TRAILERS));
+
+            // Test single header value, comma separated trailers last with OWS
+            request = client.get("/");
+            request.addHeader(TE, "foo, " + TRAILERS);
+            response = client.request(request);
+            assertThat(response.headers().values(TE), h2PriorKnowledge ?
+                    containsIgnoreCase(TRAILERS) : containsIgnoreCase("foo, " + TRAILERS));
+
+            // Test single header value, comma separated trailers first
+            request = client.get("/");
+            request.addHeader(TE, TRAILERS + ",foo");
+            response = client.request(request);
+            assertThat(response.headers().values(TE), h2PriorKnowledge ?
+                    containsIgnoreCase(TRAILERS) : containsIgnoreCase(TRAILERS + ",foo"));
+
+            // Test single header value, comma separated trailers first with OWS
+            request = client.get("/");
+            request.addHeader(TE, TRAILERS + ", foo");
+            response = client.request(request);
+            assertThat(response.headers().values(TE), h2PriorKnowledge ?
+                    containsIgnoreCase(TRAILERS) : containsIgnoreCase(TRAILERS + ", foo"));
+
+            // Test single header value, comma separated trailers middle
+            request = client.get("/");
+            request.addHeader(TE, "foo," + TRAILERS + ",bar");
+            response = client.request(request);
+            assertThat(response.headers().values(TE), h2PriorKnowledge ?
+                    containsIgnoreCase(TRAILERS) : containsIgnoreCase("foo," + TRAILERS + ",bar"));
+
+            // Test single header value, comma separated trailers middle with OWS
+            request = client.get("/");
+            request.addHeader(TE, "foo, " + TRAILERS + ", bar");
+            response = client.request(request);
+            assertThat(response.headers().values(TE), h2PriorKnowledge ?
+                    containsIgnoreCase(TRAILERS) : containsIgnoreCase("foo, " + TRAILERS + ", bar"));
         }
     }
 
@@ -1303,7 +1444,7 @@ class H2PriorKnowledgeFeatureParityTest {
                 }, __ -> { }, identity());
         InetSocketAddress serverAddress = (InetSocketAddress) serverAcceptorChannel.localAddress();
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
-                .protocols(HttpProtocol.HTTP_2.config)
+                .protocols(HttpProtocol.HTTP_2.configOtherHeaderFactory)
                 .enableWireLogging("servicetalk-tests-wire-logger", LogLevel.TRACE, () -> true)
                 .executionStrategy(clientExecutionStrategy)
                 .buildBlocking()) {
@@ -1317,7 +1458,7 @@ class H2PriorKnowledgeFeatureParityTest {
     void h2LayerFiltersOutProhibitedH1HeadersOnServerSide() throws Exception {
         setUp(DEFAULT, true);
         try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
-                .protocols(HttpProtocol.HTTP_2.config)
+                .protocols(HttpProtocol.HTTP_2.configOtherHeaderFactory)
                 .enableWireLogging("servicetalk-tests-wire-logger", LogLevel.TRACE, () -> true)
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> addProhibitedHeaders(responseFactory.ok()));
              BlockingHttpClient client = forSingleAddress(serverHostAndPort(serverContext))
@@ -1331,11 +1472,21 @@ class H2PriorKnowledgeFeatureParityTest {
                 assertThat("Unexpected headerName: " + headerName,
                         response.headers().contains(headerName), is(false));
             }
+            for (CharSequence headerName : CONNECTION_HEADERS) {
+                assertThat("Unexpected headerName: " + headerName,
+                        response.headers().contains(headerName), is(false));
+            }
         }
     }
 
     private static <T extends HttpMetaData> T addProhibitedHeaders(T metaData) {
         metaData.addHeader(CONNECTION, UPGRADE)
+                .addHeader(CONNECTION, CONNECTION_HEADER1 + "," + CONNECTION_HEADER2)
+                .addHeader(CONNECTION, CONNECTION_HEADER3 + ", " + CONNECTION_HEADER4)
+                .addHeader(CONNECTION_HEADER1, "foo")
+                .addHeader(CONNECTION_HEADER2, "bar")
+                .addHeader(CONNECTION_HEADER3, "baz")
+                .addHeader(CONNECTION_HEADER4, "boo")
                 .addHeader(KEEP_ALIVE, "timeout=5")
                 .addHeader(TRANSFER_ENCODING, CHUNKED)
                 .addHeader(UPGRADE, "foo/2")
@@ -1668,8 +1819,21 @@ class H2PriorKnowledgeFeatureParityTest {
     private InetSocketAddress bindHttpEchoServer(@Nullable StreamingHttpServiceFilterFactory filterFactory,
                                                  @Nullable CountDownLatch connectionOnClosingLatch)
             throws Exception {
+        return bindHttpEchoServer(filterFactory, connectionOnClosingLatch, null);
+    }
+
+    private static HttpProtocolConfig applyHeadersFactory(boolean h2PriorKnowledge,
+                                                          @Nullable HttpHeadersFactory headersFactory) {
+        return h2PriorKnowledge ?
+                headersFactory == null ? h2Default() : h2().headersFactory(headersFactory).build() :
+                headersFactory == null ? h1Default() : h1().headersFactory(headersFactory).build();
+    }
+
+    private InetSocketAddress bindHttpEchoServer(@Nullable StreamingHttpServiceFilterFactory filterFactory,
+                                                 @Nullable CountDownLatch connectionOnClosingLatch,
+                                                 @Nullable HttpHeadersFactory headersFactory) throws Exception {
         HttpServerBuilder serverBuilder = HttpServers.forAddress(localAddress(0))
-                .protocols(h2PriorKnowledge ? h2Default() : h1Default());
+                .protocols(applyHeadersFactory(h2PriorKnowledge, headersFactory));
         if (filterFactory != null) {
             serverBuilder.appendServiceFilter(filterFactory);
         }
@@ -1712,6 +1876,7 @@ class H2PriorKnowledgeFeatureParityTest {
                         resp.setHeader(TRANSFER_ENCODING, transferEncoding);
                     }
                     resp.headers().set(COOKIE, request.headers().valuesIterator(COOKIE));
+                    resp.headers().set(TE, request.headers().valuesIterator(TE));
                     return succeeded(resp);
                 }).toFuture().get();
         return (InetSocketAddress) h1ServerContext.listenAddress();
@@ -1922,7 +2087,17 @@ class H2PriorKnowledgeFeatureParityTest {
             return !headers.contains(HttpHeaderNames.CONNECTION) && !headers.contains(HttpHeaderNames.KEEP_ALIVE)
                     && !headers.contains(HttpHeaderNames.TRANSFER_ENCODING)
                     && !headers.contains(HttpHeaderNames.UPGRADE)
-                    && !headers.contains(HttpHeaderNames.PROXY_CONNECTION);
+                    && !headers.contains(HttpHeaderNames.PROXY_CONNECTION) &&
+                    allConnHeadersSanitized(headers);
+        }
+
+        private static boolean allConnHeadersSanitized(Http2Headers headers) {
+            for (CharSequence headerName : CONNECTION_HEADERS) {
+                if (headers.contains(headerName)) {
+                    return false;
+                }
+            }
+            return true;
         }
     }
 
