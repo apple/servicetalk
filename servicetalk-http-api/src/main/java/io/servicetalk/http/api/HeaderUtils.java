@@ -568,14 +568,14 @@ public final class HeaderUtils {
                     cookieHeaderValue, nextNextStart, nameLength, semiIndex);
             if (semiIndex > 0) {
                 if (cookieHeaderValue.length() - 2 <= semiIndex) {
-                    if (cookieParsingStrictRfc6265()) {
+                    if (COOKIE_STRICT_RFC_6265) {
                         throw new IllegalArgumentException("cookie '" + next.name() +
                                 "': cookie is not allowed to end with ;");
                     } else {
                         advanceCookieHeaderValue();
                         nextNextStart = 0;
                     }
-                } else if (cookieParsingStrictRfc6265()) {
+                } else if (COOKIE_STRICT_RFC_6265) {
                     // Skip 2 characters "; " (see https://tools.ietf.org/html/rfc6265#section-4.2.1)
                     if (cookieHeaderValue.charAt(semiIndex + 1) != ' ') {
                         throw new IllegalArgumentException("cookie '" + next.name() +
