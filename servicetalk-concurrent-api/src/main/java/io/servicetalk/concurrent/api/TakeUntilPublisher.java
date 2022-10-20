@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.concurrent.internal.ConcurrentTerminalSubscriber;
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
@@ -28,20 +29,20 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateS
 import static java.util.Objects.requireNonNull;
 
 final class TakeUntilPublisher<T> extends AbstractSynchronousPublisherOperator<T, T> {
+    private final Supplier<? extends Completable> until;
 
-    private final Completable until;
-
-    TakeUntilPublisher(Publisher<T> original, Completable until) {
+    TakeUntilPublisher(Publisher<T> original, Supplier<? extends Completable> until) {
         super(original);
         this.until = requireNonNull(until);
     }
 
     @Override
     public Subscriber<? super T> apply(Subscriber<? super T> subscriber) {
-        return new TakeUntilSubscriber<>(subscriber, until);
+        return new TakeUntilSubscriber<>(subscriber, until.get());
     }
 
     private static final class TakeUntilSubscriber<T> implements Subscriber<T> {
+        @SuppressWarnings("rawtypes")
         private static final AtomicReferenceFieldUpdater<TakeUntilSubscriber, Cancellable> untilCancellableUpdater =
                 AtomicReferenceFieldUpdater.newUpdater(TakeUntilSubscriber.class, Cancellable.class,
                         "untilCancellable");
@@ -77,15 +78,19 @@ final class TakeUntilPublisher<T> extends AbstractSynchronousPublisherOperator<T
 
                 @Override
                 public void onComplete() {
-                    if (subscriber.processOnComplete()) {
+                    try {
                         cancelDownstreamSubscription();
+                    } finally {
+                        subscriber.processOnComplete();
                     }
                 }
 
                 @Override
                 public void onError(Throwable t) {
-                    if (subscriber.processOnError(t)) {
+                    try {
                         cancelDownstreamSubscription();
+                    } finally {
+                        subscriber.processOnError(t);
                     }
                 }
 
@@ -104,15 +109,19 @@ final class TakeUntilPublisher<T> extends AbstractSynchronousPublisherOperator<T
 
         @Override
         public void onError(Throwable t) {
-            if (subscriber.processOnError(t)) {
+            try {
                 cancelUntil();
+            } finally {
+                subscriber.processOnError(t);
             }
         }
 
         @Override
         public void onComplete() {
-            if (subscriber.processOnComplete()) {
+            try {
                 cancelUntil();
+            } finally {
+                subscriber.processOnComplete();
             }
         }
 
@@ -128,7 +137,7 @@ final class TakeUntilPublisher<T> extends AbstractSynchronousPublisherOperator<T
     private static final class TakeUntilSubscription extends ConcurrentSubscription {
         private final Cancellable cancellable;
 
-        protected TakeUntilSubscription(final Subscription subscription, Cancellable cancellable) {
+        private TakeUntilSubscription(final Subscription subscription, Cancellable cancellable) {
             super(subscription);
             this.cancellable = cancellable;
         }

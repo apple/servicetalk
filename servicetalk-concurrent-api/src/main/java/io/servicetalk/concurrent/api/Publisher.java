@@ -2224,11 +2224,37 @@ public abstract class Publisher<T> {
      *
      * @param until {@link Completable}, termination of which, terminates the returned {@link Publisher}.
      * @return A {@link Publisher} that only emits the items till {@code until} {@link Completable} is completed.
-     *
+     * @deprecated Use {@link #takeUntil(Supplier)}.
      * @see <a href="https://reactivex.io/documentation/operators/takeuntil.html">ReactiveX takeUntil operator.</a>
      */
+    @Deprecated
     public final Publisher<T> takeUntil(Completable until) {
-        return new TakeUntilPublisher<>(this, until);
+        return takeUntil(() -> until);
+    }
+
+    /**
+     * Takes elements until {@link Completable} is terminated successfully or with failure.
+     * <p>
+     * This method provides a means to take a limited number of results from this {@link Publisher} and in sequential
+     * programming is similar to:
+     * <pre>{@code
+     *     List<T> results = ...;
+     *     for (T t : resultOfThisPublisher()) {
+     *         if (isCompleted(until)) {
+     *             break;
+     *         }
+     *         takeResults.add(t);
+     *     }
+     *     return results;
+     * }</pre>
+     *
+     * @param untilSupplier {@link Supplier} that is invoked on each subscribe that provides a {@link Completable},
+     * termination of which, terminates the returned {@link Publisher}.
+     * @return A {@link Publisher} that only emits the items till {@code until} {@link Completable} is completed.
+     * @see <a href="https://reactivex.io/documentation/operators/takeuntil.html">ReactiveX takeUntil operator.</a>
+     */
+    public final Publisher<T> takeUntil(Supplier<? extends Completable> untilSupplier) {
+        return new TakeUntilPublisher<>(this, untilSupplier);
     }
 
     /**

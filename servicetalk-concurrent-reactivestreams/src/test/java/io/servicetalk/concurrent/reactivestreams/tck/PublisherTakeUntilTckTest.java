@@ -24,6 +24,6 @@ import org.testng.annotations.Test;
 public class PublisherTakeUntilTckTest extends AbstractPublisherOperatorTckTest<Integer> {
     @Override
     protected Publisher<Integer> composePublisher(Publisher<Integer> publisher, int elements) {
-        return publisher.takeUntil(Completable.never());
+        return publisher.takeUntil(Completable::never);
     }
 }
