@@ -757,6 +757,11 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         }
 
         @Override
+        public Completable onClosing() {
+            return delegate.onClosing();
+        }
+
+        @Override
         public Completable closeAsync() {
             return delegate.closeAsync();
         }

@@ -31,15 +31,10 @@ import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.transport.api.ConnectExecutionStrategy;
-import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.IoThreadFactory;
 import io.servicetalk.transport.api.TransportObserver;
-import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.function.Function;
 import javax.annotation.Nullable;
@@ -51,11 +46,6 @@ import static java.util.Objects.requireNonNull;
 
 abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
         implements ConnectionFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractLBHttpConnectionFactory.class);
-
-    private static boolean onClosingWarningLogged;
-
     @Nullable
     private final StreamingHttpConnectionFilterFactory connectionFilterFunction;
     final ReadOnlyHttpClientConfig config;
@@ -102,6 +92,11 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
                     }
 
                     @Override
+                    public Completable onClosing() {
+                        return close.onClosing();
+                    }
+
+                    @Override
                     public Completable closeAsync() {
                         return close.closeAsync();
                     }
@@ -124,30 +119,8 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
                             connectionFilterFunction != null ? connectionFilterFunction.create(conn) : conn;
                     return protocolBinding.bind(filteredConnection,
                             newConcurrencyController(filteredConnection.transportEventStream(MAX_CONCURRENCY),
-                                    onClosing(filteredConnection)), context);
+                                    filteredConnection.onClosing()), context);
                 });
-    }
-
-    /**
-     * Extract {@link Completable} that notifies when connection is preparing to close. This helps to receive an earlier
-     * notification for the concurrency controller.
-     *
-     * @param connection {@link FilterableStreamingHttpConnection}
-     * @return {@link Completable} that notifies when connection is preparing to close
-     */
-    private static Completable onClosing(final FilterableStreamingHttpConnection connection) {
-        ConnectionContext ctx = connection.connectionContext();
-        if (ctx instanceof NettyConnectionContext) {
-            return ((NettyConnectionContext) ctx).onClosing();
-        }
-        if (!onClosingWarningLogged) {
-            onClosingWarningLogged = true;
-            LOGGER.warn("{} connection was wrapped in the way concurrency controller can not access the early " +
-                    "onClosing() event. Fallback to onClose(), this may cause a race between closing a connection " +
-                    "and selecting it for the next request. Reconsider how connection filters do wrapping of " +
-                    "FilterableStreamingHttpConnection#connectionContext() and/or contact support.", ctx);
-        }
-        return connection.onClose();
     }
 
     /**
@@ -166,6 +139,11 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
     @Override
     public final Completable onClose() {
         return filterableConnectionFactory.onClose();
+    }
+
+    @Override
+    public final Completable onClosing() {
+        return filterableConnectionFactory.onClosing();
     }
 
     @Override

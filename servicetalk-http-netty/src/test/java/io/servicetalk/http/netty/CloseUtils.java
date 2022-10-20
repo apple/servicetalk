@@ -44,6 +44,9 @@ final class CloseUtils {
      * @param closingStarted a {@link CountDownLatch} to notify
      */
     static void onGracefulClosureStarted(ConnectionContext cc, CountDownLatch closingStarted) {
+        // cc.onClosing() will trigger on the leading edge of closure, which maybe when the user calls closeAsync().
+        // The tests that depend upon this method need to wait until protocol events occur to ensure no more data will
+        // be processed, which isn't the same as cc.onClosing().
         NettyConnectionContext nettyCtx = (NettyConnectionContext) cc;
         if (cc.protocol() == HTTP_1_1) {
             nettyCtx.transportError().subscribe(t -> {

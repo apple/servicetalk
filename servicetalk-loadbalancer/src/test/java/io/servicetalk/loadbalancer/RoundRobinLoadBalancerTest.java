@@ -760,6 +760,7 @@ abstract class RoundRobinLoadBalancerTest {
         when(cnx.closeAsync()).thenReturn(closeable.closeAsync());
         when(cnx.closeAsyncGracefully()).thenReturn(closeable.closeAsyncGracefully());
         when(cnx.onClose()).thenReturn(closeable.onClose());
+        when(cnx.onClosing()).thenReturn(closeable.onClosing());
         when(cnx.address()).thenReturn(address);
         when(cnx.toString()).thenReturn(address + '@' + cnx.hashCode());
 

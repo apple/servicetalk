@@ -154,6 +154,11 @@ final class Utils {
             return closeAsync.onClose();
         }
 
+        @Override
+        public Completable onClosing() {
+            return closeAsync.onClosing();
+        }
+
         @Deprecated
         @Override
         public String path() {

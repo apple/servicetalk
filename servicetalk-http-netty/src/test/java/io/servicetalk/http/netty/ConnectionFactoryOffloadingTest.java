@@ -94,6 +94,11 @@ class ConnectionFactoryOffloadingTest {
                                 }
 
                                 @Override
+                                public Completable onClosing() {
+                                    return close.onClosing();
+                                }
+
+                                @Override
                                 public Completable closeAsync() {
                                     return close.closeAsync();
                                 }

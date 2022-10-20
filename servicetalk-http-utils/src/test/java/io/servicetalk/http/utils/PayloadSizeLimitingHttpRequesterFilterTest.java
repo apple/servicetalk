@@ -112,6 +112,11 @@ class PayloadSizeLimitingHttpRequesterFilterTest {
             }
 
             @Override
+            public Completable onClosing() {
+                return closeable.onClosing();
+            }
+
+            @Override
             public Completable closeAsync() {
                 return closeable.closeAsync();
             }

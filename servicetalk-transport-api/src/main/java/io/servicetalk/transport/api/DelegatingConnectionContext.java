@@ -99,6 +99,11 @@ public class DelegatingConnectionContext implements ConnectionContext {
     }
 
     @Override
+    public Completable onClosing() {
+        return delegate.onClosing();
+    }
+
+    @Override
     public Completable closeAsync() {
         return delegate.closeAsync();
     }

@@ -180,8 +180,18 @@ class NettyHttpServerConnectionDrainTest {
             }
 
             @Override
+            public Completable onClosing() {
+                return serverContext.onClosing();
+            }
+
+            @Override
             public Completable closeAsync() {
                 return serverContext.closeAsync();
+            }
+
+            @Override
+            public Completable closeAsyncGracefully() {
+                return serverContext.closeAsyncGracefully();
             }
 
             @Override

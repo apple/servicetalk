@@ -65,6 +65,11 @@ final class DnsClients {
             }
 
             @Override
+            public Completable onClosing() {
+                return dns.onClosing();
+            }
+
+            @Override
             public Publisher<Collection<ServiceDiscovererEvent<InetSocketAddress>>> discover(final String s) {
                 return dns.dnsSrvQuery(s);
             }
@@ -101,6 +106,11 @@ final class DnsClients {
             @Override
             public Completable onClose() {
                 return dns.onClose();
+            }
+
+            @Override
+            public Completable onClosing() {
+                return dns.onClosing();
             }
 
             @Override

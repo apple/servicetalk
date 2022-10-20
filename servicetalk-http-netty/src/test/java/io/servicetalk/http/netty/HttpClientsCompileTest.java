@@ -61,6 +61,11 @@ class HttpClientsCompileTest {
         }
 
         @Override
+        public Completable onClosing() {
+            return Completable.completed();
+        }
+
+        @Override
         public Completable closeAsync() {
             return Completable.completed();
         }

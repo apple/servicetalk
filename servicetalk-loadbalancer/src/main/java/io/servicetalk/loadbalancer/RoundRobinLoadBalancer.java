@@ -235,7 +235,7 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
 
             private Host<ResolvedAddress, C> createHost(ResolvedAddress addr) {
                 Host<ResolvedAddress, C> host = new Host<>(targetResource, addr, healthCheckConfig);
-                host.onClose().afterFinally(() ->
+                host.onClosing().afterFinally(() ->
                         usedHostsUpdater.updateAndGet(RoundRobinLoadBalancer.this, previousHosts -> {
                                     @SuppressWarnings("unchecked")
                                     List<Host<ResolvedAddress, C>> previousHostsTyped =
@@ -439,6 +439,11 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
     }
 
     @Override
+    public Completable onClosing() {
+        return asyncCloseable.onClosing();
+    }
+
+    @Override
     public Completable closeAsync() {
         return asyncCloseable.closeAsync();
     }
@@ -635,7 +640,7 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
             LOGGER.trace("Load balancer for {}: added a new connection {} to {} after {} attempt(s).",
                     targetResource, connection, this, addAttempt);
             // Instrument the new connection so we prune it on close
-            connection.onClose().beforeFinally(() -> {
+            connection.onClosing().beforeFinally(() -> {
                 int removeAttempt = 0;
                 for (;;) {
                     ++removeAttempt;
@@ -708,14 +713,20 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
             return closeable.onClose();
         }
 
+        @Override
+        public Completable onClosing() {
+            return closeable.onClosing();
+        }
+
         @SuppressWarnings("unchecked")
         private Completable doClose(final Function<? super C, Completable> closeFunction) {
             return Completable.defer(() -> {
                 final ConnState oldState = connStateUpdater.getAndSet(this, CLOSED_CONN_STATE);
                 cancelIfHealthCheck(oldState.state);
                 final Object[] connections = oldState.connections;
-                return connections.length == 0 ? completed() :
-                        from(connections).flatMapCompletableDelayError(conn -> closeFunction.apply((C) conn));
+                return (connections.length == 0 ? completed() :
+                        from(connections).flatMapCompletableDelayError(conn -> closeFunction.apply((C) conn)))
+                        .shareContextOnSubscribe();
             });
         }
 

@@ -107,6 +107,7 @@ public final class AsyncCloseables {
         return new ListenableAsyncCloseable() {
 
             private final CompletableProcessor onCloseProcessor = new CompletableProcessor();
+            private final CompletableProcessor onClosing = new CompletableProcessor();
             private final Completable onClose = onCloseDecorator.apply(onCloseProcessor);
 
             @Override
@@ -114,6 +115,7 @@ public final class AsyncCloseables {
                 return new SubscribableCompletable() {
                     @Override
                     protected void handleSubscribe(final Subscriber subscriber) {
+                        onClosing.onComplete();
                         asyncCloseable.closeAsyncGracefully().subscribeInternal(onCloseProcessor);
                         onClose.subscribeInternal(subscriber);
                     }
@@ -126,10 +128,16 @@ public final class AsyncCloseables {
             }
 
             @Override
+            public Completable onClosing() {
+                return onClosing;
+            }
+
+            @Override
             public Completable closeAsync() {
                 return new SubscribableCompletable() {
                     @Override
                     protected void handleSubscribe(final Subscriber subscriber) {
+                        onClosing.onComplete();
                         asyncCloseable.closeAsync().subscribeInternal(onCloseProcessor);
                         onClose.subscribeInternal(subscriber);
                     }
@@ -184,6 +192,7 @@ public final class AsyncCloseables {
         private static final AtomicIntegerFieldUpdater<DefaultAsyncCloseable> closedUpdater =
                 newUpdater(DefaultAsyncCloseable.class, "closed");
         private final CloseableResource closeableResource;
+        private final CompletableProcessor onClosing = new CompletableProcessor();
         private final CompletableProcessor onClose = new CompletableProcessor();
 
         @SuppressWarnings("unused")
@@ -200,6 +209,7 @@ public final class AsyncCloseables {
                 protected void handleSubscribe(final Subscriber subscriber) {
                     onClose.subscribeInternal(subscriber);
                     if (closedUpdater.getAndSet(DefaultAsyncCloseable.this, HARD_CLOSE) != HARD_CLOSE) {
+                        onClosing.onComplete();
                         closeableResource.doClose(false).subscribeInternal(onClose);
                     }
                 }
@@ -213,6 +223,7 @@ public final class AsyncCloseables {
                 protected void handleSubscribe(final Subscriber subscriber) {
                     onClose.subscribeInternal(subscriber);
                     if (closedUpdater.compareAndSet(DefaultAsyncCloseable.this, IDLE, CLOSED_GRACEFULLY)) {
+                        onClosing.onComplete();
                         closeableResource.doClose(true).subscribeInternal(onClose);
                     }
                 }
@@ -222,6 +233,11 @@ public final class AsyncCloseables {
         @Override
         public Completable onClose() {
             return onClose;
+        }
+
+        @Override
+        public Completable onClosing() {
+            return onClosing;
         }
     }
 

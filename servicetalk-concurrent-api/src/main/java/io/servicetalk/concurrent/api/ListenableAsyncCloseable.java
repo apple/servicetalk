@@ -25,4 +25,21 @@ public interface ListenableAsyncCloseable extends AsyncCloseable {
      * @return the {@code Completable} that is notified on close.
      */
     Completable onClose();
+
+    /**
+     * Returns a {@link Completable} that is notified when closing begins.
+     * <p>
+     * Closing begin might be when a close operation is initiated locally (e.g. subscribing to {@link #closeAsync()}) or
+     * it could also be a transport event received from a remote peer (e.g. read a {@code connection: close} header).
+     * <p>
+     * For backwards compatibility this method maybe functionally equivalent to {@link #onClose()}. Therefore, provides
+     * a best-effort leading edge notification of closing, but may fall back to notification on trailing edge.
+     * <p>
+     * The goal of this method is often to notify asap when closing so this method may not be offloaded and care must
+     * be taken to avoid blocking if subscribing to the return {@link Completable}.
+     * @return a {@link Completable} that is notified when closing begins.
+     */
+    default Completable onClosing() {
+        return onClose();
+    }
 }

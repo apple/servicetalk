@@ -132,6 +132,11 @@ public final class DefaultPartitionedClientGroup<U, R, Client extends Listenable
     }
 
     @Override
+    public Completable onClosing() {
+        return partitionMap.onClosing();
+    }
+
+    @Override
     public Completable closeAsync() {
         // Cancel doesn't provide any status and is assumed to complete immediately so we just cancel when subscribe
         // is called.
@@ -210,8 +215,18 @@ public final class DefaultPartitionedClientGroup<U, R, Client extends Listenable
         }
 
         @Override
+        public Completable onClosing() {
+            return close.onClosing();
+        }
+
+        @Override
         public Completable closeAsync() {
             return close.closeAsync();
+        }
+
+        @Override
+        public Completable closeAsyncGracefully() {
+            return close.closeAsyncGracefully();
         }
 
         static final class MutableInt {

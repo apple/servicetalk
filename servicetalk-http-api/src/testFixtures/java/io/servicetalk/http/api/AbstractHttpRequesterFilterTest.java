@@ -293,6 +293,11 @@ public abstract class AbstractHttpRequesterFilterTest {
             }
 
             @Override
+            public Completable onClosing() {
+                return connection.onClosing();
+            }
+
+            @Override
             public HttpExecutionContext executionContext() {
                 return connection.executionContext();
             }

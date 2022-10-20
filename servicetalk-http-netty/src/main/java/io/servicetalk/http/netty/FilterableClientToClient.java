@@ -140,6 +140,11 @@ final class FilterableClientToClient implements StreamingHttpClient {
                 }
 
                 @Override
+                public Completable onClosing() {
+                    return rc.onClosing();
+                }
+
+                @Override
                 public Completable closeAsync() {
                     return rc.closeAsync();
                 }
@@ -170,6 +175,11 @@ final class FilterableClientToClient implements StreamingHttpClient {
     @Override
     public Completable onClose() {
         return client.onClose();
+    }
+
+    @Override
+    public Completable onClosing() {
+        return client.onClosing();
     }
 
     @Override

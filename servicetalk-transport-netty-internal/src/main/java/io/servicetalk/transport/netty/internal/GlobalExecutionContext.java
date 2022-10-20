@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Executors;
+import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ExecutionStrategy;
@@ -28,8 +29,12 @@ import io.netty.channel.EventLoopGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
+import java.util.concurrent.Callable;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.transport.api.ExecutionStrategy.offloadAll;
@@ -104,6 +109,11 @@ public final class GlobalExecutionContext {
         }
 
         @Override
+        public Completable onClosing() {
+            return delegate.onClosing();
+        }
+
+        @Override
         public boolean isUnixDomainSocketSupported() {
             return delegate.isUnixDomainSocketSupported();
         }
@@ -116,6 +126,11 @@ public final class GlobalExecutionContext {
         @Override
         public boolean isIoThreadSupported() {
             return delegate.isIoThreadSupported();
+        }
+
+        @Override
+        public BooleanSupplier shouldOffloadSupplier() {
+            return delegate.shouldOffloadSupplier();
         }
 
         @Override
@@ -140,6 +155,11 @@ public final class GlobalExecutionContext {
         }
 
         @Override
+        public long currentTime(final TimeUnit unit) {
+            return delegate.currentTime(unit);
+        }
+
+        @Override
         public Cancellable execute(final Runnable task) throws RejectedExecutionException {
             return delegate.execute(task);
         }
@@ -148,6 +168,41 @@ public final class GlobalExecutionContext {
         public Cancellable schedule(final Runnable task, final long delay, final TimeUnit unit)
                 throws RejectedExecutionException {
             return delegate.schedule(task, delay, unit);
+        }
+
+        @Override
+        public Cancellable schedule(final Runnable task, final Duration delay) throws RejectedExecutionException {
+            return delegate.schedule(task, delay);
+        }
+
+        @Override
+        public Completable timer(final long delay, final TimeUnit unit) {
+            return delegate.timer(delay, unit);
+        }
+
+        @Override
+        public Completable timer(final Duration delay) {
+            return delegate.timer(delay);
+        }
+
+        @Override
+        public Completable submit(final Runnable runnable) {
+            return delegate.submit(runnable);
+        }
+
+        @Override
+        public Completable submitRunnable(final Supplier<Runnable> runnableSupplier) {
+            return delegate.submitRunnable(runnableSupplier);
+        }
+
+        @Override
+        public <T> Single<T> submit(final Callable<? extends T> callable) {
+            return delegate.submit(callable);
+        }
+
+        @Override
+        public <T> Single<T> submitCallable(final Supplier<? extends Callable<? extends T>> callableSupplier) {
+            return delegate.submitCallable(callableSupplier);
         }
     }
 

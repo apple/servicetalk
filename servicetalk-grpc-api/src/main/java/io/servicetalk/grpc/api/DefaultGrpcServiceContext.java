@@ -103,6 +103,11 @@ final class DefaultGrpcServiceContext extends DefaultGrpcMetadata implements Grp
     }
 
     @Override
+    public Completable onClosing() {
+        return connectionContext.onClosing();
+    }
+
+    @Override
     public Completable onClose() {
         return connectionContext.onClose();
     }

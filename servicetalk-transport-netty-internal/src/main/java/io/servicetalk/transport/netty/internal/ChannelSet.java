@@ -66,6 +66,7 @@ public final class ChannelSet implements ListenableAsyncCloseable {
 
     private final Map<ChannelId, Channel> channelMap = new ConcurrentHashMap<>();
     private final Processor onCloseProcessor = newCompletableProcessor();
+    private final Processor onClosingProcessor = newCompletableProcessor();
     private final Completable onClose;
     @SuppressWarnings("unused")
     private volatile int state;
@@ -113,6 +114,7 @@ public final class ChannelSet implements ListenableAsyncCloseable {
                     return;
                 }
 
+                onClosingProcessor.onComplete();
                 if (channelMap.isEmpty()) {
                     onCloseProcessor.onComplete();
                     return;
@@ -137,6 +139,7 @@ public final class ChannelSet implements ListenableAsyncCloseable {
                     return;
                 }
 
+                onClosingProcessor.onComplete();
                 if (channelMap.isEmpty()) {
                     toSource(onClose).subscribe(subscriber);
                     onCloseProcessor.onComplete();
@@ -144,7 +147,6 @@ public final class ChannelSet implements ListenableAsyncCloseable {
                 }
 
                 CompositeCloseable closeable = newCompositeCloseable();
-
                 for (final Channel channel : channelMap.values()) {
                     Attribute<PrivilegedListenableAsyncCloseable> closeableAttribute =
                             channel.attr(CHANNEL_CLOSEABLE_KEY);
@@ -180,5 +182,10 @@ public final class ChannelSet implements ListenableAsyncCloseable {
     @Override
     public Completable onClose() {
         return onClose;
+    }
+
+    @Override
+    public Completable onClosing() {
+        return fromSource(onClosingProcessor);
     }
 }

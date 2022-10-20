@@ -234,6 +234,11 @@ final class GrpcRouter {
         }
 
         @Override
+        public Completable onClosing() {
+            return delegate.onClosing();
+        }
+
+        @Override
         public SocketAddress listenAddress() {
             return delegate.listenAddress();
         }

@@ -176,6 +176,11 @@ final class DefaultClientGroup<Key, Client extends ListenableAsyncCloseable> imp
     }
 
     @Override
+    public Completable onClosing() {
+        return asyncCloseable.onClosing();
+    }
+
+    @Override
     public Completable closeAsync() {
         return asyncCloseable.closeAsync();
     }
