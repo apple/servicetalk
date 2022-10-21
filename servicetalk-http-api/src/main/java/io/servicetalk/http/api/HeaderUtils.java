@@ -31,7 +31,6 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.buffer.api.CharSequences.caseInsensitiveHashCode;
 import static io.servicetalk.buffer.api.CharSequences.contentEquals;
 import static io.servicetalk.buffer.api.CharSequences.contentEqualsIgnoreCase;
 import static io.servicetalk.buffer.api.CharSequences.forEachByte;
@@ -136,47 +135,6 @@ public final class HeaderUtils {
             }
             return sb.append(']').toString();
         }
-    }
-
-    static boolean equals(final HttpHeaders lhs, final HttpHeaders rhs) {
-        if (lhs.size() != rhs.size()) {
-            return false;
-        }
-
-        if (lhs == rhs) {
-            return true;
-        }
-
-        // The regular iterator is not suitable for equality comparisons because the overall ordering is not
-        // in any specific order relative to the content of this MultiMap.
-        for (final CharSequence name : lhs.names()) {
-            final Iterator<? extends CharSequence> valueItr = lhs.valuesIterator(name);
-            final Iterator<? extends CharSequence> h2ValueItr = rhs.valuesIterator(name);
-            while (valueItr.hasNext() && h2ValueItr.hasNext()) {
-                if (!contentEquals(valueItr.next(), h2ValueItr.next())) {
-                    return false;
-                }
-            }
-            if (valueItr.hasNext() != h2ValueItr.hasNext()) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    static int hashCode(final HttpHeaders headers) {
-        if (headers.isEmpty()) {
-            return 0;
-        }
-        int result = HASH_CODE_SEED;
-        for (final CharSequence key : headers.names()) {
-            result = 31 * result + caseInsensitiveHashCode(key);
-            final Iterator<? extends CharSequence> valueItr = headers.valuesIterator(key);
-            while (valueItr.hasNext()) {
-                result = 31 * result + caseInsensitiveHashCode(valueItr.next());
-            }
-        }
-        return result;
     }
 
     /**
