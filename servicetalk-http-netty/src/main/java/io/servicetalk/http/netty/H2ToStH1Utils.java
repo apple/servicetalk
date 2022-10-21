@@ -114,6 +114,9 @@ final class H2ToStH1Utils {
                         if (i + 1 < nextCookie.length() && nextCookie.charAt(i + 1) != ' ') {
                             throwNoSpaceAfterCookieCrumb(cookieCrumb);
                         }
+                        if (nextCookie.length() - 2 <= i) {
+                            throwNotAllowedToEndWithSemicolon(cookieCrumb);
+                        }
                         // skip 2 characters "; " (see https://tools.ietf.org/html/rfc6265#section-4.2.1).
                         start = i + 2;
                     } while (start >= 0 && start < nextCookie.length() &&
@@ -143,6 +146,12 @@ final class H2ToStH1Utils {
         final CharSequence name = nameEnd > 0 ? cookieCrumb.subSequence(0, nameEnd) : cookieCrumb;
         throw new IllegalArgumentException("cookie " + name +
                 " must have a space after ; in cookie attribute-value lists");
+    }
+
+    private static void throwNotAllowedToEndWithSemicolon(CharSequence cookieCrumb) {
+        final int nameEnd = indexOf(cookieCrumb, '=', 0);
+        final CharSequence name = nameEnd > 0 ? cookieCrumb.subSequence(0, nameEnd) : cookieCrumb;
+        throw new IllegalArgumentException("cookie '" + name + "': cookie is not allowed to end with ;");
     }
 
     static Http2Headers h1HeadersToH2Headers(HttpHeaders h1Headers) {

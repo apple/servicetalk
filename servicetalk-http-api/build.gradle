@@ -75,7 +75,9 @@ sourceSets {
       compileClasspath += main.output + test.output
       runtimeClasspath += main.output + test.output
       srcDirs("src/test")
+      include "**/DefaultHttpSetCookiesTest.java"
       include "**/DefaultHttpSetCookiesRfc6265Test.java"
+      include "**/LegacyCookieParsingTest.java"
     }
   }
 }

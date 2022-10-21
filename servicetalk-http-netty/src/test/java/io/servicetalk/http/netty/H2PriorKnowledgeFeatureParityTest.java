@@ -366,10 +366,10 @@ class H2PriorKnowledgeFeatureParityTest {
                     "name1=value1; name2=value2; name3=value3" :
                     "name1=value1;name2=value2;name3=value3";
             if (endsWithSemi) {
-                requestCookie = requestCookie + ';';
+                requestCookie += ';';
             }
             request.addHeader(COOKIE, requestCookie);
-            if (COOKIE_STRICT_RFC_6265 && !strictRfc6265) {
+            if (COOKIE_STRICT_RFC_6265 && (!strictRfc6265 || endsWithSemi)) {
                 if (h2PriorKnowledge) {
                     // h2 does cookie parsing to expand/compress cookie crumbs.
                     assertThat(
@@ -380,7 +380,7 @@ class H2PriorKnowledgeFeatureParityTest {
                     HttpResponse response = client.request(request);
                     CharSequence responseCookie = response.headers().get(COOKIE);
                     assertNotNull(responseCookie);
-                    assertThrows(IllegalArgumentException.class, () -> response.headers().getCookie("name2"));
+                    assertThrows(IllegalArgumentException.class, () -> response.headers().getCookie("name3"));
                 }
             } else {
                 HttpResponse response = client.request(request);
@@ -395,6 +395,15 @@ class H2PriorKnowledgeFeatureParityTest {
                 cookie = response.headers().getCookie("name3");
                 assertNotNull(cookie);
                 assertEquals("value3", cookie.value());
+                // if (COOKIE_STRICT_RFC_6265 && endsWithSemi) {
+                //     IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+                //             () -> response.headers().getCookie("name3"));
+                //     assertThat(e.getMessage(), is("cookie 'name3': cookie is not allowed to end with ;"));
+                // } else {
+                //     cookie = response.headers().getCookie("name3");
+                //     assertNotNull(cookie);
+                //     assertEquals("value3", cookie.value());
+                // }
             }
         }
     }
