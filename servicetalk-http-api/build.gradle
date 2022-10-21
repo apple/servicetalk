@@ -68,3 +68,31 @@ dependencies {
   testFixturesImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
   testFixturesImplementation "org.mockito:mockito-junit-jupiter:$mockitoCoreVersion"
 }
+
+sourceSets {
+  testProps {
+    java {
+      compileClasspath += main.output + test.output
+      runtimeClasspath += main.output + test.output
+      srcDirs("src/test")
+      include "**/DefaultHttpSetCookiesTest.java"
+      include "**/DefaultHttpSetCookiesRfc6265Test.java"
+      include "**/LegacyCookieParsingTest.java"
+    }
+  }
+}
+
+configurations {
+  testPropsImplementation.extendsFrom testImplementation
+  testPropsRuntimeOnly.extendsFrom testRuntimeOnly
+}
+
+task testProps(type: Test) {
+  useJUnitPlatform()
+  testClassesDirs = sourceSets.testProps.output.classesDirs
+  classpath = sourceSets.testProps.runtimeClasspath
+  systemProperty 'io.servicetalk.http.api.headers.cookieParsingStrictRfc6265', 'true'
+}
+test.dependsOn testProps
+// ServiceTalkLibraryPlugin adds a spotbugs task for each sourceSet, we don't need it.
+spotbugsTestProps.enabled = false

@@ -15,35 +15,19 @@
  */
 package io.servicetalk.http.api;
 
-import org.hamcrest.MatcherAssert;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.parallel.Execution;
-import org.junit.jupiter.api.parallel.ExecutionMode;
-import org.junit.jupiter.api.parallel.Isolated;
 
-import static io.servicetalk.http.api.DefaultHttpSetCookiesTest.quotesInValuePreserved;
+import static io.servicetalk.http.api.HeaderUtils.COOKIE_STRICT_RFC_6265;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-@Isolated
-@Execution(ExecutionMode.SAME_THREAD)
 class DefaultHttpSetCookiesRfc6265Test {
-
-    @BeforeAll
-    static void enablePedantic() {
-        HeaderUtils.cookieParsingStrictRfc6265(true);
-    }
-
-    @AfterAll
-    static void disablePedantic() {
-        HeaderUtils.cookieParsingStrictRfc6265(false);
-    }
-
     @Test
     void throwIfNoSpaceBeforeCookieAttributeValue() {
+        assumeTrue(COOKIE_STRICT_RFC_6265);
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         headers.add("set-cookie", "first=12345;Extension");
         headers.add("set-cookie", "second=12345;Expires=Mon, 22 Aug 2022 20:12:35 GMT");
@@ -55,23 +39,25 @@ class DefaultHttpSetCookiesRfc6265Test {
         Exception exception;
 
         exception = assertThrows(IllegalArgumentException.class, () -> headers.getSetCookie("first"));
-        MatcherAssert.assertThat(exception.getMessage(),
+        assertThat(exception.getMessage(),
                 allOf(containsString("first"), containsString("space is required after ;")));
 
         exception = assertThrows(IllegalArgumentException.class, () -> headers.getSetCookie("second"));
-        MatcherAssert.assertThat(exception.getMessage(),
+        assertThat(exception.getMessage(),
                 allOf(containsString("second"), containsString("space is required after ;")));
 
         exception = assertThrows(IllegalArgumentException.class, () -> headers.getSetCookie("third"));
-        MatcherAssert.assertThat(exception.getMessage(),
+        assertThat(exception.getMessage(),
                 allOf(containsString("third"), containsString("space is required after ;")));
     }
 
     @Test
-    void spaceAfterQuotedValue() {
+    void cookiesWithoutSpaceAfterSemicolon() {
+        assumeTrue(COOKIE_STRICT_RFC_6265);
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
-        headers.add("set-cookie",
-                "qwerty=\"12345\"; Domain=somecompany.co.uk; Path=/; Expires=Wed, 30 Aug 2019 00:00:00 GMT");
-        quotesInValuePreserved(headers);
+        headers.add("cookie", "firstCookie=v1;b=v2");
+        Exception e = assertThrows(IllegalArgumentException.class, () -> headers.getCookies().forEach(c -> { }));
+        assertThat(e.getMessage(), allOf(containsString("a space is required after ;"),
+                containsString("firstCookie")));
     }
 }
