@@ -365,6 +365,10 @@ public final class HeaderUtils {
             int semiIndex = nextCookieDelimiter(cookieString, equalsIndex + 1);
             if (nameLen == cookiePairName.length() &&
                     regionMatches(cookiePairName, true, 0, cookieString, start, nameLen)) {
+                if (COOKIE_STRICT_RFC_6265 && semiIndex > 0 && cookieString.length() - 2 <= semiIndex) {
+                    throw new IllegalArgumentException("cookie '" + cookiePairName +
+                            "': cookie is not allowed to end with ;");
+                }
                 return DefaultHttpCookiePair.parseCookiePair(cookieString, start, nameLen, semiIndex);
             } else if (semiIndex < 0) {
                 break;

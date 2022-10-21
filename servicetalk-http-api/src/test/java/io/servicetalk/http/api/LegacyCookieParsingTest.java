@@ -38,6 +38,7 @@ import java.util.Date;
 import java.util.TimeZone;
 
 import static io.servicetalk.buffer.api.Matchers.contentEqualTo;
+import static io.servicetalk.http.api.HeaderUtils.COOKIE_STRICT_RFC_6265;
 import static io.servicetalk.http.api.HttpHeaderNames.COOKIE;
 import static io.servicetalk.http.api.HttpHeaderNames.SET_COOKIE;
 import static io.servicetalk.http.api.HttpSetCookie.SameSite.None;
@@ -55,6 +56,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 /**
  * Tests from the old Netty 4.1 ClientCookieDecoder and ServerCookieDecoder.
@@ -81,6 +83,7 @@ class LegacyCookieParsingTest {
 
     @Test
     void decodingMultipleServerCookies() {
+        assumeFalse(COOKIE_STRICT_RFC_6265);
         String c1 = "myCookie=myValue;";
         String c2 = "myCookie2=myValue2;";
         String c3 = "myCookie3=myValue3;";
@@ -94,6 +97,7 @@ class LegacyCookieParsingTest {
 
     @Test
     void decodingMultipleSameNamedServerCookies() {
+        assumeFalse(COOKIE_STRICT_RFC_6265);
         String c1 = "myCookie=myValue;";
         String c2 = "myCookie=myValue2;";
         String c3 = "myCookie=myValue3;";
@@ -126,6 +130,7 @@ class LegacyCookieParsingTest {
 
     @Test
     void decodingLongServerCookieValue() {
+        assumeFalse(COOKIE_STRICT_RFC_6265);
         String longValue =
                 "b___$Q__$ha__<NC=MN(F__%#4__<NC=MN(F__2_d____#=IvZB__2_F____'=KqtH__2-9____" +
                         "'=IvZM__3f:____$=HbQW__3g'____%=J^wI__3g-____%=J^wI__3g1____$=HbQW__3g2____" +
@@ -208,6 +213,7 @@ class LegacyCookieParsingTest {
 
     @Test
     void caseSensitiveServerCookieNames() {
+        assumeFalse(COOKIE_STRICT_RFC_6265);
         Iterable<? extends HttpCookiePair> cookies = headers.add(COOKIE, "session_id=a; Session_id=b;").getCookies();
         assertThat(cookies, containsInAnyOrder(
                 new DefaultHttpCookiePair("Session_id", "b"),
