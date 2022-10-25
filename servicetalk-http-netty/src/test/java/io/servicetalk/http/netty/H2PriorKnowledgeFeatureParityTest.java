@@ -107,6 +107,7 @@ import java.io.StringWriter;
 import java.io.Writer;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Queue;
@@ -174,6 +175,7 @@ import static io.servicetalk.transport.netty.internal.BuilderUtils.socketChannel
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor;
 import static java.lang.String.valueOf;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.function.UnaryOperator.identity;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -197,6 +199,7 @@ import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 class H2PriorKnowledgeFeatureParityTest {
+    private static final Collection<Boolean> TRUE_FALSE = asList(true, false);
     private static final CharSequence[] PROHIBITED_HEADERS = {CONNECTION, KEEP_ALIVE, TRANSFER_ENCODING, UPGRADE,
             PROXY_CONNECTION};
     private static final String CONNECTION_HEADER1 = "conn1";
@@ -232,40 +235,29 @@ class H2PriorKnowledgeFeatureParityTest {
     }
 
     @SuppressWarnings("unused")
-    private static Stream<Arguments> clientExecutorsCookies() {
-        return Stream.of(
-                Arguments.of(NO_OFFLOAD, true, true, false, false),
-                Arguments.of(NO_OFFLOAD, true, false, false, false),
-                Arguments.of(NO_OFFLOAD, false, true, false, false),
-                Arguments.of(NO_OFFLOAD, false, false, false, false),
-                Arguments.of(DEFAULT, true, true, false, false),
-                Arguments.of(DEFAULT, true, false, false, false),
-                Arguments.of(DEFAULT, false, true, false, false),
-                Arguments.of(DEFAULT, false, false, false, false),
-                Arguments.of(NO_OFFLOAD, true, true, true, false),
-                Arguments.of(NO_OFFLOAD, true, false, true, false),
-                Arguments.of(NO_OFFLOAD, false, true, true, false),
-                Arguments.of(NO_OFFLOAD, false, false, true, false),
-                Arguments.of(DEFAULT, true, true, true, false),
-                Arguments.of(DEFAULT, true, false, true, false),
-                Arguments.of(DEFAULT, false, true, true, false),
-                Arguments.of(DEFAULT, false, false, true, false),
-                Arguments.of(NO_OFFLOAD, true, true, false, true),
-                Arguments.of(NO_OFFLOAD, true, false, false, true),
-                Arguments.of(NO_OFFLOAD, false, true, false, true),
-                Arguments.of(NO_OFFLOAD, false, false, false, true),
-                Arguments.of(DEFAULT, true, true, false, true),
-                Arguments.of(DEFAULT, true, false, false, true),
-                Arguments.of(DEFAULT, false, true, false, true),
-                Arguments.of(DEFAULT, false, false, false, true),
-                Arguments.of(NO_OFFLOAD, true, true, true, true),
-                Arguments.of(NO_OFFLOAD, true, false, true, true),
-                Arguments.of(NO_OFFLOAD, false, true, true, true),
-                Arguments.of(NO_OFFLOAD, false, false, true, true),
-                Arguments.of(DEFAULT, true, true, true, true),
-                Arguments.of(DEFAULT, true, false, true, true),
-                Arguments.of(DEFAULT, false, true, true, true),
-                Arguments.of(DEFAULT, false, false, true, true));
+    private static Collection<Arguments> clientExecutorsCookies() {
+        Collection<Arguments> data = new ArrayList<>();
+        // h2PriorKnowledge={1}, strictRfc6265={2}, " +
+        // "endsWithSemi={3}, swapHeaderFactories={4}
+        for (HttpTestExecutionStrategy strategy : HttpTestExecutionStrategy.values()) {
+            for (boolean h2PriorKnowledge : TRUE_FALSE) {
+                for (boolean strictRfc6265 : TRUE_FALSE) {
+                    for (boolean endsWithSemi : TRUE_FALSE) {
+                        for (boolean swapHeaderFactories : TRUE_FALSE) {
+                            if (!h2PriorKnowledge && swapHeaderFactories) {
+                                // HTTP/1.X adds "transfer-encoding: chunked" header which is not allowed by
+                                // H2HeadersFactory
+                                continue;
+                            }
+                            data.add(Arguments.of(strategy, h2PriorKnowledge, strictRfc6265, endsWithSemi,
+                                    swapHeaderFactories));
+                        }
+                    }
+                }
+            }
+
+        }
+        return data;
     }
 
     @AfterEach
@@ -347,7 +339,7 @@ class H2PriorKnowledgeFeatureParityTest {
         }
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] client={0}, h2PriorKnowledge={1}, strictRfc6265={2}, " +
+    @ParameterizedTest(name = "{displayName} [{index}] strategy={0}, h2PriorKnowledge={1}, strictRfc6265={2}, " +
                               "endsWithSemi={3}, swapHeaderFactories={4}")
     @MethodSource("clientExecutorsCookies")
     void cookiesRoundTrip(HttpTestExecutionStrategy strategy, boolean h2PriorKnowledge, boolean strictRfc6265,
@@ -1568,7 +1560,7 @@ class H2PriorKnowledgeFeatureParityTest {
                 });
                 stream = bs.open().sync().get();
 
-                Http2Headers headers = new DefaultHttp2Headers()
+                Http2Headers headers = new DefaultHttp2Headers(false)
                         .method("POST")
                         .path("/")
                         .scheme("http")
