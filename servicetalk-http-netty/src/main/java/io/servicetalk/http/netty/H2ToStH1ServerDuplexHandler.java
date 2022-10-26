@@ -153,10 +153,8 @@ final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
         if (httpMethod != null) {
             final boolean containsContentLength = h2Headers.contains(CONTENT_LENGTH);
             if (clientMaySendPayloadBodyFor(httpMethod)) {
-                if (!containsContentLength) {
-                    if (fullRequest && shouldAddZeroContentLength(httpMethod)) {
-                        h2Headers.set(CONTENT_LENGTH, ZERO);
-                    }
+                if (!containsContentLength && fullRequest && shouldAddZeroContentLength(httpMethod)) {
+                    h2Headers.set(CONTENT_LENGTH, ZERO);
                 }
             } else if (containsContentLength) {
                 throw protocolError(ctx, streamId, fullRequest, "content-length (" + h2Headers.get(CONTENT_LENGTH) +

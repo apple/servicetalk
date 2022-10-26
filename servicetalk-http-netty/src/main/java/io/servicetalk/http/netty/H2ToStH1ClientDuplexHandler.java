@@ -204,10 +204,8 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
         if (httpStatus != null) {
             final int statusCode = httpStatus.code();
             if (!h2Headers.contains(CONTENT_LENGTH)) {
-                if (serverMaySendPayloadBodyFor(statusCode, method)) {
-                    if (fullResponse) {
-                        h2Headers.set(CONTENT_LENGTH, ZERO);
-                    }
+                if (serverMaySendPayloadBodyFor(statusCode, method) && fullResponse) {
+                    h2Headers.set(CONTENT_LENGTH, ZERO);
                 }
             } else if (!responseMayHaveContent(statusCode, method)) {
                 throw protocolError(ctx, streamId, fullResponse, "content-length (" + h2Headers.get(CONTENT_LENGTH) +
