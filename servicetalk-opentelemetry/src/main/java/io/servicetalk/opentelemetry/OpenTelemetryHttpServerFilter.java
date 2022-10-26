@@ -106,7 +106,7 @@ public class OpenTelemetryHttpServerFilter implements StreamingHttpServiceFilter
         final Span span = RequestTagExtractor.reportTagsAndStart(tracer
             .spanBuilder(getOperationName(request))
             .setParent(tracingContext)
-            .setSpanKind(SpanKind.CONSUMER), request);
+            .setSpanKind(SpanKind.SERVER), request);
 
         final Scope scope = span.makeCurrent();
         final ScopeTracker tracker = new ScopeTracker(scope, span) {
