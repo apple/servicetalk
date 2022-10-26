@@ -112,9 +112,7 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
     private static final class ResponseCompletionSubscriber implements SingleSource.Subscriber<StreamingHttpResponse> {
         private static final int IDLE = 0;
         private static final int PROCESSING_PAYLOAD = 1;
-        private static final int DELIVERING_PAYLOAD = 2;
-        private static final int AWAITING_CANCEL = 3;
-        private static final int TERMINATED = 4;
+        private static final int TERMINATED = -1;
         private static final AtomicIntegerFieldUpdater<ResponseCompletionSubscriber> stateUpdater =
                 newUpdater(ResponseCompletionSubscriber.class, "state");
         private static final SingleSource.Subscriber<StreamingHttpResponse> NOOP_SUBSCRIBER =
@@ -165,228 +163,8 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
                 sendNullResponse();
             } else if (stateUpdater.compareAndSet(this, IDLE, PROCESSING_PAYLOAD)) {
                 subscriber.onSuccess(response.transformMessageBody(payload ->
-                        payload.liftSync(subscriber ->
-                                new Subscriber<Object>() {
-                                    @Nullable
-                                    private Subscription subscription;
-
-                                    @Override
-                                    public void onSubscribe(final Subscription subscription) {
-                                        this.subscription = subscription;
-                                        subscriber.onSubscribe(new Subscription() {
-                                            @Override
-                                            public void request(final long n) {
-                                                subscription.request(n);
-                                            }
-
-                                            @Override
-                                            public void cancel() {
-                                                if (!discardEventsAfterCancel) {
-                                                    try {
-                                                        if (stateUpdater.compareAndSet(
-                                                                ResponseCompletionSubscriber.this,
-                                                                PROCESSING_PAYLOAD, TERMINATED)) {
-                                                            beforeFinally.cancel();
-                                                        }
-                                                    } finally {
-                                                        subscription.cancel();
-                                                    }
-                                                    return;
-                                                }
-
-                                                for (;;) {
-                                                    final int state = ResponseCompletionSubscriber.this.state;
-                                                    assert state != IDLE;
-                                                    if (state == PROCESSING_PAYLOAD) {
-                                                        if (stateUpdater.compareAndSet(
-                                                                ResponseCompletionSubscriber.this,
-                                                                PROCESSING_PAYLOAD, TERMINATED)) {
-                                                            try {
-                                                                beforeFinally.cancel();
-                                                            } finally {
-                                                                subscription.cancel();
-                                                            }
-                                                            break;
-                                                        }
-                                                    } else if (state == DELIVERING_PAYLOAD) {
-                                                        if (stateUpdater.compareAndSet(
-                                                                ResponseCompletionSubscriber.this,
-                                                                DELIVERING_PAYLOAD, AWAITING_CANCEL)) {
-                                                            break;
-                                                        }
-                                                    } else if (state == TERMINATED) {
-                                                        // still propagate cancel to the original subscription:
-                                                        subscription.cancel();
-                                                        break;
-                                                    } else {
-                                                        // cancel can be invoked multiple times
-                                                        assert state == AWAITING_CANCEL;
-                                                        break;
-                                                    }
-                                                }
-                                            }
-                                        });
-                                    }
-
-                                    @Override
-                                    public void onNext(@Nullable final Object o) {
-                                        if (!discardEventsAfterCancel) {
-                                            subscriber.onNext(o);
-                                            return;
-                                        }
-
-                                        boolean reentry = false;
-                                        for (;;) {
-                                            final int state = ResponseCompletionSubscriber.this.state;
-                                            assert state != IDLE;
-                                            if (state == TERMINATED) {
-                                                // We already cancelled and have to discard further events
-                                                return;
-                                            }
-                                            if (state == DELIVERING_PAYLOAD || state == AWAITING_CANCEL) {
-                                                reentry = true;
-                                                break;
-                                            }
-                                            if (stateUpdater.compareAndSet(ResponseCompletionSubscriber.this,
-                                                    PROCESSING_PAYLOAD, DELIVERING_PAYLOAD)) {
-                                                break;
-                                            }
-                                        }
-
-                                        try {
-                                            subscriber.onNext(o);
-                                        } finally {
-                                            // Re-entry -> don't unlock
-                                            if (!reentry) {
-                                                for (;;) {
-                                                    final int state = ResponseCompletionSubscriber.this.state;
-                                                    assert state != IDLE;
-                                                    assert state != PROCESSING_PAYLOAD;
-                                                    if (state == TERMINATED) {
-                                                        break;
-                                                    }
-                                                    if (state == DELIVERING_PAYLOAD) {
-                                                        if (stateUpdater.compareAndSet(
-                                                                ResponseCompletionSubscriber.this,
-                                                                DELIVERING_PAYLOAD, PROCESSING_PAYLOAD)) {
-                                                            break;
-                                                        }
-                                                    } else if (stateUpdater.compareAndSet(
-                                                            ResponseCompletionSubscriber.this,
-                                                            AWAITING_CANCEL, TERMINATED)) {
-                                                        try {
-                                                            beforeFinally.cancel();
-                                                        } finally {
-                                                            assert subscription != null;
-                                                            subscription.cancel();
-                                                        }
-                                                        break;
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    @Override
-                                    public void onError(final Throwable t) {
-                                        if (!discardEventsAfterCancel) {
-                                            try {
-                                                if (stateUpdater.compareAndSet(ResponseCompletionSubscriber.this,
-                                                        PROCESSING_PAYLOAD, TERMINATED)) {
-                                                    beforeFinally.onError(t);
-                                                }
-                                            } catch (Throwable cause) {
-                                                addSuppressed(t, cause);
-                                            }
-                                            subscriber.onError(t);
-                                            return;
-                                        }
-
-                                        final int prevState = setTerminalState();
-                                        if (prevState == TERMINATED) {
-                                            // We already cancelled and have to discard further events
-                                            return;
-                                        }
-                                        // Propagate original cancel to let Subscription observe it
-                                        final boolean propagateCancel = prevState == AWAITING_CANCEL;
-
-                                        try {
-                                            beforeFinally.onError(t);
-                                        } catch (Throwable cause) {
-                                            addSuppressed(t, cause);
-                                        }
-                                        try {
-                                            subscriber.onError(t);
-                                        } finally {
-                                            cancel0(propagateCancel);
-                                        }
-                                    }
-
-                                    @Override
-                                    public void onComplete() {
-                                        if (!discardEventsAfterCancel) {
-                                            try {
-                                                if (stateUpdater.compareAndSet(ResponseCompletionSubscriber.this,
-                                                        PROCESSING_PAYLOAD, TERMINATED)) {
-                                                    beforeFinally.onComplete();
-                                                }
-                                            } catch (Throwable cause) {
-                                                subscriber.onError(cause);
-                                                return;
-                                            }
-                                            subscriber.onComplete();
-                                            return;
-                                        }
-
-                                        final int prevState = setTerminalState();
-                                        if (prevState == TERMINATED) {
-                                            // We already cancelled and have to discard further events
-                                            return;
-                                        }
-                                        // Propagate original cancel to let Subscription observe it
-                                        final boolean propagateCancel = prevState == AWAITING_CANCEL;
-
-                                        try {
-                                            try {
-                                                beforeFinally.onComplete();
-                                            } catch (Throwable cause) {
-                                                subscriber.onError(cause);
-                                                return;
-                                            }
-                                            subscriber.onComplete();
-                                        } finally {
-                                            cancel0(propagateCancel);
-                                        }
-                                    }
-
-                                    private int setTerminalState() {
-                                        for (;;) {
-                                            final int state = ResponseCompletionSubscriber.this.state;
-                                            assert state != IDLE;
-                                            if (state == TERMINATED) {
-                                                // We already cancelled and have to discard further events
-                                                return state;
-                                            }
-                                            if (state == PROCESSING_PAYLOAD) {
-                                                if (stateUpdater.compareAndSet(ResponseCompletionSubscriber.this,
-                                                        PROCESSING_PAYLOAD, TERMINATED)) {
-                                                    return state;
-                                                }
-                                            } else if (stateUpdater.compareAndSet(ResponseCompletionSubscriber.this,
-                                                    state, TERMINATED)) {
-                                                // re-entry, but we can terminate because this is a final event:
-                                                return state;
-                                            }
-                                        }
-                                    }
-
-                                    private void cancel0(final boolean propagateCancel) {
-                                        if (propagateCancel) {
-                                            assert subscription != null;
-                                            subscription.cancel();
-                                        }
-                                    }
-                                })
+                        payload.liftSync(messageBodySubscriber -> new MessageBodySubscriber(messageBodySubscriber,
+                                beforeFinally, discardEventsAfterCancel))
                 ));
             } else {
                 // Invoking a terminal method multiple times is not allowed by the RS spec, so we assume we have been
@@ -442,6 +220,233 @@ public final class BeforeFinallyHttpOperator implements SingleOperator<Streaming
             // we may retain a reference to a downstream Subscriber and violate RS 3.13.
             // https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.4/README.md#3.13
             subscriber = NOOP_SUBSCRIBER;
+        }
+    }
+
+    private static final class MessageBodySubscriber implements Subscriber<Object> {
+
+        private static final int PROCESSING_PAYLOAD = 0;
+        private static final int DELIVERING_PAYLOAD = 1;
+        private static final int AWAITING_CANCEL = 2;
+        private static final int TERMINATED = -1;
+
+        private static final AtomicIntegerFieldUpdater<MessageBodySubscriber> stateUpdater =
+                newUpdater(MessageBodySubscriber.class, "state");
+
+        private final Subscriber<? super Object> subscriber;
+        private final TerminalSignalConsumer beforeFinally;
+        private final boolean discardEventsAfterCancel;
+        private volatile int state;
+        @Nullable
+        private Subscription subscription;
+
+        MessageBodySubscriber(final Subscriber<? super Object> subscriber,
+                              final TerminalSignalConsumer beforeFinally,
+                              final boolean discardEventsAfterCancel) {
+            this.subscriber = subscriber;
+            this.beforeFinally = beforeFinally;
+            this.discardEventsAfterCancel = discardEventsAfterCancel;
+        }
+
+        @Override
+        public void onSubscribe(final Subscription subscription) {
+            this.subscription = subscription;
+            subscriber.onSubscribe(new Subscription() {
+                @Override
+                public void request(final long n) {
+                    subscription.request(n);
+                }
+
+                @Override
+                public void cancel() {
+                    if (!discardEventsAfterCancel) {
+                        try {
+                            if (stateUpdater.compareAndSet(MessageBodySubscriber.this,
+                                    PROCESSING_PAYLOAD, TERMINATED)) {
+                                beforeFinally.cancel();
+                            }
+                        } finally {
+                            subscription.cancel();
+                        }
+                        return;
+                    }
+
+                    for (;;) {
+                        final int state = MessageBodySubscriber.this.state;
+                        if (state == PROCESSING_PAYLOAD) {
+                            if (stateUpdater.compareAndSet(MessageBodySubscriber.this,
+                                    PROCESSING_PAYLOAD, TERMINATED)) {
+                                try {
+                                    beforeFinally.cancel();
+                                } finally {
+                                    subscription.cancel();
+                                }
+                                break;
+                            }
+                        } else if (state == DELIVERING_PAYLOAD) {
+                            if (stateUpdater.compareAndSet(MessageBodySubscriber.this,
+                                    DELIVERING_PAYLOAD, AWAITING_CANCEL)) {
+                                break;
+                            }
+                        } else if (state == TERMINATED) {
+                            // still propagate cancel to the original subscription:
+                            subscription.cancel();
+                            break;
+                        } else {
+                            // cancel can be invoked multiple times
+                            assert state == AWAITING_CANCEL;
+                            break;
+                        }
+                    }
+                }
+            });
+        }
+
+        @Override
+        public void onNext(@Nullable final Object o) {
+            if (!discardEventsAfterCancel) {
+                subscriber.onNext(o);
+                return;
+            }
+
+            boolean reentry = false;
+            for (;;) {
+                final int state = this.state;
+                if (state == TERMINATED) {
+                    // We already cancelled and have to discard further events
+                    return;
+                }
+                if (state == DELIVERING_PAYLOAD || state == AWAITING_CANCEL) {
+                    reentry = true;
+                    break;
+                }
+                if (stateUpdater.compareAndSet(this, PROCESSING_PAYLOAD, DELIVERING_PAYLOAD)) {
+                    break;
+                }
+            }
+
+            try {
+                subscriber.onNext(o);
+            } finally {
+                // Re-entry -> don't unlock
+                if (!reentry) {
+                    for (;;) {
+                        final int state = this.state;
+                        assert state != PROCESSING_PAYLOAD;
+                        if (state == TERMINATED) {
+                            break;
+                        }
+                        if (state == DELIVERING_PAYLOAD) {
+                            if (stateUpdater.compareAndSet(this, DELIVERING_PAYLOAD, PROCESSING_PAYLOAD)) {
+                                break;
+                            }
+                        } else if (stateUpdater.compareAndSet(this, AWAITING_CANCEL, TERMINATED)) {
+                            try {
+                                beforeFinally.cancel();
+                            } finally {
+                                assert subscription != null;
+                                subscription.cancel();
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        @Override
+        public void onError(final Throwable t) {
+            if (!discardEventsAfterCancel) {
+                try {
+                    if (stateUpdater.compareAndSet(this, PROCESSING_PAYLOAD, TERMINATED)) {
+                        beforeFinally.onError(t);
+                    }
+                } catch (Throwable cause) {
+                    addSuppressed(t, cause);
+                }
+                subscriber.onError(t);
+                return;
+            }
+
+            final int prevState = setTerminalState();
+            if (prevState == TERMINATED) {
+                // We already cancelled and have to discard further events
+                return;
+            }
+            // Propagate original cancel to let Subscription observe it
+            final boolean propagateCancel = prevState == AWAITING_CANCEL;
+
+            try {
+                beforeFinally.onError(t);
+            } catch (Throwable cause) {
+                addSuppressed(t, cause);
+            }
+            try {
+                subscriber.onError(t);
+            } finally {
+                cancel0(propagateCancel);
+            }
+        }
+
+        @Override
+        public void onComplete() {
+            if (!discardEventsAfterCancel) {
+                try {
+                    if (stateUpdater.compareAndSet(this, PROCESSING_PAYLOAD, TERMINATED)) {
+                        beforeFinally.onComplete();
+                    }
+                } catch (Throwable cause) {
+                    subscriber.onError(cause);
+                    return;
+                }
+                subscriber.onComplete();
+                return;
+            }
+
+            final int prevState = setTerminalState();
+            if (prevState == TERMINATED) {
+                // We already cancelled and have to discard further events
+                return;
+            }
+            // Propagate original cancel to let Subscription observe it
+            final boolean propagateCancel = prevState == AWAITING_CANCEL;
+
+            try {
+                try {
+                    beforeFinally.onComplete();
+                } catch (Throwable cause) {
+                    subscriber.onError(cause);
+                    return;
+                }
+                subscriber.onComplete();
+            } finally {
+                cancel0(propagateCancel);
+            }
+        }
+
+        private int setTerminalState() {
+            for (;;) {
+                final int state = this.state;
+                if (state == TERMINATED) {
+                    // We already cancelled and have to discard further events
+                    return state;
+                }
+                if (state == PROCESSING_PAYLOAD) {
+                    if (stateUpdater.compareAndSet(this, PROCESSING_PAYLOAD, TERMINATED)) {
+                        return state;
+                    }
+                } else if (stateUpdater.compareAndSet(this, state, TERMINATED)) {
+                    // re-entry, but we can terminate because this is a final event:
+                    return state;
+                }
+            }
+        }
+
+        private void cancel0(final boolean propagateCancel) {
+            if (propagateCancel) {
+                assert subscription != null;
+                subscription.cancel();
+            }
         }
     }
 }
