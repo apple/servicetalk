@@ -255,7 +255,6 @@ class H2PriorKnowledgeFeatureParityTest {
                     }
                 }
             }
-
         }
         return data;
     }
