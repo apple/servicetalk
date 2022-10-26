@@ -59,6 +59,8 @@ final class H2ServerParentChannelInitializer implements ChannelInitializer {
                 // the user to apply their own timeout at the call site.
                 .gracefulShutdownTimeoutMillis(-1)
                 .initialSettings(nettySettings)
+                // We always validate incoming headers, define this explicitly instead of inheriting a default value.
+                .validateHeaders(true)
                 .headerSensitivityDetector(config.headersSensitivityDetector()::test);
 
         initFrameLogger(multiplexCodecBuilder, config.frameLoggerConfig());
