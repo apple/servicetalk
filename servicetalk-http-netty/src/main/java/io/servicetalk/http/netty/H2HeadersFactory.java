@@ -25,8 +25,7 @@ import io.netty.handler.codec.http2.DefaultHttp2Headers;
  */
 public final class H2HeadersFactory implements HttpHeadersFactory {
 
-    private static final boolean DEFAULT_VALIDATE_VALUES = false;
-    public static final HttpHeadersFactory INSTANCE = new H2HeadersFactory(true, true, DEFAULT_VALIDATE_VALUES);
+    public static final HttpHeadersFactory INSTANCE = new H2HeadersFactory(true, true, false);
 
     private final boolean validateNames;
     private final boolean validateCookies;
@@ -81,6 +80,11 @@ public final class H2HeadersFactory implements HttpHeadersFactory {
     public HttpHeaders newEmptyTrailers() {
         return new NettyH2HeadersToHttpHeaders(new DefaultHttp2Headers(validateNames, 0),
                 validateCookies, validateValues);
+    }
+
+    @Override
+    public boolean validateNames() {
+        return validateNames;
     }
 
     @Override
