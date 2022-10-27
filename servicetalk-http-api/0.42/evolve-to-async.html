@@ -1108,13 +1108,13 @@ of operation.</p>
 <h3 id="no-offloads-per-request"><a class="anchor" href="#no-offloads-per-request"></a><a class="link" href="#no-offloads-per-request">No offloads per request</a></h3>
 <div class="paragraph">
 <p>HTTP clients for all programming models recognize <code>HTTP_EXECUTION_STRATEGY_KEY</code> from
-<a href="https://github.com/apple/servicetalk/blob/0.42.19/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpContextKeys.java">HttpContextKeys</a> that
+<a href="https://github.com/apple/servicetalk/blob/0.42.20/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpContextKeys.java">HttpContextKeys</a> that
 allows to override offloading by passing its value in <code>HttpRequestMetaData#context()</code>.</p>
 </div>
 <div class="paragraph">
 <p>In order to disable offloading for a specific request one has to use a specific <code>HttpExecutionStrategy</code> that does not
 do any offloading. Such a strategy is available out of the box in
-<a href="https://github.com/apple/servicetalk/blob/0.42.19/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpExecutionStrategies.java">HttpExecutionStrategies</a>
+<a href="https://github.com/apple/servicetalk/blob/0.42.20/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpExecutionStrategies.java">HttpExecutionStrategies</a>
 and can be used as below:</p>
 </div>
 <div class="listingblock">
@@ -1151,7 +1151,7 @@ then one can disable offloading for the entire client using the following option
 </div>
 <div class="paragraph">
 <p>See
-<a href="https://github.com/apple/servicetalk/blob/0.42.19/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpClientBuilder.java">HttpClientBuilder</a>.</p>
+<a href="https://github.com/apple/servicetalk/blob/0.42.20/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpClientBuilder.java">HttpClientBuilder</a>.</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -1206,7 +1206,7 @@ offloading for the entire server, the following option can be used:</p>
 </div>
 <div class="paragraph">
 <p>See
-<a href="https://github.com/apple/servicetalk/blob/0.42.19/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpServerBuilder.java">HttpServerBuilder</a>.</p>
+<a href="https://github.com/apple/servicetalk/blob/0.42.20/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpServerBuilder.java">HttpServerBuilder</a>.</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -1251,7 +1251,7 @@ This auto-inference is only used if no strategy is explicitly specified for that
 <p>A router may also provide a capability for a route to explicitly define an execution strategy that is used to invoke
 that route. In presence of such an explicit strategy, auto-inference of the route strategy is disabled. In order to
 disable offloads, one should use
-<a href="https://github.com/apple/servicetalk/blob/0.42.19/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpExecutionStrategies.java"><code>HttpExecutionStrategies.noOffloadsStrategy()</code></a></p>
+<a href="https://github.com/apple/servicetalk/blob/0.42.20/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpExecutionStrategies.java"><code>HttpExecutionStrategies.noOffloadsStrategy()</code></a></p>
 </div>
 </div>
 <div class="sect3">
