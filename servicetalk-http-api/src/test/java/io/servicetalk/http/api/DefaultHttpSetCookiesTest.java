@@ -27,6 +27,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.buffer.api.CharSequences.contentEqualsIgnoreCase;
 import static io.servicetalk.buffer.api.Matchers.contentEqualTo;
 import static io.servicetalk.http.api.DefaultHttpSetCookie.parseSetCookie;
+import static io.servicetalk.http.api.HeaderUtils.COOKIE_STRICT_RFC_6265;
 import static io.servicetalk.http.api.HttpSetCookie.SameSite.Lax;
 import static io.servicetalk.http.api.HttpSetCookie.SameSite.None;
 import static io.servicetalk.http.api.HttpSetCookie.SameSite.Strict;
@@ -40,6 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 class DefaultHttpSetCookiesTest {
     @Test
@@ -427,7 +429,7 @@ class DefaultHttpSetCookiesTest {
         quotesInValuePreserved(headers);
     }
 
-    static void quotesInValuePreserved(HttpHeaders headers) {
+    private static void quotesInValuePreserved(HttpHeaders headers) {
         final HttpSetCookie cookie = headers.getSetCookie("qwerty");
         assertNotNull(cookie);
         assertThat(cookie.isWrapped(), is(true));
@@ -736,6 +738,7 @@ class DefaultHttpSetCookiesTest {
 
     @Test
     void mustTolerateNoSpaceBeforeCookieAttributeValue() {
+        assumeFalse(COOKIE_STRICT_RFC_6265);
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         headers.add("set-cookie", "first=12345;Extension");
         headers.add("set-cookie", "second=12345;Expires=Mon, 22 Aug 2022 20:12:35 GMT");

@@ -47,6 +47,12 @@ public interface HttpHeadersFactory {
         return newTrailers();
     }
 
+    default boolean validateNames() {
+        // We do not know behavior of a custom HttpHeadersFactory, but assume it validates header names.
+        // This helps to make sure we always validate HTTP/2 headers by default inside Netty pipeline.
+        return true;
+    }
+
     /**
      * Determine if cookies should be validated during parsing into {@link HttpSetCookie}s.
      *

@@ -54,6 +54,7 @@ import static io.servicetalk.buffer.api.Matchers.contentEqualTo;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
+import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
@@ -142,14 +143,14 @@ class AbstractH2DuplexHandlerTest {
         }
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{displayName} [{index}] variant={0}")
     @EnumSource(Variant.class)
     void unexpectedContentLength(Variant variant) {
         setUp(variant);
         unexpectedContentLength(variant, false);
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{displayName} [{index}] variant={0}")
     @EnumSource(Variant.class)
     void unexpectedContentLengthEndStream(Variant variant) {
         setUp(variant);
@@ -177,14 +178,14 @@ class AbstractH2DuplexHandlerTest {
         assertThat(e.getMessage(), startsWith("content-length (1) header is not expected"));
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{displayName} [{index}] variant={0}")
     @EnumSource(Variant.class)
     void nullContentLengthWhenContentIsNotExpected(Variant variant) {
         setUp(variant);
         nullContentLengthWhenContentIsNotExpected(variant, false);
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{displayName} [{index}] variant={0}")
     @EnumSource(Variant.class)
     void nullContentLengthWhenContentIsNotExpectedEndStream(Variant variant) {
         setUp(variant);
@@ -210,14 +211,14 @@ class AbstractH2DuplexHandlerTest {
         assertThat(channel.readInbound(), instanceOf(HttpMetaData.class));
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{displayName} [{index}] variant={0}")
     @EnumSource(Variant.class)
     void responseWithContentLengthToHeadRequest(Variant variant) {
         setUp(variant);
         responseWithContentLengthToHeadRequest(variant, false);
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{displayName} [{index}] variant={0}")
     @EnumSource(Variant.class)
     void responseWithContentLengthToHeadRequestEndStream(Variant variant) {
         setUp(variant);
@@ -253,14 +254,14 @@ class AbstractH2DuplexHandlerTest {
         assertThat(channel.inboundMessages(), is(empty()));
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{displayName} [{index}] variant={0}")
     @EnumSource(Variant.class)
     void noContentLength(Variant variant) {
         setUp(variant);
         noContentLength(variant, false);
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{displayName} [{index}] variant={0}")
     @EnumSource(Variant.class)
     void noContentLengthEndStream(Variant variant) {
         setUp(variant);
@@ -275,20 +276,21 @@ class AbstractH2DuplexHandlerTest {
 
         HttpMetaData metaData = channel.readInbound();
         if (endStream) {
-            assertThat(metaData.headers().contains(CONTENT_LENGTH), is(true));
+            assertThat(metaData.headers().get(CONTENT_LENGTH), contentEqualTo(ZERO));
         } else {
-            assertThat(isTransferEncodingChunked(metaData.headers()), is(true));
+            assertThat("Unexpected content-length header", metaData.headers().contains(CONTENT_LENGTH), is(false));
         }
+        assertThat("Unexpected chunked encoding", isTransferEncodingChunked(metaData.headers()), is(false));
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{displayName} [{index}] variant={0}")
     @EnumSource(Variant.class)
     void withContentLength(Variant variant) {
         setUp(variant);
         withContentLength(variant, false);
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{displayName} [{index}] variant={0}")
     @EnumSource(Variant.class)
     void withContentLengthAndTrailers(Variant variant) {
         setUp(variant);
@@ -321,7 +323,7 @@ class AbstractH2DuplexHandlerTest {
         assertThat(channel.inboundMessages(), is(empty()));
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{displayName} [{index}] variant={0}")
     @EnumSource(Variant.class)
     void singleHeadersFrameWithZeroContentLength(Variant variant) {
         setUp(variant);
@@ -341,7 +343,7 @@ class AbstractH2DuplexHandlerTest {
         assertThat(channel.inboundMessages(), is(empty()));
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{displayName} [{index}] variant={0}")
     @EnumSource(Variant.class)
     void emptyMessageWrittenAsSingleFrame(Variant variant) {
         setUp(variant);
@@ -367,7 +369,7 @@ class AbstractH2DuplexHandlerTest {
         assertThat("Unexpected outbound messages", channel.outboundMessages(), empty());
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{displayName} [{index}] variant={0}")
     @EnumSource(Variant.class)
     void noDataFramesForEmptyBuffers(Variant variant) {
         setUp(variant);

@@ -31,7 +31,6 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.buffer.api.CharSequences.caseInsensitiveHashCode;
 import static io.servicetalk.buffer.api.CharSequences.contentEquals;
 import static io.servicetalk.buffer.api.CharSequences.contentEqualsIgnoreCase;
 import static io.servicetalk.buffer.api.CharSequences.forEachByte;
@@ -92,8 +91,7 @@ public final class HeaderUtils {
      * <a href="https://www.rfc-editor.org/rfc/rfc2965">RFC2965</a>/
      * <a href="https://www.rfc-editor.org/rfc/rfc2109">RFC2109</a> ({@code false}, the default).
      */
-    // not final for testing
-    private static boolean cookieParsingStrictRfc6265 = parseBoolean(getProperty(
+    static final boolean COOKIE_STRICT_RFC_6265 = parseBoolean(getProperty(
             "io.servicetalk.http.api.headers.cookieParsingStrictRfc6265", "false"));
     // ASCII symbols:
     private static final byte HT = 9;
@@ -110,15 +108,6 @@ public final class HeaderUtils {
 
     private HeaderUtils() {
         // no instances
-    }
-
-    static boolean cookieParsingStrictRfc6265() {
-        return cookieParsingStrictRfc6265;
-    }
-
-    // pkg-private for testing
-    static void cookieParsingStrictRfc6265(boolean value) {
-        cookieParsingStrictRfc6265 = value;
     }
 
     static String toString(final HttpHeaders headers,
@@ -146,47 +135,6 @@ public final class HeaderUtils {
             }
             return sb.append(']').toString();
         }
-    }
-
-    static boolean equals(final HttpHeaders lhs, final HttpHeaders rhs) {
-        if (lhs.size() != rhs.size()) {
-            return false;
-        }
-
-        if (lhs == rhs) {
-            return true;
-        }
-
-        // The regular iterator is not suitable for equality comparisons because the overall ordering is not
-        // in any specific order relative to the content of this MultiMap.
-        for (final CharSequence name : lhs.names()) {
-            final Iterator<? extends CharSequence> valueItr = lhs.valuesIterator(name);
-            final Iterator<? extends CharSequence> h2ValueItr = rhs.valuesIterator(name);
-            while (valueItr.hasNext() && h2ValueItr.hasNext()) {
-                if (!contentEquals(valueItr.next(), h2ValueItr.next())) {
-                    return false;
-                }
-            }
-            if (valueItr.hasNext() != h2ValueItr.hasNext()) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    static int hashCode(final HttpHeaders headers) {
-        if (headers.isEmpty()) {
-            return 0;
-        }
-        int result = HASH_CODE_SEED;
-        for (final CharSequence key : headers.names()) {
-            result = 31 * result + caseInsensitiveHashCode(key);
-            final Iterator<? extends CharSequence> valueItr = headers.valuesIterator(key);
-            while (valueItr.hasNext()) {
-                result = 31 * result + caseInsensitiveHashCode(valueItr.next());
-            }
-        }
-        return result;
     }
 
     /**
@@ -313,7 +261,7 @@ public final class HeaderUtils {
         final int startIndex = cookieDomain.length() - requestDomain.length();
         if (startIndex == 0) {
             // The RFC has an ambiguous statement [1] related to case sensitivity here but since domain names are
-            // generally compared in a case insensitive fashion we do the same here.
+            // generally compared in a case-insensitive fashion we do the same here.
             // [1] https://tools.ietf.org/html/rfc6265#section-5.1.3
             // the domain string and the string will have been canonicalized to lower case at this point
             return contentEqualsIgnoreCase(cookieDomain, requestDomain);
@@ -417,14 +365,29 @@ public final class HeaderUtils {
             int semiIndex = nextCookieDelimiter(cookieString, equalsIndex + 1);
             if (nameLen == cookiePairName.length() &&
                     regionMatches(cookiePairName, true, 0, cookieString, start, nameLen)) {
+                if (COOKIE_STRICT_RFC_6265 && semiIndex > 0 && cookieString.length() - 2 <= semiIndex) {
+                    throw new IllegalArgumentException("cookie '" + cookiePairName +
+                            "': cookie is not allowed to end with ;");
+                }
                 return DefaultHttpCookiePair.parseCookiePair(cookieString, start, nameLen, semiIndex);
-            }
-
-            if (semiIndex < 0 || cookieString.length() - 2 <= semiIndex) {
+            } else if (semiIndex < 0) {
                 break;
             }
-            // skip 2 characters "; " (see https://tools.ietf.org/html/rfc6265#section-4.2.1)
-            start = semiIndex + 2;
+
+            if (COOKIE_STRICT_RFC_6265) {
+                if (semiIndex + 1 < cookieString.length() && cookieString.charAt(semiIndex + 1) != ' ') {
+                    throw new IllegalArgumentException("cookie " + cookieString.subSequence(start, equalsIndex) +
+                            " must have a space after ; in cookie attribute-value lists");
+                }
+                // skip 2 characters "; " (see https://tools.ietf.org/html/rfc6265#section-4.2.1)
+                start = semiIndex + 2;
+            } else {
+                start = semiIndex + 1 < cookieString.length() && cookieString.charAt(semiIndex + 1) == ' ' ?
+                        semiIndex + 2 : semiIndex + 1;
+            }
+            if (start < 0 || start >= cookieString.length()) {
+                break;
+            }
         }
         return null;
     }
@@ -557,14 +520,33 @@ public final class HeaderUtils {
          */
         private HttpCookiePair findNext(CharSequence cookieHeaderValue) {
             int semiIndex = nextCookieDelimiter(cookieHeaderValue, nextNextStart);
-            HttpCookiePair next = DefaultHttpCookiePair.parseCookiePair(cookieHeaderValue, nextNextStart, semiIndex);
+            int nameLength = indexOf(cookieHeaderValue, '=', nextNextStart) - nextNextStart;
+            if (nameLength < 0) {
+                throw new IllegalArgumentException("no cookie value found after index " + nextNextStart +
+                        (next == null ? " (there was no previous cookie)" :
+                                " (found after parsing the '" + next.name() + "' cookie)"));
+            }
+            HttpCookiePair next = DefaultHttpCookiePair.parseCookiePair(
+                    cookieHeaderValue, nextNextStart, nameLength, semiIndex);
             if (semiIndex > 0) {
                 if (cookieHeaderValue.length() - 2 <= semiIndex) {
-                    advanceCookieHeaderValue();
-                    nextNextStart = 0;
-                } else {
-                    // skip 2 characters "; " (see https://tools.ietf.org/html/rfc6265#section-4.2.1)
+                    if (COOKIE_STRICT_RFC_6265) {
+                        throw new IllegalArgumentException("cookie '" + next.name() +
+                                "': cookie is not allowed to end with ;");
+                    } else {
+                        advanceCookieHeaderValue();
+                        nextNextStart = 0;
+                    }
+                } else if (COOKIE_STRICT_RFC_6265) {
+                    // Skip 2 characters "; " (see https://tools.ietf.org/html/rfc6265#section-4.2.1)
+                    if (cookieHeaderValue.charAt(semiIndex + 1) != ' ') {
+                        throw new IllegalArgumentException("cookie '" + next.name() +
+                                "': a space is required after ; in cookie attribute-value lists");
+                    }
                     nextNextStart = semiIndex + 2;
+                } else {
+                    // Older cookie spec delimit with just semicolon. See https://www.rfc-editor.org/rfc/rfc2965
+                    nextNextStart = semiIndex + (cookieHeaderValue.charAt(semiIndex + 1) == ' ' ? 2 : 1);
                 }
             } else {
                 advanceCookieHeaderValue();
