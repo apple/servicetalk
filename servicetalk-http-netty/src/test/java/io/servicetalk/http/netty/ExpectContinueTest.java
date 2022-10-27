@@ -71,10 +71,10 @@ import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpResponseStatus.PERMANENT_REDIRECT;
 import static io.servicetalk.http.api.HttpResponseStatus.UNPROCESSABLE_ENTITY;
+import static io.servicetalk.http.netty.BuilderUtils.newClientWithConfigs;
+import static io.servicetalk.http.netty.BuilderUtils.newLocalServerWithConfigs;
 import static io.servicetalk.http.netty.HttpProtocol.HTTP_1;
-import static io.servicetalk.logging.api.LogLevel.TRACE;
-import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
-import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
+import static io.servicetalk.http.netty.HttpProtocol.HTTP_2;
 import static java.lang.String.valueOf;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -548,11 +548,8 @@ class ExpectContinueTest {
 
     private static HttpServerContext startServer(HttpProtocol protocol,
                                                  BlockingStreamingHttpService service) throws Exception {
-        return HttpServers.forAddress(localAddress(0))
-                .ioExecutor(SERVER_CTX.ioExecutor())
-                .executor(SERVER_CTX.executor())
-                .enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> true)
-                .protocols(protocol.config)
+        return newLocalServerWithConfigs(SERVER_CTX,
+                protocol == HTTP_2 ? protocol.configOtherHeaderFactory : protocol.config)
                 .listenBlockingStreamingAndAwait(service);
     }
 
@@ -563,12 +560,8 @@ class ExpectContinueTest {
     private static StreamingHttpClient createClient(HttpServerContext serverContext,
                                                     HttpProtocol protocol,
                                                     @Nullable StreamingHttpClientFilterFactory filterFactory) {
-        final SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder =
-                HttpClients.forSingleAddress(serverHostAndPort(serverContext))
-                        .ioExecutor(CLIENT_CTX.ioExecutor())
-                        .executor(CLIENT_CTX.executor())
-                        .enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> true)
-                        .protocols(protocol.config);
+        final SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder = newClientWithConfigs(
+                serverContext, CLIENT_CTX, protocol == HTTP_2 ? protocol.configOtherHeaderFactory : protocol.config);
         if (filterFactory != null) {
             builder.appendClientFilter(filterFactory);
         }

@@ -332,8 +332,9 @@ final class HeaderUtils {
 
     private static boolean canAddTransferEncodingChunked(final HttpMetaData metaData) {
         final HttpHeaders headers = metaData.headers();
-        return ((chunkedSupported(metaData.version()) && mayHaveTrailers(metaData)) ||
-                !headers.contains(CONTENT_LENGTH)) && !isTransferEncodingChunked(headers);
+        return chunkedSupported(metaData.version()) &&
+                (mayHaveTrailers(metaData) || !headers.contains(CONTENT_LENGTH)) &&
+                !isTransferEncodingChunked(headers);
     }
 
     private static boolean chunkedSupported(final HttpProtocolVersion version) {
