@@ -25,6 +25,7 @@ import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.StreamingHttpResponses;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -43,7 +44,6 @@ import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
-import static io.servicetalk.http.api.StreamingHttpResponses.newResponse;
 import static java.time.Duration.ZERO;
 import static java.time.Duration.ofMillis;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -61,8 +61,7 @@ class IdleTimeoutConnectionFilterTest {
     private static final StreamingHttpRequest REQUEST = mock(StreamingHttpRequest.class);
     private static final StreamingHttpRequest REQUEST_SUCCESS = mock(StreamingHttpRequest.class);
     private static final StreamingHttpRequest REQUEST_FAIL = mock(StreamingHttpRequest.class);
-    private static final StreamingHttpResponse RESPONSE = newResponse(OK, HTTP_1_1,
-            DefaultHttpHeadersFactory.INSTANCE.newHeaders(), DEFAULT_ALLOCATOR, DefaultHttpHeadersFactory.INSTANCE);
+    private static final StreamingHttpResponse RESPONSE = newResponse();
     private static final Throwable DELIBERATE_EXCEPTION = new RuntimeException("DELIBERATE_EXCEPTION");
     private static final long TIMEOUT_MILLIS = 60_000;
 
@@ -127,7 +126,7 @@ class IdleTimeoutConnectionFilterTest {
     }
 
     @Test
-    void hadSuccessfulResponse() {
+    void hadSuccessfulResponse() throws Exception {
         StreamingHttpRequester requester = applyTimeout();
         executor.advanceTimeByNoExecuteTasks(TIMEOUT_MILLIS / 2, MILLISECONDS);
         assertSuccessfulResponse(requester);
@@ -157,7 +156,7 @@ class IdleTimeoutConnectionFilterTest {
     }
 
     @Test
-    void twoConcurrentRequests() {
+    void twoConcurrentRequests() throws Exception {
         StreamingHttpRequester requester = applyTimeout();
         executor.advanceTimeByNoExecuteTasks(TIMEOUT_MILLIS / 2, MILLISECONDS);
 
@@ -175,8 +174,9 @@ class IdleTimeoutConnectionFilterTest {
         assertNotClosed();  // we still have the 1st "in-flight" request
 
         // Complete the 1st request:
-        firstResponseProcessor.onSuccess(RESPONSE);
-        assertResponse(responseSubscriber);
+        StreamingHttpResponse firstResponse = newResponse();
+        firstResponseProcessor.onSuccess(firstResponse);
+        assertResponse(responseSubscriber, firstResponse);
 
         executor.advanceTimeBy(TIMEOUT_MILLIS / 2, MILLISECONDS);
         assertNotClosed();  // timeout was reset after completion of the 1st request
@@ -188,7 +188,7 @@ class IdleTimeoutConnectionFilterTest {
     }
 
     @Test
-    void inFlightRequest() {
+    void inFlightRequest() throws Exception {
         StreamingHttpRequester requester = applyTimeout();
         executor.advanceTimeByNoExecuteTasks(TIMEOUT_MILLIS / 2, MILLISECONDS);
 
@@ -201,8 +201,9 @@ class IdleTimeoutConnectionFilterTest {
         executor.advanceTimeBy(TIMEOUT_MILLIS, MILLISECONDS);
         assertNotClosed();
 
-        responseProcessor.onSuccess(RESPONSE);
-        assertResponse(responseSubscriber);
+        StreamingHttpResponse response = newResponse();
+        responseProcessor.onSuccess(response);
+        assertResponse(responseSubscriber, response);
 
         executor.advanceTimeBy(TIMEOUT_MILLIS / 2, MILLISECONDS);
         assertNotClosed();
@@ -221,17 +222,18 @@ class IdleTimeoutConnectionFilterTest {
         assertThat(closedTimes.get(), is(0));
     }
 
-    private static void assertSuccessfulResponse(StreamingHttpRequester requester) {
+    private static void assertSuccessfulResponse(StreamingHttpRequester requester) throws Exception {
         TestSingleSubscriber<StreamingHttpResponse> responseSubscriber = new TestSingleSubscriber<>();
         toSource(requester.request(REQUEST_SUCCESS)).subscribe(responseSubscriber);
-        assertResponse(responseSubscriber);
+        assertResponse(responseSubscriber, RESPONSE);
     }
 
-    private static void assertResponse(TestSingleSubscriber<StreamingHttpResponse> responseSubscriber) {
+    private static void assertResponse(TestSingleSubscriber<StreamingHttpResponse> responseSubscriber,
+                                       StreamingHttpResponse expectedResponse) throws Exception {
         StreamingHttpResponse response = responseSubscriber.awaitOnSuccess();
         assertThat(response, is(notNullValue()));
-        assertThat(response, is(RESPONSE));
-        response.payloadBody().ignoreElements().subscribe();
+        assertThat(response, is(expectedResponse));
+        response.payloadBody().ignoreElements().toFuture().get();
     }
 
     private static void assertFailedResponse(StreamingHttpRequester requester) {
@@ -244,5 +246,10 @@ class IdleTimeoutConnectionFilterTest {
         TestSingleSubscriber<StreamingHttpResponse> responseSubscriber = new TestSingleSubscriber<>();
         toSource(requester.request(REQUEST)).subscribe(responseSubscriber);
         assertThat(responseSubscriber.awaitOnError(), instanceOf(ClosedChannelException.class));
+    }
+
+    private static StreamingHttpResponse newResponse() {
+        return StreamingHttpResponses.newResponse(OK, HTTP_1_1, DefaultHttpHeadersFactory.INSTANCE.newHeaders(),
+                DEFAULT_ALLOCATOR, DefaultHttpHeadersFactory.INSTANCE);
     }
 }
