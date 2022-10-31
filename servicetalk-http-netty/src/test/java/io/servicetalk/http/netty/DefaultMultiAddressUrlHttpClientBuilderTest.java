@@ -247,6 +247,11 @@ class DefaultMultiAddressUrlHttpClientBuilderTest {
         }
 
         @Override
+        public boolean validateNames() {
+            return delegate.validateNames();
+        }
+
+        @Override
         public boolean validateCookies() {
             return delegate.validateCookies();
         }

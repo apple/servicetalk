@@ -23,6 +23,7 @@ import org.gradle.api.plugins.quality.Pmd
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.publish.maven.tasks.AbstractPublishToMaven
 import org.gradle.api.tasks.compile.JavaCompile
+import org.gradle.api.tasks.testing.Test
 
 import static io.servicetalk.gradle.plugin.internal.ProjectUtils.addManifestAttributes
 import static io.servicetalk.gradle.plugin.internal.ProjectUtils.addQualityTask
@@ -204,7 +205,7 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
 
   private static void configureTests(Project project) {
     project.configure(project) {
-      test {
+      tasks.withType(Test).all {
         useJUnitPlatform()
         // expected format for timeout: <number>[ns|μs|ms|s|m|h|d])
         def junit5DefaultTimeout = Boolean.valueOf(System.getenv("CI") ?: "false") ? "30s" : "10s"

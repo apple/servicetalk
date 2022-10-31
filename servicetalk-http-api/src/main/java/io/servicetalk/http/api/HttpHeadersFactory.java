@@ -48,6 +48,17 @@ public interface HttpHeadersFactory {
     }
 
     /**
+     * Determine if header names should be validated during parsing into {@link HttpHeaders}s.
+     *
+     * @return {@code true} if header names should be validated during parsing into {@link HttpHeaders}s.
+     */
+    default boolean validateNames() {
+        // We do not know behavior of a custom HttpHeadersFactory, but assume it validates header names.
+        // This helps to make sure we always validate HTTP/2 headers by default inside Netty pipeline.
+        return true;
+    }
+
+    /**
      * Determine if cookies should be validated during parsing into {@link HttpSetCookie}s.
      *
      * @return {@code true} if a cookies should be validated during parsing into {@link HttpSetCookie}s.

@@ -23,10 +23,12 @@ import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.LegacyTestSingle;
+import io.servicetalk.concurrent.api.Processors;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TerminalSignalConsumer;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSubscription;
+import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
@@ -38,6 +40,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
@@ -55,6 +58,7 @@ import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Publisher.never;
+import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
@@ -69,7 +73,9 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -542,6 +548,47 @@ class BeforeFinallyHttpOperatorTest {
         payload.onComplete();
 
         verify(beforeFinally).onComplete();
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] discardEventsAfterCancel={0} payloadError={1}")
+    @CsvSource(value = {"true,true", "true,false", "false,true", "false,false"})
+    void resubscribeToPayloadBody(boolean discardEventsAfterCancel, boolean payloadError) {
+        LegacyTestSingle<StreamingHttpResponse> responseSingle = new LegacyTestSingle<>(true);
+        final ResponseSubscriber subscriber = new ResponseSubscriber();
+        toSource(responseSingle
+                .liftSync(new BeforeFinallyHttpOperator(beforeFinally, discardEventsAfterCancel)))
+                .subscribe(subscriber);
+        assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
+
+        PublisherSource.Processor<Buffer, Buffer> payload = Processors.newPublisherProcessor();
+        final StreamingHttpResponse response = reqRespFactory.ok().payloadBody(fromSource(payload));
+        responseSingle.onSuccess(response);
+
+        verifyNoInteractions(beforeFinally);
+        responseSingle.verifyNotCancelled();
+        subscriber.verifyResponseReceived();
+        assert subscriber.response != null;
+
+        // Subscribe for the first time.
+        TestPublisherSubscriber<Buffer> payloadSubscriber1 = new TestPublisherSubscriber<>();
+        toSource(subscriber.response.payloadBody()).subscribe(payloadSubscriber1);
+        payloadSubscriber1.awaitSubscription().request(MAX_VALUE);
+        if (payloadError) {
+            payload.onError(DELIBERATE_EXCEPTION);
+            verify(beforeFinally).onError(DELIBERATE_EXCEPTION);
+            assertThat(payloadSubscriber1.awaitOnError(), is(sameInstance(DELIBERATE_EXCEPTION)));
+        } else {
+            payload.onComplete();
+            verify(beforeFinally).onComplete();
+            payloadSubscriber1.awaitOnComplete();
+        }
+
+        // Subscribe for the second time.
+        TestPublisherSubscriber<Buffer> payloadSubscriber2 = new TestPublisherSubscriber<>();
+        toSource(subscriber.response.payloadBody()).subscribe(payloadSubscriber2);
+        payloadSubscriber2.awaitSubscription().request(MAX_VALUE);
+        assertThat(payloadSubscriber2.awaitOnError(), is(instanceOf(DuplicateSubscribeException.class)));
+        verify(beforeFinally).onError(any(DuplicateSubscribeException.class));
     }
 
     private static final class ResponseSubscriber implements SingleSource.Subscriber<StreamingHttpResponse> {

@@ -295,7 +295,18 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T> {
     public Supplier<Throwable> pollTerminal(long timeout, TimeUnit unit) {
         if (await(onTerminalLatch, timeout, unit)) {
             assert onTerminal != null;
-            return onTerminal == complete() ? () -> null : onTerminal::cause;
+            return new Supplier<Throwable>() {
+                @Nullable
+                @Override
+                public Throwable get() {
+                    return onTerminal.cause();
+                }
+
+                @Override
+                public String toString() {
+                    return onTerminal.toString();
+                }
+            };
         }
         return null;
     }
