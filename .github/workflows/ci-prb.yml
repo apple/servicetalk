@@ -27,7 +27,7 @@ jobs:
       - name: Configure Windows Pagefile
         if: ${{ runner.os == 'Windows' }}
         # v1.2
-        uses: al-cheb/configure-pagefile-action@7e234852c937eea04d6ee627c599fb24a5bfffee
+        uses: al-cheb/configure-pagefile-action@86589fd789a4de3e62ba628dda2cb10027b66d67
         with:
           minimum-size: 8GB
           maximum-size: 16GB
