@@ -71,8 +71,8 @@ import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpResponseStatus.PERMANENT_REDIRECT;
 import static io.servicetalk.http.api.HttpResponseStatus.UNPROCESSABLE_ENTITY;
-import static io.servicetalk.http.netty.BuilderUtils.newClientWithConfigs;
-import static io.servicetalk.http.netty.BuilderUtils.newLocalServerWithConfigs;
+import static io.servicetalk.http.netty.BuilderUtils.newClientBuilderWithConfigs;
+import static io.servicetalk.http.netty.BuilderUtils.newServerBuilderWithConfigs;
 import static io.servicetalk.http.netty.HttpProtocol.HTTP_1;
 import static io.servicetalk.http.netty.HttpProtocol.HTTP_2;
 import static java.lang.String.valueOf;
@@ -548,7 +548,7 @@ class ExpectContinueTest {
 
     private static HttpServerContext startServer(HttpProtocol protocol,
                                                  BlockingStreamingHttpService service) throws Exception {
-        return newLocalServerWithConfigs(SERVER_CTX,
+        return newServerBuilderWithConfigs(SERVER_CTX,
                 protocol == HTTP_2 ? protocol.configOtherHeaderFactory : protocol.config)
                 .listenBlockingStreamingAndAwait(service);
     }
@@ -560,7 +560,7 @@ class ExpectContinueTest {
     private static StreamingHttpClient createClient(HttpServerContext serverContext,
                                                     HttpProtocol protocol,
                                                     @Nullable StreamingHttpClientFilterFactory filterFactory) {
-        final SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder = newClientWithConfigs(
+        final SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder = newClientBuilderWithConfigs(
                 serverContext, CLIENT_CTX, protocol == HTTP_2 ? protocol.configOtherHeaderFactory : protocol.config);
         if (filterFactory != null) {
             builder.appendClientFilter(filterFactory);
