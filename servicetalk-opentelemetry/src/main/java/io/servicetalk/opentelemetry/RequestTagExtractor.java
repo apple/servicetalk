@@ -16,54 +16,34 @@
 
 package io.servicetalk.opentelemetry;
 
-import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.HttpRequestMetaData;
 
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
 
-final class RequestTagExtractor implements TagExtractor<StreamingHttpRequest> {
+final class RequestTagExtractor {
 
-    public static final TagExtractor<StreamingHttpRequest> INSTANCE = new RequestTagExtractor();
+    static final RequestTagExtractor INSTANCE = new RequestTagExtractor();
 
     private RequestTagExtractor() {
         // empty private constructor
     }
 
-    public int len(StreamingHttpRequest req) {
-        return 2;
+    private String getRequestMethod(HttpRequestMetaData req) {
+        return req.method().name();
     }
 
-    public String name(StreamingHttpRequest req, int index) {
-        switch (index) {
-            case 0:
-                return "http.url";
-            case 1:
-                return "http.method";
-            default:
-                throw new IndexOutOfBoundsException("Invalid tag index " + index);
-        }
+    private String getHttpUrl(HttpRequestMetaData req) {
+        return (req.scheme() == null ? "http" : req.scheme()) + "://" +
+            (req.effectiveHostAndPort() == null ? "localhost:8080" : req.effectiveHostAndPort())
+            + req.rawPath()
+            + (req.rawQuery() == null ? "" : "?" + req.rawQuery());
     }
 
-    public String value(StreamingHttpRequest req, int index) {
-        switch (index) {
-            case 0:
-                return (req.scheme() == null ? "http" : req.scheme()) + "://" +
-                    (req.effectiveHostAndPort() == null ? "localhost:8080" : req.effectiveHostAndPort())
-                    + req.rawPath()
-                    + (req.rawQuery() == null ? "" : "?" + req.rawQuery());
-            case 1:
-                return req.method().name();
-            default:
-                throw new IndexOutOfBoundsException("Invalid tag index " + index);
-        }
-    }
-
-    static Span reportTagsAndStart(SpanBuilder span, StreamingHttpRequest obj) {
-        final TagExtractor<StreamingHttpRequest> tagExtractor = RequestTagExtractor.INSTANCE;
-        int len = tagExtractor.len(obj);
-        for (int idx = 0; idx < len; idx++) {
-            span.setAttribute(tagExtractor.name(obj, idx), tagExtractor.value(obj, idx));
-        }
+    static Span reportTagsAndStart(SpanBuilder span, HttpRequestMetaData httpRequestMetaData) {
+        final RequestTagExtractor tagExtractor = RequestTagExtractor.INSTANCE;
+        span.setAttribute("http.url", tagExtractor.getHttpUrl(httpRequestMetaData));
+        span.setAttribute("http.method", tagExtractor.getHttpUrl(httpRequestMetaData));
         return span.startSpan();
     }
 }

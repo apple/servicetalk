@@ -41,10 +41,11 @@ import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.ContextPropagators;
 import io.opentelemetry.context.propagation.TextMapSetter;
 
+import java.util.Objects;
 import java.util.function.UnaryOperator;
 
 /**
- * An HTTP filter that supports open telemetry.
+ * An HTTP filter that supports <a href="https://opentelemetry.io/docs/instrumentation/java/">open telemetry</a>.
  * <p>
  * Append this filter before others that are expected to see {@link Scope} for this request/response. Filters
  * appended after this filter that use operators with the <strong>after*</strong> prefix on
@@ -53,10 +54,10 @@ import java.util.function.UnaryOperator;
  * (e.g. {@link Publisher#afterFinally(Runnable)}) will execute after this filter invokes {@link Scope#close()} and
  * therefore will not see the {@link Span} for the current request/response.
  */
-public class OpenTelemetryHttpRequestFilter
+public final class OpenTelemetryHttpRequestFilter
     implements StreamingHttpClientFilterFactory, StreamingHttpConnectionFilterFactory {
 
-    private static final TextMapSetter<HttpHeaders> setter = new HeadersPropagatorSetter();
+    private static final TextMapSetter<HttpHeaders> setter = HeadersPropagatorSetter.INSTANCE;
 
     private final String componentName;
     private final Tracer tracer;
@@ -71,7 +72,7 @@ public class OpenTelemetryHttpRequestFilter
     public OpenTelemetryHttpRequestFilter(final OpenTelemetry openTelemetry, String componentName) {
         this.tracer = openTelemetry.getTracer("io.servicetalk");
         this.propagators = openTelemetry.getPropagators();
-        this.componentName = componentName;
+        this.componentName = Objects.requireNonNull(componentName);
     }
 
     /**

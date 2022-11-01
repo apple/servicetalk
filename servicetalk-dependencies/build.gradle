@@ -40,7 +40,6 @@ dependencies {
     // Ideally these come from the Netty BOM
     api "io.netty.incubator:netty-incubator-transport-native-io_uring:$nettyIoUringVersion"
 
-    api "io.opentelemetry:opentelemetry-api:$opentelemetryVersion"
     api "io.opentracing:opentracing-api:$openTracingVersion"
     api "io.zipkin.reporter2:zipkin-reporter:$zipkinReporterVersion"
     api "jakarta.ws.rs:jakarta.ws.rs-api:$jaxRsVersion"

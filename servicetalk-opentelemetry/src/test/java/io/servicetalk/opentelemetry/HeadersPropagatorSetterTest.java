@@ -18,6 +18,7 @@ package io.servicetalk.opentelemetry;
 
 import io.servicetalk.http.api.HttpHeaders;
 
+import io.opentelemetry.context.propagation.TextMapSetter;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -46,7 +47,7 @@ class HeadersPropagatorSetterTest {
             return carrier;
         });
 
-        final HeadersPropagatorSetter setter = new HeadersPropagatorSetter();
+        final TextMapSetter<HttpHeaders> setter = HeadersPropagatorSetter.INSTANCE;
 
         setter.set(carrier, "k", "v");
 
@@ -55,6 +56,6 @@ class HeadersPropagatorSetterTest {
 
     @Test
     void shouldNotThrowWhenCarrierIsNull() {
-        assertThatNoException().isThrownBy(() -> new HeadersPropagatorSetter().set(null, "k", "v"));
+        assertThatNoException().isThrownBy(() -> HeadersPropagatorSetter.INSTANCE.set(null, "k", "v"));
     }
 }

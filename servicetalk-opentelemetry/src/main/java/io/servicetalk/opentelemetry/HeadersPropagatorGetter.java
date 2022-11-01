@@ -20,29 +20,53 @@ import io.servicetalk.http.api.HttpHeaders;
 
 import io.opentelemetry.context.propagation.TextMapGetter;
 
-import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import javax.annotation.Nullable;
 
 final class HeadersPropagatorGetter implements TextMapGetter<HttpHeaders> {
 
-    @Override
-    public Iterable<String> keys(final HttpHeaders carrier) {
-        Set<String> keys = new HashSet<>();
-        for (CharSequence entry : carrier.names()) {
-            keys.add(entry.toString());
-        }
-        return keys;
+    public static final TextMapGetter<HttpHeaders> INSTANCE = new HeadersPropagatorGetter();
+
+    private HeadersPropagatorGetter() {
     }
 
     @Override
+    public Iterable<String> keys(final HttpHeaders carrier) {
+        return new Iterable<String>() {
+            @Override
+            public Iterator<String> iterator() {
+                return new Iterator<String>() {
+                    private final Iterator<Map.Entry<CharSequence, CharSequence>> itr = carrier.iterator();
+
+                    @Override
+                    public boolean hasNext() {
+                        return itr.hasNext();
+                    }
+
+                    @Override
+                    public String next() {
+                        return itr.next().getKey().toString();
+                    }
+
+                    @Override
+                    public void remove() {
+                        itr.remove();
+                    }
+                };
+            }
+        };
+    }
+
+    @Override
+    @Nullable
     public String get(@Nullable HttpHeaders carrier, final String key) {
         if (carrier == null) {
             return null;
         }
         if (carrier.contains(key)) {
-            return Optional.ofNullable(carrier.get(key)).orElse("").toString();
+            return Optional.ofNullable(carrier.get(key)).map(CharSequence::toString).orElse(null);
         }
         return null;
     }

@@ -45,7 +45,8 @@ import java.util.function.UnaryOperator;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 
 /**
- * A {@link StreamingHttpService} that supports open telemetry.
+ * A {@link StreamingHttpService} that supports
+ * <a href="https://opentelemetry.io/docs/instrumentation/java/">open telemetry</a>.
  * <p>
  * Append this filter before others that are expected to see {@link Scope} for this request/response. Filters
  * appended after this filter that use operators with the <strong>after*</strong> prefix on
@@ -54,9 +55,9 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
  * (e.g. {@link Publisher#afterFinally(Runnable)}) will execute after this filter invokes {@link Scope#close()} and
  * therefore will not see the {@link Span} for the current request/response.
  */
-public class OpenTelemetryHttpServerFilter implements StreamingHttpServiceFilterFactory {
-    private static final TextMapGetter<HttpHeaders> getter = new HeadersPropagatorGetter();
-    private static final TextMapSetter<HttpHeaders> setter = new HeadersPropagatorSetter();
+public final class OpenTelemetryHttpServerFilter implements StreamingHttpServiceFilterFactory {
+    private static final TextMapGetter<HttpHeaders> getter = HeadersPropagatorGetter.INSTANCE;
+    private static final TextMapSetter<HttpHeaders> setter = HeadersPropagatorSetter.INSTANCE;
 
     private final Tracer tracer;
     private final ContextPropagators propagators;
@@ -79,7 +80,7 @@ public class OpenTelemetryHttpServerFilter implements StreamingHttpServiceFilter
     }
 
     @Override
-    public final StreamingHttpServiceFilter create(final StreamingHttpService service) {
+    public StreamingHttpServiceFilter create(final StreamingHttpService service) {
         return new StreamingHttpServiceFilter(service) {
             @Override
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,

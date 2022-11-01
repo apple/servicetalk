@@ -87,7 +87,7 @@ class ScopeTracker implements TerminalSignalConsumer {
      * @param metaData The {@link HttpResponseMetaData} to test.
      * @return {@code true} if the {@link HttpResponseMetaData} should be considered an error for tracing.
      */
-    protected boolean isError(final HttpResponseMetaData metaData) {
+    private boolean isError(final HttpResponseMetaData metaData) {
         return metaData.status().statusClass().equals(SERVER_ERROR_5XX);
     }
 
@@ -100,9 +100,9 @@ class ScopeTracker implements TerminalSignalConsumer {
             .beforeOnSuccess(this::onResponseMeta);
     }
 
-    protected void tagStatusCode() {
+    void tagStatusCode() {
         if (metaData != null) {
-            ResponseTagExtractor.INSTANCE.extractTo(metaData, span::setAttribute);
+            ResponseTagExtractor.INSTANCE.extract(metaData, span);
         }
     }
 
@@ -112,9 +112,5 @@ class ScopeTracker implements TerminalSignalConsumer {
         } finally {
             span.end();
         }
-    }
-
-    final Span getSpan() {
-        return span;
     }
 }

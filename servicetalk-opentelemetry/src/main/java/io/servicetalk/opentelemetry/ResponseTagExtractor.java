@@ -18,31 +18,13 @@ package io.servicetalk.opentelemetry;
 
 import io.servicetalk.http.api.HttpResponseMetaData;
 
-final class ResponseTagExtractor implements TagExtractor<HttpResponseMetaData> {
+import io.opentelemetry.api.trace.Span;
 
-    public static final TagExtractor<HttpResponseMetaData> INSTANCE = new ResponseTagExtractor();
+final class ResponseTagExtractor {
 
-    private ResponseTagExtractor() {
-        // private constructor
-    }
+    public static final ResponseTagExtractor INSTANCE = new ResponseTagExtractor();
 
-    public int len(HttpResponseMetaData resp) {
-        return 1;
-    }
-
-    public String name(HttpResponseMetaData resp, int index) {
-        if (index == 0) {
-            return "http.status_code";
-        } else {
-            throw new IndexOutOfBoundsException("Invalid tag index " + index);
-        }
-    }
-
-    public String value(HttpResponseMetaData resp, int index) {
-        if (index == 0) {
-            return "" + resp.status().code();
-        } else {
-            throw new IndexOutOfBoundsException("Invalid tag index " + index);
-        }
+    void extract(HttpResponseMetaData responseMetaData, Span span) {
+        span.setAttribute("http.status_code", responseMetaData.status().code());
     }
 }

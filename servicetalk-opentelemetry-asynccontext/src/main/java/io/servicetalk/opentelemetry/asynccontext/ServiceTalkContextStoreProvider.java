@@ -30,8 +30,9 @@ import static io.servicetalk.context.api.ContextMap.Key.newKey;
  * Implementation of {@link ContextStorageProvider} that stores the Tracing Context
  * making it available within {@link AsyncContext}.
  */
-public class ServiceTalkContextScopeManager implements ContextStorageProvider {
+public final class ServiceTalkContextStoreProvider implements ContextStorageProvider {
 
+    static final ServiceTalkContextStoreProvider INSTANCE = new ServiceTalkContextStoreProvider();
     private static final ContextMap.Key<Context> SCOPE_KEY =
         newKey("opentelemetry", Context.class);
 
@@ -40,7 +41,7 @@ public class ServiceTalkContextScopeManager implements ContextStorageProvider {
         return ServiceTalkContextStorage.INSTANCE;
     }
 
-    public enum ServiceTalkContextStorage implements ContextStorage {
+    private enum ServiceTalkContextStorage implements ContextStorage {
         INSTANCE;
 
         @Override
@@ -48,7 +49,10 @@ public class ServiceTalkContextScopeManager implements ContextStorageProvider {
             return attach(AsyncContext.context(), toAttach);
         }
 
-        public Scope attach(ContextMap contextMap, Context toAttach) {
+        private Scope attach(ContextMap contextMap, Context toAttach) {
+            if (toAttach == null) {
+                return Scope.noop();
+            }
             final Context current = current();
 
             if (current == toAttach) {
@@ -64,8 +68,7 @@ public class ServiceTalkContextScopeManager implements ContextStorageProvider {
 
         @Override
         public Context current() {
-            final ContextMap contextMap = AsyncContext.context();
-            return contextMap.get(SCOPE_KEY);
+            return AsyncContext.context().get(SCOPE_KEY);
         }
     }
 }

@@ -16,33 +16,27 @@
 
 package io.servicetalk.opentelemetry;
 
+import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.HttpHeaders;
 
+import io.opentelemetry.context.propagation.TextMapGetter;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.anyString;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.mock;
 
 class HeadersPropagatorGetterTest {
 
     @Test
     void shouldGetAllKeys() {
 
-        final HeadersPropagatorGetter getter = new HeadersPropagatorGetter();
-        HttpHeaders carrier = mock(HttpHeaders.class);
-        Set<CharSequence> set = new HashSet<>();
-        set.add("a");
-        set.add("b");
-        doReturn(set).when(carrier).names();
+        final TextMapGetter<HttpHeaders> getter = HeadersPropagatorGetter.INSTANCE;
+        HttpHeaders httpHeaders = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
+        httpHeaders.set("a", "1");
+        httpHeaders.set("b", "2");
 
-        final Iterable<String> keys = getter.keys(carrier);
+        final Iterable<String> keys = getter.keys(httpHeaders);
 
         assertThat(keys).containsAll(Arrays.asList("a", "b"));
     }
@@ -50,11 +44,9 @@ class HeadersPropagatorGetterTest {
     @Test
     void shouldReturnNullWhenThereIsNotKeyInCarrier() {
 
-        final HeadersPropagatorGetter getter = new HeadersPropagatorGetter();
+        final TextMapGetter<HttpHeaders> getter = HeadersPropagatorGetter.INSTANCE;
 
-        HttpHeaders carrier = mock(HttpHeaders.class);
-
-        doReturn(false).when(carrier).contains(anyString());
+        HttpHeaders carrier = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
 
         assertThat(getter.get(carrier, "c")).isNull();
     }
@@ -62,19 +54,17 @@ class HeadersPropagatorGetterTest {
     @Test
     void shouldReturnValueWhenThereIsAKeyInCarrierCaseInsensitive() {
 
-        final HeadersPropagatorGetter getter = new HeadersPropagatorGetter();
+        final TextMapGetter<HttpHeaders> getter = HeadersPropagatorGetter.INSTANCE;
 
-        HttpHeaders carrier = mock(HttpHeaders.class);
-
-        doReturn(true).when(carrier).contains(eq("A"));
-        doReturn("1").when(carrier).get(eq("A"));
+        HttpHeaders carrier = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
+        carrier.set("A", "1");
 
         assertThat(getter.get(carrier, "A")).isEqualTo("1");
     }
 
     @Test
     void shouldReturnNullWhenCarrierIsNull() {
-        final HeadersPropagatorGetter getter = new HeadersPropagatorGetter();
+        final TextMapGetter<HttpHeaders> getter = HeadersPropagatorGetter.INSTANCE;
 
         assertThat(getter.get(null, "A")).isNull();
     }

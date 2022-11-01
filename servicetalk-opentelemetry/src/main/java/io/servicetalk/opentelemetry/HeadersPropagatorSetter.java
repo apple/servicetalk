@@ -25,6 +25,11 @@ import javax.annotation.Nullable;
 
 final class HeadersPropagatorSetter implements TextMapSetter<HttpHeaders> {
 
+    public static final TextMapSetter<HttpHeaders> INSTANCE = new HeadersPropagatorSetter();
+
+    private HeadersPropagatorSetter() {
+    }
+
     @Override
     public void set(@Nullable final HttpHeaders headers, final String key, final String value) {
         if (headers != null) {

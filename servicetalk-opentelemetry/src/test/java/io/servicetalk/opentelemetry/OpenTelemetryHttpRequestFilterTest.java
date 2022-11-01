@@ -21,7 +21,6 @@ import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.log4j2.mdc.utils.LoggerStringWriter;
-import io.servicetalk.opentelemetry.asynccontext.ServiceTalkContextScopeManager.ServiceTalkContextStorage;
 import io.servicetalk.transport.api.ServerContext;
 
 import io.opentelemetry.api.OpenTelemetry;
@@ -31,7 +30,6 @@ import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.ContextPropagators;
-import io.opentelemetry.sdk.testing.context.SettableContextStorageProvider;
 import io.opentelemetry.sdk.testing.junit5.OpenTelemetryExtension;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
@@ -69,7 +67,6 @@ class OpenTelemetryHttpRequestFilterTest {
 
     @BeforeAll
     static void beforeAll() {
-        SettableContextStorageProvider.setContextStorage(ServiceTalkContextStorage.INSTANCE);
     }
 
     @BeforeEach
@@ -205,7 +202,7 @@ class OpenTelemetryHttpRequestFilterTest {
                 final ContextPropagators propagators = givenOpentelemetry.getPropagators();
                 final Context context = Context.root();
                 io.opentelemetry.context.Context tracingContext = propagators.getTextMapPropagator()
-                    .extract(context, request.headers(), new HeadersPropagatorGetter());
+                    .extract(context, request.headers(), HeadersPropagatorGetter.INSTANCE);
                 Span span = Span.fromContext(tracingContext);
                 return succeeded(
                     responseFactory.ok().payloadBody(new TestSpanState(span.getSpanContext()), SPAN_STATE_SERIALIZER));

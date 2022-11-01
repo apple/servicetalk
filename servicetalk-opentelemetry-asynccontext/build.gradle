@@ -27,7 +27,6 @@ dependencies {
 
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-http-utils")
-  implementation project(":servicetalk-opentelemetry-asynccontext")
   implementation "com.google.code.findbugs:jsr305"
   implementation "org.slf4j:slf4j-api"
 
