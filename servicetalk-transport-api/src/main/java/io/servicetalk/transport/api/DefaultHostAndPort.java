@@ -242,7 +242,7 @@ final class DefaultHostAndPort implements HostAndPort {
                     throw new IllegalArgumentException("No more than 3 IP section separators expected");
                 }
             } else {
-                throw new IllegalArgumentException("Unexpected character in IPv4 address[" + i + "]=" + currChar );
+                throw new IllegalArgumentException("Unexpected character in IPv4 address[" + i + "]=" + currChar);
             }
         }
         if (nibbles != 3) {

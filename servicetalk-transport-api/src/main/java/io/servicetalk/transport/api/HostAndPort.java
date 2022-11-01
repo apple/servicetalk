@@ -15,8 +15,6 @@
  */
 package io.servicetalk.transport.api;
 
-import io.servicetalk.buffer.api.CharSequences;
-
 import java.net.InetSocketAddress;
 
 /**
