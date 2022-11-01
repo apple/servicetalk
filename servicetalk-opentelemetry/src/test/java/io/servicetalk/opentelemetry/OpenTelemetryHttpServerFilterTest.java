@@ -39,11 +39,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
@@ -59,7 +56,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class OpenTelemetryHttpServerFilterTest {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
     @RegisterExtension
     final OpenTelemetryExtension otelTesting = OpenTelemetryExtension.create();
 
