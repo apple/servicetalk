@@ -15,6 +15,8 @@
  */
 package io.servicetalk.transport.api;
 
+import io.servicetalk.buffer.api.CharSequences;
+
 import java.net.InetSocketAddress;
 
 /**
@@ -56,5 +58,29 @@ public interface HostAndPort {
      */
     static HostAndPort of(InetSocketAddress address) {
         return new DefaultHostAndPort(address.getHostString(), address.getPort());
+    }
+
+    /**
+     * Parse IPv4 {@code xxx.xxx.xxx.xxx:yyyyy} and IPv6 {@code [xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx]:yyyyy} style
+     * addresses.
+     * @param ipPort An IPv4 {@code xxx.xxx.xxx.xxx:yyyyy} or IPv6
+     * {@code [xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx]:yyyyy} addresses.
+     * @return A {@link HostAndPort} where the hostname is the IP address and the port is parsed from the string.
+     * @see #ofIpPort(String, int)
+     */
+    static HostAndPort ofIpPort(String ipPort) {
+        return DefaultHostAndPort.parseFromIpPort(ipPort, 0);
+    }
+
+    /**
+     * Parse IPv4 {@code xxx.xxx.xxx.xxx:yyyyy} and IPv6 {@code [xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx]:yyyyy} style
+     * addresses.
+     * @param ipPort An IPv4 {@code xxx.xxx.xxx.xxx:yyyyy} or IPv6
+     * {@code [xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx]:yyyyy} addresses.
+     * @param startIndex The index at which the address parsing starts.
+     * @return A {@link HostAndPort} where the hostname is the IP address and the port is parsed from the string.
+     */
+    static HostAndPort ofIpPort(String ipPort, int startIndex) {
+        return DefaultHostAndPort.parseFromIpPort(ipPort, startIndex);
     }
 }
