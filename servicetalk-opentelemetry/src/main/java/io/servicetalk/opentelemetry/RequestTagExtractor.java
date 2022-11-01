@@ -43,7 +43,7 @@ final class RequestTagExtractor {
     static Span reportTagsAndStart(SpanBuilder span, HttpRequestMetaData httpRequestMetaData) {
         final RequestTagExtractor tagExtractor = RequestTagExtractor.INSTANCE;
         span.setAttribute("http.url", tagExtractor.getHttpUrl(httpRequestMetaData));
-        span.setAttribute("http.method", tagExtractor.getHttpUrl(httpRequestMetaData));
+        span.setAttribute("http.method", tagExtractor.getRequestMethod(httpRequestMetaData));
         return span.startSpan();
     }
 }
