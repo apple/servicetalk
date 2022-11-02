@@ -42,17 +42,13 @@ final class DefaultHostAndPort implements HostAndPort {
      * @param port the port.
      */
     DefaultHostAndPort(String hostName, int port) {
-        this(hostName, port, isValidIpV6Address(hostName));
+        this(hostName, validatePort(port), isValidIpV6Address(hostName));
     }
 
     DefaultHostAndPort(String hostName, int port, boolean isIPv6) {
-        this(hostName, port, isIPv6 ? '[' + hostName + "]:" + port : hostName + ':' + port);
-    }
-
-    private DefaultHostAndPort(String hostName, int port, String toString) {
         this.hostName = requireNonNull(hostName);
         this.port = port;
-        this.toString = requireNonNull(toString);
+        this.toString = isIPv6 ? '[' + hostName + "]:" + port : hostName + ':' + port;
     }
 
     /**
@@ -113,7 +109,7 @@ final class DefaultHostAndPort implements HostAndPort {
             if (!isValidIpV6Address(inetAddress)) {
                 throw new IllegalArgumentException("Invalid IPv6 address: " + inetAddress);
             }
-            return new DefaultHostAndPort(inetAddress, port, '[' + inetAddress + "]:" + port);
+            return new DefaultHostAndPort(inetAddress, port, true);
         }
         if (!isValidIpV4Address(inetAddress)) {
             throw new IllegalArgumentException("Invalid IPv4 address: " + inetAddress);
@@ -152,6 +148,13 @@ final class DefaultHostAndPort implements HostAndPort {
 
     private static boolean isValidPort(int port) {
         return port >= 0 && port <= 65535;
+    }
+
+    private static int validatePort(int port) {
+        if (!isValidPort(port)) {
+            throw new IllegalArgumentException("Invalid port: " + port);
+        }
+        return port;
     }
 
     private static String compressIPv6(String rawIp) {
