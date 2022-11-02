@@ -42,7 +42,7 @@ final class DefaultHostAndPort implements HostAndPort {
      * @param port the port.
      */
     DefaultHostAndPort(String hostName, int port) {
-        this(hostName, validatePort(port), isValidIpV6Address(hostName));
+        this(hostName, port, isValidIpV6Address(hostName));
     }
 
     DefaultHostAndPort(String hostName, int port, boolean isIPv6) {
@@ -148,13 +148,6 @@ final class DefaultHostAndPort implements HostAndPort {
 
     private static boolean isValidPort(int port) {
         return port >= 0 && port <= 65535;
-    }
-
-    private static int validatePort(int port) {
-        if (!isValidPort(port)) {
-            throw new IllegalArgumentException("Invalid port: " + port);
-        }
-        return port;
     }
 
     private static String compressIPv6(String rawIp) {
