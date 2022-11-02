@@ -46,7 +46,14 @@ final class DefaultHostAndPort implements HostAndPort {
      * @param port the port.
      */
     DefaultHostAndPort(String hostName, int port) {
-        this(hostName, port, isValidIpV6Address(hostName));
+        if (isValidIpV6Address(requireNonNull(hostName))) { // Normalize ipv6 so equals/hashCode works as expected
+            this.hostName = hostName.charAt(0) == '[' ?
+                    compressIPv6(hostName, 1, hostName.length() - 1) : compressIPv6(hostName, 0, hostName.length());
+            this.toString = STR_IPV6;
+        } else {
+            this.hostName = hostName;
+        }
+        this.port = port;
     }
 
     DefaultHostAndPort(String hostName, int port, boolean isIPv6) {
@@ -109,7 +116,7 @@ final class DefaultHostAndPort implements HostAndPort {
         }
 
         if (isv6) {
-            inetAddress = compressIPv6(inetAddress);
+            inetAddress = compressIPv6(inetAddress, 0, inetAddress.length());
             if (!isValidIpV6Address(inetAddress)) {
                 throw new IllegalArgumentException("Invalid IPv6 address: " + inetAddress);
             }
@@ -160,8 +167,8 @@ final class DefaultHostAndPort implements HostAndPort {
         return port >= 0 && port <= 65535;
     }
 
-    private static String compressIPv6(String rawIp) {
-        if (rawIp.isEmpty()) {
+    private static String compressIPv6(String rawIp, int start, int end) {
+        if (end - start <= 0) {
             throw new IllegalArgumentException("Empty IPv6 address");
         }
         // https://datatracker.ietf.org/doc/html/rfc5952#section-2
@@ -171,16 +178,16 @@ final class DefaultHostAndPort implements HostAndPort {
         int longestZerosBegin = -1;
         int longestZerosEnd = -1;
         int zerosCount = 0;
-        int zerosBegin = rawIp.charAt(0) != '0' ? -1 : 0;
+        int zerosBegin = rawIp.charAt(start) != '0' ? -1 : 0;
         int zerosEnd = -1;
         boolean isCompressed = false;
         char prevChar = '\0';
-        StringBuilder compressedIPv6Builder = new StringBuilder(rawIp.length());
-        for (int i = 0; i < rawIp.length(); ++i) {
+        StringBuilder compressedIPv6Builder = new StringBuilder(end - start);
+        for (int i = start; i < end; ++i) {
             final char c = rawIp.charAt(i);
             switch (c) {
                 case '0':
-                    if (zerosBegin < 0 || i == rawIp.length() - 1) {
+                    if (zerosBegin < 0 || i == end - 1) {
                         compressedIPv6Builder.append('0');
                     }
                     break;

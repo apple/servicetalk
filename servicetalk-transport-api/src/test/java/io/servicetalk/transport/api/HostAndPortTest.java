@@ -27,6 +27,18 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
 final class HostAndPortTest {
     @Test
+    void hostConstructorNormalizesIpv6() {
+        HostAndPort hp1 = HostAndPort.of("[::1]", 9999);
+        HostAndPort hp2 = HostAndPort.of("::1", 9999);
+        HostAndPort hp3 = HostAndPort.of("[0000:0000:0000:0000:0000:0000:0000:0001]", 9999);
+        HostAndPort hp4 = HostAndPort.of("0000:0000:0000:0000:0000:0000:0000:0001", 9999);
+
+        assertHpEqualTo(hp1, hp2);
+        assertHpEqualTo(hp2, hp3);
+        assertHpEqualTo(hp3, hp4);
+    }
+
+    @Test
     void IPv6LoopBack() {
         assertIP("[::1]:9999", "::1", 9999);
     }
@@ -243,5 +255,11 @@ final class HostAndPortTest {
         } else {
             assertThat(result.toString(), equalTo(expectedAddress + ':' + expectedPort));
         }
+    }
+
+    private static void assertHpEqualTo(HostAndPort hp1, HostAndPort hp2) {
+        assertThat(hp1, equalTo(hp2));
+        assertThat(hp1.hashCode(), equalTo(hp2.hashCode()));
+        assertThat(hp1.toString(), equalTo(hp2.toString()));
     }
 }
