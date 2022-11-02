@@ -15,6 +15,7 @@
  */
 package io.servicetalk.transport.api;
 
+import java.net.Inet6Address;
 import java.net.InetSocketAddress;
 
 /**
@@ -55,7 +56,8 @@ public interface HostAndPort {
      * @return the {@link HostAndPort}.
      */
     static HostAndPort of(InetSocketAddress address) {
-        return new DefaultHostAndPort(address.getHostString(), address.getPort());
+        return new DefaultHostAndPort(address.getHostString(), address.getPort(),
+                address.getAddress() instanceof Inet6Address);
     }
 
     /**

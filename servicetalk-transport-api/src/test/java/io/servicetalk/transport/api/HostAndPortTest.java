@@ -76,6 +76,11 @@ final class HostAndPortTest {
     }
 
     @Test
+    public void IPv6SingleCharAddress() {
+        assertThrows(IllegalArgumentException.class, () -> assertIP("[a]:80", "[a]", 80));
+    }
+
+    @Test
     public void IPv4NegativePort() {
         assertThrows(IllegalArgumentException.class, () -> assertIP("1.2.3.4:-22", "1.2.3.4", 0));
     }
