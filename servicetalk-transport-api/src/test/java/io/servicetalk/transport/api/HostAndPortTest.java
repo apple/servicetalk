@@ -24,185 +24,186 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+@SuppressWarnings("PMD.AvoidUsingHardCodedIP")
 final class HostAndPortTest {
     @Test
-    public void IPv6LoopBack() {
+    void IPv6LoopBack() {
         assertIP("[::1]:9999", "::1", 9999);
     }
 
     @Test
-    public void IPv6Compressed() {
+    void IPv6Compressed() {
         assertIP("[2001:1234::1b12:0:0:1a13]:0", "2001:1234::1b12:0:0:1a13", 0);
     }
 
     @Test
-    public void IPv6MappedIPv4() {
+    void IPv6MappedIPv4() {
         assertIP("[::FFFF:129.144.52.38]:443", "::FFFF:129.144.52.38", 443);
     }
 
     @Test
-    public void IPv6WithScope() {
+    void IPv6WithScope() {
         assertIP("[::FFFF:129.144.52.38%2]:65535", "::FFFF:129.144.52.38%2", 65535);
     }
 
     @Test
-    public void IPv4() {
+    void IPv4() {
         assertIP("1.2.3.4:8080", "1.2.3.4", 8080);
     }
 
     @Test
-    public void IPv4MissingComponents() {
+    void IPv4MissingComponents() {
         assertThrows(IllegalArgumentException.class, () -> assertIP("1.2.3:80", "1.2.3", 80));
     }
 
     @Test
-    public void IPv4NoAddress() {
+    void IPv4NoAddress() {
         assertThrows(IllegalArgumentException.class, () -> assertIP(":80", "", 80));
     }
 
     @Test
-    public void IPv4NoPort() {
+    void IPv4NoPort() {
         assertThrows(IllegalArgumentException.class, () -> assertIP("1.2.3.4", "1.2.3.4", 0));
     }
 
     @Test
-    public void IPv6NoPort() {
+    void IPv6NoPort() {
         assertThrows(IllegalArgumentException.class, () -> assertIP("[::1]", "[::1]", 0));
     }
 
     @Test
-    public void IPv6NoAddress() {
+    void IPv6NoAddress() {
         assertThrows(IllegalArgumentException.class, () -> assertIP("[]:80", "[]", 80));
     }
 
     @Test
-    public void IPv6SingleCharAddress() {
+    void IPv6SingleCharAddress() {
         assertThrows(IllegalArgumentException.class, () -> assertIP("[a]:80", "[a]", 80));
     }
 
     @Test
-    public void IPv4NegativePort() {
+    void IPv4NegativePort() {
         assertThrows(IllegalArgumentException.class, () -> assertIP("1.2.3.4:-22", "1.2.3.4", 0));
     }
 
     @Test
-    public void IPv6NegativePort() {
+    void IPv6NegativePort() {
         assertThrows(IllegalArgumentException.class, () -> assertIP("[::1]-1", "[::1]", 0));
     }
 
     @Test
-    public void IPv4PlusPort() {
+    void IPv4PlusPort() {
         assertThrows(IllegalArgumentException.class, () -> assertIP("1.2.3.4:+22", "1.2.3.4", 0));
     }
 
     @Test
-    public void IPv6PlusPort() {
+    void IPv6PlusPort() {
         assertThrows(IllegalArgumentException.class, () -> assertIP("[::1]:+22", "[::1]", 0));
     }
 
     @Test
-    public void IPv4PortTooHigh() {
+    void IPv4PortTooHigh() {
         assertThrows(IllegalArgumentException.class, () -> assertIP("1.2.3.4:65536", "1.2.3.4", 0));
     }
 
     @Test
-    public void IPv6PortTooHigh() {
+    void IPv6PortTooHigh() {
         assertThrows(IllegalArgumentException.class, () -> assertIP("[::1]:65536", "[::1]", 0));
     }
 
     @Test
-    public void IPv4PortTooLow() {
+    void IPv4PortTooLow() {
         assertThrows(IllegalArgumentException.class, () -> assertIP("1.2.3.4:-1", "1.2.3.4", 0));
     }
 
     @Test
-    public void IPv6PortTooLow() {
+    void IPv6PortTooLow() {
         assertThrows(IllegalArgumentException.class, () -> assertIP("[::1]:-3", "[::1]", 0));
     }
 
     @Test
-    public void IPv4PortInvalidChar() {
+    void IPv4PortInvalidChar() {
         assertThrows(IllegalArgumentException.class, () -> assertIP("1.2.3.4:12x", "1.2.3.4", 0));
     }
 
     @Test
-    public void IPv6PortInvalidChar() {
+    void IPv6PortInvalidChar() {
         assertThrows(IllegalArgumentException.class, () -> assertIP("[::1]:x", "[::1]", 0));
     }
 
     @Test
-    public void IPv6HalfBracketFirst() {
+    void IPv6HalfBracketFirst() {
         assertThrows(IllegalArgumentException.class, () -> assertIP("::1]:80", "[::1]", 80));
     }
 
     @Test
-    public void IPv6HalfBracketLast() {
+    void IPv6HalfBracketLast() {
         assertThrows(IllegalArgumentException.class, () -> assertIP("[::1:80", "[::1]", 80));
     }
 
     @Test
-    public void IPv6DoubleBracketFirst() {
+    void IPv6DoubleBracketFirst() {
         assertThrows(IllegalArgumentException.class, () -> assertIP("[[::1]:80", "[::1]", 80));
     }
 
     @Test
-    public void IPv6DoubleBracketLast() {
+    void IPv6DoubleBracketLast() {
         assertThrows(IllegalArgumentException.class, () -> assertIP("[::1]]:80", "[::1]", 80));
     }
 
     @Test
-    public void IPv6ChineseChar() {
+    void IPv6ChineseChar() {
         assertThrows(IllegalArgumentException.class, () -> assertIP("[\u4F60\u597D]:8080", "", 8080));
     }
 
     @Test
-    public void IPv4ChineseChar() {
+    void IPv4ChineseChar() {
         assertThrows(IllegalArgumentException.class, () -> assertIP("\u4F60.2.3.4:8080", "", 8080));
     }
 
     @Test
-    public void IPv6UTF8() {
+    void IPv6UTF8() {
         assertThrows(IllegalArgumentException.class, () -> assertIP("[::❤]:8080", "", 8080));
     }
 
     @Test
-    public void IPv4UTF8() {
+    void IPv4UTF8() {
         assertThrows(IllegalArgumentException.class, () -> assertIP("1.❤.3.4:8080", "", 8080));
     }
 
     @Test
-    public void IPv6Latin1AsUTF8() {
+    void IPv6Latin1AsUTF8() {
         assertThrows(IllegalArgumentException.class, () -> assertIP("[::ö]:8080", "", 8080));
     }
 
     @Test
-    public void IPv4Latin1AsUTF8() {
+    void IPv4Latin1AsUTF8() {
         assertThrows(IllegalArgumentException.class, () -> assertIP("1.2.ö.4:8080", "", 8080));
     }
 
     @Test
-    public void IPv6CompressAndRemoveLeadingZeros() {
+    void IPv6CompressAndRemoveLeadingZeros() {
         assertIP("[0000:0000:0000:0000:0000:0000:0000:0001]:234", "::1", 234);
     }
 
     @Test
-    public void IPv6CompressAndRemoveLeadingZerosPreserveLastZero() {
+    void IPv6CompressAndRemoveLeadingZerosPreserveLastZero() {
         assertIP("[1000:0200:0030:0004:0000:0000:0050:0000]:234", "1000:200:30:4::50:0", 234);
     }
 
     @Test
-    public void IPv6CompressAndRemoveLeadingZeroTwo() {
+    void IPv6CompressAndRemoveLeadingZeroTwo() {
         assertIP("[00:000:0030:0004:0001:2000:0050:0000]:234", "::30:4:1:2000:50:0", 234);
     }
 
     @Test
-    public void IPv6RemoveLeadingZerosEvenIfAlreadyCompressed() {
+    void IPv6RemoveLeadingZerosEvenIfAlreadyCompressed() {
         // https://datatracker.ietf.org/doc/html/rfc5952#section-4.2.1
         assertIP("[2001:0db8::0001]:1234", "2001:db8::1", 1234);
     }
 
     @Test
-    public void IPv6NoCompressOneBitField() {
+    void IPv6NoCompressOneBitField() {
         // https://datatracker.ietf.org/doc/html/rfc5952#section-4.2.2
         assertIP("[2001:db8:0:1:1:1:1:1]:1234", "2001:db8:0:1:1:1:1:1", 1234);
         assertIP("[2001:db8:0000:1:1:1:1:1]:1234", "2001:db8:0:1:1:1:1:1", 1234);
@@ -210,13 +211,13 @@ final class HostAndPortTest {
     }
 
     @Test
-    public void IPv6CompressLongestStreak() {
+    void IPv6CompressLongestStreak() {
         // https://datatracker.ietf.org/doc/html/rfc5952#section-4.2.3
         assertIP("[2001:0:0:1:0:0:0:1]:1234", "2001:0:0:1::1", 1234);
     }
 
     @Test
-    public void IPv6CompressFirstIfTie() {
+    void IPv6CompressFirstIfTie() {
         // https://datatracker.ietf.org/doc/html/rfc5952#section-4.2.3
         assertIP("[2001:db8:0:0:1:0:0:1]:1234", "2001:db8::1:0:0:1", 1234);
     }
