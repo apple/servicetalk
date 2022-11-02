@@ -15,6 +15,8 @@
  */
 package io.servicetalk.transport.api;
 
+import javax.annotation.Nullable;
+
 import static io.servicetalk.utils.internal.NetworkUtils.isValidIpV4Address;
 import static io.servicetalk.utils.internal.NetworkUtils.isValidIpV6Address;
 import static java.lang.Integer.parseInt;
@@ -32,8 +34,10 @@ final class DefaultHostAndPort implements HostAndPort {
      * {@code [xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx]:yyyyy} = 47 chars w/out zone id
      */
     private static final int MAX_IPV6_LEN = 47 + 12 /* some limit for zone id length */;
+    private static final String STR_IPV6 = "_ipv6_";
     private final String hostName;
-    private final String toString;
+    @Nullable
+    private String toString;
     private final int port;
 
     /**
@@ -48,7 +52,7 @@ final class DefaultHostAndPort implements HostAndPort {
     DefaultHostAndPort(String hostName, int port, boolean isIPv6) {
         this.hostName = requireNonNull(hostName);
         this.port = port;
-        this.toString = isIPv6 ? '[' + hostName + "]:" + port : hostName + ':' + port;
+        this.toString = isIPv6 ? STR_IPV6 : null;
     }
 
     /**
@@ -129,7 +133,13 @@ final class DefaultHostAndPort implements HostAndPort {
 
     @Override
     public String toString() {
-        return toString;
+        String str = toString;
+        if (str == null) {
+            toString = str = hostName + ':' + port;
+        } else if (str == STR_IPV6) {
+            toString = str = '[' + hostName + "]:" + port;
+        }
+        return str;
     }
 
     @Override
