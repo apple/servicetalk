@@ -116,10 +116,10 @@ final class DefaultHostAndPort implements HostAndPort {
         }
 
         if (isv6) {
-            inetAddress = compressIPv6(inetAddress, 0, inetAddress.length());
             if (!isValidIpV6Address(inetAddress)) {
                 throw new IllegalArgumentException("Invalid IPv6 address: " + inetAddress);
             }
+            inetAddress = compressIPv6(inetAddress, 0, inetAddress.length());
             return new DefaultHostAndPort(inetAddress, port, true);
         }
         if (!isValidIpV4Address(inetAddress)) {
