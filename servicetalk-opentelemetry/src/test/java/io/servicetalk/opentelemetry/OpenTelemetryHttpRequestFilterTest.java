@@ -34,7 +34,6 @@ import io.opentelemetry.sdk.testing.junit5.OpenTelemetryExtension;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -64,10 +63,6 @@ class OpenTelemetryHttpRequestFilterTest {
 
     @RegisterExtension
     private final OpenTelemetryExtension otelTesting = OpenTelemetryExtension.create();
-
-    @BeforeAll
-    static void beforeAll() {
-    }
 
     @BeforeEach
     public void setup() {

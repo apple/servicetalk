@@ -22,30 +22,12 @@ dependencies {
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
   testRuntimeOnly enforcedPlatform(project(":servicetalk-dependencies"))
 
-  api project(":servicetalk-http-api")
   api "io.opentelemetry:opentelemetry-api"
 
+  implementation project(":servicetalk-concurrent-api")
   implementation project(":servicetalk-annotations")
-  implementation project(":servicetalk-http-utils")
-  implementation "com.google.code.findbugs:jsr305"
-  implementation "org.slf4j:slf4j-api"
 
-  testImplementation testFixtures(project(":servicetalk-concurrent-api"))
-  testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
-  testImplementation testFixtures(project(":servicetalk-transport-netty-internal"))
-  testImplementation testFixtures(project(":servicetalk-log4j2-mdc-utils"))
-  testImplementation testFixtures(project(":servicetalk-http-netty"))
-  testImplementation project(":servicetalk-buffer-netty")
-  testImplementation project(":servicetalk-data-jackson")
-  testImplementation project(":servicetalk-http-netty")
-  testImplementation project(":servicetalk-test-resources")
-  testImplementation "io.opentelemetry:opentelemetry-sdk-testing"
-  testImplementation 'io.opentelemetry.instrumentation:opentelemetry-log4j-2.13.2:1.9.2-alpha'
-  testImplementation "org.apache.logging.log4j:log4j-core"
-  testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
   testImplementation "org.junit.jupiter:junit-jupiter-api"
-  testImplementation "org.assertj:assertj-core:$assertJCore"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
   testImplementation "org.mockito:mockito-junit-jupiter:$mockitoCoreVersion"
-  testRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl"
 }

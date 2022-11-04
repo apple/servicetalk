@@ -114,7 +114,9 @@ public final class OpenTelemetryHttpServerFilter implements StreamingHttpService
             @Override
             protected void tagStatusCode() {
                 super.tagStatusCode();
-                propagators.getTextMapPropagator().inject(Context.current(), metaData.headers(), setter);
+                if (metaData != null) {
+                    propagators.getTextMapPropagator().inject(Context.current(), metaData.headers(), setter);
+                }
             }
         };
         Single<StreamingHttpResponse> response;

@@ -35,7 +35,6 @@ import io.opentelemetry.context.propagation.TextMapSetter;
 import io.opentelemetry.sdk.testing.junit5.OpenTelemetryExtension;
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -58,10 +57,6 @@ class OpenTelemetryHttpServerFilterTest {
 
     @RegisterExtension
     final OpenTelemetryExtension otelTesting = OpenTelemetryExtension.create();
-
-    @BeforeAll
-    static void beforeAll() {
-    }
 
     @BeforeEach
     public void setup() {
