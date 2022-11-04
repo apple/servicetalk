@@ -29,6 +29,7 @@ import java.util.stream.StreamSupport;
 import static io.servicetalk.http.api.HttpHeaderNames.AUTHORIZATION;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
+import static io.servicetalk.utils.internal.NetworkUtils.isValidIpV6Address;
 import static java.lang.System.lineSeparator;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
@@ -39,6 +40,7 @@ import static java.util.Collections.singletonList;
 import static java.util.Spliterators.spliteratorUnknownSize;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -208,19 +210,21 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
     }
 
     @Test
+    @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
     void testEffectiveHostIPv6NoPort() {
         createFixture("some/path?foo=bar&abc=def&foo=baz");
         fixture.headers().set(HOST, "[1:2:3::5]");
 
-        assertEffectiveHostAndPort("[1:2:3::5]");
+        assertEffectiveHostAndPort("1:2:3::5");
     }
 
     @Test
+    @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
     void testEffectiveHostIPv6WithPort() {
         createFixture("some/path?foo=bar&abc=def&foo=baz");
         fixture.headers().set(HOST, "[1:2:3::5]:8080");
 
-        assertEffectiveHostAndPort("[1:2:3::5]", 8080);
+        assertEffectiveHostAndPort("1:2:3::5", 8080);
     }
 
     @Test
@@ -839,6 +843,9 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
         assertNotNull(effectiveHostAndPort);
         assertEquals(hostName, effectiveHostAndPort.hostName());
         assertEquals(port, effectiveHostAndPort.port());
+        assertThat(effectiveHostAndPort.toString(), isValidIpV6Address(hostName) ?
+                equalTo('[' + hostName + "]:" + port) :
+                equalTo(hostName + ':' + port));
     }
 
     @SuppressWarnings("unchecked")
