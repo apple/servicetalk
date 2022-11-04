@@ -33,10 +33,8 @@ import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanKind;
-import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
-import io.opentelemetry.context.propagation.ContextPropagators;
 import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.context.propagation.TextMapSetter;
 
@@ -55,12 +53,10 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
  * (e.g. {@link Publisher#afterFinally(Runnable)}) will execute after this filter invokes {@link Scope#close()} and
  * therefore will not see the {@link Span} for the current request/response.
  */
-public final class OpenTelemetryHttpServerFilter implements StreamingHttpServiceFilterFactory {
+public final class OpenTelemetryHttpServerFilter extends OpenTelemetryFilter
+    implements StreamingHttpServiceFilterFactory {
     private static final TextMapGetter<HttpHeaders> getter = HeadersPropagatorGetter.INSTANCE;
     private static final TextMapSetter<HttpHeaders> setter = HeadersPropagatorSetter.INSTANCE;
-
-    private final Tracer tracer;
-    private final ContextPropagators propagators;
 
     /**
      * Create a new instance.
@@ -68,8 +64,7 @@ public final class OpenTelemetryHttpServerFilter implements StreamingHttpService
      * @param openTelemetry the {@link OpenTelemetry}.
      */
     public OpenTelemetryHttpServerFilter(final OpenTelemetry openTelemetry) {
-        this.tracer = openTelemetry.getTracer("io.servicetalk");
-        this.propagators = openTelemetry.getPropagators();
+        super(openTelemetry);
     }
 
     /**

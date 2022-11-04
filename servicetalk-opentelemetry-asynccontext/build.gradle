@@ -26,6 +26,7 @@ dependencies {
 
   implementation project(":servicetalk-concurrent-api")
   implementation project(":servicetalk-annotations")
+  implementation "org.slf4j:slf4j-api"
 
   testImplementation "org.junit.jupiter:junit-jupiter-api"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"

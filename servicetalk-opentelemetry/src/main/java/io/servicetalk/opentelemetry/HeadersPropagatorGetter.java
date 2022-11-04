@@ -65,9 +65,6 @@ final class HeadersPropagatorGetter implements TextMapGetter<HttpHeaders> {
         if (carrier == null) {
             return null;
         }
-        if (carrier.contains(key)) {
-            return Optional.ofNullable(carrier.get(key)).map(CharSequence::toString).orElse(null);
-        }
-        return null;
+        return Optional.ofNullable(carrier.get(key)).map(CharSequence::toString).orElse(null);
     }
 }

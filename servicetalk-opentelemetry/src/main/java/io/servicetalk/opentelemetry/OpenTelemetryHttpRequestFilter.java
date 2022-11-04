@@ -35,10 +35,8 @@ import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanKind;
-import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
-import io.opentelemetry.context.propagation.ContextPropagators;
 import io.opentelemetry.context.propagation.TextMapSetter;
 
 import java.util.Objects;
@@ -54,14 +52,12 @@ import java.util.function.UnaryOperator;
  * (e.g. {@link Publisher#afterFinally(Runnable)}) will execute after this filter invokes {@link Scope#close()} and
  * therefore will not see the {@link Span} for the current request/response.
  */
-public final class OpenTelemetryHttpRequestFilter
+public final class OpenTelemetryHttpRequestFilter extends OpenTelemetryFilter
     implements StreamingHttpClientFilterFactory, StreamingHttpConnectionFilterFactory {
 
     private static final TextMapSetter<HttpHeaders> setter = HeadersPropagatorSetter.INSTANCE;
 
     private final String componentName;
-    private final Tracer tracer;
-    private final ContextPropagators propagators;
 
     /**
      * Create a new instance.
@@ -70,8 +66,7 @@ public final class OpenTelemetryHttpRequestFilter
      * @param componentName The component name used during building new spans.
      */
     public OpenTelemetryHttpRequestFilter(final OpenTelemetry openTelemetry, String componentName) {
-        this.tracer = openTelemetry.getTracer("io.servicetalk");
-        this.propagators = openTelemetry.getPropagators();
+        super(openTelemetry);
         this.componentName = Objects.requireNonNull(componentName);
     }
 

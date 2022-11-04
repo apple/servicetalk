@@ -23,6 +23,10 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.context.ContextStorage;
 import io.opentelemetry.context.ContextStorageProvider;
 import io.opentelemetry.context.Scope;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.lang.invoke.MethodHandles;
 
 import static io.servicetalk.context.api.ContextMap.Key.newKey;
 
@@ -31,6 +35,8 @@ import static io.servicetalk.context.api.ContextMap.Key.newKey;
  * making it available within {@link AsyncContext}.
  */
 public final class ServiceTalkContextStoreProvider implements ContextStorageProvider {
+
+    private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     static final ServiceTalkContextStoreProvider INSTANCE = new ServiceTalkContextStoreProvider();
     private static final ContextMap.Key<Context> SCOPE_KEY =
@@ -63,7 +69,13 @@ public final class ServiceTalkContextStoreProvider implements ContextStorageProv
             if (current == null) {
                 return () -> contextMap.remove(SCOPE_KEY);
             }
-            return () -> contextMap.put(SCOPE_KEY, current);
+            return () -> {
+                if (current() != toAttach) {
+                    logger.warn("context was not detached",
+                        new Throwable().fillInStackTrace());
+                }
+                contextMap.put(SCOPE_KEY, current);
+            };
         }
 
         @Override
