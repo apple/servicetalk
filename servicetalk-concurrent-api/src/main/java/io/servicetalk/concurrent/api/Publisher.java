@@ -2224,8 +2224,8 @@ public abstract class Publisher<T> {
      *
      * @param until {@link Completable}, termination of which, terminates the returned {@link Publisher}.
      * @return A {@link Publisher} that only emits the items till {@code until} {@link Completable} is completed.
-     * @deprecated Use {@link #takeUntil(Supplier)}.
      * @see <a href="https://reactivex.io/documentation/operators/takeuntil.html">ReactiveX takeUntil operator.</a>
+     * @deprecated Use {@link #takeUntil(Supplier)}.
      */
     @Deprecated
     public final Publisher<T> takeUntil(Completable until) {
