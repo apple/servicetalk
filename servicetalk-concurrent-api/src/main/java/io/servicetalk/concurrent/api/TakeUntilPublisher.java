@@ -21,7 +21,6 @@ import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.concurrent.internal.ConcurrentTerminalSubscriber;
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
@@ -29,16 +28,16 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateS
 import static java.util.Objects.requireNonNull;
 
 final class TakeUntilPublisher<T> extends AbstractSynchronousPublisherOperator<T, T> {
-    private final Supplier<? extends Completable> until;
+    private final Completable until;
 
-    TakeUntilPublisher(Publisher<T> original, Supplier<? extends Completable> until) {
+    TakeUntilPublisher(Publisher<T> original, Completable until) {
         super(original);
         this.until = requireNonNull(until);
     }
 
     @Override
     public Subscriber<? super T> apply(Subscriber<? super T> subscriber) {
-        return new TakeUntilSubscriber<>(subscriber, until.get());
+        return new TakeUntilSubscriber<>(subscriber, until);
     }
 
     private static final class TakeUntilSubscriber<T> implements Subscriber<T> {

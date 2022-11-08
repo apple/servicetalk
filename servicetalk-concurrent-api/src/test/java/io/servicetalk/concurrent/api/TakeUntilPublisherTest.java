@@ -25,7 +25,6 @@ import org.mockito.stubbing.Answer;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedTransferQueue;
-import java.util.function.Supplier;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
@@ -49,7 +48,7 @@ class TakeUntilPublisherTest {
     @Test
     void testUntilComplete() {
         TestCompletable completable = new TestCompletable();
-        Publisher<String> p = publisher.takeUntil(() -> completable);
+        Publisher<String> p = publisher.takeUntil(completable);
         toSource(p).subscribe(subscriber);
         publisher.onSubscribe(subscription);
         subscriber.awaitSubscription().request(4);
@@ -63,7 +62,7 @@ class TakeUntilPublisherTest {
     @Test
     void testUntilError() {
         TestCompletable completable = new TestCompletable();
-        Publisher<String> p = publisher.takeUntil(() -> completable);
+        Publisher<String> p = publisher.takeUntil(completable);
         toSource(p).subscribe(subscriber);
         publisher.onSubscribe(subscription);
         subscriber.awaitSubscription().request(4);
@@ -77,7 +76,7 @@ class TakeUntilPublisherTest {
     @Test
     void testEmitsError() {
         TestCompletable completable = new TestCompletable();
-        Publisher<String> p = publisher.takeUntil(() -> completable);
+        Publisher<String> p = publisher.takeUntil(completable);
         toSource(p).subscribe(subscriber);
         subscriber.awaitSubscription().request(4);
         publisher.onNext("Hello1");
@@ -89,7 +88,7 @@ class TakeUntilPublisherTest {
     @Test
     void testEmitsComplete() {
         TestCompletable completable = new TestCompletable();
-        Publisher<String> p = publisher.takeUntil(() -> completable);
+        Publisher<String> p = publisher.takeUntil(completable);
         toSource(p).subscribe(subscriber);
         subscriber.awaitSubscription().request(4);
         publisher.onNext("Hello1");
@@ -104,7 +103,7 @@ class TakeUntilPublisherTest {
             subscriber1.onSubscribe(cancellable);
             return subscriber1;
         });
-        Publisher<String> p = publisher.takeUntil(() -> completable);
+        Publisher<String> p = publisher.takeUntil(completable);
         toSource(p).subscribe(subscriber);
         publisher.onSubscribe(subscription);
         subscriber.awaitSubscription().request(3);
@@ -117,19 +116,20 @@ class TakeUntilPublisherTest {
 
     @Test
     void resubscribe() throws InterruptedException {
-        BlockingQueue<CompletableSource.Processor> processors = new LinkedTransferQueue<>();
-        Supplier<Completable> completableSupplier = () -> {
+        // Intentionally have publisher outside the defer, we need to extract the TestPublisher from each subscribe.
+        final TestResubscribePublisher<String> resubscribePublisher = new TestResubscribePublisher<>();
+        final BlockingQueue<CompletableSource.Processor> processors = new LinkedTransferQueue<>();
+        Publisher<String> publisher = Publisher.defer(() -> {
             CompletableSource.Processor processor = Processors.newCompletableProcessor();
             processors.add(processor);
-            return fromSource(processor);
-        };
-        TestResubscribePublisher<String> resubscribePublisher = new TestResubscribePublisher<>();
+            return resubscribePublisher.takeUntil(fromSource(processor));
+        });
         @SuppressWarnings("unchecked")
         Subscriber<String> resubscribeSubscriber = mock(Subscriber.class);
         @SuppressWarnings("unchecked")
         Subscriber<String> subscriber = mock(Subscriber.class);
         doAnswer((Answer<Void>) invocation -> {
-            toSource(resubscribePublisher.takeUntil(completableSupplier)).subscribe(subscriber);
+            toSource(publisher).subscribe(subscriber);
             return null;
         }).when(resubscribeSubscriber).onComplete();
         doAnswer((Answer<Void>) invocation -> {
@@ -143,7 +143,7 @@ class TakeUntilPublisherTest {
             return null;
         }).when(subscriber).onSubscribe(any());
 
-        toSource(resubscribePublisher.takeUntil(completableSupplier)).subscribe(resubscribeSubscriber);
+        toSource(publisher).subscribe(resubscribeSubscriber);
 
         TestPublisher<String> testPublisher1 = resubscribePublisher.publisher();
         TestSubscription testSubscription1 = resubscribePublisher.subscription();

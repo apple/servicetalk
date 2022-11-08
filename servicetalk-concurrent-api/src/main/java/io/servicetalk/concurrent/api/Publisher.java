@@ -2222,39 +2222,14 @@ public abstract class Publisher<T> {
      *     return results;
      * }</pre>
      *
-     * @param until {@link Completable}, termination of which, terminates the returned {@link Publisher}.
+     * @param until {@link Completable}, termination of which, terminates the returned {@link Publisher}. If this
+     * {@link Publisher} maybe resubscribed the {@link Completable} should be also, or use
+     * {@link Publisher#defer(Supplier)} to create a new {@link Completable} on each subscribe.
      * @return A {@link Publisher} that only emits the items till {@code until} {@link Completable} is completed.
      * @see <a href="https://reactivex.io/documentation/operators/takeuntil.html">ReactiveX takeUntil operator.</a>
-     * @deprecated Use {@link #takeUntil(Supplier)}.
      */
-    @Deprecated
     public final Publisher<T> takeUntil(Completable until) {
-        return takeUntil(() -> until);
-    }
-
-    /**
-     * Takes elements until {@link Completable} is terminated successfully or with failure.
-     * <p>
-     * This method provides a means to take a limited number of results from this {@link Publisher} and in sequential
-     * programming is similar to:
-     * <pre>{@code
-     *     List<T> results = ...;
-     *     for (T t : resultOfThisPublisher()) {
-     *         if (isCompleted(until)) {
-     *             break;
-     *         }
-     *         takeResults.add(t);
-     *     }
-     *     return results;
-     * }</pre>
-     *
-     * @param untilSupplier {@link Supplier} that is invoked on each subscribe that provides a {@link Completable},
-     * termination of which, terminates the returned {@link Publisher}.
-     * @return A {@link Publisher} that only emits the items till {@code until} {@link Completable} is completed.
-     * @see <a href="https://reactivex.io/documentation/operators/takeuntil.html">ReactiveX takeUntil operator.</a>
-     */
-    public final Publisher<T> takeUntil(Supplier<? extends Completable> untilSupplier) {
-        return new TakeUntilPublisher<>(this, untilSupplier);
+        return new TakeUntilPublisher<>(this, until);
     }
 
     /**
