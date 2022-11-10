@@ -87,8 +87,8 @@ class ScopeTracker implements TerminalSignalConsumer {
      * @param metaData The {@link HttpResponseMetaData} to test.
      * @return {@code true} if the {@link HttpResponseMetaData} should be considered an error for tracing.
      */
-    private boolean isError(final HttpResponseMetaData metaData) {
-        return metaData.status().statusClass().equals(SERVER_ERROR_5XX);
+    private static boolean isError(final HttpResponseMetaData metaData) {
+        return metaData.status().statusClass() == SERVER_ERROR_5XX;
     }
 
     Single<StreamingHttpResponse> track(Single<StreamingHttpResponse> responseSingle) {

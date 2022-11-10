@@ -20,12 +20,12 @@ dependencies {
   api platform(project(":servicetalk-dependencies"))
   testImplementation enforcedPlatform(project(":servicetalk-dependencies"))
   testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
-  testRuntimeOnly enforcedPlatform(project(":servicetalk-dependencies"))
 
   api "io.opentelemetry:opentelemetry-api"
 
-  implementation project(":servicetalk-concurrent-api")
   implementation project(":servicetalk-annotations")
+  implementation project(":servicetalk-concurrent-api")
+  implementation "com.google.code.findbugs:jsr305"
   implementation "org.slf4j:slf4j-api"
 
   testImplementation "org.junit.jupiter:junit-jupiter-api"

@@ -27,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.invoke.MethodHandles;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.context.api.ContextMap.Key.newKey;
 
@@ -38,9 +39,7 @@ public final class ServiceTalkContextStoreProvider implements ContextStorageProv
 
     private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-    static final ServiceTalkContextStoreProvider INSTANCE = new ServiceTalkContextStoreProvider();
-    private static final ContextMap.Key<Context> SCOPE_KEY =
-        newKey("opentelemetry", Context.class);
+    private static final ContextMap.Key<Context> SCOPE_KEY = newKey("opentelemetry", Context.class);
 
     @Override
     public ContextStorage get() {
@@ -55,29 +54,33 @@ public final class ServiceTalkContextStoreProvider implements ContextStorageProv
             return attach(AsyncContext.context(), toAttach);
         }
 
-        private Scope attach(ContextMap contextMap, Context toAttach) {
+        private Scope attach(ContextMap contextMap, @Nullable Context toAttach) {
             if (toAttach == null) {
                 return Scope.noop();
             }
-            final Context current = current();
 
-            if (current == toAttach) {
+            final Context beforeAttach = current();
+            if (beforeAttach == toAttach) {
                 return Scope.noop();
             }
             contextMap.put(SCOPE_KEY, toAttach);
 
-            if (current == null) {
-                return () -> contextMap.remove(SCOPE_KEY);
-            }
             return () -> {
-                if (current() != toAttach) {
-                    logger.warn("context was not detached",
-                        new Throwable().fillInStackTrace());
+                final Context current = current();
+                if (current != toAttach) {
+                    logger.info(
+                            "Context {} in storage not the expected context {}, Scope.close() was not called correctly",
+                            current, toAttach, new Throwable("stacktrace"));
                 }
-                contextMap.put(SCOPE_KEY, current);
+                if (beforeAttach == null) {
+                    contextMap.remove(SCOPE_KEY);
+                } else {
+                    contextMap.put(SCOPE_KEY, beforeAttach);
+                }
             };
         }
 
+        @Nullable
         @Override
         public Context current() {
             return AsyncContext.context().get(SCOPE_KEY);

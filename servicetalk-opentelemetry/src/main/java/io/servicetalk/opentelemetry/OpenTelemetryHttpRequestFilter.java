@@ -20,9 +20,6 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
-import io.servicetalk.http.api.HttpExecutionStrategies;
-import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
@@ -35,15 +32,17 @@ import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanKind;
+import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
-import io.opentelemetry.context.propagation.TextMapSetter;
 
 import java.util.Objects;
 import java.util.function.UnaryOperator;
 
 /**
  * An HTTP filter that supports <a href="https://opentelemetry.io/docs/instrumentation/java/">open telemetry</a>.
+ * <p>
+ * The filter gets a {@link Tracer} with {@value #INSTRUMENTATION_SCOPE_NAME} instrumentation scope name.
  * <p>
  * Append this filter before others that are expected to see {@link Scope} for this request/response. Filters
  * appended after this filter that use operators with the <strong>after*</strong> prefix on
@@ -52,10 +51,8 @@ import java.util.function.UnaryOperator;
  * (e.g. {@link Publisher#afterFinally(Runnable)}) will execute after this filter invokes {@link Scope#close()} and
  * therefore will not see the {@link Span} for the current request/response.
  */
-public final class OpenTelemetryHttpRequestFilter extends OpenTelemetryFilter
+public final class OpenTelemetryHttpRequestFilter extends AbstractOpenTelemetryFilter
     implements StreamingHttpClientFilterFactory, StreamingHttpConnectionFilterFactory {
-
-    private static final TextMapSetter<HttpHeaders> setter = HeadersPropagatorSetter.INSTANCE;
 
     private final String componentName;
 
@@ -77,11 +74,6 @@ public final class OpenTelemetryHttpRequestFilter extends OpenTelemetryFilter
      */
     public OpenTelemetryHttpRequestFilter(String componentName) {
         this(GlobalOpenTelemetry.get(), componentName);
-    }
-
-    @Override
-    public HttpExecutionStrategy requiredOffloads() {
-        return HttpExecutionStrategies.offloadNone();
     }
 
     @Override
@@ -118,7 +110,8 @@ public final class OpenTelemetryHttpRequestFilter extends OpenTelemetryFilter
         final ScopeTracker tracker = new ScopeTracker(scope, span);
         Single<StreamingHttpResponse> response;
         try {
-            propagators.getTextMapPropagator().inject(Context.current(), request.headers(), setter);
+            propagators.getTextMapPropagator().inject(Context.current(), request.headers(),
+                    HeadersPropagatorSetter.INSTANCE);
             response = delegate.request(request);
         } catch (Throwable t) {
             tracker.onError(t);

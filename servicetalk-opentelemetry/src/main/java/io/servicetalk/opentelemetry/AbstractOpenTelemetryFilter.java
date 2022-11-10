@@ -16,17 +16,26 @@
 
 package io.servicetalk.opentelemetry;
 
+import io.servicetalk.http.api.HttpExecutionStrategies;
+import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
+
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.propagation.ContextPropagators;
 
-class OpenTelemetryFilter {
-    public static final String INSTRUMENTATION_SCOPE_NAME = "io.servicetalk";
+abstract class AbstractOpenTelemetryFilter implements HttpExecutionStrategyInfluencer {
+    static final String INSTRUMENTATION_SCOPE_NAME = "io.servicetalk";
     final Tracer tracer;
     final ContextPropagators propagators;
 
-    OpenTelemetryFilter(final OpenTelemetry openTelemetry) {
+    AbstractOpenTelemetryFilter(final OpenTelemetry openTelemetry) {
         this.tracer = openTelemetry.getTracer(INSTRUMENTATION_SCOPE_NAME);
         this.propagators = openTelemetry.getPropagators();
+    }
+
+    @Override
+    public final HttpExecutionStrategy requiredOffloads() {
+        return HttpExecutionStrategies.offloadNone();
     }
 }

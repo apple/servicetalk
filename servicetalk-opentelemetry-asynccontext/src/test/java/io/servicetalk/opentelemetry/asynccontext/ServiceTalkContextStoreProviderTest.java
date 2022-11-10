@@ -18,6 +18,7 @@ package io.servicetalk.opentelemetry.asynccontext;
 
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.ContextStorage;
+import io.opentelemetry.context.ContextStorageProvider;
 import io.opentelemetry.context.Scope;
 import org.junit.jupiter.api.Test;
 
@@ -30,7 +31,7 @@ class ServiceTalkContextStoreProviderTest {
 
     @Test
     void testScopeIsStored() {
-        ServiceTalkContextStoreProvider contextStoreProvider = ServiceTalkContextStoreProvider.INSTANCE;
+        ContextStorageProvider contextStoreProvider = new ServiceTalkContextStoreProvider();
         ContextStorage contextStorage = contextStoreProvider.get();
         Context mockSpan = mock(Context.class);
         Scope attached = contextStorage.attach(mockSpan);
@@ -41,7 +42,7 @@ class ServiceTalkContextStoreProviderTest {
 
     @Test
     void testScopeIsStoredTwice() {
-        ServiceTalkContextStoreProvider contextStoreProvider = ServiceTalkContextStoreProvider.INSTANCE;
+        ContextStorageProvider contextStoreProvider = new ServiceTalkContextStoreProvider();
         ContextStorage contextStorage = contextStoreProvider.get();
         Context mockSpan = mock(Context.class);
         Scope attached = contextStorage.attach(mockSpan);

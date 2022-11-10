@@ -18,8 +18,6 @@ package io.servicetalk.opentelemetry;
 
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -33,18 +31,17 @@ import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanKind;
+import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
-import io.opentelemetry.context.propagation.TextMapGetter;
-import io.opentelemetry.context.propagation.TextMapSetter;
 
 import java.util.function.UnaryOperator;
-
-import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 
 /**
  * A {@link StreamingHttpService} that supports
  * <a href="https://opentelemetry.io/docs/instrumentation/java/">open telemetry</a>.
+ * <p>
+ * The filter gets a {@link Tracer} with {@value #INSTRUMENTATION_SCOPE_NAME} instrumentation scope name.
  * <p>
  * Append this filter before others that are expected to see {@link Scope} for this request/response. Filters
  * appended after this filter that use operators with the <strong>after*</strong> prefix on
@@ -53,10 +50,8 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
  * (e.g. {@link Publisher#afterFinally(Runnable)}) will execute after this filter invokes {@link Scope#close()} and
  * therefore will not see the {@link Span} for the current request/response.
  */
-public final class OpenTelemetryHttpServerFilter extends OpenTelemetryFilter
+public final class OpenTelemetryHttpServerFilter extends AbstractOpenTelemetryFilter
     implements StreamingHttpServiceFilterFactory {
-    private static final TextMapGetter<HttpHeaders> getter = HeadersPropagatorGetter.INSTANCE;
-    private static final TextMapSetter<HttpHeaders> setter = HeadersPropagatorSetter.INSTANCE;
 
     /**
      * Create a new instance.
@@ -86,18 +81,13 @@ public final class OpenTelemetryHttpServerFilter extends OpenTelemetryFilter
         };
     }
 
-    @Override
-    public HttpExecutionStrategy requiredOffloads() {
-        return offloadNone();
-    }
-
     private Single<StreamingHttpResponse> trackRequest(final StreamingHttpService delegate,
                                                        final HttpServiceContext ctx,
                                                        final StreamingHttpRequest request,
                                                        final StreamingHttpResponseFactory responseFactory) {
         final Context context = Context.root();
         io.opentelemetry.context.Context tracingContext =
-            propagators.getTextMapPropagator().extract(context, request.headers(), getter);
+            propagators.getTextMapPropagator().extract(context, request.headers(), HeadersPropagatorGetter.INSTANCE);
 
         final Span span = RequestTagExtractor.reportTagsAndStart(tracer
             .spanBuilder(getOperationName(request))
@@ -110,7 +100,8 @@ public final class OpenTelemetryHttpServerFilter extends OpenTelemetryFilter
             protected void tagStatusCode() {
                 super.tagStatusCode();
                 if (metaData != null) {
-                    propagators.getTextMapPropagator().inject(Context.current(), metaData.headers(), setter);
+                    propagators.getTextMapPropagator().inject(Context.current(), metaData.headers(),
+                            HeadersPropagatorSetter.INSTANCE);
                 }
             }
         };
@@ -130,7 +121,7 @@ public final class OpenTelemetryHttpServerFilter extends OpenTelemetryFilter
      * @param metaData The {@link HttpRequestMetaData}.
      * @return the operation name to build the span with.
      */
-    protected String getOperationName(HttpRequestMetaData metaData) {
+    private static String getOperationName(HttpRequestMetaData metaData) {
         return metaData.method().name() + ' ' + metaData.requestTarget();
     }
 }

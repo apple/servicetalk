@@ -22,12 +22,11 @@ import io.opentelemetry.context.propagation.TextMapGetter;
 
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Optional;
 import javax.annotation.Nullable;
 
 final class HeadersPropagatorGetter implements TextMapGetter<HttpHeaders> {
 
-    public static final TextMapGetter<HttpHeaders> INSTANCE = new HeadersPropagatorGetter();
+    static final TextMapGetter<HttpHeaders> INSTANCE = new HeadersPropagatorGetter();
 
     private HeadersPropagatorGetter() {
     }
@@ -65,6 +64,7 @@ final class HeadersPropagatorGetter implements TextMapGetter<HttpHeaders> {
         if (carrier == null) {
             return null;
         }
-        return Optional.ofNullable(carrier.get(key)).map(CharSequence::toString).orElse(null);
+        final CharSequence value = carrier.get(key);
+        return value == null ? null : value.toString();
     }
 }

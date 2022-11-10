@@ -23,17 +23,15 @@ import io.opentelemetry.api.trace.SpanBuilder;
 
 final class RequestTagExtractor {
 
-    static final RequestTagExtractor INSTANCE = new RequestTagExtractor();
-
     private RequestTagExtractor() {
         // empty private constructor
     }
 
-    private String getRequestMethod(HttpRequestMetaData req) {
+    private static String getRequestMethod(HttpRequestMetaData req) {
         return req.method().name();
     }
 
-    private String getHttpUrl(HttpRequestMetaData req) {
+    private static String getHttpUrl(HttpRequestMetaData req) {
         return (req.scheme() == null ? "http" : req.scheme()) + "://" +
             (req.effectiveHostAndPort() == null ? "localhost:8080" : req.effectiveHostAndPort())
             + req.rawPath()
@@ -41,9 +39,8 @@ final class RequestTagExtractor {
     }
 
     static Span reportTagsAndStart(SpanBuilder span, HttpRequestMetaData httpRequestMetaData) {
-        final RequestTagExtractor tagExtractor = RequestTagExtractor.INSTANCE;
-        span.setAttribute("http.url", tagExtractor.getHttpUrl(httpRequestMetaData));
-        span.setAttribute("http.method", tagExtractor.getRequestMethod(httpRequestMetaData));
+        span.setAttribute("http.url", getHttpUrl(httpRequestMetaData));
+        span.setAttribute("http.method", getRequestMethod(httpRequestMetaData));
         return span.startSpan();
     }
 }
