@@ -14,26 +14,17 @@
  * limitations under the License.
  */
 
-package io.servicetalk.opentelemetry;
+package io.servicetalk.opentelemetry.http;
 
-import io.servicetalk.http.api.HttpHeaders;
+import io.servicetalk.http.api.HttpResponseMetaData;
 
-import io.opentelemetry.context.propagation.TextMapSetter;
+import io.opentelemetry.api.trace.Span;
 
-import java.util.Locale;
-import javax.annotation.Nullable;
+final class ResponseTagExtractor {
 
-final class HeadersPropagatorSetter implements TextMapSetter<HttpHeaders> {
+    public static final ResponseTagExtractor INSTANCE = new ResponseTagExtractor();
 
-    static final TextMapSetter<HttpHeaders> INSTANCE = new HeadersPropagatorSetter();
-
-    private HeadersPropagatorSetter() {
-    }
-
-    @Override
-    public void set(@Nullable final HttpHeaders headers, final String key, final String value) {
-        if (headers != null) {
-            headers.set(key.toLowerCase(Locale.ENGLISH), value);
-        }
+    void extract(HttpResponseMetaData responseMetaData, Span span) {
+        span.setAttribute("http.status_code", responseMetaData.status().code());
     }
 }

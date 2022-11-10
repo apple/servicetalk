@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.servicetalk.opentelemetry;
+package io.servicetalk.opentelemetry.http;
 
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;

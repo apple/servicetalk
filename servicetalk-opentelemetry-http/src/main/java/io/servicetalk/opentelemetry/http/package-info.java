@@ -13,18 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+@ElementsAreNonnullByDefault
+package io.servicetalk.opentelemetry.http;
 
-package io.servicetalk.opentelemetry;
-
-import io.servicetalk.http.api.HttpResponseMetaData;
-
-import io.opentelemetry.api.trace.Span;
-
-final class ResponseTagExtractor {
-
-    public static final ResponseTagExtractor INSTANCE = new ResponseTagExtractor();
-
-    void extract(HttpResponseMetaData responseMetaData, Span span) {
-        span.setAttribute("http.status_code", responseMetaData.status().code());
-    }
-}
+import io.servicetalk.annotations.ElementsAreNonnullByDefault;

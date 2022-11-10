@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.servicetalk.opentelemetry;
+package io.servicetalk.opentelemetry.http;
 
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpResponse;
@@ -48,9 +48,9 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.log4j2.mdc.utils.LoggerStringWriter.assertContainsMdcPair;
 import static io.servicetalk.log4j2.mdc.utils.LoggerStringWriter.stableAccumulated;
-import static io.servicetalk.opentelemetry.TestUtils.SPAN_STATE_SERIALIZER;
-import static io.servicetalk.opentelemetry.TestUtils.TRACING_TEST_LOG_LINE_PREFIX;
-import static io.servicetalk.opentelemetry.TestUtils.TestTracingClientLoggerFilter;
+import static io.servicetalk.opentelemetry.http.TestUtils.SPAN_STATE_SERIALIZER;
+import static io.servicetalk.opentelemetry.http.TestUtils.TRACING_TEST_LOG_LINE_PREFIX;
+import static io.servicetalk.opentelemetry.http.TestUtils.TestTracingClientLoggerFilter;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static org.assertj.core.api.Assertions.assertThat;
