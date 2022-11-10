@@ -21,8 +21,11 @@ import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 
 class ConcatPublisherTest {
@@ -66,5 +69,24 @@ class ConcatPublisherTest {
         second.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriber.takeOnNext(2), contains("Hello1", "Hello2"));
         assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
+    }
+
+    @Test
+    void sourceCancel() {
+        Publisher<String> p = first.concat(second);
+        toSource(p).subscribe(subscriber);
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
+        subscriber.awaitSubscription().cancel();
+
+        TestSubscription firstSubscription = new TestSubscription();
+        first.onSubscribe(firstSubscription);
+        assertThat("Source subscription not cancelled.", firstSubscription.isCancelled(), is(true));
+        assertThat("Next source subscribed on cancellation.", second.isSubscribed(), is(false));
+        first.onComplete();
+
+        TestSubscription secondSubscription = new TestSubscription();
+        second.onSubscribe(secondSubscription);
+        assertThat("Next source not subscribed.", second.isSubscribed(), is(true));
+        assertThat("Next cancellable not cancelled.", secondSubscription.isCancelled(), is(true));
     }
 }

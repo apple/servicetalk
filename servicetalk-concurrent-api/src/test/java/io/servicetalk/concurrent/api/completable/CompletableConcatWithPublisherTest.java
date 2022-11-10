@@ -146,6 +146,7 @@ class CompletableConcatWithPublisherTest {
         assertTrue(cancellable.isCancelled(), "Original completable not cancelled.");
         assertFalse(next.isSubscribed(), "Next source subscribed unexpectedly.");
         triggerNextSubscribe();
+        assertTrue(next.isSubscribed(), "Next source not subscribed.");
         assertTrue(subscription.isCancelled(), "Next source not cancelled.");
     }
 

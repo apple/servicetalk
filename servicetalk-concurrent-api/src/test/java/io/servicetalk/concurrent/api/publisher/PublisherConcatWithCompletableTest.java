@@ -109,6 +109,7 @@ final class PublisherConcatWithCompletableTest {
     @CsvSource(value = {"false,false", "false,true", "true,false", "true,true"})
     void sourceCancel(boolean propagateCancel, boolean onError) {
         setup(propagateCancel);
+        assertThat(subscriber.pollTerminal(10, MILLISECONDS), is(nullValue()));
         subscriber.awaitSubscription().cancel();
         assertThat("Source subscription not cancelled.", subscription.isCancelled(), is(true));
         assertThat(completable.isSubscribed(), is(propagateCancel));
