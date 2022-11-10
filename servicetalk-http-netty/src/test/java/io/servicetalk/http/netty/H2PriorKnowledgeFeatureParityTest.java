@@ -95,11 +95,11 @@ import io.netty.handler.codec.http2.Http2StreamChannelBootstrap;
 import io.netty.handler.codec.http2.Http2StreamFrame;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -1433,8 +1433,9 @@ class H2PriorKnowledgeFeatureParityTest {
         assertEquals(request2ToWrite, next.toString(UTF_8));
     }
 
-    @Test
-    void h2LayerFiltersOutProhibitedH1HeadersOnClientSide() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] useOtherHeadersFactory={0}")
+    @ValueSource(booleans = {false, true})
+    void h2LayerFiltersOutProhibitedH1HeadersOnClientSide(boolean useOtherHeadersFactory) throws Exception {
         setUp(DEFAULT, true);
         serverAcceptorChannel = bindH2Server(serverEventLoopGroup, new ChannelInitializer<Channel>() {
                     @Override
@@ -1444,7 +1445,8 @@ class H2PriorKnowledgeFeatureParityTest {
                 }, __ -> { }, identity());
         InetSocketAddress serverAddress = (InetSocketAddress) serverAcceptorChannel.localAddress();
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
-                .protocols(HttpProtocol.HTTP_2.configOtherHeaderFactory)
+                .protocols(useOtherHeadersFactory ?
+                        HttpProtocol.HTTP_2.configOtherHeadersFactory : HttpProtocol.HTTP_2.config)
                 .enableWireLogging("servicetalk-tests-wire-logger", LogLevel.TRACE, () -> true)
                 .executionStrategy(clientExecutionStrategy)
                 .buildBlocking()) {
@@ -1454,11 +1456,13 @@ class H2PriorKnowledgeFeatureParityTest {
         }
     }
 
-    @Test
-    void h2LayerFiltersOutProhibitedH1HeadersOnServerSide() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] useOtherHeadersFactory={0}")
+    @ValueSource(booleans = {false, true})
+    void h2LayerFiltersOutProhibitedH1HeadersOnServerSide(boolean useOtherHeadersFactory) throws Exception {
         setUp(DEFAULT, true);
         try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
-                .protocols(HttpProtocol.HTTP_2.configOtherHeaderFactory)
+                .protocols(useOtherHeadersFactory ?
+                        HttpProtocol.HTTP_2.configOtherHeadersFactory : HttpProtocol.HTTP_2.config)
                 .enableWireLogging("servicetalk-tests-wire-logger", LogLevel.TRACE, () -> true)
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> addProhibitedHeaders(responseFactory.ok()));
              BlockingHttpClient client = forSingleAddress(serverHostAndPort(serverContext))

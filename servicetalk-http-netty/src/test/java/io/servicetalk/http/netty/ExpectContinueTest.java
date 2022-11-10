@@ -48,11 +48,12 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingDeque;
-import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
@@ -74,7 +75,6 @@ import static io.servicetalk.http.api.HttpResponseStatus.UNPROCESSABLE_ENTITY;
 import static io.servicetalk.http.netty.BuilderUtils.newClientBuilderWithConfigs;
 import static io.servicetalk.http.netty.BuilderUtils.newServerBuilderWithConfigs;
 import static io.servicetalk.http.netty.HttpProtocol.HTTP_1;
-import static io.servicetalk.http.netty.HttpProtocol.HTTP_2;
 import static java.lang.String.valueOf;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -99,18 +99,22 @@ class ExpectContinueTest {
     private final CountDownLatch returnResponse = new CountDownLatch(1);
     private final BlockingQueue<StreamingHttpResponse> responses = new LinkedBlockingDeque<>();
 
-    private static Stream<Arguments> arguments() {
-        return Stream.of(Arguments.of(HTTP_1, false),
-                Arguments.of(HTTP_1, true),
-                Arguments.of(HttpProtocol.HTTP_2, false),
-                Arguments.of(HttpProtocol.HTTP_2, true));
+    private static List<Arguments> arguments() {
+        List<Arguments> list = new ArrayList<>();
+        for (HttpProtocol protocol : HttpProtocol.values()) {
+            list.add(Arguments.of(protocol, false, false));
+            list.add(Arguments.of(protocol, false, true));
+            list.add(Arguments.of(protocol, true, false));
+            list.add(Arguments.of(protocol, true, true));
+        }
+        return list;
     }
 
-    @ParameterizedTest(name = "protocol={0} withCL={1}")
+    @ParameterizedTest(name = "protocol={0} useOtherHeadersFactory={1} withCL={2}")
     @MethodSource("arguments")
-    void expectContinue(HttpProtocol protocol, boolean withCL) throws Exception {
-        try (HttpServerContext serverContext = startServer(protocol);
-             StreamingHttpClient client = createClient(serverContext, protocol);
+    void expectContinue(HttpProtocol protocol, boolean useOtherHeadersFactory, boolean withCL) throws Exception {
+        try (HttpServerContext serverContext = startServer(protocol, useOtherHeadersFactory);
+             StreamingHttpClient client = createClient(serverContext, protocol, useOtherHeadersFactory);
              StreamingHttpConnection connection = client.reserveConnection(client.get("/")).toFuture().get()) {
             BufferAllocator allocator = connection.executionContext().bufferAllocator();
 
@@ -130,11 +134,12 @@ class ExpectContinueTest {
         }
     }
 
-    @ParameterizedTest(name = "protocol={0} withCL={1}")
+    @ParameterizedTest(name = "protocol={0} useOtherHeadersFactory={1} withCL={2}")
     @MethodSource("arguments")
-    void expectContinueAggregated(HttpProtocol protocol, boolean withCL) throws Exception {
-        try (HttpServerContext serverContext = startServer(protocol);
-             StreamingHttpClient client = createClient(serverContext, protocol);
+    void expectContinueAggregated(HttpProtocol protocol, boolean useOtherHeadersFactory,
+                                  boolean withCL) throws Exception {
+        try (HttpServerContext serverContext = startServer(protocol, useOtherHeadersFactory);
+             StreamingHttpClient client = createClient(serverContext, protocol, useOtherHeadersFactory);
              HttpConnection connection = client.reserveConnection(client.get("/")).toFuture().get().asConnection()) {
             BufferAllocator allocator = connection.executionContext().bufferAllocator();
 
@@ -152,10 +157,12 @@ class ExpectContinueTest {
         }
     }
 
-    @ParameterizedTest(name = "protocol={0} withCL={1}")
+    @ParameterizedTest(name = "protocol={0} useOtherHeadersFactory={1} withCL={2}")
     @MethodSource("arguments")
-    void expectContinueThenFailure(HttpProtocol protocol, boolean withCL) throws Exception {
-        try (HttpServerContext serverContext = startServer(protocol, (ctx, request, response) -> {
+    void expectContinueThenFailure(HttpProtocol protocol, boolean useOtherHeadersFactory,
+                                   boolean withCL) throws Exception {
+        try (HttpServerContext serverContext = startServer(protocol, useOtherHeadersFactory,
+                (ctx, request, response) -> {
             requestReceived.countDown();
             sendContinue.await();
             StringBuilder sb = new StringBuilder();
@@ -165,7 +172,7 @@ class ExpectContinueTest {
                 writer.write(ctx.executionContext().bufferAllocator().fromAscii(sb));
             }
         });
-             StreamingHttpClient client = createClient(serverContext, protocol);
+             StreamingHttpClient client = createClient(serverContext, protocol, useOtherHeadersFactory);
              StreamingHttpConnection connection = client.reserveConnection(client.get("/")).toFuture().get()) {
             BufferAllocator allocator = connection.executionContext().bufferAllocator();
 
@@ -185,10 +192,12 @@ class ExpectContinueTest {
         }
     }
 
-    @ParameterizedTest(name = "protocol={0} withCL={1}")
+    @ParameterizedTest(name = "protocol={0} useOtherHeadersFactory={1} withCL={2}")
     @MethodSource("arguments")
-    void expectContinueThenFailureThenRequestPayload(HttpProtocol protocol, boolean withCL) throws Exception {
-        try (HttpServerContext serverContext = startServer(protocol, (ctx, request, response) -> {
+    void expectContinueThenFailureThenRequestPayload(HttpProtocol protocol, boolean useOtherHeadersFactory,
+                                                     boolean withCL) throws Exception {
+        try (HttpServerContext serverContext = startServer(protocol, useOtherHeadersFactory,
+                (ctx, request, response) -> {
             requestReceived.countDown();
             sendContinue.await();
             BlockingIterator<Buffer> iterator = request.payloadBody().iterator();
@@ -202,7 +211,7 @@ class ExpectContinueTest {
                 }
             }
         });
-             StreamingHttpClient client = createClient(serverContext, protocol);
+             StreamingHttpClient client = createClient(serverContext, protocol, useOtherHeadersFactory);
              StreamingHttpConnection connection = client.reserveConnection(client.get("/")).toFuture().get()) {
             BufferAllocator allocator = connection.executionContext().bufferAllocator();
 
@@ -229,12 +238,13 @@ class ExpectContinueTest {
         }
     }
 
-    @ParameterizedTest(name = "protocol={0} withCL={1}")
+    @ParameterizedTest(name = "protocol={0} useOtherHeadersFactory={1} withCL={2}")
     @MethodSource("arguments")
-    void expectContinueConnectionClose(HttpProtocol protocol, boolean withCL) throws Exception {
+    void expectContinueConnectionClose(HttpProtocol protocol, boolean useOtherHeadersFactory,
+                                       boolean withCL) throws Exception {
         assumeTrue(protocol == HTTP_1);
-        try (HttpServerContext serverContext = startServer(protocol);
-             StreamingHttpClient client = createClient(serverContext, protocol);
+        try (HttpServerContext serverContext = startServer(protocol, useOtherHeadersFactory);
+             StreamingHttpClient client = createClient(serverContext, protocol, useOtherHeadersFactory);
              StreamingHttpConnection connection = client.reserveConnection(client.get("/")).toFuture().get()) {
 
             TestPublisher<Buffer> payload = new TestPublisher.Builder<Buffer>().singleSubscriber().build();
@@ -254,10 +264,12 @@ class ExpectContinueTest {
         }
     }
 
-    @ParameterizedTest(name = "protocol={0} withCL={1}")
+    @ParameterizedTest(name = "protocol={0} useOtherHeadersFactory={1} withCL={2}")
     @MethodSource("arguments")
-    void serverRespondsWithSuccess(HttpProtocol protocol, boolean withCL) throws Exception {
-        try (HttpServerContext serverContext = startServer(protocol, (ctx, request, response) -> {
+    void serverRespondsWithSuccess(HttpProtocol protocol, boolean useOtherHeadersFactory,
+                                   boolean withCL) throws Exception {
+        try (HttpServerContext serverContext = startServer(protocol, useOtherHeadersFactory,
+                (ctx, request, response) -> {
                 requestReceived.countDown();
                 returnResponse.await();
                 response.status(ACCEPTED);
@@ -267,7 +279,7 @@ class ExpectContinueTest {
                     }
                 }
             });
-             StreamingHttpClient client = createClient(serverContext, protocol);
+             StreamingHttpClient client = createClient(serverContext, protocol, useOtherHeadersFactory);
              StreamingHttpConnection connection = client.reserveConnection(client.get("/")).toFuture().get()) {
             BufferAllocator allocator = connection.executionContext().bufferAllocator();
 
@@ -289,10 +301,12 @@ class ExpectContinueTest {
         }
     }
 
-    @ParameterizedTest(name = "protocol={0} withCL={1}")
+    @ParameterizedTest(name = "protocol={0} useOtherHeadersFactory={1} withCL={2}")
     @MethodSource("arguments")
-    void serverRespondsWithSuccessAggregated(HttpProtocol protocol, boolean withCL) throws Exception {
-        try (HttpServerContext serverContext = startServer(protocol, (ctx, request, response) -> {
+    void serverRespondsWithSuccessAggregated(HttpProtocol protocol, boolean useOtherHeadersFactory,
+                                             boolean withCL) throws Exception {
+        try (HttpServerContext serverContext = startServer(protocol, useOtherHeadersFactory,
+                (ctx, request, response) -> {
             requestReceived.countDown();
             returnResponse.await();
             response.status(ACCEPTED);
@@ -302,7 +316,7 @@ class ExpectContinueTest {
                 }
             }
         });
-             StreamingHttpClient client = createClient(serverContext, protocol);
+             StreamingHttpClient client = createClient(serverContext, protocol, useOtherHeadersFactory);
              HttpConnection connection = client.reserveConnection(client.get("/")).toFuture().get().asConnection()) {
             BufferAllocator allocator = connection.executionContext().bufferAllocator();
 
@@ -316,10 +330,12 @@ class ExpectContinueTest {
         }
     }
 
-    @ParameterizedTest(name = "protocol={0} withCL={1}")
+    @ParameterizedTest(name = "protocol={0} useOtherHeadersFactory={1} withCL={2}")
     @MethodSource("arguments")
-    void serverRespondsWithRedirect(HttpProtocol protocol, boolean withCL) throws Exception {
-        try (HttpServerContext serverContext = startServer(protocol, (ctx, request, response) -> {
+    void serverRespondsWithRedirect(HttpProtocol protocol, boolean useOtherHeadersFactory,
+                                    boolean withCL) throws Exception {
+        try (HttpServerContext serverContext = startServer(protocol, useOtherHeadersFactory,
+                (ctx, request, response) -> {
             if ("/redirect".equals(request.requestTarget())) {
                 response.status(PERMANENT_REDIRECT);
                 response.setHeader(LOCATION, "/");
@@ -335,7 +351,8 @@ class ExpectContinueTest {
                 writer.write(ctx.executionContext().bufferAllocator().fromAscii(sb));
             }
         });
-             StreamingHttpClient client = createClient(serverContext, protocol, new RedirectingHttpRequesterFilter(
+             StreamingHttpClient client = createClient(serverContext, protocol, useOtherHeadersFactory,
+                     new RedirectingHttpRequesterFilter(
                      new RedirectConfigBuilder()
                              .allowedMethods(POST)
                              .headersToRedirect(CONTENT_LENGTH, TRANSFER_ENCODING, EXPECT)
@@ -361,11 +378,11 @@ class ExpectContinueTest {
         }
     }
 
-    @ParameterizedTest(name = "protocol={0} withCL={1}")
+    @ParameterizedTest(name = "protocol={0} useOtherHeadersFactory={1} withCL={2}")
     @MethodSource("arguments")
-    void expectationFailed(HttpProtocol protocol, boolean withCL) throws Exception {
-        try (HttpServerContext serverContext = startServer(protocol);
-             StreamingHttpClient client = createClient(serverContext, protocol);
+    void expectationFailed(HttpProtocol protocol, boolean useOtherHeadersFactory, boolean withCL) throws Exception {
+        try (HttpServerContext serverContext = startServer(protocol, useOtherHeadersFactory);
+             StreamingHttpClient client = createClient(serverContext, protocol, useOtherHeadersFactory);
              StreamingHttpConnection connection = client.reserveConnection(client.get("/")).toFuture().get()) {
 
             TestPublisher<Buffer> payload = new TestPublisher.Builder<Buffer>().singleSubscriber().build();
@@ -384,11 +401,12 @@ class ExpectContinueTest {
         }
     }
 
-    @ParameterizedTest(name = "protocol={0} withCL={1}")
+    @ParameterizedTest(name = "protocol={0} useOtherHeadersFactory={1} withCL={2}")
     @MethodSource("arguments")
-    void expectationFailedAggregated(HttpProtocol protocol, boolean withCL) throws Exception {
-        try (HttpServerContext serverContext = startServer(protocol);
-             StreamingHttpClient client = createClient(serverContext, protocol);
+    void expectationFailedAggregated(HttpProtocol protocol, boolean useOtherHeadersFactory,
+                                     boolean withCL) throws Exception {
+        try (HttpServerContext serverContext = startServer(protocol, useOtherHeadersFactory);
+             StreamingHttpClient client = createClient(serverContext, protocol, useOtherHeadersFactory);
              HttpConnection connection = client.reserveConnection(client.get("/")).toFuture().get().asConnection()) {
             BufferAllocator allocator = connection.executionContext().bufferAllocator();
 
@@ -405,12 +423,13 @@ class ExpectContinueTest {
         }
     }
 
-    @ParameterizedTest(name = "protocol={0} withCL={1}")
+    @ParameterizedTest(name = "protocol={0} useOtherHeadersFactory={1} withCL={2}")
     @MethodSource("arguments")
-    void expectationFailedConnectionClose(HttpProtocol protocol, boolean withCL) throws Exception {
+    void expectationFailedConnectionClose(HttpProtocol protocol, boolean useOtherHeadersFactory,
+                                          boolean withCL) throws Exception {
         assumeTrue(protocol == HTTP_1);
-        try (HttpServerContext serverContext = startServer(protocol);
-             StreamingHttpClient client = createClient(serverContext, protocol);
+        try (HttpServerContext serverContext = startServer(protocol, useOtherHeadersFactory);
+             StreamingHttpClient client = createClient(serverContext, protocol, useOtherHeadersFactory);
              StreamingHttpConnection connection = client.reserveConnection(client.get("/")).toFuture().get()) {
 
             TestPublisher<Buffer> payload = new TestPublisher.Builder<Buffer>().singleSubscriber().build();
@@ -429,10 +448,11 @@ class ExpectContinueTest {
         }
     }
 
-    @ParameterizedTest(name = "protocol={0} withCL={1}")
+    @ParameterizedTest(name = "protocol={0} useOtherHeadersFactory={1} withCL={2}")
     @MethodSource("arguments")
-    void serverError(HttpProtocol protocol, boolean withCL) throws Exception {
-        try (HttpServerContext serverContext = startServer(protocol, (ctx, request, response) -> {
+    void serverError(HttpProtocol protocol, boolean useOtherHeadersFactory, boolean withCL) throws Exception {
+        try (HttpServerContext serverContext = startServer(protocol, useOtherHeadersFactory,
+                (ctx, request, response) -> {
                 requestReceived.countDown();
                 returnResponse.await();
                 if (request.headers().contains(EXPECT, CONTINUE)) {
@@ -440,7 +460,7 @@ class ExpectContinueTest {
                 }
                 response.sendMetaData().close();
         });
-             StreamingHttpClient client = createClient(serverContext, protocol);
+             StreamingHttpClient client = createClient(serverContext, protocol, useOtherHeadersFactory);
              StreamingHttpConnection connection = client.reserveConnection(client.get("/")).toFuture().get()) {
 
             TestPublisher<Buffer> payload = new TestPublisher.Builder<Buffer>().singleSubscriber().build();
@@ -458,10 +478,12 @@ class ExpectContinueTest {
         }
     }
 
-    @ParameterizedTest(name = "protocol={0} withCL={1}")
+    @ParameterizedTest(name = "protocol={0} useOtherHeadersFactory={1} withCL={2}")
     @MethodSource("arguments")
-    void serverErrorAggregated(HttpProtocol protocol, boolean withCL) throws Exception {
-        try (HttpServerContext serverContext = startServer(protocol, (ctx, request, response) -> {
+    void serverErrorAggregated(HttpProtocol protocol, boolean useOtherHeadersFactory,
+                               boolean withCL) throws Exception {
+        try (HttpServerContext serverContext = startServer(protocol, useOtherHeadersFactory,
+                (ctx, request, response) -> {
             requestReceived.countDown();
             returnResponse.await();
             if (request.headers().contains(EXPECT, CONTINUE)) {
@@ -469,7 +491,7 @@ class ExpectContinueTest {
             }
             response.sendMetaData().close();
         });
-             StreamingHttpClient client = createClient(serverContext, protocol);
+             StreamingHttpClient client = createClient(serverContext, protocol, useOtherHeadersFactory);
              HttpConnection connection = client.reserveConnection(client.get("/")).toFuture().get().asConnection()) {
             BufferAllocator allocator = connection.executionContext().bufferAllocator();
 
@@ -488,11 +510,12 @@ class ExpectContinueTest {
         }
     }
 
-    @ParameterizedTest(name = "protocol={0} withCL={1}")
+    @ParameterizedTest(name = "protocol={0} useOtherHeadersFactory={1} withCL={2}")
     @MethodSource("arguments")
-    void retryExpectationFailed(HttpProtocol protocol, boolean withCL) throws Exception {
-        try (HttpServerContext serverContext = startServer(protocol);
-             StreamingHttpClient client = createClient(serverContext, protocol,
+    void retryExpectationFailed(HttpProtocol protocol, boolean useOtherHeadersFactory,
+                                boolean withCL) throws Exception {
+        try (HttpServerContext serverContext = startServer(protocol, useOtherHeadersFactory);
+             StreamingHttpClient client = createClient(serverContext, protocol, useOtherHeadersFactory,
                      new RetryingHttpRequesterFilter.Builder().retryExpectationFailed(true).build())) {
 
             TestPublisher<Buffer> payload = new TestPublisher.Builder<Buffer>().singleSubscriber().build();
@@ -508,11 +531,12 @@ class ExpectContinueTest {
         }
     }
 
-    @ParameterizedTest(name = "protocol={0} withCL={1}")
+    @ParameterizedTest(name = "protocol={0} useOtherHeadersFactory={1} withCL={2}")
     @MethodSource("arguments")
-    void retryExpectationFailedAggregated(HttpProtocol protocol, boolean withCL) throws Exception {
-        try (HttpServerContext serverContext = startServer(protocol);
-             HttpClient client = createClient(serverContext, protocol,
+    void retryExpectationFailedAggregated(HttpProtocol protocol, boolean useOtherHeadersFactory,
+                                          boolean withCL) throws Exception {
+        try (HttpServerContext serverContext = startServer(protocol, useOtherHeadersFactory);
+             HttpClient client = createClient(serverContext, protocol, useOtherHeadersFactory,
                      new RetryingHttpRequesterFilter.Builder().retryExpectationFailed(true).build()).asClient()) {
 
             Future<HttpResponse> responseFuture = client.request(newRequest(client, withCL, true, PAYLOAD + PAYLOAD,
@@ -526,8 +550,8 @@ class ExpectContinueTest {
         }
     }
 
-    private HttpServerContext startServer(HttpProtocol protocol) throws Exception {
-        return startServer(protocol, (ctx, request, response) -> {
+    private HttpServerContext startServer(HttpProtocol protocol, boolean useOtherHeadersFactory) throws Exception {
+        return startServer(protocol, useOtherHeadersFactory, (ctx, request, response) -> {
                     requestReceived.countDown();
                     if (request.headers().containsIgnoreCase(EXPECT, CONTINUE) &&
                             request.headers().contains(FAIL, "true")) {
@@ -547,21 +571,24 @@ class ExpectContinueTest {
     }
 
     private static HttpServerContext startServer(HttpProtocol protocol,
+                                                 boolean useOtherHeadersFactory,
                                                  BlockingStreamingHttpService service) throws Exception {
         return newServerBuilderWithConfigs(SERVER_CTX,
-                protocol == HTTP_2 ? protocol.configOtherHeaderFactory : protocol.config)
+                useOtherHeadersFactory ? protocol.configOtherHeadersFactory : protocol.config)
                 .listenBlockingStreamingAndAwait(service);
     }
 
-    private static StreamingHttpClient createClient(HttpServerContext serverContext, HttpProtocol protocol) {
-        return createClient(serverContext, protocol, null);
+    private static StreamingHttpClient createClient(HttpServerContext serverContext, HttpProtocol protocol,
+                                                    boolean useOtherHeadersFactory) {
+        return createClient(serverContext, protocol, useOtherHeadersFactory, null);
     }
 
     private static StreamingHttpClient createClient(HttpServerContext serverContext,
-                                                    HttpProtocol protocol,
+                                                    HttpProtocol protocol, boolean useOtherHeadersFactory,
                                                     @Nullable StreamingHttpClientFilterFactory filterFactory) {
         final SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder = newClientBuilderWithConfigs(
-                serverContext, CLIENT_CTX, protocol == HTTP_2 ? protocol.configOtherHeaderFactory : protocol.config);
+                serverContext, CLIENT_CTX,
+                useOtherHeadersFactory ? protocol.configOtherHeadersFactory : protocol.config);
         if (filterFactory != null) {
             builder.appendClientFilter(filterFactory);
         }
