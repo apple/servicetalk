@@ -64,10 +64,10 @@ class ContentLengthAndTrailersTest extends AbstractNettyHttpServerTest {
     private HttpProtocol protocol;
     private String content;
 
-    private void setUp(HttpProtocol protocol, String content) {
+    private void setUp(HttpProtocol protocol, boolean useOtherHeadersFactory, String content) {
         this.protocol = protocol;
         this.content = content;
-        protocol(protocol == HTTP_2 ? protocol.configOtherHeaderFactory : protocol.config);
+        protocol(useOtherHeadersFactory ? protocol.configOtherHeadersFactory : protocol.config);
         serviceFilterFactory(service -> new StreamingHttpServiceFilter(service) {
             @Override
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
@@ -95,8 +95,10 @@ class ContentLengthAndTrailersTest extends AbstractNettyHttpServerTest {
     private static List<Arguments> data() {
         List<Arguments> list = new ArrayList<>();
         for (HttpProtocol protocol : HttpProtocol.values()) {
-            list.add(Arguments.of(protocol, ""));
-            list.add(Arguments.of(protocol, "content"));
+            list.add(Arguments.of(protocol, false, ""));
+            list.add(Arguments.of(protocol, false, "content"));
+            list.add(Arguments.of(protocol, true, ""));
+            list.add(Arguments.of(protocol, true, "content"));
         }
         return list;
     }
@@ -135,44 +137,47 @@ class ContentLengthAndTrailersTest extends AbstractNettyHttpServerTest {
         }));
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] protocol={0} content={1}")
+    @ParameterizedTest(name = "{displayName} [{index}] protocol={0} useOtherHeadersFactory={1} content={2}")
     @MethodSource("data")
-    void contentLengthAddedAutomaticallyByAggregatedApiConversion(HttpProtocol protocol,
+    void contentLengthAddedAutomaticallyByAggregatedApiConversion(HttpProtocol protocol, boolean useOtherHeadersFactory,
                                                                   String content) throws Exception {
-        setUp(protocol, content);
+        setUp(protocol, useOtherHeadersFactory, content);
         test(r -> r.toRequest().toFuture().get().toStreamingRequest(), r -> r, true, false, false);
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] protocol={0} content={1}")
+    @ParameterizedTest(name = "{displayName} [{index}] protocol={0} useOtherHeadersFactory={1} content={2}")
     @MethodSource("data")
-    void contentLengthAddedManually(HttpProtocol protocol, String content) throws Exception {
-        setUp(protocol, content);
+    void contentLengthAddedManually(HttpProtocol protocol, boolean useOtherHeadersFactory,
+                                    String content) throws Exception {
+        setUp(protocol, useOtherHeadersFactory, content);
         test(r -> r.setHeader(CONTENT_LENGTH, valueOf(addFixedLengthFramingOverhead(content.length()))), r -> r, true,
                 false, false);
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] protocol={0} content={1}")
+    @ParameterizedTest(name = "{displayName} [{index}] protocol={0} useOtherHeadersFactory={1} content={2}")
     @MethodSource("data")
-    void transferEncodingAddedAutomatically(HttpProtocol protocol,
+    void transferEncodingAddedAutomatically(HttpProtocol protocol, boolean useOtherHeadersFactory,
                                             String content) throws Exception {
-        setUp(protocol, content);
+        setUp(protocol, useOtherHeadersFactory, content);
         test(r -> r, r -> r, content.isEmpty(), protocol == HTTP_1 && !content.isEmpty(), false);
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] protocol={0} content={1}")
+    @ParameterizedTest(name = "{displayName} [{index}] protocol={0} useOtherHeadersFactory={1} content={2}")
     @MethodSource("data")
-    void transferEncodingAddedManually(HttpProtocol protocol, String content) throws Exception {
-        setUp(protocol, content);
+    void transferEncodingAddedManually(HttpProtocol protocol, boolean useOtherHeadersFactory,
+                                       String content) throws Exception {
+        setUp(protocol, useOtherHeadersFactory, content);
         // HTTP/2 can write a request without payload body as a single frame,
         // server adds "content-length: 0" when it reads those requests
         boolean hasContentLength = protocol == HTTP_2 && content.isEmpty();
         test(r -> r.setHeader(TRANSFER_ENCODING, CHUNKED), r -> r, hasContentLength, protocol == HTTP_1, false);
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] protocol={0} content={1}")
+    @ParameterizedTest(name = "{displayName} [{index}] protocol={0} useOtherHeadersFactory={1} content={2}")
     @MethodSource("data")
-    void trailersAddedForAggregatedRequest(HttpProtocol protocol, String content) throws Exception {
-        setUp(protocol, content);
+    void trailersAddedForAggregatedRequest(HttpProtocol protocol, boolean useOtherHeadersFactory,
+                                           String content) throws Exception {
+        setUp(protocol, useOtherHeadersFactory, content);
         test(r -> r.toRequest().toFuture().get()
                 .addTrailer(TRAILER_NAME, TRAILER_VALUE)
                 .toStreamingRequest(),
@@ -180,10 +185,11 @@ class ContentLengthAndTrailersTest extends AbstractNettyHttpServerTest {
                 r -> r, protocol == HTTP_2, protocol == HTTP_1, true);
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] protocol={0} content={1}")
+    @ParameterizedTest(name = "{displayName} [{index}] protocol={0} useOtherHeadersFactory={1} content={2}")
     @MethodSource("data")
-    void trailersAddedForStreamingRequest(HttpProtocol protocol, String content) throws Exception {
-        setUp(protocol, content);
+    void trailersAddedForStreamingRequest(HttpProtocol protocol, boolean useOtherHeadersFactory,
+                                          String content) throws Exception {
+        setUp(protocol, useOtherHeadersFactory, content);
         test(r -> r.transform(new StatelessTrailersTransformer<Buffer>() {
 
                     @Override
@@ -196,11 +202,11 @@ class ContentLengthAndTrailersTest extends AbstractNettyHttpServerTest {
                 protocol == HTTP_2 && content.isEmpty(), protocol == HTTP_1, true);
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] protocol={0} content={1}")
+    @ParameterizedTest(name = "{displayName} [{index}] protocol={0} useOtherHeadersFactory={1} content={2}")
     @MethodSource("data")
-    void trailersAndContentLengthAddedForAggregatedRequest(HttpProtocol protocol,
+    void trailersAndContentLengthAddedForAggregatedRequest(HttpProtocol protocol, boolean useOtherHeadersFactory,
                                                            String content) throws Exception {
-        setUp(protocol, content);
+        setUp(protocol, useOtherHeadersFactory, content);
         test(r -> r.toRequest().toFuture().get()
                         .setHeader(CONTENT_LENGTH, valueOf(addFixedLengthFramingOverhead(content.length())))
                         .addTrailer(TRAILER_NAME, TRAILER_VALUE)
@@ -209,11 +215,11 @@ class ContentLengthAndTrailersTest extends AbstractNettyHttpServerTest {
                 r -> r, protocol == HTTP_2, protocol == HTTP_1, true);
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] protocol={0} content={1}")
+    @ParameterizedTest(name = "{displayName} [{index}] protocol={0} useOtherHeadersFactory={1} content={2}")
     @MethodSource("data")
-    void trailersAndContentLengthAddedForStreamingRequest(HttpProtocol protocol,
+    void trailersAndContentLengthAddedForStreamingRequest(HttpProtocol protocol, boolean useOtherHeadersFactory,
                                                           String content) throws Exception {
-        setUp(protocol, content);
+        setUp(protocol, useOtherHeadersFactory, content);
         test(r -> r.setHeader(CONTENT_LENGTH, valueOf(addFixedLengthFramingOverhead(content.length())))
                         .transform(new StatelessTrailersTransformer<Buffer>() {
 
@@ -226,11 +232,11 @@ class ContentLengthAndTrailersTest extends AbstractNettyHttpServerTest {
                 r -> r, protocol == HTTP_2, protocol == HTTP_1, true);
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] protocol={0} content={1}")
+    @ParameterizedTest(name = "{displayName} [{index}] protocol={0} useOtherHeadersFactory={1} content={2}")
     @MethodSource("data")
-    void trailersAndTransferEncodingAddedForAggregatedRequest(HttpProtocol protocol,
+    void trailersAndTransferEncodingAddedForAggregatedRequest(HttpProtocol protocol, boolean useOtherHeadersFactory,
                                                               String content) throws Exception {
-        setUp(protocol, content);
+        setUp(protocol, useOtherHeadersFactory, content);
         test(r -> r.toRequest().toFuture().get()
                         .setHeader(TRANSFER_ENCODING, CHUNKED)
                         .addTrailer(TRAILER_NAME, TRAILER_VALUE)
@@ -238,11 +244,11 @@ class ContentLengthAndTrailersTest extends AbstractNettyHttpServerTest {
                 r -> r, false, protocol == HTTP_2 && content.isEmpty(), protocol == HTTP_1, true);
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] protocol={0} content={1}")
+    @ParameterizedTest(name = "{displayName} [{index}] protocol={0} useOtherHeadersFactory={1} content={2}")
     @MethodSource("data")
-    void trailersAndTransferEncodingAddedForStreamingRequest(HttpProtocol protocol,
+    void trailersAndTransferEncodingAddedForStreamingRequest(HttpProtocol protocol, boolean useOtherHeadersFactory,
                                                              String content) throws Exception {
-        setUp(protocol, content);
+        setUp(protocol, useOtherHeadersFactory, content);
         test(r -> r.setHeader(TRANSFER_ENCODING, CHUNKED)
                         .transform(new StatelessTrailersTransformer<Buffer>() {
 
@@ -254,11 +260,12 @@ class ContentLengthAndTrailersTest extends AbstractNettyHttpServerTest {
                 r -> r, false, protocol == HTTP_2 && content.isEmpty(), protocol == HTTP_1, true);
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] protocol={0} content={1}")
+    @ParameterizedTest(name = "{displayName} [{index}] protocol={0} useOtherHeadersFactory={1} content={2}")
     @MethodSource("data")
     void trailersContentLengthAndTransferEncodingAddedForAggregatedRequest(HttpProtocol protocol,
+                                                                           boolean useOtherHeadersFactory,
                                                                            String content) throws Exception {
-        setUp(protocol, content);
+        setUp(protocol, useOtherHeadersFactory, content);
         test(r -> r.toRequest().toFuture().get()
                         .setHeader(CONTENT_LENGTH, valueOf(addFixedLengthFramingOverhead(content.length())))
                         .setHeader(TRANSFER_ENCODING, CHUNKED)
@@ -268,11 +275,12 @@ class ContentLengthAndTrailersTest extends AbstractNettyHttpServerTest {
                 r -> r, protocol == HTTP_2, protocol == HTTP_1, true);
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] protocol={0} content={1}")
+    @ParameterizedTest(name = "{displayName} [{index}] protocol={0} useOtherHeadersFactory={1} content={2}")
     @MethodSource("data")
     void trailersContentLengthAndTransferEncodingAddedForStreamingRequest(HttpProtocol protocol,
+                                                                          boolean useOtherHeadersFactory,
                                                                           String content) throws Exception {
-        setUp(protocol, content);
+        setUp(protocol, useOtherHeadersFactory, content);
         test(r -> r.setHeader(CONTENT_LENGTH, valueOf(addFixedLengthFramingOverhead(content.length())))
                         .setHeader(TRANSFER_ENCODING, CHUNKED)
                         .transform(new StatelessTrailersTransformer<Buffer>() {
@@ -286,19 +294,21 @@ class ContentLengthAndTrailersTest extends AbstractNettyHttpServerTest {
                 r -> r, protocol == HTTP_2, protocol == HTTP_1, true);
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] protocol={0} content={1}")
+    @ParameterizedTest(name = "{displayName} [{index}] protocol={0} useOtherHeadersFactory={1} content={2}")
     @MethodSource("data")
-    void responseTrailersObservedWhenNoTrailers(HttpProtocol protocol, String content) throws Exception {
-        setUp(protocol, content);
+    void responseTrailersObservedWhenNoTrailers(HttpProtocol protocol, boolean useOtherHeadersFactory,
+                                                String content) throws Exception {
+        setUp(protocol, useOtherHeadersFactory, content);
         // Use transform to simulate access to trailers
         test(r -> r, r -> r.transform(new StatelessTrailersTransformer<>()),
                 content.isEmpty(), protocol == HTTP_1 && !content.isEmpty(), false);
     }
 
-    @ParameterizedTest(name = "{displayName} [{index}] protocol={0} content={1}")
+    @ParameterizedTest(name = "{displayName} [{index}] protocol={0} useOtherHeadersFactory={1} content={2}")
     @MethodSource("data")
-    void responseTrailersObserved(HttpProtocol protocol, String content) throws Exception {
-        setUp(protocol, content);
+    void responseTrailersObserved(HttpProtocol protocol, boolean useOtherHeadersFactory,
+                                  String content) throws Exception {
+        setUp(protocol, useOtherHeadersFactory, content);
         test(r -> r.transform(new StatelessTrailersTransformer<Buffer>() {
 
             @Override
