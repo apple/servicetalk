@@ -176,7 +176,7 @@ class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
             verify(serverConnectionObserver, await()).connectionEstablished(any(ConnectionInfo.class));
 
             verify(serverDataObserver, await()).onNewRead();
-            verify(serverDataObserver, await()).onNewWrite();
+            verify(serverReadObserver, await()).requestedToRead(anyLong());
         } else {
             verify(clientConnectionObserver).multiplexedConnectionEstablished(any(ConnectionInfo.class));
             verify(serverConnectionObserver, await()).multiplexedConnectionEstablished(any(ConnectionInfo.class));
@@ -186,9 +186,12 @@ class HttpTransportObserverTest extends AbstractNettyHttpServerTest {
         assertConnectionClosed();
         verify(clientConnectionObserver).connectionClosed();
         verify(serverConnectionObserver, await()).connectionClosed();
+        if (protocol == HTTP_1) {
+            verify(serverReadObserver, await()).readFailed(any(ClosedChannelException.class));
+        }
 
         verifyNoMoreInteractions(clientTransportObserver, clientDataObserver, clientMultiplexedObserver,
-                serverTransportObserver, serverDataObserver, serverMultiplexedObserver);
+                serverTransportObserver, serverDataObserver, serverMultiplexedObserver, serverReadObserver);
         if (protocol != HTTP_2) {
             // HTTP/2 coded adds additional write/flush events related to connection preface. Also, it may emit more
             // flush events on the pipeline after the connection is closed.

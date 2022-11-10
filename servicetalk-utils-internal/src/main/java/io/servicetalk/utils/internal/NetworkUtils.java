@@ -55,6 +55,14 @@ public final class NetworkUtils {
         return isValidIpV4Address(ip, 0, ip.length());
     }
 
+    /**
+     * Takes a string and parses it to see if it is a valid IPV4 address.
+     *
+     * @param ip the IP-address to validate
+     * @param from the index in {@code ip} to start validation (inclusive).
+     * @param toExclusive the index in {@code ip} to end validation (exclusive).
+     * @return true, if the string represents an IPV4 address in dotted notation, false otherwise.
+     */
     private static boolean isValidIpV4Address(final CharSequence ip, int from, int toExclusive) {
         int len = toExclusive - from;
         int i;

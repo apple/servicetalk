@@ -2222,9 +2222,10 @@ public abstract class Publisher<T> {
      *     return results;
      * }</pre>
      *
-     * @param until {@link Completable}, termination of which, terminates the returned {@link Publisher}.
+     * @param until {@link Completable}, termination of which, terminates the returned {@link Publisher}. If this
+     * {@link Publisher} maybe resubscribed the {@link Completable} should be also, or use
+     * {@link Publisher#defer(Supplier)} to create a new {@link Completable} on each subscribe.
      * @return A {@link Publisher} that only emits the items till {@code until} {@link Completable} is completed.
-     *
      * @see <a href="https://reactivex.io/documentation/operators/takeuntil.html">ReactiveX takeUntil operator.</a>
      */
     public final Publisher<T> takeUntil(Completable until) {

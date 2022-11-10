@@ -20,9 +20,7 @@ package io.servicetalk.http.api;
  */
 public final class DefaultHttpHeadersFactory implements HttpHeadersFactory {
 
-    private static final boolean DEFAULT_VALIDATE_VALUES = false;
-    public static final HttpHeadersFactory INSTANCE = new DefaultHttpHeadersFactory(true, true,
-            DEFAULT_VALIDATE_VALUES);
+    public static final HttpHeadersFactory INSTANCE = new DefaultHttpHeadersFactory(true, true, false);
 
     private final boolean validateNames;
     private final boolean validateCookies;
@@ -74,6 +72,11 @@ public final class DefaultHttpHeadersFactory implements HttpHeadersFactory {
     @Override
     public HttpHeaders newEmptyTrailers() {
         return new DefaultHttpHeaders(0, validateNames, validateCookies, validateValues);
+    }
+
+    @Override
+    public boolean validateNames() {
+        return validateNames;
     }
 
     @Override

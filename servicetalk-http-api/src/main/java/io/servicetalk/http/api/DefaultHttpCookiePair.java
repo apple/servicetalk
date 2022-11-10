@@ -17,7 +17,6 @@ package io.servicetalk.http.api;
 
 import static io.servicetalk.buffer.api.CharSequences.caseInsensitiveHashCode;
 import static io.servicetalk.buffer.api.CharSequences.contentEquals;
-import static io.servicetalk.buffer.api.CharSequences.indexOf;
 import static io.servicetalk.http.api.HeaderUtils.validateCookieNameAndValue;
 
 /**
@@ -51,21 +50,6 @@ public final class DefaultHttpCookiePair implements HttpCookiePair {
         this.name = cookieName;
         this.value = cookieValue;
         this.isWrapped = isWrapped;
-    }
-
-    /**
-     * Parse a <a href="https://tools.ietf.org/html/rfc6265#section-4.1.1">cookie-pair</a> from {@code sequence}.
-     * @param sequence The {@link CharSequence} that contains a
-     * <a href="https://tools.ietf.org/html/rfc6265#section-4.1.1">cookie-pair</a>.
-     *
-     * @param nameStart The index were the <a href="https://tools.ietf.org/html/rfc6265#section-4.1.1">cookie-name</a>
-     * starts in {@code sequence}.
-     * @param valueEnd The end index (exclusive) of the
-     * <a href="https://tools.ietf.org/html/rfc6265#section-4.1.1">cookie-pair</a> in {@code sequence}.
-     * @return a {@link HttpCookiePair} parsed from {@code sequence}.
-     */
-    static HttpCookiePair parseCookiePair(final CharSequence sequence, int nameStart, int valueEnd) {
-        return parseCookiePair(sequence, nameStart, indexOf(sequence, '=', nameStart) - nameStart, valueEnd);
     }
 
     /**

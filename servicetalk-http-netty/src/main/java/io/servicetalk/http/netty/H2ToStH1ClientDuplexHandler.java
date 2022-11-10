@@ -40,8 +40,6 @@ import javax.annotation.Nullable;
 
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_LENGTH;
 import static io.netty.handler.codec.http.HttpHeaderNames.HOST;
-import static io.netty.handler.codec.http.HttpHeaderNames.TRANSFER_ENCODING;
-import static io.netty.handler.codec.http.HttpHeaderValues.CHUNKED;
 import static io.netty.handler.codec.http.HttpHeaderValues.ZERO;
 import static io.netty.handler.codec.http2.Http2Headers.PseudoHeaderName.STATUS;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
@@ -206,12 +204,8 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
         if (httpStatus != null) {
             final int statusCode = httpStatus.code();
             if (!h2Headers.contains(CONTENT_LENGTH)) {
-                if (serverMaySendPayloadBodyFor(statusCode, method)) {
-                    if (fullResponse) {
-                        h2Headers.set(CONTENT_LENGTH, ZERO);
-                    } else {
-                        h2Headers.add(TRANSFER_ENCODING, CHUNKED);
-                    }
+                if (serverMaySendPayloadBodyFor(statusCode, method) && fullResponse) {
+                    h2Headers.set(CONTENT_LENGTH, ZERO);
                 }
             } else if (!responseMayHaveContent(statusCode, method)) {
                 throw protocolError(ctx, streamId, fullResponse, "content-length (" + h2Headers.get(CONTENT_LENGTH) +
