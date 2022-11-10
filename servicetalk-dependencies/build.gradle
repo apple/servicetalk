@@ -29,6 +29,7 @@ dependencies {
   api platform("com.google.protobuf:protobuf-bom:${protobufVersion}")
   api platform("org.apache.logging.log4j:log4j-bom:${log4jVersion}")
   api platform("org.glassfish.jersey:jersey-bom:${jerseyVersion}")
+  api platform("io.opentelemetry:opentelemetry-bom:$opentelemetryVersion")
 
   constraints {
     api "com.google.api.grpc:proto-google-common-protos:$protoGoogleCommonProtosVersion"
