@@ -68,9 +68,15 @@ public final class ServiceTalkContextStoreProvider implements ContextStorageProv
             return () -> {
                 final Context current = current();
                 if (current != toAttach) {
-                    logger.info(
-                            "Context {} in storage not the expected context {}, Scope.close() was not called correctly",
+                    if (logger.isDebugEnabled()) {
+                        logger.debug(
+                            "Context {} in storage isn't the expected context {}, Scope wasn't closed correctly",
                             current, toAttach, new Throwable("stacktrace"));
+                    } else {
+                        logger.info(
+                            "Context {} in storage isn't the expected context {}, Scope wasn't closed correctly",
+                            current, toAttach);
+                    }
                 }
                 if (beforeAttach == null) {
                     contextMap.remove(SCOPE_KEY);
