@@ -35,13 +35,16 @@ import io.servicetalk.transport.api.ServerContext;
 
 import io.grpc.examples.helloworld.Greeter;
 import io.grpc.examples.helloworld.Greeter.BlockingGreeterClient;
+import io.grpc.examples.helloworld.Greeter.GreeterService;
 import io.grpc.examples.helloworld.HelloReply;
 import io.grpc.examples.helloworld.HelloRequest;
+import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.time.Duration;
+import java.util.concurrent.TimeoutException;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
@@ -58,6 +61,7 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static java.time.Duration.ofMillis;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 final class GrpcTimeoutOrderTest {
@@ -68,8 +72,7 @@ final class GrpcTimeoutOrderTest {
     @CsvSource(value = {"true,true,false", "false,true,false", "false,false,false", "true,false,true",
                         "true,false,false"})
     void serverFilterNeverRespondsAppliesDeadline(boolean appendNonOffloading, boolean serverBuilderAppendTimeout,
-                                                  boolean serverManualAppendTimeout)
-            throws Exception {
+                                                  boolean serverManualAppendTimeout) throws Exception {
         final boolean clientAppliesTimeout = (!serverManualAppendTimeout && !serverBuilderAppendTimeout);
         try (ServerContext serverContext = applyDefaultTimeout(forAddress(localAddress(0))
                 .appendTimeoutFilter(serverBuilderAppendTimeout)
@@ -88,25 +91,24 @@ final class GrpcTimeoutOrderTest {
                         builder.appendServiceFilter(NEVER_SERVER_FILTER);
                     }
                 }), serverBuilderAppendTimeout ? DEFAULT_TIMEOUT : null)
-                .listenAndAwait((Greeter.GreeterService) (ctx, request) ->
+                .listenAndAwait((GreeterService) (ctx, request) ->
                         succeeded(HelloReply.newBuilder().setMessage("hello " + request.getName()).build()));
              BlockingGreeterClient client = applyDefaultTimeout(forResolvedAddress(serverContext.listenAddress())
                      .appendTimeoutFilter(clientAppliesTimeout), clientAppliesTimeout ? DEFAULT_TIMEOUT : null)
                      .buildBlocking(new Greeter.ClientFactory())) {
-            assertThat(assertThrows(GrpcStatusException.class, () ->
-                            client.sayHello(HelloRequest.newBuilder().setName("world").build())
-                    ).status().code(), equalTo(clientAppliesTimeout ? UNKNOWN : DEADLINE_EXCEEDED));
+            assertGrpcTimeout(() -> client.sayHello(HelloRequest.newBuilder().setName("world").build()),
+                    clientAppliesTimeout);
         }
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] builderEnableTimeout={0}")
     @ValueSource(booleans = {true, false})
-    void clientNeverRespondsAppliesDeadline(boolean builderEnableTimeout)
-            throws Exception {
+    void clientFilterNeverRespondsAppliesDeadline(boolean builderEnableTimeout) throws Exception {
         try (ServerContext serverContext = forAddress(localAddress(0))
                 .appendTimeoutFilter(false)
-                .listenAndAwait((Greeter.GreeterService) (ctx, request) ->
-                        succeeded(HelloReply.newBuilder().setMessage("hello " + request.getName()).build()));
+                .listenAndAwait((GreeterService) (ctx, request) -> {
+                    throw new IllegalStateException("client using never filter, server shouldn't read response");
+                });
              BlockingGreeterClient client = forResolvedAddress(serverContext.listenAddress())
                      .appendTimeoutFilter(builderEnableTimeout)
                      .defaultTimeout(DEFAULT_TIMEOUT)
@@ -117,9 +119,17 @@ final class GrpcTimeoutOrderTest {
                          builder.appendClientFilter(NEVER_CLIENT_FILTER);
                      })
                      .buildBlocking(new Greeter.ClientFactory())) {
-            assertThat(assertThrows(GrpcStatusException.class, () ->
-                    client.sayHello(HelloRequest.newBuilder().setName("world").build())
-            ).status().code(), equalTo(UNKNOWN));
+            assertGrpcTimeout(() -> client.sayHello(HelloRequest.newBuilder().setName("world").build()), true);
+        }
+    }
+
+    private static void assertGrpcTimeout(Executable executable, boolean clientSideTimeout) {
+        GrpcStatusException e = assertThrows(GrpcStatusException.class, executable);
+        if (clientSideTimeout) {
+            assertThat(e.status().code(), equalTo(UNKNOWN));
+            assertThat(e.getCause(), instanceOf(TimeoutException.class));
+        } else {
+            assertThat(e.status().code(), equalTo(DEADLINE_EXCEEDED));
         }
     }
 
