@@ -60,7 +60,7 @@ public class DelegatingGrpcServerBuilder implements GrpcServerBuilder {
 
     @Override
     public GrpcServerBuilder appendTimeoutFilter(final boolean append) {
-        delegate = delegate.appendTimeoutFilter(false);
+        delegate = delegate.appendTimeoutFilter(append);
         return this;
     }
 
