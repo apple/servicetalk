@@ -18,6 +18,7 @@ package io.servicetalk.grpc.api;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpLifecycleObserver;
 import io.servicetalk.http.api.HttpServerBuilder;
+import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 
 import java.time.Duration;
 
@@ -67,6 +68,25 @@ public interface GrpcServerBuilder {
      * @return {@code this}.
      */
     GrpcServerBuilder defaultTimeout(Duration defaultTimeout);
+
+    /**
+     * Determine if a filter will be inserted by this builder that enforces the
+     * <a href="https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#requests">Timeout deadline
+     * propagation</a>.
+     * <p>
+     * To insert {@link GrpcFilters#newGrpcDeadlineServerFilterFactory(Duration)} in your preferred order use
+     * {@link #initializeHttp} and
+     * {@link HttpServerBuilder#appendNonOffloadingServiceFilter(StreamingHttpServiceFilterFactory)} (to force ordering
+     * before any offloading filters) or
+     * {@link HttpServerBuilder#appendServiceFilter(StreamingHttpServiceFilterFactory)} (if you require different
+     * ordering).
+     * <p>
+     * {@link #defaultTimeout(Duration)} may be ignored if {@code append} is false.
+     * @param append {@code true} if this builder should append the timeout filter, {@code false} if it should not.
+     * @return {@code this}.
+     * @see GrpcFilters#newGrpcDeadlineServerFilterFactory(Duration)
+     */
+    GrpcServerBuilder appendTimeoutFilter(boolean append);
 
     /**
      * Sets a {@link GrpcLifecycleObserver} that provides visibility into gRPC lifecycle events.

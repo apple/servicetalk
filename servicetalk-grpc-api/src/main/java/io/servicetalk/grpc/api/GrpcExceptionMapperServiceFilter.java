@@ -84,9 +84,11 @@ public final class GrpcExceptionMapperServiceFilter implements StreamingHttpServ
                 ctx.executionContext().bufferAllocator(), null);
         final CharSequence codeValue = response.headers().get(GRPC_STATUS);
         assert codeValue != null;
-        LOGGER.error("Unexpected exception during a {} processing for connection={}, request='{} {} {}' was mapped " +
-                        "to grpc-status: {} ({})", what, ctx, request.method(), request.requestTarget(),
-                request.version(), codeValue, fromCodeValue(codeValue), cause);
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info("Unexpected exception during a {} processing for connection={}, request='{} {} {}' was " +
+                            "mapped to grpc-status: {} ({})", what, ctx, request.method(), request.requestTarget(),
+                    request.version(), codeValue, fromCodeValue(codeValue), cause);
+        }
         return response;
     }
 

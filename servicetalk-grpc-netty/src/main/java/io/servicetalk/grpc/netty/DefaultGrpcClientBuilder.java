@@ -15,7 +15,6 @@
  */
 package io.servicetalk.grpc.netty;
 
-import io.servicetalk.concurrent.TimeSource;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.grpc.api.BlockingGrpcClient;
 import io.servicetalk.grpc.api.GrpcClient;
@@ -23,7 +22,6 @@ import io.servicetalk.grpc.api.GrpcClientBuilder;
 import io.servicetalk.grpc.api.GrpcClientCallFactory;
 import io.servicetalk.grpc.api.GrpcClientFactory;
 import io.servicetalk.grpc.api.GrpcStatusException;
-import io.servicetalk.grpc.internal.DeadlineUtils;
 import io.servicetalk.http.api.FilterableReservedStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategies;
@@ -36,14 +34,13 @@ import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.http.utils.TimeoutHttpRequesterFilter;
 
 import java.time.Duration;
-import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.failed;
+import static io.servicetalk.grpc.api.GrpcFilters.newGrpcDeadlineClientFilterFactory;
 import static io.servicetalk.grpc.internal.DeadlineUtils.GRPC_MAX_TIMEOUT;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 import static io.servicetalk.utils.internal.DurationUtils.ensurePositive;
@@ -51,15 +48,9 @@ import static io.servicetalk.utils.internal.DurationUtils.isInfinite;
 import static java.util.Objects.requireNonNull;
 
 final class DefaultGrpcClientBuilder<U, R> implements GrpcClientBuilder<U, R> {
-
-    /**
-     * A function which determines the timeout for a given request.
-     */
-    private static final BiFunction<HttpRequestMetaData, TimeSource, Duration> GRPC_TIMEOUT_REQHDR =
-            (request, timeSource) -> DeadlineUtils.readTimeoutHeader(request);
-
     @Nullable
     private Duration defaultTimeout;
+    private boolean appendTimeoutFilter = true;
     private HttpInitializer<U, R> httpInitializer = builder -> {
         // no-op
     };
@@ -80,6 +71,12 @@ final class DefaultGrpcClientBuilder<U, R> implements GrpcClientBuilder<U, R> {
     @Override
     public GrpcClientBuilder<U, R> defaultTimeout(Duration defaultTimeout) {
         this.defaultTimeout = ensurePositive(defaultTimeout, "defaultTimeout");
+        return this;
+    }
+
+    @Override
+    public GrpcClientBuilder<U, R> appendTimeoutFilter(final boolean append) {
+        appendTimeoutFilter = append;
         return this;
     }
 
@@ -115,7 +112,9 @@ final class DefaultGrpcClientBuilder<U, R> implements GrpcClientBuilder<U, R> {
     private GrpcClientCallFactory newGrpcClientCallFactory() {
         SingleAddressHttpClientBuilder<U, R> builder = httpClientBuilderSupplier.get().protocols(h2Default());
         builder.appendClientFilter(CatchAllHttpClientFilter.INSTANCE);
-        builder.appendClientFilter(new TimeoutHttpRequesterFilter(GRPC_TIMEOUT_REQHDR, true));
+        if (appendTimeoutFilter) {
+            builder.appendClientFilter(newGrpcDeadlineClientFilterFactory());
+        }
         httpInitializer.initialize(builder);
         Duration timeout = isInfinite(defaultTimeout, GRPC_MAX_TIMEOUT) ? null : defaultTimeout;
         return GrpcClientCallFactory.from(builder.buildStreaming(), timeout);

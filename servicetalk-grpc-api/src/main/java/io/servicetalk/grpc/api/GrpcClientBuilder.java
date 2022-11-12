@@ -16,6 +16,7 @@
 package io.servicetalk.grpc.api;
 
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
+import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 
 import java.time.Duration;
 
@@ -71,6 +72,23 @@ public interface GrpcClientBuilder<U, R> {
      * @return {@code this}.
      */
     GrpcClientBuilder<U, R> defaultTimeout(Duration defaultTimeout);
+
+    /**
+     * Determine if a filter will be inserted by this builder that enforces the
+     * <a href="https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#requests">Timeout deadline
+     * propagation</a>.
+     * <p>
+     * To insert {@link GrpcFilters#newGrpcDeadlineClientFilterFactory()} in your preferred order use
+     * {@link #initializeHttp} and
+     * {@link SingleAddressHttpClientBuilder#appendClientFilter(StreamingHttpClientFilterFactory)}.
+     * <p>
+     * {@link #defaultTimeout(Duration)} is independent of this method, and may still inject state (even if no timeout
+     * is applied locally because this {@code append} is {@code false} and no timeout filter is appended).
+     * @param append {@code true} if this builder should append the timeout filter, {@code false} if it should not.
+     * @return {@code this}.
+     * @see GrpcFilters#newGrpcDeadlineClientFilterFactory()
+     */
+    GrpcClientBuilder<U, R> appendTimeoutFilter(boolean append);
 
     /**
      * Builds a <a href="https://www.grpc.io">gRPC</a> client.

@@ -32,7 +32,7 @@ dependencies {
   api project(":servicetalk-grpc-utils")
   api project(":servicetalk-http-netty")
 
-  implementation project(":servicetalk-http-utils")
+  compileOnly project(":servicetalk-http-utils")
   implementation project(":servicetalk-grpc-internal")
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-transport-netty-internal")
@@ -52,6 +52,7 @@ dependencies {
   testImplementation project(":servicetalk-encoding-api-internal")
   testImplementation project(":servicetalk-encoding-netty")
   testImplementation project(":servicetalk-grpc-protobuf")
+  testImplementation project(":servicetalk-http-utils")
   testImplementation project(":servicetalk-data-protobuf")
   testImplementation project(":servicetalk-grpc-protoc")
   testImplementation project(":servicetalk-router-utils-internal")

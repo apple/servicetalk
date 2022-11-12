@@ -17,6 +17,7 @@ package io.servicetalk.grpc.netty;
 
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.grpc.api.GrpcClientBuilder;
+import io.servicetalk.grpc.api.GrpcFilters;
 import io.servicetalk.grpc.api.GrpcLifecycleObserver;
 import io.servicetalk.grpc.api.GrpcLifecycleObserver.GrpcExchangeObserver;
 import io.servicetalk.http.api.HttpRequestMetaData;
@@ -54,8 +55,8 @@ import java.util.function.UnaryOperator;
  *     <li>As the last
  *     {@link SingleAddressHttpClientBuilder#appendConnectionFilter(StreamingHttpConnectionFilterFactory) connection
  *     filter} if only network interactions should be observed without accounting for work of any other filters.</li>
- *     <li>After {@link TimeoutHttpRequesterFilter} if the timeout event should be observed as
- *     {@link GrpcExchangeObserver#onResponseCancel() cancellation} instead of an
+ *     <li>After {@link TimeoutHttpRequesterFilter} (or {@link GrpcFilters#newGrpcDeadlineClientFilterFactory()}) if the
+ *     timeout event should be observed as {@link GrpcExchangeObserver#onResponseCancel() cancellation} instead of an
  *     {@link GrpcExchangeObserver#onResponseError(Throwable) error}.</li>
  *     <li>Before any filter that populates {@link HttpResponseMetaData#context() response context} or alters
  *     {@link HttpResponseMetaData} if that information has to be available for {@link GrpcExchangeObserver}.</li>

@@ -59,6 +59,12 @@ public class DelegatingGrpcServerBuilder implements GrpcServerBuilder {
     }
 
     @Override
+    public GrpcServerBuilder appendTimeoutFilter(final boolean append) {
+        delegate = delegate.appendTimeoutFilter(false);
+        return this;
+    }
+
+    @Override
     public GrpcServerBuilder lifecycleObserver(final GrpcLifecycleObserver lifecycleObserver) {
         delegate = delegate.lifecycleObserver(lifecycleObserver);
         return this;

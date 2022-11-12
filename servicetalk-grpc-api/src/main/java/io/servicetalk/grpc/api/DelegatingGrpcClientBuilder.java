@@ -60,6 +60,12 @@ public class DelegatingGrpcClientBuilder<U, R> implements GrpcClientBuilder<U, R
     }
 
     @Override
+    public GrpcClientBuilder<U, R> appendTimeoutFilter(final boolean append) {
+        delegate = delegate.appendTimeoutFilter(append);
+        return this;
+    }
+
+    @Override
     public <Client extends GrpcClient<?>> Client build(final GrpcClientFactory<Client, ?> clientFactory) {
         return delegate.build(clientFactory);
     }
