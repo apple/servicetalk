@@ -117,7 +117,7 @@ final class GrpcRouter {
     private static final GrpcStatus STATUS_UNIMPLEMENTED = fromCodeValue(UNIMPLEMENTED.value());
     private static final StreamingHttpService NOT_FOUND_SERVICE = (ctx, request, responseFactory) -> {
         final StreamingHttpResponse response = newErrorResponse(responseFactory, APPLICATION_GRPC,
-                STATUS_UNIMPLEMENTED.asException(), ctx.executionContext().bufferAllocator(), null);
+                new GrpcStatusException(STATUS_UNIMPLEMENTED), ctx.executionContext().bufferAllocator(), null);
         response.version(request.version());
         return succeeded(response);
     };
@@ -539,11 +539,11 @@ final class GrpcRouter {
                                     return deserializer.deserialize(request.payloadBody(), allocator).firstOrError()
                                             .onErrorMap(t -> {
                                                 if (t instanceof NoSuchElementException) {
-                                                    return new GrpcStatus(INVALID_ARGUMENT, t,
-                                                            SINGLE_MESSAGE_EXPECTED_NONE_RECEIVED_MSG).asException();
+                                                    return new GrpcStatusException(new GrpcStatus(INVALID_ARGUMENT,
+                                                            SINGLE_MESSAGE_EXPECTED_NONE_RECEIVED_MSG), t);
                                                 } else if (t instanceof IllegalArgumentException) {
-                                                    return new GrpcStatus(INVALID_ARGUMENT, t,
-                                                            MORE_THAN_ONE_MESSAGE_RECEIVED_MSG).asException();
+                                                    return new GrpcStatusException(new GrpcStatus(INVALID_ARGUMENT,
+                                                            MORE_THAN_ONE_MESSAGE_RECEIVED_MSG), t);
                                                 } else {
                                                     return t;
                                                 }
@@ -790,16 +790,16 @@ final class GrpcRouter {
                             final Req firstItem;
                             try (BlockingIterator<Req> requestIterator = request.iterator()) {
                                 if (!requestIterator.hasNext()) {
-                                    throw new GrpcStatus(INVALID_ARGUMENT, null,
-                                            SINGLE_MESSAGE_EXPECTED_NONE_RECEIVED_MSG).asException();
+                                    throw new GrpcStatusException(new GrpcStatus(INVALID_ARGUMENT,
+                                            SINGLE_MESSAGE_EXPECTED_NONE_RECEIVED_MSG));
                                 }
                                 firstItem = requestIterator.next();
                                 assert firstItem != null;
                                 if (requestIterator.hasNext()) {
                                     // Consume the next item to make sure it's not a TerminalNotification with an error
                                     requestIterator.next();
-                                    throw new GrpcStatus(INVALID_ARGUMENT, null,
-                                            MORE_THAN_ONE_MESSAGE_RECEIVED_MSG).asException();
+                                    throw new GrpcStatusException(new GrpcStatus(INVALID_ARGUMENT,
+                                            MORE_THAN_ONE_MESSAGE_RECEIVED_MSG));
                                 }
                             }
                             return firstItem;

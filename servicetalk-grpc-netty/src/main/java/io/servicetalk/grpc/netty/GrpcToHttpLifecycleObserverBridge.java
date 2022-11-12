@@ -180,7 +180,7 @@ final class GrpcToHttpLifecycleObserverBridge implements HttpLifecycleObserver {
             if (statusStr == null) {
                 return null;
             }
-            return new GrpcStatus(fromCodeValue(statusStr), null, headers.get(GRPC_STATUS_MESSAGE));
+            return new GrpcStatus(fromCodeValue(statusStr), headers.get(GRPC_STATUS_MESSAGE));
         }
     }
 }

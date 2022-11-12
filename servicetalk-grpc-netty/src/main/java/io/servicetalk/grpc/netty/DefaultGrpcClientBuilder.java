@@ -44,7 +44,6 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.failed;
-import static io.servicetalk.grpc.api.GrpcStatus.fromThrowable;
 import static io.servicetalk.grpc.internal.DeadlineUtils.GRPC_MAX_TIMEOUT;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 import static io.servicetalk.utils.internal.DurationUtils.ensurePositive;
@@ -167,7 +166,7 @@ final class DefaultGrpcClientBuilder<U, R> implements GrpcClientBuilder<U, R> {
         }
 
         private static GrpcStatusException toGrpcException(Throwable cause) {
-            return fromThrowable(cause).asException();
+            return GrpcStatusException.fromThrowable(cause);
         }
 
         @Override

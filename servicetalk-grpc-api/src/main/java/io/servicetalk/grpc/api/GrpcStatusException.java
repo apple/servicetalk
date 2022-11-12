@@ -15,9 +15,19 @@
  */
 package io.servicetalk.grpc.api;
 
+import io.servicetalk.http.api.Http2Exception;
+import io.servicetalk.serializer.api.SerializationException;
+
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.grpc.api.GrpcStatusCode.CANCELLED;
+import static io.servicetalk.grpc.api.GrpcStatusCode.DEADLINE_EXCEEDED;
+import static io.servicetalk.grpc.api.GrpcStatusCode.UNIMPLEMENTED;
+import static io.servicetalk.grpc.api.GrpcStatusCode.UNKNOWN;
+import static io.servicetalk.grpc.api.GrpcStatusCode.fromHttp2ErrorCode;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -31,12 +41,40 @@ public final class GrpcStatusException extends RuntimeException {
 
     /**
      * Constructs an instance with the given {@link GrpcStatus}.
-     *
+     * @param status status to be wrapped.
+     */
+    public GrpcStatusException(GrpcStatus status) {
+        this(status, () -> null);
+    }
+
+    /**
+     * Constructs an instance with the given {@link GrpcStatus}.
+     * @param status status to be wrapped.
+     * @param cause the cause of this exception.
+     */
+    public GrpcStatusException(GrpcStatus status, Throwable cause) {
+        this(status, () -> null, cause);
+    }
+
+    /**
+     * Constructs an instance with the given {@link GrpcStatus}.
      * @param status status to be wrapped.
      * @param applicationStatusSupplier the {@link Supplier} for the {@link com.google.rpc.Status}.
      */
+    @SuppressWarnings("deprecation")
     GrpcStatusException(GrpcStatus status, Supplier<com.google.rpc.Status> applicationStatusSupplier) {
-        super(toMessage(status), status.cause());
+        this(status, applicationStatusSupplier, status.cause());
+    }
+
+    /**
+     * Constructs an instance with the given {@link GrpcStatus}.
+     * @param status status to be wrapped.
+     * @param applicationStatusSupplier the {@link Supplier} for the {@link com.google.rpc.Status}.
+     * @param cause the cause of this exception, or {@code null} if no cause.
+     */
+    GrpcStatusException(GrpcStatus status, Supplier<com.google.rpc.Status> applicationStatusSupplier,
+                        @Nullable Throwable cause) {
+        super(toMessage(status), cause);
         this.status = status;
         this.applicationStatusSupplier = requireNonNull(applicationStatusSupplier);
     }
@@ -68,10 +106,45 @@ public final class GrpcStatusException extends RuntimeException {
      */
     public static GrpcStatusException of(com.google.rpc.Status status) {
         return new GrpcStatusException(new GrpcStatus(GrpcStatusCode.fromCodeValue(status.getCode()),
-                null, status.getMessage()), () -> status);
+                status.getMessage()), () -> status);
+    }
+
+    /**
+     * Translates a {@link Throwable} into a {@link GrpcStatusException}.
+     *
+     * @param t the throwable.
+     * @return {@link GrpcStatusException} with mapped {@link GrpcStatus} or {@link GrpcStatusCode#UNKNOWN}
+     * status with the throwable as the cause.
+     */
+    public static GrpcStatusException fromThrowable(Throwable t) {
+        return t instanceof GrpcStatusException ? (GrpcStatusException) t : new GrpcStatusException(toGrpcStatus(t), t);
     }
 
     private static String toMessage(GrpcStatus status) {
         return status.description() == null ? status.code().toString() : status.code() + ": " + status.description();
+    }
+
+    @SuppressWarnings("deprecation")
+    static GrpcStatus toGrpcStatus(Throwable cause) {
+        final GrpcStatus status;
+        if (cause instanceof Http2Exception) {
+            Http2Exception h2Exception = (Http2Exception) cause;
+            status = new GrpcStatus(fromHttp2ErrorCode(h2Exception.errorCode()), cause);
+        } else if (cause instanceof MessageEncodingException) {
+            MessageEncodingException msgEncException = (MessageEncodingException) cause;
+            status = new GrpcStatus(UNIMPLEMENTED, cause, "Message encoding '" + msgEncException.encoding()
+                    + "' not supported ");
+        } else if (cause instanceof SerializationException) {
+            status = new GrpcStatus(UNKNOWN, cause, "Serialization error: " + cause.getMessage());
+        } else if (cause instanceof CancellationException) {
+            status = new GrpcStatus(CANCELLED, cause);
+        } else if (cause instanceof TimeoutException) {
+            status = new GrpcStatus(DEADLINE_EXCEEDED, cause);
+        } else {
+            // Initialize detail because cause is often lost
+            status = new GrpcStatus(UNKNOWN, cause, cause.toString());
+        }
+
+        return status;
     }
 }
