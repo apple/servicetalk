@@ -51,7 +51,6 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.grpc.api.GrpcFilters.newGrpcDeadlineClientFilterFactory;
 import static io.servicetalk.grpc.api.GrpcFilters.newGrpcDeadlineServerFilterFactory;
 import static io.servicetalk.grpc.api.GrpcStatusCode.DEADLINE_EXCEEDED;
-import static io.servicetalk.grpc.api.GrpcStatusCode.UNKNOWN;
 import static io.servicetalk.grpc.netty.GrpcClients.forResolvedAddress;
 import static io.servicetalk.grpc.netty.GrpcServers.forAddress;
 import static io.servicetalk.grpc.netty.GrpcTimeoutOrderTest.NeverStreamingHttpClientFilterFactory.NEVER_CLIENT_FILTER;
@@ -125,11 +124,9 @@ final class GrpcTimeoutOrderTest {
 
     private static void assertGrpcTimeout(Executable executable, boolean clientSideTimeout) {
         GrpcStatusException e = assertThrows(GrpcStatusException.class, executable);
+        assertThat(e.status().code(), equalTo(DEADLINE_EXCEEDED));
         if (clientSideTimeout) {
-            assertThat(e.status().code(), equalTo(UNKNOWN));
             assertThat(e.getCause(), instanceOf(TimeoutException.class));
-        } else {
-            assertThat(e.status().code(), equalTo(DEADLINE_EXCEEDED));
         }
     }
 
