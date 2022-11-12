@@ -88,7 +88,11 @@ public interface GrpcClientBuilder<U, R> {
      * @return {@code this}.
      * @see GrpcFilters#newGrpcDeadlineClientFilterFactory()
      */
-    GrpcClientBuilder<U, R> appendTimeoutFilter(boolean append);
+    default GrpcClientBuilder<U, R> appendTimeoutFilter(boolean append) {
+        // FIXME: 0.43 - remove default implementation
+        throw new UnsupportedOperationException(
+                "GrpcClientBuilder#appendTimeoutFilter(boolean) is not supported by " + getClass());
+    }
 
     /**
      * Builds a <a href="https://www.grpc.io">gRPC</a> client.

@@ -86,7 +86,11 @@ public interface GrpcServerBuilder {
      * @return {@code this}.
      * @see GrpcFilters#newGrpcDeadlineServerFilterFactory(Duration)
      */
-    GrpcServerBuilder appendTimeoutFilter(boolean append);
+    default GrpcServerBuilder appendTimeoutFilter(boolean append) {
+        // FIXME: 0.43 - remove default implementation
+        throw new UnsupportedOperationException(
+                "GrpcServerBuilder#appendTimeoutFilter(boolean) is not supported by " + getClass());
+    }
 
     /**
      * Sets a {@link GrpcLifecycleObserver} that provides visibility into gRPC lifecycle events.
