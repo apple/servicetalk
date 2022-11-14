@@ -154,7 +154,9 @@ final class RequestResponseCloseHandler extends CloseHandler {
             protocolPayloadEndOutbound0(ctx);
             return;
         }
-        ctx.pipeline().fireUserEventTriggered(OutboundDataEndEvent.INSTANCE);
+        if (isClient || (closeEvent != null && pending == 0)) {
+            ctx.pipeline().fireUserEventTriggered(OutboundDataEndEvent.INSTANCE);
+        }
         promise.addListener(f -> protocolPayloadEndOutbound0(ctx));
     }
 

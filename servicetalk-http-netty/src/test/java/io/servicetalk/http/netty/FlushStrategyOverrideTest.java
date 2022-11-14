@@ -15,7 +15,12 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.client.api.ServiceDiscoverer;
+import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.ReservedStreamingHttpConnection;
@@ -35,18 +40,23 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.AVAILABLE;
+import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
-import static io.servicetalk.http.netty.BuilderUtils.newClientBuilder;
-import static io.servicetalk.http.netty.BuilderUtils.newServerBuilder;
+import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
+import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
+import static io.servicetalk.transport.netty.internal.ExecutionContextExtension.immediate;
+import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
@@ -54,13 +64,7 @@ import static org.hamcrest.Matchers.hasSize;
 class FlushStrategyOverrideTest {
 
     @RegisterExtension
-    static final ExecutionContextExtension SERVER_CTX =
-            ExecutionContextExtension.cached("server-io", "server-executor")
-                    .setClassLevel(true);
-    @RegisterExtension
-    static final ExecutionContextExtension CLIENT_CTX =
-            ExecutionContextExtension.cached("client-io", "client-executor")
-                    .setClassLevel(true);
+    final ExecutionContextExtension ctx = immediate();
 
     private StreamingHttpClient client;
     private ServerContext serverCtx;
@@ -70,13 +74,17 @@ class FlushStrategyOverrideTest {
     @BeforeEach
     void setUp() throws Exception {
         service = new FlushingService();
-        serverCtx = newServerBuilder(SERVER_CTX)
+        serverCtx = HttpServers.forAddress(localAddress(0))
+                .ioExecutor(ctx.ioExecutor())
                 .executionStrategy(offloadNone())
                 .listenStreaming(service)
                 .toFuture().get();
-        client = newClientBuilder(serverCtx, CLIENT_CTX)
-                .executionStrategy(offloadNone())
+        InetSocketAddress serverAddr = (InetSocketAddress) serverCtx.listenAddress();
+        client = forSingleAddress(new NoopSD(serverAddr), serverAddr)
                 .hostHeaderFallback(false)
+                .ioExecutor(ctx.ioExecutor())
+                .executionStrategy(offloadNone())
+                .unresolvedAddressToHost(InetSocketAddress::getHostString)
                 .buildStreaming();
         conn = client.reserveConnection(client.get("/")).toFuture().get();
     }
@@ -94,7 +102,7 @@ class FlushStrategyOverrideTest {
 
         CountDownLatch reqWritten = new CountDownLatch(1);
         StreamingHttpRequest req = client.get("/flush").payloadBody(from(1, 2, 3)
-                .map(count -> client.executionContext().bufferAllocator().fromAscii("" + count))
+                .map(count -> ctx.bufferAllocator().fromAscii("" + count))
                 .afterFinally(reqWritten::countDown));
 
         Future<? extends Collection<Object>> clientResp = conn.request(req)
@@ -152,6 +160,44 @@ class FlushStrategyOverrideTest {
 
         MockFlushStrategy getLastUsedStrategy() throws InterruptedException {
             return flushStrategies.take();
+        }
+    }
+
+    private static final class NoopSD implements ServiceDiscoverer<InetSocketAddress, InetSocketAddress,
+            ServiceDiscovererEvent<InetSocketAddress>> {
+
+        private final ListenableAsyncCloseable closeable;
+        private final InetSocketAddress serverAddr;
+
+        NoopSD(final InetSocketAddress serverAddr) {
+            this.serverAddr = serverAddr;
+            closeable = emptyAsyncCloseable();
+        }
+
+        @Override
+        public Publisher<Collection<ServiceDiscovererEvent<InetSocketAddress>>> discover(
+                final InetSocketAddress inetSocketAddress) {
+            return from(singletonList(new ServiceDiscovererEvent<InetSocketAddress>() {
+                @Override
+                public InetSocketAddress address() {
+                    return serverAddr;
+                }
+
+                @Override
+                public Status status() {
+                    return AVAILABLE;
+                }
+            }));
+        }
+
+        @Override
+        public Completable onClose() {
+            return closeable.onClose();
+        }
+
+        @Override
+        public Completable closeAsync() {
+            return closeable.closeAsync();
         }
     }
 }
