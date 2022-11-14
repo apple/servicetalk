@@ -465,7 +465,8 @@ final class GrpcUtils {
         if (grpcStatusCode.value() == GrpcStatusCode.OK.value()) {
             return null;
         }
-        final GrpcStatus grpcStatus = new GrpcStatus(grpcStatusCode, headers.get(GRPC_STATUS_MESSAGE));
+        final CharSequence statusMsg = headers.get(GRPC_STATUS_MESSAGE);
+        final GrpcStatus grpcStatus = new GrpcStatus(grpcStatusCode, statusMsg == null ? null : statusMsg.toString());
         return new GrpcStatusException(grpcStatus, new StatusSupplier(headers, grpcStatus));
     }
 

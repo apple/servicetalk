@@ -57,7 +57,7 @@ public final class GrpcStatus {
      * @param code status code.
      */
     public GrpcStatus(GrpcStatusCode code) {
-        this(code, (CharSequence) null);
+        this(code, (String) null);
     }
 
     /**
@@ -79,7 +79,7 @@ public final class GrpcStatus {
      * @param cause cause.
      * @param description additional description.
      * @deprecated Use {@link GrpcStatusException} if there is a cause or
-     * {@link GrpcStatus#GrpcStatus(GrpcStatusCode, CharSequence)}.
+     * {@link GrpcStatus#GrpcStatus(GrpcStatusCode, String)}.
      */
     @Deprecated
     public GrpcStatus(GrpcStatusCode code, @Nullable Throwable cause, @Nullable CharSequence description) {
@@ -93,10 +93,10 @@ public final class GrpcStatus {
      * @param code status code.
      * @param description additional description.
      */
-    public GrpcStatus(GrpcStatusCode code, @Nullable CharSequence description) {
+    public GrpcStatus(GrpcStatusCode code, @Nullable String description) {
         this.code = requireNonNull(code);
         this.cause = null;
-        this.description = description == null ? null : description.toString();
+        this.description = description;
     }
 
     /**
@@ -171,7 +171,7 @@ public final class GrpcStatus {
      *
      * @param applicationStatusSupplier the {@link Supplier} for the {@link Status}.
      * @return the current status wrapped in a {@link GrpcStatusException}.
-     * @deprecated Use {@link GrpcStatusException#GrpcStatusException(GrpcStatus)}.
+     * @deprecated Use {@link GrpcStatusException#of(Status)}.
      */
     @Deprecated
     public GrpcStatusException asException(Supplier<Status> applicationStatusSupplier) {
