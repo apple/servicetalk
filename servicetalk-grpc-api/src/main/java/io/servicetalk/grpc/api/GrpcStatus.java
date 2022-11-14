@@ -17,10 +17,12 @@ package io.servicetalk.grpc.api;
 
 import com.google.rpc.Status;
 
+import java.util.Objects;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNKNOWN;
+import static io.servicetalk.grpc.api.GrpcStatusException.toGrpcStatus;
 import static java.lang.Integer.parseInt;
 import static java.util.Objects.requireNonNull;
 
@@ -40,7 +42,11 @@ public final class GrpcStatus {
     }
 
     private final GrpcStatusCode code;
+    /**
+     * @deprecated FIXME: 0.43 - remove deprecated member
+     */
     @Nullable
+    @Deprecated
     private final Throwable cause;
     @Nullable
     private final String description;
@@ -51,7 +57,7 @@ public final class GrpcStatus {
      * @param code status code.
      */
     public GrpcStatus(GrpcStatusCode code) {
-        this(code, null);
+        this(code, (String) null);
     }
 
     /**
@@ -59,7 +65,9 @@ public final class GrpcStatus {
      *
      * @param code status code.
      * @param cause cause.
+     * @deprecated Use {@link GrpcStatusException} if there is a {@link Throwable} cause.
      */
+    @Deprecated
     public GrpcStatus(GrpcStatusCode code, @Nullable Throwable cause) {
         this(code, cause, null);
     }
@@ -70,11 +78,25 @@ public final class GrpcStatus {
      * @param code status code.
      * @param cause cause.
      * @param description additional description.
+     * @deprecated Use {@link GrpcStatusException} if there is a cause or
+     * {@link GrpcStatus#GrpcStatus(GrpcStatusCode, String)}.
      */
+    @Deprecated
     public GrpcStatus(GrpcStatusCode code, @Nullable Throwable cause, @Nullable CharSequence description) {
         this.code = requireNonNull(code);
         this.cause = cause;
         this.description = description == null ? null : description.toString();
+    }
+
+    /**
+     * Constructs a status with cause and additional description.
+     * @param code status code.
+     * @param description additional description.
+     */
+    public GrpcStatus(GrpcStatusCode code, @Nullable String description) {
+        this.code = requireNonNull(code);
+        this.cause = null;
+        this.description = description;
     }
 
     /**
@@ -83,12 +105,11 @@ public final class GrpcStatus {
      * @param codeValue code value string.
      * @return status associated with the code value, or {@link GrpcStatusCode#UNKNOWN}.
      */
-    @SuppressWarnings("unused")
     public static GrpcStatus fromCodeValue(String codeValue) {
         try {
             return fromCodeValue(parseInt(codeValue));
         } catch (NumberFormatException e) {
-            return new GrpcStatus(UNKNOWN, null, "Status code value not a number: " + codeValue);
+            return new GrpcStatus(UNKNOWN, "Status code value not a number: " + codeValue);
         }
     }
 
@@ -100,7 +121,7 @@ public final class GrpcStatus {
      */
     public static GrpcStatus fromCodeValue(int codeValue) {
         return codeValue < 0 || codeValue >= INT_TO_GRPC_STATUS_MAP.length ?
-                new GrpcStatus(UNKNOWN, null, "Unknown code: " + codeValue) : INT_TO_GRPC_STATUS_MAP[codeValue];
+                new GrpcStatus(UNKNOWN, "Unknown code: " + codeValue) : INT_TO_GRPC_STATUS_MAP[codeValue];
     }
 
     /**
@@ -109,10 +130,12 @@ public final class GrpcStatus {
      * @param t the throwable.
      * @return embedded status if the throwable is a {@link GrpcStatusException}, or an {@link GrpcStatusCode#UNKNOWN}
      * status with the throwable as the cause.
+     * @deprecated Use {@link GrpcStatusException#fromThrowable(Throwable)}.
      */
-    public static GrpcStatus fromThrowable(Throwable t) {
+    @Deprecated
+    public static GrpcStatus fromThrowable(Throwable t) { // FIXME: 0.43 - remove deprecated method
         GrpcStatus status = fromThrowableNullable(t);
-        return status == null ? new GrpcStatus(UNKNOWN, t) : status;
+        return status == null ? toGrpcStatus(t) : status;
     }
 
     /**
@@ -120,9 +143,11 @@ public final class GrpcStatus {
      *
      * @param t the throwable.
      * @return embedded status if the throwable is a {@link GrpcStatusException}, or {@code null}.
+     * @deprecated Use {@link GrpcStatusException#fromThrowable(Throwable)}.
      */
     @Nullable
-    public static GrpcStatus fromThrowableNullable(Throwable t) {
+    @Deprecated
+    public static GrpcStatus fromThrowableNullable(Throwable t) { // FIXME: 0.43 - remove deprecated method
         GrpcStatusException exception = unwrapGrpcStatusException(t);
         return exception == null ? null : exception.status();
     }
@@ -131,8 +156,10 @@ public final class GrpcStatus {
      * Returns the current status wrapped in a {@link GrpcStatusException}.
      *
      * @return the current status wrapped in a {@link GrpcStatusException}.
+     * @deprecated Use {@link GrpcStatusException#GrpcStatusException(GrpcStatus)}.
      */
-    public GrpcStatusException asException() {
+    @Deprecated
+    public GrpcStatusException asException() { // FIXME: 0.43 - remove deprecated method
         return new GrpcStatusException(this, () -> null);
     }
 
@@ -144,8 +171,11 @@ public final class GrpcStatus {
      *
      * @param applicationStatusSupplier the {@link Supplier} for the {@link Status}.
      * @return the current status wrapped in a {@link GrpcStatusException}.
+     * @deprecated Use {@link GrpcStatusException#of(Status)}.
      */
+    @Deprecated
     public GrpcStatusException asException(Supplier<Status> applicationStatusSupplier) {
+        // FIXME: 0.43 - remove deprecated method
         return new GrpcStatusException(this, applicationStatusSupplier);
     }
 
@@ -162,9 +192,12 @@ public final class GrpcStatus {
      * Returns the cause, can be null.
      *
      * @return the cause, can be null.
+     * @deprecated Use {@link GrpcStatusException#fromThrowable(Throwable)} to create a {@link GrpcStatusException}
+     * then {@link GrpcStatusException#getCause()}.
      */
     @Nullable
-    public Throwable cause() {
+    @Deprecated
+    public Throwable cause() { // FIXME: 0.43 - remove deprecated method
         return cause;
     }
 
@@ -192,10 +225,7 @@ public final class GrpcStatus {
         if (code != that.code) {
             return false;
         }
-        if (cause != null ? !cause.equals(that.cause) : that.cause != null) {
-            return false;
-        }
-        return description != null ? description.equals(that.description) : that.description == null;
+        return Objects.equals(cause, that.cause) && Objects.equals(description, that.description);
     }
 
     @Override
@@ -223,7 +253,7 @@ public final class GrpcStatus {
      * @return unwrapped {@link GrpcStatusException}.
      */
     @Nullable
-    static GrpcStatusException unwrapGrpcStatusException(Throwable error) {
+    private static GrpcStatusException unwrapGrpcStatusException(Throwable error) {
         for (Throwable cause = error; cause != null; cause = cause.getCause()) {
             if (cause instanceof GrpcStatusException) {
                 return (GrpcStatusException) cause;

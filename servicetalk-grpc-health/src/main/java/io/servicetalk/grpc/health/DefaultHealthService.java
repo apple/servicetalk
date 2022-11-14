@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.grpc.api.GrpcServiceContext;
 import io.servicetalk.grpc.api.GrpcStatus;
 import io.servicetalk.grpc.api.GrpcStatusCode;
+import io.servicetalk.grpc.api.GrpcStatusException;
 import io.servicetalk.health.v1.Health;
 import io.servicetalk.health.v1.HealthCheckRequest;
 import io.servicetalk.health.v1.HealthCheckResponse;
@@ -81,8 +82,8 @@ public final class DefaultHealthService implements Health.HealthService {
     public Single<HealthCheckResponse> check(final GrpcServiceContext ctx, final HealthCheckRequest request) {
         HealthValue health = serviceToStatusMap.get(request.getService());
         if (health == null) {
-            return Single.failed(new GrpcStatus(NOT_FOUND, null, "unknown service: " + request.getService())
-                    .asException());
+            return Single.failed(new GrpcStatusException(
+                    new GrpcStatus(NOT_FOUND, "unknown service: " + request.getService())));
         }
         return Single.succeeded(health.last);
     }
@@ -93,8 +94,8 @@ public final class DefaultHealthService implements Health.HealthService {
         HealthValue healthValue = serviceToStatusMap.get(request.getService());
         if (healthValue == null) {
             if (!watchAllowed.test(request.getService())) {
-                return Publisher.failed(new GrpcStatus(FAILED_PRECONDITION, null, "watch not allowed for service " +
-                        request.getService()).asException());
+                return Publisher.failed(new GrpcStatusException(new GrpcStatus(FAILED_PRECONDITION,
+                        "watch not allowed for service " + request.getService())));
             }
             lock.lock();
             try {

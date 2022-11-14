@@ -30,7 +30,6 @@ import io.servicetalk.encoding.api.internal.ContentCodecToBufferEncoder;
 import io.servicetalk.encoding.api.internal.HeaderUtils;
 import io.servicetalk.grpc.api.DefaultGrpcMetadata.LazyContextMapSupplier;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
-import io.servicetalk.http.api.Http2Exception;
 import io.servicetalk.http.api.HttpDeserializer;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpRequestMetaData;
@@ -43,7 +42,6 @@ import io.servicetalk.http.api.StatelessTrailersTransformer;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.serializer.api.Deserializer;
-import io.servicetalk.serializer.api.SerializationException;
 import io.servicetalk.serializer.api.Serializer;
 import io.servicetalk.serializer.api.SerializerDeserializer;
 
@@ -88,7 +86,7 @@ import static io.servicetalk.grpc.api.GrpcStatusCode.UNAUTHENTICATED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNAVAILABLE;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNIMPLEMENTED;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNKNOWN;
-import static io.servicetalk.grpc.api.GrpcStatusCode.fromHttp2ErrorCode;
+import static io.servicetalk.grpc.api.GrpcStatusException.toGrpcStatus;
 import static io.servicetalk.grpc.internal.DeadlineUtils.GRPC_TIMEOUT_HEADER_KEY;
 import static io.servicetalk.grpc.internal.DeadlineUtils.makeTimeoutHeader;
 import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
@@ -135,13 +133,13 @@ final class GrpcUtils {
                     // local cancel
                     if (cause instanceof CancellationException) {
                         // include the cause so that caller can determine who cancelled request
-                        throw new GrpcStatusException(new GrpcStatus(CANCELLED, cause), () -> null);
+                        throw new GrpcStatusException(new GrpcStatus(CANCELLED), () -> null, cause);
                     }
 
                     // local timeout
                     if (cause instanceof TimeoutException) {
                         // include the cause so the caller sees the time duration.
-                        throw new GrpcStatusException(new GrpcStatus(DEADLINE_EXCEEDED, cause), () -> null);
+                        throw new GrpcStatusException(new GrpcStatus(DEADLINE_EXCEEDED), () -> null, cause);
                     }
 
                     throw cause;
@@ -276,34 +274,6 @@ final class GrpcUtils {
         }
     }
 
-    static GrpcStatus toGrpcStatus(Throwable cause) {
-        final GrpcStatus status;
-        if (cause instanceof Http2Exception) {
-            Http2Exception h2Exception = (Http2Exception) cause;
-            status = new GrpcStatus(fromHttp2ErrorCode(h2Exception.errorCode()), cause);
-        } else if (cause instanceof MessageEncodingException) {
-            MessageEncodingException msgEncException = (MessageEncodingException) cause;
-            status = new GrpcStatus(UNIMPLEMENTED, cause, "Message encoding '" + msgEncException.encoding()
-                    + "' not supported ");
-        } else if (cause instanceof SerializationException) {
-            status = new GrpcStatus(UNKNOWN, cause, "Serialization error: " + cause.getMessage());
-        } else if (cause instanceof CancellationException) {
-            status = new GrpcStatus(CANCELLED, cause);
-        } else if (cause instanceof TimeoutException) {
-            status = new GrpcStatus(DEADLINE_EXCEEDED, cause);
-        } else {
-            // Initialize detail because cause is often lost
-            status = new GrpcStatus(UNKNOWN, cause, cause.toString());
-        }
-
-        return status;
-    }
-
-    static GrpcStatusException toGrpcException(Throwable cause) {
-        return cause instanceof GrpcStatusException ? (GrpcStatusException) cause
-                : new GrpcStatusException(toGrpcStatus(cause), () -> null);
-    }
-
     private static void validateStatusCode(HttpResponseStatus status) {
         final int statusCode = status.code();
         if (statusCode == OK.code()) {
@@ -350,10 +320,11 @@ final class GrpcUtils {
             // In case the grpc-status is received in headers, we expect an empty messageBody, draining should not see
             // any other frames. However, the messageBody won't complete until after the request stream completes too.
             final Completable drainResponse = response.messageBody().beforeOnNext(frame -> {
-                throw new GrpcStatus(INTERNAL, null, "Violation of the protocol: received unexpected " +
-                        (frame instanceof HttpHeaders ? "Trailers" : "Data") +
-                        "frame after Trailers-Only response is received with grpc-status: " +
-                        grpcStatusCode.value() + '(' + grpcStatusCode + ')').asException();
+                throw new GrpcStatusException(new GrpcStatus(INTERNAL,
+                        "Violation of the protocol: received unexpected " +
+                                (frame instanceof HttpHeaders ? "Trailers" : "Data") +
+                                "frame after Trailers-Only response is received with grpc-status: " +
+                                grpcStatusCode.value() + '(' + grpcStatusCode + ')'));
             }).ignoreElements();
             final GrpcStatusException grpcStatusException = convertToGrpcStatusException(grpcStatusCode, headers);
             if (grpcStatusException != null) {
@@ -429,8 +400,8 @@ final class GrpcUtils {
         final GrpcStatusCode statusCode = extractGrpcStatusCodeFromHeaders(headers);
         if (statusCode == null) {
             // This is a protocol violation as we expect to receive grpc-status.
-            throw new GrpcStatus(UNKNOWN, null, "Response does not contain " +
-                    GRPC_STATUS + " header or trailer").asException();
+            throw new GrpcStatusException(new GrpcStatus(UNKNOWN,
+                    "Response does not contain " + GRPC_STATUS + " header or trailer"));
         }
         final GrpcStatusException grpcStatusException = convertToGrpcStatusException(statusCode, headers);
         if (grpcStatusException != null) {
@@ -494,8 +465,9 @@ final class GrpcUtils {
         if (grpcStatusCode.value() == GrpcStatusCode.OK.value()) {
             return null;
         }
-        final GrpcStatus grpcStatus = new GrpcStatus(grpcStatusCode, null, headers.get(GRPC_STATUS_MESSAGE));
-        return grpcStatus.asException(new StatusSupplier(headers, grpcStatus));
+        final CharSequence statusMsg = headers.get(GRPC_STATUS_MESSAGE);
+        final GrpcStatus grpcStatus = new GrpcStatus(grpcStatusCode, statusMsg == null ? null : statusMsg.toString());
+        return new GrpcStatusException(grpcStatus, new StatusSupplier(headers, grpcStatus));
     }
 
     @Nullable

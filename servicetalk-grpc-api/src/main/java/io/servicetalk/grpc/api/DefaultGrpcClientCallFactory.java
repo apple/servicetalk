@@ -50,7 +50,6 @@ import static io.servicetalk.grpc.api.GrpcUtils.grpcContentType;
 import static io.servicetalk.grpc.api.GrpcUtils.initRequest;
 import static io.servicetalk.grpc.api.GrpcUtils.readGrpcMessageEncodingRaw;
 import static io.servicetalk.grpc.api.GrpcUtils.serializerDeserializer;
-import static io.servicetalk.grpc.api.GrpcUtils.toGrpcException;
 import static io.servicetalk.grpc.api.GrpcUtils.validateResponseAndGetPayload;
 import static io.servicetalk.grpc.internal.DeadlineUtils.GRPC_DEADLINE_KEY;
 import static java.util.Objects.requireNonNull;
@@ -113,7 +112,7 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
                                 readGrpcMessageEncodingRaw(response.headers(), deserializerIdentity, deserializers,
                                         GrpcDeserializer::messageEncoding));
                     })
-                    .onErrorMap(GrpcUtils::toGrpcException);
+                    .onErrorMap(GrpcStatusException::fromThrowable);
         };
     }
 
@@ -161,7 +160,7 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
                                 readGrpcMessageEncodingRaw(response.headers(), deserializerIdentity, deserializers,
                                         GrpcStreamingDeserializer::messageEncoding), httpRequest.requestTarget());
                     })
-                    .onErrorMap(GrpcUtils::toGrpcException);
+                    .onErrorMap(GrpcStatusException::fromThrowable);
         };
     }
 
@@ -248,7 +247,7 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
                         client.executionContext().bufferAllocator(), readGrpcMessageEncodingRaw(response.headers(),
                                 deserializerIdentity, deserializers, GrpcDeserializer::messageEncoding));
             } catch (Throwable cause) {
-                throw toGrpcException(cause);
+                throw GrpcStatusException.fromThrowable(cause);
             }
         };
     }
@@ -298,7 +297,7 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
                                 response.headers(), deserializerIdentity, deserializers,
                                 GrpcStreamingDeserializer::messageEncoding), httpRequest.requestTarget()).toIterable();
             } catch (Throwable cause) {
-                throw toGrpcException(cause);
+                throw GrpcStatusException.fromThrowable(cause);
             }
         };
     }
