@@ -21,7 +21,7 @@ import io.servicetalk.concurrent.api.Single;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import static io.servicetalk.utils.internal.PlatformDependent.throwException;
+import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
 
 /**
  * Common utility functions to unwrap {@link ExecutionException} from async operations.
@@ -50,7 +50,7 @@ public final class BlockingUtils {
             future.cancel(false);
             throw e;
         } catch (ExecutionException e) {
-            return throwException(executionExceptionCause(e));
+            return throwException(unwrapExecutionException(e));
         }
     }
 
@@ -69,7 +69,7 @@ public final class BlockingUtils {
         try {
             return source.toFuture().get();
         } catch (final ExecutionException e) {
-            return throwException(executionExceptionCause(e));
+            return throwException(unwrapExecutionException(e));
         }
     }
 
@@ -86,11 +86,31 @@ public final class BlockingUtils {
         try {
             source.toFuture().get();
         } catch (final ExecutionException e) {
-            throwException(executionExceptionCause(e));
+            throwException(unwrapExecutionException(e));
         }
     }
 
-    private static Throwable executionExceptionCause(ExecutionException original) {
-        return (original.getCause() != null) ? original.getCause() : original;
+    private static Throwable unwrapExecutionException(ExecutionException ee) {
+        final Throwable cause = ee.getCause();
+        if (cause == null) {
+            return ee;
+        }
+        cause.addSuppressed(new SuppressedExecutionException(ee));
+        return cause;
+    }
+
+    private static final class SuppressedExecutionException extends ExecutionException {
+        private static final long serialVersionUID = 2001711259056665126L;
+
+        SuppressedExecutionException(final ExecutionException original) {
+            super("Blocking operation terminated with an error");
+            setStackTrace(original.getStackTrace());
+        }
+
+        @Override
+        public synchronized Throwable fillInStackTrace() {
+            // We inherit the stack-trace from the original ExecutionException
+            return this;
+        }
     }
 }
