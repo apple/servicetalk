@@ -48,7 +48,6 @@ import io.netty.resolver.dns.DnsNameResolverBuilder;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
-import io.netty.util.concurrent.ImmediateEventExecutor;
 import io.netty.util.concurrent.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -314,7 +313,7 @@ final class DefaultDnsClient implements DnsClient {
             return new AbstractDnsSubscription(subscriber) {
                 @Override
                 protected Future<DnsAnswer<HostAndPort>> doDnsQuery() {
-                    Promise<DnsAnswer<HostAndPort>> promise = ImmediateEventExecutor.INSTANCE.newPromise();
+                    Promise<DnsAnswer<HostAndPort>> promise = nettyIoExecutor.eventLoopGroup().next().newPromise();
                     resolver.resolveAll(new DefaultDnsQuestion(name, SRV))
                             .addListener((Future<? super List<DnsRecord>> completedFuture) -> {
                                 Throwable cause = completedFuture.cause();
@@ -386,7 +385,8 @@ final class DefaultDnsClient implements DnsClient {
                 @Override
                 protected Future<DnsAnswer<InetAddress>> doDnsQuery() {
                     ttlCache.prepareForResolution(name);
-                    Promise<DnsAnswer<InetAddress>> dnsAnswerPromise = ImmediateEventExecutor.INSTANCE.newPromise();
+                    Promise<DnsAnswer<InetAddress>> dnsAnswerPromise =
+                            nettyIoExecutor.eventLoopGroup().next().newPromise();
                     resolver.resolveAll(name).addListener(completedFuture -> {
                         Throwable cause = completedFuture.cause();
                         if (cause != null) {
@@ -394,8 +394,11 @@ final class DefaultDnsClient implements DnsClient {
                         } else {
                             final DnsAnswer<InetAddress> dnsAnswer;
                             try {
+                                // Make a copy of the address List in-case the underlying cache modifies the List we
+                                // can avoid a ConcurrentModificationException.
                                 @SuppressWarnings("unchecked")
-                                final List<InetAddress> addresses = (List<InetAddress>) completedFuture.getNow();
+                                final List<InetAddress> addresses = new ArrayList<>(
+                                                (List<InetAddress>) completedFuture.getNow());
                                 dnsAnswer = new DnsAnswer<>(addresses, SECONDS.toNanos(ttlCache.minTtl(name)));
                             } catch (Throwable cause2) {
                                 dnsAnswerPromise.setFailure(cause2);
