@@ -33,6 +33,7 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.grpc.api.GrpcHeaderNames.GRPC_STATUS;
 import static io.servicetalk.grpc.api.GrpcHeaderValues.APPLICATION_GRPC;
 import static io.servicetalk.grpc.api.GrpcStatusCode.fromCodeValue;
+import static io.servicetalk.grpc.api.GrpcStatusException.serverCatchAllShouldLog;
 import static io.servicetalk.grpc.api.GrpcUtils.newErrorResponse;
 
 /**
@@ -82,10 +83,10 @@ public final class GrpcExceptionMapperServiceFilter implements StreamingHttpServ
                                                                     final Throwable cause) {
         final StreamingHttpResponse response = newErrorResponse(responseFactory, APPLICATION_GRPC, cause,
                 ctx.executionContext().bufferAllocator(), null);
-        final CharSequence codeValue = response.headers().get(GRPC_STATUS);
-        assert codeValue != null;
-        if (LOGGER.isInfoEnabled()) {
-            LOGGER.info("Unexpected exception during a {} processing for connection={}, request='{} {} {}' was " +
+        if (serverCatchAllShouldLog(cause)) {
+            final CharSequence codeValue = response.headers().get(GRPC_STATUS);
+            assert codeValue != null;
+            LOGGER.error("Unexpected exception during a {} processing for connection={}, request='{} {} {}' was " +
                             "mapped to grpc-status: {} ({})", what, ctx, request.method(), request.requestTarget(),
                     request.version(), codeValue, fromCodeValue(codeValue), cause);
         }
