@@ -27,9 +27,7 @@ import io.servicetalk.grpc.netty.TesterProto.Tester.TesterClient;
 import io.servicetalk.grpc.netty.TesterProto.Tester.TesterService;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.HttpResponseMetaData;
-import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServiceContext;
-import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -40,13 +38,11 @@ import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.utils.BeforeFinallyHttpOperator;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
-import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
 import io.grpc.examples.helloworld.Greeter;
 import io.grpc.examples.helloworld.Greeter.GreeterClient;
 import io.grpc.examples.helloworld.HelloRequest;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.function.Executable;
 
 import java.net.InetSocketAddress;
@@ -79,25 +75,15 @@ import static org.mockito.Mockito.when;
 
 class TrailersOnlyErrorTest {
 
-    @RegisterExtension
-    static final ExecutionContextExtension SERVER_CTX =
-            ExecutionContextExtension.cached("server-io", "server-executor")
-                    .setClassLevel(true);
-    @RegisterExtension
-    static final ExecutionContextExtension CLIENT_CTX =
-            ExecutionContextExtension.cached("client-io", "client-executor")
-                    .setClassLevel(true);
-
     @Test
     void testRouteThrows() throws Exception {
         final BlockingQueue<Throwable> asyncErrors = new LinkedBlockingDeque<>();
         final CountDownLatch responseLatch = new CountDownLatch(1);
         try (ServerContext serverContext = GrpcServers.forAddress(localAddress(0))
-                .initializeHttp(TrailersOnlyErrorTest::applyCtx)
                 .listenAndAwait(new Tester.ServiceFactory(mockTesterService()))) {
 
             final GrpcClientBuilder<HostAndPort, InetSocketAddress> clientBuilder =
-                    GrpcClients.forAddress(serverHostAndPort(serverContext)).initializeHttp(builder -> applyCtx(builder)
+                    GrpcClients.forAddress(serverHostAndPort(serverContext)).initializeHttp(builder -> builder
                             .appendClientFilter(__ -> true, setupResponseVerifierFilter(asyncErrors, responseLatch)));
 
             // The server only binds on Tester service, but the client sends a HelloRequest (Greeter service),
@@ -118,11 +104,10 @@ class TrailersOnlyErrorTest {
         setupServiceThrows(service);
 
         try (ServerContext serverContext = GrpcServers.forAddress(localAddress(0))
-                .initializeHttp(TrailersOnlyErrorTest::applyCtx)
                 .listenAndAwait(new Tester.ServiceFactory(service))) {
 
             final GrpcClientBuilder<HostAndPort, InetSocketAddress> clientBuilder =
-                    GrpcClients.forAddress(serverHostAndPort(serverContext)).initializeHttp(builder -> applyCtx(builder)
+                    GrpcClients.forAddress(serverHostAndPort(serverContext)).initializeHttp(builder -> builder
                             .appendClientFilter(__ -> true, setupResponseVerifierFilter(asyncErrors, responseLatch)));
 
             try (TesterClient client = clientBuilder.build(new Tester.ClientFactory())) {
@@ -152,11 +137,10 @@ class TrailersOnlyErrorTest {
         setupServiceThrows(service);
 
         try (ServerContext serverContext = GrpcServers.forAddress(localAddress(0))
-                .initializeHttp(TrailersOnlyErrorTest::applyCtx)
                 .listenAndAwait(new Tester.ServiceFactory(service))) {
 
             final GrpcClientBuilder<HostAndPort, InetSocketAddress> clientBuilder =
-                    GrpcClients.forAddress(serverHostAndPort(serverContext)).initializeHttp(builder -> applyCtx(builder)
+                    GrpcClients.forAddress(serverHostAndPort(serverContext)).initializeHttp(builder -> builder
                             .appendClientFilter(__ -> true, setupResponseVerifierFilter(asyncErrors, responseLatch)));
 
             try (BlockingTesterClient client = clientBuilder.buildBlocking(new Tester.ClientFactory())) {
@@ -165,8 +149,6 @@ class TrailersOnlyErrorTest {
 
                 verifyException(() -> client.testRequestStream(singleton(TestRequest.newBuilder().build())), UNKNOWN);
                 assertNoAsyncErrors(asyncErrors);
-
-                // Skip testing client.testResponseStream bcz it can not generate Trailers-Only response
 
                 verifyException(() -> client.testBiDiStream(singleton(TestRequest.newBuilder().build()))
                         .iterator().next(), UNKNOWN);
@@ -184,11 +166,10 @@ class TrailersOnlyErrorTest {
         setupServiceSingleThrows(service);
 
         try (ServerContext serverContext = GrpcServers.forAddress(localAddress(0))
-                .initializeHttp(TrailersOnlyErrorTest::applyCtx)
                 .listenAndAwait(new Tester.ServiceFactory(service))) {
 
             final GrpcClientBuilder<HostAndPort, InetSocketAddress> clientBuilder =
-                    GrpcClients.forAddress(serverHostAndPort(serverContext)).initializeHttp(builder -> applyCtx(builder)
+                    GrpcClients.forAddress(serverHostAndPort(serverContext)).initializeHttp(builder -> builder
                             .appendClientFilter(__ -> true, setupResponseVerifierFilter(asyncErrors, responseLatch)));
 
             try (TesterClient client = clientBuilder.build(new Tester.ClientFactory())) {
@@ -211,7 +192,6 @@ class TrailersOnlyErrorTest {
         final TesterService service = mockTesterService();
 
         final GrpcServerBuilder serverBuilder = GrpcServers.forAddress(localAddress(0))
-                .initializeHttp(TrailersOnlyErrorTest::applyCtx)
                 .initializeHttp(builder -> builder.appendServiceFilter(svc -> new StreamingHttpServiceFilter(svc) {
                     @Override
                     public Single<StreamingHttpResponse> handle(
@@ -224,7 +204,7 @@ class TrailersOnlyErrorTest {
         try (ServerContext serverContext = serverBuilder.listenAndAwait(new Tester.ServiceFactory(service))) {
 
             final GrpcClientBuilder<HostAndPort, InetSocketAddress> clientBuilder =
-                    GrpcClients.forAddress(serverHostAndPort(serverContext)).initializeHttp(builder -> applyCtx(builder)
+                    GrpcClients.forAddress(serverHostAndPort(serverContext)).initializeHttp(builder -> builder
                             .appendClientFilter(__ -> true, setupResponseVerifierFilter(asyncErrors, responseLatch)));
 
             try (TesterClient client = clientBuilder.build(new Tester.ClientFactory())) {
@@ -261,10 +241,10 @@ class TrailersOnlyErrorTest {
     }
 
     private static TesterService mockTesterService() {
-        TesterService service = mock(TesterService.class);
-        when(service.closeAsync()).thenReturn(completed());
-        when(service.closeAsyncGracefully()).thenReturn(completed());
-        return service;
+        TesterService filter = mock(TesterService.class);
+        when(filter.closeAsync()).thenReturn(completed());
+        when(filter.closeAsyncGracefully()).thenReturn(completed());
+        return filter;
     }
 
     private static void setupServiceThrows(final TesterService service) {
@@ -307,19 +287,5 @@ class TrailersOnlyErrorTest {
         } catch (Throwable t) {
             errors.add(t);
         }
-    }
-
-    private static HttpServerBuilder applyCtx(HttpServerBuilder builder) {
-        return builder
-                .ioExecutor(SERVER_CTX.ioExecutor())
-                .executor(SERVER_CTX.executor())
-                .bufferAllocator(SERVER_CTX.bufferAllocator());
-    }
-
-    private static <U, R> SingleAddressHttpClientBuilder<U, R> applyCtx(SingleAddressHttpClientBuilder<U, R> builder) {
-        return builder
-                .ioExecutor(CLIENT_CTX.ioExecutor())
-                .executor(CLIENT_CTX.executor())
-                .bufferAllocator(CLIENT_CTX.bufferAllocator());
     }
 }

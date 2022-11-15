@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.CompletableSource.Processor;
@@ -32,6 +33,7 @@ import io.servicetalk.concurrent.internal.TerminalNotification;
 import io.servicetalk.http.api.DefaultHttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategies;
+import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpRequestMetaData;
@@ -55,11 +57,11 @@ import io.servicetalk.transport.netty.internal.CloseHandler.CloseEventObservedEx
 import io.servicetalk.transport.netty.internal.CopyByteBufHandlerChannelInitializer;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
-import io.servicetalk.transport.netty.internal.FlushStrategyHolder;
 import io.servicetalk.transport.netty.internal.InfluencerConnectionAcceptor;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
-import io.servicetalk.transport.netty.internal.NettyConnectionContext.FlushStrategyProvider;
+import io.servicetalk.transport.netty.internal.SplittingFlushStrategy;
+import io.servicetalk.transport.netty.internal.SplittingFlushStrategy.FlushBoundaryProvider;
 
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.Channel;
@@ -83,11 +85,14 @@ import javax.net.ssl.SSLSession;
 import static io.servicetalk.buffer.netty.BufferUtils.getByteBufAllocator;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
+import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.defer;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
+import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
 import static io.servicetalk.http.api.StreamingHttpRequests.newTransportRequest;
 import static io.servicetalk.http.netty.AbstractStreamingHttpConnection.isSafeToAggregateOrEmpty;
 import static io.servicetalk.http.netty.HeaderUtils.REQ_EXPECT_CONTINUE;
@@ -98,10 +103,14 @@ import static io.servicetalk.http.netty.HeaderUtils.flatEmptyMessage;
 import static io.servicetalk.http.netty.HeaderUtils.setResponseContentLength;
 import static io.servicetalk.http.netty.HeaderUtils.shouldAppendTrailers;
 import static io.servicetalk.http.netty.HttpDebugUtils.showPipeline;
+import static io.servicetalk.http.netty.HttpObjectDecoder.getContentLength;
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.CHANNEL_CLOSED_INBOUND;
 import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedRequestResponse;
+import static io.servicetalk.transport.netty.internal.FlushStrategies.flushOnEach;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.flushOnEnd;
-import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
+import static io.servicetalk.transport.netty.internal.SplittingFlushStrategy.FlushBoundaryProvider.FlushBoundary.End;
+import static io.servicetalk.transport.netty.internal.SplittingFlushStrategy.FlushBoundaryProvider.FlushBoundary.InProgress;
+import static io.servicetalk.transport.netty.internal.SplittingFlushStrategy.FlushBoundaryProvider.FlushBoundary.Start;
 
 final class NettyHttpServer {
     private static final Logger LOGGER = LoggerFactory.getLogger(NettyHttpServer.class);
@@ -246,7 +255,7 @@ final class NettyHttpServer {
         private final NettyConnection<Object, Object> connection;
         private final HttpHeadersFactory headersFactory;
         private final HttpExecutionContext executionContext;
-        private final ChangingFlushStrategy flushStrategy;
+        private final SplittingFlushStrategy flushStrategy;
         private final boolean drainRequestPayloadBody;
         private final boolean requireTrailerHeader;
 
@@ -269,7 +278,38 @@ final class NettyHttpServer {
                     connection.executionContext().ioExecutor(), connection.executionContext().executor(),
                     HttpExecutionStrategies.offloadNone());
             this.service = service;
-            this.flushStrategy = new ChangingFlushStrategy(new FlushStrategyHolder(connection.defaultFlushStrategy()));
+            flushStrategy = new SplittingFlushStrategy(connection.defaultFlushStrategy(),
+                    // h2 may return a single HttpResponseMetaData for an empty response in some scenarios,
+                    // otherwise a trailers object will be included to indicate the end because content-length isn't
+                    // mutually exclusive from trailers in h2.
+                    protocol().major() > 1 ?
+                            itemWritten -> (itemWritten instanceof HttpResponseMetaData &&
+                                        emptyMessageBody((HttpResponseMetaData) itemWritten)) ||
+                                    itemWritten instanceof HttpHeaders ? End : InProgress :
+                    new FlushBoundaryProvider() {
+                        private long contentLength;
+                        @Override
+                        public FlushBoundary detectBoundary(@Nullable final Object itemWritten) {
+                            if (itemWritten instanceof HttpResponseMetaData) {
+                                final HttpResponseMetaData metadata = (HttpResponseMetaData) itemWritten;
+                                contentLength = getContentLength(metadata);
+                                // The content length maybe unknown at this point (e.g. 204 response) but then later
+                                // determined to be 0. In that case we should conservatively use End and rely upon
+                                // adjustForMissingBoundaries to accommodate if more data comes. Otherwise the
+                                // FlushStrategy may not trigger a flush (e.g. flushOnEnd) and if so the response
+                                // won't actually be written.
+                                return contentLength > 0 || (contentLength < 0 &&
+                                        (!emptyMessageBody(metadata) &&
+                                                isTransferEncodingChunked(metadata.headers()))) ? Start : End;
+                            }
+                            if (itemWritten instanceof Buffer) {
+                                return contentLength > 0 &&
+                                        (contentLength -= ((Buffer) itemWritten).readableBytes()) <= 0 ?
+                                        End : InProgress;
+                            }
+                            return itemWritten instanceof HttpHeaders ? End : InProgress;
+                        }
+                    });
             connection.updateFlushStrategy((current, isCurrentOriginal) -> flushStrategy);
             this.drainRequestPayloadBody = drainRequestPayloadBody;
             this.requireTrailerHeader = requireTrailerHeader;
@@ -298,7 +338,7 @@ final class NettyHttpServer {
 
         private Completable handleRequestAndWriteResponse(final Single<StreamingHttpRequest> requestSingle,
                                                           final boolean handleMultipleRequests) {
-            final Completable exchange = requestSingle.flatMapCompletable(rawRequest -> {
+            final Publisher<Object> responseObjectPublisher = requestSingle.flatMapPublisher(rawRequest -> {
                 // We transform the request and delay the completion of the result flattened stream to avoid
                 // resubscribing to the NettyChannelPublisher before the previous subscriber has terminated. Otherwise
                 // we may attempt to do duplicate subscribe on NettyChannelPublisher, which will result in a connection
@@ -355,17 +395,11 @@ final class NettyHttpServer {
                             };
                         }));
 
-                // Remember the original request method before users can modify it.
                 final HttpRequestMethod requestMethod = request.method();
-                // We can not concat response flat Publisher with `requestCompletion` or draining because by deferring
-                // stream completion we will defer flushing. We concat with `responseWrite` Completable instead to let
-                // the response go through first. After `responseWrite` completes we can immediately start draining the
-                // request message body because completion of the `responseWrite` means completion of the flat response
-                // stream and completion of the business logic.
-                final Completable responseWrite = connection.write(
-                        // Don't expect any exceptions from service because it's already wrapped with
-                        // HttpExceptionMapperServiceFilter.
-                        service.handle(this, request, streamingResponseFactory())
+                final boolean isHeadRequest = HEAD.equals(request.method());
+                // Don't expect any exceptions from service because it's already wrapped with
+                // ExceptionMapperServiceFilter
+                Publisher<Object> respPublisher = service.handle(this, request, streamingResponseFactory())
                         .flatMapPublisher(response -> {
                             if (responseSent != null) {
                                 // While concurrency between 100 (Continue) and the final response is handled in Netty
@@ -374,30 +408,40 @@ final class NettyHttpServer {
                                 // the final response, which may trigger continuation for the next request in pipeline.
                                 responseSent.set(true);
                             }
+                            // SplittingFlushStrategy needs to be aware of protocols constraints in order to determine
+                            // boundaries between responses. However it isn't aware of request data and content-length
+                            // for HEAD requests won't actually be followed by payload. It also has a method
+                            // adjustForMissingBoundaries to accommodate for missing End boundaries, so just flush on
+                            // each. SplittingFlushStrategy should be removed when NettyHttpServer writes per request
+                            // instead of a single stream with repeat() operator, and this code can also be removed.
                             Cancellable c = null;
-                            final FlushStrategy flushStrategy = determineFlushStrategyForApi(response);
-                            if (flushStrategy != null) {
-                                c = updateFlushStrategy((prev, isOriginal) -> isOriginal ? flushStrategy : prev);
+                            if (isHeadRequest) {
+                                flushStrategy.updateFlushStrategy(
+                                        (prev, isOriginal) -> isOriginal ? flushOnEach() : prev, 1);
+                            } else {
+                                final FlushStrategy flushStrategy = determineFlushStrategyForApi(response);
+                                if (flushStrategy != null) {
+                                    c = updateFlushStrategy((prev, isOriginal) -> isOriginal ? flushStrategy : prev);
+                                }
                             }
+
                             Publisher<Object> pub = handleResponse(protocol(), requestMethod, response);
-                            return (c == null ? pub : pub.beforeFinally(c::cancel))
-                                    // No need to make a copy of the context while consuming response message body.
-                                    .shareContextOnSubscribe();
-                        }));
+                            return c == null ? pub : pub.beforeFinally(c::cancel);
+                        });
 
                 if (drainRequestPayloadBody) {
-                    return responseWrite.concat(defer(() -> (payloadSubscribed.get() ?
+                    respPublisher = respPublisher.concat(defer(() -> payloadSubscribed.get() ?
+                                    completed() : request.messageBody().ignoreElements()
                             // Discarding the request payload body is an operation which should not impact the state of
                             // request/response processing. It's appropriate to recover from any error here.
                             // ST may introduce RejectedSubscribeError if user already consumed the request payload body
-                            requestCompletion : request.messageBody().ignoreElements().onErrorComplete())
-                            // No need to make a copy of the context in both cases.
-                            .shareContextOnSubscribe()));
-                } else {
-                    return responseWrite.concat(requestCompletion);
+                            .onErrorComplete()));
                 }
+
+                return respPublisher.concat(requestCompletion);
             });
-            return handleMultipleRequests ? exchange.repeat(__ -> true).ignoreElements() : exchange;
+            return connection.write(handleMultipleRequests ? responseObjectPublisher.repeat(val -> true) :
+                    responseObjectPublisher);
         }
 
         @Nonnull
@@ -627,97 +671,6 @@ final class NettyHttpServer {
         private static void logUnexpectedException(final Throwable t, NettyConnection<Object, Object> connection) {
             LOGGER.debug("{} Unexpected error received, closing {} {} due to:", connection, connection.protocol(),
                     HTTP_2_0.equals(connection.protocol()) ? "stream" : "connection", t);
-        }
-    }
-
-    /**
-     * Simplified variant of {@link io.servicetalk.transport.netty.internal.SplittingFlushStrategy}. Introduced
-     * temporarily until the {@link FlushStrategy} API is re-designed.
-     */
-    private static final class ChangingFlushStrategy implements FlushStrategy {
-        private static final AtomicReferenceFieldUpdater<ChangingFlushStrategy, ChangingWriteEventsListener>
-                listenerUpdater = newUpdater(ChangingFlushStrategy.class, ChangingWriteEventsListener.class,
-                "listener");
-
-        @Nullable
-        private volatile ChangingWriteEventsListener listener;
-
-        private final FlushStrategyHolder flushStrategyHolder;
-
-        private ChangingFlushStrategy(final FlushStrategyHolder flushStrategyHolder) {
-            this.flushStrategyHolder = flushStrategyHolder;
-        }
-
-        Cancellable updateFlushStrategy(FlushStrategyProvider strategyProvider) {
-            return flushStrategyHolder.updateFlushStrategy(strategyProvider);
-        }
-
-        @Override
-        public WriteEventsListener apply(final FlushSender sender) {
-            ChangingWriteEventsListener cListener = listener;
-            if (cListener != null) {
-                return cListener;
-            }
-            ChangingWriteEventsListener l = listenerUpdater.updateAndGet(this,
-                    existing -> existing != null ? existing :
-                            new ChangingWriteEventsListener(sender, flushStrategyHolder));
-            assert l != null;
-            return l;
-        }
-
-        @Override
-        public boolean shouldFlushOnUnwritable() {
-            return flushStrategyHolder.currentStrategy().shouldFlushOnUnwritable();
-        }
-
-        private static final class ChangingWriteEventsListener implements WriteEventsListener {
-
-            private final FlushSender sender;
-            private final FlushStrategyHolder flushStrategyHolder;
-            private final FlushStrategy defaultStrategy;
-            private final WriteEventsListener defaultListener;
-            private WriteEventsListener delegate;
-            private boolean firstWrite = true;
-
-            ChangingWriteEventsListener(final FlushSender sender, final FlushStrategyHolder flushStrategyHolder) {
-                this.sender = sender;
-                this.flushStrategyHolder = flushStrategyHolder;
-                this.defaultStrategy = flushStrategyHolder.currentStrategy();
-                this.defaultListener = defaultStrategy.apply(sender);
-                this.delegate = defaultListener;
-            }
-
-            @Override
-            public void writeStarted() {
-                firstWrite = true;
-                delegate = defaultListener;
-                // Invocation of "delegate.writeStarted()" is intentionally deferred until the first item is written.
-                // This is required to observe any changes for the FlushStrategy inside the service handle method.
-                // Deferring this invocation does not change the contract defined in the javadoc of this method.
-            }
-
-            @Override
-            public void itemWritten(@Nullable final Object written) {
-                if (firstWrite) {
-                    final FlushStrategy currentStrategy = flushStrategyHolder.currentStrategy();
-                    if (currentStrategy != defaultStrategy) {
-                        this.delegate = currentStrategy.apply(sender);
-                    }
-                    delegate.writeStarted();
-                    firstWrite = false;
-                }
-                delegate.itemWritten(written);
-            }
-
-            @Override
-            public void writeTerminated() {
-                delegate.writeTerminated();
-            }
-
-            @Override
-            public void writeCancelled() {
-                delegate.writeCancelled();
-            }
         }
     }
 }

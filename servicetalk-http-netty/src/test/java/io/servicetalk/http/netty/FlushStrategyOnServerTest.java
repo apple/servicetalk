@@ -15,6 +15,8 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.concurrent.api.ExecutorExtension;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.DefaultHttpExecutionContext;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
@@ -32,7 +34,6 @@ import io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer;
 import io.servicetalk.tcp.netty.internal.TcpServerConfig;
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ServerContext;
-import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
@@ -57,9 +58,11 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
 import static io.servicetalk.http.api.StreamingHttpRequests.newTransportRequest;
-import static io.servicetalk.http.netty.BuilderUtils.newClientBuilder;
+import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
 import static io.servicetalk.http.netty.NettyHttpServer.initChannel;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
+import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
+import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
@@ -68,14 +71,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 class FlushStrategyOnServerTest {
 
     @RegisterExtension
-    static final ExecutionContextExtension SERVER_CTX =
-            ExecutionContextExtension.cached("server-io", "server-executor")
-                    .setClassLevel(true);
-    @RegisterExtension
-    static final ExecutionContextExtension CLIENT_CTX =
-            ExecutionContextExtension.cached("client-io", "client-executor")
-                    .setClassLevel(true);
-
+    static final ExecutorExtension<Executor> EXECUTOR_RULE = ExecutorExtension.withCachedExecutor().setClassLevel(true);
     private static final String USE_AGGREGATED_RESP = "aggregated-resp";
     private static final String USE_EMPTY_RESP_BODY = "empty-resp-body";
 
@@ -110,8 +106,8 @@ class FlushStrategyOnServerTest {
             return succeeded(resp);
         };
 
-        final DefaultHttpExecutionContext httpExecutionContext = new DefaultHttpExecutionContext(
-                SERVER_CTX.bufferAllocator(), SERVER_CTX.ioExecutor(), SERVER_CTX.executor(), param.executionStrategy);
+        final DefaultHttpExecutionContext httpExecutionContext = new DefaultHttpExecutionContext(DEFAULT_ALLOCATOR,
+                globalExecutionContext().ioExecutor(), EXECUTOR_RULE.executor(), param.executionStrategy);
 
         final ReadOnlyHttpServerConfig config = new HttpServerConfig().asReadOnly();
         final ReadOnlyTcpServerConfig tcpReadOnly = new TcpServerConfig().asReadOnly();
@@ -134,7 +130,9 @@ class FlushStrategyOnServerTest {
             fail(e);
         }
 
-        client = newClientBuilder(serverContext, CLIENT_CTX).buildBlocking();
+        client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
+                .protocols(h1Default())
+                .buildBlocking();
     }
 
     @AfterEach
