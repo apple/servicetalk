@@ -49,6 +49,8 @@ io.servicetalk.logging.api
 io.servicetalk.logging.slf4j.internal
 io.servicetalk.oio.api
 io.servicetalk.oio.api.internal
+io.servicetalk.opentelemetry.asynccontext
+io.servicetalk.opentelemetry.http
 io.servicetalk.opentracing.asynccontext
 io.servicetalk.opentracing.http
 io.servicetalk.opentracing.inmemory

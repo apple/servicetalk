@@ -105,6 +105,19 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab1">
 <div class="block">Create a new <a href="HostAndPort.html" title="interface in io.servicetalk.transport.api"><code>HostAndPort</code></a> from a <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link"><code>InetSocketAddress</code></a>.</div>
 </div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1"><code>static <a href="HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1"><code><a href="#ofIpPort(java.lang.String)" class="member-name-link">ofIpPort</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;ipPort)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1">
+<div class="block">Parse IPv4 <code>xxx.xxx.xxx.xxx:yyyyy</code> and IPv6 <code>[xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx]:yyyyy</code> style
+ addresses.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1"><code>static <a href="HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1"><code><a href="#ofIpPort(java.lang.String,int)" class="member-name-link">ofIpPort</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;ipPort,
+ int&nbsp;startIndex)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1">
+<div class="block">Parse IPv4 <code>xxx.xxx.xxx.xxx:yyyyy</code> and IPv6 <code>[xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx]:yyyyy</code> style
+ addresses.</div>
+</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>int</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#port()" class="member-name-link">port</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
@@ -174,6 +187,44 @@ loadScripts(document, 'script');</script>
 <dd><code>address</code> - The <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link"><code>InetSocketAddress</code></a> to convert.</dd>
 <dt>Returns:</dt>
 <dd>the <a href="HostAndPort.html" title="interface in io.servicetalk.transport.api"><code>HostAndPort</code></a>.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="ofIpPort(java.lang.String)">
+<h3>ofIpPort</h3>
+<div class="member-signature"><span class="modifiers">static</span>&nbsp;<span class="return-type"><a href="HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a></span>&nbsp;<span class="element-name">ofIpPort</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;ipPort)</span></div>
+<div class="block">Parse IPv4 <code>xxx.xxx.xxx.xxx:yyyyy</code> and IPv6 <code>[xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx]:yyyyy</code> style
+ addresses.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>ipPort</code> - An IPv4 <code>xxx.xxx.xxx.xxx:yyyyy</code> or IPv6
+ <code>[xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx]:yyyyy</code> addresses.</dd>
+<dt>Returns:</dt>
+<dd>A <a href="HostAndPort.html" title="interface in io.servicetalk.transport.api"><code>HostAndPort</code></a> where the hostname is the IP address and the port is parsed from the string.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="#ofIpPort(java.lang.String,int)"><code>ofIpPort(String, int)</code></a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="ofIpPort(java.lang.String,int)">
+<h3>ofIpPort</h3>
+<div class="member-signature"><span class="modifiers">static</span>&nbsp;<span class="return-type"><a href="HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a></span>&nbsp;<span class="element-name">ofIpPort</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;ipPort,
+ int&nbsp;startIndex)</span></div>
+<div class="block">Parse IPv4 <code>xxx.xxx.xxx.xxx:yyyyy</code> and IPv6 <code>[xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx]:yyyyy</code> style
+ addresses.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>ipPort</code> - An IPv4 <code>xxx.xxx.xxx.xxx:yyyyy</code> or IPv6
+ <code>[xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx]:yyyyy</code> addresses.</dd>
+<dd><code>startIndex</code> - The index at which the address parsing starts.</dd>
+<dt>Returns:</dt>
+<dd>A <a href="HostAndPort.html" title="interface in io.servicetalk.transport.api"><code>HostAndPort</code></a> where the hostname is the IP address and the port is parsed from the string.</dd>
 </dl>
 </section>
 </li>

@@ -102,16 +102,26 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color">
 <div class="block">Constructs a status with no cause or description.</div>
 </div>
-<div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(io.servicetalk.grpc.api.GrpcStatusCode,java.lang.Throwable)" class="member-name-link">GrpcStatus</a><wbr>(<a href="GrpcStatusCode.html" title="enum class in io.servicetalk.grpc.api">GrpcStatusCode</a>&nbsp;code,
- <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&nbsp;cause)</code></div>
+<div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(io.servicetalk.grpc.api.GrpcStatusCode,java.lang.String)" class="member-name-link">GrpcStatus</a><wbr>(<a href="GrpcStatusCode.html" title="enum class in io.servicetalk.grpc.api">GrpcStatusCode</a>&nbsp;code,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;description)</code></div>
 <div class="col-last odd-row-color">
-<div class="block">Constructs a status with cause but no additional description.</div>
+<div class="block">Constructs a status with cause and additional description.</div>
 </div>
-<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(io.servicetalk.grpc.api.GrpcStatusCode,java.lang.Throwable,java.lang.CharSequence)" class="member-name-link">GrpcStatus</a><wbr>(<a href="GrpcStatusCode.html" title="enum class in io.servicetalk.grpc.api">GrpcStatusCode</a>&nbsp;code,
+<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(io.servicetalk.grpc.api.GrpcStatusCode,java.lang.Throwable)" class="member-name-link">GrpcStatus</a><wbr>(<a href="GrpcStatusCode.html" title="enum class in io.servicetalk.grpc.api">GrpcStatusCode</a>&nbsp;code,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&nbsp;cause)</code></div>
+<div class="col-last even-row-color">
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="GrpcStatusException.html" title="class in io.servicetalk.grpc.api"><code>GrpcStatusException</code></a> if there is a <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link"><code>Throwable</code></a> cause.</div>
+</div>
+</div>
+<div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(io.servicetalk.grpc.api.GrpcStatusCode,java.lang.Throwable,java.lang.CharSequence)" class="member-name-link">GrpcStatus</a><wbr>(<a href="GrpcStatusCode.html" title="enum class in io.servicetalk.grpc.api">GrpcStatusCode</a>&nbsp;code,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&nbsp;cause,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;description)</code></div>
-<div class="col-last even-row-color">
-<div class="block">Constructs a status with cause and additional description.</div>
+<div class="col-last odd-row-color">
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="GrpcStatusException.html" title="class in io.servicetalk.grpc.api"><code>GrpcStatusException</code></a> if there is a cause or
+ <a href="#%3Cinit%3E(io.servicetalk.grpc.api.GrpcStatusCode,java.lang.String)"><code>GrpcStatus(GrpcStatusCode, String)</code></a>.</div>
+</div>
 </div>
 </div>
 </section>
@@ -121,26 +131,33 @@ loadScripts(document, 'script');</script>
 <section class="method-summary" id="method-summary">
 <h2>Method Summary</h2>
 <div id="method-summary-table">
-<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab1" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab1', 3)" class="table-tab">Static Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button></div>
+<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab1" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab1', 3)" class="table-tab">Static Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button><button id="method-summary-table-tab6" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab6', 3)" class="table-tab">Deprecated Methods</button></div>
 <div id="method-summary-table.tabpanel" role="tabpanel">
 <div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="GrpcStatusException.html" title="class in io.servicetalk.grpc.api">GrpcStatusException</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#asException()" class="member-name-link">asException</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Returns the current status wrapped in a <a href="GrpcStatusException.html" title="class in io.servicetalk.grpc.api"><code>GrpcStatusException</code></a>.</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="GrpcStatusException.html" title="class in io.servicetalk.grpc.api">GrpcStatusException</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#asException()" class="member-name-link">asException</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="GrpcStatusException.html#%3Cinit%3E(io.servicetalk.grpc.api.GrpcStatus)"><code>GrpcStatusException(GrpcStatus)</code></a>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="GrpcStatusException.html" title="class in io.servicetalk.grpc.api">GrpcStatusException</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#asException(java.util.function.Supplier)" class="member-name-link">asException</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Supplier.html" title="class or interface in java.util.function" class="external-link">Supplier</a>&lt;com.google.rpc.Status&gt;&nbsp;applicationStatusSupplier)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Returns the current status wrapped in a <a href="GrpcStatusException.html" title="class in io.servicetalk.grpc.api"><code>GrpcStatusException</code></a> including the supplied details.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#cause()" class="member-name-link">cause</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Returns the cause, can be null.</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="GrpcStatusException.html" title="class in io.servicetalk.grpc.api">GrpcStatusException</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#asException(java.util.function.Supplier)" class="member-name-link">asException</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Supplier.html" title="class or interface in java.util.function" class="external-link">Supplier</a>&lt;com.google.rpc.Status&gt;&nbsp;applicationStatusSupplier)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="GrpcStatusException.html#of(com.google.rpc.Status)"><code>GrpcStatusException.of(Status)</code></a>.</div>
+</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#cause()" class="member-name-link">cause</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="GrpcStatusException.html#fromThrowable(java.lang.Throwable)"><code>GrpcStatusException.fromThrowable(Throwable)</code></a> to create a <a href="GrpcStatusException.html" title="class in io.servicetalk.grpc.api"><code>GrpcStatusException</code></a>
+ then <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html#getCause()" title="class or interface in java.lang" class="external-link"><code>Throwable.getCause()</code></a>.</div>
+</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="GrpcStatusCode.html" title="enum class in io.servicetalk.grpc.api">GrpcStatusCode</a></code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#code()" class="member-name-link">code</a>()</code></div>
@@ -165,15 +182,19 @@ loadScripts(document, 'script');</script>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Obtains the status given a code value string.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="GrpcStatus.html" title="class in io.servicetalk.grpc.api">GrpcStatus</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#fromThrowable(java.lang.Throwable)" class="member-name-link">fromThrowable</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&nbsp;t)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
-<div class="block">Translates a throwable into a status.</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code>static <a href="GrpcStatus.html" title="class in io.servicetalk.grpc.api">GrpcStatus</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#fromThrowable(java.lang.Throwable)" class="member-name-link">fromThrowable</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&nbsp;t)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="GrpcStatusException.html#fromThrowable(java.lang.Throwable)"><code>GrpcStatusException.fromThrowable(Throwable)</code></a>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="GrpcStatus.html" title="class in io.servicetalk.grpc.api">GrpcStatus</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#fromThrowableNullable(java.lang.Throwable)" class="member-name-link">fromThrowableNullable</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&nbsp;t)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
-<div class="block">Translates a throwable into a status.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code>static <a href="GrpcStatus.html" title="class in io.servicetalk.grpc.api">GrpcStatus</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#fromThrowableNullable(java.lang.Throwable)" class="member-name-link">fromThrowableNullable</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&nbsp;t)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="GrpcStatusException.html#fromThrowable(java.lang.Throwable)"><code>GrpcStatusException.fromThrowable(Throwable)</code></a>.</div>
+</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>int</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#hashCode()" class="member-name-link">hashCode</a>()</code></div>
@@ -212,9 +233,13 @@ loadScripts(document, 'script');</script>
 <li>
 <section class="detail" id="&lt;init&gt;(io.servicetalk.grpc.api.GrpcStatusCode,java.lang.Throwable)">
 <h3>GrpcStatus</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">GrpcStatus</span><wbr><span class="parameters">(<a href="GrpcStatusCode.html" title="enum class in io.servicetalk.grpc.api">GrpcStatusCode</a>&nbsp;code,
+<div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">public</span>&nbsp;<span class="element-name">GrpcStatus</span><wbr><span class="parameters">(<a href="GrpcStatusCode.html" title="enum class in io.servicetalk.grpc.api">GrpcStatusCode</a>&nbsp;code,
  @Nullable
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&nbsp;cause)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="GrpcStatusException.html" title="class in io.servicetalk.grpc.api"><code>GrpcStatusException</code></a> if there is a <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link"><code>Throwable</code></a> cause.</div>
+</div>
 <div class="block">Constructs a status with cause but no additional description.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
@@ -226,16 +251,35 @@ loadScripts(document, 'script');</script>
 <li>
 <section class="detail" id="&lt;init&gt;(io.servicetalk.grpc.api.GrpcStatusCode,java.lang.Throwable,java.lang.CharSequence)">
 <h3>GrpcStatus</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">GrpcStatus</span><wbr><span class="parameters">(<a href="GrpcStatusCode.html" title="enum class in io.servicetalk.grpc.api">GrpcStatusCode</a>&nbsp;code,
+<div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">public</span>&nbsp;<span class="element-name">GrpcStatus</span><wbr><span class="parameters">(<a href="GrpcStatusCode.html" title="enum class in io.servicetalk.grpc.api">GrpcStatusCode</a>&nbsp;code,
  @Nullable
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&nbsp;cause,
  @Nullable
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;description)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="GrpcStatusException.html" title="class in io.servicetalk.grpc.api"><code>GrpcStatusException</code></a> if there is a cause or
+ <a href="#%3Cinit%3E(io.servicetalk.grpc.api.GrpcStatusCode,java.lang.String)"><code>GrpcStatus(GrpcStatusCode, String)</code></a>.</div>
+</div>
 <div class="block">Constructs a status with cause and additional description.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>code</code> - status code.</dd>
 <dd><code>cause</code> - cause.</dd>
+<dd><code>description</code> - additional description.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="&lt;init&gt;(io.servicetalk.grpc.api.GrpcStatusCode,java.lang.String)">
+<h3>GrpcStatus</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">GrpcStatus</span><wbr><span class="parameters">(<a href="GrpcStatusCode.html" title="enum class in io.servicetalk.grpc.api">GrpcStatusCode</a>&nbsp;code,
+ @Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;description)</span></div>
+<div class="block">Constructs a status with cause and additional description.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>code</code> - status code.</dd>
 <dd><code>description</code> - additional description.</dd>
 </dl>
 </section>
@@ -277,7 +321,11 @@ loadScripts(document, 'script');</script>
 <li>
 <section class="detail" id="fromThrowable(java.lang.Throwable)">
 <h3>fromThrowable</h3>
-<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="GrpcStatus.html" title="class in io.servicetalk.grpc.api">GrpcStatus</a></span>&nbsp;<span class="element-name">fromThrowable</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&nbsp;t)</span></div>
+<div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="GrpcStatus.html" title="class in io.servicetalk.grpc.api">GrpcStatus</a></span>&nbsp;<span class="element-name">fromThrowable</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&nbsp;t)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="GrpcStatusException.html#fromThrowable(java.lang.Throwable)"><code>GrpcStatusException.fromThrowable(Throwable)</code></a>.</div>
+</div>
 <div class="block">Translates a throwable into a status.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
@@ -292,7 +340,11 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="fromThrowableNullable(java.lang.Throwable)">
 <h3>fromThrowableNullable</h3>
 <div class="member-signature"><span class="annotations">@Nullable
+<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
 </span><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="GrpcStatus.html" title="class in io.servicetalk.grpc.api">GrpcStatus</a></span>&nbsp;<span class="element-name">fromThrowableNullable</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&nbsp;t)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="GrpcStatusException.html#fromThrowable(java.lang.Throwable)"><code>GrpcStatusException.fromThrowable(Throwable)</code></a>.</div>
+</div>
 <div class="block">Translates a throwable into a status.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
@@ -305,7 +357,11 @@ loadScripts(document, 'script');</script>
 <li>
 <section class="detail" id="asException()">
 <h3>asException</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="GrpcStatusException.html" title="class in io.servicetalk.grpc.api">GrpcStatusException</a></span>&nbsp;<span class="element-name">asException</span>()</div>
+<div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="GrpcStatusException.html" title="class in io.servicetalk.grpc.api">GrpcStatusException</a></span>&nbsp;<span class="element-name">asException</span>()</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="GrpcStatusException.html#%3Cinit%3E(io.servicetalk.grpc.api.GrpcStatus)"><code>GrpcStatusException(GrpcStatus)</code></a>.</div>
+</div>
 <div class="block">Returns the current status wrapped in a <a href="GrpcStatusException.html" title="class in io.servicetalk.grpc.api"><code>GrpcStatusException</code></a>.</div>
 <dl class="notes">
 <dt>Returns:</dt>
@@ -316,7 +372,11 @@ loadScripts(document, 'script');</script>
 <li>
 <section class="detail" id="asException(java.util.function.Supplier)">
 <h3>asException</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="GrpcStatusException.html" title="class in io.servicetalk.grpc.api">GrpcStatusException</a></span>&nbsp;<span class="element-name">asException</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Supplier.html" title="class or interface in java.util.function" class="external-link">Supplier</a>&lt;com.google.rpc.Status&gt;&nbsp;applicationStatusSupplier)</span></div>
+<div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="GrpcStatusException.html" title="class in io.servicetalk.grpc.api">GrpcStatusException</a></span>&nbsp;<span class="element-name">asException</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Supplier.html" title="class or interface in java.util.function" class="external-link">Supplier</a>&lt;com.google.rpc.Status&gt;&nbsp;applicationStatusSupplier)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="GrpcStatusException.html#of(com.google.rpc.Status)"><code>GrpcStatusException.of(Status)</code></a>.</div>
+</div>
 <div class="block">Returns the current status wrapped in a <a href="GrpcStatusException.html" title="class in io.servicetalk.grpc.api"><code>GrpcStatusException</code></a> including the supplied details.
  The status code used by <code>Status</code> and the one of the <a href="GrpcStatus.html" title="class in io.servicetalk.grpc.api"><code>GrpcStatus</code></a> must be the same.
 
@@ -344,7 +404,12 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="cause()">
 <h3>cause</h3>
 <div class="member-signature"><span class="annotations">@Nullable
+<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
 </span><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a></span>&nbsp;<span class="element-name">cause</span>()</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="GrpcStatusException.html#fromThrowable(java.lang.Throwable)"><code>GrpcStatusException.fromThrowable(Throwable)</code></a> to create a <a href="GrpcStatusException.html" title="class in io.servicetalk.grpc.api"><code>GrpcStatusException</code></a>
+ then <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html#getCause()" title="class or interface in java.lang" class="external-link"><code>Throwable.getCause()</code></a>.</div>
+</div>
 <div class="block">Returns the cause, can be null.</div>
 <dl class="notes">
 <dt>Returns:</dt>

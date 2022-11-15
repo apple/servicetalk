@@ -102,8 +102,8 @@ loadScripts(document, 'script');</script>
      <li>As the last
      <a href="../../http/api/SingleAddressHttpClientBuilder.html#appendConnectionFilter(io.servicetalk.http.api.StreamingHttpConnectionFilterFactory)"><code>connection
      filter</code></a> if only network interactions should be observed without accounting for work of any other filters.</li>
-     <li>After <a href="../../http/utils/TimeoutHttpRequesterFilter.html" title="class in io.servicetalk.http.utils"><code>TimeoutHttpRequesterFilter</code></a> if the timeout event should be observed as
-     <a href="../../http/api/HttpLifecycleObserver.HttpExchangeObserver.html#onResponseCancel()"><code>cancellation</code></a> instead of an
+     <li>After <a href="../../http/utils/TimeoutHttpRequesterFilter.html" title="class in io.servicetalk.http.utils"><code>TimeoutHttpRequesterFilter</code></a> (or <a href="../api/GrpcFilters.html#newGrpcDeadlineClientFilterFactory()"><code>GrpcFilters.newGrpcDeadlineClientFilterFactory()</code></a>) if the
+     timeout event should be observed as <a href="../../http/api/HttpLifecycleObserver.HttpExchangeObserver.html#onResponseCancel()"><code>cancellation</code></a> instead of an
      <a href="../../http/api/HttpLifecycleObserver.HttpExchangeObserver.html#onResponseError(java.lang.Throwable)"><code>error</code></a>.</li>
      <li>Before any filter that populates <a href="../../http/api/HttpMetaData.html#context()"><code>response context</code></a> or alters
      <a href="../../http/api/HttpResponseMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpResponseMetaData</code></a> if that information has to be available for <a href="../api/GrpcLifecycleObserver.GrpcExchangeObserver.html" title="interface in io.servicetalk.grpc.api"><code>GrpcLifecycleObserver.GrpcExchangeObserver</code></a>.</li>

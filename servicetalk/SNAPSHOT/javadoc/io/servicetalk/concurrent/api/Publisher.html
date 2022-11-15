@@ -3746,7 +3746,9 @@ B&gt;<br><a href="Publisher.html" title="class in io.servicetalk.concurrent.api"
  </code></pre></div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>until</code> - <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a>, termination of which, terminates the returned <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>.</dd>
+<dd><code>until</code> - <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a>, termination of which, terminates the returned <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>. If this
+ <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> maybe resubscribed the <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> should be also, or use
+ <a href="#defer(java.util.function.Supplier)"><code>defer(Supplier)</code></a> to create a new <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> on each subscribe.</dd>
 <dt>Returns:</dt>
 <dd>A <a href="Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> that only emits the items till <code>until</code> <a href="Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> is completed.</dd>
 <dt>See Also:</dt>

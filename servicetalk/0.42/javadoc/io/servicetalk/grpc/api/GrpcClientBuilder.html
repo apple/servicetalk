@@ -115,7 +115,7 @@ loadScripts(document, 'script');</script>
 <section class="method-summary" id="method-summary">
 <h2>Method Summary</h2>
 <div id="method-summary-table">
-<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab3" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab3', 3)" class="table-tab">Abstract Methods</button></div>
+<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab3" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab3', 3)" class="table-tab">Abstract Methods</button><button id="method-summary-table-tab5" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab5', 3)" class="table-tab">Default Methods</button></div>
 <div id="method-summary-table.tabpanel" role="tabpanel">
 <div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
 <div class="table-header col-first">Modifier and Type</div>
@@ -141,9 +141,15 @@ loadScripts(document, 'script');</script>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">Set default timeout during which gRPC calls are expected to complete.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="GrpcClientBuilder.html" title="interface in io.servicetalk.grpc.api">GrpcClientBuilder</a>&lt;<a href="GrpcClientBuilder.html" title="type parameter in GrpcClientBuilder">U</a>,<wbr><a href="GrpcClientBuilder.html" title="type parameter in GrpcClientBuilder">R</a>&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#initializeHttp(io.servicetalk.grpc.api.GrpcClientBuilder.HttpInitializer)" class="member-name-link">initializeHttp</a><wbr>(<a href="GrpcClientBuilder.HttpInitializer.html" title="interface in io.servicetalk.grpc.api">GrpcClientBuilder.HttpInitializer</a>&lt;<a href="GrpcClientBuilder.html" title="type parameter in GrpcClientBuilder">U</a>,<wbr><a href="GrpcClientBuilder.html" title="type parameter in GrpcClientBuilder">R</a>&gt;&nbsp;initializer)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="GrpcClientBuilder.html" title="interface in io.servicetalk.grpc.api">GrpcClientBuilder</a>&lt;<a href="GrpcClientBuilder.html" title="type parameter in GrpcClientBuilder">U</a>,<wbr><a href="GrpcClientBuilder.html" title="type parameter in GrpcClientBuilder">R</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#defaultTimeout(java.time.Duration,boolean)" class="member-name-link">defaultTimeout</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;defaultTimeout,
+ boolean&nbsp;appendTimeoutFilter)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
+<div class="block">Set default timeout during which gRPC calls are expected to complete.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="GrpcClientBuilder.html" title="interface in io.servicetalk.grpc.api">GrpcClientBuilder</a>&lt;<a href="GrpcClientBuilder.html" title="type parameter in GrpcClientBuilder">U</a>,<wbr><a href="GrpcClientBuilder.html" title="type parameter in GrpcClientBuilder">R</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#initializeHttp(io.servicetalk.grpc.api.GrpcClientBuilder.HttpInitializer)" class="member-name-link">initializeHttp</a><wbr>(<a href="GrpcClientBuilder.HttpInitializer.html" title="interface in io.servicetalk.grpc.api">GrpcClientBuilder.HttpInitializer</a>&lt;<a href="GrpcClientBuilder.html" title="type parameter in GrpcClientBuilder">U</a>,<wbr><a href="GrpcClientBuilder.html" title="type parameter in GrpcClientBuilder">R</a>&gt;&nbsp;initializer)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">Set a function which can configure the underlying <a href="../../http/api/SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api"><code>SingleAddressHttpClientBuilder</code></a> used for
  the transport layer.</div>
 </div>
@@ -186,6 +192,40 @@ loadScripts(document, 'script');</script>
 <dd><code>defaultTimeout</code> - <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link"><code>Duration</code></a> of default timeout which must be positive non-zero.</dd>
 <dt>Returns:</dt>
 <dd><code>this</code>.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="#defaultTimeout(java.time.Duration,boolean)"><code>defaultTimeout(Duration, boolean)</code></a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="defaultTimeout(java.time.Duration,boolean)">
+<h3>defaultTimeout</h3>
+<div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="GrpcClientBuilder.html" title="interface in io.servicetalk.grpc.api">GrpcClientBuilder</a>&lt;<a href="GrpcClientBuilder.html" title="type parameter in GrpcClientBuilder">U</a>,<wbr><a href="GrpcClientBuilder.html" title="type parameter in GrpcClientBuilder">R</a>&gt;</span>&nbsp;<span class="element-name">defaultTimeout</span><wbr><span class="parameters">(@Nullable
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;defaultTimeout,
+ boolean&nbsp;appendTimeoutFilter)</span></div>
+<div class="block">Set default timeout during which gRPC calls are expected to complete. This default will be used only if the
+ request metadata includes no timeout; any value specified in client request will supersede this default.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>defaultTimeout</code> - <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link"><code>Duration</code></a> of default timeout which must be positive non-zero, or <code>null</code> if a
+ default shouldn't be applied.</dd>
+<dd><code>appendTimeoutFilter</code> - <code>true</code> to append the filter that enforces
+ <a href="https://grpc.io/blog/deadlines">deadline propagation</a>. <code>false</code> to not append the filter and
+ therefore not enforce deadlines. If <code>false</code> you can manually insert
+ <a href="GrpcFilters.html#newGrpcDeadlineClientFilterFactory()"><code>GrpcFilters.newGrpcDeadlineClientFilterFactory()</code></a> in your preferred order use <a href="#initializeHttp(io.servicetalk.grpc.api.GrpcClientBuilder.HttpInitializer)"><code>initializeHttp(io.servicetalk.grpc.api.GrpcClientBuilder.HttpInitializer&lt;U, R&gt;)</code></a> and
+ <a href="../../http/api/SingleAddressHttpClientBuilder.html#appendClientFilter(io.servicetalk.http.api.StreamingHttpClientFilterFactory)"><code>SingleAddressHttpClientBuilder.appendClientFilter(StreamingHttpClientFilterFactory)</code></a>.</dd>
+<dt>Returns:</dt>
+<dd><code>this</code>.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="GrpcFilters.html#newGrpcDeadlineClientFilterFactory()"><code>GrpcFilters.newGrpcDeadlineClientFilterFactory()</code></a></li>
+</ul>
+</dd>
 </dl>
 </section>
 </li>
