@@ -18,8 +18,10 @@ package io.servicetalk.grpc.api;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpLifecycleObserver;
 import io.servicetalk.http.api.HttpServerBuilder;
+import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 
 import java.time.Duration;
+import javax.annotation.Nullable;
 
 /**
  * A builder for building a <a href="https://www.grpc.io">gRPC</a> server.
@@ -65,8 +67,31 @@ public interface GrpcServerBuilder {
      *
      * @param defaultTimeout {@link Duration} of default timeout which must be positive non-zero.
      * @return {@code this}.
+     * @see #defaultTimeout(Duration, boolean)
      */
     GrpcServerBuilder defaultTimeout(Duration defaultTimeout);
+
+    /**
+     * Set a default timeout during which gRPC calls are expected to complete. This default will be used only if the
+     * request includes no timeout; any value specified in client request will supersede this default.
+     *
+     * @param defaultTimeout {@link Duration} of default timeout which must be positive non-zero, or {@code null} if a
+     * default shouldn't be applied.
+     * @param appendTimeoutFilter {@code true} to append the filter that enforces
+     * <a href="https://grpc.io/blog/deadlines">deadline propagation</a>. {@code false} to not append the filter and
+     * therefore not enforce deadlines. If {@code false} you can manually insert
+     * {@link GrpcFilters#newGrpcDeadlineServerFilterFactory(Duration)} in your preferred order use
+     * {@link #initializeHttp} and
+     * {@link HttpServerBuilder#appendNonOffloadingServiceFilter(StreamingHttpServiceFilterFactory)} (to force ordering
+     * before any offloading filters) or
+     * {@link HttpServerBuilder#appendServiceFilter(StreamingHttpServiceFilterFactory)} (if you require different
+     * ordering).
+     * @return {@code this}.
+     */
+    default GrpcServerBuilder defaultTimeout(@Nullable Duration defaultTimeout, boolean appendTimeoutFilter) {
+        // FIXME: 0.43 - remove default implementation
+        throw new UnsupportedOperationException("method not supported by " + getClass());
+    }
 
     /**
      * Sets a {@link GrpcLifecycleObserver} that provides visibility into gRPC lifecycle events.

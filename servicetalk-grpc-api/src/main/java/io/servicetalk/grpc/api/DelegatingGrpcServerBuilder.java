@@ -18,6 +18,7 @@ package io.servicetalk.grpc.api;
 import io.servicetalk.concurrent.api.Single;
 
 import java.time.Duration;
+import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
 
@@ -55,6 +56,13 @@ public class DelegatingGrpcServerBuilder implements GrpcServerBuilder {
     @Override
     public GrpcServerBuilder defaultTimeout(final Duration defaultTimeout) {
         delegate = delegate.defaultTimeout(defaultTimeout);
+        return this;
+    }
+
+    @Override
+    public GrpcServerBuilder defaultTimeout(@Nullable final Duration defaultTimeout,
+                                            final boolean appendTimeoutFilter) {
+        delegate = delegate.defaultTimeout(defaultTimeout, appendTimeoutFilter);
         return this;
     }
 

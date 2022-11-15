@@ -16,8 +16,6 @@
 package io.servicetalk.grpc.netty;
 
 import io.servicetalk.buffer.api.BufferAllocator;
-import io.servicetalk.concurrent.TimeSource;
-import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.grpc.api.GrpcBindableService;
@@ -33,14 +31,12 @@ import io.servicetalk.http.api.BlockingStreamingHttpService;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpLifecycleObserver;
 import io.servicetalk.http.api.HttpProtocolConfig;
-import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServerContext;
 import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
-import io.servicetalk.http.utils.TimeoutHttpServiceFilter;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ConnectionAcceptorFactory;
 import io.servicetalk.transport.api.IoExecutor;
@@ -48,14 +44,10 @@ import io.servicetalk.transport.api.ServerSslConfig;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.ExecutionContextBuilder;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.net.SocketOption;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Map;
-import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -63,17 +55,12 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.FutureUtils.awaitResult;
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.defaultStrategy;
-import static io.servicetalk.grpc.internal.DeadlineUtils.GRPC_DEADLINE_KEY;
-import static io.servicetalk.grpc.internal.DeadlineUtils.readTimeoutHeader;
+import static io.servicetalk.grpc.api.GrpcFilters.newGrpcDeadlineServerFilterFactory;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 import static io.servicetalk.utils.internal.DurationUtils.ensurePositive;
 import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 final class DefaultGrpcServerBuilder implements GrpcServerBuilder, ServerBinder {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultGrpcServerBuilder.class);
-
     private final Supplier<HttpServerBuilder> httpServerBuilderSupplier;
     private GrpcServerBuilder.HttpInitializer initializer = builder -> {
         // no-op
@@ -90,6 +77,7 @@ final class DefaultGrpcServerBuilder implements GrpcServerBuilder, ServerBinder 
      */
     @Nullable
     private Duration defaultTimeout;
+    private boolean appendTimeoutFilter = true;
 
     // Do not use this ctor directly, GrpcServers is the entry point for creating a new builder.
     DefaultGrpcServerBuilder(final Supplier<HttpServerBuilder> httpServerBuilderSupplier) {
@@ -107,6 +95,14 @@ final class DefaultGrpcServerBuilder implements GrpcServerBuilder, ServerBinder 
     @Override
     public GrpcServerBuilder defaultTimeout(Duration defaultTimeout) {
         this.defaultTimeout = ensurePositive(defaultTimeout, "defaultTimeout");
+        return this;
+    }
+
+    @Override
+    public GrpcServerBuilder defaultTimeout(@Nullable final Duration defaultTimeout,
+                                            final boolean appendTimeoutFilter) {
+        this.defaultTimeout = defaultTimeout == null ? null : ensurePositive(defaultTimeout, "defaultTimeout");
+        this.appendTimeoutFilter = appendTimeoutFilter;
         return this;
     }
 
@@ -164,43 +160,12 @@ final class DefaultGrpcServerBuilder implements GrpcServerBuilder, ServerBinder 
         interceptor.appendNonOffloadingServiceFilter(GrpcExceptionMapperServiceFilter.INSTANCE);
 
         directCallInitializer.initialize(interceptor);
+        if (appendTimeoutFilter) {
+            interceptor.appendNonOffloadingServiceFilter(newGrpcDeadlineServerFilterFactory(defaultTimeout));
+        }
         initializer.initialize(interceptor);
 
-        interceptor.appendServiceFilter(
-                new TimeoutHttpServiceFilter(grpcDetermineTimeout(defaultTimeout), true));
         return interceptor;
-    }
-
-    private static BiFunction<HttpRequestMetaData, TimeSource, Duration> grpcDetermineTimeout(
-            @Nullable Duration defaultTimeout) {
-        return (HttpRequestMetaData request, TimeSource timeSource) -> {
-                /*
-                * Return the timeout duration extracted from the GRPC timeout HTTP header if present or default timeout.
-                *
-                * @param request The HTTP request to be used as source of the GRPC timeout header
-                * @return The non-negative timeout duration which may be null
-                */
-                @Nullable
-                Duration requestTimeout = readTimeoutHeader(request);
-                @Nullable
-                Duration timeout = null != requestTimeout ? requestTimeout : defaultTimeout;
-
-                if (null != timeout) {
-                    // Store the timeout in the context as a deadline to be used for any client requests created
-                    // during the context of handling this request.
-                    try {
-                        Long deadline = timeSource.currentTime(NANOSECONDS) + timeout.toNanos();
-                        AsyncContext.put(GRPC_DEADLINE_KEY, deadline);
-                    } catch (UnsupportedOperationException ignored) {
-                        LOGGER.debug("Async context disabled, timeouts will not be propagated to client requests");
-                        // ignored -- async context has probably been disabled.
-                        // Timeout propagation will be partially disabled.
-                        // cancel()s will still happen which will accomplish the same effect though less efficiently
-                    }
-                }
-
-                return timeout;
-            };
     }
 
     @Override
