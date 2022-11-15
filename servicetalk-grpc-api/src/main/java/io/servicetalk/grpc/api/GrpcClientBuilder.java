@@ -19,6 +19,7 @@ import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 
 import java.time.Duration;
+import javax.annotation.Nullable;
 
 /**
  * A builder for building a <a href="https://www.grpc.io">gRPC</a> client.
@@ -70,28 +71,27 @@ public interface GrpcClientBuilder<U, R> {
      *
      * @param defaultTimeout {@link Duration} of default timeout which must be positive non-zero.
      * @return {@code this}.
+     * @see #defaultTimeout(Duration, boolean)
      */
     GrpcClientBuilder<U, R> defaultTimeout(Duration defaultTimeout);
 
     /**
-     * Determine if a filter will be inserted by this builder that enforces the
-     * <a href="https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#requests">Timeout deadline
-     * propagation</a>.
-     * <p>
-     * To insert {@link GrpcFilters#newGrpcDeadlineClientFilterFactory()} in your preferred order use
-     * {@link #initializeHttp} and
+     * Set default timeout during which gRPC calls are expected to complete. This default will be used only if the
+     * request metadata includes no timeout; any value specified in client request will supersede this default.
+     *
+     * @param defaultTimeout {@link Duration} of default timeout which must be positive non-zero, or {@code null} if a
+     * default shouldn't be applied.
+     * @param appendTimeoutFilter {@code true} to append the filter that enforces
+     * <a href="https://grpc.io/blog/deadlines">deadline propagation</a>. {@code false} to not append the filter and
+     * therefore not enforce deadlines. If {@code false} you can manually insert
+     * {@link GrpcFilters#newGrpcDeadlineClientFilterFactory()} in your preferred order use {@link #initializeHttp} and
      * {@link SingleAddressHttpClientBuilder#appendClientFilter(StreamingHttpClientFilterFactory)}.
-     * <p>
-     * {@link #defaultTimeout(Duration)} is independent of this method, and may still inject state (even if no timeout
-     * is applied locally because this {@code append} is {@code false} and no timeout filter is appended).
-     * @param append {@code true} if this builder should append the timeout filter, {@code false} if it should not.
      * @return {@code this}.
      * @see GrpcFilters#newGrpcDeadlineClientFilterFactory()
      */
-    default GrpcClientBuilder<U, R> appendTimeoutFilter(boolean append) {
+    default GrpcClientBuilder<U, R> defaultTimeout(@Nullable Duration defaultTimeout, boolean appendTimeoutFilter) {
         // FIXME: 0.43 - remove default implementation
-        throw new UnsupportedOperationException(
-                "GrpcClientBuilder#appendTimeoutFilter(boolean) is not supported by " + getClass());
+        throw new UnsupportedOperationException("method not supported by " + getClass());
     }
 
     /**

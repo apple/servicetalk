@@ -16,8 +16,6 @@
 package io.servicetalk.grpc.netty;
 
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.grpc.api.GrpcClientBuilder;
-import io.servicetalk.grpc.api.GrpcServerBuilder;
 import io.servicetalk.grpc.api.GrpcStatusException;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategy;
@@ -45,7 +43,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.time.Duration;
 import java.util.concurrent.TimeoutException;
-import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.grpc.api.GrpcFilters.newGrpcDeadlineClientFilterFactory;
@@ -73,8 +70,8 @@ final class GrpcTimeoutOrderTest {
     void serverFilterNeverRespondsAppliesDeadline(boolean appendNonOffloading, boolean serverBuilderAppendTimeout,
                                                   boolean serverManualAppendTimeout) throws Exception {
         final boolean clientAppliesTimeout = (!serverManualAppendTimeout && !serverBuilderAppendTimeout);
-        try (ServerContext serverContext = applyDefaultTimeout(forAddress(localAddress(0))
-                .appendTimeoutFilter(serverBuilderAppendTimeout)
+        try (ServerContext serverContext = forAddress(localAddress(0))
+                .defaultTimeout(serverBuilderAppendTimeout ? DEFAULT_TIMEOUT : null, serverBuilderAppendTimeout)
                 .initializeHttp(builder -> {
                     if (serverManualAppendTimeout) {
                         if (appendNonOffloading) {
@@ -89,11 +86,11 @@ final class GrpcTimeoutOrderTest {
                     } else {
                         builder.appendServiceFilter(NEVER_SERVER_FILTER);
                     }
-                }), serverBuilderAppendTimeout ? DEFAULT_TIMEOUT : null)
+                })
                 .listenAndAwait((GreeterService) (ctx, request) ->
                         succeeded(HelloReply.newBuilder().setMessage("hello " + request.getName()).build()));
-             BlockingGreeterClient client = applyDefaultTimeout(forResolvedAddress(serverContext.listenAddress())
-                     .appendTimeoutFilter(clientAppliesTimeout), clientAppliesTimeout ? DEFAULT_TIMEOUT : null)
+             BlockingGreeterClient client = forResolvedAddress(serverContext.listenAddress())
+                     .defaultTimeout(clientAppliesTimeout ? DEFAULT_TIMEOUT : null, clientAppliesTimeout)
                      .buildBlocking(new Greeter.ClientFactory())) {
             assertGrpcTimeout(() -> client.sayHello(HelloRequest.newBuilder().setName("world").build()),
                     clientAppliesTimeout);
@@ -104,13 +101,12 @@ final class GrpcTimeoutOrderTest {
     @ValueSource(booleans = {true, false})
     void clientFilterNeverRespondsAppliesDeadline(boolean builderEnableTimeout) throws Exception {
         try (ServerContext serverContext = forAddress(localAddress(0))
-                .appendTimeoutFilter(false)
+                .defaultTimeout(null, false)
                 .listenAndAwait((GreeterService) (ctx, request) -> {
                     throw new IllegalStateException("client using never filter, server shouldn't read response");
                 });
              BlockingGreeterClient client = forResolvedAddress(serverContext.listenAddress())
-                     .appendTimeoutFilter(builderEnableTimeout)
-                     .defaultTimeout(DEFAULT_TIMEOUT)
+                     .defaultTimeout(DEFAULT_TIMEOUT, builderEnableTimeout)
                      .initializeHttp(builder -> {
                          if (!builderEnableTimeout) {
                              builder.appendClientFilter(newGrpcDeadlineClientFilterFactory());
@@ -128,15 +124,6 @@ final class GrpcTimeoutOrderTest {
         if (clientSideTimeout) {
             assertThat(e.getCause(), instanceOf(TimeoutException.class));
         }
-    }
-
-    private static GrpcServerBuilder applyDefaultTimeout(GrpcServerBuilder builder, @Nullable Duration defaultTimeout) {
-        return defaultTimeout != null ? builder.defaultTimeout(defaultTimeout) : builder;
-    }
-
-    private static <T> GrpcClientBuilder<T, T> applyDefaultTimeout(GrpcClientBuilder<T, T> builder,
-                                                                   @Nullable Duration defaultTimeout) {
-        return defaultTimeout != null ? builder.defaultTimeout(defaultTimeout) : builder;
     }
 
     static final class NeverStreamingHttpClientFilterFactory implements StreamingHttpClientFilterFactory {

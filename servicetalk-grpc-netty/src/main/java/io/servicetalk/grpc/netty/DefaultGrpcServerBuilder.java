@@ -99,8 +99,10 @@ final class DefaultGrpcServerBuilder implements GrpcServerBuilder, ServerBinder 
     }
 
     @Override
-    public GrpcServerBuilder appendTimeoutFilter(final boolean append) {
-        appendTimeoutFilter = append;
+    public GrpcServerBuilder defaultTimeout(@Nullable final Duration defaultTimeout,
+                                            final boolean appendTimeoutFilter) {
+        this.defaultTimeout = defaultTimeout == null ? null : ensurePositive(defaultTimeout, "defaultTimeout");
+        this.appendTimeoutFilter = appendTimeoutFilter;
         return this;
     }
 

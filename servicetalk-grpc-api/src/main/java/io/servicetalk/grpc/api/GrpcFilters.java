@@ -23,9 +23,6 @@ import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import io.servicetalk.http.utils.TimeoutHttpRequesterFilter;
 import io.servicetalk.http.utils.TimeoutHttpServiceFilter;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.time.Duration;
 import java.util.function.BiFunction;
 import javax.annotation.Nullable;
@@ -39,15 +36,13 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
  * Utility filters for gRPC.
  */
 public final class GrpcFilters {
-    private static final Logger LOGGER = LoggerFactory.getLogger(GrpcFilters.class);
-
     private GrpcFilters() {
     }
 
     /**
      * Create a {@link StreamingHttpClientFilterFactory} that enforces the
-     * <a href="https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#requests">Timeout deadline
-     * propagation</a>.
+     * <a href="https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#requests">Timeout</a>
+     * <a href="https://grpc.io/blog/deadlines">deadline propagation</a>.
      * @return {@code this}.
      */
     public static StreamingHttpClientFilterFactory newGrpcDeadlineClientFilterFactory() {
@@ -56,10 +51,10 @@ public final class GrpcFilters {
 
     /**
      * Create a {@link StreamingHttpClientFilterFactory} that enforces the
-     * <a href="https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#requests">Timeout deadline
-     * propagation</a>.
-     * @param defaultTimeout The default timeout to apply if not otherwise specified, or {@code null} doesn't apply a
-     * timeout if not specified.
+     * <a href="https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#requests">Timeout</a>
+     * <a href="https://grpc.io/blog/deadlines">deadline propagation</a>.
+     * @param defaultTimeout The default timeout to apply if not otherwise specified for the request, or {@code null}
+     * doesn't apply a timeout if not specified.
      * @return {@code this}.
      */
     public static StreamingHttpServiceFilterFactory newGrpcDeadlineServerFilterFactory(
@@ -85,15 +80,8 @@ public final class GrpcFilters {
             if (null != timeout) {
                 // Store the timeout in the context as a deadline to be used for any client requests created
                 // during the context of handling this request.
-                try {
-                    Long deadline = timeSource.currentTime(NANOSECONDS) + timeout.toNanos();
-                    AsyncContext.put(GRPC_DEADLINE_KEY, deadline);
-                } catch (UnsupportedOperationException ignored) {
-                    LOGGER.debug("Async context disabled, timeouts will not be propagated to client requests");
-                    // ignored -- async context has probably been disabled.
-                    // Timeout propagation will be partially disabled.
-                    // cancel()s will still happen which will accomplish the same effect though less efficiently
-                }
+                Long deadline = timeSource.currentTime(NANOSECONDS) + timeout.toNanos();
+                AsyncContext.put(GRPC_DEADLINE_KEY, deadline);
             }
 
             return timeout;

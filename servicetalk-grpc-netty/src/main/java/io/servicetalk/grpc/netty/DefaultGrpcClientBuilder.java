@@ -75,8 +75,10 @@ final class DefaultGrpcClientBuilder<U, R> implements GrpcClientBuilder<U, R> {
     }
 
     @Override
-    public GrpcClientBuilder<U, R> appendTimeoutFilter(final boolean append) {
-        appendTimeoutFilter = append;
+    public GrpcClientBuilder<U, R> defaultTimeout(@Nullable final Duration defaultTimeout,
+                                                  final boolean appendTimeoutFilter) {
+        this.defaultTimeout = defaultTimeout == null ? null : ensurePositive(defaultTimeout, "defaultTimeout");
+        this.appendTimeoutFilter = appendTimeoutFilter;
         return this;
     }
 
