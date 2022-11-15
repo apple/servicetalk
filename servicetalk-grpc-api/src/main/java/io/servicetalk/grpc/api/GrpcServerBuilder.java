@@ -67,6 +67,7 @@ public interface GrpcServerBuilder {
      *
      * @param defaultTimeout {@link Duration} of default timeout which must be positive non-zero.
      * @return {@code this}.
+     * @see #defaultTimeout(Duration, boolean)
      */
     GrpcServerBuilder defaultTimeout(Duration defaultTimeout);
 
