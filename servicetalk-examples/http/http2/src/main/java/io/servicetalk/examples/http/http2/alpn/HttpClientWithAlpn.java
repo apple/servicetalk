@@ -37,6 +37,8 @@ public final class HttpClientWithAlpn {
         // streaming API see helloworld examples.
         try (BlockingHttpClient client = HttpClients.forSingleAddress("localhost", 8080)
                 .protocols(h2Default(), h1Default()) // Configure support for HTTP/2 and HTTP/1.1 protocols
+                // Note: DefaultTestCerts contains self-signed certificates that may be used only for local testing.
+                // or demonstration purposes. Never use those for real use-cases.
                 .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem).build())
                 .buildBlocking()) {
             HttpResponse response = client.request(client.get("/"));

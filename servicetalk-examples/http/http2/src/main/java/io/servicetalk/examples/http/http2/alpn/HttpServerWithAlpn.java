@@ -33,6 +33,8 @@ public final class HttpServerWithAlpn {
     public static void main(String[] args) throws Exception {
         HttpServers.forPort(8080)
                 .protocols(h2Default(), h1Default()) // Configure support for HTTP/2 and HTTP/1.1 protocols
+                // Note: DefaultTestCerts contains self-signed certificates that may be used only for local testing.
+                // or demonstration purposes. Never use those for real use-cases.
                 .sslConfig(new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
                         .build())
                 // Note: this example demonstrates only blocking-aggregated programming paradigm, for asynchronous and

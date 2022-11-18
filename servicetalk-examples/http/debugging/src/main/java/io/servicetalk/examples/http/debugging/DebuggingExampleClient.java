@@ -197,6 +197,8 @@ public final class DebuggingExampleClient {
                 /*
                  * For ALPN, make sure to supply both HTTP/2 and HTTP/1.X HttpProtocolConfigs and SslConfig.
                  */
+                // Note: DefaultTestCerts contains self-signed certificates that may be used only for local testing
+                // or demonstration purposes. Never use those for real use-cases.
                 // .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem).build())
                 // .protocols(HttpProtocolConfigs.h2()
                 //         .enableFrameLogging("servicetalk-examples-h2-frame-logger", TRACE, LOG_USER_DATA)
