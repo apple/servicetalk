@@ -17,76 +17,109 @@ package io.servicetalk.test.resources;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.security.KeyFactory;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.util.Base64;
 
 import static java.nio.charset.StandardCharsets.US_ASCII;
-import static java.util.stream.Collectors.joining;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
-// Not a particularly robust test, but ensures the file is found and loaded.
-// If we change algorithms/settings this size may need to change.
 class DefaultTestCertsTest {
+    private static final char[] PASSWORD = "changeit".toCharArray();
 
     @Test
     void loadServerKey() throws Exception {
-        String contents = readFully(DefaultTestCerts.loadServerKey());
-        assertEquals(2483, contents.length());
+        loadPrivateKey(DefaultTestCerts.loadServerKey());
     }
 
     @Test
     void loadServerPem() throws Exception {
-        String contents = readFully(DefaultTestCerts.loadServerPem());
-        assertEquals(1337, contents.length());
+        loadCertificate(DefaultTestCerts.loadServerPem());
     }
 
     @Test
     void loadServerCAPem() throws Exception {
-        String contents = readFully(DefaultTestCerts.loadServerCAPem());
-        assertEquals(1366, contents.length());
+        loadCertificate(DefaultTestCerts.loadServerCAPem());
     }
 
     @Test
     void loadServerP12() throws Exception {
-        String contents = readFully(DefaultTestCerts.loadServerP12());
-        assertEquals(4262, contents.length());
+        loadKeystore(DefaultTestCerts.loadServerP12());
     }
 
     @Test
     void loadClientKey() throws Exception {
-        String contents = readFully(DefaultTestCerts.loadClientKey());
-        assertEquals(2483, contents.length());
+        loadPrivateKey(DefaultTestCerts.loadClientKey());
     }
 
     @Test
     void loadClientPem() throws Exception {
-        String contents = readFully(DefaultTestCerts.loadClientPem());
-        assertEquals(1337, contents.length());
+        loadCertificate(DefaultTestCerts.loadClientPem());
     }
 
     @Test
     void loadClientCAPem() throws Exception {
-        String contents = readFully(DefaultTestCerts.loadClientCAPem());
-        assertEquals(1366, contents.length());
+        loadCertificate(DefaultTestCerts.loadClientCAPem());
     }
 
     @Test
     void loadClientP12() throws Exception {
-        String contents = readFully(DefaultTestCerts.loadClientP12());
-        assertEquals(4262, contents.length());
+        loadKeystore(DefaultTestCerts.loadClientP12());
     }
 
     @Test
     void loadTrustP12() throws Exception {
-        String contents = readFully(DefaultTestCerts.loadTruststoreP12());
-        assertEquals(2422, contents.length());
+        loadKeystore(DefaultTestCerts.loadTruststoreP12());
     }
 
-    private String readFully(final InputStream inputStream) throws IOException {
-        try (BufferedReader buffer = new BufferedReader(new InputStreamReader(inputStream, US_ASCII))) {
-            return buffer.lines().collect(joining("\n"));
+    private Certificate loadCertificate(final InputStream inputStream) throws CertificateException {
+        final CertificateFactory factory = CertificateFactory.getInstance("X.509");
+        return factory.generateCertificate(inputStream);
+    }
+
+    private KeyStore loadKeystore(final InputStream inputStream) throws CertificateException, IOException,
+            NoSuchAlgorithmException, KeyStoreException {
+        final KeyStore keyStore = KeyStore.getInstance("pkcs12");
+        keyStore.load(inputStream, PASSWORD);
+        return keyStore;
+    }
+
+    private PrivateKey loadPrivateKey(final InputStream inputStream) throws IOException, NoSuchAlgorithmException,
+            InvalidKeySpecException {
+        final byte[] rawKey = readAllBytes(inputStream);
+        final String key = new String(rawKey, US_ASCII);
+        /*
+         * Acknowledgement: Uses algorithm by Catalin Burcea. https://www.baeldung.com/java-read-pem-file-keys
+         * Bouncy Castle Library handles removing header and decoding, use instead?
+         */
+        final String privateKeyPEM = key
+                .replace("-----BEGIN PRIVATE KEY-----", "")
+                .replaceAll(System.lineSeparator(), "")
+                .replace("-----END PRIVATE KEY-----", "");
+        byte[] encoded = Base64.getDecoder().decode(privateKeyPEM);
+        KeyFactory factory = KeyFactory.getInstance("RSA");
+        PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(encoded);
+        return factory.generatePrivate(keySpec);
+    }
+
+    private byte[] readAllBytes(final InputStream inputStream) throws IOException {
+        final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        final byte[] data = new byte[1024];
+        int numBytesRead;
+        while ((numBytesRead = inputStream.read(data, 0, data.length)) != -1) {
+            outputStream.write(data, 0, numBytesRead);
         }
+        outputStream.flush();
+        return outputStream.toByteArray();
     }
 }
