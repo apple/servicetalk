@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
@@ -38,18 +37,17 @@ final class BuilderUtils {
         // No instances
     }
 
-    static HttpServerBuilder newLocalServer(ExecutionContext<? extends ExecutionStrategy> ctx,
-                                            HttpProtocol... protocols) {
-        return newLocalServerWithConfigs(ctx, toConfigs(protocols));
+    static HttpServerBuilder newServerBuilder(ExecutionContext<? extends ExecutionStrategy> ctx,
+                                              HttpProtocol... protocols) {
+        return newServerBuilderWithConfigs(ctx, toConfigs(protocols));
     }
 
-    static HttpServerBuilder newLocalServerWithConfigs(ExecutionContext<? extends ExecutionStrategy> ctx,
-                                                       HttpProtocolConfig... protocols) {
+    static HttpServerBuilder newServerBuilderWithConfigs(ExecutionContext<? extends ExecutionStrategy> ctx,
+                                                         HttpProtocolConfig... protocols) {
         HttpServerBuilder builder = HttpServers.forAddress(localAddress(0))
                 .ioExecutor(ctx.ioExecutor())
                 .executor(ctx.executor())
                 .bufferAllocator(ctx.bufferAllocator())
-                .executionStrategy(HttpExecutionStrategy.from(ctx.executionStrategy()))
                 .enableWireLogging("servicetalk-tests-wire-logger", TRACE, Boolean.TRUE::booleanValue)
                 .lifecycleObserver(logging("servicetalk-tests-lifecycle-observer-logger", TRACE));
         if (protocols.length > 0) {
@@ -58,14 +56,14 @@ final class BuilderUtils {
         return builder;
     }
 
-    static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> newClient(
+    static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> newClientBuilder(
             ServerContext serverContext,
             ExecutionContext<? extends ExecutionStrategy> ctx,
             HttpProtocol... protocols) {
-        return newClientWithConfigs(serverContext, ctx, toConfigs(protocols));
+        return newClientBuilderWithConfigs(serverContext, ctx, toConfigs(protocols));
     }
 
-    static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> newClientWithConfigs(
+    static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> newClientBuilderWithConfigs(
             ServerContext serverContext,
             ExecutionContext<? extends ExecutionStrategy> ctx,
             HttpProtocolConfig... protocols) {
@@ -75,7 +73,6 @@ final class BuilderUtils {
                         .ioExecutor(ctx.ioExecutor())
                         .executor(ctx.executor())
                         .bufferAllocator(ctx.bufferAllocator())
-                        .executionStrategy(HttpExecutionStrategy.from(ctx.executionStrategy()))
                         .enableWireLogging("servicetalk-tests-wire-logger", TRACE, Boolean.TRUE::booleanValue)
                         .appendClientFilter(new HttpLifecycleObserverRequesterFilter(
                                 logging("servicetalk-tests-lifecycle-observer-logger", TRACE)));

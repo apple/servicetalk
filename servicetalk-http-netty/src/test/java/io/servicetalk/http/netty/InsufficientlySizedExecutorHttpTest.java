@@ -24,9 +24,11 @@ import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -41,11 +43,9 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpResponseStatus.SERVICE_UNAVAILABLE;
-import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
-import static io.servicetalk.http.netty.HttpServers.forAddress;
+import static io.servicetalk.http.netty.BuilderUtils.newClientBuilder;
+import static io.servicetalk.http.netty.BuilderUtils.newServerBuilder;
 import static io.servicetalk.transport.api.ConnectionAcceptorFactory.identity;
-import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
-import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.instanceOf;
@@ -54,6 +54,16 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class InsufficientlySizedExecutorHttpTest {
+
+    @RegisterExtension
+    static final ExecutionContextExtension SERVER_CTX =
+            ExecutionContextExtension.cached("server-io", "server-executor")
+                    .setClassLevel(true);
+    @RegisterExtension
+    static final ExecutionContextExtension CLIENT_CTX =
+            ExecutionContextExtension.cached("client-io", "client-executor")
+                    .setClassLevel(true);
+
     @Nullable
     private Executor executor;
     @Nullable
@@ -106,9 +116,9 @@ class InsufficientlySizedExecutorHttpTest {
 
     private void initWhenClientUnderProvisioned(final int capacity) throws Exception {
         executor = getExecutorForCapacity(capacity);
-        server = forAddress(localAddress(0))
+        server = newServerBuilder(SERVER_CTX)
                 .listenStreamingAndAwait((ctx, request, responseFactory) -> succeeded(responseFactory.ok()));
-        client = forSingleAddress(serverHostAndPort(server))
+        client = newClientBuilder(server, CLIENT_CTX)
                 .executor(executor)
                 .executionStrategy(offloadAllStrategy())
                 .buildStreaming();
@@ -119,13 +129,15 @@ class InsufficientlySizedExecutorHttpTest {
         throws Exception {
         executor = getExecutorForCapacity(capacity);
         final HttpExecutionStrategy strategy = offloadAllStrategy();
-        HttpServerBuilder serverBuilder = forAddress(localAddress(0));
+        HttpServerBuilder serverBuilder = newServerBuilder(SERVER_CTX);
         if (addConnectionAcceptor) {
             serverBuilder.appendConnectionAcceptorFilter(identity());
         }
-        server = serverBuilder.executor(executor).executionStrategy(strategy)
+        server = serverBuilder
+                .executor(executor)
+                .executionStrategy(strategy)
                 .listenStreamingAndAwait((ctx, request, respFactory) -> succeeded(respFactory.ok()));
-        client = forSingleAddress(serverHostAndPort(server)).buildStreaming();
+        client = newClientBuilder(server, CLIENT_CTX).buildStreaming();
     }
 
     private HttpExecutionStrategy offloadAllStrategy() {

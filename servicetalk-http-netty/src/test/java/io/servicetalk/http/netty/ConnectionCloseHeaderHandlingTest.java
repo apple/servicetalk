@@ -75,7 +75,7 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.newSocketAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static io.servicetalk.transport.netty.internal.ExecutionContextExtension.cached;
-import static io.servicetalk.utils.internal.PlatformDependent.throwException;
+import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
 import static java.lang.String.valueOf;
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -292,9 +292,10 @@ final class ConnectionCloseHeaderHandlingTest {
                                    boolean noRequestContent, boolean noResponseContent) throws Exception {
             setUp(useUds, viaProxy, awaitRequestPayload);
             String content = "request_content";
+            CharSequence contentLength = noRequestContent ? ZERO : valueOf(content.length());
             StreamingHttpRequest request = connection.newRequest(noRequestContent ? GET : POST, "/first")
                     .setQueryParameter("noResponseContent", valueOf(noResponseContent))
-                    .addHeader(CONTENT_LENGTH, noRequestContent ? ZERO : valueOf(content.length()));
+                    .addHeader(CONTENT_LENGTH, contentLength);
             if (!noRequestContent) {
                 request.payloadBody(connection.connectionContext().executionContext().executor().submit(() -> {
                     try {
@@ -319,7 +320,7 @@ final class ConnectionCloseHeaderHandlingTest {
             assertResponsePayloadBody(response);
             responsePayloadReceived.countDown();
             requestPayloadReceived.await();
-            assertThat(request.headers().get(CONTENT_LENGTH), contentEqualTo(valueOf(requestPayloadSize.get())));
+            assertThat(valueOf(requestPayloadSize.get()), contentEqualTo(contentLength));
 
             awaitConnectionClosed();
             assertClosedChannelException("/second");
