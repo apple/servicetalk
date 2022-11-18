@@ -26,6 +26,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -36,9 +37,8 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
-import static io.servicetalk.utils.internal.PlatformDependent.throwException;
+import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
 import static java.lang.Thread.NORM_PRIORITY;
-import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
@@ -53,13 +53,20 @@ final class DefaultExecutor extends AbstractExecutor implements Consumer<Runnabl
      * scheduler thread is usually ok. In cases, when it is not, one can always override the executor with a custom
      * scheduler.
      */
-    private static final ScheduledExecutorService GLOBAL_SINGLE_THREADED_SCHEDULED_EXECUTOR =
-            newSingleThreadScheduledExecutor(new DefaultThreadFactory("servicetalk-global-scheduler",
+    private static final ScheduledThreadPoolExecutor GLOBAL_SINGLE_THREADED_SCHEDULED_EXECUTOR =
+            new ScheduledThreadPoolExecutor(1, new DefaultThreadFactory("servicetalk-global-scheduler",
                     true, NORM_PRIORITY));
     private static final RejectedExecutionHandler DEFAULT_REJECTION_HANDLER = new AbortPolicy();
 
     private final InternalExecutor executor;
     private final InternalScheduler scheduler;
+
+    static {
+        // It isn't uncommon to set timers for longer intervals that required and cancel these timers. For example
+        // each request may have a timeout applied and in the happy path no requests will timeout. We don't need to
+        // retain timeout objects for their full duration and we should make them eligible for GC asap.
+        GLOBAL_SINGLE_THREADED_SCHEDULED_EXECUTOR.setRemoveOnCancelPolicy(true);
+    }
 
     DefaultExecutor(int coreSize, int maxSize, ThreadFactory threadFactory) {
         this(new ThreadPoolExecutor(coreSize, maxSize, DEFAULT_KEEP_ALIVE_TIME_SECONDS, SECONDS,
