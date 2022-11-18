@@ -52,8 +52,8 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpResponseStatus.NO_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
-import static io.servicetalk.http.netty.BuilderUtils.newClientWithConfigs;
-import static io.servicetalk.http.netty.BuilderUtils.newLocalServer;
+import static io.servicetalk.http.netty.BuilderUtils.newClientBuilderWithConfigs;
+import static io.servicetalk.http.netty.BuilderUtils.newServerBuilder;
 import static io.servicetalk.http.netty.GracefulConnectionClosureHandlingTest.RAW_STRING_SERIALIZER;
 import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
 import static java.lang.Long.MAX_VALUE;
@@ -208,10 +208,10 @@ class ServerPipelineControlFlowTest {
 
     private void test(HttpServerFactory serverFactory, boolean serverHasOffloading, boolean drainRequestPayloadBody,
                       boolean responseHasPayload) throws Exception {
-        try (HttpServerContext serverContext = serverFactory.create(newLocalServer(SERVER_CTX)
+        try (HttpServerContext serverContext = serverFactory.create(newServerBuilder(SERVER_CTX)
                 .executionStrategy(serverHasOffloading ? defaultStrategy() : offloadNone())
                 .drainRequestPayloadBody(drainRequestPayloadBody));
-             StreamingHttpClient client = newClientWithConfigs(serverContext, CLIENT_CTX,
+             StreamingHttpClient client = newClientBuilderWithConfigs(serverContext, CLIENT_CTX,
                      new H1ProtocolConfigBuilder().maxPipelinedRequests(3).build())
                      .buildStreaming();
              StreamingHttpConnection connection = client.reserveConnection(client.get("/")).toFuture().get()) {
