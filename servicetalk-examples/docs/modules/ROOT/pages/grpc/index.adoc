@@ -178,3 +178,22 @@ The example demonstrates the impact of different route execution strategy config
 
 This example demonstrates how options for the servicetalk-grpc-protoc plugin can be used. See
 link:{source-root}/servicetalk-examples/grpc/protoc-options[protoc-options] for more details.
+
+[#request-response-context]
+== Request Response Context
+
+This example demonstrates how request and response context can be used to access HTTP meta-data.
+
+=== Asynchronous
+
+This example demonstrates context with asynchronous request processing using the
+link:{source-root}/servicetalk-examples/grpc/request-response-context/src/main/java/io/servicetalk/examples/grpc/context/async/RequestResponseContextClient.java[RequestResponseContextClient]
+and a
+link:{source-root}/servicetalk-examples/grpc/request-response-context/src/main/java/io/servicetalk/examples/grpc/context/async/RequestResponseContextServer.java[RequestResponseContextServer].
+
+=== Blocking
+
+This example demonstrates context with blocking request processing using the
+link:{source-root}/servicetalk-examples/grpc/request-response-context/src/main/java/io/servicetalk/examples/grpc/context/blocking/BlockingRequestResponseContextClient.java[BlockingRequestResponseContextClient]
+and a
+link:{source-root}/servicetalk-examples/grpc/request-response-context/src/main/java/io/servicetalk/examples/grpc/context/blocking/BlockingRequestResponseContextServer.java[BlockingRequestResponseContextServer].

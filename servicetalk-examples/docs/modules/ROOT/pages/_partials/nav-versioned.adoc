@@ -28,3 +28,4 @@
 ** xref:{page-version}@servicetalk-examples::grpc/index.adoc#execution-strategy[Execution Strategy]
 ** xref:{page-version}@servicetalk-examples::grpc/index.adoc#route-guide[Route Guide]
 ** xref:{page-version}@servicetalk-examples::grpc/index.adoc#protoc-options[Protoc Options]
+** xref:{page-version}@servicetalk-examples::grpc/index.adoc#request-response-context[Request Response Context]
