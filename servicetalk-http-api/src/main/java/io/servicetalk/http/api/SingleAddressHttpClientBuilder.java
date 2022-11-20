@@ -173,10 +173,10 @@ public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<
     SingleAddressHttpClientBuilder<U, R> executor(Executor executor);
 
     /**
-     * {@inheritDoc}
-     *
-     * <p>Specifying an execution strategy affects the offloading used during execution of client requests:
-     *
+     * Sets the {@link HttpExecutionStrategy} to be used for client callbacks when executing client requests for all
+     * clients created from this builder.
+     * <p>
+     * Specifying an execution strategy affects the offloading used during execution of client requests:
      * <dl>
      *     <dt>Unspecified or {@link HttpExecutionStrategies#defaultStrategy()}
      *     <dd>Execution of client requests will use a safe (non-blocking) execution strategy appropriate for the
@@ -204,9 +204,10 @@ public interface SingleAddressHttpClientBuilder<U, R> extends HttpClientBuilder<
      *     callbacks <strong style="text-transform: uppercase;">MAY</strong> only block during the offloaded portions of
      *     the client request execution.
      * </dl>
-     *
-     * @param strategy {@inheritDoc}
-     * @return {@inheritDoc}
+     * @param strategy {@link HttpExecutionStrategy} to use. If callbacks to the application code may block then those
+     * callbacks must request to be offloaded.
+     * @return {@code this}.
+     * @see HttpExecutionStrategies
      */
     @Override
     SingleAddressHttpClientBuilder<U, R> executionStrategy(HttpExecutionStrategy strategy);

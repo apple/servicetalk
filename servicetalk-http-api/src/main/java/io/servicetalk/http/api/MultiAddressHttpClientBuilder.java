@@ -70,18 +70,18 @@ public interface MultiAddressHttpClientBuilder<U, R> extends HttpClientBuilder<U
     MultiAddressHttpClientBuilder<U, R> executor(Executor executor);
 
     /**
-     * {@inheritDoc}
-     *
-     * <p>Provides the base execution strategy for all clients created from this builder and the default strategy for
+     * Sets the {@link HttpExecutionStrategy} to be used for client callbacks when executing client requests for all
+     * clients created from this builder.
+     * <p>
+     * Provides the base execution strategy for all clients created from this builder and the default strategy for
      * the {@link SingleAddressHttpClientBuilder} used to construct client instances. The
      * {@link #initializer(SingleAddressInitializer)} may be used for some customization of the execution strategy for a
      * specific single address client instance, but may not reduce the offloading to be performed. Specifically, the
      * initializer may introduce additional offloading via
      * {@link SingleAddressHttpClientBuilder#executionStrategy(HttpExecutionStrategy)} and may add filters which
      * influence the computed execution strategy.
-     *
-     * <p>Specifying an execution strategy will affect the offloading used during the execution of client requests:
-     *
+     * <p>
+     * Specifying an execution strategy will affect the offloading used during the execution of client requests:
      * <dl>
      *     <dt>Unspecified or {@link HttpExecutionStrategies#defaultStrategy()}
      *     <dd>The resulting client instances will use the default safe strategy for each API variant and
@@ -101,9 +101,10 @@ public interface MultiAddressHttpClientBuilder<U, R> extends HttpClientBuilder<U
      *     <dd>{@link SingleAddressHttpClientBuilder} instances created by the client will start with the provided
      *     strategy and may add additional offloading as required by added filters.
      * </dl>
-     *
-     * @param strategy {@inheritDoc}
-     * @return {@inheritDoc}
+     * @param strategy {@link HttpExecutionStrategy} to use. If callbacks to the application code may block then those
+     * callbacks must request to be offloaded.
+     * @return {@code this}.
+     * @see HttpExecutionStrategies
      */
     @Override
     MultiAddressHttpClientBuilder<U, R> executionStrategy(HttpExecutionStrategy strategy);
