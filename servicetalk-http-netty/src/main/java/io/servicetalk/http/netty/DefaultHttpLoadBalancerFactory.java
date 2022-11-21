@@ -210,7 +210,7 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
 
         @Override
         public String toString() {
-            return getClass().getSimpleName() + '(' + delegate + ')';
+            return delegate.toString();
         }
     }
 }
