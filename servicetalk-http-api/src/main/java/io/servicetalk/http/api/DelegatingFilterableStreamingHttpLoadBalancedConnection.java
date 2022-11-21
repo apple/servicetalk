@@ -24,14 +24,16 @@ import static java.util.Objects.requireNonNull;
 /**
  * Implementation of {@link FilterableStreamingHttpLoadBalancedConnection} that delegates all methods.
  */
-public class DelegatingFilterableStreamingHttpConnection implements FilterableStreamingHttpLoadBalancedConnection {
+public class DelegatingFilterableStreamingHttpLoadBalancedConnection
+        implements FilterableStreamingHttpLoadBalancedConnection {
     private final FilterableStreamingHttpLoadBalancedConnection delegate;
 
     /**
      * Create a new instance.
      * @param delegate The instance to delegate to.
      */
-    public DelegatingFilterableStreamingHttpConnection(final FilterableStreamingHttpLoadBalancedConnection delegate) {
+    public DelegatingFilterableStreamingHttpLoadBalancedConnection(
+            final FilterableStreamingHttpLoadBalancedConnection delegate) {
         this.delegate = requireNonNull(delegate);
     }
 
@@ -162,6 +164,6 @@ public class DelegatingFilterableStreamingHttpConnection implements FilterableSt
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + '(' + delegate + ')';
+        return delegate.toString();
     }
 }

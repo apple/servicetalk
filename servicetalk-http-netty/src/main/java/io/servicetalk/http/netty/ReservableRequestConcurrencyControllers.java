@@ -187,7 +187,7 @@ final class ReservableRequestConcurrencyControllers {
 
         @Override
         public String toString() {
-            return "pendingRequests: " + pendingRequests + " maxRequests: " + maxConcurrencyHolder.lastSeenValue(-1);
+            return "pendingRequests=" + pendingRequests + " maxRequests=" + maxConcurrencyHolder.lastSeenValue(-1);
         }
     }
 

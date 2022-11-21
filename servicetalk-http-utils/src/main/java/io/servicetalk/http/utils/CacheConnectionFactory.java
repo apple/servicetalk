@@ -89,6 +89,9 @@ final class CacheConnectionFactory<ResolvedAddress, C extends ListenableAsyncClo
                                             result1.onClose().whenFinally(this::lockRemoveFromMap).subscribe();
                                         }
                                     } catch (Throwable cause) {
+                                        if (result1 != null) {
+                                            result1.closeAsync().subscribe();
+                                        }
                                         subscriber.onError(cause);
                                         return;
                                     }

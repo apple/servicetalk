@@ -416,9 +416,15 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
                     // Invoke the selector before adding the connection to the pool, otherwise, connection can be
                     // used concurrently and hence a new connection can be rejected by the selector.
                     if (!selector.test(newCnx)) {
-                        // Failure in selection could be the result of connection factory returning queued connection,
-                        // and not having visibility into max-concurrent-requests. Propagate the exception and rely upon
-                        // retry strategy.
+                        // Failure in selection could be the result of connection factory returning cached connection,
+                        // and not having visibility into max-concurrent-requests, or other threads already selected the
+                        // connection which uses all the max concurrent request count.
+
+                        // Just in case the connection is not closed add it to the host so we don't lose track,
+                        // duplicates will be filtered out.
+                        host.addConnection(newCnx);
+
+                        // If there is caching Propagate the exception and rely upon retry strategy.
                         return failed(StacklessConnectionRejectedException.newInstance(
                                 "Newly created connection " + newCnx + " for " + targetResource
                                         + " was rejected by the selection filter.",
@@ -626,6 +632,13 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
                 }
 
                 final Object[] existing = previous.connections;
+                // Brute force iteration to avoid duplicates. If connections grow larger and faster lookup is required
+                // we can keep a Set for faster lookups (at the cost of more memory) as well as array.
+                for (final Object o : existing) {
+                    if (o.equals(connection)) {
+                        return true;
+                    }
+                }
                 Object[] newList = Arrays.copyOf(existing, existing.length + 1);
                 newList[existing.length] = connection;
 

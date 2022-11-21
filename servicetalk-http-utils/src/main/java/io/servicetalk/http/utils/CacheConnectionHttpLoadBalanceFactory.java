@@ -26,7 +26,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.context.api.ContextMap;
-import io.servicetalk.http.api.DelegatingFilterableStreamingHttpConnection;
+import io.servicetalk.http.api.DelegatingFilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpLoadBalancerFactory;
@@ -48,12 +48,12 @@ import static java.util.Objects.requireNonNull;
  * instead of creating a new connection for each request, if the underlying protocol version supports concurrency
  * (pipelining, multiplexing) a single connection creation attempt can be used before the connection is actually
  * established, which will reduce the overall number of connectiosn required.
- * @param <ResolvableAddress> The resolved address type.
+ * @param <ResolvedAddress> The resolved address type.
  */
-public final class CacheConnectionHttpLoadBalanceFactory<ResolvableAddress>
-        implements HttpLoadBalancerFactory<ResolvableAddress> {
-    private final ToIntFunction<ResolvableAddress> maxConcurrencyFunc;
-    private final HttpLoadBalancerFactory<ResolvableAddress> delegate;
+public final class CacheConnectionHttpLoadBalanceFactory<ResolvedAddress>
+        implements HttpLoadBalancerFactory<ResolvedAddress> {
+    private final ToIntFunction<ResolvedAddress> maxConcurrencyFunc;
+    private final HttpLoadBalancerFactory<ResolvedAddress> delegate;
 
     /**
      * Create a new instance.
@@ -61,8 +61,8 @@ public final class CacheConnectionHttpLoadBalanceFactory<ResolvableAddress>
      * @param delegate The {@link LoadBalancerFactory} to delegate to.
      * @param maxConcurrencyFunc The default number of maximum concurrency requests per each address.
      */
-    public CacheConnectionHttpLoadBalanceFactory(final HttpLoadBalancerFactory<ResolvableAddress> delegate,
-                                                 final ToIntFunction<ResolvableAddress> maxConcurrencyFunc) {
+    public CacheConnectionHttpLoadBalanceFactory(final HttpLoadBalancerFactory<ResolvedAddress> delegate,
+                                                 final ToIntFunction<ResolvedAddress> maxConcurrencyFunc) {
         this.maxConcurrencyFunc = requireNonNull(maxConcurrencyFunc);
         this.delegate = requireNonNull(delegate);
     }
@@ -70,17 +70,17 @@ public final class CacheConnectionHttpLoadBalanceFactory<ResolvableAddress>
     @Override
     public <T extends FilterableStreamingHttpLoadBalancedConnection> LoadBalancer<T> newLoadBalancer(
             final String targetResource,
-            final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvableAddress>>> eventPublisher,
-            final ConnectionFactory<ResolvableAddress, T> connectionFactory) {
+            final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
+            final ConnectionFactory<ResolvedAddress, T> connectionFactory) {
         throw new UnsupportedOperationException("Use newLoadBalancerTyped instead.");
     }
 
     @Override
     public LoadBalancer<FilterableStreamingHttpLoadBalancedConnection> newLoadBalancerTyped(
         final String targetResource,
-        final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvableAddress>>> eventPublisher,
-        final ConnectionFactory<ResolvableAddress, FilterableStreamingHttpLoadBalancedConnection> connectionFactory) {
-        final HttpCacheConnectionFactory<ResolvableAddress> cacheFactory =
+        final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
+        final ConnectionFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> connectionFactory) {
+        final HttpCacheConnectionFactory<ResolvedAddress> cacheFactory =
                 new HttpCacheConnectionFactory<>(connectionFactory, maxConcurrencyFunc);
         return delegate.newLoadBalancerTyped(targetResource, eventPublisher,
                 new CacheConnectionFactory<>(cacheFactory, r -> {
@@ -112,7 +112,7 @@ public final class CacheConnectionHttpLoadBalanceFactory<ResolvableAddress>
                 final RA resolvedAddress, @Nullable final ContextMap context,
                 @Nullable final TransportObserver observer) {
             return delegate.newConnection(resolvedAddress, context, observer)
-                    .map(connection -> new MaxConcurrencyFilterableStreamingHttpConnection<>(connection,
+                    .map(connection -> new MaxConcurrencyFilterableStreamingHttpLoadBalancedConnection<>(connection,
                             maxConcurrentMap, resolvedAddress, maxConcurrencyFunc));
         }
 
@@ -132,12 +132,12 @@ public final class CacheConnectionHttpLoadBalanceFactory<ResolvableAddress>
         }
     }
 
-    private static final class MaxConcurrencyFilterableStreamingHttpConnection<RA>
-            extends DelegatingFilterableStreamingHttpConnection {
-        MaxConcurrencyFilterableStreamingHttpConnection(final FilterableStreamingHttpLoadBalancedConnection delegate,
-                                                        final Map<RA, ConcurrencyRefCnt> maxConcurrentMap,
-                                                        final RA resolvedAddress,
-                                                        final ToIntFunction<RA> concurrencyEstimator) {
+    private static final class MaxConcurrencyFilterableStreamingHttpLoadBalancedConnection<RA>
+            extends DelegatingFilterableStreamingHttpLoadBalancedConnection {
+        MaxConcurrencyFilterableStreamingHttpLoadBalancedConnection(
+                final FilterableStreamingHttpLoadBalancedConnection delegate,
+                final Map<RA, ConcurrencyRefCnt> maxConcurrentMap, final RA resolvedAddress,
+                final ToIntFunction<RA> concurrencyEstimator) {
             super(delegate);
             // For each new connection we increment the reference count. Even if the estimate is <=1 we still track
             // the connection because we could learn the actual concurrency after connections are established and

@@ -237,7 +237,7 @@ public interface HttpLoadBalancerFactory<ResolvedAddress>
 
         @Override
         public String toString() {
-            return getClass().getSimpleName() + '(' + delegate + ", " + controller + ')';
+            return delegate.toString();
         }
     }
 }
