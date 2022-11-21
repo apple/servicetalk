@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        java: [ 8, 11.0.16+8, 17 ]
+        java: [ 8, 11.0.16+8, 17, 19 ]
     steps:
       - name: Download Artifacts
         uses: dawidd6/action-download-artifact@e6e25ac3a2b93187502a8be1ef9e9603afc34925
