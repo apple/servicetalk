@@ -17,9 +17,10 @@ package io.servicetalk.test.resources;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.ByteArrayOutputStream;
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.security.KeyFactory;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -33,53 +34,55 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Base64;
 
 import static java.nio.charset.StandardCharsets.US_ASCII;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.notNullValue;
 
 class DefaultTestCertsTest {
     private static final char[] PASSWORD = "changeit".toCharArray();
 
     @Test
     void loadServerKey() throws Exception {
-        loadPrivateKey(DefaultTestCerts.loadServerKey());
+        assertThat(loadPrivateKey(DefaultTestCerts.loadServerKey()), notNullValue());
     }
 
     @Test
     void loadServerPem() throws Exception {
-        loadCertificate(DefaultTestCerts.loadServerPem());
+        assertThat(loadCertificate(DefaultTestCerts.loadServerPem()), notNullValue());
     }
 
     @Test
     void loadServerCAPem() throws Exception {
-        loadCertificate(DefaultTestCerts.loadServerCAPem());
+        assertThat(loadCertificate(DefaultTestCerts.loadServerCAPem()), notNullValue());
     }
 
     @Test
     void loadServerP12() throws Exception {
-        loadKeystore(DefaultTestCerts.loadServerP12());
+        assertThat(loadKeystore(DefaultTestCerts.loadServerP12()), notNullValue());
     }
 
     @Test
     void loadClientKey() throws Exception {
-        loadPrivateKey(DefaultTestCerts.loadClientKey());
+        assertThat(loadPrivateKey(DefaultTestCerts.loadClientKey()), notNullValue());
     }
 
     @Test
     void loadClientPem() throws Exception {
-        loadCertificate(DefaultTestCerts.loadClientPem());
+        assertThat(loadCertificate(DefaultTestCerts.loadClientPem()), notNullValue());
     }
 
     @Test
     void loadClientCAPem() throws Exception {
-        loadCertificate(DefaultTestCerts.loadClientCAPem());
+        assertThat(loadCertificate(DefaultTestCerts.loadClientCAPem()), notNullValue());
     }
 
     @Test
     void loadClientP12() throws Exception {
-        loadKeystore(DefaultTestCerts.loadClientP12());
+        assertThat(loadKeystore(DefaultTestCerts.loadClientP12()), notNullValue());
     }
 
     @Test
     void loadTrustP12() throws Exception {
-        loadKeystore(DefaultTestCerts.loadTruststoreP12());
+        assertThat(loadKeystore(DefaultTestCerts.loadTruststoreP12()), notNullValue());
     }
 
     private Certificate loadCertificate(final InputStream inputStream) throws CertificateException {
@@ -96,30 +99,21 @@ class DefaultTestCertsTest {
 
     private PrivateKey loadPrivateKey(final InputStream inputStream) throws IOException, NoSuchAlgorithmException,
             InvalidKeySpecException {
-        final byte[] rawKey = readAllBytes(inputStream);
-        final String key = new String(rawKey, US_ASCII);
-        /*
-         * Acknowledgement: Uses algorithm by Catalin Burcea. https://www.baeldung.com/java-read-pem-file-keys
-         * Bouncy Castle Library handles removing header and decoding, use instead?
-         */
-        final String privateKeyPEM = key
-                .replace("-----BEGIN PRIVATE KEY-----", "")
-                .replaceAll(System.lineSeparator(), "")
-                .replace("-----END PRIVATE KEY-----", "");
-        byte[] encoded = Base64.getDecoder().decode(privateKeyPEM);
-        KeyFactory factory = KeyFactory.getInstance("RSA");
-        PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(encoded);
-        return factory.generatePrivate(keySpec);
-    }
-
-    private byte[] readAllBytes(final InputStream inputStream) throws IOException {
-        final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        final byte[] data = new byte[1024];
-        int numBytesRead;
-        while ((numBytesRead = inputStream.read(data, 0, data.length)) != -1) {
-            outputStream.write(data, 0, numBytesRead);
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(inputStream, US_ASCII))) {
+            StringBuilder sb = new StringBuilder(2048);
+            String line = br.readLine();
+            if (!"-----BEGIN PRIVATE KEY-----".equals(line)) {
+                sb.append(line);
+            }
+            while ((line = br.readLine()) != null) {
+                sb.append(line);
+            }
+            int endKeyIndex = sb.lastIndexOf("-----END PRIVATE KEY-----");
+            String privateKeyPEM = endKeyIndex > 0 ? sb.substring(0, endKeyIndex) : sb.toString();
+            byte[] encoded = Base64.getDecoder().decode(privateKeyPEM);
+            KeyFactory factory = KeyFactory.getInstance("RSA");
+            PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(encoded);
+            return factory.generatePrivate(keySpec);
         }
-        outputStream.flush();
-        return outputStream.toByteArray();
     }
 }
