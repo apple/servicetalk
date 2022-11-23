@@ -15,6 +15,7 @@
  */
 package io.servicetalk.gradle.plugin.internal
 
+import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.Task
@@ -122,6 +123,23 @@ final class ProjectUtils {
         "Implementation-Vendor": "Apple Inc.",
         "Automatic-Module-Name": "io.${project.name.replace("-", ".")}"
     )
+  }
+
+  static void addGeneratedProtoDependsOn(Project project,
+                                         /*com.google.protobuf.gradle.GenerateProtoTask*/ DefaultTask task,
+                                         boolean projectTestGeneratedOnly) {
+    if (!projectTestGeneratedOnly) {
+      if (!task.isTest) {
+        project.sourcesJar.dependsOn task
+      }
+      // generateTestProto tasks also depends upon non-test proto tasks
+      project.pmdMain.dependsOn task
+      project.spotbugsMain.dependsOn task
+      project.checkstyleMain.dependsOn task
+    }
+    project.pmdTest.dependsOn task
+    project.spotbugsTest.dependsOn task
+    project.checkstyleTest.dependsOn task
   }
 
   private static <T extends Task> T createTask(Project project, String name, @DelegatesTo.Target Class<T> type,
