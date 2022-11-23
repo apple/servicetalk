@@ -23,7 +23,6 @@ import java.util.function.BooleanSupplier;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
-import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnError;
 
 /**
  * A set of factory methods that provides implementations for the various publish/subscribeOn methods on
@@ -39,21 +38,6 @@ final class PublishAndSubscribeOnPublishers {
                                                  ContextMap contextMap, AsyncContextProvider contextProvider,
                                                  Throwable cause) {
         deliverErrorFromSource(contextProvider.wrapPublisherSubscriber(subscriber, contextMap), cause);
-    }
-
-    @FunctionalInterface
-    private interface HandleSubscribe<T> {
-        void handleSubscribe(Subscriber<? super T> subscriber,
-                             ContextMap contextMap, AsyncContextProvider contextProvider);
-    }
-
-    private static <T> void safeHandleSubscribe(final HandleSubscribe handler, final Subscriber<? super T> subscriber,
-                                    final ContextMap contextMap, final AsyncContextProvider contextProvider) {
-        try {
-            handler.handleSubscribe(subscriber, contextMap, contextProvider);
-        } catch (Throwable throwable) {
-            safeOnError(subscriber, throwable);
-        }
     }
 
     static <T> Publisher<T> publishOn(final Publisher<T> original,
@@ -101,7 +85,7 @@ final class PublishAndSubscribeOnPublishers {
                 return;
             }
 
-            safeHandleSubscribe(super::handleSubscribe, upstreamSubscriber, contextMap, contextProvider);
+            super.handleSubscribe(upstreamSubscriber, contextMap, contextProvider);
         }
     }
 
@@ -136,7 +120,7 @@ final class PublishAndSubscribeOnPublishers {
 
                 if (shouldOffload.getAsBoolean()) {
                     // offload the remainder of subscribe()
-                    executor().execute(() -> safeHandleSubscribe(super::handleSubscribe,
+                    executor().execute(() -> super.handleSubscribe(
                             upstreamSubscriber, contextMap, contextProvider));
                     return;
                 }
@@ -148,7 +132,7 @@ final class PublishAndSubscribeOnPublishers {
             }
 
             // continue non-offloaded subscribe()
-            safeHandleSubscribe(super::handleSubscribe, upstreamSubscriber, contextMap, contextProvider);
+            super.handleSubscribe(upstreamSubscriber, contextMap, contextProvider);
         }
     }
 }
