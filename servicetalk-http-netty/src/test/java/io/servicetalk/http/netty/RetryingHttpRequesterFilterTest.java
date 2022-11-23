@@ -63,9 +63,12 @@ import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.disableAutoR
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.closeTo;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class RetryingHttpRequesterFilterTest {
@@ -170,14 +173,16 @@ class RetryingHttpRequesterFilterTest {
     void testResponseMapper() {
         AtomicInteger newConnectionCreated = new AtomicInteger();
         AtomicInteger responseDrained = new AtomicInteger();
+        final int maxTotalRetries = 4;
         normalClient = normalClientBuilder
                 .appendClientFilter(new Builder()
+                        .maxTotalRetries(maxTotalRetries)
                         .responseMapper(metaData -> metaData.headers().contains(RETRYABLE_HEADER) ?
                                     new HttpResponseException("Retryable header", metaData) : null)
                         // Disable request retrying
                         .retryRetryableExceptions((requestMetaData, e) -> ofNoRetries())
                         // Retry only responses marked so
-                        .retryResponses((requestMetaData, throwable) -> ofImmediate())
+                        .retryResponses((requestMetaData, throwable) -> ofImmediate(maxTotalRetries - 1))
                         .build())
                 .appendConnectionFilter(c -> {
                     newConnectionCreated.incrementAndGet();
@@ -194,8 +199,12 @@ class RetryingHttpRequesterFilterTest {
         HttpResponseException e = assertThrows(HttpResponseException.class,
                 () -> normalClient.request(normalClient.get("/")));
         assertThat("Unexpected exception.", e, instanceOf(HttpResponseException.class));
-        assertThat("Unexpected calls to select.", lbSelectInvoked.get(), is(4));
-        assertThat("Response payload body was not drained on every mapping", responseDrained.get(), is(4));
+        // The load balancer is allowed to be not ready one time, which is counted against total retry attempts but not
+        // against actual requests being issued.
+        assertThat("Unexpected calls to select.", lbSelectInvoked.get(), allOf(greaterThanOrEqualTo(maxTotalRetries),
+                lessThanOrEqualTo(maxTotalRetries + 1)));
+        assertThat("Response payload body was not drained on every mapping", responseDrained.get(),
+                is(maxTotalRetries));
         assertThat("Unexpected number of connections was created", newConnectionCreated.get(), is(1));
     }
 

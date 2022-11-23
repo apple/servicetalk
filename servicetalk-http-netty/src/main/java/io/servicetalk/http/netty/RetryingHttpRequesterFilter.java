@@ -80,7 +80,7 @@ import static java.util.Objects.requireNonNull;
  */
 public final class RetryingHttpRequesterFilter
         implements StreamingHttpClientFilterFactory, ExecutionStrategyInfluencer<HttpExecutionStrategy> {
-
+    private static final int DEFAULT_MAX_TOTAL_RETRIES = 4;
     private static final RetryingHttpRequesterFilter DISABLE_RETRIES =
             new RetryingHttpRequesterFilter(false, true, 0, null,
                     (__, ___) -> NO_RETRIES);
@@ -156,31 +156,52 @@ public final class RetryingHttpRequesterFilter
             }
         }
 
-        // Visible for testing
-        BiIntFunction<Throwable, Completable> retryStrategy(final Executor executor,
-                                                            final HttpRequestMetaData requestMetaData) {
-            return (count, t) -> {
+        private final class OuterRetryStrategy implements BiIntFunction<Throwable, Completable> {
+            private final Executor executor;
+            private final HttpRequestMetaData requestMetaData;
+            /**
+             * The outer retry strategy handles both "load balancer not ready" and "request failed" cases. This count
+             * discounts the former so the ladder strategies only count actual request attempts.
+             */
+            private int lbNotReadyCount;
+
+            private OuterRetryStrategy(final Executor executor, final HttpRequestMetaData requestMetaData) {
+                this.executor = executor;
+                this.requestMetaData = requestMetaData;
+            }
+
+            @Override
+            public Completable apply(final int count, final Throwable t) {
                 if (count > maxTotalRetries) {
                     return failed(t);
                 }
 
                 if (loadBalancerReadySubscriber != null && t instanceof NoAvailableHostException) {
+                    ++lbNotReadyCount;
                     final Completable onHostsAvailable = loadBalancerReadySubscriber.onHostsAvailable();
                     return sdStatus == null ? onHostsAvailable : onHostsAvailable.ambWith(sdStatus);
                 }
 
                 final BackOffPolicy backOffPolicy = retryFor.apply(requestMetaData, t);
                 if (backOffPolicy != NO_RETRIES) {
+                    final int offsetCount = count - lbNotReadyCount;
                     if (t instanceof DelayedRetry) {
                         final Duration constant = ((DelayedRetry) t).delay();
-                        return backOffPolicy.newStrategy(executor).apply(count, t).concat(executor.timer(constant));
+                        return backOffPolicy.newStrategy(executor).apply(offsetCount, t)
+                                .concat(executor.timer(constant));
                     }
 
-                    return backOffPolicy.newStrategy(executor).apply(count, t);
+                    return backOffPolicy.newStrategy(executor).apply(offsetCount, t);
                 }
 
                 return failed(t);
-            };
+            }
+        }
+
+        // Visible for testing
+        BiIntFunction<Throwable, Completable> retryStrategy(final Executor executor,
+                                                            final HttpRequestMetaData requestMetaData) {
+            return new OuterRetryStrategy(executor, requestMetaData);
         }
 
         @Override
@@ -355,7 +376,7 @@ public final class RetryingHttpRequesterFilter
          * @return a new {@link BackOffPolicy} that retries failures instantly up-to 3 max retries.
          */
         public static BackOffPolicy ofImmediate() {
-            return new BackOffPolicy(3);
+            return new BackOffPolicy(DEFAULT_MAX_TOTAL_RETRIES - 1);
         }
 
         /**
@@ -590,7 +611,7 @@ public final class RetryingHttpRequesterFilter
         private boolean waitForLb = true;
         private boolean ignoreSdErrors;
 
-        private int maxTotalRetries = 4;
+        private int maxTotalRetries = DEFAULT_MAX_TOTAL_RETRIES;
         private boolean retryExpectationFailed;
 
         @Nullable
