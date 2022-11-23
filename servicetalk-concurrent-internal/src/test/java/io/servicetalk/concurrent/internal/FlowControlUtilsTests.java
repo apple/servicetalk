@@ -28,47 +28,92 @@ class FlowControlUtilsTests {
     }
 
     @Test
-    void addWithUnderOverflowProtectionPositiveNoOverflow() {
+    void addIntWithUnderOverflowProtectionPositiveNoOverflow() {
         assertEquals(3, addWithUnderOverflowProtection(1, 2));
     }
 
     @Test
-    void addWithUnderOverflowProtectionNegativeNoOverflow() {
+    void addLongWithUnderOverflowProtectionPositiveNoOverflow() {
+        assertEquals(3L, addWithUnderOverflowProtection(1L, 2L));
+    }
+
+    @Test
+    void addIntWithUnderOverflowProtectionNegativeNoOverflow() {
         assertEquals(-3, addWithUnderOverflowProtection(-1, -2));
     }
 
     @Test
-    void addWithUnderOverflowProtectionPositivePlusNegative() {
+    void addLongWithUnderOverflowProtectionNegativeNoOverflow() {
+        assertEquals(-3L, addWithUnderOverflowProtection(-1L, -2L));
+    }
+
+    @Test
+    void addIntWithUnderOverflowProtectionPositivePlusNegative() {
         assertEquals(1, addWithUnderOverflowProtection(-1, 2));
     }
 
     @Test
-    void addWithUnderOverflowProtectionZeroToMin() {
+    void addLongWithUnderOverflowProtectionPositivePlusNegative() {
+        assertEquals(1L, addWithUnderOverflowProtection(-1L, 2L));
+    }
+
+    @Test
+    void addIntWithUnderOverflowProtectionZeroToMin() {
+        assertEquals(Integer.MIN_VALUE, addWithUnderOverflowProtection(0, Integer.MIN_VALUE));
+    }
+
+    @Test
+    void addLongWithUnderOverflowProtectionZeroToMin() {
         assertEquals(Long.MIN_VALUE, addWithUnderOverflowProtection(0, Long.MIN_VALUE));
     }
 
     @Test
-    void addWithUnderOverflowProtectionNegativeOneToMin() {
+    void addIntWithUnderOverflowProtectionNegativeOneToMin() {
+        assertEquals(Integer.MIN_VALUE, addWithUnderOverflowProtection(-1, Integer.MIN_VALUE));
+    }
+
+    @Test
+    void addLongWithUnderOverflowProtectionNegativeOneToMin() {
         assertEquals(Long.MIN_VALUE, addWithUnderOverflowProtection(-1, Long.MIN_VALUE));
     }
 
     @Test
-    void addWithUnderOverflowProtectionMinToMin() {
+    void addIntWithUnderOverflowProtectionMinToMin() {
+        assertEquals(Integer.MIN_VALUE, addWithUnderOverflowProtection(Integer.MIN_VALUE, Integer.MIN_VALUE));
+    }
+
+    @Test
+    void addLongWithUnderOverflowProtectionMinToMin() {
         assertEquals(Long.MIN_VALUE, addWithUnderOverflowProtection(Long.MIN_VALUE, Long.MIN_VALUE));
     }
 
     @Test
-    void addWithUnderOverflowProtectionZeroToMax() {
+    void addIntWithUnderOverflowProtectionZeroToMax() {
+        assertEquals(Integer.MAX_VALUE, addWithUnderOverflowProtection(0, Integer.MAX_VALUE));
+    }
+
+    @Test
+    void addLongWithUnderOverflowProtectionZeroToMax() {
         assertEquals(Long.MAX_VALUE, addWithUnderOverflowProtection(0, Long.MAX_VALUE));
     }
 
     @Test
-    void addWithUnderOverflowProtectionOneToMax() {
+    void addIntWithUnderOverflowProtectionOneToMax() {
+        assertEquals(Integer.MAX_VALUE, addWithUnderOverflowProtection(1, Integer.MAX_VALUE));
+    }
+
+    @Test
+    void addLongWithUnderOverflowProtectionOneToMax() {
         assertEquals(Long.MAX_VALUE, addWithUnderOverflowProtection(1, Long.MAX_VALUE));
     }
 
     @Test
-    void addWithUnderOverflowProtectionMaxToMax() {
+    void addIntWithUnderOverflowProtectionMaxToMax() {
+        assertEquals(Integer.MAX_VALUE, addWithUnderOverflowProtection(Integer.MAX_VALUE, Integer.MAX_VALUE));
+    }
+
+    @Test
+    void addLongWithUnderOverflowProtectionMaxToMax() {
         assertEquals(Long.MAX_VALUE, addWithUnderOverflowProtection(Long.MAX_VALUE, Long.MAX_VALUE));
     }
 }
