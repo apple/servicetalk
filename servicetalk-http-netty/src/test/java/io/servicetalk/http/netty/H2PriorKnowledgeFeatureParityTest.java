@@ -58,6 +58,9 @@ import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import io.servicetalk.http.netty.NettyHttp2ExceptionUtils.H2StreamResetException;
 import io.servicetalk.logging.api.LogLevel;
+import io.servicetalk.transport.api.ConnectExecutionStrategy;
+import io.servicetalk.transport.api.ConnectionAcceptor;
+import io.servicetalk.transport.api.ConnectionAcceptorFactory;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.DelegatingConnectionAcceptor;
 import io.servicetalk.transport.api.HostAndPort;
@@ -1843,11 +1846,21 @@ class H2PriorKnowledgeFeatureParityTest {
         }
 
         if (connectionOnClosingLatch != null) {
-            serverBuilder.appendConnectionAcceptorFilter(original -> new DelegatingConnectionAcceptor(original) {
+            serverBuilder.appendConnectionAcceptorFilter(new ConnectionAcceptorFactory() {
                 @Override
-                public Completable accept(final ConnectionContext context) {
-                    onGracefulClosureStarted(context, connectionOnClosingLatch);
-                    return completed();
+                public ConnectionAcceptor create(final ConnectionAcceptor original) {
+                    return new DelegatingConnectionAcceptor(original) {
+                        @Override
+                        public Completable accept(final ConnectionContext context) {
+                            onGracefulClosureStarted(context, connectionOnClosingLatch);
+                            return completed();
+                        }
+                    };
+                }
+
+                @Override
+                public ConnectExecutionStrategy requiredOffloads() {
+                    return ConnectExecutionStrategy.offloadNone();
                 }
             });
         }
