@@ -124,4 +124,22 @@ public final class FlowControlUtils {
         // if overflow, sign extended right shift, then flip lower 63 bits (non-sign bits) to get 2s complement min/max.
         return ((x ^ sum) & (y ^ sum)) < 0 ? ((x >> 63) ^ Long.MAX_VALUE) : sum;
     }
+
+    /**
+     * Add two longs and prevent [under|over]flow which is defined as if both {@code x} and {@code y} have the same sign
+     * but the result of {@code x + y} has a different sign.
+     * @param x first value.
+     * @param y second value.
+     * @return
+     * <ul>
+     *     <li>{@code x + y} if no overflow</li>
+     *     <li>{@link Integer#MAX_VALUE} if overflow in the positive direction</li>
+     *     <li>{@link Integer#MIN_VALUE} if otherwise in the negative direction</li>
+     * </ul>
+     */
+    public static int addWithUnderOverflowProtection(final int x, final int y) {
+        final int sum = x + y;
+        // if overflow, sign extended right shift, then flip lower 63 bits (non-sign bits) to get 2s complement min/max.
+        return ((x ^ sum) & (y ^ sum)) < 0 ? ((x >> 31) ^ Integer.MAX_VALUE) : sum;
+    }
 }
