@@ -18,6 +18,9 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.context.api.ContextMapHolder;
 
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinPool.ForkJoinWorkerThreadFactory;
+import java.util.concurrent.ForkJoinWorkerThread;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
@@ -28,7 +31,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * A {@link ThreadFactory} implementation.
  */
-public final class DefaultThreadFactory implements ThreadFactory {
+public final class DefaultThreadFactory implements ThreadFactory, ForkJoinWorkerThreadFactory {
 
     private static final AtomicInteger factoryCount = new AtomicInteger();
     /**
@@ -101,12 +104,7 @@ public final class DefaultThreadFactory implements ThreadFactory {
     @Override
     public Thread newThread(Runnable r) {
         Thread t = new AsyncContextHolderThread(r, namePrefix + threadCount.incrementAndGet());
-        if (t.isDaemon() != daemon) {
-            t.setDaemon(daemon);
-        }
-        if (t.getPriority() != priority) {
-            t.setPriority(priority);
-        }
+        initThread(t);
         return t;
     }
 
@@ -120,6 +118,43 @@ public final class DefaultThreadFactory implements ThreadFactory {
                 '}';
     }
 
+    @Override
+    public ForkJoinWorkerThread newThread(final ForkJoinPool pool) {
+        FJAsyncContextHolderThread t = new FJAsyncContextHolderThread(pool);
+        initThread(t);
+        return t;
+    }
+
+    private void initThread(Thread t) {
+        if (t.isDaemon() != daemon) {
+            t.setDaemon(daemon);
+        }
+        if (t.getPriority() != priority) {
+            t.setPriority(priority);
+        }
+    }
+
+    private static final class FJAsyncContextHolderThread extends ForkJoinWorkerThread implements ContextMapHolder {
+        @Nullable
+        private ContextMap context;
+
+        FJAsyncContextHolderThread(final ForkJoinPool pool) {
+            super(pool);
+        }
+
+        @Override
+        public ContextMapHolder context(@Nullable final ContextMap context) {
+            this.context = context;
+            return this;
+        }
+
+        @Nullable
+        @Override
+        public ContextMap context() {
+            return context;
+        }
+    }
+
     private static final class AsyncContextHolderThread extends Thread implements ContextMapHolder {
         @Nullable
         private ContextMap context;
@@ -129,7 +164,7 @@ public final class DefaultThreadFactory implements ThreadFactory {
         }
 
         @Override
-        public AsyncContextHolderThread context(@Nullable final ContextMap context) {
+        public ContextMapHolder context(@Nullable final ContextMap context) {
             this.context = context;
             return this;
         }

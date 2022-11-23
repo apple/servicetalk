@@ -15,7 +15,12 @@
  */
 package io.servicetalk.concurrent.api;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinPool.ForkJoinWorkerThreadFactory;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -27,6 +32,7 @@ import static io.servicetalk.concurrent.api.ImmediateExecutor.IMMEDIATE_EXECUTOR
  * Utility methods to create various {@link Executor}s.
  */
 public final class Executors {
+    private static final Logger LOGGER = LoggerFactory.getLogger(Executors.class);
     static final CopyOnWriteExecutorPluginSet EXECUTOR_PLUGINS = new CopyOnWriteExecutorPluginSet();
 
     static {
@@ -98,6 +104,19 @@ public final class Executors {
      */
     public static Executor newCachedThreadExecutor(ThreadFactory threadFactory) {
         return EXECUTOR_PLUGINS.wrapExecutor(new DefaultExecutor(1, Integer.MAX_VALUE, threadFactory));
+    }
+
+    /**
+     * Creates a new {@link Executor} that creates as many threads as required but reuses threads when possible.
+     *
+     * @param threadFactory {@link ThreadFactory} to use.
+     * @return A new {@link Executor}.
+     */
+    public static Executor newForkJoinExecutor(ForkJoinWorkerThreadFactory threadFactory) {
+        return EXECUTOR_PLUGINS.wrapExecutor(
+                new DefaultExecutor(new ForkJoinPool(Runtime.getRuntime().availableProcessors() * 2,
+                        threadFactory, (t, e) -> LOGGER.error("Uncaught exception from thread={}", t, e), true))
+        );
     }
 
     /**
