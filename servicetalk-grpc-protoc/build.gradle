@@ -81,6 +81,7 @@ protobuf {
   }
   generateProtoTasks {
     all().each { task ->
+      io.servicetalk.gradle.plugin.internal.ProjectUtils.addGeneratedProtoDependsOn(project, task, true)
       task.generateDescriptorSet = true
       task.descriptorSetOptions.includeImports = true
       task.inputs

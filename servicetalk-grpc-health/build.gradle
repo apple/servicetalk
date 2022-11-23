@@ -104,8 +104,9 @@ protobuf {
   }
   generateProtoTasks {
     all().each { task ->
-      task.dependsOn unzipGrpcProtos
       //// REMOVE if outside of ServiceTalk gradle project
+      io.servicetalk.gradle.plugin.internal.ProjectUtils.addGeneratedProtoDependsOn(project, task, false)
+      task.dependsOn unzipGrpcProtos
       task.dependsOn(":servicetalk-grpc-protoc:buildExecutable") // use gradle project local grpc-protoc dependency
 
       // you may need to manually add the artifact name as an input
