@@ -17,11 +17,17 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.transport.api.ConnectExecutionStrategy;
+import io.servicetalk.transport.api.ConnectionAcceptor;
+import io.servicetalk.transport.api.ConnectionAcceptorFactory;
+import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.DelegatingConnectionAcceptor;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
@@ -89,11 +95,26 @@ class NettyHttpServerConnectionTest {
 
         serverContext = HttpServers.forAddress(localAddress(0))
                 .ioExecutor(contextRule.ioExecutor())
-                .appendConnectionAcceptorFilter(original -> original.append(ctx -> {
-                            customCancellableRef.set(
-                                    ((NettyConnectionContext) ctx).updateFlushStrategy((__, ___) -> customStrategy));
-                            return completed();
-                        }))
+                .appendConnectionAcceptorFilter(new ConnectionAcceptorFactory() {
+                    @Override
+                    public ConnectionAcceptor create(ConnectionAcceptor original) {
+                        return new DelegatingConnectionAcceptor(original) {
+                            @Override
+                            public Completable accept(final ConnectionContext context) {
+                                return Completable.defer(() -> {
+                                    customCancellableRef.set(((NettyConnectionContext) context)
+                                            .updateFlushStrategy((__, ___) -> customStrategy));
+                                    return completed().shareContextOnSubscribe();
+                                });
+                            }
+                        };
+                    }
+
+                    @Override
+                    public ConnectExecutionStrategy requiredOffloads() {
+                        return ConnectExecutionStrategy.offloadNone();
+                    }
+                })
                 .executionStrategy(serverExecutionStrategy)
                 .listenStreaming((ctx, request, responseFactory) -> {
                     if (handledFirstRequest.compareAndSet(false, true)) {
