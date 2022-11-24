@@ -1852,8 +1852,10 @@ class H2PriorKnowledgeFeatureParityTest {
                     return new DelegatingConnectionAcceptor(original) {
                         @Override
                         public Completable accept(final ConnectionContext context) {
-                            onGracefulClosureStarted(context, connectionOnClosingLatch);
-                            return completed();
+                            return Completable.defer(() -> {
+                                onGracefulClosureStarted(context, connectionOnClosingLatch);
+                                return completed().shareContextOnSubscribe();
+                            });
                         }
                     };
                 }

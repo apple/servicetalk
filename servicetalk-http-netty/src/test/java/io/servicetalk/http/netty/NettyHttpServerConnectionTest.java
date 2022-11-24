@@ -104,7 +104,7 @@ class NettyHttpServerConnectionTest {
                                 return Completable.defer(() -> {
                                     customCancellableRef.set(((NettyConnectionContext) context)
                                             .updateFlushStrategy((__, ___) -> customStrategy));
-                                    return completed();
+                                    return completed().shareContextOnSubscribe();
                                 });
                             }
                         };
