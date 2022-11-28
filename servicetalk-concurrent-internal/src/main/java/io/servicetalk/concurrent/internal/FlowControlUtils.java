@@ -139,7 +139,7 @@ public final class FlowControlUtils {
      */
     public static int addWithUnderOverflowProtection(final int x, final int y) {
         final int sum = x + y;
-        // if overflow, sign extended right shift, then flip lower 63 bits (non-sign bits) to get 2s complement min/max.
+        // if overflow, sign extended right shift, then flip lower 31 bits (non-sign bits) to get 2s complement min/max.
         return ((x ^ sum) & (y ^ sum)) < 0 ? ((x >> 31) ^ Integer.MAX_VALUE) : sum;
     }
 }
