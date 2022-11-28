@@ -19,6 +19,14 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: '11.0.16+8'
+          distribution: 'zulu'
+          cache: 'gradle'
+      - name: Print JDK Version
+        run: java -version
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v2
         with:
