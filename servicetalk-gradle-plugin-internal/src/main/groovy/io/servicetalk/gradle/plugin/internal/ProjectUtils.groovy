@@ -125,6 +125,7 @@ final class ProjectUtils {
     )
   }
 
+  // https://docs.gradle.org/7.6-rc-3/userguide/validation_problems.html#implicit_dependency
   static void addGeneratedProtoDependsOn(Project project,
                                          /*com.google.protobuf.gradle.GenerateProtoTask*/ DefaultTask task,
                                          boolean projectTestGeneratedOnly) {
