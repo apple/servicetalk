@@ -24,7 +24,6 @@ import java.util.function.BooleanSupplier;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
-import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnError;
 
 /**
  * A set of factory methods that provides implementations for the various publish/subscribeOn methods on
@@ -44,20 +43,6 @@ final class PublishAndSubscribeOnCompletables {
                                              ContextMap contextMap, AsyncContextProvider contextProvider,
                                              Throwable cause) {
         deliverErrorFromSource(contextProvider.wrapCompletableSubscriber(subscriber, contextMap), cause);
-    }
-
-    @FunctionalInterface
-    private interface HandleSubscribe {
-        void handleSubscribe(Subscriber subscriber, ContextMap contextMap, AsyncContextProvider contextProvider);
-    }
-
-    private static void safeHandleSubscribe(final HandleSubscribe handler, final Subscriber subscriber,
-                                    final ContextMap contextMap, final AsyncContextProvider contextProvider) {
-        try {
-            handler.handleSubscribe(subscriber, contextMap, contextProvider);
-        } catch (Throwable throwable) {
-            safeOnError(subscriber, throwable);
-        }
     }
 
     static Completable publishOn(final Completable original,
@@ -103,7 +88,7 @@ final class PublishAndSubscribeOnCompletables {
                 return;
             }
 
-            safeHandleSubscribe(super::handleSubscribe, upstreamSubscriber, contextMap, contextProvider);
+            super.handleSubscribe(upstreamSubscriber, contextMap, contextProvider);
         }
     }
 
@@ -137,7 +122,7 @@ final class PublishAndSubscribeOnCompletables {
 
                 if (shouldOffload.getAsBoolean()) {
                     // offload the remainder of subscribe()
-                    executor().execute(() -> safeHandleSubscribe(super::handleSubscribe,
+                    executor().execute(() -> super.handleSubscribe(
                             upstreamSubscriber, contextMap, contextProvider));
                     return;
                 }
@@ -148,7 +133,7 @@ final class PublishAndSubscribeOnCompletables {
             }
 
             // continue non-offloaded subscribe()
-            safeHandleSubscribe(super::handleSubscribe, upstreamSubscriber, contextMap, contextProvider);
+            super.handleSubscribe(upstreamSubscriber, contextMap, contextProvider);
         }
     }
 }

@@ -77,7 +77,6 @@ abstract class TaskBasedAsyncSingleOperator<T> extends AbstractNoHandleSubscribe
     @Override
     void handleSubscribe(final Subscriber<? super T> subscriber,
                          final ContextMap contextMap, final AsyncContextProvider contextProvider) {
-
         original.delegateSubscribe(subscriber, contextMap, contextProvider);
     }
 
