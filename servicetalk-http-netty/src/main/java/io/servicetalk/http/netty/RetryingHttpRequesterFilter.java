@@ -376,6 +376,8 @@ public final class RetryingHttpRequesterFilter
          * @return a new {@link BackOffPolicy} that retries failures instantly up-to 3 max retries.
          */
         public static BackOffPolicy ofImmediate() {
+            // Subtract 1 because the total strategy anticipates 1 failure from LB not being ready (due to SD available
+            // events not yet arriving), however this level of retry is strictly applied to request/response failures.
             return new BackOffPolicy(DEFAULT_MAX_TOTAL_RETRIES - 1);
         }
 
