@@ -32,7 +32,6 @@ import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 abstract class AbstractNettyIoExecutor<T extends EventLoopGroup> implements NettyIoExecutor, Executor {
-
     protected final boolean isIoThreadSupported;
     protected final T eventLoop;
     protected final boolean interruptOnCancel;
@@ -46,8 +45,12 @@ abstract class AbstractNettyIoExecutor<T extends EventLoopGroup> implements Nett
         this.eventLoop = eventLoop;
         this.interruptOnCancel = interruptOnCancel;
         this.isIoThreadSupported = isIoThreadSupported;
-        // Best effort completion of closingProcessor if the EventLoop is closed outside the scope of this Object
-        eventLoop.terminationFuture().addListener(f -> closingProcessor.onComplete());
+        try {
+            // Best effort completion of closingProcessor if the EventLoop is closed outside the scope of this Object
+            eventLoop.terminationFuture().addListener(f -> closingProcessor.onComplete());
+        } catch (Throwable ignored) {
+            // EmbeddedEventLoop doesn't support this method.
+        }
     }
 
     @Override
