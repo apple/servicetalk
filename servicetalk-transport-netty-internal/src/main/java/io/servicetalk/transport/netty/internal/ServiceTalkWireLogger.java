@@ -16,7 +16,6 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.buffer.api.BufferHolder;
 import io.servicetalk.logging.slf4j.internal.FixedLevelLogger;
 
 import io.netty.buffer.ByteBuf;
@@ -244,11 +243,6 @@ final class ServiceTalkWireLogger extends ChannelDuplexHandler {
         if (msg instanceof Buffer) {
             ByteBuf byteBuf = toByteBuf((Buffer) msg);
             return logUserData ? formatByteBuf(ctx, eventName, byteBuf) : formatByteBufNoData(ctx, eventName, byteBuf);
-        }
-        if (msg instanceof BufferHolder) {
-            BufferHolder holder = (BufferHolder) msg;
-            return logUserData ? formatByteBufHolder(ctx, eventName, holder, h -> toByteBuf(h.content())) :
-                    formatByteBufHolderNoData(ctx, eventName, holder, holder.content()::readableBytes);
         }
         return contextToString(ctx) + ' ' + eventName + ": " + (logUserData ? String.valueOf(msg) : msgToString(msg));
     }

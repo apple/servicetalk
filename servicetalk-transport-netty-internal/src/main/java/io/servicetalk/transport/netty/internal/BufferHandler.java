@@ -16,7 +16,6 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.buffer.api.BufferHolder;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufHolder;
@@ -34,9 +33,7 @@ import static io.servicetalk.buffer.netty.BufferUtils.newBufferFrom;
  *
  * <ul>
  *     <li>{@link Buffer} to {@link ByteBuf} for writes.</li>
- *     <li>{@link BufferHolder} to {@link ByteBuf} for writes.</li>
  *     <li>{@link ByteBuf} to {@link Buffer} for reads.</li>
- *     <li>{@link ByteBufHolder} to {@link Buffer} for reads.</li>
  * </ul>
  *
  * This also releases any {@link ByteBuf} once converted to {@link Buffer}.
@@ -66,8 +63,6 @@ public final class BufferHandler extends ChannelDuplexHandler {
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
         if (msg instanceof Buffer) {
             ctx.write(extractByteBufOrCreate((Buffer) msg), promise);
-        } else if (msg instanceof BufferHolder) {
-            ctx.write(extractByteBufOrCreate(((BufferHolder) msg).content()), promise);
         } else {
             ctx.write(msg, promise);
         }
