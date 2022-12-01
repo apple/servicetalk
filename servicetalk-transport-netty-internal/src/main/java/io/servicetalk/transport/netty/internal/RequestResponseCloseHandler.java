@@ -252,6 +252,18 @@ final class RequestResponseCloseHandler extends CloseHandler {
     }
 
     @Override
+    void channelClose(final Channel channel) {
+        // We need to set SO_LINGER before we invoke close if we are not writing and still reading. This forces sending
+        // RST (instead of FIN) which the peer will interpret as "full close" and any future writes by the peer will
+        // fail (if the peer is half closed, not reading, but still writing). Otherwise, the peer write attempts may
+        // be accepted by the OS, only to generate RST when the local peer receives the data, but the peer has finished
+        // reading which may prevent processing the RST and be hung.
+        if (isAllSet(state, READ) && !isAllSet(state, WRITE) && channel instanceof SocketChannel) {
+            setSocketResetOnClose((SocketChannel) channel);
+        }
+    }
+
+    @Override
     public String toString() {
         StringBuilder sb = new StringBuilder(32);
         if (isClient) {
@@ -418,13 +430,8 @@ final class RequestResponseCloseHandler extends CloseHandler {
         // When both IN_CLOSED and OUT_CLOSED have been observed we should NOT attempt to set socket options. However
         // when only IN_CLOSED is observed as part of a TCP RST we also shouldn't attempt to set, but there is no
         // reliable event for this (in netty/JDK) so the best we can do is catch and log the exception.
-        if (channel instanceof SocketChannel && !isAllSet(state, IN_OR_OUT_CLOSED)) {
-            try {
-                ((SocketChannel) channel).config().setSoLinger(0);
-            } catch (Exception e) {
-                LOGGER.trace("{} set SO_LINGER=0 failed (expected when IN+OUT or IN+RST closed channel): {}",
-                        channel, e.getMessage());
-            }
+        if (!isAllSet(state, IN_OR_OUT_CLOSED) && channel instanceof SocketChannel) {
+            setSocketResetOnClose((SocketChannel) channel);
         }
     }
 

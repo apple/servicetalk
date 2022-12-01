@@ -18,6 +18,7 @@ package io.servicetalk.transport.netty.internal;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
+import io.netty.channel.socket.SocketChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -159,6 +160,18 @@ final class NonPipelinedCloseHandler extends CloseHandler {
         storeCloseRequestAndEmit(evt);
         if (!isAnySet(state, READ_OR_WRITE)) {
             closeChannel(channel, evt);
+        }
+    }
+
+    @Override
+    void channelClose(final Channel channel) {
+        // We need to set SO_LINGER before we invoke close if we are not writing and still reading. This forces sending
+        // RST (instead of FIN) which the peer will interpret as "full close" and any future writes by the peer will
+        // fail (if the peer is half closed, not reading, but still writing). Otherwise, the peer write attempts may
+        // be accepted by the OS, only to generate RST when the local peer receives the data, but the peer has finished
+        // reading which may prevent processing the RST and be hung.
+        if (isAllSet(state, READ) && !isAllSet(state, WRITE) && channel instanceof SocketChannel) {
+            setSocketResetOnClose((SocketChannel) channel);
         }
     }
 
