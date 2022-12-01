@@ -315,9 +315,9 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
         asyncCloseable = toAsyncCloseable(graceful -> {
             discoveryCancellable.cancel();
             eventStreamProcessor.onComplete();
-            // We lock because items are removed from the collection via onClosing (on the leading edge). If
-            // closeAsyncGracefully is called all the items will be removed from the collection, however that
-            // operation may timeout and then a subsequent closeAsync is expected to close the original items.
+            // We lock because the collection of hosts is dereferenced and if closeAsyncGracefully is called all the
+            // items will be removed from the collection, however that operation may timeout and then a subsequent
+            // closeAsync is expected to close the original items.
             synchronized (discoveryCancellable) {
                 if (compositeCloseable == null) {
                     @SuppressWarnings("unchecked")
