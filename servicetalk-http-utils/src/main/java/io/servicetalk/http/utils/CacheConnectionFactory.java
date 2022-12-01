@@ -24,6 +24,9 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.transport.api.TransportObserver;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.ToIntFunction;
@@ -31,6 +34,7 @@ import javax.annotation.Nullable;
 
 final class CacheConnectionFactory<ResolvedAddress, C extends ListenableAsyncCloseable>
         extends DelegatingConnectionFactory<ResolvedAddress, C> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(CacheConnectionFactory.class);
     private final Map<ResolvedAddress, Item<C>> map = new HashMap<>();
     private final ToIntFunction<ResolvedAddress> maxConcurrencyFunc;
 
@@ -86,10 +90,11 @@ final class CacheConnectionFactory<ResolvedAddress, C extends ListenableAsyncClo
                                         if (result1 == null) {
                                             lockRemoveFromMap();
                                         } else {
-                                            result1.onClose().whenFinally(this::lockRemoveFromMap).subscribe();
+                                            result1.onClosing().whenFinally(this::lockRemoveFromMap).subscribe();
                                         }
                                     } catch (Throwable cause) {
                                         if (result1 != null) {
+                                            LOGGER.debug("Unexpected error, closing connection={}", result1, cause);
                                             result1.closeAsync().subscribe();
                                         }
                                         subscriber.onError(cause);

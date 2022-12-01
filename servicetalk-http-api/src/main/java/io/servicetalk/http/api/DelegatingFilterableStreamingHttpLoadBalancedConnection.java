@@ -73,6 +73,11 @@ public class DelegatingFilterableStreamingHttpLoadBalancedConnection
     }
 
     @Override
+    public Completable onClosing() {
+        return delegate.onClosing();
+    }
+
+    @Override
     public HttpConnectionContext connectionContext() {
         return delegate.connectionContext();
     }

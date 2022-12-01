@@ -420,15 +420,15 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
                         // and not having visibility into max-concurrent-requests, or other threads already selected the
                         // connection which uses all the max concurrent request count.
 
-                        // Just in case the connection is not closed add it to the host so we don't lose track,
-                        // duplicates will be filtered out.
-                        host.addConnection(newCnx);
-
                         // If there is caching Propagate the exception and rely upon retry strategy.
-                        return failed(StacklessConnectionRejectedException.newInstance(
+                        Single<C> failedSingle = failed(StacklessConnectionRejectedException.newInstance(
                                 "Newly created connection " + newCnx + " for " + targetResource
                                         + " was rejected by the selection filter.",
                                 RoundRobinLoadBalancer.class, "selectConnection0(...)"));
+
+                        // Just in case the connection is not closed add it to the host so we don't lose track,
+                        // duplicates will be filtered out.
+                        return host.addConnection(newCnx) ? failedSingle : newCnx.closeAsync().concat(failedSingle);
                     }
                     if (host.addConnection(newCnx)) {
                         return succeeded(newCnx);

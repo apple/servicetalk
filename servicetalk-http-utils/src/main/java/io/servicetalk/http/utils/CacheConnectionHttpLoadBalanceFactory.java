@@ -130,6 +130,11 @@ public final class CacheConnectionHttpLoadBalanceFactory<ResolvedAddress>
         public Completable onClose() {
             return delegate.onClose();
         }
+
+        @Override
+        public Completable onClosing() {
+            return delegate.onClosing();
+        }
     }
 
     private static final class MaxConcurrencyFilterableStreamingHttpLoadBalancedConnection<RA>
