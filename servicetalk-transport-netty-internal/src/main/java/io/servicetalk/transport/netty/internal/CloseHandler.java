@@ -164,7 +164,7 @@ public abstract class CloseHandler {
     abstract void channelCloseNotify(ChannelHandlerContext ctx);
 
     /**
-     * Signal that {@link Channel#close()} is above to be called.
+     * Signal that {@link Channel#close()} is about to be called.
      * @param channel The channel.
      */
     void channelClose(Channel channel) {
