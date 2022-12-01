@@ -16,6 +16,7 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 
@@ -26,6 +27,8 @@ import io.netty.util.concurrent.ScheduledFuture;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
+import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
+import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 abstract class AbstractNettyIoExecutor<T extends EventLoopGroup> implements NettyIoExecutor, Executor {
@@ -33,6 +36,7 @@ abstract class AbstractNettyIoExecutor<T extends EventLoopGroup> implements Nett
     protected final boolean isIoThreadSupported;
     protected final T eventLoop;
     protected final boolean interruptOnCancel;
+    private final CompletableSource.Processor closingProcessor = newCompletableProcessor();
 
     AbstractNettyIoExecutor(T eventLoop, boolean interruptOnCancel) {
         this(eventLoop, interruptOnCancel, false);
@@ -42,21 +46,30 @@ abstract class AbstractNettyIoExecutor<T extends EventLoopGroup> implements Nett
         this.eventLoop = eventLoop;
         this.interruptOnCancel = interruptOnCancel;
         this.isIoThreadSupported = isIoThreadSupported;
+        // Best effort completion of closingProcessor if the EventLoop is closed outside the scope of this Object
+        eventLoop.terminationFuture().addListener(f -> closingProcessor.onComplete());
     }
 
     @Override
     public Completable closeAsync() {
-        return new NettyFutureCompletable(() -> eventLoop.shutdownGracefully(0, 0, NANOSECONDS));
+        return new NettyFutureCompletable(() -> eventLoop.shutdownGracefully(0, 0, NANOSECONDS))
+                .beforeOnSubscribe(c -> closingProcessor.onComplete());
     }
 
     @Override
     public Completable closeAsyncGracefully() {
-        return new NettyFutureCompletable(eventLoop::shutdownGracefully);
+        return new NettyFutureCompletable(eventLoop::shutdownGracefully)
+                .beforeOnSubscribe(c -> closingProcessor.onComplete());
     }
 
     @Override
     public final Completable onClose() {
         return new NettyFutureCompletable(eventLoop::terminationFuture);
+    }
+
+    @Override
+    public Completable onClosing() {
+        return fromSource(closingProcessor);
     }
 
     @Override

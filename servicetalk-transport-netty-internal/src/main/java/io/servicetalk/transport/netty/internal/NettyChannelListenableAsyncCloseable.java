@@ -101,6 +101,7 @@ public class NettyChannelListenableAsyncCloseable implements PrivilegedListenabl
      *
      * @return a {@link Completable} that notifies when the connection has begun its closing sequence.
      */
+    @Override
     public final Completable onClosing() {
         return fromSource(onClosing);
     }
@@ -117,12 +118,12 @@ public class NettyChannelListenableAsyncCloseable implements PrivilegedListenabl
 
     @Override
     public final Completable closeAsyncNoOffload() {
-        return closeAsync(onCloseNoOffload());
+        return closeAsync(onCloseNoOffload);
     }
 
     @Override
     public final Completable closeAsyncGracefullyNoOffload() {
-        return closeAsyncGracefully(onCloseNoOffload());
+        return closeAsyncGracefully(onCloseNoOffload);
     }
 
     private Completable closeAsync(Completable source) {
@@ -160,10 +161,6 @@ public class NettyChannelListenableAsyncCloseable implements PrivilegedListenabl
     @Override
     public final Completable onClose() {
         return onClose;
-    }
-
-    final Completable onCloseNoOffload() {
-        return onCloseNoOffload;
     }
 
     /**
