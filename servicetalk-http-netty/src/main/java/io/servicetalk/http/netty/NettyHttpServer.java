@@ -237,6 +237,11 @@ final class NettyHttpServer {
         }
 
         @Override
+        public Completable onClosing() {
+            return asyncCloseable.onClosing();
+        }
+
+        @Override
         public String toString() {
             return delegate.toString();
         }

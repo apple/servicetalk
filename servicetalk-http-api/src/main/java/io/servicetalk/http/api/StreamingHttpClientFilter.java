@@ -64,6 +64,11 @@ public class StreamingHttpClientFilter implements FilterableStreamingHttpClient 
     }
 
     @Override
+    public Completable onClosing() {
+        return delegate.onClosing();
+    }
+
+    @Override
     public Completable closeAsync() {
         return delegate.closeAsync();
     }

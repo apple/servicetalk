@@ -110,4 +110,9 @@ public final class NettyServerContext implements ServerContext {
     public Completable onClose() {
         return closeable.onClose();
     }
+
+    @Override
+    public Completable onClosing() {
+        return closeable.onClosing();
+    }
 }

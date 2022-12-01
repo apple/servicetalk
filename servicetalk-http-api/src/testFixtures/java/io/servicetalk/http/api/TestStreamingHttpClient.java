@@ -80,6 +80,11 @@ public final class TestStreamingHttpClient {
                     }
 
                     @Override
+                    public Completable onClosing() {
+                        return closeable.onClosing();
+                    }
+
+                    @Override
                     public StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
                         return reqRespFactory.newRequest(method, requestTarget);
                     }
@@ -145,6 +150,11 @@ public final class TestStreamingHttpClient {
                             }
 
                             @Override
+                            public Completable onClosing() {
+                                return rc.onClosing();
+                            }
+
+                            @Override
                             public Completable closeAsync() {
                                 return rc.closeAsync();
                             }
@@ -180,6 +190,11 @@ public final class TestStreamingHttpClient {
             @Override
             public Completable onClose() {
                 return filterChain.onClose();
+            }
+
+            @Override
+            public Completable onClosing() {
+                return filterChain.onClosing();
             }
 
             @Override

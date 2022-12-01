@@ -18,9 +18,7 @@ package io.servicetalk.http.netty;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.DelegatingConnectionFactory;
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.api.AsyncCloseables;
-import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.context.api.ContextMap;
@@ -55,8 +53,6 @@ import java.util.function.UnaryOperator;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
-import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -120,18 +116,15 @@ class ConnectionFactoryFilterTest {
 
     @Test
     void onClosingIsDelegated() throws Exception {
-        CompletableSource.Processor onClosing = newCompletableProcessor();
         client = clientBuilder.appendConnectionFactoryFilter(
-                newConnectionFactoryFilter(delegate ->
-                        new NettyConnectionContextReturningConnection(delegate, onClosing)))
+                newConnectionFactoryFilter(NettyConnectionContextReturningConnection::new))
                 .buildBlocking();
 
         ReservedStreamingHttpConnection con = client.asStreamingClient()
                 .reserveConnection(client.get("/"))
                 .toFuture().get();
-        NettyConnectionContext ctx = (NettyConnectionContext) con.connectionContext();
-        onClosing.onComplete();
-        ctx.onClosing().toFuture().get();
+        con.closeAsyncGracefully().subscribe();
+        con.onClosing().toFuture().get();
     }
 
     private static HttpResponse sendRequest(BlockingHttpClient client) throws Exception {
@@ -190,10 +183,9 @@ class ConnectionFactoryFilterTest {
     private static final class NettyConnectionContextReturningConnection extends StreamingHttpConnectionFilter {
         private final HttpConnectionContext ctx;
 
-        NettyConnectionContextReturningConnection(final FilterableStreamingHttpConnection delegate,
-                                                  final CompletableSource.Processor onClosing) {
+        NettyConnectionContextReturningConnection(final FilterableStreamingHttpConnection delegate) {
             super(delegate);
-            ctx = new DelegatingNettyConnectionContext(delegate.connectionContext(), onClosing);
+            ctx = new DelegatingNettyConnectionContext(delegate.connectionContext());
         }
 
         @Override
@@ -206,13 +198,10 @@ class ConnectionFactoryFilterTest {
             implements NettyConnectionContext {
 
         private final NettyConnectionContext delegate;
-        private final CompletableSource.Processor onClosing;
 
-        DelegatingNettyConnectionContext(final HttpConnectionContext delegate,
-                                         final CompletableSource.Processor onClosing) {
+        DelegatingNettyConnectionContext(final HttpConnectionContext delegate) {
             super(delegate);
             this.delegate = (NettyConnectionContext) delegate;
-            this.onClosing = onClosing;
         }
 
         @Override
@@ -233,11 +222,6 @@ class ConnectionFactoryFilterTest {
         @Override
         public Single<Throwable> transportError() {
             return delegate.transportError();
-        }
-
-        @Override
-        public Completable onClosing() {
-            return fromSource(onClosing);
         }
     }
 }

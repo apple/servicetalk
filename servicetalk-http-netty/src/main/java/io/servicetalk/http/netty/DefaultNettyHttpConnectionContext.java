@@ -16,7 +16,6 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpConnectionContext;
 import io.servicetalk.http.api.HttpExecutionContext;
@@ -74,11 +73,6 @@ final class DefaultNettyHttpConnectionContext extends DelegatingConnectionContex
     @Override
     public Single<Throwable> transportError() {
         return nettyConnectionContext.transportError();
-    }
-
-    @Override
-    public Completable onClosing() {
-        return nettyConnectionContext.onClosing();
     }
 
     @Override

@@ -374,6 +374,11 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
         return streamingHttpClient.onClose();
     }
 
+    @Override
+    public Completable onClosing() {
+        return streamingHttpClient.onClosing();
+    }
+
     /**
      * Determines the timeout for a new request using three potential sources; the deadline in the async context, the
      * request timeout, and the client default. The timeout will be the lesser of the context and request timeouts or if

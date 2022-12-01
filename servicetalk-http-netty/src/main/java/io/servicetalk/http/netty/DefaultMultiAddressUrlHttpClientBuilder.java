@@ -383,6 +383,11 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         }
 
         @Override
+        public Completable onClosing() {
+            return closeable.onClosing();
+        }
+
+        @Override
         public Completable closeAsync() {
             return closeable.closeAsync();
         }

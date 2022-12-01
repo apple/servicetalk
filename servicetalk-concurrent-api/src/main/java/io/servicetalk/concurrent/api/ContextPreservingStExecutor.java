@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 import static java.util.Objects.requireNonNull;
@@ -44,6 +45,11 @@ final class ContextPreservingStExecutor implements Executor {
     }
 
     @Override
+    public Cancellable schedule(final Runnable task, final Duration delay) {
+        return delegate.schedule(new ContextPreservingRunnable(task), delay);
+    }
+
+    @Override
     public long currentTime(TimeUnit unit) {
         return delegate.currentTime(unit);
     }
@@ -54,12 +60,24 @@ final class ContextPreservingStExecutor implements Executor {
     }
 
     @Override
+    public Completable onClosing() {
+        return delegate.onClosing();
+    }
+
+    @Override
     public Completable closeAsync() {
         return delegate.closeAsync();
+    }
+
+    @Override
+    public Completable closeAsyncGracefully() {
+        return delegate.closeAsyncGracefully();
     }
 
     static Executor of(Executor delegate) {
         return delegate instanceof ContextPreservingStExecutor ? delegate :
                 new ContextPreservingStExecutor(delegate);
     }
+
+    // Don't override methods that return an async source. Context will be captured at subscribe by the async source.
 }

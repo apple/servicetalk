@@ -78,8 +78,6 @@ class ServerGracefulConnectionClosureHandlingTest {
                 @Override
                 public Completable accept(final ConnectionContext context) {
                     CloseUtils.onGracefulClosureStarted(context, serverConnectionClosing);
-                    // ((NettyHttpServerConnection) context).onClosing()
-                    //     .whenFinally(serverConnectionClosing::countDown).subscribe();
                     context.onClose().whenFinally(serverConnectionClosed::countDown).subscribe();
                     return completed();
                 }

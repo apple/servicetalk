@@ -108,6 +108,11 @@ public class TestHttpServiceContext extends HttpServiceContext {
     }
 
     @Override
+    public Completable onClosing() {
+        return completed();
+    }
+
+    @Override
     public Completable onClose() {
         return completed();
     }

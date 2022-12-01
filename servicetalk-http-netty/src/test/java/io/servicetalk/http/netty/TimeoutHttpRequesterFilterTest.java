@@ -25,7 +25,6 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.utils.BeforeFinallyHttpOperator;
 import io.servicetalk.http.utils.TimeoutHttpRequesterFilter;
-import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
 import org.junit.jupiter.api.Test;
 
@@ -53,7 +52,7 @@ class TimeoutHttpRequesterFilterTest extends AbstractNettyHttpServerTest {
     @Test
     void onClosingWinsOnError() throws Exception {
         connectionFilterFactory(appendConnectionFilter(c -> {
-                    ((NettyConnectionContext) c.connectionContext()).onClosing()
+                    c.connectionContext().onClosing()
                             .subscribe(() -> firstEventRef.compareAndSet(null, Event.ON_CLOSING));
                     return new StreamingHttpConnectionFilter(c) {
                         @Override

@@ -79,4 +79,9 @@ final class ConditionalHttpClientFilter extends StreamingHttpClientFilter {
     public Completable onClose() {
         return closeable.onClose();
     }
+
+    @Override
+    public Completable onClosing() {
+        return closeable.onClosing();
+    }
 }

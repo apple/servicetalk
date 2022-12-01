@@ -207,6 +207,11 @@ public final class PowerSetPartitionMap<T extends AsyncCloseable> implements Par
     }
 
     @Override
+    public Completable onClosing() {
+        return asyncCloseable.onClosing();
+    }
+
+    @Override
     public Completable closeAsync() {
         return asyncCloseable.closeAsync();
     }

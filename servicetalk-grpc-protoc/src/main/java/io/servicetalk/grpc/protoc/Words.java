@@ -30,6 +30,7 @@ final class Words {
     static final String ctx = "ctx";
     static final String factory = "factory";
     static final String onClose = "onClose";
+    static final String onClosing = "onClosing";
     static final String metadata = "metadata";
     static final String request = "request";
     static final String response = "response";

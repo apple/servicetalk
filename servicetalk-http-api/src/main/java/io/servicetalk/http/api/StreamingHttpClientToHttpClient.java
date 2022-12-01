@@ -90,6 +90,11 @@ final class StreamingHttpClientToHttpClient implements HttpClient {
     }
 
     @Override
+    public Completable onClosing() {
+        return client.onClosing();
+    }
+
+    @Override
     public Completable closeAsync() {
         return client.closeAsync();
     }
@@ -182,6 +187,11 @@ final class StreamingHttpClientToHttpClient implements HttpClient {
         @Override
         public Completable onClose() {
             return connection.onClose();
+        }
+
+        @Override
+        public Completable onClosing() {
+            return connection.onClosing();
         }
 
         @Override

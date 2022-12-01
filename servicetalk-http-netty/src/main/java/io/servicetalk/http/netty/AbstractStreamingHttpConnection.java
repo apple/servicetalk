@@ -257,6 +257,11 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
     }
 
     @Override
+    public final Completable onClosing() {
+        return connectionContext.onClosing();
+    }
+
+    @Override
     public final Completable closeAsync() {
         return connectionContext.closeAsync();
     }

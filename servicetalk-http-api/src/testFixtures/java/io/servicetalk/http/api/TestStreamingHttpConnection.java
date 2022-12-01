@@ -57,6 +57,11 @@ public final class TestStreamingHttpConnection {
                     }
 
                     @Override
+                    public Completable onClosing() {
+                        return closeable.onClosing();
+                    }
+
+                    @Override
                     public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
                         return failed(new UnsupportedOperationException());
                     }
@@ -109,6 +114,11 @@ public final class TestStreamingHttpConnection {
             @Override
             public Completable onClose() {
                 return filterChain.onClose();
+            }
+
+            @Override
+            public Completable onClosing() {
+                return filterChain.onClosing();
             }
 
             @Override

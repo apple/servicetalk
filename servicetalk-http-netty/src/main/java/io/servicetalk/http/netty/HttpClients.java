@@ -320,6 +320,11 @@ public final class HttpClients {
                             }
 
                             @Override
+                            public Completable onClosing() {
+                                return closeable.onClosing();
+                            }
+
+                            @Override
                             public Completable closeAsync() {
                                 return closeable.closeAsync();
                             }

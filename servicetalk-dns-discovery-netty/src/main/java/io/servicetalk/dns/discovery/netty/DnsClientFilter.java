@@ -56,6 +56,11 @@ class DnsClientFilter implements DnsClient {
     }
 
     @Override
+    public Completable onClosing() {
+        return client.onClosing();
+    }
+
+    @Override
     public Completable closeAsync() {
         return client.closeAsync();
     }

@@ -153,6 +153,7 @@ import static io.servicetalk.grpc.protoc.Words.metadata;
 import static io.servicetalk.grpc.protoc.Words.methodDescriptor;
 import static io.servicetalk.grpc.protoc.Words.methodDescriptors;
 import static io.servicetalk.grpc.protoc.Words.onClose;
+import static io.servicetalk.grpc.protoc.Words.onClosing;
 import static io.servicetalk.grpc.protoc.Words.registerRoutes;
 import static io.servicetalk.grpc.protoc.Words.request;
 import static io.servicetalk.grpc.protoc.Words.requestEncoding;
@@ -1274,6 +1275,7 @@ final class Generator {
                         .build())
                 .addMethod(newDelegatingMethodSpec(executionContext, factory, GrpcExecutionContext, null))
                 .addMethod(newDelegatingCompletableMethodSpec(onClose, factory))
+                .addMethod(newDelegatingCompletableMethodSpec(onClosing, factory))
                 .addMethod(newDelegatingCompletableMethodSpec(closeAsync, factory))
                 .addMethod(newDelegatingCompletableMethodSpec(closeAsyncGracefully, factory))
                 .addMethod(newDelegatingCompletableToBlockingMethodSpec(close, closeAsync, factory))

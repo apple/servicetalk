@@ -179,6 +179,11 @@ final class LoadBalancedStreamingHttpClient implements FilterableStreamingHttpCl
     }
 
     @Override
+    public Completable onClosing() {
+        return loadBalancer.onClosing();
+    }
+
+    @Override
     public Completable closeAsync() {
         return loadBalancer.closeAsync();
     }

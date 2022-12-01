@@ -102,6 +102,11 @@ final class StreamingHttpConnectionToHttpConnection implements HttpConnection {
     }
 
     @Override
+    public Completable onClosing() {
+        return connection.onClosing();
+    }
+
+    @Override
     public Completable closeAsync() {
         return connection.closeAsync();
     }

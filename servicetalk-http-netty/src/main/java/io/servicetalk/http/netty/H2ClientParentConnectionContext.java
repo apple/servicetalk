@@ -463,17 +463,26 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
         }
 
         @Override
+        public Completable onClosing() {
+            return parentContext.onClosing();
+        }
+
+        @Override
         public Completable closeAsync() {
-            maxConcurrencyProcessor.onNext(ZERO_MAX_CONCURRENCY_EVENT);
-            maxConcurrencyProcessor.onComplete();
-            return parentContext.closeAsync();
+            return Completable.defer(() -> {
+                maxConcurrencyProcessor.onNext(ZERO_MAX_CONCURRENCY_EVENT);
+                maxConcurrencyProcessor.onComplete();
+                return parentContext.closeAsync().shareContextOnSubscribe();
+            });
         }
 
         @Override
         public Completable closeAsyncGracefully() {
-            maxConcurrencyProcessor.onNext(ZERO_MAX_CONCURRENCY_EVENT);
-            maxConcurrencyProcessor.onComplete();
-            return parentContext.closeAsyncGracefully();
+            return Completable.defer(() -> {
+                maxConcurrencyProcessor.onNext(ZERO_MAX_CONCURRENCY_EVENT);
+                maxConcurrencyProcessor.onComplete();
+                return parentContext.closeAsyncGracefully().shareContextOnSubscribe();
+            });
         }
 
         @Override
@@ -504,11 +513,6 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
         @Override
         public Single<Throwable> transportError() {
             return parentContext.transportError();
-        }
-
-        @Override
-        public Completable onClosing() {
-            return parentContext.onClosing();
         }
     }
 

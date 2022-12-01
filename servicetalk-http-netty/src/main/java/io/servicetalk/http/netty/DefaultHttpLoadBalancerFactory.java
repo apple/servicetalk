@@ -180,6 +180,11 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
         }
 
         @Override
+        public Completable onClosing() {
+            return delegate.onClosing();
+        }
+
+        @Override
         public Completable closeAsync() {
             return delegate.closeAsync();
         }

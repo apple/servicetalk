@@ -15,44 +15,39 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.CompletableSource;
-
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import javax.annotation.Nullable;
-
-import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
+import static io.servicetalk.concurrent.api.AsyncCloseables.toAsyncCloseable;
+import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
+import static io.servicetalk.concurrent.api.Completable.completed;
+import static io.servicetalk.concurrent.api.Completable.defer;
 
 abstract class AbstractExecutor implements Executor {
-
-    private static final AtomicReferenceFieldUpdater<AbstractExecutor, CompletableProcessor>
-            onCloseUpdater = newUpdater(AbstractExecutor.class, CompletableProcessor.class, "onClose");
-
-    @SuppressWarnings("unused")
-    @Nullable
-    private volatile CompletableProcessor onClose;
+    private final ListenableAsyncCloseable listenableAsyncCloseable = toListenableAsyncCloseable(
+            toAsyncCloseable(graceful -> defer(() -> {
+                // If closeAsync() is subscribed multiple times, we will call this method as many times.
+                // Since doClose() is idempotent and usually cheap, it is OK as compared to implementing at most
+                // once semantics.
+                doClose();
+                return completed().shareContextOnSubscribe();
+            })));
 
     @Override
     public Completable onClose() {
-        return getOrCreateOnClose();
+        return listenableAsyncCloseable.onClose();
+    }
+
+    @Override
+    public Completable onClosing() {
+        return listenableAsyncCloseable.onClosing();
     }
 
     @Override
     public Completable closeAsync() {
-        return new CloseAsync();
+        return listenableAsyncCloseable.closeAsync();
     }
 
-    private CompletableProcessor getOrCreateOnClose() {
-        CompletableProcessor onClose = this.onClose;
-        if (onClose != null) {
-            return onClose;
-        }
-        final CompletableProcessor newOnClose = new CompletableProcessor();
-        if (onCloseUpdater.compareAndSet(this, null, newOnClose)) {
-            return newOnClose;
-        }
-        onClose = this.onClose;
-        assert onClose != null;
-        return onClose;
+    @Override
+    public Completable closeAsyncGracefully() {
+        return listenableAsyncCloseable.closeAsyncGracefully();
     }
 
     /**
@@ -60,27 +55,4 @@ abstract class AbstractExecutor implements Executor {
      * This method MUST be idempotent.
      */
     abstract void doClose();
-
-    private final class CloseAsync extends Completable implements CompletableSource {
-        @Override
-        protected void handleSubscribe(Subscriber subscriber) {
-            CompletableProcessor onClose = getOrCreateOnClose();
-            onClose.subscribeInternal(subscriber);
-            try {
-                // If closeAsync() is subscribed multiple times, we will call this method as many times.
-                // Since doClose() is idempotent and usually cheap, it is OK as compared to implementing at most
-                // once semantics.
-                doClose();
-            } catch (Throwable cause) {
-                onClose.onError(cause);
-                return;
-            }
-            onClose.onComplete();
-        }
-
-        @Override
-        public void subscribe(final Subscriber subscriber) {
-            subscribeInternal(subscriber);
-        }
-    }
 }

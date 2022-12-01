@@ -112,6 +112,11 @@ public abstract class DelegatingExecutor implements Executor {
     }
 
     @Override
+    public Completable onClosing() {
+        return delegate.onClosing();
+    }
+
+    @Override
     public Completable closeAsync() {
         return delegate.closeAsync();
     }

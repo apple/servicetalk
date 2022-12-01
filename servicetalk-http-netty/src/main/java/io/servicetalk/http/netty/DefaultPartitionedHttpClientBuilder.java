@@ -196,6 +196,11 @@ final class DefaultPartitionedHttpClientBuilder<U, R> implements PartitionedHttp
         }
 
         @Override
+        public Completable onClosing() {
+            return group.onClosing();
+        }
+
+        @Override
         public Completable closeAsync() {
             return group.closeAsync();
         }
@@ -237,6 +242,11 @@ final class DefaultPartitionedHttpClientBuilder<U, R> implements PartitionedHttp
         @Override
         public Completable onClose() {
             return close.onClose();
+        }
+
+        @Override
+        public Completable onClosing() {
+            return close.onClosing();
         }
 
         @Override
