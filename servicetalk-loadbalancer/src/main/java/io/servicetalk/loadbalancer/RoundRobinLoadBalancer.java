@@ -128,6 +128,8 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
     private final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory;
     private final int linearSearchSpace;
     private final ListenableAsyncCloseable asyncCloseable;
+    @Nullable
+    private CompositeCloseable compositeCloseable;
 
     /**
      * Creates a new instance.
@@ -235,7 +237,7 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
 
             private Host<ResolvedAddress, C> createHost(ResolvedAddress addr) {
                 Host<ResolvedAddress, C> host = new Host<>(targetResource, addr, healthCheckConfig);
-                host.onClosing().afterFinally(() ->
+                host.onClose().afterFinally(() ->
                         usedHostsUpdater.updateAndGet(RoundRobinLoadBalancer.this, previousHosts -> {
                                     @SuppressWarnings("unchecked")
                                     List<Host<ResolvedAddress, C>> previousHostsTyped =
@@ -311,12 +313,19 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
             }
         });
         asyncCloseable = toAsyncCloseable(graceful -> {
-            @SuppressWarnings("unchecked")
-            List<Host<ResolvedAddress, C>> currentList = usedHostsUpdater.getAndSet(this, CLOSED_LIST);
             discoveryCancellable.cancel();
             eventStreamProcessor.onComplete();
-            CompositeCloseable cc = newCompositeCloseable().appendAll(currentList).appendAll(connectionFactory);
-            return graceful ? cc.closeAsyncGracefully() : cc.closeAsync();
+            // We lock because items are removed from the collection via onClosing (on the leading edge). If
+            // closeAsyncGracefully is called all the items will be removed from the collection, however that
+            // operation may timeout and then a subsequent closeAsync is expected to close the original items.
+            synchronized (discoveryCancellable) {
+                if (compositeCloseable == null) {
+                    @SuppressWarnings("unchecked")
+                    List<Host<ResolvedAddress, C>> currentList = usedHostsUpdater.getAndSet(this, CLOSED_LIST);
+                    compositeCloseable = newCompositeCloseable().appendAll(currentList).appendAll(connectionFactory);
+                }
+            }
+            return graceful ? compositeCloseable.closeAsyncGracefully() : compositeCloseable.closeAsync();
         });
     }
 
@@ -528,7 +537,7 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
         }
 
         void markClosed() {
-            final ConnState oldState = connStateUpdater.getAndSet(this, CLOSED_CONN_STATE);
+            final ConnState oldState = closeConnState();
             final Object[] toRemove = oldState.connections;
             cancelIfHealthCheck(oldState.state);
             LOGGER.debug("Load balancer for {}: closing {} connection(s) gracefully to the closed address: {}.",
@@ -537,6 +546,20 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
                 @SuppressWarnings("unchecked")
                 final C cConn = (C) conn;
                 cConn.closeAsyncGracefully().subscribe();
+            }
+        }
+
+        private ConnState closeConnState() {
+            for (;;) {
+                final ConnState oldState = connState;
+                if (oldState.state != State.CLOSED) {
+                    if (connStateUpdater.compareAndSet(this, oldState,
+                            new ConnState(oldState.connections, State.CLOSED))) {
+                        return oldState;
+                    }
+                } else {
+                    return oldState;
+                }
             }
         }
 
@@ -627,7 +650,7 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
             for (;;) {
                 ++addAttempt;
                 final ConnState previous = connStateUpdater.get(this);
-                if (previous == CLOSED_CONN_STATE) {
+                if (previous.state == State.CLOSED) {
                     return false;
                 }
 
@@ -654,12 +677,12 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
             LOGGER.trace("Load balancer for {}: added a new connection {} to {} after {} attempt(s).",
                     targetResource, connection, this, addAttempt);
             // Instrument the new connection so we prune it on close
-            connection.onClosing().beforeFinally(() -> {
+            connection.onClose().beforeFinally(() -> {
                 int removeAttempt = 0;
                 for (;;) {
                     ++removeAttempt;
                     final ConnState currentConnState = this.connState;
-                    if (currentConnState == CLOSED_CONN_STATE) {
+                    if (currentConnState.state == State.CLOSED) {
                         break;
                     }
                     int i = 0;
@@ -735,7 +758,7 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
         @SuppressWarnings("unchecked")
         private Completable doClose(final Function<? super C, Completable> closeFunction) {
             return Completable.defer(() -> {
-                final ConnState oldState = connStateUpdater.getAndSet(this, CLOSED_CONN_STATE);
+                final ConnState oldState = closeConnState();
                 cancelIfHealthCheck(oldState.state);
                 final Object[] connections = oldState.connections;
                 return (connections.length == 0 ? completed() :
