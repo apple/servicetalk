@@ -100,6 +100,7 @@ public class TcpServer {
     }
 
     // Visible to allow tests to override.
+    @SuppressWarnings("deprecation") // legitimate use of BufferHandler
     ChannelInitializer getChannelInitializer(final Function<NettyConnection<Buffer, Buffer>, Completable> service,
                                              final ExecutionContext<?> executionContext) {
         return channel -> channel.pipeline().addLast(BufferHandler.INSTANCE);

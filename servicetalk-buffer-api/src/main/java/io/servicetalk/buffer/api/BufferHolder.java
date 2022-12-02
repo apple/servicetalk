@@ -17,7 +17,11 @@ package io.servicetalk.buffer.api;
 
 /**
  * An object which contains a {@link Buffer}.
+ *
+ * @deprecated This API is going to be removed in future releases with no planned replacement. If it cannot be
+ *             removed from your application, consider copying it into your codebase.
  */
+@Deprecated // FIXME: 0.43 - Remove deprecation
 public interface BufferHolder {
     /**
      * The buffer contained by this object.

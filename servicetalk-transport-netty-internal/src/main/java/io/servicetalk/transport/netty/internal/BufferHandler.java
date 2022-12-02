@@ -40,8 +40,12 @@ import static io.servicetalk.buffer.netty.BufferUtils.newBufferFrom;
  * </ul>
  *
  * This also releases any {@link ByteBuf} once converted to {@link Buffer}.
+ *
+ * @deprecated This API is going to be removed in future releases with no planned replacement. If it cannot be
+ *             removed from your application, consider copying it into your codebase.
  */
 @Sharable
+@Deprecated // FIXME: 0.43 - Remove deprecation and copy into tests
 public final class BufferHandler extends ChannelDuplexHandler {
     public static final ChannelDuplexHandler INSTANCE = new BufferHandler();
 
