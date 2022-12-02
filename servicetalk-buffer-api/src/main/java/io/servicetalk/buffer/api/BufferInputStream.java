@@ -23,8 +23,11 @@ import static java.util.Objects.requireNonNull;
 final class BufferInputStream extends InputStream {
     private final Buffer buffer;
 
+    private int mark;
+
     BufferInputStream(Buffer buffer) {
         this.buffer = requireNonNull(buffer);
+        this.mark = buffer.readerIndex();
     }
 
     @Override
@@ -60,5 +63,20 @@ final class BufferInputStream extends InputStream {
     @Override
     public int available() {
         return buffer.readableBytes();
+    }
+
+    @Override
+    public boolean markSupported() {
+        return true;
+    }
+
+    @Override
+    public void mark(final int readlimit) {
+        mark = buffer.readerIndex();
+    }
+
+    @Override
+    public void reset() {
+        buffer.readerIndex(mark);
     }
 }
