@@ -41,7 +41,7 @@ import static io.servicetalk.buffer.netty.BufferUtils.newBufferFrom;
  *
  * This also releases any {@link ByteBuf} once converted to {@link Buffer}.
  *
- * @deprecated This API is going to be removed in the next minor version with no planned replacement. If it cannot be
+ * @deprecated This API is going to be removed in future releases with no planned replacement. If it cannot be
  *             removed from your application, consider copying it into your codebase.
  */
 @Sharable
