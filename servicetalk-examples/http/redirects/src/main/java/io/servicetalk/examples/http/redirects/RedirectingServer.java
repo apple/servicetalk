@@ -45,6 +45,8 @@ public final class RedirectingServer {
 
     public static void main(String... args) throws Exception {
         ServerContext finalServer = HttpServers.forPort(SECURE_SERVER_PORT)
+                // Note: DefaultTestCerts contains self-signed certificates that may be used only for local testing.
+                // or demonstration purposes. Never use those for real use-cases.
                 .sslConfig(new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
                         .build())
                 // Wire-logging helps to demonstrate requests and responses that have been sent

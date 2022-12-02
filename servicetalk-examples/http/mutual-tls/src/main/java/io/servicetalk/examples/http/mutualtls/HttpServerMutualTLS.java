@@ -29,6 +29,8 @@ public final class HttpServerMutualTLS {
 
     public static void main(String[] args) throws Exception {
         HttpServers.forPort(8080)
+                // Note: DefaultTestCerts contains self-signed certificates that may be used only for local testing.
+                // or demonstration purposes. Never use those for real use-cases.
                 .sslConfig(new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
                         // Require clients to authenticate, otherwise a handshake may succeed without authentication.
                         .clientAuthMode(SslClientAuthMode.REQUIRE)

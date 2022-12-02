@@ -192,6 +192,8 @@ public final class DebuggingExampleServer {
                 /*
                  * For ALPN, make sure to supply both HTTP/2 and HTTP/1.X HttpProtocolConfigs and SslConfig.
                  */
+                // Note: DefaultTestCerts contains self-signed certificates that may be used only for local testing
+                // or demonstration purposes. Never use those for real use-cases.
                 // .sslConfig(new ServerSslConfigBuilder(
                 //         DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey).build())
                 // .protocols(HttpProtocolConfigs.h2()
