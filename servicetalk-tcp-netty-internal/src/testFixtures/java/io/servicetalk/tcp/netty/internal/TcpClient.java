@@ -89,6 +89,7 @@ final class TcpClient {
      * @param address to connect.
      * @return New {@link NettyConnection}.
      */
+    @SuppressWarnings("deprecation") // legitimate use of BufferHandler
     public Single<NettyConnection<Buffer, Buffer>> connect(ExecutionContext<?> executionContext,
                                                            SocketAddress address) {
         return TcpConnector.connect(null, address, config, false, executionContext,
