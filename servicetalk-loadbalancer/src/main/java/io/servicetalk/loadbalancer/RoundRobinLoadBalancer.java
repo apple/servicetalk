@@ -559,6 +559,9 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
 
         private ConnState closeConnState() {
             for (;;) {
+                // We need to keep the oldState.connections around even if we are closed because the user may do
+                // closeGracefully with a timeout, which fails, and then force close. If we discard connections when
+                // closeGracefully is started we may leak connections.
                 final ConnState oldState = connState;
                 if (oldState.state == State.CLOSED || connStateUpdater.compareAndSet(this, oldState,
                         new ConnState(oldState.connections, State.CLOSED))) {
@@ -652,11 +655,11 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
         boolean addConnection(C connection) {
             int addAttempt = 0;
             for (;;) {
-                ++addAttempt;
                 final ConnState previous = connStateUpdater.get(this);
                 if (previous.state == State.CLOSED) {
                     return false;
                 }
+                ++addAttempt;
 
                 final Object[] existing = previous.connections;
                 // Brute force iteration to avoid duplicates. If connections grow larger and faster lookup is required
@@ -684,11 +687,11 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
             connection.onClose().beforeFinally(() -> {
                 int removeAttempt = 0;
                 for (;;) {
-                    ++removeAttempt;
                     final ConnState currentConnState = this.connState;
                     if (currentConnState.state == State.CLOSED) {
                         break;
                     }
+                    ++removeAttempt;
                     int i = 0;
                     final Object[] connections = currentConnState.connections;
                     for (; i < connections.length; ++i) {
@@ -1011,7 +1014,7 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
 
         @Override
         public boolean removeIf(final Predicate<? super T> filter) {
-            return List.super.removeIf(filter);
+            return delegate.removeIf(filter);
         }
 
         @Override
@@ -1021,12 +1024,12 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
 
         @Override
         public void replaceAll(final UnaryOperator<T> operator) {
-            List.super.replaceAll(operator);
+            delegate.replaceAll(operator);
         }
 
         @Override
         public void sort(final Comparator<? super T> c) {
-            List.super.sort(c);
+            delegate.sort(c);
         }
 
         @Override
