@@ -560,12 +560,8 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
         private ConnState closeConnState() {
             for (;;) {
                 final ConnState oldState = connState;
-                if (oldState.state != State.CLOSED) {
-                    if (connStateUpdater.compareAndSet(this, oldState,
-                            new ConnState(oldState.connections, State.CLOSED))) {
-                        return oldState;
-                    }
-                } else {
+                if (oldState.state == State.CLOSED || connStateUpdater.compareAndSet(this, oldState,
+                        new ConnState(oldState.connections, State.CLOSED))) {
                     return oldState;
                 }
             }
