@@ -90,11 +90,21 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
         this.healthCheckConfig = healthCheckConfig;
     }
 
+    @Deprecated
     @Override
     public <T extends C> LoadBalancer<T> newLoadBalancer(
             final String targetResource,
             final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
             final ConnectionFactory<ResolvedAddress, T> connectionFactory) {
+        return new RoundRobinLoadBalancer<>(requireNonNull(targetResource), eventPublisher, connectionFactory,
+                linearSearchSpace, healthCheckConfig);
+    }
+
+    @Override
+    public LoadBalancer<C> newLoadBalancerTyped(
+            final String targetResource,
+            final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
+            final ConnectionFactory<ResolvedAddress, C> connectionFactory) {
         return new RoundRobinLoadBalancer<>(requireNonNull(targetResource), eventPublisher, connectionFactory,
                 linearSearchSpace, healthCheckConfig);
     }

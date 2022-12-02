@@ -222,6 +222,7 @@ class RetryingHttpRequesterFilterTest {
         private final LoadBalancerFactory<InetSocketAddress, C> rr =
                 new RoundRobinLoadBalancerFactory.Builder<InetSocketAddress, C>().build();
 
+        @SuppressWarnings("deprecation")
         @Override
         public <T extends C> LoadBalancer<T> newLoadBalancer(
                 final String targetResource,
@@ -229,6 +230,16 @@ class RetryingHttpRequesterFilterTest {
                         eventPublisher,
                 final ConnectionFactory<InetSocketAddress, T> connectionFactory) {
             return new InspectingLoadBalancer<>(rr.newLoadBalancer(targetResource, eventPublisher, connectionFactory));
+        }
+
+        @Override
+        public LoadBalancer<C> newLoadBalancerTyped(
+                final String targetResource,
+                final Publisher<? extends Collection<? extends ServiceDiscovererEvent<InetSocketAddress>>>
+                        eventPublisher,
+                final ConnectionFactory<InetSocketAddress, C> connectionFactory) {
+            return new InspectingLoadBalancer<>(
+                    rr.newLoadBalancerTyped(targetResource, eventPublisher, connectionFactory));
         }
 
         @Override

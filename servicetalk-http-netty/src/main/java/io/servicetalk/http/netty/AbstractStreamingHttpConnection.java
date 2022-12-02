@@ -89,7 +89,8 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
                 .concat(succeeded(ZERO_MAX_CONCURRENCY_EVENT))
                 .publishOn(executionContext.executionStrategy().isEventOffloaded() ?
                         executionContext.executor() : immediate(),
-                        IoThreadFactory.IoThread::currentThreadIsIoThread);
+                        IoThreadFactory.IoThread::currentThreadIsIoThread)
+                .multicast(1); // Allows multiple Subscribers to consume the event stream.
         this.headersFactory = headersFactory;
         this.allowDropTrailersReadFromTransport = allowDropTrailersReadFromTransport;
     }

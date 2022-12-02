@@ -289,7 +289,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
             }
 
             final LoadBalancer<FilterableStreamingHttpLoadBalancedConnection> lb =
-                    closeOnException.prepend(ctx.builder.loadBalancerFactory.newLoadBalancer(
+                    closeOnException.prepend(ctx.builder.loadBalancerFactory.newLoadBalancerTyped(
                             targetAddress(ctx),
                             sdEvents,
                             connectionFactory));

@@ -63,6 +63,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -384,7 +385,7 @@ abstract class RoundRobinLoadBalancerTest {
     }
 
     @Test
-    void newConnectionIsClosedWhenSelectorRejects() throws Exception {
+    void newConnectionIsNotClosedWhenSelectorRejects() throws Exception {
         sendServiceDiscoveryEvents(upEvent("address-1"));
         try {
             awaitIndefinitely(lb.selectConnection(__ -> false, null));
@@ -396,7 +397,10 @@ abstract class RoundRobinLoadBalancerTest {
         TestLoadBalancedConnection connection = connectionsCreated.get(0);
         assertThat(connection, is(notNullValue()));
         assertThat(connection.address(), is(equalTo("address-1")));
-        awaitIndefinitely(connection.onClose());
+        // Verify that no close is initiated. Selection may fail because max concurrency changed or connection is
+        // being cached and re-used.
+        assertThrows(TimeoutException.class, () -> connection.onClose().toFuture().get(10, MILLISECONDS));
+        connection.closeAsync().toFuture().get();
     }
 
     @Test
@@ -456,7 +460,7 @@ abstract class RoundRobinLoadBalancerTest {
                 new RoundRobinLoadBalancerFactory.Builder<String, TestLoadBalancedConnection>()
                         .healthCheckFailedConnectionsThreshold(-1)
                         .build()
-                        .newLoadBalancer("test-service", serviceDiscoveryPublisher, connectionFactory);
+                        .newLoadBalancerTyped("test-service", serviceDiscoveryPublisher, connectionFactory);
 
         sendServiceDiscoveryEvents(upEvent("address-1"));
 
@@ -538,7 +542,7 @@ abstract class RoundRobinLoadBalancerTest {
                             }
                         })
                         .build()
-                        .newLoadBalancer("test-service", serviceDiscoveryPublisher, connectionFactory);
+                        .newLoadBalancerTyped("test-service", serviceDiscoveryPublisher, connectionFactory);
 
         sendServiceDiscoveryEvents(upEvent("address-1"));
 
@@ -640,7 +644,7 @@ abstract class RoundRobinLoadBalancerTest {
                         .healthCheckInterval(ofMillis(50), ofMillis(10))
                         .backgroundExecutor(testExecutor)
                         .build()
-                        .newLoadBalancer("test-service", serviceDiscoveryPublisher, connectionFactory);
+                        .newLoadBalancerTyped("test-service", serviceDiscoveryPublisher, connectionFactory);
 
         assertAddresses(lb.usedAddresses(), EMPTY_ARRAY);
 
@@ -712,7 +716,7 @@ abstract class RoundRobinLoadBalancerTest {
                         .healthCheckInterval(ofMillis(50), ofMillis(10))
                         .backgroundExecutor(testExecutor)
                         .build()
-                        .newLoadBalancer("test-service", serviceDiscoveryPublisher, connectionFactory);
+                        .newLoadBalancerTyped("test-service", serviceDiscoveryPublisher, connectionFactory);
     }
 
     @SafeVarargs

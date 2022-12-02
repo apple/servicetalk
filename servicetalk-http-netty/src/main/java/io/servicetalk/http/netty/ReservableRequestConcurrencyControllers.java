@@ -184,6 +184,11 @@ final class ReservableRequestConcurrencyControllers {
         final boolean casPendingRequests(int oldValue, int newValue) {
             return pendingRequestsUpdater.compareAndSet(this, oldValue, newValue);
         }
+
+        @Override
+        public String toString() {
+            return "pendingRequests=" + pendingRequests + " maxRequests=" + maxConcurrencyHolder.lastSeenValue(-1);
+        }
     }
 
     private static final class ReservableRequestConcurrencyControllerMulti

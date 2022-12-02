@@ -416,12 +416,19 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
                     // Invoke the selector before adding the connection to the pool, otherwise, connection can be
                     // used concurrently and hence a new connection can be rejected by the selector.
                     if (!selector.test(newCnx)) {
-                        // Failure in selection could be temporary, hence add it to the queue and be consistent
-                        // with the fact that select failure does not close a connection.
-                        return newCnx.closeAsync().concat(failed(StacklessConnectionRejectedException.newInstance(
+                        // Failure in selection could be the result of connection factory returning cached connection,
+                        // and not having visibility into max-concurrent-requests, or other threads already selected the
+                        // connection which uses all the max concurrent request count.
+
+                        // If there is caching Propagate the exception and rely upon retry strategy.
+                        Single<C> failedSingle = failed(StacklessConnectionRejectedException.newInstance(
                                 "Newly created connection " + newCnx + " for " + targetResource
                                         + " was rejected by the selection filter.",
-                                RoundRobinLoadBalancer.class, "selectConnection0(...)")));
+                                RoundRobinLoadBalancer.class, "selectConnection0(...)"));
+
+                        // Just in case the connection is not closed add it to the host so we don't lose track,
+                        // duplicates will be filtered out.
+                        return host.addConnection(newCnx) ? failedSingle : newCnx.closeAsync().concat(failedSingle);
                     }
                     if (host.addConnection(newCnx)) {
                         return succeeded(newCnx);
@@ -625,6 +632,13 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
                 }
 
                 final Object[] existing = previous.connections;
+                // Brute force iteration to avoid duplicates. If connections grow larger and faster lookup is required
+                // we can keep a Set for faster lookups (at the cost of more memory) as well as array.
+                for (final Object o : existing) {
+                    if (o.equals(connection)) {
+                        return true;
+                    }
+                }
                 Object[] newList = Arrays.copyOf(existing, existing.length + 1);
                 newList[existing.length] = connection;
 

@@ -67,8 +67,7 @@ public interface HttpLoadBalancerFactory<ResolvedAddress>
      * @param concurrencyController {@link ReservableRequestConcurrencyController} to control access to the connection
      * @param context A {@link ContextMap context} of the caller (e.g. request/LB context) or {@code null} if no context
      * @return {@link FilterableStreamingHttpLoadBalancedConnection} for the passed
-     * {@link FilterableStreamingHttpConnection}
-     * provided
+     * {@link FilterableStreamingHttpConnection}.
      */
     default FilterableStreamingHttpLoadBalancedConnection toLoadBalancedConnection(
             FilterableStreamingHttpConnection connection,
