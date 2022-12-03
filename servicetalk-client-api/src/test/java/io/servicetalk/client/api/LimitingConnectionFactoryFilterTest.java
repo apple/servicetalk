@@ -46,12 +46,12 @@ import static org.mockito.Mockito.when;
 
 class LimitingConnectionFactoryFilterTest {
 
-    private final TestSingleSubscriber<ListenableAsyncCloseable> connectlistener = new TestSingleSubscriber<>();
+    private final TestSingleSubscriber<ListenableAsyncCloseable> connectListener = new TestSingleSubscriber<>();
     private ConnectionFactory<String, ListenableAsyncCloseable> original;
     private BlockingQueue<Processor> connectionOnClose;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         original = newMockConnectionFactory();
         connectionOnClose = new LinkedBlockingQueue<>();
         when(original.newConnection(any(), any(), any())).thenAnswer(invocation -> {
@@ -76,7 +76,8 @@ class LimitingConnectionFactoryFilterTest {
         cf.newConnection("c1", null, null).toFuture().get();
         Exception e = assertThrows(ExecutionException.class, () -> cf.newConnection("c2", null, null)
                 .toFuture().get());
-        assertThat(e.getCause(), instanceOf(ConnectException.class));
+        assertThat(e.getCause(), instanceOf(ConnectException.class)); // ensure backwards compatibility
+        assertThat(e.getCause(), instanceOf(ConnectionLimitReachedException.class));
     }
 
     @Test
@@ -95,10 +96,10 @@ class LimitingConnectionFactoryFilterTest {
         when(o.newConnection(any(), any(), any())).thenReturn(never());
         ConnectionFactory<String, ? extends ListenableAsyncCloseable> cf =
                 makeCF(LimitingConnectionFactoryFilter.withMax(1), o);
-        toSource(cf.newConnection("c1", null, null)).subscribe(connectlistener);
-        assertThat(connectlistener.pollTerminal(10, MILLISECONDS), is(nullValue()));
+        toSource(cf.newConnection("c1", null, null)).subscribe(connectListener);
+        assertThat(connectListener.pollTerminal(10, MILLISECONDS), is(nullValue()));
         connectAndVerifyFailed(cf);
-        connectlistener.awaitSubscription().cancel();
+        connectListener.awaitSubscription().cancel();
 
         ListenableAsyncCloseable c = mock(ListenableAsyncCloseable.class);
         when(c.onClose()).thenReturn(Completable.never());

@@ -133,7 +133,7 @@ public final class LimitingConnectionFactoryFilter<ResolvedAddress, C extends Li
          * @return {@link Throwable} representing a connection attempt was refused.
          */
         default Throwable newConnectionRefusedException(ResolvedAddress target) {
-            return new ConnectException("No more connections allowed for the host: " + target);
+            return new ConnectionLimitReachedException("No more connections allowed for the host: " + target);
         }
     }
 
