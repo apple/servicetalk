@@ -244,13 +244,15 @@ class JacksonSerializerFactoryTest {
 
         assertThat(
                 stringStreamingSerializer(false)
-                        .deserialize(from(directBuffer, heapBuffer), BufferAllocators.DEFAULT_ALLOCATOR)
+                        .deserialize(from(directBuffer.duplicate(), heapBuffer.duplicate()),
+                                BufferAllocators.DEFAULT_ALLOCATOR)
                         .toIterable(),
                 contains("b1", "b2"));
 
         assertThat(
                 stringStreamingSerializer(false)
-                        .deserialize(from(heapBuffer, directBuffer), BufferAllocators.DEFAULT_ALLOCATOR)
+                        .deserialize(from(heapBuffer.duplicate(), directBuffer.duplicate()),
+                                BufferAllocators.DEFAULT_ALLOCATOR)
                         .toIterable(),
                 contains("b2", "b1"));
     }
