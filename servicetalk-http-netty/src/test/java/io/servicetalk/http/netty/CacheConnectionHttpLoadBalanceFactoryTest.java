@@ -118,7 +118,7 @@ final class CacheConnectionHttpLoadBalanceFactoryTest {
             assertThat(connectionObserver.count.get(),
                     // Initial number of streams is unbound, so we may create more streams on connections before the
                     // client acknowledges the servers max_concurrent_streams setting update.
-                    lessThanOrEqualTo((int) ceil((double) (numRequests + numRetries.get()) / maxConcurrency)));
+                    lessThanOrEqualTo((int) ceil((double) (numRequests + numRetries.get()) / maxConcurrency) + 1));
         }
     }
 
