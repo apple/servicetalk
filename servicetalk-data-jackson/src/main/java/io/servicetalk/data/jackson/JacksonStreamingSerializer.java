@@ -162,7 +162,6 @@ final class JacksonStreamingSerializer<T> implements StreamingSerializerDeserial
                 feeder.feedInput(buffer.toNioBuffer());
                 return feeder.needMoreInput();
             }
-
         }
 
         private abstract static class DeserializeSubscriber<T> implements Subscriber<Buffer> {
