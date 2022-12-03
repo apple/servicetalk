@@ -177,12 +177,12 @@ public class JacksonStreamingSerializerBenchmark {
         int remainingBytes = size;
         Random random = new Random();
         while (remainingBytes > 2) {
-            int keyLen = random.nextInt(1, Math.min(50, remainingBytes));
+            int keyLen = Math.max(1, random.nextInt(Math.min(50, remainingBytes)));
             remainingBytes -= keyLen;
             if (remainingBytes <= 2) {
                 break;
             }
-            int bodyLen = random.nextInt(1, Math.min(50, remainingBytes));
+            int bodyLen = Math.max(1, random.nextInt(Math.min(50, remainingBytes)));
             remainingBytes -= bodyLen;
 
             payload.put(
