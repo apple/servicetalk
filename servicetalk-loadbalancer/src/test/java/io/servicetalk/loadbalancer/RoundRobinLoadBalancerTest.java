@@ -45,6 +45,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.AbstractMap;
 import java.util.Arrays;
@@ -77,7 +79,11 @@ import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.AVAILABLE;
 import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.EXPIRED;
 import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.UNAVAILABLE;
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
+import static io.servicetalk.concurrent.api.AsyncCloseables.toAsyncCloseable;
+import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitely;
+import static io.servicetalk.concurrent.api.Completable.completed;
+import static io.servicetalk.concurrent.api.Completable.never;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoffFullJitter;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.failed;
@@ -382,6 +388,35 @@ abstract class RoundRobinLoadBalancerTest {
     void closeClosesConnectionFactory() throws Exception {
         awaitIndefinitely(lb.closeAsync());
         assertTrue(connectionFactory.isClosed(), "ConnectionFactory not closed.");
+    }
+
+    @ParameterizedTest(name = "closeFromLb={0}")
+    @ValueSource(booleans = {true, false})
+    void closeGracefulThenClose(boolean closeFromLb)
+            throws ExecutionException, InterruptedException {
+        serviceDiscoveryPublisher.onComplete();
+        lb = defaultLb(new DelegatingConnectionFactory(addr -> newRealizedConnectionSingle(addr,
+                toListenableAsyncCloseable(toAsyncCloseable(graceful -> graceful ? never() : completed())))));
+        sendServiceDiscoveryEvents(upEvent("address-1"));
+        final TestLoadBalancedConnection connection = awaitIndefinitely(lb.selectConnection(any(), null));
+        assertThat(connection, notNullValue());
+            assertThat(assertThrows(ExecutionException.class,
+                    () -> (closeFromLb ? lb.closeAsyncGracefully() : connection.closeAsyncGracefully())
+                            .timeout(ofMillis(1)).toFuture().get())
+                    .getCause(), instanceOf(TimeoutException.class));
+
+        if (closeFromLb) {
+            lb.onClosing().toFuture().get();
+        }
+        connection.onClosing().toFuture().get();
+
+        lb.closeAsync().toFuture().get();
+        if (!closeFromLb) {
+            lb.onClosing().toFuture().get();
+        }
+
+        lb.onClose().toFuture().get(); // Verify onClose reflects the close status.
+        connection.onClose().toFuture().get(); // Make sure closeable is closed completely.
     }
 
     @Test
@@ -755,12 +790,20 @@ abstract class RoundRobinLoadBalancerTest {
     }
 
     private Single<TestLoadBalancedConnection> newRealizedConnectionSingle(final String address) {
-        return succeeded(newConnection(address));
+        return newRealizedConnectionSingle(address, emptyAsyncCloseable());
+    }
+
+    private Single<TestLoadBalancedConnection> newRealizedConnectionSingle(final String address,
+                                                                           final ListenableAsyncCloseable closeable) {
+        return succeeded(newConnection(address, closeable));
     }
 
     private TestLoadBalancedConnection newConnection(final String address) {
+        return newConnection(address, emptyAsyncCloseable());
+    }
+
+    private TestLoadBalancedConnection newConnection(final String address, final ListenableAsyncCloseable closeable) {
         final TestLoadBalancedConnection cnx = mock(TestLoadBalancedConnection.class);
-        final ListenableAsyncCloseable closeable = emptyAsyncCloseable();
         when(cnx.closeAsync()).thenReturn(closeable.closeAsync());
         when(cnx.closeAsyncGracefully()).thenReturn(closeable.closeAsyncGracefully());
         when(cnx.onClose()).thenReturn(closeable.onClose());
