@@ -126,8 +126,8 @@ public final class LimitingConnectionFactoryFilter<ResolvedAddress, C extends Li
         void onConnectionClose(ResolvedAddress target);
 
         /**
-         * Create a {@link Throwable} representing a connection attempt refused, typically  as a result of returning
-         * {@code false} from {@link #isConnectAllowed(Object)}.
+         * Create a {@link ConnectionLimitReachedException} representing a connection attempt refused, typically
+         * as a result of returning {@code false} from {@link #isConnectAllowed(Object)}.
          *
          * @param target {@link ResolvedAddress} for which connection was refused.
          * @return {@link Throwable} representing a connection attempt was refused.

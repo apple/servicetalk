@@ -20,6 +20,8 @@ import java.net.ConnectException;
 /**
  * Thrown when the number of connections reached their limit for a given resource (i.e. a host)
  * depending on the context.
+ *
+ * @see LimitingConnectionFactoryFilter
  */
 public class ConnectionLimitReachedException extends ConnectException {
 
