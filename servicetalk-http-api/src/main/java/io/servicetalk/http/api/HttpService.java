@@ -25,7 +25,7 @@ import static io.servicetalk.http.api.DefaultHttpExecutionStrategy.OFFLOAD_RECEI
  * Same as {@link StreamingHttpService} but that accepts {@link HttpRequest} and returns {@link HttpResponse}.
  */
 @FunctionalInterface
-public interface HttpService extends AsyncCloseable, HttpExecutionStrategyInfluencer {
+public interface HttpService extends AsyncCloseable, Service {
     /**
      * Handles a single HTTP request.
      *

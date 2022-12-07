@@ -25,7 +25,7 @@ import static io.servicetalk.concurrent.api.Completable.completed;
  * A service contract for the HTTP protocol.
  */
 @FunctionalInterface
-public interface StreamingHttpService extends AsyncCloseable, HttpExecutionStrategyInfluencer {
+public interface StreamingHttpService extends AsyncCloseable, Service {
     /**
      * Handles a single HTTP request.
      *
