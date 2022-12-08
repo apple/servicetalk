@@ -320,6 +320,9 @@ public final class RetryingHttpRequesterFilter
     public static final class BackOffPolicy {
 
         private static final Duration FULL_JITTER = ofDays(1024);
+        // Subtract 1 because the total strategy anticipates 1 failure from LB not being ready (due to SD available
+        // events not yet arriving), however this level of retry is strictly applied to request/response failures.
+        private static final BackOffPolicy IMMEDIATE_DEFAULT_RETRIES = new BackOffPolicy(DEFAULT_MAX_TOTAL_RETRIES - 1);
 
         // FIXME: 0.43 - change field accessor to default
         /**
@@ -373,12 +376,23 @@ public final class RetryingHttpRequesterFilter
 
         /**
          * Creates a new {@link BackOffPolicy} that retries failures instantly up-to 3 max retries.
+         *
          * @return a new {@link BackOffPolicy} that retries failures instantly up-to 3 max retries.
+         * @deprecated Use {@link #ofImmediateBounded()}.
          */
+        @Deprecated
         public static BackOffPolicy ofImmediate() {
-            // Subtract 1 because the total strategy anticipates 1 failure from LB not being ready (due to SD available
-            // events not yet arriving), however this level of retry is strictly applied to request/response failures.
-            return new BackOffPolicy(DEFAULT_MAX_TOTAL_RETRIES - 1);
+            return ofImmediateBounded();
+        }
+
+        /**
+         * Creates a new {@link BackOffPolicy} that retries failures instantly up-to 3 max retries.
+         *
+         * @return a new {@link BackOffPolicy} that retries failures instantly up-to 3 max retries.
+         * @see #ofImmediate(int)
+         */
+        public static BackOffPolicy ofImmediateBounded() {
+            return IMMEDIATE_DEFAULT_RETRIES;
         }
 
         /**
@@ -616,11 +630,11 @@ public final class RetryingHttpRequesterFilter
         private int maxTotalRetries = DEFAULT_MAX_TOTAL_RETRIES;
         private boolean retryExpectationFailed;
 
+        private BiFunction<HttpRequestMetaData, RetryableException, BackOffPolicy>
+                retryRetryableExceptions = (requestMetaData, e) -> BackOffPolicy.ofImmediateBounded();
+
         @Nullable
         private Function<HttpResponseMetaData, HttpResponseException> responseMapper;
-
-        private BiFunction<HttpRequestMetaData, RetryableException, BackOffPolicy>
-                retryRetryableExceptions = (requestMetaData, e) -> BackOffPolicy.ofImmediate();
 
         @Nullable
         private BiFunction<HttpRequestMetaData, IOException, BackOffPolicy>
@@ -840,7 +854,7 @@ public final class RetryingHttpRequesterFilter
                         if (retryExpectationFailed && throwable instanceof ExpectationFailedException &&
                                 requestMetaData.headers().containsIgnoreCase(EXPECT, CONTINUE)) {
                             requestMetaData.headers().remove(EXPECT);
-                            return BackOffPolicy.ofImmediate();
+                            return BackOffPolicy.ofImmediateBounded();
                         }
 
                         if (retryIdempotentRequests != null && throwable instanceof IOException
