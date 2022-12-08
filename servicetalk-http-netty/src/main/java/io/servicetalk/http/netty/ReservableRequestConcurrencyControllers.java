@@ -86,6 +86,11 @@ final class ReservableRequestConcurrencyControllers {
         @Override
         public void eventConsumed() {
         }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName() + "{event=" + event + '}';
+        }
     }
 
     private abstract static class AbstractReservableRequestConcurrencyController

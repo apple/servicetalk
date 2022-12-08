@@ -542,6 +542,14 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                 channel.writeAndFlush(Http2SettingsAckFrame.INSTANCE);
             }
         }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName() +
+                    "{maxConcurrentStreams=" + maxConcurrentStreams +
+                    ", completed=" + completed +
+                    '}';
+        }
     }
 
     static final class StacklessCancellationException extends CancellationException {
