@@ -60,16 +60,30 @@ final class BuilderUtils {
             ServerContext serverContext,
             ExecutionContext<? extends ExecutionStrategy> ctx,
             HttpProtocol... protocols) {
-        return newClientBuilderWithConfigs(serverContext, ctx, toConfigs(protocols));
+        return newClientBuilder(serverHostAndPort(serverContext), ctx, protocols);
+    }
+
+    static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> newClientBuilder(
+            HostAndPort serverHostAndPort,
+            ExecutionContext<? extends ExecutionStrategy> ctx,
+            HttpProtocol... protocols) {
+        return newClientBuilderWithConfigs(serverHostAndPort, ctx, toConfigs(protocols));
     }
 
     static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> newClientBuilderWithConfigs(
             ServerContext serverContext,
             ExecutionContext<? extends ExecutionStrategy> ctx,
             HttpProtocolConfig... protocols) {
+        return newClientBuilderWithConfigs(serverHostAndPort(serverContext), ctx, protocols);
+    }
+
+    static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> newClientBuilderWithConfigs(
+            HostAndPort serverHostAndPort,
+            ExecutionContext<? extends ExecutionStrategy> ctx,
+            HttpProtocolConfig... protocols) {
 
         SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder =
-                HttpClients.forSingleAddress(serverHostAndPort(serverContext))
+                HttpClients.forSingleAddress(serverHostAndPort)
                         .ioExecutor(ctx.ioExecutor())
                         .executor(ctx.executor())
                         .bufferAllocator(ctx.bufferAllocator())
