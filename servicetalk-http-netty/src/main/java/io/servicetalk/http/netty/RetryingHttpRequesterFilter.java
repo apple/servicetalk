@@ -16,6 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.LoadBalancer;
+import io.servicetalk.client.api.LoadBalancerReadyEvent;
 import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.concurrent.api.AsyncCloseable;
@@ -81,7 +82,10 @@ import static java.util.Objects.requireNonNull;
 public final class RetryingHttpRequesterFilter
         implements StreamingHttpClientFilterFactory, ExecutionStrategyInfluencer<HttpExecutionStrategy> {
     private static final int DEFAULT_MAX_TOTAL_RETRIES = 4;
-    private static final RetryingHttpRequesterFilter DISABLE_RETRIES =
+    private static final RetryingHttpRequesterFilter DISABLE_AUTO_RETRIES =
+            new RetryingHttpRequesterFilter(true, false, 1, null,
+                    (__, ___) -> NO_RETRIES);
+    private static final RetryingHttpRequesterFilter DISABLE_ALL_RETRIES =
             new RetryingHttpRequesterFilter(false, true, 0, null,
                     (__, ___) -> NO_RETRIES);
 
@@ -246,12 +250,27 @@ public final class RetryingHttpRequesterFilter
     }
 
     /**
-     * Retrying filter that disables any form of retry behaviour. All types of failures will not be re-attempted.
-     * @return a retrying filter that disables any form of retry behaviour. All types of failures will not be
-     * re-attempted.
+     * Retrying filter that disables automatic retries for exceptions, but still waits until {@link LoadBalancer}
+     * becomes {@link LoadBalancerReadyEvent ready} for the first time.
+     *
+     * @return a retrying filter that disables automatic retries for exceptions, but still waits until
+     * {@link LoadBalancer} becomes {@link LoadBalancerReadyEvent ready} for the first time.
+     * @see RetryingHttpRequesterFilter.Builder#waitForLoadBalancer(boolean)
      */
     public static RetryingHttpRequesterFilter disableAutoRetries() {
-        return DISABLE_RETRIES;
+        return DISABLE_AUTO_RETRIES;
+    }
+
+    /**
+     * Retrying filter that disables any form of retry behaviour. All types of failures will not be re-attempted,
+     * including {@link LoadBalancer} {@link LoadBalancerReadyEvent readiness state}.
+     *
+     * @return a retrying filter that disables any form of retry behaviour. All types of failures will not be
+     * re-attempted.
+     * @see RetryingHttpRequesterFilter.Builder#waitForLoadBalancer(boolean)
+     */
+    public static RetryingHttpRequesterFilter disableAllRetries() {
+        return DISABLE_ALL_RETRIES;
     }
 
     /**
@@ -639,9 +658,10 @@ public final class RetryingHttpRequesterFilter
                 retryOther;
 
         /**
-         * By default, automatic retries wait for the associated {@link LoadBalancer} to be ready before triggering a
-         * retry for requests. This behavior may add latency to requests till the time the load balancer is ready
-         * instead of failing fast. This method allows controlling that behavior.
+         * By default, automatic retries wait for the associated {@link LoadBalancer} to be
+         * {@link LoadBalancerReadyEvent ready} before triggering a retry for requests. This behavior may add latency to
+         * requests till the time the load balancer is ready instead of failing fast. This method allows controlling
+         * that behavior.
          *
          * @param waitForLb Whether to wait for the {@link LoadBalancer} to be ready before retrying requests.
          * @return {@code this}.
