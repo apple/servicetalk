@@ -34,8 +34,21 @@ final class NettyHttp2ExceptionUtils {
             final int streamId = (cause instanceof StreamException) ? ((StreamException) cause).streamId() : 0;
             final io.netty.handler.codec.http2.Http2Exception h2Cause =
                     (io.netty.handler.codec.http2.Http2Exception) cause;
-            return isRetryable(h2Cause) ? new RetryableStacklessHttp2Exception(streamId, h2Cause) :
-                    new StacklessHttp2Exception(streamId, h2Cause);
+            if (h2Cause.error() == REFUSED_STREAM) {
+                // The first check captures cases like:
+                //  - Http2ChannelClosedException.
+                //  - Cannot create stream %d greater than Last-Stream-ID %d from GOAWAY.
+                //  - Stream IDs are exhausted for this endpoint.
+                //  - Maximum active streams violated for this endpoint.
+                if (cause.getMessage() != null &&
+                        cause.getMessage().startsWith("Maximum active streams violated for this endpoint")) {
+                    return new MaxConcurrentStreamsViolatedStacklessHttp2Exception(streamId, h2Cause);
+                }
+            } else if (h2Cause instanceof io.netty.handler.codec.http2.Http2NoMoreStreamIdsException) {
+                // The  second check captures "No more streams can be created on this connection":
+                return new RetryableStacklessHttp2Exception(streamId, h2Cause);
+            }
+            return new StacklessHttp2Exception(streamId, h2Cause);
         }
         if (cause instanceof io.netty.handler.codec.http2.Http2FrameStreamException) {
             io.netty.handler.codec.http2.Http2FrameStreamException streamException =
@@ -110,7 +123,7 @@ final class NettyHttp2ExceptionUtils {
         }
     }
 
-    private static final class RetryableStacklessHttp2Exception extends Http2Exception implements RetryableException {
+    private static class RetryableStacklessHttp2Exception extends Http2Exception implements RetryableException {
         private static final long serialVersionUID = -413341269442893267L;
 
         RetryableStacklessHttp2Exception(final int streamId, io.netty.handler.codec.http2.Http2Exception cause) {
@@ -126,6 +139,15 @@ final class NettyHttp2ExceptionUtils {
         public Throwable fillInStackTrace() {
             // This is a wrapping exception class that always has an original cause and does not require stack trace.
             return this;
+        }
+    }
+
+    static final class MaxConcurrentStreamsViolatedStacklessHttp2Exception extends RetryableStacklessHttp2Exception {
+        private static final long serialVersionUID = 5519486857188675226L;
+
+        MaxConcurrentStreamsViolatedStacklessHttp2Exception(final int streamId,
+                                                            io.netty.handler.codec.http2.Http2Exception cause) {
+            super(streamId, cause);
         }
     }
 

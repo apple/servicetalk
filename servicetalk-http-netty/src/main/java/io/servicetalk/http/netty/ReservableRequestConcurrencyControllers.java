@@ -24,7 +24,16 @@ import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
+import io.servicetalk.http.api.FilterableStreamingHttpClient;
+import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.StreamingHttpClientFilter;
+import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
+import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequester;
+import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.netty.NettyHttp2ExceptionUtils.MaxConcurrentStreamsViolatedStacklessHttp2Exception;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,6 +48,7 @@ import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateSubscription;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
+import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
@@ -284,6 +294,32 @@ final class ReservableRequestConcurrencyControllers {
                     return Accepted;
                 }
             }
+        }
+    }
+
+    static final class InternalRetryingHttpClientFilter implements StreamingHttpClientFilterFactory {
+
+        static final StreamingHttpClientFilterFactory INSTANCE = new InternalRetryingHttpClientFilter();
+
+        private InternalRetryingHttpClientFilter() {
+            // Singleton.
+        }
+
+        @Override
+        public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {
+            return new StreamingHttpClientFilter(client) {
+                @Override
+                protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
+                                                                final StreamingHttpRequest request) {
+                    return delegate.request(request)
+                            .retry((__, t) -> t instanceof MaxConcurrentStreamsViolatedStacklessHttp2Exception);
+                }
+            };
+        }
+
+        @Override
+        public HttpExecutionStrategy requiredOffloads() {
+            return offloadNone();   // This filter doesn't block
         }
     }
 }

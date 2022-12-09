@@ -47,6 +47,7 @@ import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
+import io.servicetalk.http.netty.ReservableRequestConcurrencyControllers.InternalRetryingHttpClientFilter;
 import io.servicetalk.http.utils.HostHeaderHttpRequesterFilter;
 import io.servicetalk.http.utils.IdleTimeoutConnectionFilter;
 import io.servicetalk.logging.api.LogLevel;
@@ -313,6 +314,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                 currClientFilterFactory = appendFilter(currClientFilterFactory,
                         ctx.builder.retryingHttpRequesterFilter);
             }
+            currClientFilterFactory = appendFilter(currClientFilterFactory, InternalRetryingHttpClientFilter.INSTANCE);
             FilterableStreamingHttpClient wrappedClient = currClientFilterFactory != null ?
                     currClientFilterFactory.create(lbClient, lb.eventStream(), ctx.sdStatus) :
                     lbClient;
