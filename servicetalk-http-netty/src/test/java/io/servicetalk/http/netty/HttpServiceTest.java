@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Named.named;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
-public class HttpServiceTest {
+class HttpServiceTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {0}")
     @MethodSource("serviceProvider")
