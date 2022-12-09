@@ -53,6 +53,9 @@ final class H2ServerParentChannelInitializer implements ChannelInitializer {
                 // We do not want close to trigger graceful closure (go away), instead when user triggers a graceful
                 // close, we do the appropriate go away handling.
                 .decoupleCloseAndGoAway(true)
+                // H2ServerParentConnectionContext.ackSettings(...) expects Netty to ack settings frame.
+                // While the default value is `true`, set this explicitly to avoid any unexpected changes.
+                .autoAckSettingsFrame(true)
                 // We ack PING frames in KeepAliveManager#pingReceived.
                 .autoAckPingFrame(false)
                 // We don't want to rely upon Netty to manage the graceful close timeout, because we expect

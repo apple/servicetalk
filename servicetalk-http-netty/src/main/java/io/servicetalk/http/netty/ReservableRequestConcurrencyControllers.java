@@ -20,18 +20,24 @@ import io.servicetalk.client.api.RequestConcurrencyController;
 import io.servicetalk.client.api.ReservableRequestConcurrencyController;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
-import io.servicetalk.concurrent.internal.LatestValueSubscriber;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.client.api.RequestConcurrencyController.Result.Accepted;
 import static io.servicetalk.client.api.RequestConcurrencyController.Result.RejectedPermanently;
 import static io.servicetalk.client.api.RequestConcurrencyController.Result.RejectedTemporary;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateSubscription;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
@@ -40,6 +46,7 @@ import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
  * Factory for common {@link ReservableRequestConcurrencyController}s.
  */
 final class ReservableRequestConcurrencyControllers {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ReservableRequestConcurrencyControllers.class);
 
     private ReservableRequestConcurrencyControllers() {
         // no instances
@@ -48,17 +55,15 @@ final class ReservableRequestConcurrencyControllers {
     /**
      * Create a new instance of {@link ReservableRequestConcurrencyController}.
      *
+     * @param initialEvent The initial event that defines default allowed concurrency.
      * @param maxConcurrency A {@link Publisher} that provides the maximum allowed concurrency updates.
      * @param onClosing A {@link Completable} that when terminated no more calls to
      * {@link RequestConcurrencyController#tryRequest()} are expected to succeed.
-     * @param initialMaxConcurrency The initial maximum value for concurrency, until {@code maxConcurrencySetting}
-     * provides data.
      * @return a new instance of {@link ReservableRequestConcurrencyController}.
      */
-    static ReservableRequestConcurrencyController newController(
-            final Publisher<? extends ConsumableEvent<Integer>> maxConcurrency, final Completable onClosing,
-            final int initialMaxConcurrency) {
-        return new ReservableRequestConcurrencyControllerMulti(maxConcurrency, onClosing, initialMaxConcurrency);
+    static ReservableRequestConcurrencyController newController(final ConsumableEvent<Integer> initialEvent,
+            final Publisher<? extends ConsumableEvent<Integer>> maxConcurrency, final Completable onClosing) {
+        return new ReservableRequestConcurrencyControllerMulti(initialEvent, maxConcurrency, onClosing);
     }
 
     /**
@@ -112,12 +117,13 @@ final class ReservableRequestConcurrencyControllers {
          */
         @SuppressWarnings("unused")
         private volatile int pendingRequests;
-        private final LatestValueSubscriber<Integer> maxConcurrencyHolder;
+        private volatile ConsumableEvent<Integer> latestEvent;
 
         AbstractReservableRequestConcurrencyController(
+                final ConsumableEvent<Integer> initialEvent,
                 final Publisher<? extends ConsumableEvent<Integer>> maxConcurrency,
                 final Completable onClosing) {
-            maxConcurrencyHolder = new LatestValueSubscriber<>();
+            latestEvent = requireNonNull(initialEvent);
             // Subscribe to onClosing() before maxConcurrency, this order increases the chances of capturing the
             // STATE_QUIT before observing 0 from maxConcurrency which could lead to more ambiguous max concurrency
             // error messages for the users on connection tear-down.
@@ -139,24 +145,87 @@ final class ReservableRequestConcurrencyControllers {
                     pendingRequests = STATE_QUIT;
                 }
             });
-            toSource(maxConcurrency
-                    .afterOnNext(ConsumableEvent::eventConsumed)
-                    .map(ConsumableEvent::event)
-            ).subscribe(maxConcurrencyHolder);
+            toSource(maxConcurrency).subscribe(new Subscriber<ConsumableEvent<Integer>>() {
+
+                @Nullable
+                private Subscription subscription;
+
+                @Override
+                public void onSubscribe(final Subscription s) {
+                    if (checkDuplicateSubscription(subscription, s)) {
+                        subscription = s;
+                        s.request(1);
+                    }
+                }
+
+                @Override
+                public void onNext(@Nullable final ConsumableEvent<Integer> event) {
+                    assert subscription != null : "Subscription can not be null in onNext.";
+                    assert event != null : "event can not be null in onNext.";
+                    final ConsumableEvent<Integer> current = latestEvent;
+                    // Events have to be consumed in-order. Make sure the current one is consumed.
+                    current.eventConsumed();
+                    final int newConcurrency = event.event();
+                    if (current.event() < newConcurrency) {
+                        // When concurrency increases, consume event to notify Netty asap, then update latestEvent to
+                        // allow more requests to go through. Even if this event is offloaded, eventConsumed() will
+                        // queue a task on Netty's event loop before any new requests come in from different threads.
+                        // However, the race is still possible if only transportEventStream is offloaded, but requests
+                        // are executed on the event loop. In this case, we rely on InternalRetryingHttpClientFilter.
+                        event.eventConsumed();
+                        latestEvent = event;
+                    } else if (current.event() > newConcurrency) {
+                        // When concurrency decreases, update latestEvent and wait for pending requests to go
+                        // at or below the new limit before notifying Netty. This is the best effort to minimize
+                        // probability for a race condition between decreasing the concurrency limit and requests flow.
+                        // There is still a possibility for a race when:
+                        //   1. Caller thread remembers old value in tryRequest()
+                        //   2. IO-thread updates latestEvent
+                        //   3. Some requests complete and pendingRequests goes down exactly to the new limit
+                        //   4. IO-thread consumes event, which updates the limit inside Netty http2-handler
+                        //   5. Caller thread accepts a request based on the old concurrency limit value, then receives
+                        //      "Maximum active streams violated for this endpoint" exception.
+                        // In this case, we rely on InternalRetryingHttpClientFilter.
+                        latestEvent = event;
+                        if (pendingRequests <= newConcurrency) {
+                            event.eventConsumed();
+                        }
+                    } else {
+                        // No need to update latestEvent because the value is identical.
+                        event.eventConsumed();
+                    }
+                    subscription.request(1);
+                }
+
+                @Override
+                public void onError(final Throwable t) {
+                    LOGGER.info("Unexpected error from transportEventStream(MAX_CONCURRENCY).", t);
+                }
+
+                @Override
+                public void onComplete() {
+                    LOGGER.debug("transportEventStream(MAX_CONCURRENCY) stream completes.");
+                }
+            });
         }
 
         @Override
         public final void requestFinished() {
-            pendingRequestsUpdater.decrementAndGet(this);
+            final int outstandingRequests = pendingRequestsUpdater.decrementAndGet(this);
+            final ConsumableEvent<Integer> current = latestEvent;
+            if (outstandingRequests == current.event()) {
+                // This executes only if pendingRequests were above the new limit when latestEvent was received.
+                current.eventConsumed();
+            }
         }
 
         @Override
-        public boolean tryReserve() {
+        public final boolean tryReserve() {
             return pendingRequestsUpdater.compareAndSet(this, STATE_IDLE, STATE_RESERVED);
         }
 
         @Override
-        public Completable releaseAsync() {
+        public final Completable releaseAsync() {
             return new SubscribableCompletable() {
                 @Override
                 protected void handleSubscribe(Subscriber subscriber) {
@@ -178,8 +247,8 @@ final class ReservableRequestConcurrencyControllers {
             };
         }
 
-        final int lastSeenMaxValue(int defaultValue) {
-            return maxConcurrencyHolder.lastSeenValue(defaultValue);
+        final int lastSeenMaxValue() {
+            return latestEvent.event();
         }
 
         final int pendingRequests() {
@@ -191,25 +260,29 @@ final class ReservableRequestConcurrencyControllers {
         }
 
         @Override
-        public String toString() {
-            return "pendingRequests=" + pendingRequests + " maxRequests=" + maxConcurrencyHolder.lastSeenValue(-1);
+        public final String toString() {
+            return getClass().getSimpleName() +
+                    "{pendingRequests=" + pendingRequests +
+                    ", latestEvent=" + latestEvent +
+                    '}';
         }
     }
 
     private static final class ReservableRequestConcurrencyControllerMulti
             extends AbstractReservableRequestConcurrencyController {
-        private final int maxRequests;
-
-        ReservableRequestConcurrencyControllerMulti(final Publisher<? extends ConsumableEvent<Integer>> maxConcurrency,
-                                                    final Completable onClosing,
-                                                    int maxRequests) {
-            super(maxConcurrency, onClosing);
-            this.maxRequests = maxRequests;
+        ReservableRequestConcurrencyControllerMulti(final ConsumableEvent<Integer> initialEvent,
+                                                    final Publisher<? extends ConsumableEvent<Integer>> maxConcurrency,
+                                                    final Completable onClosing) {
+            super(initialEvent, maxConcurrency, onClosing);
         }
 
         @Override
         public Result tryRequest() {
-            final int maxConcurrency = lastSeenMaxValue(maxRequests);
+            // We assume that frequency of changing `maxConcurrency` is low, while frequency of requests is high and can
+            // cause CAS failure. We take `lastSeenMaxValue()` out of the loop to minimize number of volatile reads on
+            // the hot path. In case there is a race between changing `maxConcurrency` to a lower value and a new
+            // request, we rely on InternalRetryingHttpClientFilter to retry the request.
+            final int maxConcurrency = lastSeenMaxValue();
             for (;;) {
                 final int currentPending = pendingRequests();
                 if (currentPending < 0) {

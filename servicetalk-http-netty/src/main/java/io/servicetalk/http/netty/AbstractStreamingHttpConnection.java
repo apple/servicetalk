@@ -67,7 +67,7 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
         implements FilterableStreamingHttpConnection {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractStreamingHttpConnection.class);
-    private static final IgnoreConsumedEvent<Integer> ZERO_MAX_CONCURRENCY_EVENT = new IgnoreConsumedEvent<>(0);
+    static final IgnoreConsumedEvent<Integer> ZERO_MAX_CONCURRENCY_EVENT = new IgnoreConsumedEvent<>(0);
 
     final CC connection;
     private final HttpConnectionContext connectionContext;

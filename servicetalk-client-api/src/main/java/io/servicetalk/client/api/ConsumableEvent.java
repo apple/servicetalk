@@ -30,6 +30,9 @@ public interface ConsumableEvent<T> {
 
     /**
      * Signify the {@link #event()} has been consumed and any side effects have taken place.
+     * <p>
+     * Implementations of this method are expected to be idempotent, meaning that if the event is already consumed then
+     * invoking this method has no effect.
      */
     void eventConsumed();
 }

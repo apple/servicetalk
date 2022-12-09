@@ -85,6 +85,7 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFro
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
+import static io.servicetalk.http.netty.AbstractStreamingHttpConnection.ZERO_MAX_CONCURRENCY_EVENT;
 import static io.servicetalk.http.netty.HeaderUtils.OBJ_EXPECT_CONTINUE;
 import static io.servicetalk.http.netty.HttpDebugUtils.showPipeline;
 import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.close;
@@ -94,6 +95,10 @@ import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
 import static java.util.Objects.requireNonNull;
 
 final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
+
+    static final ConsumableEvent<Integer> DEFAULT_H2_MAX_CONCURRENCY_EVENT =
+            new IgnoreConsumedEvent<>(SMALLEST_MAX_CONCURRENT_STREAMS);
+
     private H2ClientParentConnectionContext(Channel channel, HttpExecutionContext executionContext,
                                             FlushStrategy flushStrategy, long idleTimeoutMs,
                                             @Nullable final SslConfig sslConfig,
@@ -154,10 +159,6 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                                                                                              H2ClientParentConnection {
 
         private static final Logger LOGGER = LoggerFactory.getLogger(DefaultH2ClientParentConnection.class);
-
-        private static final ConsumableEvent<Integer> DEFAULT_H2_MAX_CONCURRENCY_EVENT =
-                new IgnoreConsumedEvent<>(SMALLEST_MAX_CONCURRENT_STREAMS);
-        private static final ConsumableEvent<Integer> ZERO_MAX_CONCURRENCY_EVENT = new IgnoreConsumedEvent<>(0);
 
         private final Http2StreamChannelBootstrap bs;
         private final HttpHeadersFactory headersFactory;

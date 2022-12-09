@@ -25,6 +25,7 @@ import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
+import io.servicetalk.http.netty.ReservableRequestConcurrencyControllers.IgnoreConsumedEvent;
 import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.TransportObserver;
 
@@ -59,6 +60,7 @@ final class PipelinedLBHttpConnectionFactory<ResolvedAddress> extends AbstractLB
     ReservableRequestConcurrencyController newConcurrencyController(
             final Publisher<? extends ConsumableEvent<Integer>> maxConcurrency, Completable onClosing) {
         assert config.h1Config() != null;
-        return newController(maxConcurrency, onClosing, config.h1Config().maxPipelinedRequests());
+        return newController(new IgnoreConsumedEvent<>(config.h1Config().maxPipelinedRequests()),
+                maxConcurrency, onClosing);
     }
 }

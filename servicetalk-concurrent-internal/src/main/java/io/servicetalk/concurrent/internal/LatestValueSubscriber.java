@@ -25,9 +25,13 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateS
 /**
  * A {@link Subscriber} which makes the latest value from {@link #onNext(Object)} available outside the context of the
  * {@link Subscriber}.
+ *
  * @param <T> The type of data.
+ * @deprecated This class is no longer used by ServiceTalk and will be removed in the future releases. If you depend on
+ * it, consider copying into your codebase.
  */
-public final class LatestValueSubscriber<T> implements Subscriber<T> {
+@Deprecated
+public final class LatestValueSubscriber<T> implements Subscriber<T> {  // FIXME: 0.43 - remove deprecated class
     @Nullable
     private volatile T latestValue;
     @Nullable
