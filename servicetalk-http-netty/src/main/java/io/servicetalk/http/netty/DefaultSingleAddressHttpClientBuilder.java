@@ -314,10 +314,10 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                 currClientFilterFactory = appendFilter(currClientFilterFactory,
                         ctx.builder.retryingHttpRequesterFilter);
             }
+            // Internal retries must be the last filter in the chain, right before LoadBalancedStreamingHttpClient.
             currClientFilterFactory = appendFilter(currClientFilterFactory, InternalRetryingHttpClientFilter.INSTANCE);
-            FilterableStreamingHttpClient wrappedClient = currClientFilterFactory != null ?
-                    currClientFilterFactory.create(lbClient, lb.eventStream(), ctx.sdStatus) :
-                    lbClient;
+            FilterableStreamingHttpClient wrappedClient =
+                    currClientFilterFactory.create(lbClient, lb.eventStream(), ctx.sdStatus);
 
             if (builderStrategy != defaultStrategy() &&
                     builderStrategy.missing(computedStrategy) != offloadNone()) {

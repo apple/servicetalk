@@ -82,25 +82,6 @@ final class NettyHttp2ExceptionUtils {
                 new H2StreamResetException(stream.id(), (int) resetFrame.errorCode());
     }
 
-    /**
-     * Checks if an {@link io.netty.handler.codec.http2.Http2Exception} is retryable on a different h2 parent
-     * connection.
-     *
-     * @param cause {@link io.netty.handler.codec.http2.Http2Exception} for inspection
-     * @return {@code true} if {@link io.netty.handler.codec.http2.Http2Exception} is retryable on a different h2
-     * parent connection.
-     */
-    private static boolean isRetryable(final io.netty.handler.codec.http2.Http2Exception cause) {
-        // The first check captures cases like:
-        //  - Cannot create stream %d greater than Last-Stream-ID %d from GOAWAY.
-        //  - Stream IDs are exhausted for this endpoint.
-        //  - Maximum active streams violated for this endpoint.
-        //  - Http2ChannelClosedException
-        return cause.error() == REFUSED_STREAM
-                // The  second check captures "No more streams can be created on this connection":
-                || cause instanceof io.netty.handler.codec.http2.Http2NoMoreStreamIdsException;
-    }
-
     private static boolean isRetryable(final io.netty.handler.codec.http2.Http2FrameStreamException cause) {
         return cause.error() == REFUSED_STREAM;
     }
