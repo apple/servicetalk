@@ -27,7 +27,6 @@ import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.netty.AlpnChannelSingle.NoopChannelInitializer;
-import io.servicetalk.http.netty.ReservableRequestConcurrencyControllers.IgnoreConsumedEvent;
 import io.servicetalk.tcp.netty.internal.ReadOnlyTcpClientConfig;
 import io.servicetalk.tcp.netty.internal.TcpClientChannelInitializer;
 import io.servicetalk.tcp.netty.internal.TcpConnector;
@@ -47,8 +46,6 @@ import static io.servicetalk.http.netty.ReservableRequestConcurrencyControllers.
 import static io.servicetalk.http.netty.StreamingConnectionFactory.withSslConfigPeerHost;
 
 final class AlpnLBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpConnectionFactory<ResolvedAddress> {
-
-    private static final IgnoreConsumedEvent<Integer> ONE_MAX_CONCURRENCY_EVENT = new IgnoreConsumedEvent<>(1);
 
     AlpnLBHttpConnectionFactory(
             final ReadOnlyHttpClientConfig config, final HttpExecutionContext executionContext,
@@ -108,6 +105,6 @@ final class AlpnLBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpC
         // We set initialMaxConcurrency to 1 here because we don't know what type of connection will be created when
         // ALPN completes. The actual maxConcurrency value will be updated by the MAX_CONCURRENCY stream,
         // when we create a connection.
-        return newController(ONE_MAX_CONCURRENCY_EVENT, maxConcurrency, onClosing);
+        return newController(maxConcurrency, onClosing, 1);
     }
 }

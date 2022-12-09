@@ -69,6 +69,6 @@ final class H2LBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpCon
     @Override
     ReservableRequestConcurrencyController newConcurrencyController(
             final Publisher<? extends ConsumableEvent<Integer>> maxConcurrency, final Completable onClosing) {
-        return newController(DEFAULT_H2_MAX_CONCURRENCY_EVENT, maxConcurrency, onClosing);
+        return newController(maxConcurrency, onClosing, DEFAULT_H2_MAX_CONCURRENCY_EVENT.event());
     }
 }

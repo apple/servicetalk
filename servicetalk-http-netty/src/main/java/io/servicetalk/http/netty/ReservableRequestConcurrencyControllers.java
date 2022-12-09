@@ -55,15 +55,16 @@ final class ReservableRequestConcurrencyControllers {
     /**
      * Create a new instance of {@link ReservableRequestConcurrencyController}.
      *
-     * @param initialEvent The initial event that defines default allowed concurrency.
      * @param maxConcurrency A {@link Publisher} that provides the maximum allowed concurrency updates.
      * @param onClosing A {@link Completable} that when terminated no more calls to
      * {@link RequestConcurrencyController#tryRequest()} are expected to succeed.
+     * @param initialConcurrency The initial maximum value for concurrency, until {@code maxConcurrency} provides data.
      * @return a new instance of {@link ReservableRequestConcurrencyController}.
      */
-    static ReservableRequestConcurrencyController newController(final ConsumableEvent<Integer> initialEvent,
-            final Publisher<? extends ConsumableEvent<Integer>> maxConcurrency, final Completable onClosing) {
-        return new ReservableRequestConcurrencyControllerMulti(initialEvent, maxConcurrency, onClosing);
+    static ReservableRequestConcurrencyController newController(
+            final Publisher<? extends ConsumableEvent<Integer>> maxConcurrency, final Completable onClosing,
+            final int initialConcurrency) {
+        return new ReservableRequestConcurrencyControllerMulti(maxConcurrency, onClosing, initialConcurrency);
     }
 
     /**
@@ -117,13 +118,13 @@ final class ReservableRequestConcurrencyControllers {
          */
         @SuppressWarnings("unused")
         private volatile int pendingRequests;
-        private volatile ConsumableEvent<Integer> latestEvent;
+        private volatile int lastMaxConcurrency;
 
         AbstractReservableRequestConcurrencyController(
-                final ConsumableEvent<Integer> initialEvent,
                 final Publisher<? extends ConsumableEvent<Integer>> maxConcurrency,
-                final Completable onClosing) {
-            latestEvent = requireNonNull(initialEvent);
+                final Completable onClosing,
+                final int initialConcurrency) {
+            lastMaxConcurrency = initialConcurrency;
             // Subscribe to onClosing() before maxConcurrency, this order increases the chances of capturing the
             // STATE_QUIT before observing 0 from maxConcurrency which could lead to more ambiguous max concurrency
             // error messages for the users on connection tear-down.
@@ -162,36 +163,29 @@ final class ReservableRequestConcurrencyControllers {
                 public void onNext(@Nullable final ConsumableEvent<Integer> event) {
                     assert subscription != null : "Subscription can not be null in onNext.";
                     assert event != null : "event can not be null in onNext.";
-                    final ConsumableEvent<Integer> current = latestEvent;
-                    // Events have to be consumed in-order. Make sure the current one is consumed.
-                    current.eventConsumed();
+                    final int currentConcurrency = lastMaxConcurrency;
                     final int newConcurrency = event.event();
-                    if (current.event() < newConcurrency) {
-                        // When concurrency increases, consume event to notify Netty asap, then update latestEvent to
+                    if (currentConcurrency < newConcurrency) {
+                        // When concurrency increases, consume event to notify Netty asap, then update the value to
                         // allow more requests to go through. Even if this event is offloaded, eventConsumed() will
                         // queue a task on Netty's event loop before any new requests come in from different threads.
                         // However, the race is still possible if only transportEventStream is offloaded, but requests
                         // are executed on the event loop. In this case, we rely on InternalRetryingHttpClientFilter.
                         event.eventConsumed();
-                        latestEvent = event;
-                    } else if (current.event() > newConcurrency) {
-                        // When concurrency decreases, update latestEvent and wait for pending requests to go
-                        // at or below the new limit before notifying Netty. This is the best effort to minimize
-                        // probability for a race condition between decreasing the concurrency limit and requests flow.
-                        // There is still a possibility for a race when:
-                        //   1. Caller thread remembers old value in tryRequest()
-                        //   2. IO-thread updates latestEvent
-                        //   3. Some requests complete and pendingRequests goes down exactly to the new limit
-                        //   4. IO-thread consumes event, which updates the limit inside Netty http2-handler
-                        //   5. Caller thread accepts a request based on the old concurrency limit value, then receives
-                        //      "Maximum active streams violated for this endpoint" exception.
-                        // In this case, we rely on InternalRetryingHttpClientFilter.
-                        latestEvent = event;
-                        if (pendingRequests <= newConcurrency) {
-                            event.eventConsumed();
-                        }
+                        lastMaxConcurrency = newConcurrency;
+                    } else if (currentConcurrency > newConcurrency) {
+                        // When concurrency decreases, update the value first to prevent new requests to go through,
+                        // then consume the event. If concurrency decreases significantly, we may end up being in a
+                        // situation when some requests already went through the controller and wait in the event loop
+                        // queue to execute. In this case, netty will throw "Maximum active streams violated for this
+                        // endpoint" exception, we rely on InternalRetryingHttpClientFilter to handle it.
+                        // We can not defer eventConsumed until after the concurrency goes down, because all HTTP/2
+                        // SETTINGS frames have to be acked in the order in which they are received. Waiting may affect
+                        // ordering and ack may never be sent if users have long streaming requests.
+                        lastMaxConcurrency = newConcurrency;
+                        event.eventConsumed();
                     } else {
-                        // No need to update latestEvent because the value is identical.
+                        // No need to update the value because it is identical.
                         event.eventConsumed();
                     }
                     subscription.request(1);
@@ -211,12 +205,7 @@ final class ReservableRequestConcurrencyControllers {
 
         @Override
         public final void requestFinished() {
-            final int outstandingRequests = pendingRequestsUpdater.decrementAndGet(this);
-            final ConsumableEvent<Integer> current = latestEvent;
-            if (outstandingRequests == current.event()) {
-                // This executes only if pendingRequests were above the new limit when latestEvent was received.
-                current.eventConsumed();
-            }
+            pendingRequestsUpdater.decrementAndGet(this);
         }
 
         @Override
@@ -247,8 +236,8 @@ final class ReservableRequestConcurrencyControllers {
             };
         }
 
-        final int lastSeenMaxValue() {
-            return latestEvent.event();
+        final int lastMaxConcurrency() {
+            return lastMaxConcurrency;
         }
 
         final int pendingRequests() {
@@ -263,26 +252,26 @@ final class ReservableRequestConcurrencyControllers {
         public final String toString() {
             return getClass().getSimpleName() +
                     "{pendingRequests=" + pendingRequests +
-                    ", latestEvent=" + latestEvent +
+                    ", lastMaxConcurrency=" + lastMaxConcurrency +
                     '}';
         }
     }
 
     private static final class ReservableRequestConcurrencyControllerMulti
             extends AbstractReservableRequestConcurrencyController {
-        ReservableRequestConcurrencyControllerMulti(final ConsumableEvent<Integer> initialEvent,
-                                                    final Publisher<? extends ConsumableEvent<Integer>> maxConcurrency,
-                                                    final Completable onClosing) {
-            super(initialEvent, maxConcurrency, onClosing);
+        ReservableRequestConcurrencyControllerMulti(final Publisher<? extends ConsumableEvent<Integer>> maxConcurrency,
+                                                    final Completable onClosing,
+                                                    final int initialConcurrency) {
+            super(maxConcurrency, onClosing, initialConcurrency);
         }
 
         @Override
         public Result tryRequest() {
             // We assume that frequency of changing `maxConcurrency` is low, while frequency of requests is high and can
-            // cause CAS failure. We take `lastSeenMaxValue()` out of the loop to minimize number of volatile reads on
+            // cause CAS failure. We take `lastMaxConcurrency()` out of the loop to minimize number of volatile reads on
             // the hot path. In case there is a race between changing `maxConcurrency` to a lower value and a new
             // request, we rely on InternalRetryingHttpClientFilter to retry the request.
-            final int maxConcurrency = lastSeenMaxValue();
+            final int maxConcurrency = lastMaxConcurrency();
             for (;;) {
                 final int currentPending = pendingRequests();
                 if (currentPending < 0) {

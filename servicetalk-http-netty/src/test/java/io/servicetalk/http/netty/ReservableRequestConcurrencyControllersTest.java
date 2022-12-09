@@ -44,8 +44,7 @@ class ReservableRequestConcurrencyControllersTest {
     void maxConcurrencyRequestAtTime() {
         final int maxRequestCount = 10;
         RequestConcurrencyController controller =
-                newController(new IgnoreConsumedEvent<>(maxRequestCount),
-                        from(new IgnoreConsumedEvent<>(maxRequestCount)), never());
+                newController(from(new IgnoreConsumedEvent<>(maxRequestCount)), never(), maxRequestCount);
         for (int i = 0; i < 100; ++i) {
             for (int j = 0; j < maxRequestCount; ++j) {
                 assertThat(controller.tryRequest(), is(Accepted));
@@ -59,8 +58,7 @@ class ReservableRequestConcurrencyControllersTest {
 
     @Test
     void limitIsAllowedToIncrease() {
-        RequestConcurrencyController controller = newController(new IgnoreConsumedEvent<>(10),
-                limitPublisher, never());
+        RequestConcurrencyController controller = newController(limitPublisher, never(), 10);
         for (int i = 1; i < 100; ++i) {
             limitPublisher.onNext(new IgnoreConsumedEvent<>(i));
             for (int j = 0; j < i; ++j) {
@@ -76,7 +74,7 @@ class ReservableRequestConcurrencyControllersTest {
     @Test
     void limitIsAllowedToDecrease() {
         int maxRequestCount = 10;
-        RequestConcurrencyController controller = newController(new IgnoreConsumedEvent<>(10), limitPublisher, never());
+        RequestConcurrencyController controller = newController(limitPublisher, never(), 10);
 
         for (int j = 0; j < maxRequestCount; ++j) {
             assertThat(controller.tryRequest(), is(Accepted));
@@ -93,15 +91,14 @@ class ReservableRequestConcurrencyControllersTest {
 
     @Test
     void noMoreRequestsAfterClose() {
-        RequestConcurrencyController controller = newController(new IgnoreConsumedEvent<>(10),
-                from(new IgnoreConsumedEvent<>(1)), completed());
+        RequestConcurrencyController controller = newController(from(new IgnoreConsumedEvent<>(1)), completed(), 10);
         assertThat(controller.tryRequest(), is(RejectedPermanently));
     }
 
     @Test
     void defaultValueIsUsed() {
         final int maxRequestCount = 10;
-        RequestConcurrencyController controller = newController(new IgnoreConsumedEvent<>(10), limitPublisher, never());
+        RequestConcurrencyController controller = newController(limitPublisher, never(), 10);
         for (int j = 0; j < maxRequestCount; ++j) {
             assertThat(controller.tryRequest(), is(Accepted));
         }
@@ -114,7 +111,7 @@ class ReservableRequestConcurrencyControllersTest {
     @Test
     void reserveWithNoRequests() throws Exception {
         ReservableRequestConcurrencyController controller =
-                newController(new IgnoreConsumedEvent<>(10), from(new IgnoreConsumedEvent<>(10)), never());
+                newController(from(new IgnoreConsumedEvent<>(10)), never(), 10);
         for (int i = 0; i < 10; ++i) {
             assertTrue(controller.tryReserve());
             assertFalse(controller.tryReserve());
@@ -131,7 +128,7 @@ class ReservableRequestConcurrencyControllersTest {
     @Test
     void reserveFailsWhenPendingRequest() {
         ReservableRequestConcurrencyController controller =
-                newController(new IgnoreConsumedEvent<>(10), from(new IgnoreConsumedEvent<>(10)), never());
+                newController(from(new IgnoreConsumedEvent<>(10)), never(), 10);
         assertThat(controller.tryRequest(), is(Accepted));
         assertFalse(controller.tryReserve());
     }
