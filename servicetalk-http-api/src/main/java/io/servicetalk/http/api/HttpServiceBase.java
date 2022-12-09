@@ -23,5 +23,5 @@ package io.servicetalk.http.api;
  * @see BlockingHttpService
  * @see BlockingStreamingHttpService
  */
-public interface Service extends HttpExecutionStrategyInfluencer {
+public interface HttpServiceBase extends HttpExecutionStrategyInfluencer {
 }

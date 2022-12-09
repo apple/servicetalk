@@ -21,7 +21,7 @@ import io.servicetalk.http.api.BlockingStreamingHttpService;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpServerContext;
 import io.servicetalk.http.api.HttpService;
-import io.servicetalk.http.api.Service;
+import io.servicetalk.http.api.HttpServiceBase;
 import io.servicetalk.http.api.StreamingHttpService;
 
 import org.junit.jupiter.api.Test;
@@ -39,19 +39,19 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 public class HttpServiceTest {
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{displayName} [{index}] {0}")
     @MethodSource("serviceProvider")
-    void supportsHttpServiceVariantAtRuntime(Service service) throws Exception {
+    void supportsHttpServiceVariantAtRuntime(HttpServiceBase service) throws Exception {
         assertNotNull(HttpServers.forAddress(localAddress(0)).listenServiceAndAwait(service));
     }
 
     @Test
     void failsOnUnknownService() {
         assertThrows(IllegalArgumentException.class, () -> {
-            Service service = new Service() {
+            HttpServiceBase service = new HttpServiceBase() {
                 @Override
                 public HttpExecutionStrategy requiredOffloads() {
-                    return Service.super.requiredOffloads();
+                    return HttpServiceBase.super.requiredOffloads();
                 }
             };
 
