@@ -621,6 +621,7 @@ final class Generator {
                             .addModifiers(PUBLIC)
                             .addParameter(rpcInterface.className, rpc, FINAL)
                             .returns(builderClass)
+                            .addStatement("$T.requireNonNull($L)", Objects, rpc)
                             .addCode(addRouteCode)
                             .addStatement("return this")
                             .build())
@@ -629,6 +630,8 @@ final class Generator {
                             .addParameter(GrpcExecutionStrategy, strategy, FINAL)
                             .addParameter(rpcInterface.className, rpc, FINAL)
                             .returns(builderClass)
+                            .addStatement("$T.requireNonNull($L)", Objects, strategy)
+                            .addStatement("$T.requireNonNull($L)", Objects, rpc)
                             .addCode(addRouteExecCode)
                             .addStatement("return this")
                             .build());
@@ -638,6 +641,7 @@ final class Generator {
                 .addModifiers(PUBLIC)
                 .returns(builderClass)
                 .addParameter(state.serviceClass, service, FINAL)
+                .addStatement("$T.requireNonNull($L)", Objects, service)
                 .addStatement("$L($L)", registerRoutes, service)
                 .addStatement("return this")
                 .build());
@@ -661,7 +665,8 @@ final class Generator {
         final MethodSpec.Builder addBlockingServiceMethodSpecBuilder = methodBuilder(addBlockingService)
                 .addModifiers(PUBLIC)
                 .returns(builderClass)
-                .addParameter(state.blockingServiceClass, service, FINAL);
+                .addParameter(state.blockingServiceClass, service, FINAL)
+                .addStatement("$T.requireNonNull($L)", Objects, service);
         final MethodSpec.Builder registerRoutesMethodSpecBuilder = methodBuilder(registerRoutes)
                 .addModifiers(PROTECTED)
                 .addAnnotation(Override.class)
@@ -1328,10 +1333,14 @@ final class Generator {
                             (__, b) -> b.addAnnotation(Deprecated.class)
                                     .addAnnotation(Override.class)
                                     .addParameter(clientMetaData.className, metadata, FINAL)
+                                    .addStatement("$T.requireNonNull($L)", Objects, metadata)
+                                    .addStatement("$T.requireNonNull($L)", Objects, request)
                                     .addStatement("return $L.$L($L, $L)", callFieldName, request, metadata, request)))
                     .addMethod(newRpcMethodSpec(clientMetaData.methodProto, rpcMethodSpecsFlags, false,
                             (__, b) -> b.addAnnotation(Override.class)
                                     .addParameter(GrpcClientMetadata, metadata, FINAL)
+                                    .addStatement("$T.requireNonNull($L)", Objects, metadata)
+                                    .addStatement("$T.requireNonNull($L)", Objects, request)
                                     .addStatement("return $L.$L($L, $L)", callFieldName, request, metadata, request)));
 
             constructorBuilder
