@@ -20,7 +20,6 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.BlockingHttpService;
 import io.servicetalk.http.api.BlockingStreamingHttpService;
-import io.servicetalk.http.api.HttpApiConversions;
 import io.servicetalk.http.api.HttpExceptionMapperServiceFilter;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategies;
@@ -257,7 +256,8 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
 
     @Override
     public Single<HttpServerContext> listen(final HttpService service) {
-        return listenForAdapter(toStreamingHttpService(service, computeServiceStrategy(HttpService.class, service)));
+        HttpExecutionStrategy executionStrategy = computeServiceStrategy(HttpService.class, service);
+        return listenForService(toStreamingHttpService(service, executionStrategy), executionStrategy);
     }
 
     @Override
@@ -267,23 +267,19 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
 
     @Override
     public Single<HttpServerContext> listenBlocking(final BlockingHttpService service) {
-        return listenForAdapter(toStreamingHttpService(service,
-                computeServiceStrategy(BlockingHttpService.class, service)));
+        HttpExecutionStrategy executionStrategy = computeServiceStrategy(BlockingHttpService.class, service);
+        return listenForService(toStreamingHttpService(service, executionStrategy), executionStrategy);
     }
 
     @Override
     public Single<HttpServerContext> listenBlockingStreaming(final BlockingStreamingHttpService service) {
-        return listenForAdapter(toStreamingHttpService(service,
-                computeServiceStrategy(BlockingStreamingHttpService.class, service)));
+        HttpExecutionStrategy executionStrategy = computeServiceStrategy(BlockingStreamingHttpService.class, service);
+        return listenForService(toStreamingHttpService(service, executionStrategy), executionStrategy);
     }
 
     private HttpExecutionContext buildExecutionContext(final HttpExecutionStrategy strategy) {
         executionContextBuilder.executionStrategy(strategy);
         return executionContextBuilder.build();
-    }
-
-    private Single<HttpServerContext> listenForAdapter(HttpApiConversions.ServiceAdapterHolder adapterHolder) {
-        return listenForService(adapterHolder.adaptor(), adapterHolder.serviceInvocationStrategy());
     }
 
     /**

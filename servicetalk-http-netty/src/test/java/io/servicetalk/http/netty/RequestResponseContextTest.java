@@ -137,7 +137,7 @@ class RequestResponseContextTest extends AbstractNettyHttpServerTest {
                     HttpResponse response = responseFactory.ok().payloadBody(request.payloadBody());
                     transferContext(request, response);
                     return succeeded(response);
-                }, offloadNone()).adaptor();
+                }, offloadNone());
                 break;
             case AsyncStreaming:
                 newService = (ctx, request, responseFactory) -> {
@@ -151,7 +151,7 @@ class RequestResponseContextTest extends AbstractNettyHttpServerTest {
                     HttpResponse response = responseFactory.ok().payloadBody(request.payloadBody());
                     transferContext(request, response);
                     return response;
-                }, offloadNone()).adaptor();
+                }, offloadNone());
                 break;
             case BlockingStreaming:
                 newService = toStreamingHttpService((ctx, request, response) -> {
@@ -161,7 +161,7 @@ class RequestResponseContextTest extends AbstractNettyHttpServerTest {
                             writer.write(chunk);
                         }
                     }
-                }, offloadNone()).adaptor();
+                }, offloadNone());
                 break;
             default:
                 throw new IllegalStateException("Unknown api: " + api);

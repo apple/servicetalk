@@ -68,7 +68,7 @@ class SupportedBufferAllocatorsTest extends AbstractNettyHttpServerTest {
     void service(final StreamingHttpService service) {
         super.service((toStreamingHttpService((BlockingHttpService) (ctx, request, responseFactory) ->
                         responseFactory.ok().payloadBody(allocator.fromAscii(request.payloadBody().toString(US_ASCII))),
-                offloadNone())).adaptor());
+                offloadNone())));
     }
 
     @ParameterizedTest(name = "{index}: protocol={0}, allocator={1}")

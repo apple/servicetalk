@@ -302,9 +302,10 @@ public final class HttpApiConversions {
      *
      * @param service The {@link HttpService} to convert.
      * @param strategy required strategy for the service when invoking the resulting {@link StreamingHttpService}.
-     * @return {@link ServiceAdapterHolder} containing the service adapted to the streaming programming model.
+     * @return {@link ServiceToStreamingService} containing the service adapted to the streaming programming model.
      */
-    public static ServiceAdapterHolder toStreamingHttpService(HttpService service, HttpExecutionStrategy strategy) {
+    public static ServiceToStreamingService toStreamingHttpService(HttpService service,
+                                                                   HttpExecutionStrategy strategy) {
         return new ServiceToStreamingService(service, strategy);
     }
 
@@ -329,10 +330,11 @@ public final class HttpApiConversions {
      *
      * @param service The {@link BlockingStreamingHttpService} to convert.
      * @param strategy required strategy for the service when invoking the resulting {@link StreamingHttpService}.
-     * @return {@link ServiceAdapterHolder} containing the service adapted to the streaming programming model.
+     * @return {@link BlockingStreamingToStreamingService} containing the service adapted to the streaming
+     * programming model.
      */
-    public static ServiceAdapterHolder toStreamingHttpService(BlockingStreamingHttpService service,
-                                                              HttpExecutionStrategy strategy) {
+    public static BlockingStreamingToStreamingService toStreamingHttpService(BlockingStreamingHttpService service,
+                                                                             HttpExecutionStrategy strategy) {
         return new BlockingStreamingToStreamingService(service, strategy);
     }
 
@@ -357,10 +359,10 @@ public final class HttpApiConversions {
      *
      * @param service The {@link BlockingStreamingHttpService} to convert.
      * @param strategy required strategy for the service when invoking the resulting {@link StreamingHttpService}.
-     * @return {@link ServiceAdapterHolder} containing the service adapted to the streaming programming model.
+     * @return {@link BlockingToStreamingService} containing the service adapted to the streaming programming model.
      */
-    public static ServiceAdapterHolder toStreamingHttpService(BlockingHttpService service,
-                                                              HttpExecutionStrategy strategy) {
+    public static BlockingToStreamingService toStreamingHttpService(BlockingHttpService service,
+                                                                    HttpExecutionStrategy strategy) {
         return new BlockingToStreamingService(service, strategy);
     }
 
