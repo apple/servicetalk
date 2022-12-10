@@ -165,6 +165,7 @@ final class ReservableRequestConcurrencyControllers {
                 public void onSubscribe(final Subscription s) {
                     if (checkDuplicateSubscription(subscription, s)) {
                         subscription = s;
+                        // Because the events can be offloaded, we request 1-by-1 to avoid overwhelming executor.
                         s.request(1);
                     }
                 }
@@ -312,7 +313,9 @@ final class ReservableRequestConcurrencyControllers {
                 protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                                 final StreamingHttpRequest request) {
                     return delegate.request(request)
-                            .retry((__, t) -> t instanceof MaxConcurrentStreamsViolatedStacklessHttp2Exception);
+                            // Retry reasonable number of times to avoid infinite loops internally.
+                            .retry((count, t) -> count <= 32 &&
+                                    t instanceof MaxConcurrentStreamsViolatedStacklessHttp2Exception);
                 }
             };
         }
