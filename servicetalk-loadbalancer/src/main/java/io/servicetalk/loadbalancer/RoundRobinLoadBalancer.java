@@ -16,6 +16,7 @@
 package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.ConnectionFactory;
+import io.servicetalk.client.api.ConnectionLimitReachedException;
 import io.servicetalk.client.api.ConnectionRejectedException;
 import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.client.api.LoadBalancer;
@@ -614,7 +615,8 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
             for (;;) {
                 ConnState previous = connStateUpdater.get(this);
 
-                if (!ActiveState.class.equals(previous.state.getClass()) || previous.connections.length > 0) {
+                if (!ActiveState.class.equals(previous.state.getClass()) || previous.connections.length > 0
+                        || cause instanceof ConnectionLimitReachedException) {
                     LOGGER.debug("Load balancer for {}: failed to open a new connection to the host on address {}. {}",
                             targetResource, address, previous, cause);
                     break;

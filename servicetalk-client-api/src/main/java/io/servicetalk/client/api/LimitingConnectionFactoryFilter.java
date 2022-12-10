@@ -57,6 +57,8 @@ public final class LimitingConnectionFactoryFilter<ResolvedAddress, C extends Li
 
     /**
      * Create a new {@link ConnectionFactory} that only creates a maximum of {@code maxConnections} active connections.
+     * <p>
+     * When the limit is reached, {@link ConnectionLimitReachedException} will be thrown.
      *
      * @param maxConnections Maximum number of active connections to create.
      * @param <A> The type of a resolved address that can be used for connecting.
@@ -126,8 +128,10 @@ public final class LimitingConnectionFactoryFilter<ResolvedAddress, C extends Li
         void onConnectionClose(ResolvedAddress target);
 
         /**
-         * Create a {@link ConnectionLimitReachedException} representing a connection attempt refused, typically
+         * Create a {@link Throwable} representing a connection attempt refused, typically
          * as a result of returning {@code false} from {@link #isConnectAllowed(Object)}.
+         * <p>
+         * The default and recommended exception type is {@link ConnectionLimitReachedException}.
          *
          * @param target {@link ResolvedAddress} for which connection was refused.
          * @return {@link Throwable} representing a connection attempt was refused.
@@ -196,6 +200,12 @@ public final class LimitingConnectionFactoryFilter<ResolvedAddress, C extends Li
         @Override
         public void onConnectionClose(final ResolvedAddress target) {
             countUpdater.decrementAndGet(this);
+        }
+
+        @Override
+        public Throwable newConnectionRefusedException(final ResolvedAddress target) {
+            return new ConnectionLimitReachedException("No more connections allowed for the host: " + target +
+                    ". Reached the maximum limit of " + maxAllowed + " connection(s).");
         }
     }
 

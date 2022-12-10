@@ -15,15 +15,19 @@
  */
 package io.servicetalk.client.api;
 
+import io.servicetalk.client.api.LimitingConnectionFactoryFilter.ConnectionLimiter;
+import io.servicetalk.transport.api.RetryableException;
+
 import java.net.ConnectException;
 
 /**
  * Thrown when the number of connections reached their limit for a given resource (i.e. a host)
  * depending on the context.
  *
- * @see LimitingConnectionFactoryFilter
+ * @see ConnectionLimiter#newConnectionRefusedException(Object)
+ * @see LimitingConnectionFactoryFilter#withMax(int)
  */
-public class ConnectionLimitReachedException extends ConnectException {
+public class ConnectionLimitReachedException extends ConnectException implements RetryableException {
 
     private static final long serialVersionUID = 645105614301638032L;
 
