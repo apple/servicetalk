@@ -54,8 +54,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 
-import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
+import static io.servicetalk.http.netty.AbstractStreamingHttpConnection.MAX_CONCURRENCY_NO_OFFLOADING;
 import static io.servicetalk.http.netty.H2PriorKnowledgeFeatureParityTest.bindH2Server;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2;
 import static io.servicetalk.http.netty.HttpTransportObserverTest.await;
@@ -149,7 +149,7 @@ class StreamObserverTest {
     void maxActiveStreamsViolationError() throws Exception {
         CountDownLatch maxConcurrentStreamsValueSetToOne = new CountDownLatch(1);
         try (HttpConnection connection = client.reserveConnection(client.get("/")).map(conn -> {
-            conn.transportEventStream(MAX_CONCURRENCY).forEach(event -> {
+            conn.transportEventStream(MAX_CONCURRENCY_NO_OFFLOADING).forEach(event -> {
                 if (event.event() == 1) {
                     maxConcurrentStreamsValueSetToOne.countDown();
                 }
@@ -201,13 +201,13 @@ class StreamObserverTest {
 
         @Override
         public StreamingHttpConnectionFilter create(FilterableStreamingHttpConnection connection) {
-            Publisher<? extends ConsumableEvent<Integer>> maxConcurrent = connection
-                    .transportEventStream(MAX_CONCURRENCY).multicast(2);
+            Publisher<? extends ConsumableEvent<Integer>> maxConcurrency = connection
+                    .transportEventStream(MAX_CONCURRENCY_NO_OFFLOADING).multicast(2);
             return new StreamingHttpConnectionFilter(connection) {
                 @Override
                 @SuppressWarnings("unchecked")
                 public <T> Publisher<? extends T> transportEventStream(final HttpEventKey<T> eventKey) {
-                    return eventKey == MAX_CONCURRENCY ? (Publisher<? extends T>) maxConcurrent :
+                    return eventKey == MAX_CONCURRENCY_NO_OFFLOADING ? (Publisher<? extends T>) maxConcurrency :
                             delegate().transportEventStream(eventKey);
                 }
             };

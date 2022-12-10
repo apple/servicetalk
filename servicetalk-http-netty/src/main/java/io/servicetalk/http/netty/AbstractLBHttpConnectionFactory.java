@@ -43,7 +43,7 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
-import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
+import static io.servicetalk.http.netty.AbstractStreamingHttpConnection.MAX_CONCURRENCY_NO_OFFLOADING;
 import static io.servicetalk.transport.api.TransportObservers.asSafeObserver;
 import static java.util.Objects.requireNonNull;
 
@@ -121,11 +121,11 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
                     // Apply connection filters:
                     FilterableStreamingHttpConnection filteredConnection =
                             connectionFilterFunction != null ? connectionFilterFunction.create(conn) : conn;
-                    return protocolBinding.bind(filteredConnection,
-                            newConcurrencyController(filteredConnection.transportEventStream(MAX_CONCURRENCY)
-                                            .beforeOnNext(event -> LOGGER.debug("{} Received {} event: {}",
-                                                    conn, MAX_CONCURRENCY, event)),
-                                    filteredConnection.onClosing()), context);
+                    return protocolBinding.bind(filteredConnection, newConcurrencyController(
+                            filteredConnection.transportEventStream(MAX_CONCURRENCY_NO_OFFLOADING)
+                                    .beforeOnNext(event -> LOGGER.debug("{} Received {} event: {}",
+                                            conn, MAX_CONCURRENCY_NO_OFFLOADING, event)),
+                            filteredConnection.onClosing()), context);
                 });
     }
 

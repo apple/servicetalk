@@ -62,12 +62,12 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.internal.BlockingUtils.blockingInvocation;
-import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadAll;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
+import static io.servicetalk.http.netty.AbstractStreamingHttpConnection.MAX_CONCURRENCY_NO_OFFLOADING;
 import static io.servicetalk.http.netty.BuilderUtils.newClientBuilder;
 import static io.servicetalk.http.netty.H2PriorKnowledgeFeatureParityTest.EchoHttp2Handler;
 import static io.servicetalk.http.netty.H2PriorKnowledgeFeatureParityTest.bindH2Server;
@@ -182,7 +182,8 @@ class H2ConcurrencyControllerTest {
 
             BlockingQueue<Integer> maxConcurrentStreams = new LinkedBlockingDeque<>();
             try (ReservedHttpConnection connection = client.reserveConnection(client.get("/")).map(conn -> {
-                conn.transportEventStream(MAX_CONCURRENCY).forEach(event -> maxConcurrentStreams.add(event.event()));
+                conn.transportEventStream(MAX_CONCURRENCY_NO_OFFLOADING)
+                        .forEach(event -> maxConcurrentStreams.add(event.event()));
                 return conn;
             }).toFuture().get()) {
                 awaitMaxConcurrentStreamsSettingsUpdate(connection, maxConcurrentStreams,
@@ -257,7 +258,8 @@ class H2ConcurrencyControllerTest {
 
             BlockingQueue<Integer> maxConcurrentStreams = new LinkedBlockingDeque<>();
             try (ReservedHttpConnection connection = client.reserveConnection(client.get("/")).map(conn -> {
-                conn.transportEventStream(MAX_CONCURRENCY).forEach(event -> maxConcurrentStreams.add(event.event()));
+                conn.transportEventStream(MAX_CONCURRENCY_NO_OFFLOADING)
+                        .forEach(event -> maxConcurrentStreams.add(event.event()));
                 return conn;
             }).toFuture().get()) {
                 awaitMaxConcurrentStreamsSettingsUpdate(connection, maxConcurrentStreams,

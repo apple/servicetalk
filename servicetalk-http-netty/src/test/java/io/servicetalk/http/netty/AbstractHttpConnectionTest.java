@@ -47,7 +47,6 @@ import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyN
 import static io.servicetalk.concurrent.api.Completable.never;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
-import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
@@ -59,6 +58,7 @@ import static io.servicetalk.http.api.HttpResponseMetaDataFactory.newResponseMet
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
 import static io.servicetalk.http.api.StreamingHttpRequests.newTransportRequest;
+import static io.servicetalk.http.netty.AbstractStreamingHttpConnection.MAX_CONCURRENCY_NO_OFFLOADING;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
@@ -111,7 +111,7 @@ final class AbstractHttpConnectionTest {
 
     @Test
     void shouldEmitMaxConcurrencyInEventStream() throws Exception {
-        Integer max = http.transportEventStream(MAX_CONCURRENCY)
+        Integer max = http.transportEventStream(MAX_CONCURRENCY_NO_OFFLOADING)
                 .afterOnNext(ConsumableEvent::eventConsumed).map(ConsumableEvent::event)
                 .firstOrElse(() -> null).toFuture().get();
         assertThat(max, equalTo(101));

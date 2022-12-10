@@ -142,7 +142,6 @@ import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.context.api.ContextMap.Key.newKey;
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
-import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
 import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.COOKIE;
@@ -160,6 +159,7 @@ import static io.servicetalk.http.api.HttpResponseStatus.EXPECTATION_FAILED;
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
+import static io.servicetalk.http.netty.AbstractStreamingHttpConnection.MAX_CONCURRENCY_NO_OFFLOADING;
 import static io.servicetalk.http.netty.CloseUtils.onGracefulClosureStarted;
 import static io.servicetalk.http.netty.H2ToStH1Utils.COOKIE_STRICT_RFC_6265;
 import static io.servicetalk.http.netty.H2ToStH1Utils.PROXY_CONNECTION;
@@ -2026,7 +2026,7 @@ class H2PriorKnowledgeFeatureParityTest {
                              Queue<FilterableStreamingHttpConnection> connectionQueue,
                              Queue<Publisher<? extends ConsumableEvent<Integer>>> maxConcurrentPubQueue) {
             super(delegate);
-            maxConcurrent = delegate.transportEventStream(MAX_CONCURRENCY).multicast(2);
+            maxConcurrent = delegate.transportEventStream(MAX_CONCURRENCY_NO_OFFLOADING).multicast(2);
             connectionQueue.add(delegate);
             maxConcurrentPubQueue.add(maxConcurrent);
         }
@@ -2034,7 +2034,7 @@ class H2PriorKnowledgeFeatureParityTest {
         @SuppressWarnings("unchecked")
         @Override
         public <T> Publisher<? extends T> transportEventStream(final HttpEventKey<T> eventKey) {
-            return eventKey == MAX_CONCURRENCY ? (Publisher<? extends T>) maxConcurrent :
+            return eventKey == MAX_CONCURRENCY_NO_OFFLOADING ? (Publisher<? extends T>) maxConcurrent :
                     super.transportEventStream(eventKey);
         }
     }

@@ -85,6 +85,7 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFro
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
+import static io.servicetalk.http.netty.AbstractStreamingHttpConnection.MAX_CONCURRENCY_NO_OFFLOADING;
 import static io.servicetalk.http.netty.AbstractStreamingHttpConnection.ZERO_MAX_CONCURRENCY_EVENT;
 import static io.servicetalk.http.netty.HeaderUtils.OBJ_EXPECT_CONTINUE;
 import static io.servicetalk.http.netty.HttpDebugUtils.showPipeline;
@@ -188,9 +189,6 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
             maxConcurrencyProcessor.onNext(DEFAULT_H2_MAX_CONCURRENCY_EVENT);
             bs = new Http2StreamChannelBootstrap(connection.channel());
             maxConcurrencyPublisher = fromSource(maxConcurrencyProcessor)
-                    .publishOn(connection.executionContext().executionStrategy().isEventOffloaded() ?
-                                    connection.executionContext().executor() : immediate(),
-                            IoThreadFactory.IoThread::currentThreadIsIoThread)
                     .multicast(1); // Allows multiple Subscribers to consume the event stream.
         }
 
@@ -239,9 +237,16 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
         @SuppressWarnings("unchecked")
         @Override
         public <T> Publisher<? extends T> transportEventStream(final HttpEventKey<T> eventKey) {
-            return eventKey == MAX_CONCURRENCY ?
-                    (Publisher<T>) maxConcurrencyPublisher :
-                    failed(new IllegalArgumentException("Unknown key: " + eventKey));
+            if (eventKey == MAX_CONCURRENCY_NO_OFFLOADING) {
+                return (Publisher<? extends T>) maxConcurrencyPublisher;
+            } else if (eventKey == MAX_CONCURRENCY) {
+                return (Publisher<? extends T>) maxConcurrencyPublisher
+                        .publishOn(executionContext().executionStrategy().isEventOffloaded() ?
+                                        executionContext().executor() : immediate(),
+                                IoThreadFactory.IoThread::currentThreadIsIoThread);
+            } else {
+                return failed(new IllegalArgumentException("Unknown key: " + eventKey));
+            }
         }
 
         @Override

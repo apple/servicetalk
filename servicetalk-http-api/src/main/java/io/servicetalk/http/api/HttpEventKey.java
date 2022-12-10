@@ -21,6 +21,9 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * A key which identifies a configuration setting for a connection. Setting values may change over time.
+ * <p>
+ * Comparison between {@link HttpEventKey} objects should be assumed to be on an instance basis.
+ * In general, {@code newKey(strA) != newKey(strA)}.
  *
  * @param <T> Type of the value of this setting.
  */
@@ -30,7 +33,7 @@ public final class HttpEventKey<T> {
      * Option to define max concurrent requests allowed on a connection.
      */
     public static final HttpEventKey<ConsumableEvent<Integer>> MAX_CONCURRENCY =
-            newKeyWithDebugToString("max-concurrency");
+            newKey("max-concurrency");
 
     private final String stringRepresentation;
 
@@ -45,22 +48,12 @@ public final class HttpEventKey<T> {
     /**
      * Creates a new {@link HttpEventKey} with the specific {@code name}.
      *
-     * @param stringRepresentation of the option. This is only used for debugging purpose and not for key equality.
-     * @param <T>                  Type of the value of the option.
-     * @return A new {@link HttpEventKey}.
-     */
-    static <T> HttpEventKey<T> newKeyWithDebugToString(String stringRepresentation) {
-        return new HttpEventKey<>(stringRepresentation);
-    }
-
-    /**
-     * Creates a new {@link HttpEventKey}.
-     *
+     * @param name of the option. This is only used for debugging purpose and not for key equality.
      * @param <T> Type of the value of the option.
      * @return A new {@link HttpEventKey}.
      */
-    static <T> HttpEventKey<T> newKey() {
-        return new HttpEventKey<>();
+    public static <T> HttpEventKey<T> newKey(String name) {
+        return new HttpEventKey<>(name);
     }
 
     @Override

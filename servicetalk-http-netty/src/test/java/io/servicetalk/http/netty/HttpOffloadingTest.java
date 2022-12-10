@@ -68,12 +68,12 @@ import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyN
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadAll;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
+import static io.servicetalk.http.netty.AbstractStreamingHttpConnection.MAX_CONCURRENCY_NO_OFFLOADING;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.http.netty.HttpServers.forAddress;
 import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
@@ -264,7 +264,7 @@ class HttpOffloadingTest {
     void clientSettingsStreamIsOffloaded() throws Exception {
         setup();
         subscribeTo(errors,
-                httpConnection.transportEventStream(MAX_CONCURRENCY).afterFinally(terminated::countDown),
+                httpConnection.transportEventStream(MAX_CONCURRENCY_NO_OFFLOADING).afterFinally(terminated::countDown),
                 "Client settings stream: ");
         httpConnection.closeAsyncGracefully().toFuture().get();
         terminated.await();
