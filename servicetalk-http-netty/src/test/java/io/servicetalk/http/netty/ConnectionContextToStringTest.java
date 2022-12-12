@@ -45,7 +45,7 @@ class ConnectionContextToStringTest extends AbstractNettyHttpServerTest {
     void service(final StreamingHttpService service) {
         super.service((toStreamingHttpService((BlockingHttpService) (ctx, request, responseFactory) ->
                         responseFactory.ok().payloadBody(ctx.toString(), textSerializerUtf8()),
-                HttpExecutionStrategies.offloadNone())));
+                HttpExecutionStrategies.offloadNone())).adaptor());
     }
 
     @ParameterizedTest(name = "protocol={0}")
