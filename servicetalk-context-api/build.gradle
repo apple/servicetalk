@@ -18,7 +18,11 @@ apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
   api platform(project(":servicetalk-dependencies"))
-  implementation project(":servicetalk-annotations")
+  testImplementation enforcedPlatform("org.junit:junit-bom:$junit5Version")
 
+  implementation project(":servicetalk-annotations")
   implementation "com.google.code.findbugs:jsr305"
+
+  testImplementation "org.junit.jupiter:junit-jupiter-api"
+  testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
 }

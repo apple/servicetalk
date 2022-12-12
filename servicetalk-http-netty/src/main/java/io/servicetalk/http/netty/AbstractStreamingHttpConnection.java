@@ -71,7 +71,7 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractStreamingHttpConnection.class);
     static final IgnoreConsumedEvent<Integer> ZERO_MAX_CONCURRENCY_EVENT = new IgnoreConsumedEvent<>(0);
     static final HttpEventKey<ConsumableEvent<Integer>> MAX_CONCURRENCY_NO_OFFLOADING =
-            newKey("max-concurrency-no-offloading");
+            newKey("max-concurrency-no-offloading", generify(ConsumableEvent.class));
 
     final CC connection;
     private final HttpConnectionContext connectionContext;
@@ -284,5 +284,10 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
     @Override
     public final String toString() {
         return getClass().getName() + '(' + connectionContext + ')';
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> Class<T> generify(Class<?> clazz) {
+        return (Class<T>) clazz;
     }
 }
