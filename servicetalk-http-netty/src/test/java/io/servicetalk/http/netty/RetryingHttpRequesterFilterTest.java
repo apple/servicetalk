@@ -120,7 +120,7 @@ class RetryingHttpRequesterFilterTest {
                 .buildBlocking();
         Exception e = assertThrows(Exception.class, () -> failingClient.request(failingClient.get("/")));
         assertThat(e, instanceOf(RetryableException.class));
-        assertThat("Unexpected calls to select.", lbSelectInvoked.get(), is(1));
+        assertThat("Unexpected calls to select.", lbSelectInvoked.get(), is(lessThanOrEqualTo(2)));
     }
 
     @Test
