@@ -54,7 +54,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.extension.TestWatcher;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,9 +62,7 @@ import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.annotation.Nullable;
 
@@ -114,7 +111,6 @@ import static java.util.Arrays.asList;
 import static java.util.Objects.hash;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -521,9 +517,8 @@ class RequestResponseCloseHandlerTest {
     @Nested
     class RequestResponseUserEventTest {
 
-        @ParameterizedTest(name = "{displayName} [{index}] isClient={0}")
-        @ValueSource(booleans = {false, true})
-        void outboundDataEndEventEmitsUserEventAlways(boolean isClient) throws Exception {
+        @Test
+        void clientOutboundDataEndEventEmitsUserEventAlways() throws Exception {
             AtomicBoolean ab = new AtomicBoolean(false);
             final EmbeddedChannel channel = new EmbeddedChannel(new ChannelInboundHandlerAdapter() {
                 @Override
@@ -534,50 +529,63 @@ class RequestResponseCloseHandlerTest {
                     ctx.fireUserEventTriggered(evt);
                 }
             });
-            final RequestResponseCloseHandler ch = new RequestResponseCloseHandler(isClient);
+            final RequestResponseCloseHandler ch = new RequestResponseCloseHandler(true);
             channel.eventLoop().execute(() -> ch.protocolPayloadEndOutbound(channel.pipeline().firstContext(),
                     channel.newPromise()));
-            channel.runPendingTasks();
-            assertThat("OutboundDataEndEvent not fired", ab.get(), is(true));
             channel.close().sync();
+            assertThat("OutboundDataEndEvent not fired", ab.get(), is(true));
         }
 
         @Test
-        void serverOutboundDataEndEventEmitsAfterEveryResponse() throws Exception {
-            BlockingQueue<OutboundDataEndEvent> events = new LinkedBlockingQueue<>();
+        void serverOutboundDataEndEventDoesntEmitUntilClosing() throws Exception {
+            AtomicBoolean ab = new AtomicBoolean(false);
             final EmbeddedChannel channel = new EmbeddedChannel(new ChannelInboundHandlerAdapter() {
                 @Override
                 public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) {
                     if (evt == OutboundDataEndEvent.INSTANCE) {
-                        events.add((OutboundDataEndEvent) evt);
+                        ab.set(true);
+                    }
+                    ctx.fireUserEventTriggered(evt);
+                }
+            });
+            final RequestResponseCloseHandler ch = new RequestResponseCloseHandler(false);
+            channel.eventLoop().execute(() ->
+                    ch.protocolPayloadEndOutbound(channel.pipeline().firstContext(), channel.newPromise()));
+            channel.close().sync();
+            assertThat("OutboundDataEndEvent should not fire", ab.get(), is(false));
+        }
+
+        @Test
+        void serverOutboundDataEndEventDoesntEmitUntilClosingAndIdle() throws Exception {
+            AtomicBoolean ab = new AtomicBoolean(false);
+            final EmbeddedChannel channel = new EmbeddedChannel(new ChannelInboundHandlerAdapter() {
+                @Override
+                public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) {
+                    if (evt == OutboundDataEndEvent.INSTANCE) {
+                        ab.set(true);
                     }
                     ctx.fireUserEventTriggered(evt);
                 }
             });
             final ChannelHandlerContext ctx = channel.pipeline().firstContext();
             final RequestResponseCloseHandler ch = new RequestResponseCloseHandler(false);
-            assertThat("Unexpected OutboundDataEndEvent", events, is(empty()));
             // Request #1
             channel.eventLoop().execute(() -> ch.protocolPayloadBeginInbound(ctx));
             channel.eventLoop().execute(() -> ch.protocolPayloadEndInbound(ctx));
-            assertThat("Unexpected OutboundDataEndEvent", events, is(empty()));
             // Request #2
             channel.eventLoop().execute(() -> ch.protocolPayloadBeginInbound(ctx));
             channel.eventLoop().execute(() -> ch.protocolPayloadEndInbound(ctx));
             channel.eventLoop().execute(() -> ch.gracefulUserClosing(channel));
-            assertThat("Unexpected OutboundDataEndEvent", events, is(empty()));
             // Response #1
             channel.eventLoop().execute(() -> ch.protocolPayloadBeginOutbound(ctx));
             channel.eventLoop().execute(() -> ch.protocolPayloadEndOutbound(ctx, ctx.newPromise()));
             channel.runPendingTasks();
-            assertThat("OutboundDataEndEvent not fired", events.poll(), is(OutboundDataEndEvent.INSTANCE));
-            assertThat("Unexpected OutboundDataEndEvent", events, is(empty()));
+            assertThat("OutboundDataEndEvent should not fire", ab.get(), is(false));
             // Response #2
             channel.eventLoop().execute(() -> ch.protocolPayloadBeginOutbound(ctx));
             channel.eventLoop().execute(() -> ch.protocolPayloadEndOutbound(ctx, ctx.newPromise()));
             channel.close().sync();
-            assertThat("OutboundDataEndEvent not fired", events.poll(), is(OutboundDataEndEvent.INSTANCE));
-            assertThat("Unexpected OutboundDataEndEvent", events, is(empty()));
+            assertThat("OutboundDataEndEvent not fired", ab.get(), is(true));
         }
 
         @Test
