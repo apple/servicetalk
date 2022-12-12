@@ -38,13 +38,13 @@ final class BuilderUtils {
         // No instances
     }
 
-    static HttpServerBuilder newLocalServer(ExecutionContext<? extends ExecutionStrategy> ctx,
-                                            HttpProtocol... protocols) {
-        return newLocalServerWithConfigs(ctx, toConfigs(protocols));
+    static HttpServerBuilder newServerBuilder(ExecutionContext<? extends ExecutionStrategy> ctx,
+                                              HttpProtocol... protocols) {
+        return newServerBuilderWithConfigs(ctx, toConfigs(protocols));
     }
 
-    static HttpServerBuilder newLocalServerWithConfigs(ExecutionContext<? extends ExecutionStrategy> ctx,
-                                                       HttpProtocolConfig... protocols) {
+    static HttpServerBuilder newServerBuilderWithConfigs(ExecutionContext<? extends ExecutionStrategy> ctx,
+                                                         HttpProtocolConfig... protocols) {
         HttpServerBuilder builder = HttpServers.forAddress(localAddress(0))
                 .ioExecutor(ctx.ioExecutor())
                 .executor(ctx.executor())
@@ -58,24 +58,37 @@ final class BuilderUtils {
         return builder;
     }
 
-    static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> newClient(
+    static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> newClientBuilder(
             ServerContext serverContext,
             ExecutionContext<? extends ExecutionStrategy> ctx,
             HttpProtocol... protocols) {
-        return newClientWithConfigs(serverContext, ctx, toConfigs(protocols));
+        return newClientBuilder(serverHostAndPort(serverContext), ctx, protocols);
     }
 
-    static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> newClientWithConfigs(
+    static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> newClientBuilder(
+            HostAndPort serverHostAndPort,
+            ExecutionContext<? extends ExecutionStrategy> ctx,
+            HttpProtocol... protocols) {
+        return newClientBuilderWithConfigs(serverHostAndPort, ctx, toConfigs(protocols));
+    }
+
+    static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> newClientBuilderWithConfigs(
             ServerContext serverContext,
+            ExecutionContext<? extends ExecutionStrategy> ctx,
+            HttpProtocolConfig... protocols) {
+        return newClientBuilderWithConfigs(serverHostAndPort(serverContext), ctx, protocols);
+    }
+
+    static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> newClientBuilderWithConfigs(
+            HostAndPort serverHostAndPort,
             ExecutionContext<? extends ExecutionStrategy> ctx,
             HttpProtocolConfig... protocols) {
 
         SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder =
-                HttpClients.forSingleAddress(serverHostAndPort(serverContext))
+                HttpClients.forSingleAddress(serverHostAndPort)
                         .ioExecutor(ctx.ioExecutor())
                         .executor(ctx.executor())
                         .bufferAllocator(ctx.bufferAllocator())
-                        .executionStrategy(HttpExecutionStrategy.from(ctx.executionStrategy()))
                         .enableWireLogging("servicetalk-tests-wire-logger", TRACE, Boolean.TRUE::booleanValue)
                         .appendClientFilter(new HttpLifecycleObserverRequesterFilter(
                                 logging("servicetalk-tests-lifecycle-observer-logger", TRACE)));

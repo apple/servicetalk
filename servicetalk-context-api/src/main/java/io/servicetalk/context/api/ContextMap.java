@@ -72,7 +72,7 @@ public interface ContextMap {
          * @param type The type of the key. This <strong>WILL NOT</strong> be used in comparisons between {@link Key}
          * objects.
          * @param <T> The value type associated with the {@link Key}.
-         * @return a new {@link Key} which has a {@link String} used only in the {@link #toString()} method for
+         * @return A new {@link Key} which uses a passed name only in the {@link #toString()} method for
          * debugging visibility.
          */
         public static <T> Key<T> newKey(final String name, final Class<T> type) {

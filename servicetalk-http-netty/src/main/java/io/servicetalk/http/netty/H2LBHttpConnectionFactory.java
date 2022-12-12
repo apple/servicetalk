@@ -33,8 +33,8 @@ import io.servicetalk.transport.api.TransportObserver;
 
 import javax.annotation.Nullable;
 
-import static io.netty.handler.codec.http2.Http2CodecUtil.SMALLEST_MAX_CONCURRENT_STREAMS;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
+import static io.servicetalk.http.netty.H2ClientParentConnectionContext.DEFAULT_H2_MAX_CONCURRENCY_EVENT;
 import static io.servicetalk.http.netty.ReservableRequestConcurrencyControllers.newController;
 import static io.servicetalk.http.netty.StreamingConnectionFactory.withSslConfigPeerHost;
 
@@ -69,6 +69,6 @@ final class H2LBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpCon
     @Override
     ReservableRequestConcurrencyController newConcurrencyController(
             final Publisher<? extends ConsumableEvent<Integer>> maxConcurrency, final Completable onClosing) {
-        return newController(maxConcurrency, onClosing, SMALLEST_MAX_CONCURRENT_STREAMS);
+        return newController(maxConcurrency, onClosing, DEFAULT_H2_MAX_CONCURRENCY_EVENT.event());
     }
 }

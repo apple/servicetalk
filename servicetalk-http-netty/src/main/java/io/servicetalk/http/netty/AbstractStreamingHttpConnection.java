@@ -52,6 +52,8 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpApiConversions.isPayloadEmpty;
 import static io.servicetalk.http.api.HttpApiConversions.isSafeToAggregate;
 import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
+import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
+import static io.servicetalk.http.api.HttpEventKey.newKey;
 import static io.servicetalk.http.api.StreamingHttpResponses.newTransportResponse;
 import static io.servicetalk.http.netty.HeaderUtils.REQ_EXPECT_CONTINUE;
 import static io.servicetalk.http.netty.HeaderUtils.addRequestTransferEncodingIfNecessary;
@@ -67,7 +69,9 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
         implements FilterableStreamingHttpConnection {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractStreamingHttpConnection.class);
-    private static final IgnoreConsumedEvent<Integer> ZERO_MAX_CONCURRENCY_EVENT = new IgnoreConsumedEvent<>(0);
+    static final IgnoreConsumedEvent<Integer> ZERO_MAX_CONCURRENCY_EVENT = new IgnoreConsumedEvent<>(0);
+    static final HttpEventKey<ConsumableEvent<Integer>> MAX_CONCURRENCY_NO_OFFLOADING =
+            newKey("max-concurrency-no-offloading", generify(ConsumableEvent.class));
 
     final CC connection;
     private final HttpConnectionContext connectionContext;
@@ -87,9 +91,6 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
         maxConcurrencySetting = from(new IgnoreConsumedEvent<>(maxPipelinedRequests))
                 .concat(connection.onClosing())
                 .concat(succeeded(ZERO_MAX_CONCURRENCY_EVENT))
-                .publishOn(executionContext.executionStrategy().isEventOffloaded() ?
-                        executionContext.executor() : immediate(),
-                        IoThreadFactory.IoThread::currentThreadIsIoThread)
                 .multicast(1); // Allows multiple Subscribers to consume the event stream.
         this.headersFactory = headersFactory;
         this.allowDropTrailersReadFromTransport = allowDropTrailersReadFromTransport;
@@ -103,8 +104,16 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
     @SuppressWarnings("unchecked")
     @Override
     public final <T> Publisher<? extends T> transportEventStream(final HttpEventKey<T> eventKey) {
-        return eventKey == HttpEventKey.MAX_CONCURRENCY ? (Publisher<? extends T>) maxConcurrencySetting :
-                failed(new IllegalArgumentException("Unknown key: " + eventKey));
+        if (eventKey == MAX_CONCURRENCY_NO_OFFLOADING) {
+            return (Publisher<? extends T>) maxConcurrencySetting;
+        } else if (eventKey == MAX_CONCURRENCY) {
+            return (Publisher<? extends T>) maxConcurrencySetting
+                    .publishOn(executionContext().executionStrategy().isEventOffloaded() ?
+                                    executionContext().executor() : immediate(),
+                            IoThreadFactory.IoThread::currentThreadIsIoThread);
+        } else {
+            return failed(new IllegalArgumentException("Unknown key: " + eventKey));
+        }
     }
 
     private Single<StreamingHttpResponse> makeRequest(final HttpRequestMetaData requestMetaData,
@@ -275,5 +284,10 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
     @Override
     public final String toString() {
         return getClass().getName() + '(' + connectionContext + ')';
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> Class<T> generify(Class<?> clazz) {
+        return (Class<T>) clazz;
     }
 }

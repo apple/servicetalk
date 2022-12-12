@@ -36,16 +36,20 @@ import io.servicetalk.transport.api.IoThreadFactory;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
-import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
+import static io.servicetalk.http.netty.AbstractStreamingHttpConnection.MAX_CONCURRENCY_NO_OFFLOADING;
 import static io.servicetalk.transport.api.TransportObservers.asSafeObserver;
 import static java.util.Objects.requireNonNull;
 
 abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
         implements ConnectionFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractLBHttpConnectionFactory.class);
     @Nullable
     private final StreamingHttpConnectionFilterFactory connectionFilterFunction;
     final ReadOnlyHttpClientConfig config;
@@ -117,9 +121,11 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
                     // Apply connection filters:
                     FilterableStreamingHttpConnection filteredConnection =
                             connectionFilterFunction != null ? connectionFilterFunction.create(conn) : conn;
-                    return protocolBinding.bind(filteredConnection,
-                            newConcurrencyController(filteredConnection.transportEventStream(MAX_CONCURRENCY),
-                                    filteredConnection.onClosing()), context);
+                    return protocolBinding.bind(filteredConnection, newConcurrencyController(
+                            filteredConnection.transportEventStream(MAX_CONCURRENCY_NO_OFFLOADING)
+                                    .beforeOnNext(event -> LOGGER.debug("{} Received {} event: {}",
+                                            conn, MAX_CONCURRENCY_NO_OFFLOADING, event)),
+                            filteredConnection.onClosing()), context);
                 });
     }
 

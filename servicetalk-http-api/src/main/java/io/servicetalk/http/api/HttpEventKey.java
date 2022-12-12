@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2022 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,14 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.client.api.ConsumableEvent;
 
+import static java.lang.Integer.toHexString;
 import static java.util.Objects.requireNonNull;
 
 /**
  * A key which identifies a configuration setting for a connection. Setting values may change over time.
+ * <p>
+ * Comparison between {@link HttpEventKey} objects should be assumed to be on an instance basis.
+ * In general, {@code newKey(strA) != newKey(strA)}.
  *
  * @param <T> Type of the value of this setting.
  */
@@ -30,41 +34,59 @@ public final class HttpEventKey<T> {
      * Option to define max concurrent requests allowed on a connection.
      */
     public static final HttpEventKey<ConsumableEvent<Integer>> MAX_CONCURRENCY =
-            newKeyWithDebugToString("max-concurrency");
+            newKey("max-concurrency", generify(ConsumableEvent.class));
 
-    private final String stringRepresentation;
+    private final String name;
+    private final Class<T> type;
 
-    private HttpEventKey(String stringRepresentation) {
-        this.stringRepresentation = requireNonNull(stringRepresentation);
-    }
-
-    private HttpEventKey() {
-        this.stringRepresentation = super.toString();
-    }
-
-    /**
-     * Creates a new {@link HttpEventKey} with the specific {@code name}.
-     *
-     * @param stringRepresentation of the option. This is only used for debugging purpose and not for key equality.
-     * @param <T>                  Type of the value of the option.
-     * @return A new {@link HttpEventKey}.
-     */
-    static <T> HttpEventKey<T> newKeyWithDebugToString(String stringRepresentation) {
-        return new HttpEventKey<>(stringRepresentation);
+    private HttpEventKey(final String name, final Class<T> type) {
+        this.name = requireNonNull(name);
+        this.type = requireNonNull(type);
     }
 
     /**
-     * Creates a new {@link HttpEventKey}.
+     * Returns the name of the key.
      *
-     * @param <T> Type of the value of the option.
-     * @return A new {@link HttpEventKey}.
+     * @return the name of the key.
      */
-    static <T> HttpEventKey<T> newKey() {
-        return new HttpEventKey<>();
+    public String name() {
+        return name;
+    }
+
+    /**
+     * Returns the type of the key.
+     *
+     * @return the type of the key.
+     */
+    public Class<T> type() {
+        return type;
+    }
+
+    /**
+     * Creates a new {@link HttpEventKey} with the specified name and type.
+     *
+     * @param name The name of the key. This <strong>WILL NOT</strong> be used in comparisons between
+     * {@link HttpEventKey} objects.
+     * @param type The type of the key. This <strong>WILL NOT</strong> be used in comparisons between
+     * {@link HttpEventKey} objects.
+     * @param <T> The value type associated with the {@link HttpEventKey}.
+     * @return A new {@link HttpEventKey} which uses a passed name only in the {@link #toString()} method for
+     * debugging visibility.
+     */
+    public static <T> HttpEventKey<T> newKey(String name, final Class<T> type) {
+        return new HttpEventKey<>(name, type);
     }
 
     @Override
     public String toString() {
-        return stringRepresentation;
+        return getClass().getSimpleName() +
+                "{name='" + name + '\'' +
+                ", type=" + type.getSimpleName() +
+                "}@" + toHexString(hashCode());
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> Class<T> generify(Class<?> clazz) {
+        return (Class<T>) clazz;
     }
 }
