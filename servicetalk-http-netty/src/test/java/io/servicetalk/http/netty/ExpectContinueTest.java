@@ -72,8 +72,8 @@ import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpResponseStatus.PERMANENT_REDIRECT;
 import static io.servicetalk.http.api.HttpResponseStatus.UNPROCESSABLE_ENTITY;
-import static io.servicetalk.http.netty.BuilderUtils.newClientBuilderWithConfigs;
-import static io.servicetalk.http.netty.BuilderUtils.newServerBuilderWithConfigs;
+import static io.servicetalk.http.netty.BuilderUtils.newClientWithConfigs;
+import static io.servicetalk.http.netty.BuilderUtils.newLocalServerWithConfigs;
 import static io.servicetalk.http.netty.HttpProtocol.HTTP_1;
 import static java.lang.String.valueOf;
 import static java.nio.charset.StandardCharsets.US_ASCII;
@@ -573,7 +573,7 @@ class ExpectContinueTest {
     private static HttpServerContext startServer(HttpProtocol protocol,
                                                  boolean useOtherHeadersFactory,
                                                  BlockingStreamingHttpService service) throws Exception {
-        return newServerBuilderWithConfigs(SERVER_CTX,
+        return newLocalServerWithConfigs(SERVER_CTX,
                 useOtherHeadersFactory ? protocol.configOtherHeadersFactory : protocol.config)
                 .listenBlockingStreamingAndAwait(service);
     }
@@ -586,7 +586,7 @@ class ExpectContinueTest {
     private static StreamingHttpClient createClient(HttpServerContext serverContext,
                                                     HttpProtocol protocol, boolean useOtherHeadersFactory,
                                                     @Nullable StreamingHttpClientFilterFactory filterFactory) {
-        final SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder = newClientBuilderWithConfigs(
+        final SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder = newClientWithConfigs(
                 serverContext, CLIENT_CTX,
                 useOtherHeadersFactory ? protocol.configOtherHeadersFactory : protocol.config);
         if (filterFactory != null) {
