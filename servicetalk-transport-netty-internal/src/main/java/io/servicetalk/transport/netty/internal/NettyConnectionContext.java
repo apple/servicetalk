@@ -16,6 +16,7 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ConnectionContext;
 
@@ -56,6 +57,9 @@ public interface NettyConnectionContext extends ConnectionContext {
      * the transport.
      */
     Single<Throwable> transportError();
+
+    @Override
+    Completable onClosing();    // FIXME: 0.43 - remove override from this interface
 
     /**
      * Return the Netty {@link Channel} backing this connection.
