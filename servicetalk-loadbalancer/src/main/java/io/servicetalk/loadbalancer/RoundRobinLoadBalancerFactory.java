@@ -101,10 +101,10 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
     }
 
     @Override
-    public LoadBalancer<C> newLoadBalancerTyped(
-            final String targetResource,
+    public LoadBalancer<C> newLoadBalancer(
             final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
-            final ConnectionFactory<ResolvedAddress, C> connectionFactory) {
+            final ConnectionFactory<ResolvedAddress, C> connectionFactory,
+            final String targetResource) {
         return new RoundRobinLoadBalancer<>(requireNonNull(targetResource), eventPublisher, connectionFactory,
                 linearSearchSpace, healthCheckConfig);
     }

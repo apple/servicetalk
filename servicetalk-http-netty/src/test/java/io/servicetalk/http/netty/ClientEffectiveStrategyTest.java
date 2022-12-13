@@ -582,15 +582,15 @@ class ClientEffectiveStrategyTest {
         }
 
         @Override
-        public LoadBalancer<FilterableStreamingHttpLoadBalancedConnection> newLoadBalancerTyped(
-                final String targetResource,
+        public LoadBalancer<FilterableStreamingHttpLoadBalancedConnection> newLoadBalancer(
                 final Publisher<? extends Collection<? extends ServiceDiscovererEvent<InetSocketAddress>>>
                         eventPublisher,
                 final ConnectionFactory<InetSocketAddress, FilterableStreamingHttpLoadBalancedConnection>
-                        connectionFactory) {
+                        connectionFactory,
+                final String targetResource) {
             return new RoundRobinLoadBalancerFactory
                     .Builder<InetSocketAddress, FilterableStreamingHttpLoadBalancedConnection>().build()
-                    .newLoadBalancerTyped(targetResource, eventPublisher, connectionFactory);
+                    .newLoadBalancer(eventPublisher, connectionFactory, targetResource);
         }
 
         @Override

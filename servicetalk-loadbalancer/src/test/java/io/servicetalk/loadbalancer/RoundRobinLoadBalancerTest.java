@@ -496,7 +496,7 @@ abstract class RoundRobinLoadBalancerTest {
                 new RoundRobinLoadBalancerFactory.Builder<String, TestLoadBalancedConnection>()
                         .healthCheckFailedConnectionsThreshold(-1)
                         .build()
-                        .newLoadBalancerTyped("test-service", serviceDiscoveryPublisher, connectionFactory);
+                        .newLoadBalancer(serviceDiscoveryPublisher, connectionFactory, "test-service");
 
         sendServiceDiscoveryEvents(upEvent("address-1"));
 
@@ -614,7 +614,7 @@ abstract class RoundRobinLoadBalancerTest {
                             }
                         })
                         .build()
-                        .newLoadBalancerTyped("test-service", serviceDiscoveryPublisher, connectionFactory);
+                        .newLoadBalancer(serviceDiscoveryPublisher, connectionFactory, "test-service");
 
         sendServiceDiscoveryEvents(upEvent("address-1"));
 
@@ -716,7 +716,7 @@ abstract class RoundRobinLoadBalancerTest {
                         .healthCheckInterval(ofMillis(50), ofMillis(10))
                         .backgroundExecutor(testExecutor)
                         .build()
-                        .newLoadBalancerTyped("test-service", serviceDiscoveryPublisher, connectionFactory);
+                        .newLoadBalancer(serviceDiscoveryPublisher, connectionFactory, "test-service");
 
         assertAddresses(lb.usedAddresses(), EMPTY_ARRAY);
 
@@ -788,7 +788,7 @@ abstract class RoundRobinLoadBalancerTest {
                         .healthCheckInterval(ofMillis(50), ofMillis(10))
                         .backgroundExecutor(testExecutor)
                         .build()
-                        .newLoadBalancerTyped("test-service", serviceDiscoveryPublisher, connectionFactory);
+                        .newLoadBalancer(serviceDiscoveryPublisher, connectionFactory, "test-service");
     }
 
     @SafeVarargs

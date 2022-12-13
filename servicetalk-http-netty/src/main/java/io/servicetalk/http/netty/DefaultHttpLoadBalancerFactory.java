@@ -67,11 +67,11 @@ public final class DefaultHttpLoadBalancerFactory<ResolvedAddress>
     }
 
     @Override
-    public LoadBalancer<FilterableStreamingHttpLoadBalancedConnection> newLoadBalancerTyped(
-            final String targetResource,
+    public LoadBalancer<FilterableStreamingHttpLoadBalancedConnection> newLoadBalancer(
             final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
-            final ConnectionFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> connectionFactory) {
-        return rawFactory.newLoadBalancerTyped(targetResource, eventPublisher, connectionFactory);
+            final ConnectionFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> connectionFactory,
+            final String targetResource) {
+        return rawFactory.newLoadBalancer(eventPublisher, connectionFactory, targetResource);
     }
 
     @Override   // FIXME: 0.43 - remove deprecated method
