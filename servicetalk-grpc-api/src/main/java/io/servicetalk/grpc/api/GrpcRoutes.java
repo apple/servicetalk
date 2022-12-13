@@ -32,14 +32,18 @@ import io.servicetalk.router.api.RouteExecutionStrategyFactory;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import java.lang.reflect.Method;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.offloadNever;
 import static io.servicetalk.grpc.api.GrpcHeaderValues.GRPC_CONTENT_TYPE_PROTO_SUFFIX;
+import static io.servicetalk.grpc.api.GrpcRouter.verifyNoOverrides;
 import static io.servicetalk.grpc.api.GrpcUtils.compressors;
 import static io.servicetalk.grpc.api.GrpcUtils.decompressors;
 import static io.servicetalk.grpc.api.GrpcUtils.defaultToInt;
@@ -60,6 +64,7 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
     private final GrpcRouter.Builder routeBuilder;
     private final Set<String> errors;
     private final RouteExecutionStrategyFactory<GrpcExecutionStrategy> strategyFactory;
+    private final Map<String, Consumer<GrpcRouter.Builder>> deferredRoutes;
 
     /**
      * Create a new instance.
@@ -79,12 +84,15 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
     protected GrpcRoutes(final RouteExecutionStrategyFactory<GrpcExecutionStrategy> strategyFactory) {
         routeBuilder = new GrpcRouter.Builder();
         errors = new TreeSet<>();
+        deferredRoutes = new LinkedHashMap<>();
         this.strategyFactory = strategyFactory;
     }
 
-    private GrpcRoutes(final GrpcRouter.Builder routeBuilder, final Set<String> errors) {
+    private GrpcRoutes(final GrpcRouter.Builder routeBuilder, final Set<String> errors,
+                       final Map<String, Consumer<GrpcRouter.Builder>> deferredRoutes) {
         this.routeBuilder = routeBuilder;
         this.errors = errors;
+        this.deferredRoutes = deferredRoutes;
         strategyFactory = defaultStrategyFactory();
     }
 
@@ -98,6 +106,8 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * the server could not be started.
      */
     final Single<GrpcServerContext> bind(final ServerBinder binder, final GrpcExecutionContext executionContext) {
+        deferredRoutes.values().forEach(deferredRoute -> deferredRoute.accept(routeBuilder));
+
         if (!errors.isEmpty()) {
             throw new IllegalStateException("Invalid execution strategy configuration found:\n" + errors);
         }
@@ -130,11 +140,18 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
     static GrpcRoutes<?> merge(GrpcRoutes<?>... allRoutes) {
         final GrpcRouter.Builder[] builders = new GrpcRouter.Builder[allRoutes.length];
         final Set<String> errors = new TreeSet<>();
+        final Map<String, Consumer<GrpcRouter.Builder>> deferredRoutes = new LinkedHashMap<>();
         for (int i = 0; i < allRoutes.length; i++) {
             builders[i] = allRoutes[i].routeBuilder;
             errors.addAll(allRoutes[i].errors);
+
+            final Map<String, Consumer<GrpcRouter.Builder>> newDeferredRoutes = allRoutes[i].deferredRoutes;
+            for (String path : newDeferredRoutes.keySet()) {
+                 verifyNoOverrides(null, path, deferredRoutes);
+            }
+            deferredRoutes.putAll(allRoutes[i].deferredRoutes);
         }
-        return new GrpcRoutes<GrpcService>(GrpcRouter.Builder.merge(builders), errors) {
+        return new GrpcRoutes<GrpcService>(GrpcRouter.Builder.merge(builders), errors, deferredRoutes) {
             @Deprecated
             @Override
             protected void registerRoutes(final GrpcService service) {
@@ -205,10 +222,15 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
     protected final <Req, Resp> void addRoute(
             Class<?> serviceClass, MethodDescriptor<Req, Resp> methodDescriptor,
             BufferDecoderGroup decompressors, List<BufferEncoder> compressors, Route<Req, Resp> route) {
-        final Method method = retrieveMethod(serviceClass, methodDescriptor.javaMethodName(), GrpcServiceContext.class,
-                methodDescriptor.requestDescriptor().parameterClass());
-        routeBuilder.addRoute(methodDescriptor, decompressors, compressors,
-                executionStrategy(methodDescriptor.httpPath(), method, serviceClass), route);
+        final String path = methodDescriptor.httpPath();
+        verifyNoOverrides(null, path, deferredRoutes);
+
+        deferredRoutes.put(path, routeBuilder -> {
+            final Method method = retrieveMethod(serviceClass, methodDescriptor.javaMethodName(),
+                    GrpcServiceContext.class, methodDescriptor.requestDescriptor().parameterClass());
+            routeBuilder.addRoute(methodDescriptor, decompressors, compressors,
+                    executionStrategy(path, method, serviceClass), route);
+        });
     }
 
     /**
@@ -250,7 +272,11 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
     protected final <Req, Resp> void addRoute(
             final GrpcExecutionStrategy executionStrategy, MethodDescriptor<Req, Resp> methodDescriptor,
             BufferDecoderGroup decompressors, List<BufferEncoder> compressors, Route<Req, Resp> route) {
-        routeBuilder.addRoute(methodDescriptor, decompressors, compressors, executionStrategy, route);
+        final String path = methodDescriptor.httpPath();
+        verifyNoOverrides(null, path, deferredRoutes);
+
+        deferredRoutes.put(path, routeBuilder ->
+                routeBuilder.addRoute(methodDescriptor, decompressors, compressors, executionStrategy, route));
     }
 
     /**
@@ -294,10 +320,15 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
     protected final <Req, Resp> void addStreamingRoute(
             Class<?> serviceClass, MethodDescriptor<Req, Resp> methodDescriptor,
             BufferDecoderGroup decompressors, List<BufferEncoder> compressors, StreamingRoute<Req, Resp> route) {
-        final Method method = retrieveMethod(serviceClass, methodDescriptor.javaMethodName(), GrpcServiceContext.class,
-                Publisher.class);
-        routeBuilder.addStreamingRoute(methodDescriptor, decompressors, compressors,
-                executionStrategy(methodDescriptor.httpPath(), method, serviceClass), route);
+        final String path = methodDescriptor.httpPath();
+        verifyNoOverrides(null, path, deferredRoutes);
+
+        deferredRoutes.put(path, routeBuilder -> {
+                    final Method method = retrieveMethod(serviceClass, methodDescriptor.javaMethodName(),
+                            GrpcServiceContext.class, Publisher.class);
+                    routeBuilder.addStreamingRoute(methodDescriptor, decompressors, compressors,
+                            executionStrategy(path, method, serviceClass), route);
+                });
     }
 
     /**
@@ -340,7 +371,11 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
     protected final <Req, Resp> void addStreamingRoute(
             final GrpcExecutionStrategy executionStrategy, MethodDescriptor<Req, Resp> methodDescriptor,
             BufferDecoderGroup decompressors, List<BufferEncoder> compressors, StreamingRoute<Req, Resp> route) {
-        routeBuilder.addStreamingRoute(methodDescriptor, decompressors, compressors, executionStrategy, route);
+        final String path = methodDescriptor.httpPath();
+        verifyNoOverrides(null, methodDescriptor.httpPath(), deferredRoutes);
+
+        deferredRoutes.put(path, routeBuilder ->
+                routeBuilder.addStreamingRoute(methodDescriptor, decompressors, compressors, executionStrategy, route));
     }
 
     /**
@@ -386,10 +421,15 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
             Class<?> serviceClass, MethodDescriptor<Req, Resp> methodDescriptor,
             BufferDecoderGroup decompressors, List<BufferEncoder> compressors,
             RequestStreamingRoute<Req, Resp> route) {
-        final Method method = retrieveMethod(serviceClass, methodDescriptor.javaMethodName(), GrpcServiceContext.class,
-                Publisher.class);
-        routeBuilder.addRequestStreamingRoute(methodDescriptor, decompressors, compressors,
-                executionStrategy(methodDescriptor.httpPath(), method, serviceClass), route);
+        final String path = methodDescriptor.httpPath();
+        verifyNoOverrides(null, path, deferredRoutes);
+
+        deferredRoutes.put(methodDescriptor.httpPath(), routeBuilder -> {
+            final Method method = retrieveMethod(serviceClass, methodDescriptor.javaMethodName(),
+                    GrpcServiceContext.class, Publisher.class);
+            routeBuilder.addRequestStreamingRoute(methodDescriptor, decompressors, compressors,
+                    executionStrategy(path, method, serviceClass), route);
+        });
     }
 
     /**
@@ -434,7 +474,12 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
             final GrpcExecutionStrategy executionStrategy, MethodDescriptor<Req, Resp> methodDescriptor,
             BufferDecoderGroup decompressors, List<BufferEncoder> compressors,
             RequestStreamingRoute<Req, Resp> route) {
-        routeBuilder.addRequestStreamingRoute(methodDescriptor, decompressors, compressors, executionStrategy, route);
+        final String path = methodDescriptor.httpPath();
+        verifyNoOverrides(null, path, deferredRoutes);
+
+        deferredRoutes.put(path, routeBuilder ->
+                routeBuilder.addRequestStreamingRoute(methodDescriptor, decompressors, compressors, executionStrategy,
+                        route));
     }
 
     /**
@@ -480,10 +525,15 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
             Class<?> serviceClass, MethodDescriptor<Req, Resp> methodDescriptor,
             BufferDecoderGroup decompressors, List<BufferEncoder> compressors,
             ResponseStreamingRoute<Req, Resp> route) {
-        final Method method = retrieveMethod(serviceClass, methodDescriptor.javaMethodName(), GrpcServiceContext.class,
-                methodDescriptor.requestDescriptor().parameterClass());
-        routeBuilder.addResponseStreamingRoute(methodDescriptor, decompressors, compressors,
-                executionStrategy(methodDescriptor.httpPath(), method, serviceClass), route);
+        final String path = methodDescriptor.httpPath();
+        verifyNoOverrides(null, path, deferredRoutes);
+
+        deferredRoutes.put(path, routeBuilder -> {
+            final Method method = retrieveMethod(serviceClass, methodDescriptor.javaMethodName(),
+                    GrpcServiceContext.class, methodDescriptor.requestDescriptor().parameterClass());
+            routeBuilder.addResponseStreamingRoute(methodDescriptor, decompressors, compressors,
+                    executionStrategy(path, method, serviceClass), route);
+        });
     }
 
     /**
@@ -528,7 +578,12 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
             final GrpcExecutionStrategy executionStrategy, MethodDescriptor<Req, Resp> methodDescriptor,
             BufferDecoderGroup decompressors, List<BufferEncoder> compressors,
             ResponseStreamingRoute<Req, Resp> route) {
-        routeBuilder.addResponseStreamingRoute(methodDescriptor, decompressors, compressors, executionStrategy, route);
+        final String path = methodDescriptor.httpPath();
+        verifyNoOverrides(null, path, deferredRoutes);
+
+        deferredRoutes.put(path, routeBuilder ->
+                routeBuilder.addResponseStreamingRoute(methodDescriptor, decompressors, compressors, executionStrategy,
+                        route));
     }
 
     /**
@@ -573,10 +628,15 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
             Class<?> serviceClass, MethodDescriptor<Req, Resp> methodDescriptor,
             BufferDecoderGroup decompressors, List<BufferEncoder> compressors,
             BlockingRoute<Req, Resp> route) {
-        final Method method = retrieveMethod(serviceClass, methodDescriptor.javaMethodName(), GrpcServiceContext.class,
-                methodDescriptor.requestDescriptor().parameterClass());
-        routeBuilder.addBlockingRoute(methodDescriptor, decompressors, compressors,
-                executionStrategy(methodDescriptor.httpPath(), method, serviceClass), route);
+        final String path = methodDescriptor.httpPath();
+        verifyNoOverrides(null, path, deferredRoutes);
+
+        deferredRoutes.put(path, routeBuilder -> {
+            final Method method = retrieveMethod(serviceClass, methodDescriptor.javaMethodName(),
+                    GrpcServiceContext.class, methodDescriptor.requestDescriptor().parameterClass());
+            routeBuilder.addBlockingRoute(methodDescriptor, decompressors, compressors,
+                    executionStrategy(path, method, serviceClass), route);
+        });
     }
 
     /**
@@ -620,7 +680,11 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
             final GrpcExecutionStrategy executionStrategy, MethodDescriptor<Req, Resp> methodDescriptor,
             BufferDecoderGroup decompressors, List<BufferEncoder> compressors,
             BlockingRoute<Req, Resp> route) {
-        routeBuilder.addBlockingRoute(methodDescriptor, decompressors, compressors, executionStrategy, route);
+        final String path = methodDescriptor.httpPath();
+        verifyNoOverrides(null, path, deferredRoutes);
+
+        deferredRoutes.put(path, routeBuilder ->
+                routeBuilder.addBlockingRoute(methodDescriptor, decompressors, compressors, executionStrategy, route));
     }
 
     /**
@@ -666,10 +730,15 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
             Class<?> serviceClass, MethodDescriptor<Req, Resp> methodDescriptor,
             BufferDecoderGroup decompressors, List<BufferEncoder> compressors,
             BlockingStreamingRoute<Req, Resp> route) {
-        final Method method = retrieveMethod(serviceClass, methodDescriptor.javaMethodName(), GrpcServiceContext.class,
-                BlockingIterable.class, GrpcPayloadWriter.class);
-        routeBuilder.addBlockingStreamingRoute(methodDescriptor, decompressors, compressors,
-                executionStrategy(methodDescriptor.httpPath(), method, serviceClass), route);
+        final String path = methodDescriptor.httpPath();
+        verifyNoOverrides(null, path, deferredRoutes);
+
+        deferredRoutes.put(path, routeBuilder -> {
+            final Method method = retrieveMethod(serviceClass, methodDescriptor.javaMethodName(),
+                    GrpcServiceContext.class, BlockingIterable.class, GrpcPayloadWriter.class);
+            routeBuilder.addBlockingStreamingRoute(methodDescriptor, decompressors, compressors,
+                    executionStrategy(path, method, serviceClass), route);
+        });
     }
 
     /**
@@ -714,7 +783,12 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
             final GrpcExecutionStrategy executionStrategy, MethodDescriptor<Req, Resp> methodDescriptor,
             BufferDecoderGroup decompressors, List<BufferEncoder> compressors,
             BlockingStreamingRoute<Req, Resp> route) {
-        routeBuilder.addBlockingStreamingRoute(methodDescriptor, decompressors, compressors, executionStrategy, route);
+        final String path = methodDescriptor.httpPath();
+        verifyNoOverrides(null, path, deferredRoutes);
+
+        deferredRoutes.put(path, routeBuilder ->
+                routeBuilder.addBlockingStreamingRoute(methodDescriptor, decompressors, compressors, executionStrategy,
+                        route));
     }
 
     /**
@@ -760,10 +834,15 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
             Class<?> serviceClass, MethodDescriptor<Req, Resp> methodDescriptor,
             BufferDecoderGroup decompressors, List<BufferEncoder> compressors,
             BlockingRequestStreamingRoute<Req, Resp> route) {
-        final Method method = retrieveMethod(serviceClass, methodDescriptor.javaMethodName(), GrpcServiceContext.class,
-                BlockingIterable.class);
-        routeBuilder.addBlockingRequestStreamingRoute(methodDescriptor, decompressors, compressors,
-                executionStrategy(methodDescriptor.httpPath(), method, serviceClass), route);
+        final String path = methodDescriptor.httpPath();
+        verifyNoOverrides(null, path, deferredRoutes);
+
+        deferredRoutes.put(path, routeBuilder -> {
+            final Method method = retrieveMethod(serviceClass, methodDescriptor.javaMethodName(),
+                    GrpcServiceContext.class, BlockingIterable.class);
+            routeBuilder.addBlockingRequestStreamingRoute(methodDescriptor, decompressors, compressors,
+                    executionStrategy(path, method, serviceClass), route);
+        });
     }
 
     /**
@@ -808,8 +887,12 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
             final GrpcExecutionStrategy executionStrategy, MethodDescriptor<Req, Resp> methodDescriptor,
             BufferDecoderGroup decompressors, List<BufferEncoder> compressors,
             BlockingRequestStreamingRoute<Req, Resp> route) {
-        routeBuilder.addBlockingRequestStreamingRoute(methodDescriptor, decompressors, compressors, executionStrategy,
-                route);
+        final String path = methodDescriptor.httpPath();
+        verifyNoOverrides(null, path, deferredRoutes);
+
+        deferredRoutes.put(path, routeBuilder ->
+                routeBuilder.addBlockingRequestStreamingRoute(methodDescriptor, decompressors, compressors,
+                        executionStrategy, route));
     }
 
     /**
@@ -856,10 +939,16 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
             Class<?> serviceClass, MethodDescriptor<Req, Resp> methodDescriptor,
             BufferDecoderGroup decompressors, List<BufferEncoder> compressors,
             BlockingResponseStreamingRoute<Req, Resp> route) {
-        final Method method = retrieveMethod(serviceClass, methodDescriptor.javaMethodName(), GrpcServiceContext.class,
-                methodDescriptor.requestDescriptor().parameterClass(), GrpcPayloadWriter.class);
-        routeBuilder.addBlockingResponseStreamingRoute(methodDescriptor, decompressors, compressors,
-                executionStrategy(methodDescriptor.httpPath(), method, serviceClass), route);
+        final String path = methodDescriptor.httpPath();
+        verifyNoOverrides(null, path, deferredRoutes);
+
+        deferredRoutes.put(path, routeBuilder -> {
+            final Method method = retrieveMethod(serviceClass, methodDescriptor.javaMethodName(),
+                    GrpcServiceContext.class, methodDescriptor.requestDescriptor().parameterClass(),
+                    GrpcPayloadWriter.class);
+            routeBuilder.addBlockingResponseStreamingRoute(methodDescriptor, decompressors, compressors,
+                    executionStrategy(path, method, serviceClass), route);
+        });
     }
 
     /**
@@ -904,8 +993,12 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
             final GrpcExecutionStrategy executionStrategy, MethodDescriptor<Req, Resp> methodDescriptor,
             BufferDecoderGroup decompressors, List<BufferEncoder> compressors,
             BlockingResponseStreamingRoute<Req, Resp> route) {
-        routeBuilder.addBlockingResponseStreamingRoute(methodDescriptor, decompressors, compressors, executionStrategy,
-                route);
+        final String path = methodDescriptor.httpPath();
+        verifyNoOverrides(null, path, deferredRoutes);
+
+        deferredRoutes.put(path, routeBuilder ->
+                routeBuilder.addBlockingResponseStreamingRoute(methodDescriptor, decompressors, compressors,
+                        executionStrategy, route));
     }
 
     /**
