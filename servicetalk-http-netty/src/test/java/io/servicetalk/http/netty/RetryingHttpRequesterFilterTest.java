@@ -233,13 +233,13 @@ class RetryingHttpRequesterFilterTest {
         }
 
         @Override
-        public LoadBalancer<C> newLoadBalancerTyped(
-                final String targetResource,
+        public LoadBalancer<C> newLoadBalancer(
                 final Publisher<? extends Collection<? extends ServiceDiscovererEvent<InetSocketAddress>>>
                         eventPublisher,
-                final ConnectionFactory<InetSocketAddress, C> connectionFactory) {
+                final ConnectionFactory<InetSocketAddress, C> connectionFactory,
+                final String targetResource) {
             return new InspectingLoadBalancer<>(
-                    rr.newLoadBalancerTyped(targetResource, eventPublisher, connectionFactory));
+                    rr.newLoadBalancer(eventPublisher, connectionFactory, targetResource));
         }
 
         @Override

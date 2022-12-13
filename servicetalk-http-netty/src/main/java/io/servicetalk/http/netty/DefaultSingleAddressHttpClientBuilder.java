@@ -290,10 +290,10 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
             }
 
             final LoadBalancer<FilterableStreamingHttpLoadBalancedConnection> lb =
-                    closeOnException.prepend(ctx.builder.loadBalancerFactory.newLoadBalancerTyped(
-                            targetAddress(ctx),
+                    closeOnException.prepend(ctx.builder.loadBalancerFactory.newLoadBalancer(
                             sdEvents,
-                            connectionFactory));
+                            connectionFactory,
+                            targetAddress(ctx)));
 
             ContextAwareStreamingHttpClientFilterFactory currClientFilterFactory = ctx.builder.clientFilterFactory;
             if (roConfig.hasProxy() && sslContext == null) {

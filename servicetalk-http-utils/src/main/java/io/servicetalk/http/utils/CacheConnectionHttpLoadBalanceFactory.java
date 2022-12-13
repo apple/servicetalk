@@ -76,17 +76,18 @@ public final class CacheConnectionHttpLoadBalanceFactory<ResolvedAddress>
     }
 
     @Override
-    public LoadBalancer<FilterableStreamingHttpLoadBalancedConnection> newLoadBalancerTyped(
-        final String targetResource,
+    public LoadBalancer<FilterableStreamingHttpLoadBalancedConnection> newLoadBalancer(
         final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
-        final ConnectionFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> connectionFactory) {
+        final ConnectionFactory<ResolvedAddress, FilterableStreamingHttpLoadBalancedConnection> connectionFactory,
+        final String targetResource) {
+
         final HttpCacheConnectionFactory<ResolvedAddress> cacheFactory =
                 new HttpCacheConnectionFactory<>(connectionFactory, maxConcurrencyFunc);
-        return delegate.newLoadBalancerTyped(targetResource, eventPublisher,
+        return delegate.newLoadBalancer(eventPublisher,
                 new CacheConnectionFactory<>(cacheFactory, r -> {
                     ConcurrencyRefCnt v = cacheFactory.maxConcurrentMap.get(r);
                     return v == null ? maxConcurrencyFunc.applyAsInt(r) : v.concurrency;
-                }));
+                }), targetResource);
     }
 
     @Override
