@@ -87,7 +87,7 @@ loadScripts(document, 'script');</script>
 </dl>
 <dl class="notes">
 <dt>All Known Implementing Classes:</dt>
-<dd><code><a href="../../http/netty/DefaultHttpLoadBalancerFactory.html" title="class in io.servicetalk.http.netty">DefaultHttpLoadBalancerFactory</a></code>, <code><a href="../../loadbalancer/RoundRobinLoadBalancerFactory.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancerFactory</a></code></dd>
+<dd><code><a href="../../http/utils/CacheConnectionHttpLoadBalanceFactory.html" title="class in io.servicetalk.http.utils">CacheConnectionHttpLoadBalanceFactory</a></code>, <code><a href="../../http/netty/DefaultHttpLoadBalancerFactory.html" title="class in io.servicetalk.http.netty">DefaultHttpLoadBalancerFactory</a></code>, <code><a href="../../loadbalancer/RoundRobinLoadBalancerFactory.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancerFactory</a></code></dd>
 </dl>
 <dl class="notes">
 <dt>Functional Interface:</dt>
@@ -117,20 +117,28 @@ extends <a href="../../transport/api/ExecutionStrategyInfluencer.html" title="in
  <a href="ConnectionFactory.html" title="interface in io.servicetalk.client.api">ConnectionFactory</a>&lt;<a href="LoadBalancerFactory.html" title="type parameter in LoadBalancerFactory">ResolvedAddress</a>,<wbr>T&gt;&nbsp;connectionFactory)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6">
 <div class="block"><span class="deprecated-label">Deprecated.</span>
-<div class="deprecation-comment">In the future only <a href="#newLoadBalancer(java.lang.String,io.servicetalk.concurrent.api.Publisher,io.servicetalk.client.api.ConnectionFactory)"><code>newLoadBalancer(String, Publisher, ConnectionFactory)</code></a> will remain,
- please use that method instead.</div>
+<div class="deprecation-comment">Use <a href="#newLoadBalancer(io.servicetalk.concurrent.api.Publisher,io.servicetalk.client.api.ConnectionFactory,java.lang.String)"><code>newLoadBalancer(Publisher, ConnectionFactory, String)</code></a>.</div>
 </div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>&lt;T extends <a href="LoadBalancerFactory.html" title="type parameter in LoadBalancerFactory">C</a>&gt;<br><a href="LoadBalancer.html" title="interface in io.servicetalk.client.api">LoadBalancer</a>&lt;T&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#newLoadBalancer(java.lang.String,io.servicetalk.concurrent.api.Publisher,io.servicetalk.client.api.ConnectionFactory)" class="member-name-link">newLoadBalancer</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;targetResource,
- <a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;? extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Collection.html" title="class or interface in java.util" class="external-link">Collection</a>&lt;? extends <a href="ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;<a href="LoadBalancerFactory.html" title="type parameter in LoadBalancerFactory">ResolvedAddress</a>&gt;&gt;&gt;&nbsp;eventPublisher,
- <a href="ConnectionFactory.html" title="interface in io.servicetalk.client.api">ConnectionFactory</a>&lt;<a href="LoadBalancerFactory.html" title="type parameter in LoadBalancerFactory">ResolvedAddress</a>,<wbr>T&gt;&nbsp;connectionFactory)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="LoadBalancer.html" title="interface in io.servicetalk.client.api">LoadBalancer</a>&lt;<a href="LoadBalancerFactory.html" title="type parameter in LoadBalancerFactory">C</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#newLoadBalancer(io.servicetalk.concurrent.api.Publisher,io.servicetalk.client.api.ConnectionFactory,java.lang.String)" class="member-name-link">newLoadBalancer</a><wbr>(<a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;? extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Collection.html" title="class or interface in java.util" class="external-link">Collection</a>&lt;? extends <a href="ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;<a href="LoadBalancerFactory.html" title="type parameter in LoadBalancerFactory">ResolvedAddress</a>&gt;&gt;&gt;&nbsp;eventPublisher,
+ <a href="ConnectionFactory.html" title="interface in io.servicetalk.client.api">ConnectionFactory</a>&lt;<a href="LoadBalancerFactory.html" title="type parameter in LoadBalancerFactory">ResolvedAddress</a>,<wbr><a href="LoadBalancerFactory.html" title="type parameter in LoadBalancerFactory">C</a>&gt;&nbsp;connectionFactory,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;targetResource)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
 <div class="block">Create a new <a href="LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="../../transport/api/ExecutionStrategy.html" title="interface in io.servicetalk.transport.api">ExecutionStrategy</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#requiredOffloads()" class="member-name-link">requiredOffloads</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code>&lt;T extends <a href="LoadBalancerFactory.html" title="type parameter in LoadBalancerFactory">C</a>&gt;<br><a href="LoadBalancer.html" title="interface in io.servicetalk.client.api">LoadBalancer</a>&lt;T&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code><a href="#newLoadBalancer(java.lang.String,io.servicetalk.concurrent.api.Publisher,io.servicetalk.client.api.ConnectionFactory)" class="member-name-link">newLoadBalancer</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;targetResource,
+ <a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;? extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Collection.html" title="class or interface in java.util" class="external-link">Collection</a>&lt;? extends <a href="ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;<a href="LoadBalancerFactory.html" title="type parameter in LoadBalancerFactory">ResolvedAddress</a>&gt;&gt;&gt;&nbsp;eventPublisher,
+ <a href="ConnectionFactory.html" title="interface in io.servicetalk.client.api">ConnectionFactory</a>&lt;<a href="LoadBalancerFactory.html" title="type parameter in LoadBalancerFactory">ResolvedAddress</a>,<wbr>T&gt;&nbsp;connectionFactory)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="#newLoadBalancer(io.servicetalk.concurrent.api.Publisher,io.servicetalk.client.api.ConnectionFactory,java.lang.String)"><code>newLoadBalancer(Publisher, ConnectionFactory, String)</code></a>.</div>
+</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="../../transport/api/ExecutionStrategy.html" title="interface in io.servicetalk.transport.api">ExecutionStrategy</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#requiredOffloads()" class="member-name-link">requiredOffloads</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
 <div class="block">Return an <a href="../../transport/api/ExecutionStrategy.html" title="interface in io.servicetalk.transport.api"><code>ExecutionStrategy</code></a> that describes the offloads required by the influencer.</div>
 </div>
 </div>
@@ -154,8 +162,7 @@ extends <a href="../../transport/api/ExecutionStrategyInfluencer.html" title="in
 </span><span class="modifiers">default</span>&nbsp;<span class="type-parameters">&lt;T extends <a href="LoadBalancerFactory.html" title="type parameter in LoadBalancerFactory">C</a>&gt;</span>&nbsp;<span class="return-type"><a href="LoadBalancer.html" title="interface in io.servicetalk.client.api">LoadBalancer</a>&lt;T&gt;</span>&nbsp;<span class="element-name">newLoadBalancer</span><wbr><span class="parameters">(<a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;? extends <a href="ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;<a href="LoadBalancerFactory.html" title="type parameter in LoadBalancerFactory">ResolvedAddress</a>&gt;&gt;&nbsp;eventPublisher,
  <a href="ConnectionFactory.html" title="interface in io.servicetalk.client.api">ConnectionFactory</a>&lt;<a href="LoadBalancerFactory.html" title="type parameter in LoadBalancerFactory">ResolvedAddress</a>,<wbr>T&gt;&nbsp;connectionFactory)</span></div>
 <div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
-<div class="deprecation-comment">In the future only <a href="#newLoadBalancer(java.lang.String,io.servicetalk.concurrent.api.Publisher,io.servicetalk.client.api.ConnectionFactory)"><code>newLoadBalancer(String, Publisher, ConnectionFactory)</code></a> will remain,
- please use that method instead.</div>
+<div class="deprecation-comment">Use <a href="#newLoadBalancer(io.servicetalk.concurrent.api.Publisher,io.servicetalk.client.api.ConnectionFactory,java.lang.String)"><code>newLoadBalancer(Publisher, ConnectionFactory, String)</code></a>.</div>
 </div>
 <div class="block">Create a new <a href="LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>.</div>
 <dl class="notes">
@@ -176,9 +183,13 @@ extends <a href="../../transport/api/ExecutionStrategyInfluencer.html" title="in
 <li>
 <section class="detail" id="newLoadBalancer(java.lang.String,io.servicetalk.concurrent.api.Publisher,io.servicetalk.client.api.ConnectionFactory)">
 <h3>newLoadBalancer</h3>
-<div class="member-signature"><span class="type-parameters">&lt;T extends <a href="LoadBalancerFactory.html" title="type parameter in LoadBalancerFactory">C</a>&gt;</span>&nbsp;<span class="return-type"><a href="LoadBalancer.html" title="interface in io.servicetalk.client.api">LoadBalancer</a>&lt;T&gt;</span>&nbsp;<span class="element-name">newLoadBalancer</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;targetResource,
+<div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="type-parameters">&lt;T extends <a href="LoadBalancerFactory.html" title="type parameter in LoadBalancerFactory">C</a>&gt;</span>&nbsp;<span class="return-type"><a href="LoadBalancer.html" title="interface in io.servicetalk.client.api">LoadBalancer</a>&lt;T&gt;</span>&nbsp;<span class="element-name">newLoadBalancer</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;targetResource,
  <a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;? extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Collection.html" title="class or interface in java.util" class="external-link">Collection</a>&lt;? extends <a href="ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;<a href="LoadBalancerFactory.html" title="type parameter in LoadBalancerFactory">ResolvedAddress</a>&gt;&gt;&gt;&nbsp;eventPublisher,
  <a href="ConnectionFactory.html" title="interface in io.servicetalk.client.api">ConnectionFactory</a>&lt;<a href="LoadBalancerFactory.html" title="type parameter in LoadBalancerFactory">ResolvedAddress</a>,<wbr>T&gt;&nbsp;connectionFactory)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="#newLoadBalancer(io.servicetalk.concurrent.api.Publisher,io.servicetalk.client.api.ConnectionFactory,java.lang.String)"><code>newLoadBalancer(Publisher, ConnectionFactory, String)</code></a>.</div>
+</div>
 <div class="block">Create a new <a href="LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>.</div>
 <dl class="notes">
 <dt>Type Parameters:</dt>
@@ -194,6 +205,30 @@ extends <a href="../../transport/api/ExecutionStrategyInfluencer.html" title="in
 <dd><code>connectionFactory</code> - <a href="ConnectionFactory.html" title="interface in io.servicetalk.client.api"><code>ConnectionFactory</code></a> that the returned <a href="LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> will use to generate
  new connections. Returned <a href="LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> will own the responsibility for this <a href="ConnectionFactory.html" title="interface in io.servicetalk.client.api"><code>ConnectionFactory</code></a>
  and hence will call <a href="../../concurrent/api/AsyncCloseable.html#closeAsync()"><code>AsyncCloseable.closeAsync()</code></a> when <a href="../../concurrent/api/AsyncCloseable.html#closeAsync()"><code>AsyncCloseable.closeAsync()</code></a> is called.</dd>
+<dt>Returns:</dt>
+<dd>a new <a href="LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="newLoadBalancer(io.servicetalk.concurrent.api.Publisher,io.servicetalk.client.api.ConnectionFactory,java.lang.String)">
+<h3>newLoadBalancer</h3>
+<div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="LoadBalancer.html" title="interface in io.servicetalk.client.api">LoadBalancer</a>&lt;<a href="LoadBalancerFactory.html" title="type parameter in LoadBalancerFactory">C</a>&gt;</span>&nbsp;<span class="element-name">newLoadBalancer</span><wbr><span class="parameters">(<a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;? extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Collection.html" title="class or interface in java.util" class="external-link">Collection</a>&lt;? extends <a href="ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;<a href="LoadBalancerFactory.html" title="type parameter in LoadBalancerFactory">ResolvedAddress</a>&gt;&gt;&gt;&nbsp;eventPublisher,
+ <a href="ConnectionFactory.html" title="interface in io.servicetalk.client.api">ConnectionFactory</a>&lt;<a href="LoadBalancerFactory.html" title="type parameter in LoadBalancerFactory">ResolvedAddress</a>,<wbr><a href="LoadBalancerFactory.html" title="type parameter in LoadBalancerFactory">C</a>&gt;&nbsp;connectionFactory,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;targetResource)</span></div>
+<div class="block">Create a new <a href="LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>eventPublisher</code> - A stream of <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Collection.html" title="class or interface in java.util" class="external-link"><code>Collection</code></a>&lt;<a href="ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscovererEvent</code></a>&gt;
+ which the <a href="LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> can use to connect to physical hosts. Typically generated
+ from <a href="ServiceDiscoverer.html#discover(UnresolvedAddress)"><code>ServiceDiscoverer</code></a>.</dd>
+<dd><code>connectionFactory</code> - <a href="ConnectionFactory.html" title="interface in io.servicetalk.client.api"><code>ConnectionFactory</code></a> that the returned <a href="LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> will use to generate
+ new connections. Returned <a href="LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> will own the responsibility for this <a href="ConnectionFactory.html" title="interface in io.servicetalk.client.api"><code>ConnectionFactory</code></a>
+ and hence will call <a href="../../concurrent/api/AsyncCloseable.html#closeAsync()"><code>AsyncCloseable.closeAsync()</code></a> when <a href="../../concurrent/api/AsyncCloseable.html#closeAsync()"><code>AsyncCloseable.closeAsync()</code></a> is called.</dd>
+<dd><code>targetResource</code> - A <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link"><code>String</code></a> representation of the target resource for which the created instance
+ will perform load balancing. Bear in mind, load balancing is performed over the a collection of hosts provided
+ via the <code>eventPublisher</code> which may not correspond directly to a single unresolved address, but potentially
+ a merged collection.</dd>
 <dt>Returns:</dt>
 <dd>a new <a href="LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>.</dd>
 </dl>

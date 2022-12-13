@@ -135,10 +135,17 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">If <code>x</code> is positive this method behaves the same as <a href="#addWithOverflowProtection(long,long)"><code>addWithOverflowProtection(long, long)</code></a>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static long</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#addWithUnderOverflowProtection(long,long)" class="member-name-link">addWithUnderOverflowProtection</a><wbr>(long&nbsp;x,
- long&nbsp;y)</code></div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static int</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#addWithUnderOverflowProtection(int,int)" class="member-name-link">addWithUnderOverflowProtection</a><wbr>(int&nbsp;x,
+ int&nbsp;y)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">Add two longs and prevent [under|over]flow which is defined as if both <code>x</code> and <code>y</code> have the same sign
+ but the result of <code>x + y</code> has a different sign.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static long</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#addWithUnderOverflowProtection(long,long)" class="member-name-link">addWithUnderOverflowProtection</a><wbr>(long&nbsp;x,
+ long&nbsp;y)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Add two longs and prevent [under|over]flow which is defined as if both <code>x</code> and <code>y</code> have the same sign
  but the result of <code>x + y</code> has a different sign.</div>
 </div>
@@ -289,6 +296,26 @@ loadScripts(document, 'script');</script>
      <li><code>x + y</code> if no overflow</li>
      <li><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Long.html#MAX_VALUE" title="class or interface in java.lang" class="external-link"><code>Long.MAX_VALUE</code></a> if overflow in the positive direction</li>
      <li><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Long.html#MIN_VALUE" title="class or interface in java.lang" class="external-link"><code>Long.MIN_VALUE</code></a> if otherwise in the negative direction</li>
+ </ul></dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="addWithUnderOverflowProtection(int,int)">
+<h3>addWithUnderOverflowProtection</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type">int</span>&nbsp;<span class="element-name">addWithUnderOverflowProtection</span><wbr><span class="parameters">(int&nbsp;x,
+ int&nbsp;y)</span></div>
+<div class="block">Add two longs and prevent [under|over]flow which is defined as if both <code>x</code> and <code>y</code> have the same sign
+ but the result of <code>x + y</code> has a different sign.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>x</code> - first value.</dd>
+<dd><code>y</code> - second value.</dd>
+<dt>Returns:</dt>
+<dd><ul>
+     <li><code>x + y</code> if no overflow</li>
+     <li><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html#MAX_VALUE" title="class or interface in java.lang" class="external-link"><code>Integer.MAX_VALUE</code></a> if overflow in the positive direction</li>
+     <li><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Integer.html#MIN_VALUE" title="class or interface in java.lang" class="external-link"><code>Integer.MIN_VALUE</code></a> if otherwise in the negative direction</li>
  </ul></dd>
 </dl>
 </section>

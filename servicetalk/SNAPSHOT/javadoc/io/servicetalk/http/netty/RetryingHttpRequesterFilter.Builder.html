@@ -171,8 +171,8 @@ loadScripts(document, 'script');</script>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RetryingHttpRequesterFilter.Builder.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.Builder</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#waitForLoadBalancer(boolean)" class="member-name-link">waitForLoadBalancer</a><wbr>(boolean&nbsp;waitForLb)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">By default, automatic retries wait for the associated <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> to be ready before triggering a
- retry for requests.</div>
+<div class="block">By default, automatic retries wait for the associated <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> to be
+ <a href="../../client/api/LoadBalancerReadyEvent.html" title="interface in io.servicetalk.client.api"><code>ready</code></a> before triggering a retry for requests.</div>
 </div>
 </div>
 </div>
@@ -209,9 +209,10 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="waitForLoadBalancer(boolean)">
 <h3>waitForLoadBalancer</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="RetryingHttpRequesterFilter.Builder.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.Builder</a></span>&nbsp;<span class="element-name">waitForLoadBalancer</span><wbr><span class="parameters">(boolean&nbsp;waitForLb)</span></div>
-<div class="block">By default, automatic retries wait for the associated <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> to be ready before triggering a
- retry for requests. This behavior may add latency to requests till the time the load balancer is ready
- instead of failing fast. This method allows controlling that behavior.</div>
+<div class="block">By default, automatic retries wait for the associated <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> to be
+ <a href="../../client/api/LoadBalancerReadyEvent.html" title="interface in io.servicetalk.client.api"><code>ready</code></a> before triggering a retry for requests. This behavior may add latency to
+ requests till the time the load balancer is ready instead of failing fast. This method allows controlling
+ that behavior.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>waitForLb</code> - Whether to wait for the <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> to be ready before retrying requests.</dd>

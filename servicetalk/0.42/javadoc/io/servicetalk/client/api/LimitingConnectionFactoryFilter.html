@@ -194,7 +194,9 @@ C extends <a href="../../concurrent/api/ListenableAsyncCloseable.html" title="in
 <div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="type-parameters">&lt;A,<wbr>
 C extends <a href="../../concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a>&gt;</span>
 <span class="return-type"><a href="ConnectionFactoryFilter.html" title="interface in io.servicetalk.client.api">ConnectionFactoryFilter</a>&lt;A,<wbr>C&gt;</span>&nbsp;<span class="element-name">withMax</span><wbr><span class="parameters">(int&nbsp;maxConnections)</span></div>
-<div class="block">Create a new <a href="ConnectionFactory.html" title="interface in io.servicetalk.client.api"><code>ConnectionFactory</code></a> that only creates a maximum of <code>maxConnections</code> active connections.</div>
+<div class="block">Create a new <a href="ConnectionFactory.html" title="interface in io.servicetalk.client.api"><code>ConnectionFactory</code></a> that only creates a maximum of <code>maxConnections</code> active connections.
+ <p>
+ When the limit is reached, <a href="ConnectionLimitReachedException.html" title="class in io.servicetalk.client.api"><code>ConnectionLimitReachedException</code></a> will be thrown.</div>
 <dl class="notes">
 <dt>Type Parameters:</dt>
 <dd><code>A</code> - The type of a resolved address that can be used for connecting.</dd>

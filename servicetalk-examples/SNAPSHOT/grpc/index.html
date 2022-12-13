@@ -151,6 +151,9 @@
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="#protoc-options">Protoc Options</a>
   </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="#request-response-context">Request Response Context</a>
+  </li>
 </ul>
   </li>
 </ul>
@@ -1347,6 +1350,32 @@ condition on the server.</p>
 <div class="paragraph">
 <p>This example demonstrates how options for the servicetalk-grpc-protoc plugin can be used. See
 <a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/grpc/protoc-options">protoc-options</a> for more details.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="request-response-context"><a class="anchor" href="#request-response-context"></a><a class="link" href="#request-response-context">Request Response Context</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This example demonstrates how request and response context can be used to access HTTP meta-data.</p>
+</div>
+<div class="sect2">
+<h3 id="asynchronous-3"><a class="anchor" href="#asynchronous-3"></a><a class="link" href="#asynchronous-3">Asynchronous</a></h3>
+<div class="paragraph">
+<p>This example demonstrates context with asynchronous request processing using the
+<a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/grpc/request-response-context/src/main/java/io/servicetalk/examples/grpc/context/async/RequestResponseContextClient.java">RequestResponseContextClient</a>
+and a
+<a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/grpc/request-response-context/src/main/java/io/servicetalk/examples/grpc/context/async/RequestResponseContextServer.java">RequestResponseContextServer</a>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="blocking-3"><a class="anchor" href="#blocking-3"></a><a class="link" href="#blocking-3">Blocking</a></h3>
+<div class="paragraph">
+<p>This example demonstrates context with blocking request processing using the
+<a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/grpc/request-response-context/src/main/java/io/servicetalk/examples/grpc/context/blocking/BlockingRequestResponseContextClient.java">BlockingRequestResponseContextClient</a>
+and a
+<a href="https://github.com/apple/servicetalk/blob/main/servicetalk-examples/grpc/request-response-context/src/main/java/io/servicetalk/examples/grpc/context/blocking/BlockingRequestResponseContextServer.java">BlockingRequestResponseContextServer</a>.</p>
+</div>
 </div>
 </div>
 </div>

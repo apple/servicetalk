@@ -186,7 +186,10 @@ implements <a href="SingleAddressHttpClientBuilder.html" title="interface in io.
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="DelegatingSingleAddressHttpClientBuilder.html" title="type parameter in DelegatingSingleAddressHttpClientBuilder">U</a>,<wbr><a href="DelegatingSingleAddressHttpClientBuilder.html" title="type parameter in DelegatingSingleAddressHttpClientBuilder">R</a>&gt;</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#executionStrategy(io.servicetalk.http.api.HttpExecutionStrategy)" class="member-name-link">executionStrategy</a><wbr>(<a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategy</a>&nbsp;strategy)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Sets the <a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> to be used for client callbacks when executing client requests for all
+ clients created from this builder.</div>
+</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="DelegatingSingleAddressHttpClientBuilder.html" title="type parameter in DelegatingSingleAddressHttpClientBuilder">U</a>,<wbr><a href="DelegatingSingleAddressHttpClientBuilder.html" title="type parameter in DelegatingSingleAddressHttpClientBuilder">R</a>&gt;</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#executor(io.servicetalk.concurrent.api.Executor)" class="member-name-link">executor</a><wbr>(<a href="../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;executor)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
@@ -540,10 +543,10 @@ implements <a href="SingleAddressHttpClientBuilder.html" title="interface in io.
 <h3>executionStrategy</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="DelegatingSingleAddressHttpClientBuilder.html" title="type parameter in DelegatingSingleAddressHttpClientBuilder">U</a>,<wbr><a href="DelegatingSingleAddressHttpClientBuilder.html" title="type parameter in DelegatingSingleAddressHttpClientBuilder">R</a>&gt;</span>&nbsp;<span class="element-name">executionStrategy</span><wbr><span class="parameters">(<a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategy</a>&nbsp;strategy)</span></div>
 <div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="SingleAddressHttpClientBuilder.html#executionStrategy(io.servicetalk.http.api.HttpExecutionStrategy)">SingleAddressHttpClientBuilder</a></code></span></div>
-<div class="block">
-
- <p>Specifying an execution strategy affects the offloading used during execution of client requests:
-
+<div class="block">Sets the <a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> to be used for client callbacks when executing client requests for all
+ clients created from this builder.
+ <p>
+ Specifying an execution strategy affects the offloading used during execution of client requests:
  <dl>
      <dt>Unspecified or <a href="HttpExecutionStrategies.html#defaultStrategy()"><code>HttpExecutionStrategies.defaultStrategy()</code></a>
      <dd>Execution of client requests will use a safe (non-blocking) execution strategy appropriate for the
@@ -575,8 +578,16 @@ implements <a href="SingleAddressHttpClientBuilder.html" title="interface in io.
 <dt>Specified by:</dt>
 <dd><code><a href="SingleAddressHttpClientBuilder.html#executionStrategy(io.servicetalk.http.api.HttpExecutionStrategy)">executionStrategy</a></code>&nbsp;in interface&nbsp;<code><a href="SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="DelegatingSingleAddressHttpClientBuilder.html" title="type parameter in DelegatingSingleAddressHttpClientBuilder">U</a>,<wbr><a href="DelegatingSingleAddressHttpClientBuilder.html" title="type parameter in DelegatingSingleAddressHttpClientBuilder">R</a>&gt;</code></dd>
 <dt>Parameters:</dt>
-<dd><code>strategy</code> - </dd>
+<dd><code>strategy</code> - <a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> to use. If callbacks to the application code may block then those
+ callbacks must request to be offloaded.</dd>
 <dt>Returns:</dt>
+<dd><code>this</code>.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list">
+<li><a href="HttpExecutionStrategies.html" title="class in io.servicetalk.http.api"><code>HttpExecutionStrategies</code></a></li>
+</ul>
+</dd>
 </dl>
 </section>
 </li>

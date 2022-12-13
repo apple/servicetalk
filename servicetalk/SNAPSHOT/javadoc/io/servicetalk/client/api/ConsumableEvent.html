@@ -136,7 +136,10 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="eventConsumed()">
 <h3>eventConsumed</h3>
 <div class="member-signature"><span class="return-type">void</span>&nbsp;<span class="element-name">eventConsumed</span>()</div>
-<div class="block">Signify the <a href="#event()"><code>event()</code></a> has been consumed and any side effects have taken place.</div>
+<div class="block">Signify the <a href="#event()"><code>event()</code></a> has been consumed and any side effects have taken place.
+ <p>
+ Implementations of this method are expected to be idempotent, meaning that if the event is already consumed then
+ invoking this method has no effect.</div>
 </section>
 </li>
 </ul>

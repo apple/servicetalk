@@ -215,6 +215,8 @@ loadScripts(document, 'script');</script>
  <b>Note:</b>The <code>Completable</code> is not required to be blocking-safe and should be offloaded if the
  <a href="../../../concurrent/CompletableSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>CompletableSource.Subscriber</code></a> may block.</div>
 <dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="../../../concurrent/api/ListenableAsyncCloseable.html#onClosing()">onClosing</a></code>&nbsp;in interface&nbsp;<code><a href="../../../concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a></code></dd>
 <dt>Returns:</dt>
 <dd>a <a href="../../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that notifies when the connection has begun its closing sequence.</dd>
 </dl>

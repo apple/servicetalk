@@ -114,8 +114,8 @@ loadScripts(document, 'script');</script>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a></code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#newConnectionRefusedException(ResolvedAddress)" class="member-name-link">newConnectionRefusedException</a><wbr>(<a href="LimitingConnectionFactoryFilter.ConnectionLimiter.html" title="type parameter in LimitingConnectionFactoryFilter.ConnectionLimiter">ResolvedAddress</a>&nbsp;target)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
-<div class="block">Create a <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link"><code>Throwable</code></a> representing a connection attempt refused, typically  as a result of returning
- <code>false</code> from <a href="#isConnectAllowed(ResolvedAddress)"><code>isConnectAllowed(Object)</code></a>.</div>
+<div class="block">Create a <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link"><code>Throwable</code></a> representing a connection attempt refused, typically
+ as a result of returning <code>false</code> from <a href="#isConnectAllowed(ResolvedAddress)"><code>isConnectAllowed(Object)</code></a>.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>void</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#onConnectionClose(ResolvedAddress)" class="member-name-link">onConnectionClose</a><wbr>(<a href="LimitingConnectionFactoryFilter.ConnectionLimiter.html" title="type parameter in LimitingConnectionFactoryFilter.ConnectionLimiter">ResolvedAddress</a>&nbsp;target)</code></div>
@@ -171,8 +171,10 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="newConnectionRefusedException(ResolvedAddress)">
 <h3 id="newConnectionRefusedException(java.lang.Object)">newConnectionRefusedException</h3>
 <div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a></span>&nbsp;<span class="element-name">newConnectionRefusedException</span><wbr><span class="parameters">(<a href="LimitingConnectionFactoryFilter.ConnectionLimiter.html" title="type parameter in LimitingConnectionFactoryFilter.ConnectionLimiter">ResolvedAddress</a>&nbsp;target)</span></div>
-<div class="block">Create a <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link"><code>Throwable</code></a> representing a connection attempt refused, typically  as a result of returning
- <code>false</code> from <a href="#isConnectAllowed(ResolvedAddress)"><code>isConnectAllowed(Object)</code></a>.</div>
+<div class="block">Create a <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link"><code>Throwable</code></a> representing a connection attempt refused, typically
+ as a result of returning <code>false</code> from <a href="#isConnectAllowed(ResolvedAddress)"><code>isConnectAllowed(Object)</code></a>.
+ <p>
+ The default and recommended exception type is <a href="ConnectionLimitReachedException.html" title="class in io.servicetalk.client.api"><code>ConnectionLimitReachedException</code></a>.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>target</code> - <a href="LimitingConnectionFactoryFilter.ConnectionLimiter.html" title="interface in io.servicetalk.client.api"><code>LimitingConnectionFactoryFilter.ConnectionLimiter</code></a> for which connection was refused.</dd>

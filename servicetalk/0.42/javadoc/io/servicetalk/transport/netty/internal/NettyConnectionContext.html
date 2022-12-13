@@ -135,7 +135,7 @@ extends <a href="../../api/ConnectionContext.html" title="interface in io.servic
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="../../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#onClosing()" class="member-name-link">onClosing</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
-<div class="block">Returns a <a href="../../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that notifies when the connection has begun its closing sequence.</div>
+<div class="block">Returns a <a href="../../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that is notified when closing begins.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="../../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&gt;</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#transportError()" class="member-name-link">transportError</a>()</code></div>
@@ -221,15 +221,22 @@ extends <a href="../../api/ConnectionContext.html" title="interface in io.servic
 <section class="detail" id="onClosing()">
 <h3>onClosing</h3>
 <div class="member-signature"><span class="return-type"><a href="../../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></span>&nbsp;<span class="element-name">onClosing</span>()</div>
-<div class="block">Returns a <a href="../../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that notifies when the connection has begun its closing sequence.
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="../../../concurrent/api/ListenableAsyncCloseable.html#onClosing()">ListenableAsyncCloseable</a></code></span></div>
+<div class="block">Returns a <a href="../../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that is notified when closing begins.
  <p>
- <b>Note:</b>The <code>Completable</code> is not required to be blocking-safe and should be offloaded if the
- <a href="../../../concurrent/CompletableSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>CompletableSource.Subscriber</code></a> may block.</div>
+ Closing begin might be when a close operation is initiated locally (e.g. subscribing to <a href="../../../concurrent/api/AsyncCloseable.html#closeAsync()"><code>AsyncCloseable.closeAsync()</code></a>) or
+ it could also be a transport event received from a remote peer (e.g. read a <code>connection: close</code> header).
+ <p>
+ For backwards compatibility this method maybe functionally equivalent to <a href="../../../concurrent/api/ListenableAsyncCloseable.html#onClose()"><code>ListenableAsyncCloseable.onClose()</code></a>. Therefore, provides
+ a best-effort leading edge notification of closing, but may fall back to notification on trailing edge.
+ <p>
+ The goal of this method is often to notify asap when closing so this method may not be offloaded and care must
+ be taken to avoid blocking if subscribing to the return <a href="../../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a>.</div>
 <dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="../../../concurrent/api/ListenableAsyncCloseable.html#onClosing()">onClosing</a></code>&nbsp;in interface&nbsp;<code><a href="../../../concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a></code></dd>
 <dt>Returns:</dt>
-<dd>a <a href="../../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that notifies when the connection has begun its closing sequence. A configured
- <a href="CloseHandler.html" title="class in io.servicetalk.transport.netty.internal"><code>CloseHandler</code></a> will determine whether more reads or writes will be allowed on this
- <a href="NettyConnectionContext.html" title="interface in io.servicetalk.transport.netty.internal"><code>NettyConnectionContext</code></a>.</dd>
+<dd>a <a href="../../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that is notified when closing begins.</dd>
 </dl>
 </section>
 </li>

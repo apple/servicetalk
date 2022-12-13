@@ -82,7 +82,7 @@ loadScripts(document, 'script');</script>
 </dl>
 <dl class="notes">
 <dt>All Known Implementing Classes:</dt>
-<dd><code><a href="../netty/DefaultHttpLoadBalancerFactory.html" title="class in io.servicetalk.http.netty">DefaultHttpLoadBalancerFactory</a></code></dd>
+<dd><code><a href="../utils/CacheConnectionHttpLoadBalanceFactory.html" title="class in io.servicetalk.http.utils">CacheConnectionHttpLoadBalanceFactory</a></code>, <code><a href="../netty/DefaultHttpLoadBalancerFactory.html" title="class in io.servicetalk.http.netty">DefaultHttpLoadBalancerFactory</a></code></dd>
 </dl>
 <hr>
 <div class="type-signature"><span class="modifiers">public interface </span><span class="element-name type-name-label">HttpLoadBalancerFactory&lt;ResolvedAddress&gt;</span><span class="extends-implements">
@@ -144,7 +144,7 @@ extends <a href="../../client/api/LoadBalancerFactory.html" title="interface in 
 </div>
 <div class="inherited-list">
 <h3 id="methods-inherited-from-class-io.servicetalk.client.api.LoadBalancerFactory">Methods inherited from interface&nbsp;io.servicetalk.client.api.<a href="../../client/api/LoadBalancerFactory.html" title="interface in io.servicetalk.client.api">LoadBalancerFactory</a></h3>
-<code><a href="../../client/api/LoadBalancerFactory.html#newLoadBalancer(io.servicetalk.concurrent.api.Publisher,io.servicetalk.client.api.ConnectionFactory)">newLoadBalancer</a>, <a href="../../client/api/LoadBalancerFactory.html#newLoadBalancer(java.lang.String,io.servicetalk.concurrent.api.Publisher,io.servicetalk.client.api.ConnectionFactory)">newLoadBalancer</a></code></div>
+<code><a href="../../client/api/LoadBalancerFactory.html#newLoadBalancer(io.servicetalk.concurrent.api.Publisher,io.servicetalk.client.api.ConnectionFactory)">newLoadBalancer</a>, <a href="../../client/api/LoadBalancerFactory.html#newLoadBalancer(io.servicetalk.concurrent.api.Publisher,io.servicetalk.client.api.ConnectionFactory,java.lang.String)">newLoadBalancer</a>, <a href="../../client/api/LoadBalancerFactory.html#newLoadBalancer(java.lang.String,io.servicetalk.concurrent.api.Publisher,io.servicetalk.client.api.ConnectionFactory)">newLoadBalancer</a></code></div>
 </section>
 </li>
 </ul>
@@ -191,8 +191,7 @@ extends <a href="../../client/api/LoadBalancerFactory.html" title="interface in 
 <dd><code>context</code> - A <a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api"><code>context</code></a> of the caller (e.g. request/LB context) or <code>null</code> if no context</dd>
 <dt>Returns:</dt>
 <dd><a href="FilterableStreamingHttpLoadBalancedConnection.html" title="interface in io.servicetalk.http.api"><code>FilterableStreamingHttpLoadBalancedConnection</code></a> for the passed
- <a href="FilterableStreamingHttpConnection.html" title="interface in io.servicetalk.http.api"><code>FilterableStreamingHttpConnection</code></a>
- provided</dd>
+ <a href="FilterableStreamingHttpConnection.html" title="interface in io.servicetalk.http.api"><code>FilterableStreamingHttpConnection</code></a>.</dd>
 </dl>
 </section>
 </li>

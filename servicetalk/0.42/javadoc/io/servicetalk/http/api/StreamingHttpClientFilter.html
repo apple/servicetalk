@@ -160,26 +160,31 @@ implements <a href="FilterableStreamingHttpClient.html" title="interface in io.s
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns a <a href="../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that is notified once the <a href="../../concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api"><code>ListenableAsyncCloseable</code></a> was closed.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="StreamingHttpResponse.html" title="interface in io.servicetalk.http.api">StreamingHttpResponse</a>&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#request(io.servicetalk.http.api.StreamingHttpRequest)" class="member-name-link">request</a><wbr>(<a href="StreamingHttpRequest.html" title="interface in io.servicetalk.http.api">StreamingHttpRequest</a>&nbsp;request)</code></div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onClosing()" class="member-name-link">onClosing</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Returns a <a href="../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that is notified when closing begins.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="StreamingHttpResponse.html" title="interface in io.servicetalk.http.api">StreamingHttpResponse</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#request(io.servicetalk.http.api.StreamingHttpRequest)" class="member-name-link">request</a><wbr>(<a href="StreamingHttpRequest.html" title="interface in io.servicetalk.http.api">StreamingHttpRequest</a>&nbsp;request)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Send a <code>request</code>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>protected <a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="StreamingHttpResponse.html" title="interface in io.servicetalk.http.api">StreamingHttpResponse</a>&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#request(io.servicetalk.http.api.StreamingHttpRequester,io.servicetalk.http.api.StreamingHttpRequest)" class="member-name-link">request</a><wbr>(<a href="StreamingHttpRequester.html" title="interface in io.servicetalk.http.api">StreamingHttpRequester</a>&nbsp;delegate,
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>protected <a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="StreamingHttpResponse.html" title="interface in io.servicetalk.http.api">StreamingHttpResponse</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#request(io.servicetalk.http.api.StreamingHttpRequester,io.servicetalk.http.api.StreamingHttpRequest)" class="member-name-link">request</a><wbr>(<a href="StreamingHttpRequester.html" title="interface in io.servicetalk.http.api">StreamingHttpRequester</a>&nbsp;delegate,
  <a href="StreamingHttpRequest.html" title="interface in io.servicetalk.http.api">StreamingHttpRequest</a>&nbsp;request)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Called when the filter needs to delegate the request using the provided <a href="StreamingHttpRequester.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpRequester</code></a> on
  which to call <a href="StreamingHttpRequester.html#request(io.servicetalk.http.api.StreamingHttpRequest)"><code>StreamingHttpRequester.request(StreamingHttpRequest)</code></a>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends <a href="FilterableReservedStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">FilterableReservedStreamingHttpConnection</a>&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#reserveConnection(io.servicetalk.http.api.HttpRequestMetaData)" class="member-name-link">reserveConnection</a><wbr>(<a href="HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a>&nbsp;metaData)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;? extends <a href="FilterableReservedStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">FilterableReservedStreamingHttpConnection</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#reserveConnection(io.servicetalk.http.api.HttpRequestMetaData)" class="member-name-link">reserveConnection</a><wbr>(<a href="HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a>&nbsp;metaData)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Reserve a <a href="StreamingHttpConnection.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpConnection</code></a> based on provided <a href="HttpRequestMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpRequestMetaData</code></a>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toString()" class="member-name-link">toString</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toString()" class="member-name-link">toString</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 </div>
 </div>
 </div>
@@ -295,6 +300,29 @@ implements <a href="FilterableStreamingHttpClient.html" title="interface in io.s
 <dd><code><a href="../../concurrent/api/ListenableAsyncCloseable.html#onClose()">onClose</a></code>&nbsp;in interface&nbsp;<code><a href="../../concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a></code></dd>
 <dt>Returns:</dt>
 <dd>the <code>Completable</code> that is notified on close.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="onClosing()">
+<h3>onClosing</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></span>&nbsp;<span class="element-name">onClosing</span>()</div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="../../concurrent/api/ListenableAsyncCloseable.html#onClosing()">ListenableAsyncCloseable</a></code></span></div>
+<div class="block">Returns a <a href="../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that is notified when closing begins.
+ <p>
+ Closing begin might be when a close operation is initiated locally (e.g. subscribing to <a href="../../concurrent/api/AsyncCloseable.html#closeAsync()"><code>AsyncCloseable.closeAsync()</code></a>) or
+ it could also be a transport event received from a remote peer (e.g. read a <code>connection: close</code> header).
+ <p>
+ For backwards compatibility this method maybe functionally equivalent to <a href="../../concurrent/api/ListenableAsyncCloseable.html#onClose()"><code>ListenableAsyncCloseable.onClose()</code></a>. Therefore, provides
+ a best-effort leading edge notification of closing, but may fall back to notification on trailing edge.
+ <p>
+ The goal of this method is often to notify asap when closing so this method may not be offloaded and care must
+ be taken to avoid blocking if subscribing to the return <a href="../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a>.</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="../../concurrent/api/ListenableAsyncCloseable.html#onClosing()">onClosing</a></code>&nbsp;in interface&nbsp;<code><a href="../../concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a></code></dd>
+<dt>Returns:</dt>
+<dd>a <a href="../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that is notified when closing begins.</dd>
 </dl>
 </section>
 </li>

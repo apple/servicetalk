@@ -84,9 +84,14 @@ loadScripts(document, 'script');</script>
 <dd><code><a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent">PublisherSource.Subscriber</a>&lt;T&gt;</code></dd>
 </dl>
 <hr>
-<div class="type-signature"><span class="modifiers">public final class </span><span class="element-name type-name-label">LatestValueSubscriber&lt;T&gt;</span>
+<div class="type-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">public final class </span><span class="element-name type-name-label">LatestValueSubscriber&lt;T&gt;</span>
 <span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>
 implements <a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent">PublisherSource.Subscriber</a>&lt;T&gt;</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">This class is no longer used by ServiceTalk and will be removed in the future releases. If you depend on
+ it, consider copying into your codebase.</div>
+</div>
 <div class="block">A <a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a> which makes the latest value from <a href="#onNext(T)"><code>onNext(Object)</code></a> available outside the context of the
  <a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a>.</div>
 </section>
@@ -101,7 +106,9 @@ implements <a href="../PublisherSource.Subscriber.html" title="interface in io.s
 <div class="table-header col-first">Constructor</div>
 <div class="table-header col-last">Description</div>
 <div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E()" class="member-name-link">LatestValueSubscriber</a>()</code></div>
-<div class="col-last even-row-color">&nbsp;</div>
+<div class="col-last even-row-color">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
+&nbsp;</div>
 </div>
 </section>
 </li>
@@ -110,35 +117,40 @@ implements <a href="../PublisherSource.Subscriber.html" title="interface in io.s
 <section class="method-summary" id="method-summary">
 <h2>Method Summary</h2>
 <div id="method-summary-table">
-<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button></div>
+<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button><button id="method-summary-table-tab6" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab6', 3)" class="table-tab">Deprecated Methods</button></div>
 <div id="method-summary-table.tabpanel" role="tabpanel">
 <div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="LatestValueSubscriber.html" title="type parameter in LatestValueSubscriber">T</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#lastSeenValue(T)" class="member-name-link">lastSeenValue</a><wbr>(<a href="LatestValueSubscriber.html" title="type parameter in LatestValueSubscriber">T</a>&nbsp;defaultValue)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="LatestValueSubscriber.html" title="type parameter in LatestValueSubscriber">T</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#lastSeenValue(T)" class="member-name-link">lastSeenValue</a><wbr>(<a href="LatestValueSubscriber.html" title="type parameter in LatestValueSubscriber">T</a>&nbsp;defaultValue)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Get the last seen value.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onComplete()" class="member-name-link">onComplete</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code>void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#onComplete()" class="member-name-link">onComplete</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Callback to signal completion of the <a href="../PublisherSource.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource</code></a> for this <code>Subscriber</code>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onError(java.lang.Throwable)" class="member-name-link">onError</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&nbsp;t)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code>void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#onError(java.lang.Throwable)" class="member-name-link">onError</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&nbsp;t)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Callback to receive an <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link"><code>error</code></a> for this <code>Subscriber</code>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onNext(T)" class="member-name-link">onNext</a><wbr>(<a href="LatestValueSubscriber.html" title="type parameter in LatestValueSubscriber">T</a>&nbsp;newValue)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code>void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#onNext(T)" class="member-name-link">onNext</a><wbr>(<a href="LatestValueSubscriber.html" title="type parameter in LatestValueSubscriber">T</a>&nbsp;newValue)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Callback to receive a <a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>data</code></a> element for this <code>Subscriber</code>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onSubscribe(io.servicetalk.concurrent.PublisherSource.Subscription)" class="member-name-link">onSubscribe</a><wbr>(<a href="../PublisherSource.Subscription.html" title="interface in io.servicetalk.concurrent">PublisherSource.Subscription</a>&nbsp;s)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code>void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#onSubscribe(io.servicetalk.concurrent.PublisherSource.Subscription)" class="member-name-link">onSubscribe</a><wbr>(<a href="../PublisherSource.Subscription.html" title="interface in io.servicetalk.concurrent">PublisherSource.Subscription</a>&nbsp;s)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Callback to receive a <a href="../PublisherSource.Subscription.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscription</code></a> for this <code>Subscriber</code>.</div>
 </div>
 </div>
@@ -162,6 +174,7 @@ implements <a href="../PublisherSource.Subscriber.html" title="interface in io.s
 <section class="detail" id="&lt;init&gt;()">
 <h3>LatestValueSubscriber</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">LatestValueSubscriber</span>()</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 </section>
 </li>
 </ul>
@@ -176,6 +189,7 @@ implements <a href="../PublisherSource.Subscriber.html" title="interface in io.s
 <section class="detail" id="onSubscribe(io.servicetalk.concurrent.PublisherSource.Subscription)">
 <h3>onSubscribe</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">onSubscribe</span><wbr><span class="parameters">(<a href="../PublisherSource.Subscription.html" title="interface in io.servicetalk.concurrent">PublisherSource.Subscription</a>&nbsp;s)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="../PublisherSource.Subscriber.html#onSubscribe(io.servicetalk.concurrent.PublisherSource.Subscription)">PublisherSource.Subscriber</a></code></span></div>
 <div class="block">Callback to receive a <a href="../PublisherSource.Subscription.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscription</code></a> for this <code>Subscriber</code>.
  <p>
@@ -194,6 +208,7 @@ implements <a href="../PublisherSource.Subscriber.html" title="interface in io.s
 <section class="detail" id="onNext(T)">
 <h3 id="onNext(java.lang.Object)">onNext</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">onNext</span><wbr><span class="parameters">(<a href="LatestValueSubscriber.html" title="type parameter in LatestValueSubscriber">T</a>&nbsp;newValue)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="../PublisherSource.Subscriber.html#onNext(T)">PublisherSource.Subscriber</a></code></span></div>
 <div class="block">Callback to receive a <a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>data</code></a> element for this <code>Subscriber</code>.
  <p>
@@ -212,6 +227,7 @@ implements <a href="../PublisherSource.Subscriber.html" title="interface in io.s
 <section class="detail" id="onError(java.lang.Throwable)">
 <h3>onError</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">onError</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&nbsp;t)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="../PublisherSource.Subscriber.html#onError(java.lang.Throwable)">PublisherSource.Subscriber</a></code></span></div>
 <div class="block">Callback to receive an <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link"><code>error</code></a> for this <code>Subscriber</code>.
  <p>
@@ -230,6 +246,7 @@ implements <a href="../PublisherSource.Subscriber.html" title="interface in io.s
 <section class="detail" id="onComplete()">
 <h3>onComplete</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">onComplete</span>()</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="../PublisherSource.Subscriber.html#onComplete()">PublisherSource.Subscriber</a></code></span></div>
 <div class="block">Callback to signal completion of the <a href="../PublisherSource.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource</code></a> for this <code>Subscriber</code>.
  <p>
@@ -246,6 +263,7 @@ implements <a href="../PublisherSource.Subscriber.html" title="interface in io.s
 <section class="detail" id="lastSeenValue(T)">
 <h3 id="lastSeenValue(java.lang.Object)">lastSeenValue</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="LatestValueSubscriber.html" title="type parameter in LatestValueSubscriber">T</a></span>&nbsp;<span class="element-name">lastSeenValue</span><wbr><span class="parameters">(<a href="LatestValueSubscriber.html" title="type parameter in LatestValueSubscriber">T</a>&nbsp;defaultValue)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Get the last seen value.</div>
 <dl class="notes">
 <dt>Parameters:</dt>

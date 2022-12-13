@@ -151,6 +151,9 @@
   <li class="nav-item" data-depth="3">
     <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/grpc/index.html#protoc-options">Protoc Options</a>
   </li>
+  <li class="nav-item" data-depth="3">
+    <a class="nav-link" href="../../servicetalk-examples/SNAPSHOT/grpc/index.html#request-response-context">Request Response Context</a>
+  </li>
 </ul>
   </li>
 </ul>
@@ -1228,8 +1231,10 @@ thread) &#8594; <code>map</code> &#8594; <code>toFuture</code> where the element
 <h3 id="subscribeon-example"><a class="anchor" href="#subscribeon-example"></a><a class="link" href="#subscribeon-example"><code>subscribeOn()</code> Example</a></h3>
 <div class="paragraph">
 <p>Using the <code>subscribeOn(executor)</code> operator allows processing of the subscription and demand on a specific thread. Using
-the <code>subscribeOn(executor)</code> operator is necessary if the thread doing the <code>subscribe</code> or interacting with the
-<code>Subscription</code> is sensitive to blocking, for example, an EventLoop thread.</p>
+the <code>subscribeOn(executor)</code> operator generally requires an understanding of the behavior of the source; using a
+different source may change the need for offloading. <code>subscribeOn(executor)</code> is used less frequently than
+<code>publishOn(executor)</code> but is useful when it is necessary to offload the control path; the <code>subscribe</code> method or
+<code>Subscription</code> methods.</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -1346,180 +1351,6 @@ different <code>Executor</code> in specific cases. ServiceTalk provides reactive
 <code>publishOn(executor)</code> operator. These operators will unconditionally offload to the specified <code>Executor</code>. Additional,
 conditional offloading operators; <code>subscribeOn(executor, predicate)</code> and <code>publishOn(executor, predicate)</code> are also
 available.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="publishon-example-2"><a class="anchor" href="#publishon-example-2"></a><a class="link" href="#publishon-example-2"><code>publishOn()</code> Example</a></h3>
-<div class="paragraph">
-<p>Using the <code>publishOn(executor)</code> operator allows processing of signals related to the source content on a different
-thread than is generating the content. It is the most common form of offloading used as it relates to the data path,
-specifically the <code>Subscription</code> methods.</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">Collection&lt;Integer&gt; result = Publisher.range(1, 10) <i class="conum" data-value="2"></i><b>(2)</b> <i class="conum" data-value="5"></i><b>(5)</b>
-        .map(element -&gt; element)  // non-offloaded NO-OP
-        .publishOn(publishExecutor)  <i class="conum" data-value="4"></i><b>(4)</b>
-        .map(element -&gt; element)  // offloaded NO-OP
-        .toFuture()  <i class="conum" data-value="3"></i><b>(3)</b>
-        .get();  <i class="conum" data-value="1"></i><b>(1)</b> <i class="conum" data-value="6"></i><b>(6)</b></code></pre>
-</div>
-</div>
-<div class="colist arabic">
-<table>
-<tr>
-<td><i class="conum" data-value="1"></i><b>1</b></td>
-<td><code>toFuture()</code> begins by calling <code>subscribe(Subscriber)</code>. Executing on the calling thread, execution flows up
-the operator chain towards the source; <code>map</code> &#8594; <code>publishOn</code> &#8594; <code>map</code> &#8594; <code>Publisher.range(1, 10)</code>.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="2"></i><b>2</b></td>
-<td>Still executing on the calling thread, <code>Range</code> will call <code>Subscriber.onSubscribe(Subscription)</code> on the
-<code>Subscriber</code>. This flows back down the operator chain, <code>Range</code> &#8594; <code>map</code> &#8594; <code>publishOn</code> (offloads on to <code>publishExecutor</code>
-thread) &#8594; <code>map</code> &#8594; <code>toFuture</code>.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="3"></i><b>3</b></td>
-<td>The <code>onSubscribe(Subscription)</code> method of <code>toFuture()</code>&#xfeff;'s <code>Subscriber</code> will call
-<code>Subscription.request(Long.MAX_VALUE)</code>. Execution flows up the operator chain towards the source;
-<code>map</code> &#8594; <code>publishOn</code> &#8594; <code>map</code> &#8594; <code>Range</code>. <code>Range</code> will publish synchronously via <code>onNext(element)</code> nine items, the
-integers &#8220;1&#8221; through &#8220;9&#8221;.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="4"></i><b>4</b></td>
-<td>Each <code>onNext</code> flows down the operator chain, <code>Range</code> &#8594; <code>map</code> &#8594; <code>publishOn</code> (offloads on to <code>publishExecutor</code>
-thread) &#8594; <code>map</code> &#8594; <code>toFuture</code> where the element is collected for the result. For each offloaded item a thread of
-<code>publishExecutor</code> will be used for executing the second <code>map</code> operator and final collect operation.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="5"></i><b>5</b></td>
-<td>After all items, <code>Range</code> sends the terminal <code>onComplete()</code> signal synchronously which flows down the operator chain,
-<code>Range</code> &#8594; <code>map &#8594; `publishOn</code> (offloads on to <code>publishExecutor</code> thread) &#8594; <code>map</code> &#8594; <code>toFuture</code> and will complete the
-<code>Future</code> with the integer collection result.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="6"></i><b>6</b></td>
-<td>The calling thread will wait at <code>get()</code> for the <code>Future</code> result to be asynchronously completed.</td>
-</tr>
-</table>
-</div>
-</div>
-<div class="sect2">
-<h3 id="subscribeon-example-2"><a class="anchor" href="#subscribeon-example-2"></a><a class="link" href="#subscribeon-example-2"><code>subscribeOn()</code> Example</a></h3>
-<div class="paragraph">
-<p>Using the <code>subscribeOn(executor)</code> operator allows processing of the subscription and demand on a specific thread. Using
-the <code>subscribeOn(executor)</code> operator generally requires an understanding of the behavior of the source; using a
-different source may change the need for offloading. <code>subscribeOn(executor)</code> is used less frequently than
-<code>publishOn(executor)</code> but is useful when it is necessary to offload the control path; the <code>subscribe</code> method or
-<code>Subscription</code> methods.</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">Collection&lt;Integer&gt; result = Publisher.range(1, 10) <i class="conum" data-value="2"></i><b>(2)</b> <i class="conum" data-value="4"></i><b>(4)</b>
-        .map(element -&gt; element)  // NO-OP
-        .subscribeOn(subscribeExecutor)
-        .toFuture() <i class="conum" data-value="1"></i><b>(1)</b> <i class="conum" data-value="3"></i><b>(3)</b> <i class="conum" data-value="5"></i><b>(5)</b>
-        .get(); <i class="conum" data-value="6"></i><b>(6)</b></code></pre>
-</div>
-</div>
-<div class="colist arabic">
-<table>
-<tr>
-<td><i class="conum" data-value="1"></i><b>1</b></td>
-<td><code>toFuture()</code> will do a <code>subscribe(Subscriber)</code>. This flows up the operator chain toward the source;
-<code>subscribeOn</code> (offload onto <code>subscribeExecutor</code> thread) &#8594; <code>map</code> &#8594; <code>Range</code>.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="2"></i><b>2</b></td>
-<td>Still on a thread from <code>subscribeExecutor</code> <code>Range</code> will call <code>Subscriber.onSubscribe(Subscription)</code> on the
-<code>Subscriber</code>. This flows back down the operator chain, <code>Range</code> &#8594; <code>map</code> &#8594; <code>subscribeOn</code> &#8594; <code>toFuture</code>.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="3"></i><b>3</b></td>
-<td>Still on the`subscribeExecutor` thread, <code>toFuture()&#8217;s `onSubscribe(Subscription)</code> call
-<code>Subscription.request(Long.MAX_VALUE)</code>. This flows up the operator chain, <code>subscribeOn</code> (offloads again onto another
-<code>subscribeExecutor</code> thread) &#8594; <code>map</code> &#8594; <code>Range</code>.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="4"></i><b>4</b></td>
-<td>Still on thread from the second offload to <code>subscribeExecutor</code>, <code>Range</code> ` will publish synchronously via
-<code>onNext(element)</code> nine items, the integers &#8220;1&#8221; through &#8220;9&#8221;. Each <code>onNext</code> flows back down the operator chain,
-<code>Range</code> &#8594; <code>map</code> &#8594; <code>subscribeOn</code> &#8594; <code>toFuture</code> where the element is collected for the result.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="5"></i><b>5</b></td>
-<td>Still on thread from the second offload to <code>subscribeExecutor</code>, after all items, <code>Range</code> will call <code>onComplete</code>.
-When the <code>toFuture()</code> <code>Subscriber</code> receives the <code>onComplete()</code> signal it will complete the <code>Future</code> with the integer
-collection result.</td>
-</tr>
-<tr>
-<td><i class="conum" data-value="6"></i><b>6</b></td>
-<td>The calling thread will wait at <code>get()</code> for the <code>Future</code> result to be asynchronously completed.</td>
-</tr>
-</table>
-</div>
-</div>
-<div class="sect2">
-<h3 id="publishonsubscribeon-detailed-example-2"><a class="anchor" href="#publishonsubscribeon-detailed-example-2"></a><a class="link" href="#publishonsubscribeon-detailed-example-2">publishOn()/subscribeOn() Detailed Example</a></h3>
-<div class="paragraph">
-<p>These examples can be expanded to demonstrate the offloading behavior directly. The expanded example extends the NO-OP
-<code>map</code> implementations to reveal the active thread during their execution. To show the active thread at the other
-points described in the callouts the expanded example also adds <code>whenOnSubscribe</code>, <code>whenRequest</code>, <code>liftSync</code> and
-<code>whenFinally</code> operations in the operator chain. The output of the example shows the thread used for executing each of
-the operators, while the specialized operators provide examples of how you might use them to debug your own programs.</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">Collection&lt;?&gt; result = Publisher.range(1, 3)
-        .map(element -&gt; {
-            System.out.println("\nPublish starts on " + Thread.currentThread() + " Received : " + element);
-            return element;
-        })
-        .whenOnSubscribe(subscription -&gt; {
-            System.out.println("\nonSubscribe starts on " + Thread.currentThread());
-        })
-        .publishOn(publishExecutor)
-        .map(element -&gt; {
-            System.out.println("\nPublish offloaded to " + Thread.currentThread() + " Received : " + element);
-            return element;
-        })
-        .whenRequest(request -&gt; {
-            System.out.println("\nrequest(" + request + ") offloaded to " + Thread.currentThread());
-        })
-        .liftSync(subscriber -&gt; {
-            System.out.println("\nSubscribe offloaded to " + Thread.currentThread());
-            return subscriber;
-        })
-        .subscribeOn(subscribeExecutor)
-        .liftSync(subscriber -&gt; {
-            System.out.println("\nSubscribe begins on " + Thread.currentThread());
-            return subscriber;
-        })
-        .whenOnSubscribe(subscription -&gt; {
-            System.out.println("\nonSubscribe offloaded to " + Thread.currentThread());
-        })
-        .whenRequest(request -&gt; {
-            System.out.println("\nrequest(" + request + ") starts on " + Thread.currentThread());
-        })
-        .whenFinally(new TerminalSignalConsumer() {
-            @Override
-            public void onComplete() {
-                System.out.println("\ncomplete on " + Thread.currentThread());
-            }
-
-            @Override
-            public void onError(final Throwable throwable) {
-                System.out.println("\nerror (" + throwable + ") on " + Thread.currentThread());
-            }
-
-            @Override
-            public void cancel() {
-                System.out.println("\ncancel on " + Thread.currentThread());
-            }
-        })
-        .toFuture()
-        .get();</code></pre>
-</div>
 </div>
 </div>
 </div>

@@ -92,70 +92,75 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">Helper operator for signaling the end of an HTTP Request/Response cycle.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="EnforceSequentialModeRequesterFilter.html" title="class in io.servicetalk.http.utils">EnforceSequentialModeRequesterFilter</a></div>
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="CacheConnectionHttpLoadBalanceFactory.html" title="class in io.servicetalk.http.utils">CacheConnectionHttpLoadBalanceFactory</a>&lt;ResolvedAddress&gt;</div>
 <div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="block">A <a href="../api/HttpLoadBalancerFactory.html" title="interface in io.servicetalk.http.api"><code>HttpLoadBalancerFactory</code></a> that will cache successive connection creation attempts and return the same
+ <a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> instead of creating a new connection each time.</div>
+</div>
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="EnforceSequentialModeRequesterFilter.html" title="class in io.servicetalk.http.utils">EnforceSequentialModeRequesterFilter</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">Enforces sequential behavior of the client, deferring return of the response until after the request payload body is
  sent.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="HostHeaderHttpRequesterFilter.html" title="class in io.servicetalk.http.utils">HostHeaderHttpRequesterFilter</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="HostHeaderHttpRequesterFilter.html" title="class in io.servicetalk.http.utils">HostHeaderHttpRequesterFilter</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">A filter which will set a <a href="../api/HttpHeaderNames.html#HOST"><code>HttpHeaderNames.HOST</code></a> header with the fallback value if the header is not already
  present in <a href="../api/HttpRequestMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpRequestMetaData</code></a>.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="HttpLifecycleObservers.html" title="class in io.servicetalk.http.utils">HttpLifecycleObservers</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="HttpLifecycleObservers.html" title="class in io.servicetalk.http.utils">HttpLifecycleObservers</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">A factory to create different <a href="../api/HttpLifecycleObserver.html" title="interface in io.servicetalk.http.api"><code>HttpLifecycleObserver</code></a>s.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="HttpRequestUriUtils.html" title="class in io.servicetalk.http.utils">HttpRequestUriUtils</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="HttpRequestUriUtils.html" title="class in io.servicetalk.http.utils">HttpRequestUriUtils</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">Helper methods for computing effective request URIs according
  to <a href="https://tools.ietf.org/html/rfc7230#section-5.5">RFC 7230, section 5.5</a>
  and base URIs (which are effective request URIs with <code>/</code> as path, and no query nor fragment.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="IdleTimeoutConnectionFilter.html" title="class in io.servicetalk.http.utils">IdleTimeoutConnectionFilter</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="IdleTimeoutConnectionFilter.html" title="class in io.servicetalk.http.utils">IdleTimeoutConnectionFilter</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">A connection-level filter that closes idle connections.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="PayloadSizeLimitingHttpRequesterFilter.html" title="class in io.servicetalk.http.utils">PayloadSizeLimitingHttpRequesterFilter</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="PayloadSizeLimitingHttpRequesterFilter.html" title="class in io.servicetalk.http.utils">PayloadSizeLimitingHttpRequesterFilter</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">Limits the response payload size.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="PayloadSizeLimitingHttpServiceFilter.html" title="class in io.servicetalk.http.utils">PayloadSizeLimitingHttpServiceFilter</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="PayloadSizeLimitingHttpServiceFilter.html" title="class in io.servicetalk.http.utils">PayloadSizeLimitingHttpServiceFilter</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">Limits the request payload size.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="RedirectingHttpRequesterFilter.html" title="class in io.servicetalk.http.utils">RedirectingHttpRequesterFilter</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="RedirectingHttpRequesterFilter.html" title="class in io.servicetalk.http.utils">RedirectingHttpRequesterFilter</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">An HTTP request filter that performs automatic
  <a href="https://datatracker.ietf.org/doc/html/rfc7231#section-6.4">redirection</a> if a client receives
  <a href="../api/HttpResponseStatus.StatusClass.html#REDIRECTION_3XX"><code>3XX status code</code></a> in the <a href="../api/HttpResponseMetaData.html" title="interface in io.servicetalk.http.api"><code>response</code></a>.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="RequestTargetDecoderHttpServiceFilter.html" title="class in io.servicetalk.http.utils">RequestTargetDecoderHttpServiceFilter</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="RequestTargetDecoderHttpServiceFilter.html" title="class in io.servicetalk.http.utils">RequestTargetDecoderHttpServiceFilter</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block"><a href="https://tools.ietf.org/html/rfc3986#section-2.1">Decodes</a> the
  <a href="../api/HttpRequestMetaData.html#requestTarget()"><code>HttpRequestMetaData.requestTarget()</code></a> for each incoming request.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="RequestTargetEncoderHttpRequesterFilter.html" title="class in io.servicetalk.http.utils">RequestTargetEncoderHttpRequesterFilter</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="RequestTargetEncoderHttpRequesterFilter.html" title="class in io.servicetalk.http.utils">RequestTargetEncoderHttpRequesterFilter</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block"><a href="https://tools.ietf.org/html/rfc3986#section-2.1">Encodes</a> the
  <a href="../api/HttpRequestMetaData.html#requestTarget()"><code>HttpRequestMetaData.requestTarget()</code></a> for each outgoing request.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="RequestTargetEncoderHttpServiceFilter.html" title="class in io.servicetalk.http.utils">RequestTargetEncoderHttpServiceFilter</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="RequestTargetEncoderHttpServiceFilter.html" title="class in io.servicetalk.http.utils">RequestTargetEncoderHttpServiceFilter</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block"><a href="https://tools.ietf.org/html/rfc3986#section-2.1">Encodes</a> the
  <a href="../api/HttpRequestMetaData.html#requestTarget()"><code>HttpRequestMetaData.requestTarget()</code></a> for each incoming request.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab1"><a href="TimeoutFromRequest.html" title="interface in io.servicetalk.http.utils">TimeoutFromRequest</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab1">Deprecated.
+<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="TimeoutFromRequest.html" title="interface in io.servicetalk.http.utils">TimeoutFromRequest</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab1">Deprecated.
 <div class="deprecation-comment">In areas which require <a href="TimeoutFromRequest.html" title="interface in io.servicetalk.http.utils"><code>TimeoutFromRequest</code></a> use variants that accept
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/BiFunction.html" title="class or interface in java.util.function" class="external-link"><code>BiFunction</code></a>&lt;<a href="../api/HttpRequestMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpRequestMetaData</code></a>, <a href="../../concurrent/TimeSource.html" title="interface in io.servicetalk.concurrent"><code>TimeSource</code></a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link"><code>Duration</code></a>&gt;.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="TimeoutHttpRequesterFilter.html" title="class in io.servicetalk.http.utils">TimeoutHttpRequesterFilter</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="TimeoutHttpRequesterFilter.html" title="class in io.servicetalk.http.utils">TimeoutHttpRequesterFilter</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">A filter to enable timeouts for HTTP requests on the client-side.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="TimeoutHttpServiceFilter.html" title="class in io.servicetalk.http.utils">TimeoutHttpServiceFilter</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="TimeoutHttpServiceFilter.html" title="class in io.servicetalk.http.utils">TimeoutHttpServiceFilter</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">A filter to enable timeouts for HTTP requests on the server-side.</div>
 </div>
 </div>

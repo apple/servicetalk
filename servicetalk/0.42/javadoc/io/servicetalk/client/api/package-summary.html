@@ -107,111 +107,115 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color class-summary class-summary-tab1">
 <div class="block">A contract to decorate <a href="ConnectionFactory.html" title="interface in io.servicetalk.client.api"><code>ConnectionFactory</code></a> instances for the purpose of filtering.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab5"><a href="ConnectionRejectedException.html" title="class in io.servicetalk.client.api">ConnectionRejectedException</a></div>
+<div class="col-first odd-row-color class-summary class-summary-tab5"><a href="ConnectionLimitReachedException.html" title="class in io.servicetalk.client.api">ConnectionLimitReachedException</a></div>
 <div class="col-last odd-row-color class-summary class-summary-tab5">
+<div class="block">Thrown when the number of connections reached their limit for a given resource (i.e.</div>
+</div>
+<div class="col-first even-row-color class-summary class-summary-tab5"><a href="ConnectionRejectedException.html" title="class in io.servicetalk.client.api">ConnectionRejectedException</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab5">
 <div class="block">Thrown when a newly created connection was rejected.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab5"><a href="ConnectTimeoutException.html" title="class in io.servicetalk.client.api">ConnectTimeoutException</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab5">
+<div class="col-first odd-row-color class-summary class-summary-tab5"><a href="ConnectTimeoutException.html" title="class in io.servicetalk.client.api">ConnectTimeoutException</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab5">
 <div class="block">Throws when a connect operations failed because of a timeout.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="ConsumableEvent.html" title="interface in io.servicetalk.client.api">ConsumableEvent</a>&lt;T&gt;</div>
-<div class="col-last odd-row-color class-summary class-summary-tab1">
+<div class="col-first even-row-color class-summary class-summary-tab1"><a href="ConsumableEvent.html" title="interface in io.servicetalk.client.api">ConsumableEvent</a>&lt;T&gt;</div>
+<div class="col-last even-row-color class-summary class-summary-tab1">
 <div class="block">A container for an event that requires acknowledgement when the event is consumed via <a href="ConsumableEvent.html#eventConsumed()"><code>ConsumableEvent.eventConsumed()</code></a>.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="DefaultGroupKey.html" title="class in io.servicetalk.client.api">DefaultGroupKey</a>&lt;Address&gt;</div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="DefaultGroupKey.html" title="class in io.servicetalk.client.api">DefaultGroupKey</a>&lt;Address&gt;</div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">A default implementation of <a href="GroupKey.html" title="interface in io.servicetalk.client.api"><code>GroupKey</code></a>.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="DefaultServiceDiscovererEvent.html" title="class in io.servicetalk.client.api">DefaultServiceDiscovererEvent</a>&lt;T&gt;</div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="DefaultServiceDiscovererEvent.html" title="class in io.servicetalk.client.api">DefaultServiceDiscovererEvent</a>&lt;T&gt;</div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">Default implementation of <a href="ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscovererEvent</code></a>.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="DelegatingConnectionFactory.html" title="class in io.servicetalk.client.api">DelegatingConnectionFactory</a>&lt;ResolvedAddress,<wbr>C extends <a href="../../concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a>&gt;</div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="DelegatingConnectionFactory.html" title="class in io.servicetalk.client.api">DelegatingConnectionFactory</a>&lt;ResolvedAddress,<wbr>C extends <a href="../../concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a>&gt;</div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">A <a href="ConnectionFactory.html" title="interface in io.servicetalk.client.api"><code>ConnectionFactory</code></a> that delegates all methods to another <a href="ConnectionFactory.html" title="interface in io.servicetalk.client.api"><code>ConnectionFactory</code></a>.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="DelegatingConnectionFactoryFilter.html" title="class in io.servicetalk.client.api">DelegatingConnectionFactoryFilter</a>&lt;ResolvedAddress,<wbr>C extends <a href="../../concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a>&gt;</div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="DelegatingConnectionFactoryFilter.html" title="class in io.servicetalk.client.api">DelegatingConnectionFactoryFilter</a>&lt;ResolvedAddress,<wbr>C extends <a href="../../concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a>&gt;</div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">A <a href="ConnectionFactoryFilter.html" title="interface in io.servicetalk.client.api"><code>ConnectionFactoryFilter</code></a> that delegates all methods to another <a href="ConnectionFactoryFilter.html" title="interface in io.servicetalk.client.api"><code>ConnectionFactoryFilter</code></a>.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab1"><a href="GroupKey.html" title="interface in io.servicetalk.client.api">GroupKey</a>&lt;Address&gt;</div>
-<div class="col-last even-row-color class-summary class-summary-tab1">
+<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="GroupKey.html" title="interface in io.servicetalk.client.api">GroupKey</a>&lt;Address&gt;</div>
+<div class="col-last odd-row-color class-summary class-summary-tab1">
 <div class="block">Identifies a client within a group of clients, and provides enough information to create a client if non exist.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="LimitingConnectionFactoryFilter.html" title="class in io.servicetalk.client.api">LimitingConnectionFactoryFilter</a>&lt;ResolvedAddress,<wbr>C extends <a href="../../concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a>&gt;</div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="LimitingConnectionFactoryFilter.html" title="class in io.servicetalk.client.api">LimitingConnectionFactoryFilter</a>&lt;ResolvedAddress,<wbr>C extends <a href="../../concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a>&gt;</div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">A <a href="ConnectionFactory.html" title="interface in io.servicetalk.client.api"><code>ConnectionFactory</code></a> that limits the total number of active connections created using this
  <a href="ConnectionFactory.html" title="interface in io.servicetalk.client.api"><code>ConnectionFactory</code></a>.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab1"><a href="LimitingConnectionFactoryFilter.ConnectionLimiter.html" title="interface in io.servicetalk.client.api">LimitingConnectionFactoryFilter.ConnectionLimiter</a>&lt;ResolvedAddress,<wbr>C extends <a href="../../concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a>&gt;</div>
-<div class="col-last even-row-color class-summary class-summary-tab1">
+<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="LimitingConnectionFactoryFilter.ConnectionLimiter.html" title="interface in io.servicetalk.client.api">LimitingConnectionFactoryFilter.ConnectionLimiter</a>&lt;ResolvedAddress,<wbr>C extends <a href="../../concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a>&gt;</div>
+<div class="col-last odd-row-color class-summary class-summary-tab1">
 <div class="block">A contract to limit number of connections created by <a href="LimitingConnectionFactoryFilter.html" title="class in io.servicetalk.client.api"><code>LimitingConnectionFactoryFilter</code></a>.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="LoadBalancedAddress.html" title="interface in io.servicetalk.client.api">LoadBalancedAddress</a>&lt;C extends <a href="LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</div>
-<div class="col-last odd-row-color class-summary class-summary-tab1">
+<div class="col-first even-row-color class-summary class-summary-tab1"><a href="LoadBalancedAddress.html" title="interface in io.servicetalk.client.api">LoadBalancedAddress</a>&lt;C extends <a href="LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</div>
+<div class="col-last even-row-color class-summary class-summary-tab1">
 <div class="block">An address managed by a <a href="LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab1"><a href="LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab1">
+<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab1">
 <div class="block">A connection managed by a <a href="LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="LoadBalancer.html" title="interface in io.servicetalk.client.api">LoadBalancer</a>&lt;C extends <a href="LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</div>
-<div class="col-last odd-row-color class-summary class-summary-tab1">
+<div class="col-first even-row-color class-summary class-summary-tab1"><a href="LoadBalancer.html" title="interface in io.servicetalk.client.api">LoadBalancer</a>&lt;C extends <a href="LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</div>
+<div class="col-last even-row-color class-summary class-summary-tab1">
 <div class="block">Given multiple <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/SocketAddress.html" title="class or interface in java.net" class="external-link"><code>SocketAddress</code></a>es select the most desired <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/SocketAddress.html" title="class or interface in java.net" class="external-link"><code>SocketAddress</code></a> to use.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab1"><a href="LoadBalancerFactory.html" title="interface in io.servicetalk.client.api">LoadBalancerFactory</a>&lt;ResolvedAddress,<wbr>C extends <a href="LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</div>
-<div class="col-last even-row-color class-summary class-summary-tab1">
+<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="LoadBalancerFactory.html" title="interface in io.servicetalk.client.api">LoadBalancerFactory</a>&lt;ResolvedAddress,<wbr>C extends <a href="LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</div>
+<div class="col-last odd-row-color class-summary class-summary-tab1">
 <div class="block">A factory for creating <a href="LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> instances.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="LoadBalancerReadyEvent.html" title="interface in io.servicetalk.client.api">LoadBalancerReadyEvent</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab1">
+<div class="col-first even-row-color class-summary class-summary-tab1"><a href="LoadBalancerReadyEvent.html" title="interface in io.servicetalk.client.api">LoadBalancerReadyEvent</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab1">
 <div class="block">A hint from <a href="LoadBalancer.html#eventStream()"><code>LoadBalancer.eventStream()</code></a> that the internal state of the <a href="LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> is ready such
  <a href="LoadBalancer.html#selectConnection(java.util.function.Predicate,io.servicetalk.context.api.ContextMap)"><code>LoadBalancer.selectConnection(Predicate, ContextMap)</code></a> is not likely to fail.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab5"><a href="NoAvailableHostException.html" title="class in io.servicetalk.client.api">NoAvailableHostException</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab5">
+<div class="col-first odd-row-color class-summary class-summary-tab5"><a href="NoAvailableHostException.html" title="class in io.servicetalk.client.api">NoAvailableHostException</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab5">
 <div class="block">Thrown when no host is available but at least one is required.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="RequestConcurrencyController.html" title="interface in io.servicetalk.client.api">RequestConcurrencyController</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab1">
+<div class="col-first even-row-color class-summary class-summary-tab1"><a href="RequestConcurrencyController.html" title="interface in io.servicetalk.client.api">RequestConcurrencyController</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab1">
 <div class="block">An interface which allows controlling reserving connections which maybe used concurrently.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab3"><a href="RequestConcurrencyController.Result.html" title="enum class in io.servicetalk.client.api">RequestConcurrencyController.Result</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab3">
+<div class="col-first odd-row-color class-summary class-summary-tab3"><a href="RequestConcurrencyController.Result.html" title="enum class in io.servicetalk.client.api">RequestConcurrencyController.Result</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab3">
 <div class="block">Result of the <a href="RequestConcurrencyController.html#tryRequest()"><code>RequestConcurrencyController.tryRequest()</code></a> call.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab5"><a href="RequestRejectedException.html" title="class in io.servicetalk.client.api">RequestRejectedException</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab5">
+<div class="col-first even-row-color class-summary class-summary-tab5"><a href="RequestRejectedException.html" title="class in io.servicetalk.client.api">RequestRejectedException</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab5">
 <div class="block">Thrown when a request was rejected before processing by the transport layer.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab1"><a href="ReservableRequestConcurrencyController.html" title="interface in io.servicetalk.client.api">ReservableRequestConcurrencyController</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab1">
+<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="ReservableRequestConcurrencyController.html" title="interface in io.servicetalk.client.api">ReservableRequestConcurrencyController</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab1">
 <div class="block">A <a href="RequestConcurrencyController.html" title="interface in io.servicetalk.client.api"><code>RequestConcurrencyController</code></a> that also allows to <a href="ReservableRequestConcurrencyController.html#tryReserve()"><code>ReservableRequestConcurrencyController.tryReserve()</code></a> a connection for exclusive use.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab5"><a href="RetryableConnectException.html" title="class in io.servicetalk.client.api">RetryableConnectException</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab5">
+<div class="col-first even-row-color class-summary class-summary-tab5"><a href="RetryableConnectException.html" title="class in io.servicetalk.client.api">RetryableConnectException</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab5">
 <div class="block">Throws when a connect operations failed.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab1"><a href="ScoreSupplier.html" title="interface in io.servicetalk.client.api">ScoreSupplier</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab1">
+<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="ScoreSupplier.html" title="interface in io.servicetalk.client.api">ScoreSupplier</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab1">
 <div class="block">Enables components to expose a score.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="ServiceDiscoverer.html" title="interface in io.servicetalk.client.api">ServiceDiscoverer</a>&lt;UnresolvedAddress,<wbr>ResolvedAddress,<wbr>E extends <a href="ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;ResolvedAddress&gt;&gt;</div>
-<div class="col-last odd-row-color class-summary class-summary-tab1">
+<div class="col-first even-row-color class-summary class-summary-tab1"><a href="ServiceDiscoverer.html" title="interface in io.servicetalk.client.api">ServiceDiscoverer</a>&lt;UnresolvedAddress,<wbr>ResolvedAddress,<wbr>E extends <a href="ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;ResolvedAddress&gt;&gt;</div>
+<div class="col-last even-row-color class-summary class-summary-tab1">
 <div class="block">Represents the interaction pattern with a service discovery system.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab1"><a href="ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;ResolvedAddress&gt;</div>
-<div class="col-last even-row-color class-summary class-summary-tab1">
+<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;ResolvedAddress&gt;</div>
+<div class="col-last odd-row-color class-summary class-summary-tab1">
 <div class="block">Notification from the Service Discovery system that availability for an address has changed.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="ServiceDiscovererEvent.Status.html" title="class in io.servicetalk.client.api">ServiceDiscovererEvent.Status</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="ServiceDiscovererEvent.Status.html" title="class in io.servicetalk.client.api">ServiceDiscovererEvent.Status</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">Status provided by the <a href="ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> system that guides the actions of <a href="LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> upon the
  bound <a href="ServiceDiscovererEvent.html#address()"><code>ServiceDiscovererEvent.address()</code></a> (via <a href="ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscovererEvent</code></a>).</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="TransportObserverConnectionFactoryFilter.html" title="class in io.servicetalk.client.api">TransportObserverConnectionFactoryFilter</a>&lt;ResolvedAddress,<wbr>C extends <a href="../../concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a>&gt;</div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="TransportObserverConnectionFactoryFilter.html" title="class in io.servicetalk.client.api">TransportObserverConnectionFactoryFilter</a>&lt;ResolvedAddress,<wbr>C extends <a href="../../concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a>&gt;</div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">A <a href="ConnectionFactoryFilter.html" title="interface in io.servicetalk.client.api"><code>ConnectionFactoryFilter</code></a> that configures a <a href="../../transport/api/TransportObserver.html" title="interface in io.servicetalk.transport.api"><code>TransportObserver</code></a> for new connections.</div>
 </div>
 </div>

@@ -155,13 +155,19 @@ implements <a href="../api/StreamingHttpClientFilterFactory.html" title="interfa
 <div class="block">Creates a <a href="../api/StreamingHttpClientFilter.html" title="class in io.servicetalk.http.api"><code>StreamingHttpClientFilter</code></a> using the provided <a href="../api/StreamingHttpClientFilter.html" title="class in io.servicetalk.http.api"><code>StreamingHttpClientFilter</code></a>.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="RetryingHttpRequesterFilter.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#disableAutoRetries()" class="member-name-link">disableAutoRetries</a>()</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#disableAllRetries()" class="member-name-link">disableAllRetries</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Retrying filter that disables any form of retry behaviour.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../api/HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategy</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#requiredOffloads()" class="member-name-link">requiredOffloads</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="RetryingHttpRequesterFilter.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#disableAutoRetries()" class="member-name-link">disableAutoRetries</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">Retrying filter that disables automatic retries for exceptions, but still waits until <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>
+ becomes <a href="../../client/api/LoadBalancerReadyEvent.html" title="interface in io.servicetalk.client.api"><code>ready</code></a> for the first time.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../api/HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategy</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#requiredOffloads()" class="member-name-link">requiredOffloads</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Return an <a href="../../transport/api/ExecutionStrategy.html" title="interface in io.servicetalk.transport.api"><code>ExecutionStrategy</code></a> that describes the offloads required by the influencer.</div>
 </div>
 </div>
@@ -226,11 +232,37 @@ implements <a href="../api/StreamingHttpClientFilterFactory.html" title="interfa
 <section class="detail" id="disableAutoRetries()">
 <h3>disableAutoRetries</h3>
 <div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="RetryingHttpRequesterFilter.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter</a></span>&nbsp;<span class="element-name">disableAutoRetries</span>()</div>
-<div class="block">Retrying filter that disables any form of retry behaviour. All types of failures will not be re-attempted.</div>
+<div class="block">Retrying filter that disables automatic retries for exceptions, but still waits until <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>
+ becomes <a href="../../client/api/LoadBalancerReadyEvent.html" title="interface in io.servicetalk.client.api"><code>ready</code></a> for the first time.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>a retrying filter that disables automatic retries for exceptions, but still waits until
+ <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> becomes <a href="../../client/api/LoadBalancerReadyEvent.html" title="interface in io.servicetalk.client.api"><code>ready</code></a> for the first time.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="RetryingHttpRequesterFilter.Builder.html#waitForLoadBalancer(boolean)"><code>RetryingHttpRequesterFilter.Builder.waitForLoadBalancer(boolean)</code></a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="disableAllRetries()">
+<h3>disableAllRetries</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="RetryingHttpRequesterFilter.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter</a></span>&nbsp;<span class="element-name">disableAllRetries</span>()</div>
+<div class="block">Retrying filter that disables any form of retry behaviour. All types of failures will not be re-attempted,
+ including <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> <a href="../../client/api/LoadBalancerReadyEvent.html" title="interface in io.servicetalk.client.api"><code>readiness state</code></a>.</div>
 <dl class="notes">
 <dt>Returns:</dt>
 <dd>a retrying filter that disables any form of retry behaviour. All types of failures will not be
  re-attempted.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="RetryingHttpRequesterFilter.Builder.html#waitForLoadBalancer(boolean)"><code>RetryingHttpRequesterFilter.Builder.waitForLoadBalancer(boolean)</code></a></li>
+</ul>
+</dd>
 </dl>
 </section>
 </li>
