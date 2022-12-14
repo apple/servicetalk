@@ -35,6 +35,7 @@ import java.lang.reflect.Method;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Consumer;
@@ -63,8 +64,8 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
 
     private final GrpcRouter.Builder routeBuilder;
     private final Set<String> errors;
-    private final RouteExecutionStrategyFactory<GrpcExecutionStrategy> strategyFactory;
     private final Map<String, Consumer<GrpcRouter.Builder>> deferredRoutes;
+    private RouteExecutionStrategyFactory<GrpcExecutionStrategy> strategyFactory;
 
     /**
      * Create a new instance.
@@ -80,7 +81,9 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * {@link RouteExecutionStrategyFactory RouteExecutionStrategyFactory&lt;GrpcExecutionStrategy&gt;} for creating
      * {@link GrpcExecutionStrategy} instances that can be used for offloading the handling of request to resource
      * methods, as specified via {@link RouteExecutionStrategy} annotation
+     * @deprecated this constructor is not needed anymore, use {@link #GrpcRoutes()} instead.
      */
+    @Deprecated // TODO: remove API in 0.43
     protected GrpcRoutes(final RouteExecutionStrategyFactory<GrpcExecutionStrategy> strategyFactory) {
         routeBuilder = new GrpcRouter.Builder();
         errors = new TreeSet<>();
@@ -94,6 +97,18 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
         this.errors = errors;
         this.deferredRoutes = deferredRoutes;
         strategyFactory = defaultStrategyFactory();
+    }
+
+    /**
+     * Setter for the {@link RouteExecutionStrategyFactory}, intended to be made public by implementations.
+     *
+     * @param strategyFactory the factory to set.
+     * @return this instance for chaining purposes.
+     */
+    protected GrpcRoutes<Service> routeExecutionStrategyFactory(
+            final RouteExecutionStrategyFactory<GrpcExecutionStrategy> strategyFactory) {
+        this.strategyFactory = Objects.requireNonNull(strategyFactory);
+        return this;
     }
 
     /**

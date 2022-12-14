@@ -160,6 +160,7 @@ import static io.servicetalk.grpc.protoc.Words.requestEncoding;
 import static io.servicetalk.grpc.protoc.Words.response;
 import static io.servicetalk.grpc.protoc.Words.responseWriter;
 import static io.servicetalk.grpc.protoc.Words.route;
+import static io.servicetalk.grpc.protoc.Words.routeExecutionStrategyFactory;
 import static io.servicetalk.grpc.protoc.Words.routes;
 import static io.servicetalk.grpc.protoc.Words.rpc;
 import static io.servicetalk.grpc.protoc.Words.service;
@@ -530,6 +531,9 @@ final class Generator {
                         .addJavadoc(JAVADOC_PARAM + strategyFactory +
                                 " a factory that creates an execution strategy for different {@link $L#id() id}s" +
                                 lineSeparator(), RouteExecutionStrategy)
+                        .addJavadoc(JAVADOC_DEPRECATED + "use {@link #$L($T)} on the Builder instead." +
+                                lineSeparator(), routeExecutionStrategyFactory, RouteExecutionStrategyFactory)
+                        .addAnnotation(Deprecated.class)
                         .addModifiers(PUBLIC)
                         .addParameter(GrpcRouteExecutionStrategyFactory, strategyFactory, FINAL)
                         .addStatement("this($L, $T.emptyList())", strategyFactory, Collections)
@@ -565,6 +569,13 @@ final class Generator {
                         .addParameter(BufferEncoderList, bufferEncoders, FINAL)
                         .returns(builderClass)
                         .addStatement("this.$L = $T.requireNonNull($L)", bufferEncoders, Objects, bufferEncoders)
+                        .addStatement("return this").build())
+                .addMethod(methodBuilder(routeExecutionStrategyFactory)
+                        .addModifiers(PUBLIC)
+                        .addAnnotation(Override.class)
+                        .addParameter(GrpcRouteExecutionStrategyFactory, strategyFactory, FINAL)
+                        .returns(builderClass)
+                        .addStatement("super.$L($L)", routeExecutionStrategyFactory, strategyFactory)
                         .addStatement("return this").build())
                 .addMethod(methodBuilder("build")
                         .addModifiers(PUBLIC)
@@ -728,6 +739,10 @@ final class Generator {
                         .addJavadoc(JAVADOC_PARAM + strategyFactory +
                                 " a factory that creates an execution strategy for different {@link $L#id() id}s" +
                                 lineSeparator(), RouteExecutionStrategy)
+                        .addJavadoc(JAVADOC_DEPRECATED + "Use {@link $L#$L()} and set the custom strategy " +
+                                "on {@link $L#$L($T)} instead." + lineSeparator(), Builder, Builder, Builder,
+                                routeExecutionStrategyFactory, RouteExecutionStrategyFactory)
+                        .addAnnotation(Deprecated.class)
                         .addModifiers(PUBLIC)
                         .addParameter(state.serviceClass, service, FINAL)
                         .addParameter(GrpcRouteExecutionStrategyFactory, strategyFactory, FINAL)
@@ -792,6 +807,10 @@ final class Generator {
                         .addJavadoc(JAVADOC_PARAM + strategyFactory +
                                 " a factory that creates an execution strategy for different {@link $L#id() id}s" +
                                 lineSeparator(), RouteExecutionStrategy)
+                        .addJavadoc(JAVADOC_DEPRECATED + "Use {@link $L#$L()} and set the custom strategy " +
+                                        "on {@link $L#$L($T)} instead." + lineSeparator(), Builder, Builder, Builder,
+                                routeExecutionStrategyFactory, RouteExecutionStrategyFactory)
+                        .addAnnotation(Deprecated.class)
                         .addModifiers(PUBLIC)
                         .addParameter(state.blockingServiceClass, service, FINAL)
                         .addParameter(GrpcRouteExecutionStrategyFactory, strategyFactory, FINAL)
