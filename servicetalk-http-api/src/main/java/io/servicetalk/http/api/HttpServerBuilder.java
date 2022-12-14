@@ -318,6 +318,27 @@ public interface HttpServerBuilder {
      * Starts this server and returns the {@link HttpServerContext} after the server has been successfully started.
      * <p>
      * If the underlying protocol (e.g. TCP) supports it this will result in a socket bind/listen on {@code address}.
+     * <p>
+     * Note that this method is generic in the sense that it accepts all HTTP {@link HttpServiceBase} implementations
+     * to be passed in, namely {@link StreamingHttpService}, {@link HttpService}, {@link BlockingStreamingHttpService}
+     * and {@link BlockingHttpService}. It is especially useful when Dependency Injection is used and the type of
+     * service is not known at compile time.
+     *
+     * @param service Service invoked for every request received by this server. The returned {@link HttpServerContext}
+     * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link HttpServerContext} is closed.
+     * @return A {@link HttpServerContext} by blocking the calling thread until the server is successfully started or
+     * throws an {@link Exception} if the server could not be started.
+     * @throws IllegalArgumentException if an unsupported {@link HttpServiceBase} type is being provided.
+     * @throws Exception if the server could not be started.
+     */
+    default HttpServerContext listenServiceAndAwait(HttpServiceBase service) throws Exception {
+        return blockingInvocation(listenService(service));
+    }
+
+    /**
+     * Starts this server and returns the {@link HttpServerContext} after the server has been successfully started.
+     * <p>
+     * If the underlying protocol (e.g. TCP) supports it this will result in a socket bind/listen on {@code address}.
      *
      * @param service Service invoked for every request received by this server. The returned {@link HttpServerContext}
      * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link HttpServerContext} is closed.
@@ -372,6 +393,36 @@ public interface HttpServerBuilder {
      */
     default HttpServerContext listenBlockingStreamingAndAwait(BlockingStreamingHttpService service) throws Exception {
         return blockingInvocation(listenBlockingStreaming(service));
+    }
+
+    /**
+     * Starts this server and returns the {@link HttpServerContext} after the server has been successfully started.
+     * <p>
+     * If the underlying protocol (e.g. TCP) supports it this will result in a socket bind/listen on {@code address}.
+     * <p>
+     * Note that this method is generic in the sense that it accepts all HTTP {@link HttpServiceBase} implementations
+     * to be passed in, namely {@link StreamingHttpService}, {@link HttpService}, {@link BlockingStreamingHttpService}
+     * and {@link BlockingHttpService}. It is especially useful when Dependency Injection is used and the type of
+     * service is not known at compile time.
+     *
+     * @param service Service invoked for every request received by this server. The returned {@link HttpServerContext}
+     * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link HttpServerContext} is closed.
+     * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
+     * the server could not be started.
+     * @throws IllegalArgumentException if an unsupported {@link HttpServiceBase} type is being provided.
+     */
+    default Single<HttpServerContext> listenService(final HttpServiceBase service) {
+        if (service instanceof HttpService) {
+            return listen((HttpService) service);
+        } else if (service instanceof StreamingHttpService) {
+            return listenStreaming((StreamingHttpService) service);
+        } else if (service instanceof BlockingHttpService) {
+            return listenBlocking((BlockingHttpService) service);
+        } else if (service instanceof BlockingStreamingHttpService) {
+            return listenBlockingStreaming((BlockingStreamingHttpService) service);
+        } else {
+            return Single.failed(new IllegalArgumentException("Unsupported service type: " + service));
+        }
     }
 
     /**

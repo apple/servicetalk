@@ -23,7 +23,7 @@ import static io.servicetalk.http.api.DefaultHttpExecutionStrategy.OFFLOAD_RECEI
  * The equivalent of {@link StreamingHttpService} but with synchronous/blocking APIs instead of asynchronous APIs.
  */
 @FunctionalInterface
-public interface BlockingStreamingHttpService extends HttpExecutionStrategyInfluencer, GracefulAutoCloseable {
+public interface BlockingStreamingHttpService extends HttpServiceBase, GracefulAutoCloseable {
     /**
      * Handles a single HTTP request.
      *
