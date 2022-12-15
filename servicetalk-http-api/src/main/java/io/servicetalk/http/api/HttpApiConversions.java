@@ -436,8 +436,11 @@ public final class HttpApiConversions {
 
     /**
      * A holder for {@link StreamingHttpService} that adapts another {@code service} to the streaming programming model.
+     *
+     * @deprecated this interface is not needed anymore and will be removed in a future version with no replacement.
      */
-    public interface ServiceAdapterHolder {
+    @Deprecated
+    public interface ServiceAdapterHolder { // FIXME: 0.43 - remove deprecated interface
 
         /**
          * {@link StreamingHttpService} that adapts another {@code service} to the streaming programming model. This

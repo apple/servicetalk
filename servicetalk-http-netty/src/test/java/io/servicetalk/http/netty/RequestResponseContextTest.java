@@ -133,11 +133,11 @@ class RequestResponseContextTest extends AbstractNettyHttpServerTest {
         assert api != null;
         switch (api) {
             case AsyncAggregated:
-                newService = toStreamingHttpService((HttpService) (ctx, request, responseFactory) -> {
+                newService = toStreamingHttpService(offloadNone(), (HttpService) (ctx, request, responseFactory) -> {
                     HttpResponse response = responseFactory.ok().payloadBody(request.payloadBody());
                     transferContext(request, response);
                     return succeeded(response);
-                }, offloadNone()).adaptor();
+                });
                 break;
             case AsyncStreaming:
                 newService = (ctx, request, responseFactory) -> {
@@ -147,21 +147,22 @@ class RequestResponseContextTest extends AbstractNettyHttpServerTest {
                 };
                 break;
             case BlockingAggregated:
-                newService = toStreamingHttpService((BlockingHttpService) (ctx, request, responseFactory) -> {
+                newService = toStreamingHttpService(offloadNone(),
+                        (BlockingHttpService) (ctx, request, responseFactory) -> {
                     HttpResponse response = responseFactory.ok().payloadBody(request.payloadBody());
                     transferContext(request, response);
                     return response;
-                }, offloadNone()).adaptor();
+                });
                 break;
             case BlockingStreaming:
-                newService = toStreamingHttpService((ctx, request, response) -> {
+                newService = toStreamingHttpService(offloadNone(), (ctx, request, response) -> {
                     transferContext(request, response);
                     try (HttpPayloadWriter<Buffer> writer = response.sendMetaData()) {
                         for (Buffer chunk : request.payloadBody()) {
                             writer.write(chunk);
                         }
                     }
-                }, offloadNone()).adaptor();
+                });
                 break;
             default:
                 throw new IllegalStateException("Unknown api: " + api);

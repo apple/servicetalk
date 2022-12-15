@@ -34,4 +34,9 @@ abstract class AbstractServiceAdapterHolder implements StreamingHttpService, Ser
     public HttpExecutionStrategy serviceInvocationStrategy() {
         return serviceInvocationStrategy;
     }
+
+    @Override
+    public HttpExecutionStrategy requiredOffloads() {
+        return serviceInvocationStrategy;
+    }
 }
