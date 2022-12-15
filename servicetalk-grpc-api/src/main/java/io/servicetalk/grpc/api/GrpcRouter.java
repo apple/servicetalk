@@ -845,8 +845,8 @@ final class GrpcRouter {
         }
     }
 
-    private static void verifyNoOverrides(@Nullable final Object oldValue, final String path,
-                                          final Map<String, ?> alternativeMap) {
+    static void verifyNoOverrides(@Nullable final Object oldValue, final String path,
+                                  final Map<String, ?> alternativeMap) {
         if (oldValue != null || alternativeMap.containsKey(path)) {
             throw new IllegalStateException("Can not override already registered route for path: " + path);
         }
