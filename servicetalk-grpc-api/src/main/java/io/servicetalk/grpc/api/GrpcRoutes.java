@@ -372,7 +372,7 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
             final GrpcExecutionStrategy executionStrategy, MethodDescriptor<Req, Resp> methodDescriptor,
             BufferDecoderGroup decompressors, List<BufferEncoder> compressors, StreamingRoute<Req, Resp> route) {
         final String path = methodDescriptor.httpPath();
-        verifyNoOverrides(null, methodDescriptor.httpPath(), deferredRoutes);
+        verifyNoOverrides(null, path, deferredRoutes);
 
         deferredRoutes.put(path, routeBuilder ->
                 routeBuilder.addStreamingRoute(methodDescriptor, decompressors, compressors, executionStrategy, route));
@@ -424,7 +424,7 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
         final String path = methodDescriptor.httpPath();
         verifyNoOverrides(null, path, deferredRoutes);
 
-        deferredRoutes.put(methodDescriptor.httpPath(), routeBuilder -> {
+        deferredRoutes.put(path, routeBuilder -> {
             final Method method = retrieveMethod(serviceClass, methodDescriptor.javaMethodName(),
                     GrpcServiceContext.class, Publisher.class);
             routeBuilder.addRequestStreamingRoute(methodDescriptor, decompressors, compressors,
