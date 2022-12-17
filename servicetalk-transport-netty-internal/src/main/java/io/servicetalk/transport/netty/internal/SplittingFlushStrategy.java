@@ -33,8 +33,11 @@ import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater
 /**
  * A {@link FlushStrategy} that splits writes into logical write boundaries and manages flush state across those logical
  * write boundaries. Actual flush logic is delegated to an externally provided (and updatable) {@link FlushStrategy}.
+ *
+ * @deprecated This class will be removed in the future releases.
  */
-public final class SplittingFlushStrategy implements FlushStrategy {
+@Deprecated
+public final class SplittingFlushStrategy implements FlushStrategy {    // FIXME: 0.43 - remove deprecated class
     private static final AtomicReferenceFieldUpdater<SplittingFlushStrategy, SplittingWriteEventsListener>
             listenerUpdater = newUpdater(SplittingFlushStrategy.class, SplittingWriteEventsListener.class,
             "listener");
@@ -98,7 +101,10 @@ public final class SplittingFlushStrategy implements FlushStrategy {
 
     /**
      * A provider of {@link FlushBoundary} for each written item.
+     *
+     * @deprecated This interface will be removed in the future releases.
      */
+    @Deprecated
     @FunctionalInterface
     public interface FlushBoundaryProvider {
         /**

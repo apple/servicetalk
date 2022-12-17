@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
@@ -49,7 +48,6 @@ final class BuilderUtils {
                 .ioExecutor(ctx.ioExecutor())
                 .executor(ctx.executor())
                 .bufferAllocator(ctx.bufferAllocator())
-                .executionStrategy(HttpExecutionStrategy.from(ctx.executionStrategy()))
                 .enableWireLogging("servicetalk-tests-wire-logger", TRACE, Boolean.TRUE::booleanValue)
                 .lifecycleObserver(logging("servicetalk-tests-lifecycle-observer-logger", TRACE));
         if (protocols.length > 0) {
