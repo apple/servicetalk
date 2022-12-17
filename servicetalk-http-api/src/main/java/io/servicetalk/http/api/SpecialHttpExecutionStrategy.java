@@ -41,6 +41,11 @@ enum SpecialHttpExecutionStrategy implements HttpExecutionStrategy {
         }
 
         @Override
+        public boolean isRequestResponseOffloaded() {
+            return false;
+        }
+
+        @Override
         public boolean isMetadataReceiveOffloaded() {
             return false;
         }
@@ -90,6 +95,11 @@ enum SpecialHttpExecutionStrategy implements HttpExecutionStrategy {
 
         @Override
         public boolean hasOffloads() {
+            return true;
+        }
+
+        @Override
+        public boolean isRequestResponseOffloaded() {
             return true;
         }
 
