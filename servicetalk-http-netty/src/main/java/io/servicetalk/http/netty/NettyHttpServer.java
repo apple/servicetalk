@@ -49,6 +49,7 @@ import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.SslConfig;
+import io.servicetalk.transport.netty.internal.ChannelCloseUtils;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.transport.netty.internal.CloseHandler.CloseEventObservedException;
@@ -288,7 +289,7 @@ final class NettyHttpServer {
                                             meta.headers(), executionContext().bufferAllocator(), payload,
                                             requireTrailerHeader, headersFactory)));
             toSource(handleRequestAndWriteResponse(requestSingle, handleMultipleRequests))
-                    .subscribe(new ErrorLoggingHttpSubscriber(connection));
+                    .subscribe(new ErrorLoggingHttpSubscriber(this));
         }
 
         @Override
@@ -587,9 +588,9 @@ final class NettyHttpServer {
 
         private static final Logger LOGGER = LoggerFactory.getLogger(ErrorLoggingHttpSubscriber.class);
 
-        private final NettyConnection<Object, Object> connection;
+        private final NettyHttpServerConnection connection;
 
-        ErrorLoggingHttpSubscriber(final NettyConnection<Object, Object> connection) {
+        ErrorLoggingHttpSubscriber(final NettyHttpServerConnection connection) {
             this.connection = connection;
         }
 
@@ -624,14 +625,24 @@ final class NettyHttpServer {
         }
 
         private static void logDecoderException(final DecoderException e,
-                                                final NettyConnection<Object, Object> connection) {
-            LOGGER.warn("{} Can not decode a message, no more requests will be received on this {} {}.", connection,
-                    connection.protocol(), HTTP_2_0.equals(connection.protocol()) ? "stream" : "connection", e);
+                                                final NettyHttpServerConnection connection) {
+            final String whatClosing = HTTP_2_0.compareTo(connection.protocol()) <= 0 ? "stream" : "connection";
+            final boolean isOpen = connection.nettyChannel().isOpen();
+            final String closeStatement = isOpen ? ", closing it" : "";
+            LOGGER.warn("{} Can not decode a message, no more requests will be received on this {} {}{} due to:",
+                    connection, connection.protocol(), whatClosing, closeStatement, e);
+            if (isOpen) {
+                ChannelCloseUtils.close(connection.nettyChannel(), e);
+            }
         }
 
-        private static void logUnexpectedException(final Throwable t, NettyConnection<Object, Object> connection) {
-            LOGGER.debug("{} Unexpected error received, closing {} {} due to:", connection, connection.protocol(),
-                    HTTP_2_0.equals(connection.protocol()) ? "stream" : "connection", t);
+        private static void logUnexpectedException(final Throwable t, NettyHttpServerConnection connection) {
+            final String whatClosing = HTTP_2_0.compareTo(connection.protocol()) <= 0 ? "stream" : "connection";
+            LOGGER.debug("{} Unexpected error received, closing {} {} due to:",
+                    connection, connection.protocol(), whatClosing, t);
+            if (connection.nettyChannel().isOpen()) {
+                ChannelCloseUtils.close(connection.nettyChannel(), t);
+            }
         }
     }
 
