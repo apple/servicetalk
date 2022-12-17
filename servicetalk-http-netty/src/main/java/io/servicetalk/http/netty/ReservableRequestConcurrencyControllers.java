@@ -26,8 +26,10 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
+import io.servicetalk.http.api.FilterableReservedStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -316,6 +318,14 @@ final class ReservableRequestConcurrencyControllers {
                             // Retry reasonable number of times to avoid infinite loops internally.
                             .retry((count, t) -> count <= 32 &&
                                     t instanceof MaxConcurrentStreamsViolatedStacklessHttp2Exception);
+                }
+
+                @Override
+                public Single<? extends FilterableReservedStreamingHttpConnection> reserveConnection(
+                        final HttpRequestMetaData metaData) {
+                    // Pass through. Concurrency controller isn't applied for reserved connections. Users have to manage
+                    // all traffic themselves and should see all exceptions from Netty.
+                    return delegate().reserveConnection(metaData);
                 }
             };
         }
