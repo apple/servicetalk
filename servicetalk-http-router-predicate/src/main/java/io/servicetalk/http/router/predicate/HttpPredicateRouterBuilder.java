@@ -17,7 +17,6 @@ package io.servicetalk.http.router.predicate;
 
 import io.servicetalk.http.api.BlockingHttpService;
 import io.servicetalk.http.api.BlockingStreamingHttpService;
-import io.servicetalk.http.api.HttpApiConversions.ServiceAdapterHolder;
 import io.servicetalk.http.api.HttpCookiePair;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
@@ -259,20 +258,20 @@ public final class HttpPredicateRouterBuilder implements RouteStarter {
 
         @Override
         public RouteStarter thenRouteTo(final HttpService service) {
-            final ServiceAdapterHolder adapterHolder = toStreamingHttpService(service, serviceOffloads(service));
-            return thenRouteTo0(adapterHolder.adaptor(), adapterHolder.serviceInvocationStrategy());
+            final StreamingHttpService streamingService = toStreamingHttpService(serviceOffloads(service), service);
+            return thenRouteTo0(streamingService, streamingService.requiredOffloads());
         }
 
         @Override
         public RouteStarter thenRouteTo(final BlockingHttpService service) {
-            final ServiceAdapterHolder adapterHolder = toStreamingHttpService(service, serviceOffloads(service));
-            return thenRouteTo0(adapterHolder.adaptor(), adapterHolder.serviceInvocationStrategy());
+            final StreamingHttpService streamingService = toStreamingHttpService(serviceOffloads(service), service);
+            return thenRouteTo0(streamingService, streamingService.requiredOffloads());
         }
 
         @Override
         public RouteStarter thenRouteTo(final BlockingStreamingHttpService service) {
-            final ServiceAdapterHolder adapterHolder = toStreamingHttpService(service, serviceOffloads(service));
-            return thenRouteTo0(adapterHolder.adaptor(), adapterHolder.serviceInvocationStrategy());
+            final StreamingHttpService streamingService = toStreamingHttpService(serviceOffloads(service), service);
+            return thenRouteTo0(streamingService, streamingService.requiredOffloads());
         }
 
         private HttpExecutionStrategy serviceOffloads(final HttpExecutionStrategyInfluencer service) {

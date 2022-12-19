@@ -23,7 +23,6 @@ import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ExecutorExtension;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.http.api.HttpApiConversions.ServiceAdapterHolder;
 import io.servicetalk.oio.api.PayloadWriter;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -229,7 +228,7 @@ class BlockingStreamingToStreamingServiceTest {
                 closedCalled.set(true);
             }
         };
-        StreamingHttpService asyncService = toStreamingHttpService(syncService, offloadNone()).adaptor();
+        StreamingHttpService asyncService = toStreamingHttpService(offloadNone(), syncService);
         asyncService.closeAsync().toFuture().get();
         assertThat(closedCalled.get(), is(true));
     }
@@ -250,7 +249,7 @@ class BlockingStreamingToStreamingServiceTest {
                 onErrorLatch.countDown();
             }
         };
-        StreamingHttpService asyncService = toStreamingHttpService(syncService, offloadNone()).adaptor();
+        StreamingHttpService asyncService = toStreamingHttpService(offloadNone(), syncService);
         toSource(asyncService.handle(mockCtx, reqRespFactory.get("/"), reqRespFactory)
                 // Use subscribeOn(Executor) instead of HttpExecutionStrategy#invokeService which returns a flatten
                 // Publisher<Object> to verify that cancellation of Single<StreamingHttpResponse> interrupts the thread
@@ -297,7 +296,7 @@ class BlockingStreamingToStreamingServiceTest {
                 serviceTerminationLatch.countDown();
             }
         };
-        StreamingHttpService asyncService = toStreamingHttpService(syncService, offloadNone()).adaptor();
+        StreamingHttpService asyncService = toStreamingHttpService(offloadNone(), syncService);
         StreamingHttpResponse asyncResponse = asyncService.handle(mockCtx, reqRespFactory.get("/"), reqRespFactory)
                 // Use subscribeOn(Executor) instead of HttpExecutionStrategy#invokeService which returns a flatten
                 // Publisher<Object> to verify that cancellation of Publisher<Buffer> interrupts the thread of handle
@@ -368,7 +367,7 @@ class BlockingStreamingToStreamingServiceTest {
         BlockingStreamingHttpService syncService = (ctx, request, response) -> {
             throw DELIBERATE_EXCEPTION;
         };
-        StreamingHttpService asyncService = toStreamingHttpService(syncService, offloadNone()).adaptor();
+        StreamingHttpService asyncService = toStreamingHttpService(offloadNone(), syncService);
         toSource(asyncService.handle(mockCtx, reqRespFactory.get("/"), reqRespFactory)
                 // Use subscribeOn(Executor) instead of HttpExecutionStrategy#invokeService which returns a flatten
                 // Publisher<Object> to verify that the Single<StreamingHttpResponse> of response meta-data terminates
@@ -403,7 +402,7 @@ class BlockingStreamingToStreamingServiceTest {
             response.sendMetaData();
             throw DELIBERATE_EXCEPTION;
         };
-        StreamingHttpService asyncService = toStreamingHttpService(syncService, offloadNone()).adaptor();
+        StreamingHttpService asyncService = toStreamingHttpService(offloadNone(), syncService);
         StreamingHttpResponse asyncResponse = asyncService.handle(mockCtx, reqRespFactory.get("/"), reqRespFactory)
                 // Use subscribeOn(Executor) instead of HttpExecutionStrategy#invokeService which returns a flatten
                 // Publisher<Object> to verify that the Publisher<Buffer> of payload body terminates with an error
@@ -445,11 +444,11 @@ class BlockingStreamingToStreamingServiceTest {
 
     private List<Object> invokeService(BlockingStreamingHttpService syncService,
                                        StreamingHttpRequest request) throws Exception {
-        ServiceAdapterHolder holder = toStreamingHttpService(syncService, offloadNone());
+        StreamingHttpService streamingService = toStreamingHttpService(offloadNone(), syncService);
 
         Collection<Object> responseCollection =
-                invokeService(holder.serviceInvocationStrategy(), executorExtension.executor(), request,
-                        req -> holder.adaptor().handle(mockCtx, req, reqRespFactory)
+                invokeService(streamingService.requiredOffloads(), executorExtension.executor(), request,
+                        req -> streamingService.handle(mockCtx, req, reqRespFactory)
                                 .flatMapPublisher(response -> Publisher.<Object>from(response)
                                         .concat(response.messageBody())), (t, e) -> failed(t))
                 .toFuture().get();

@@ -288,10 +288,9 @@ public final class HttpApiConversions {
      * @param influencer {@link HttpExecutionStrategyInfluencer} to influence the strategy for invoking the resulting
      * {@link StreamingHttpService}.
      * @return {@link ServiceAdapterHolder} containing the service adapted to the streaming programming model.
-     * @deprecated Use overload with {@link HttpExecutionStrategy} rather than {@link HttpExecutionStrategyInfluencer}
+     * @deprecated Use {@link #toStreamingHttpService(HttpExecutionStrategy, HttpService)} instead.
      */
-    // FIXME: 0.43 - remove deprecated method
-    @Deprecated
+    @Deprecated // FIXME: 0.43 - remove deprecated method
     public static ServiceAdapterHolder toStreamingHttpService(HttpService service,
                                                               HttpExecutionStrategyInfluencer influencer) {
         return toStreamingHttpService(service, influencer.requiredOffloads());
@@ -301,10 +300,23 @@ public final class HttpApiConversions {
      * Convert from a {@link HttpService} to a {@link StreamingHttpService}.
      *
      * @param service The {@link HttpService} to convert.
-     * @param strategy required strategy for the service when invoking the resulting {@link StreamingHttpService}.
+     * @param strategy required strategy for the service when invoking the resulting {@link ServiceAdapterHolder}.
      * @return {@link ServiceAdapterHolder} containing the service adapted to the streaming programming model.
+     * @deprecated use {@link #toStreamingHttpService(HttpExecutionStrategy, HttpService)} instead.
      */
+    @Deprecated // FIXME: 0.43 - remove deprecated method
     public static ServiceAdapterHolder toStreamingHttpService(HttpService service, HttpExecutionStrategy strategy) {
+        return new ServiceToStreamingService(service, strategy);
+    }
+
+    /**
+     * Convert from a {@link HttpService} to a {@link StreamingHttpService}.
+     *
+     * @param service The {@link HttpService} to convert.
+     * @param strategy required strategy for the service when invoking the resulting {@link StreamingHttpService}.
+     * @return the converted {@link StreamingHttpService} to be used for the streaming programming model.
+     */
+    public static StreamingHttpService toStreamingHttpService(HttpExecutionStrategy strategy, HttpService service) {
         return new ServiceToStreamingService(service, strategy);
     }
 
@@ -315,10 +327,9 @@ public final class HttpApiConversions {
      * @param influencer {@link HttpExecutionStrategyInfluencer} to influence the strategy for invoking the resulting
      * {@link StreamingHttpService}.
      * @return {@link ServiceAdapterHolder} containing the service adapted to the streaming programming model.
-     * @deprecated Use overload with {@link HttpExecutionStrategy} rather than {@link HttpExecutionStrategyInfluencer}
+     * @deprecated Use {@link #toStreamingHttpService(HttpExecutionStrategy, BlockingStreamingHttpService)} instead.
      */
-    // FIXME: 0.43 - remove deprecated method
-    @Deprecated
+    @Deprecated // FIXME: 0.43 - remove deprecated method
     public static ServiceAdapterHolder toStreamingHttpService(BlockingStreamingHttpService service,
                                                               HttpExecutionStrategyInfluencer influencer) {
         return toStreamingHttpService(service, influencer.requiredOffloads());
@@ -330,7 +341,9 @@ public final class HttpApiConversions {
      * @param service The {@link BlockingStreamingHttpService} to convert.
      * @param strategy required strategy for the service when invoking the resulting {@link StreamingHttpService}.
      * @return {@link ServiceAdapterHolder} containing the service adapted to the streaming programming model.
+     * @deprecated use {@link #toStreamingHttpService(HttpExecutionStrategy, BlockingStreamingHttpService)} instead.
      */
+    @Deprecated // FIXME: 0.43 - remove deprecated method
     public static ServiceAdapterHolder toStreamingHttpService(BlockingStreamingHttpService service,
                                                               HttpExecutionStrategy strategy) {
         return new BlockingStreamingToStreamingService(service, strategy);
@@ -339,11 +352,23 @@ public final class HttpApiConversions {
     /**
      * Convert from a {@link BlockingStreamingHttpService} to a {@link StreamingHttpService}.
      *
+     * @param strategy required strategy for the service when invoking the resulting {@link StreamingHttpService}.
      * @param service The {@link BlockingStreamingHttpService} to convert.
+     * @return the converted {@link StreamingHttpService} to be used for the streaming programming model.
+     */
+    public static StreamingHttpService toStreamingHttpService(HttpExecutionStrategy strategy,
+                                                              BlockingStreamingHttpService service) {
+        return new BlockingStreamingToStreamingService(service, strategy);
+    }
+
+    /**
+     * Convert from a {@link BlockingHttpService} to a {@link StreamingHttpService}.
+     *
+     * @param service The {@link BlockingHttpService} to convert.
      * @param influencer {@link HttpExecutionStrategyInfluencer} to influence the strategy for invoking the resulting
      * {@link StreamingHttpService}.
      * @return {@link ServiceAdapterHolder} containing the service adapted to the streaming programming model.
-     * @deprecated Use overload with {@link HttpExecutionStrategy} rather than {@link HttpExecutionStrategyInfluencer}
+     * @deprecated Use {@link #toStreamingHttpService(HttpExecutionStrategy, BlockingHttpService)} instead.
      */
     // FIXME: 0.43 - remove deprecated method
     @Deprecated
@@ -353,14 +378,28 @@ public final class HttpApiConversions {
     }
 
     /**
-     * Convert from a {@link BlockingStreamingHttpService} to a {@link StreamingHttpService}.
+     * Convert from a {@link BlockingHttpService} to a {@link StreamingHttpService}.
      *
-     * @param service The {@link BlockingStreamingHttpService} to convert.
-     * @param strategy required strategy for the service when invoking the resulting {@link StreamingHttpService}.
+     * @param service The {@link BlockingHttpService} to convert.
+     * @param strategy required strategy for the service when invoking the resulting {@link ServiceAdapterHolder}.
      * @return {@link ServiceAdapterHolder} containing the service adapted to the streaming programming model.
+     * @deprecated Use {@link #toStreamingHttpService(HttpExecutionStrategy, BlockingHttpService)} instead.
      */
+    @Deprecated // FIXME: 0.43 - Remove deprecation
     public static ServiceAdapterHolder toStreamingHttpService(BlockingHttpService service,
                                                               HttpExecutionStrategy strategy) {
+        return new BlockingToStreamingService(service, strategy);
+    }
+
+    /**
+     * Convert from a {@link BlockingHttpService} to a {@link StreamingHttpService}.
+     *
+     * @param strategy required strategy for the service when invoking the resulting {@link StreamingHttpService}.
+     * @param service The {@link BlockingHttpService} to convert.
+     * @return the converted {@link StreamingHttpService} to be used for the streaming programming model.
+     */
+    public static StreamingHttpService toStreamingHttpService(HttpExecutionStrategy strategy,
+                                                              BlockingHttpService service) {
         return new BlockingToStreamingService(service, strategy);
     }
 
@@ -397,8 +436,11 @@ public final class HttpApiConversions {
 
     /**
      * A holder for {@link StreamingHttpService} that adapts another {@code service} to the streaming programming model.
+     *
+     * @deprecated this interface is not needed anymore and will be removed in a future version with no replacement.
      */
-    public interface ServiceAdapterHolder {
+    @Deprecated
+    public interface ServiceAdapterHolder { // FIXME: 0.43 - remove deprecated interface
 
         /**
          * {@link StreamingHttpService} that adapts another {@code service} to the streaming programming model. This
