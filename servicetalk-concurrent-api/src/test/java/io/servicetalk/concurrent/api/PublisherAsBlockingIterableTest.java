@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Spliterator;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
@@ -33,6 +34,7 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.StreamSupport.stream;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
@@ -364,6 +366,21 @@ final class PublisherAsBlockingIterableTest {
         assertThat(subscription.requested(), is((long) 5));
         source.onComplete();
         assertThat("Item not expected but found.", iterator.hasNext(), is(false));
+    }
+
+    @Test
+    void spscThreads() throws ExecutionException, InterruptedException {
+        Executor executor = Executors.newCachedThreadExecutor();
+        try {
+            int nextExpected = 0;
+            for (Integer integer : Publisher.range(0, 1000000)
+                    .publishOn(executor)
+                    .toIterable(Integer.MAX_VALUE)) {
+                assertThat(integer, equalTo(nextExpected++));
+            }
+        } finally {
+            executor.closeAsync().toFuture().get();
+        }
     }
 
     @Test
