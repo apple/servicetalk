@@ -256,8 +256,8 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
 
     @Override
     public Single<HttpServerContext> listen(final HttpService service) {
-        HttpExecutionStrategy executionStrategy = computeServiceStrategy(HttpService.class, service);
-        StreamingHttpService streamingService = toStreamingHttpService(executionStrategy, service);
+        StreamingHttpService streamingService = toStreamingHttpService(
+                computeServiceStrategy(HttpService.class, service), service);
         return listenForService(streamingService, streamingService.requiredOffloads());
     }
 
@@ -268,15 +268,15 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
 
     @Override
     public Single<HttpServerContext> listenBlocking(final BlockingHttpService service) {
-        HttpExecutionStrategy executionStrategy = computeServiceStrategy(BlockingHttpService.class, service);
-        StreamingHttpService streamingService = toStreamingHttpService(executionStrategy, service);
+        StreamingHttpService streamingService = toStreamingHttpService(
+                computeServiceStrategy(BlockingHttpService.class, service), service);
         return listenForService(streamingService, streamingService.requiredOffloads());
     }
 
     @Override
     public Single<HttpServerContext> listenBlockingStreaming(final BlockingStreamingHttpService service) {
-        HttpExecutionStrategy executionStrategy = computeServiceStrategy(BlockingStreamingHttpService.class, service);
-        StreamingHttpService streamingService = toStreamingHttpService(executionStrategy, service);
+        StreamingHttpService streamingService = toStreamingHttpService(
+                computeServiceStrategy(BlockingStreamingHttpService.class, service), service);
         return listenForService(streamingService, streamingService.requiredOffloads());
     }
 
