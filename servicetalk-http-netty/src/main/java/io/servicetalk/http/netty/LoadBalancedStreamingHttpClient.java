@@ -19,10 +19,12 @@ import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TerminalSignalConsumer;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.context.api.ContextMap.Key;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpConnectionContext;
+import io.servicetalk.http.api.HttpContextKeys;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequestMetaData;
@@ -153,8 +155,16 @@ final class LoadBalancedStreamingHttpClient implements FilterableStreamingHttpCl
     @Override
     public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpRequestMetaData metaData) {
         return Single.defer(() -> {
-            Single<ReservedStreamingHttpConnection> connection =
-                    loadBalancer.selectConnection(SELECTOR_FOR_RESERVE, metaData.context()).map(identity());
+            final ContextMap context = metaData.context();
+            final Boolean forceNew = context.get(HttpContextKeys.HTTP_FORCE_NEW_CONNECTION);
+
+            Single<ReservedStreamingHttpConnection> connection;
+            if (forceNew != null && forceNew) {
+                connection = loadBalancer.newConnection(context).map(identity());
+            } else {
+                connection = loadBalancer.selectConnection(SELECTOR_FOR_RESERVE, context).map(identity());
+            }
+
             final HttpExecutionStrategy strategy = requestExecutionStrategy(metaData,
                     executionContext().executionStrategy());
             return (strategy.isMetadataReceiveOffloaded() || strategy.isDataReceiveOffloaded() ?

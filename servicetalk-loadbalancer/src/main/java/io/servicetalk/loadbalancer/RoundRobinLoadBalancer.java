@@ -344,7 +344,12 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
 
     @Override
     public Single<C> selectConnection(final Predicate<C> selector, @Nullable final ContextMap context) {
-        return defer(() -> selectConnection0(selector, context).shareContextOnSubscribe());
+        return defer(() -> selectConnection0(selector, context, false).shareContextOnSubscribe());
+    }
+
+    @Override
+    public Single<C> newConnection(@Nullable final ContextMap context) {
+        return defer(() -> selectConnection0(c -> true, context, true).shareContextOnSubscribe());
     }
 
     @Override
@@ -360,7 +365,8 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
                 '}';
     }
 
-    private Single<C> selectConnection0(final Predicate<C> selector, @Nullable final ContextMap context) {
+    private Single<C> selectConnection0(final Predicate<C> selector, @Nullable final ContextMap context,
+                                        final boolean forceNewConnectionAndReserve) {
         final List<Host<ResolvedAddress, C>> usedHosts = this.usedHosts;
         if (usedHosts.isEmpty()) {
             return isClosedList(usedHosts) ? failedLBClosed(targetResource) :
@@ -380,29 +386,31 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
             final Host<ResolvedAddress, C> host = usedHosts.get(localCursor);
             assert host != null : "Host can't be null.";
 
-            // Try first to see if an existing connection can be used
-            final Object[] connections = host.connState.connections;
-            // Exhaust the linear search space first:
-            final int linearAttempts = min(connections.length, linearSearchSpace);
-            for (int j = 0; j < linearAttempts; ++j) {
-                @SuppressWarnings("unchecked")
-                final C connection = (C) connections[j];
-                if (selector.test(connection)) {
-                    return succeeded(connection);
-                }
-            }
-            // Try other connections randomly:
-            if (connections.length > linearAttempts) {
-                final int diff = connections.length - linearAttempts;
-                // With small enough search space, attempt number of times equal to number of remaining connections.
-                // Back off after exploring most of the search space, it gives diminishing returns.
-                final int randomAttempts = diff < MIN_RANDOM_SEARCH_SPACE ? diff :
-                        (int) (diff * RANDOM_SEARCH_FACTOR);
-                for (int j = 0; j < randomAttempts; ++j) {
+            if (!forceNewConnectionAndReserve) {
+                // Try first to see if an existing connection can be used
+                final Object[] connections = host.connState.connections;
+                // Exhaust the linear search space first:
+                final int linearAttempts = min(connections.length, linearSearchSpace);
+                for (int j = 0; j < linearAttempts; ++j) {
                     @SuppressWarnings("unchecked")
-                    final C connection = (C) connections[rnd.nextInt(linearAttempts, connections.length)];
+                    final C connection = (C) connections[j];
                     if (selector.test(connection)) {
                         return succeeded(connection);
+                    }
+                }
+                // Try other connections randomly:
+                if (connections.length > linearAttempts) {
+                    final int diff = connections.length - linearAttempts;
+                    // With small enough search space, attempt number of times equal to number of remaining connections.
+                    // Back off after exploring most of the search space, it gives diminishing returns.
+                    final int randomAttempts = diff < MIN_RANDOM_SEARCH_SPACE ? diff :
+                            (int) (diff * RANDOM_SEARCH_FACTOR);
+                    for (int j = 0; j < randomAttempts; ++j) {
+                        @SuppressWarnings("unchecked")
+                        final C connection = (C) connections[rnd.nextInt(linearAttempts, connections.length)];
+                        if (selector.test(connection)) {
+                            return succeeded(connection);
+                        }
                     }
                 }
             }
@@ -431,6 +439,13 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
         }
         return establishConnection
                 .flatMap(newCnx -> {
+                    if (forceNewConnectionAndReserve && !newCnx.tryReserve()) {
+                        return failed(StacklessConnectionRejectedException.newInstance(
+                                "Newly created connection " + newCnx + " for " + targetResource
+                                        + " could not be reserved.",
+                                RoundRobinLoadBalancer.class, "selectConnection0(...)"));
+                    }
+
                     // Invoke the selector before adding the connection to the pool, otherwise, connection can be
                     // used concurrently and hence a new connection can be rejected by the selector.
                     if (!selector.test(newCnx)) {

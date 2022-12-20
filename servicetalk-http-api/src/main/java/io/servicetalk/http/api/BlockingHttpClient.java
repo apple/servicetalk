@@ -21,12 +21,16 @@ package io.servicetalk.http.api;
 public interface BlockingHttpClient extends BlockingHttpRequester {
     /**
      * Reserve a {@link BlockingHttpConnection} based on provided {@link HttpRequestMetaData}.
+     * <p>
+     * If a new connection should be opened instead of potentially reusing an already established one, the
+     * {@link HttpContextKeys#HTTP_FORCE_NEW_CONNECTION} must be set.
      *
      * @param metaData Allows the underlying layers to know what {@link BlockingHttpConnection}s are valid to
      * reserve for future {@link HttpRequest requests} with the same {@link HttpRequestMetaData}.
      * For example this may provide some insight into shard or other info.
      * @return a {@link ReservedBlockingHttpConnection}.
      * @throws Exception if a exception occurs during the reservation process.
+     * @see HttpContextKeys#HTTP_FORCE_NEW_CONNECTION
      */
     ReservedBlockingHttpConnection reserveConnection(HttpRequestMetaData metaData) throws Exception;
 

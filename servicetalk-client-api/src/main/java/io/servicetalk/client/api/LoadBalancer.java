@@ -73,6 +73,26 @@ public interface LoadBalancer<C extends LoadBalancedConnection> extends Listenab
     }
 
     /**
+     * Opens a new connection for a request instead of potentially reusing one.
+     * <p>
+     * If the returned connection is {@link LoadBalancedConnection#releaseAsync() released}, it is returned to the
+     * pool and made available for other connection requests sent via {@link #selectConnection(Predicate, ContextMap)}.
+     * If the connection should not be returned to the pool, it must be explicitly
+     * {@link LoadBalancedConnection#closeAsync() closed} by the caller.
+     *
+     * @param context A {@link ContextMap context} of the caller (e.g. request context) or {@code null} if no context
+     * provided.
+     * @return a {@link Single} that completes with a new connection to use. A
+     * {@link Single#failed(Throwable) failed Single} with {@link NoAvailableHostException} can be returned if no
+     * connection can be created at this time or with {@link ConnectionRejectedException} if a newly created connection
+     * was rejected by this load balancer.
+     */
+    default Single<C> newConnection(@Nullable ContextMap context) {
+        return failed(new UnsupportedOperationException(
+                "LoadBalancer#newConnection(ContextMap) is not supported by " + getClass()));
+    }
+
+    /**
      * A {@link Publisher} of events provided by this {@link LoadBalancer}. This maybe used to broadcast internal state
      * of this {@link LoadBalancer} to provide hints/visibility for external usage.
      * @return A {@link Publisher} of events provided by this {@link LoadBalancer}.
