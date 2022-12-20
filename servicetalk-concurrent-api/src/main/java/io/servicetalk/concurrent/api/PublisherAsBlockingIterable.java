@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedTransferQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import javax.annotation.Nullable;
@@ -39,7 +39,7 @@ import static io.servicetalk.concurrent.api.SubscriberApiUtils.unwrapNullUncheck
 import static io.servicetalk.concurrent.api.SubscriberApiUtils.wrapNull;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.concurrent.internal.TerminalNotification.error;
-import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
+import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.lang.Math.min;
 import static java.lang.Thread.currentThread;
 import static java.util.Objects.requireNonNull;
@@ -101,7 +101,7 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
 
         SubscriberAndIterator(int queueCapacity) {
             requestN = queueCapacity;
-            data = new LinkedTransferQueue<>();
+            data = new LinkedBlockingQueue<>();
         }
 
         @Override
