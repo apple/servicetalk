@@ -51,6 +51,7 @@ final class Words {
     static final String bufferDecoderGroup = "bufferDecoderGroup";
     static final String bufferEncoders = "bufferEncoders";
     static final String strategyFactory = strategy + "Factory";
+    static final String routeExecutionStrategyFactory = "routeExecutionStrategyFactory";
     static final String methodDescriptor = "methodDescriptor";
     static final String methodDescriptors = methodDescriptor + "s";
     static final String javaMethodName = "javaMethodName";
