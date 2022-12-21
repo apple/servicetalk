@@ -137,31 +137,42 @@ class ExecutionStrategyTest {
         ASYNC_DEFAULT {
             @Override
             ServiceFactory getServiceFactory() {
-                return new ServiceFactory(DEFAULT_STRATEGY_ASYNC_SERVICE, STRATEGY_FACTORY);
+                return new ServiceFactory.Builder()
+                        .addService(DEFAULT_STRATEGY_ASYNC_SERVICE)
+                        .routeExecutionStrategyFactory(STRATEGY_FACTORY)
+                        .build();
             }
         },
         ASYNC_CLASS_EXEC_ID {
             @Override
             ServiceFactory getServiceFactory() {
-                return new ServiceFactory(CLASS_EXEC_ID_STRATEGY_ASYNC_SERVICE, STRATEGY_FACTORY);
+                return new ServiceFactory.Builder()
+                        .addService(CLASS_EXEC_ID_STRATEGY_ASYNC_SERVICE)
+                        .routeExecutionStrategyFactory(STRATEGY_FACTORY)
+                        .build();
             }
         },
         ASYNC_CLASS_NO_OFFLOADS {
             @Override
             ServiceFactory getServiceFactory() {
-                return new ServiceFactory(CLASS_NO_OFFLOADS_STRATEGY_ASYNC_SERVICE, STRATEGY_FACTORY);
+                return new ServiceFactory.Builder()
+                        .addService(CLASS_NO_OFFLOADS_STRATEGY_ASYNC_SERVICE)
+                        .routeExecutionStrategyFactory(STRATEGY_FACTORY)
+                        .build();
             }
         },
         ASYNC_METHOD_NO_OFFLOADS {
             @Override
             ServiceFactory getServiceFactory() {
+                // Keeping one deprecated call for now to ensure backwards compatibility until removed.
                 return new ServiceFactory(METHOD_NO_OFFLOADS_STRATEGY_ASYNC_SERVICE, STRATEGY_FACTORY);
             }
         },
         ASYNC_SERVICE_FACTORY_NO_OFFLOADS {
             @Override
             ServiceFactory getServiceFactory() {
-                return new ServiceFactory.Builder(STRATEGY_FACTORY)
+                return new ServiceFactory.Builder()
+                        .routeExecutionStrategyFactory(STRATEGY_FACTORY)
                         .test(offloadNever(), DEFAULT_STRATEGY_ASYNC_SERVICE)
                         .testBiDiStream(offloadNever(), DEFAULT_STRATEGY_ASYNC_SERVICE)
                         .testResponseStream(offloadNever(), DEFAULT_STRATEGY_ASYNC_SERVICE)
@@ -172,31 +183,42 @@ class ExecutionStrategyTest {
         BLOCKING_DEFAULT {
             @Override
             ServiceFactory getServiceFactory() {
-                return new ServiceFactory(DEFAULT_STRATEGY_BLOCKING_SERVICE, STRATEGY_FACTORY);
+                return new ServiceFactory.Builder()
+                        .routeExecutionStrategyFactory(STRATEGY_FACTORY)
+                        .addBlockingService(DEFAULT_STRATEGY_BLOCKING_SERVICE)
+                        .build();
             }
         },
         BLOCKING_CLASS_EXEC_ID {
             @Override
             ServiceFactory getServiceFactory() {
-                return new ServiceFactory(CLASS_EXEC_ID_STRATEGY_BLOCKING_SERVICE, STRATEGY_FACTORY);
+                return new ServiceFactory.Builder()
+                        .routeExecutionStrategyFactory(STRATEGY_FACTORY)
+                        .addBlockingService(CLASS_EXEC_ID_STRATEGY_BLOCKING_SERVICE)
+                        .build();
             }
         },
         BLOCKING_CLASS_NO_OFFLOADS {
             @Override
             ServiceFactory getServiceFactory() {
-                return new ServiceFactory(CLASS_NO_OFFLOADS_STRATEGY_BLOCKING_SERVICE, STRATEGY_FACTORY);
+                return new ServiceFactory.Builder()
+                        .routeExecutionStrategyFactory(STRATEGY_FACTORY)
+                        .addBlockingService(CLASS_NO_OFFLOADS_STRATEGY_BLOCKING_SERVICE)
+                        .build();
             }
         },
         BLOCKING_METHOD_NO_OFFLOADS {
             @Override
             ServiceFactory getServiceFactory() {
+                // Keeping one deprecated call for now to ensure backwards compatibility until removed.
                 return new ServiceFactory(METHOD_NO_OFFLOADS_STRATEGY_BLOCKING_SERVICE, STRATEGY_FACTORY);
             }
         },
         BLOCKING_SERVICE_FACTORY_NO_OFFLOADS {
             @Override
             ServiceFactory getServiceFactory() {
-                return new ServiceFactory.Builder(STRATEGY_FACTORY)
+                return new ServiceFactory.Builder()
+                        .routeExecutionStrategyFactory(STRATEGY_FACTORY)
                         .testBlocking(offloadNever(), DEFAULT_STRATEGY_BLOCKING_SERVICE)
                         .testBiDiStreamBlocking(offloadNever(), DEFAULT_STRATEGY_BLOCKING_SERVICE)
                         .testResponseStreamBlocking(offloadNever(), DEFAULT_STRATEGY_BLOCKING_SERVICE)
