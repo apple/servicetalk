@@ -39,9 +39,9 @@ final class ClientTransportGrpcCallFactory implements GrpcClientCallFactory {
     private final GrpcExecutionContext ctx;
     private final ListenableAsyncCloseable closeable = emptyAsyncCloseable();
 
-    ClientTransportGrpcCallFactory(ClientTransport transport, EventLoopGroup group) {
+    ClientTransportGrpcCallFactory(ClientTransport transport, EventLoopGroup group, boolean isIoThreadSupported) {
         this.transport = transport;
-        ctx = new UtilGrpcExecutionContext(DEFAULT_ALLOCATOR, fromNettyEventLoopGroup(group),
+        ctx = new UtilGrpcExecutionContext(DEFAULT_ALLOCATOR, fromNettyEventLoopGroup(group, isIoThreadSupported),
                 globalExecutionContext().executor());
     }
 

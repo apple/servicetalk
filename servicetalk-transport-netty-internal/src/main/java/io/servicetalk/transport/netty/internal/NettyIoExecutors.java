@@ -130,8 +130,10 @@ public final class NettyIoExecutors {
      * @param ioExecutor {@link IoExecutor} to convert.
      * @return {@link NettyIoExecutor} corresponding to the passed {@link IoExecutor}.
      * @throws IllegalArgumentException If {@link IoExecutor} is not of type {@link NettyIoExecutor}.
+     * @deprecated Use {@link EventLoopAwareNettyIoExecutors#toEventLoopAwareNettyIoExecutor(IoExecutor)}.
      */
-    public static NettyIoExecutor toNettyIoExecutor(IoExecutor ioExecutor) {
+    @Deprecated
+    public static NettyIoExecutor toNettyIoExecutor(IoExecutor ioExecutor) {  // FIXME: 0.43 - remove deprecated method
         requireNonNull(ioExecutor);
         if (ioExecutor instanceof NettyIoExecutor) {
             return (NettyIoExecutor) ioExecutor;
@@ -145,9 +147,11 @@ public final class NettyIoExecutors {
      *
      * @param eventLoop {@link EventLoop} to use to create a new {@link NettyIoExecutor}.
      * @return New {@link NettyIoExecutor} using the passed {@link EventLoop}.
+     * @deprecated Use {@link #fromNettyEventLoop(EventLoop, boolean)}.
      */
-    public static NettyIoExecutor fromNettyEventLoop(EventLoop eventLoop) {
-        return new EventLoopIoExecutor(eventLoop, true);
+    @Deprecated
+    public static NettyIoExecutor fromNettyEventLoop(EventLoop eventLoop) { // FIXME: 0.43 - remove deprecated method
+        return fromNettyEventLoop(eventLoop, false);
     }
 
     /**
@@ -168,9 +172,11 @@ public final class NettyIoExecutors {
      *
      * @param eventLoopGroup {@link EventLoopGroup} to use to create a new {@link NettyIoExecutor}.
      * @return New {@link NettyIoExecutor} using the passed {@link EventLoopGroup}.
+     * @deprecated Use {@link #fromNettyEventLoopGroup(EventLoopGroup, boolean)}.
      */
+    @Deprecated // FIXME: 0.43 - remove deprecated method
     public static NettyIoExecutor fromNettyEventLoopGroup(EventLoopGroup eventLoopGroup) {
-        return new EventLoopGroupIoExecutor(eventLoopGroup, true);
+        return fromNettyEventLoopGroup(eventLoopGroup, false);
     }
 
     /**

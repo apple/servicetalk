@@ -20,10 +20,6 @@ import io.netty.channel.EventLoopGroup;
 
 final class EventLoopIoExecutor extends AbstractNettyIoExecutor<EventLoop> implements EventLoopAwareNettyIoExecutor {
 
-    EventLoopIoExecutor(EventLoop eventLoop, boolean interruptOnCancel) {
-        super(eventLoop, interruptOnCancel);
-    }
-
     EventLoopIoExecutor(EventLoop eventLoop, boolean interruptOnCancel, boolean isIoThreadSupported) {
         super(eventLoop, interruptOnCancel, isIoThreadSupported);
     }

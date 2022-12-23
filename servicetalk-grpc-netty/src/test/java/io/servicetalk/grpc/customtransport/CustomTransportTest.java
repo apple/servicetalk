@@ -67,7 +67,7 @@ class CustomTransportTest {
             }.newClient(new ClientTransportGrpcCallFactory(
                     // Build the client transport, which just calls the server transport directly.
                     (method, requestMessages) -> serverTransport.handle(c, "clientId", method, requestMessages),
-                    ioExecutor.eventLoopGroup()));
+                    ioExecutor.eventLoopGroup(), ioExecutor.isIoThreadSupported()));
 
             // Test using the client.
             assertThat(client.test(newReq("scalar")).toFuture().get(), is(newResp("hello scalar")));

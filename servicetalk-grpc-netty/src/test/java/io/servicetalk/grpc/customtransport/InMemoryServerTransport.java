@@ -36,7 +36,6 @@ import io.servicetalk.grpc.customtransport.Utils.UtilGrpcExecutionContext;
 import io.servicetalk.serializer.api.StreamingDeserializer;
 import io.servicetalk.serializer.api.StreamingSerializer;
 import io.servicetalk.transport.netty.internal.GlobalExecutionContext;
-import io.servicetalk.transport.netty.internal.NettyIoExecutors;
 
 import com.google.rpc.Status;
 import io.netty.channel.Channel;
@@ -57,7 +56,8 @@ import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.grpc.api.GrpcStatusCode.INTERNAL;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNIMPLEMENTED;
-import static io.servicetalk.utils.internal.PlatformDependent.throwException;
+import static io.servicetalk.transport.netty.internal.NettyIoExecutors.fromNettyEventLoop;
+import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
 import static java.lang.Math.ceil;
 import static java.lang.invoke.MethodHandles.lookup;
 import static java.lang.invoke.MethodType.methodType;
@@ -307,7 +307,7 @@ final class InMemoryServerTransport implements ServerTransport {
         // FastThreadLocal to store this info as well.
         GrpcExecutionContext executionContext =
                 EVENT_LOOP_GRPC_EXECUTION_CONTEXT_MAP.computeIfAbsent(channel.eventLoop(), el ->
-                        new UtilGrpcExecutionContext(allocator, NettyIoExecutors.fromNettyEventLoop(el),
+                        new UtilGrpcExecutionContext(allocator, fromNettyEventLoop(el, false),
                                 GlobalExecutionContext.globalExecutionContext().executor()));
 
         serviceContext = new ChannelGrpcServiceContext(channel, executionContext);
