@@ -27,6 +27,8 @@ import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 import io.servicetalk.transport.api.ConnectionInfo.Protocol;
+import io.servicetalk.transport.api.DefaultExecutionContext;
+import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.RetryableException;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
@@ -64,6 +66,7 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverComplete
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlushStrategy;
+import static io.servicetalk.transport.netty.internal.NettyIoExecutors.fromNettyEventLoop;
 import static java.lang.Integer.MAX_VALUE;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -93,15 +96,18 @@ class NettyPipelinedConnectionTest {
 
     @BeforeEach
     void setUp() throws Exception {
+        ExecutionContextUtils.clearThreadLocal();
         channel = new EmbeddedDuplexChannel(false);
         WriteDemandEstimator demandEstimator = mock(WriteDemandEstimator.class);
         writePublisher1 = new TestPublisher<>();
         writePublisher2 = new TestPublisher<>();
         when(demandEstimator.estimateRequestN(anyLong())).then(invocation1 -> MAX_VALUE);
         CloseHandler closeHandler = UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
+        ExecutionContext<?> executionContext = new DefaultExecutionContext<>(DEFAULT_ALLOCATOR,
+                fromNettyEventLoop(channel.eventLoop(), false), immediate(), defaultStrategy());
         final DefaultNettyConnection<Integer, Integer> connection =
-                DefaultNettyConnection.<Integer, Integer>initChannel(channel, DEFAULT_ALLOCATOR,
-                immediate(), null, closeHandler, defaultFlushStrategy(), 0L, null, channel2 -> {
+                DefaultNettyConnection.<Integer, Integer>initChannel(channel, executionContext,
+                closeHandler, defaultFlushStrategy(), 0L, null, channel2 -> {
                     channel2.pipeline().addLast(new ChannelInboundHandlerAdapter() {
                         @Override
                         public void channelRead(ChannelHandlerContext ctx, Object msg) {
@@ -109,7 +115,7 @@ class NettyPipelinedConnectionTest {
                             closeHandler.protocolPayloadEndInbound(ctx);
                         }
                     });
-                }, defaultStrategy(), mock(Protocol.class), NoopConnectionObserver.INSTANCE, true, __ -> false)
+                }, mock(Protocol.class), NoopConnectionObserver.INSTANCE, true, __ -> false)
                         .toFuture().get();
         requester = new NettyPipelinedConnection<>(connection, 8);
     }

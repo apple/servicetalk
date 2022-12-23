@@ -91,6 +91,7 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.api.StreamingHttpRequests.newTransportRequest;
 import static io.servicetalk.http.netty.AbstractStreamingHttpConnection.isSafeToAggregateOrEmpty;
+import static io.servicetalk.http.netty.ExecutionContextUtils.channelExecutionContext;
 import static io.servicetalk.http.netty.HeaderUtils.REQ_EXPECT_CONTINUE;
 import static io.servicetalk.http.netty.HeaderUtils.addResponseTransferEncodingIfNecessary;
 import static io.servicetalk.http.netty.HeaderUtils.canAddResponseContentLength;
@@ -141,18 +142,18 @@ final class NettyHttpServer {
     }
 
     static Single<NettyHttpServerConnection> initChannel(final Channel channel,
-                                                         final HttpExecutionContext httpExecutionContext,
+                                                         final HttpExecutionContext builderExecutionContext,
                                                          final ReadOnlyHttpServerConfig config,
                                                          final ChannelInitializer initializer,
                                                          final StreamingHttpService service,
                                                          final boolean drainRequestPayloadBody,
                                                          final ConnectionObserver observer) {
-        return initChannel(channel, httpExecutionContext, config, initializer, service, drainRequestPayloadBody,
+        return initChannel(channel, builderExecutionContext, config, initializer, service, drainRequestPayloadBody,
                 observer, forPipelinedRequestResponse(false, channel.config()));
     }
 
     private static Single<NettyHttpServerConnection> initChannel(final Channel channel,
-                                                                 final HttpExecutionContext httpExecutionContext,
+                                                                 final HttpExecutionContext builderExecutionContext,
                                                                  final ReadOnlyHttpServerConfig config,
                                                                  final ChannelInitializer initializer,
                                                                  final StreamingHttpService service,
@@ -165,15 +166,15 @@ final class NettyHttpServer {
         }
         final ReadOnlyTcpServerConfig tcpConfig = config.tcpConfig();
         return showPipeline(DefaultNettyConnection.initChannel(channel,
-                httpExecutionContext.bufferAllocator(), httpExecutionContext.executor(),
-                httpExecutionContext.ioExecutor(), closeHandler, tcpConfig.flushStrategy(), tcpConfig.idleTimeoutMs(),
-                tcpConfig.sslConfig(),
-                initializer.andThen(getChannelInitializer(getByteBufAllocator(httpExecutionContext.bufferAllocator()),
-                        h1Config, closeHandler)), httpExecutionContext.executionStrategy(), HTTP_1_1, observer, false,
-                        __ -> false)
+                channelExecutionContext(channel, builderExecutionContext),
+                closeHandler, tcpConfig.flushStrategy(), tcpConfig.idleTimeoutMs(), tcpConfig.sslConfig(),
+                initializer.andThen(getChannelInitializer(
+                        getByteBufAllocator(builderExecutionContext.bufferAllocator()), h1Config, closeHandler)),
+                HTTP_1_1, observer, false, __ -> false)
                 .map(conn -> new NettyHttpServerConnection(conn, service,
                         HTTP_1_1, h1Config.headersFactory(), drainRequestPayloadBody,
-                        config.allowDropTrailersReadFromTransport())), HTTP_1_1, channel);
+                        config.allowDropTrailersReadFromTransport())),
+                HTTP_1_1, channel);
     }
 
     private static ChannelInitializer getChannelInitializer(final ByteBufAllocator alloc, final H1ProtocolConfig config,

@@ -18,6 +18,8 @@ package io.servicetalk.transport.netty.internal;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 import io.servicetalk.transport.api.ConnectionInfo.Protocol;
+import io.servicetalk.transport.api.DefaultExecutionContext;
+import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopConnectionObserver;
 
 import io.netty.buffer.ByteBuf;
@@ -34,6 +36,7 @@ import static io.servicetalk.concurrent.internal.TestTimeoutConstants.DEFAULT_TI
 import static io.servicetalk.transport.api.ExecutionStrategy.offloadAll;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlushStrategy;
+import static io.servicetalk.transport.netty.internal.NettyIoExecutors.fromNettyEventLoop;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -48,9 +51,10 @@ class NettyChannelPublisherRefCountTest {
     @BeforeEach
     public void setUp() throws Exception {
         channel = new EmbeddedDuplexChannel(false);
-        publisher = DefaultNettyConnection.initChannel(channel,
-                        DEFAULT_ALLOCATOR, immediate(), null, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
-                        defaultFlushStrategy(), 0L, null, channel2 -> { }, offloadAll(), mock(Protocol.class),
+        ExecutionContext<?> executionContext = new DefaultExecutionContext<>(DEFAULT_ALLOCATOR,
+                fromNettyEventLoop(channel.eventLoop(), false), immediate(), offloadAll());
+        publisher = DefaultNettyConnection.initChannel(channel, executionContext, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
+                        defaultFlushStrategy(), 0L, null, channel2 -> { }, mock(Protocol.class),
                         NoopConnectionObserver.INSTANCE, true, __ -> false).toFuture().get()
                 .read();
     }
