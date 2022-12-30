@@ -24,6 +24,9 @@ import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
  */
 public final class GrpcExecutionStrategies {
 
+    private static final GrpcExecutionStrategy OFFLOAD_NONE_STRATEGY =
+            new DefaultGrpcExecutionStrategy(HttpExecutionStrategies.offloadNone());
+
     @Deprecated
     private static final GrpcExecutionStrategy NEVER_OFFLOAD_STRATEGY = // FIXME: 0.43 - remove deprecated constant
             new DefaultGrpcExecutionStrategy(HttpExecutionStrategies.offloadNever()) {
@@ -64,13 +67,26 @@ public final class GrpcExecutionStrategies {
      * When merged with another execution strategy the result is always this strategy.
      *
      * @return {@link GrpcExecutionStrategy} that disables all request-response path offloads.
-     * @deprecated Use a custom strategy with no offloads instead;
-     * {@code GrpcExecutionStrategies.customStrategyBuilder().offloadNone().build()}
+     * @see #offloadNone()
+     * @deprecated Use a custom strategy with no offloads instead; (for example {@link #offloadNone()})
      */
     // FIXME: 0.43 - remove deprecated method
     @Deprecated
     public static GrpcExecutionStrategy offloadNever() {
         return NEVER_OFFLOAD_STRATEGY;
+    }
+
+    /**
+     * An {@link GrpcExecutionStrategy} that requires no offloads on the request-response path or transport event path.
+     * <p>
+     * For {@link HttpExecutionStrategyInfluencer}s that do not block, the
+     * {@link HttpExecutionStrategyInfluencer#requiredOffloads()} method should return this value. Unlike
+     * {@link #offloadNever()}, this strategy merges normally with other execution strategy instances.
+     * @return {@link GrpcExecutionStrategy} that requires no request-response path offloads.
+     * @see #offloadNever()
+     */
+    public static GrpcExecutionStrategy offloadNone() {
+        return OFFLOAD_NONE_STRATEGY;
     }
 
     /**
