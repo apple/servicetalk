@@ -60,8 +60,11 @@ public interface ConnectionAcceptor extends AsyncCloseable {
      * applied
      * @return a composed {@link ConnectionAcceptor} that first applies {@code this} {@link ConnectionAcceptor}, and if
      * this is successful then applies {@code after} {@link ConnectionAcceptor}.
+     * @deprecated do not use this method directly, consider appending through higher level APIs
+     * (i.e. {@link ConnectionAcceptorFactoryAppender}).
      */
-    default ConnectionAcceptor append(ConnectionAcceptor after) {
+    @Deprecated
+    default ConnectionAcceptor append(ConnectionAcceptor after) { // FIXME: 0.43 - remove deprecated method
         return new ConnectionAcceptorAppender(this, after);
     }
 

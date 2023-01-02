@@ -18,6 +18,7 @@ package io.servicetalk.client.api;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionAcceptorFactory;
+import io.servicetalk.transport.api.ConnectionAcceptorFactoryAppender;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import org.junit.jupiter.api.Test;
@@ -75,7 +76,7 @@ class ConnectionAcceptorFilterTest {
         FilterOrder first = new FilterOrder(1);
         FilterOrder second = new FilterOrder(2);
 
-        ConnectionAcceptorFactory combined = first.append(second);
+        ConnectionAcceptorFactory combined = new ConnectionAcceptorFactoryAppender(first, second);
 
         ConnectionAcceptor acceptor = combined.create(ConnectionAcceptor.ACCEPT_ALL);
 

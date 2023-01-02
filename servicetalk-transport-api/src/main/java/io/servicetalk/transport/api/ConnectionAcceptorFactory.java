@@ -45,13 +45,13 @@ public interface ConnectionAcceptorFactory extends ExecutionStrategyInfluencer<C
      *     filter1 ⇒ filter2 ⇒ filter3
      * </pre>
      * @param before the function to apply before this function is applied
-     * @return a composed function that first applies the {@code before}
-     * function and then applies this function
+     * @return a composed function that first applies the {@code before} function and then applies this function
+     * @deprecated consider using higher level APIs to merge factories
+     * (or use {@link ConnectionAcceptorFactoryAppender}).
      */
+    @Deprecated // FIXME: 0.43 - remove deprecated method
     default ConnectionAcceptorFactory append(ConnectionAcceptorFactory before) {
-        requireNonNull(before);
-        return withStrategy(service -> create(before.create(service)),
-                this.requiredOffloads().merge(before.requiredOffloads()));
+        return new ConnectionAcceptorFactoryAppender(requireNonNull(before), this);
     }
 
     /**

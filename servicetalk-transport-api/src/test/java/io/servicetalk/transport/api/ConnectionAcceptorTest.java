@@ -52,12 +52,18 @@ class ConnectionAcceptorTest {
 
     @Test
     void factoryAppend() throws Exception {
-        ConnectionAcceptorFactory f = ConnectionAcceptorFactory.identity();
         ConcurrentLinkedQueue<Integer> order = new ConcurrentLinkedQueue<>();
-        f.append(original -> new OrderVerifyingConnectionAcceptor(original, order, 1))
-                .append(original -> new OrderVerifyingConnectionAcceptor(original, order, 2))
-                .append(original -> new OrderVerifyingConnectionAcceptor(original, order, 3))
-                .create(ACCEPT_ALL).accept(context).toFuture().get();
+
+        ConnectionAcceptorFactory first = new ConnectionAcceptorFactoryAppender(
+                original -> new OrderVerifyingConnectionAcceptor(original, order, 1),
+                original -> new OrderVerifyingConnectionAcceptor(original, order, 2)
+        );
+        ConnectionAcceptorFactory f = new ConnectionAcceptorFactoryAppender(
+                first,
+                original -> new OrderVerifyingConnectionAcceptor(original, order, 3)
+        );
+
+        f.create(ACCEPT_ALL).accept(context).toFuture().get();
         assertThat("Unexpected filter order.", order, contains(1, 2, 3));
     }
 
@@ -101,8 +107,8 @@ class ConnectionAcceptorTest {
     }
 
     protected void applyFilters() {
-        ConnectionAcceptorFactory f = (original -> original.append(ctx -> second.accept(ctx)));
-        f = f.append(original -> original.append(ctx -> first.accept(ctx)));
+        ConnectionAcceptorFactory f = (original -> new ConnectionAcceptorAppender(original, second));
+        f = new ConnectionAcceptorFactoryAppender(f, original -> new ConnectionAcceptorAppender(original, first));
         toSource(f.create(ACCEPT_ALL).accept(context)).subscribe(listener);
     }
 
