@@ -19,6 +19,7 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.buffer.api.CharSequences;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
+import io.servicetalk.client.api.ConnectionFactoryFilterAppender;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
@@ -250,7 +251,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                 final ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> proxy =
                         new ProxyConnectConnectionFactoryFilter<>(roConfig.connectAddress());
                 assert !proxy.requiredOffloads().hasOffloads();
-                connectionFactoryFilter = proxy.append(connectionFactoryFilter);
+                connectionFactoryFilter = new ConnectionFactoryFilterAppender<>(proxy, connectionFactoryFilter);
             }
 
             final HttpExecutionStrategy builderStrategy = executionContext.executionStrategy();
@@ -521,7 +522,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> appendConnectionFactoryFilter(
             final ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> factory) {
-        connectionFactoryFilter = connectionFactoryFilter.append(requireNonNull(factory));
+        connectionFactoryFilter = new ConnectionFactoryFilterAppender<>(connectionFactoryFilter,
+                requireNonNull(factory));
         strategyComputation.add(factory);
         return this;
     }
