@@ -20,6 +20,8 @@ import io.servicetalk.transport.api.ConnectExecutionStrategy;
 import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * A contract to decorate {@link ConnectionFactory} instances for the purpose of filtering.
  *
@@ -65,12 +67,14 @@ public interface ConnectionFactoryFilter<ResolvedAddress, C extends ListenableAs
      * @param before the function to apply before this function is applied
      * @return a composed function that first applies the {@code before}
      * function and then applies this function
-     * @deprecated instead consider using higher level append APIs or if not
-     * possible {@link ConnectionFactoryFilterAppender}.
+     * @deprecated consider using higher level client builders to append filters.
      */
     @Deprecated // FIXME: 0.43 - remove deprecated method
     default ConnectionFactoryFilter<ResolvedAddress, C> append(ConnectionFactoryFilter<ResolvedAddress, C> before) {
-        return new ConnectionFactoryFilterAppender<>(this, before);
+        requireNonNull(before);
+        return withStrategy(service -> create(before.create(
+                new DeprecatedToNewConnectionFactoryFilter<ResolvedAddress, C>().create(service))),
+                this.requiredOffloads().merge(before.requiredOffloads()));
     }
 
     /**

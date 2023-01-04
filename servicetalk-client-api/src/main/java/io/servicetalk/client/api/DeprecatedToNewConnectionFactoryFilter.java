@@ -27,7 +27,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.context.api.ContextMap.Key.newKey;
 
 @Deprecated // FIXME: 0.43 - remove as no longer required
-final class DeprecatedToNewConnectionFactoryFilter<ResolvedAddress, C extends ListenableAsyncCloseable>
+public final class DeprecatedToNewConnectionFactoryFilter<ResolvedAddress, C extends ListenableAsyncCloseable>
         implements ConnectionFactoryFilter<ResolvedAddress, C> {
 
     /**

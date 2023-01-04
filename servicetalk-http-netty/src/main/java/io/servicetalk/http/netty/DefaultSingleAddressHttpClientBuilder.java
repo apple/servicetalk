@@ -19,7 +19,7 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.buffer.api.CharSequences;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
-import io.servicetalk.client.api.ConnectionFactoryFilterAppender;
+import io.servicetalk.client.api.DeprecatedToNewConnectionFactoryFilter;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
@@ -251,7 +251,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                 final ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> proxy =
                         new ProxyConnectConnectionFactoryFilter<>(roConfig.connectAddress());
                 assert !proxy.requiredOffloads().hasOffloads();
-                connectionFactoryFilter = new ConnectionFactoryFilterAppender<>(proxy, connectionFactoryFilter);
+                connectionFactoryFilter = appendConnectionFilter(proxy, connectionFactoryFilter);
             }
 
             final HttpExecutionStrategy builderStrategy = executionContext.executionStrategy();
@@ -338,6 +338,25 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
             closeOnException.closeAsync().subscribe();
             throw t;
         }
+    }
+
+    private static <R> ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> appendConnectionFilter(
+            final ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> first,
+            final ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> second) {
+        return new ConnectionFactoryFilter<R, FilterableStreamingHttpConnection>() {
+            @Override
+            public ConnectionFactory<R, FilterableStreamingHttpConnection> create(
+                    final ConnectionFactory<R, FilterableStreamingHttpConnection> original) {
+                return first.create(second.create(
+                        new DeprecatedToNewConnectionFactoryFilter<R, FilterableStreamingHttpConnection>()
+                                .create(original)));
+            }
+
+            @Override
+            public ExecutionStrategy requiredOffloads() {
+                return first.requiredOffloads().merge(second.requiredOffloads());
+            }
+        };
     }
 
     private static StreamingHttpRequestResponseFactory defaultReqRespFactory(ReadOnlyHttpClientConfig roConfig,
@@ -522,8 +541,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> appendConnectionFactoryFilter(
             final ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> factory) {
-        connectionFactoryFilter = new ConnectionFactoryFilterAppender<>(connectionFactoryFilter,
-                requireNonNull(factory));
+        connectionFactoryFilter = appendConnectionFilter(connectionFactoryFilter, requireNonNull(factory));
         strategyComputation.add(factory);
         return this;
     }
