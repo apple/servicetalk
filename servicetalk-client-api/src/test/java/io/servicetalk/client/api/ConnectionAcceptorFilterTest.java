@@ -18,7 +18,6 @@ package io.servicetalk.client.api;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionAcceptorFactory;
-import io.servicetalk.transport.api.ConnectionAcceptorFactoryAppender;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import org.junit.jupiter.api.Test;
@@ -41,7 +40,7 @@ class ConnectionAcceptorFilterTest {
         Deque<Integer> connectOrder = new ArrayDeque<>();
         class AcceptorOrder implements ConnectionAcceptor {
             final int order;
-            ConnectionAcceptor original;
+            final ConnectionAcceptor original;
             AcceptorOrder(int order, ConnectionAcceptor original) {
                 this.order = order;
                 this.original = original;
@@ -76,7 +75,7 @@ class ConnectionAcceptorFilterTest {
         FilterOrder first = new FilterOrder(1);
         FilterOrder second = new FilterOrder(2);
 
-        ConnectionAcceptorFactory combined = new ConnectionAcceptorFactoryAppender(first, second);
+        ConnectionAcceptorFactory combined = original -> first.create(second.create(original));
 
         ConnectionAcceptor acceptor = combined.create(ConnectionAcceptor.ACCEPT_ALL);
 

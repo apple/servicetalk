@@ -46,12 +46,14 @@ public interface ConnectionAcceptorFactory extends ExecutionStrategyInfluencer<C
      * </pre>
      * @param before the function to apply before this function is applied
      * @return a composed function that first applies the {@code before} function and then applies this function
-     * @deprecated consider using higher level APIs to merge factories
-     * (or use {@link ConnectionAcceptorFactoryAppender}).
+     * @deprecated manually appending is going to be removed, consider using higher level APIs (i.e. on the server
+     * builder) instead.
      */
     @Deprecated // FIXME: 0.43 - remove deprecated method
     default ConnectionAcceptorFactory append(ConnectionAcceptorFactory before) {
-        return new ConnectionAcceptorFactoryAppender(requireNonNull(before), this);
+        requireNonNull(before);
+        return withStrategy(service -> create(before.create(service)),
+                this.requiredOffloads().merge(before.requiredOffloads()));
     }
 
     /**

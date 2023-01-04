@@ -54,11 +54,11 @@ class ConnectionAcceptorTest {
     void factoryAppend() throws Exception {
         ConcurrentLinkedQueue<Integer> order = new ConcurrentLinkedQueue<>();
 
-        ConnectionAcceptorFactory first = new ConnectionAcceptorFactoryAppender(
+        ConnectionAcceptorFactory first = append(
                 original -> new OrderVerifyingConnectionAcceptor(original, order, 1),
                 original -> new OrderVerifyingConnectionAcceptor(original, order, 2)
         );
-        ConnectionAcceptorFactory f = new ConnectionAcceptorFactoryAppender(
+        ConnectionAcceptorFactory f = append(
                 first,
                 original -> new OrderVerifyingConnectionAcceptor(original, order, 3)
         );
@@ -108,8 +108,13 @@ class ConnectionAcceptorTest {
 
     protected void applyFilters() {
         ConnectionAcceptorFactory f = (original -> new ConnectionAcceptorAppender(original, second));
-        f = new ConnectionAcceptorFactoryAppender(f, original -> new ConnectionAcceptorAppender(original, first));
+        f = append(f, original -> new ConnectionAcceptorAppender(original, first));
         toSource(f.create(ACCEPT_ALL).accept(context)).subscribe(listener);
+    }
+
+    private static ConnectionAcceptorFactory append(final ConnectionAcceptorFactory first,
+                                                    final ConnectionAcceptorFactory second) {
+        return original -> first.create(second.create(original));
     }
 
     private static class OrderVerifyingConnectionAcceptor extends DelegatingConnectionAcceptor {

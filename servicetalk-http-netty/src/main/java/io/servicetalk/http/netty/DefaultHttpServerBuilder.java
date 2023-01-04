@@ -39,8 +39,9 @@ import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import io.servicetalk.logging.api.LogLevel;
+import io.servicetalk.transport.api.ConnectExecutionStrategy;
+import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionAcceptorFactory;
-import io.servicetalk.transport.api.ConnectionAcceptorFactoryAppender;
 import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 import io.servicetalk.transport.api.IoExecutor;
@@ -142,7 +143,17 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
         if (connectionAcceptorFactory == null) {
             connectionAcceptorFactory = factory;
         } else {
-            connectionAcceptorFactory = new ConnectionAcceptorFactoryAppender(connectionAcceptorFactory, factory);
+            connectionAcceptorFactory = new ConnectionAcceptorFactory() {
+                @Override
+                public ConnectionAcceptor create(final ConnectionAcceptor original) {
+                    return connectionAcceptorFactory.create(factory.create(original));
+                }
+
+                @Override
+                public ConnectExecutionStrategy requiredOffloads() {
+                    return connectionAcceptorFactory.requiredOffloads().merge(factory.requiredOffloads());
+                }
+            };
         }
         return this;
     }
