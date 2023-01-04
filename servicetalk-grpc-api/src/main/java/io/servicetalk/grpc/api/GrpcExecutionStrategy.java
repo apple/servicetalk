@@ -30,7 +30,7 @@ public interface GrpcExecutionStrategy extends HttpExecutionStrategy {
      *
      * @return New {@link GrpcExecutionStrategy} using the passed {@link HttpExecutionStrategy}.
      */
-    static GrpcExecutionStrategy from(HttpExecutionStrategy httpExecutionStrategy) {
+    static GrpcExecutionStrategy from(final HttpExecutionStrategy httpExecutionStrategy) {
         GrpcExecutionStrategy result;
         if (httpExecutionStrategy instanceof GrpcExecutionStrategy) {
             result = (GrpcExecutionStrategy) httpExecutionStrategy;
@@ -38,6 +38,8 @@ public interface GrpcExecutionStrategy extends HttpExecutionStrategy {
             result = GrpcExecutionStrategies.offloadNever();
         } else if (HttpExecutionStrategies.defaultStrategy() == httpExecutionStrategy) {
             result = GrpcExecutionStrategies.defaultStrategy();
+        } else if (HttpExecutionStrategies.offloadNone() == httpExecutionStrategy) {
+            result = GrpcExecutionStrategies.offloadNone();
         } else {
             result = new DefaultGrpcExecutionStrategy(httpExecutionStrategy);
         }

@@ -68,7 +68,7 @@ public final class GrpcExecutionStrategies {
      *
      * @return {@link GrpcExecutionStrategy} that disables all request-response path offloads.
      * @see #offloadNone()
-     * @deprecated Use a custom strategy with no offloads instead; (for example {@link #offloadNone()})
+     * @deprecated Use {@link #offloadNone()} instead.
      */
     // FIXME: 0.43 - remove deprecated method
     @Deprecated
