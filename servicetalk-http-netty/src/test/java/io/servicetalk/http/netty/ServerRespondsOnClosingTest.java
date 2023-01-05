@@ -71,6 +71,7 @@ class ServerRespondsOnClosingTest {
     private final Queue<Exchange> requests = new ArrayDeque<>();
 
     ServerRespondsOnClosingTest() throws Exception {
+        ExecutionContextUtils.clearThreadLocal();
         channel = new EmbeddedDuplexChannel(false);
         DefaultHttpExecutionContext httpExecutionContext = new DefaultHttpExecutionContext(DEFAULT_ALLOCATOR,
                 fromNettyEventLoop(channel.eventLoop()), immediate(), offloadNone());

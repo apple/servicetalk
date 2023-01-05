@@ -19,6 +19,8 @@ import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.test.StepVerifiers;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ConnectionInfo.Protocol;
+import io.servicetalk.transport.api.DefaultExecutionContext;
+import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopConnectionObserver;
 
@@ -33,6 +35,7 @@ import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedRequestResponse;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlushStrategy;
+import static io.servicetalk.transport.netty.internal.NettyIoExecutors.fromNettyEventLoop;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -52,8 +55,11 @@ abstract class AbstractSslCloseNotifyAlertHandlingTest {
     AbstractSslCloseNotifyAlertHandlingTest(boolean isClient) throws Exception {
         channel = new EmbeddedDuplexChannel(false);
         final CloseHandler closeHandler = forPipelinedRequestResponse(isClient, channel.config());
-        conn = DefaultNettyConnection.<String, String>initChannel(channel, DEFAULT_ALLOCATOR, immediate(),
-                        null, closeHandler, defaultFlushStrategy(), 0L, null,
+        ExecutionContext<?> executionContext = new DefaultExecutionContext<>(DEFAULT_ALLOCATOR,
+                fromNettyEventLoop(channel.eventLoop(), false), immediate(),
+                ExecutionStrategy.offloadNone());
+        conn = DefaultNettyConnection.<String, String>initChannel(channel, executionContext, closeHandler,
+                        defaultFlushStrategy(), 0L, null,
                 WIRE_LOGGING_INITIALIZER.andThen(ch -> ch.pipeline().addLast(new ChannelDuplexHandler() {
                     @Override
                     public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
@@ -76,8 +82,7 @@ abstract class AbstractSslCloseNotifyAlertHandlingTest {
                         }
                         ctx.write(msg, promise);
                     }
-                })), ExecutionStrategy.offloadNone(), mock(Protocol.class), NoopConnectionObserver.INSTANCE, isClient,
-                        __ -> false)
+                })), mock(Protocol.class), NoopConnectionObserver.INSTANCE, isClient, __ -> false)
                 .toFuture().get();
     }
 

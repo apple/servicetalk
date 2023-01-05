@@ -19,7 +19,6 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
-import io.servicetalk.http.api.DefaultHttpExecutionContext;
 import io.servicetalk.http.api.HttpConnectionContext;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpProtocolVersion;
@@ -54,9 +53,9 @@ import static io.netty.util.ReferenceCountUtil.release;
 import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
+import static io.servicetalk.http.netty.ExecutionContextUtils.channelExecutionContext;
 import static io.servicetalk.http.netty.NettyHttp2ExceptionUtils.wrapIfNecessary;
 import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.assignConnectionError;
-import static io.servicetalk.transport.netty.internal.NettyIoExecutors.fromNettyEventLoop;
 import static io.servicetalk.transport.netty.internal.NettyPipelineSslUtils.extractSslSessionAndReport;
 import static io.servicetalk.transport.netty.internal.SocketOptionUtils.getOption;
 
@@ -77,9 +76,7 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
                               @Nullable final SslConfig sslConfig,
                               final KeepAliveManager keepAliveManager) {
         super(channel, executionContext.executor());
-        this.executionContext = new DefaultHttpExecutionContext(executionContext.bufferAllocator(),
-                fromNettyEventLoop(channel.eventLoop(), executionContext.ioExecutor().isIoThreadSupported()),
-                executionContext.executor(), executionContext.executionStrategy());
+        this.executionContext = channelExecutionContext(channel, executionContext);
         this.flushStrategyHolder = new FlushStrategyHolder(flushStrategy);
         this.sslConfig = sslConfig;
         this.idleTimeoutMs = idleTimeoutMs;

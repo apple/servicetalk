@@ -23,6 +23,8 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 import io.servicetalk.transport.api.ConnectionInfo.Protocol;
+import io.servicetalk.transport.api.DefaultExecutionContext;
+import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopConnectionObserver;
 
 import io.netty.channel.ChannelDuplexHandler;
@@ -53,6 +55,7 @@ import static io.servicetalk.concurrent.internal.TestTimeoutConstants.DEFAULT_TI
 import static io.servicetalk.transport.api.ExecutionStrategy.offloadAll;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlushStrategy;
+import static io.servicetalk.transport.netty.internal.NettyIoExecutors.fromNettyEventLoop;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -90,9 +93,11 @@ class NettyChannelPublisherTest {
     public void setUp(Predicate<Integer> terminalPredicate) throws Exception {
         channel = new EmbeddedDuplexChannel(false);
         CloseHandler closeHandler = UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
+        ExecutionContext<?> executionContext = new DefaultExecutionContext<>(DEFAULT_ALLOCATOR,
+                fromNettyEventLoop(channel.eventLoop(), false), immediate(), offloadAll());
         NettyConnection<Integer, Object> connection =
-                DefaultNettyConnection.<Integer, Object>initChannel(channel, DEFAULT_ALLOCATOR,
-                immediate(), null, closeHandler, defaultFlushStrategy(), 0L, null, channel ->
+                DefaultNettyConnection.<Integer, Object>initChannel(channel, executionContext, closeHandler,
+                defaultFlushStrategy(), 0L, null, channel ->
                                 channel.pipeline().addLast(new ChannelOutboundHandlerAdapter() {
                 @Override
                 public void read(ChannelHandlerContext ctx) throws Exception {
@@ -107,7 +112,7 @@ class NettyChannelPublisherTest {
                         closeHandler.protocolPayloadEndInbound(ctx);
                     }
                 }
-            }), offloadAll(), mock(Protocol.class), NoopConnectionObserver.INSTANCE, true, __ -> false)
+            }), mock(Protocol.class), NoopConnectionObserver.INSTANCE, true, __ -> false)
                         .toFuture().get();
         publisher = connection.read();
         channel.config().setAutoRead(false);
@@ -126,8 +131,9 @@ class NettyChannelPublisherTest {
         }
         channel = new EmbeddedDuplexChannel(false);
         NettyConnection<Integer, Object> connection = DefaultNettyConnection.<Integer, Object>initChannel(channel,
-                DEFAULT_ALLOCATOR, immediate(), null, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, defaultFlushStrategy(), 0L,
-                null, channel -> {
+                DEFAULT_ALLOCATOR, immediate(), fromNettyEventLoop(channel.eventLoop(), false),
+                        UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, defaultFlushStrategy(), 0L,
+                        null, channel -> {
                     channel.pipeline().addLast(new ChannelDuplexHandler() {
                         @Override
                         public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
