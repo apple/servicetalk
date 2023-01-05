@@ -24,6 +24,8 @@ import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.test.internal.TestCompletableSubscriber;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 import io.servicetalk.transport.api.ConnectionInfo.Protocol;
+import io.servicetalk.transport.api.DefaultExecutionContext;
+import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopConnectionObserver;
 import io.servicetalk.transport.netty.internal.WriteStreamSubscriber.AbortedFirstWriteException;
 
@@ -55,6 +57,7 @@ import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedR
 import static io.servicetalk.transport.netty.internal.FlushStrategies.batchFlush;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlushStrategy;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.flushOnEnd;
+import static io.servicetalk.transport.netty.internal.NettyIoExecutors.fromNettyEventLoop;
 import static java.lang.Integer.MAX_VALUE;
 import static java.nio.charset.Charset.defaultCharset;
 import static java.nio.charset.StandardCharsets.US_ASCII;
@@ -112,10 +115,12 @@ class DefaultNettyConnectionTest {
         demandEstimator = mock(WriteDemandEstimator.class);
         when(demandEstimator.estimateRequestN(anyLong())).then(invocation1 -> (long) requestNext);
         CloseHandler closeHandler = closeHandlerFactory.apply(channel);
-        conn = DefaultNettyConnection.<Buffer, Buffer>initChannel(channel, allocator, executor,
-                null, closeHandler, defaultFlushStrategy(), 0L, null,
+        ExecutionContext<?> executionContext = new DefaultExecutionContext<>(allocator,
+                fromNettyEventLoop(channel.eventLoop(), false), executor, offloadAll());
+        conn = DefaultNettyConnection.<Buffer, Buffer>initChannel(channel, executionContext,
+                closeHandler, defaultFlushStrategy(), 0L, null,
                 trailerProtocolEndEventEmitter(closeHandler),
-                offloadAll(), mock(Protocol.class), NoopConnectionObserver.INSTANCE, true, __ -> false)
+                mock(Protocol.class), NoopConnectionObserver.INSTANCE, true, __ -> false)
                 .toFuture().get();
         publisher = new TestPublisher<>();
     }

@@ -36,6 +36,7 @@ import javax.net.ssl.SNIHostName;
 
 import static io.servicetalk.buffer.netty.BufferUtils.getByteBufAllocator;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
+import static io.servicetalk.http.netty.ExecutionContextUtils.channelExecutionContext;
 import static io.servicetalk.http.netty.HeaderUtils.OBJ_EXPECT_CONTINUE;
 import static io.servicetalk.http.netty.HttpDebugUtils.showPipeline;
 import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedRequestResponse;
@@ -60,17 +61,17 @@ final class StreamingConnectionFactory {
                 observer);
     }
 
-    static Single<? extends DefaultNettyConnection<Object, Object>> createConnection(final Channel channel,
-            final HttpExecutionContext executionContext, final H1ProtocolConfig h1Config,
+    static Single<? extends NettyConnection<Object, Object>> createConnection(final Channel channel,
+            final HttpExecutionContext builderExecutionContext, final H1ProtocolConfig h1Config,
             final ReadOnlyTcpClientConfig tcpConfig, final ChannelInitializer initializer,
             final ConnectionObserver connectionObserver) {
         final CloseHandler closeHandler = forPipelinedRequestResponse(true, channel.config());
-        return showPipeline(DefaultNettyConnection.initChannel(channel, executionContext.bufferAllocator(),
-                executionContext.executor(), executionContext.ioExecutor(), closeHandler,
+        return showPipeline(DefaultNettyConnection.initChannel(channel,
+                channelExecutionContext(channel, builderExecutionContext), closeHandler,
                 tcpConfig.flushStrategy(), tcpConfig.idleTimeoutMs(), tcpConfig.sslConfig(),
                 initializer.andThen(new HttpClientChannelInitializer(
-                        getByteBufAllocator(executionContext.bufferAllocator()), h1Config, closeHandler)),
-                executionContext.executionStrategy(), HTTP_1_1, connectionObserver, true, OBJ_EXPECT_CONTINUE),
+                        getByteBufAllocator(builderExecutionContext.bufferAllocator()), h1Config, closeHandler)),
+                HTTP_1_1, connectionObserver, true, OBJ_EXPECT_CONTINUE),
                 HTTP_1_1, channel);
     }
 
