@@ -176,4 +176,9 @@ public final class TimeoutHttpRequesterFilter extends AbstractTimeoutHttpFilter
             }
         };
     }
+
+    @Override
+    boolean isService() {
+        return false;
+    }
 }

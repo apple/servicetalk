@@ -17,6 +17,7 @@ package io.servicetalk.http.utils;
 
 import io.servicetalk.concurrent.TimeSource;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.DefaultHttpExecutionContext;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpConnectionContext;
@@ -31,6 +32,7 @@ import java.time.Duration;
 import java.util.function.BiFunction;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
+import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -72,6 +74,10 @@ public class TimeoutHttpRequesterFilterTest extends AbstractTimeoutHttpFilterTes
         when(connection.request(any())).thenReturn(responseSingle);
 
         StreamingHttpRequester requester = filterFactory.create(connection);
-        return requester.request(mock(StreamingHttpRequest.class));
+        StreamingHttpRequest request = mock(StreamingHttpRequest.class);
+        ContextMap requestContext = mock(ContextMap.class);
+        when(request.context()).thenReturn(requestContext);
+        when(requestContext.getOrDefault(HTTP_EXECUTION_STRATEGY_KEY, strategy)).thenReturn(strategy);
+        return requester.request(request);
     }
 }

@@ -33,6 +33,7 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.defer;
+import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
 import static io.servicetalk.utils.internal.DurationUtils.ensurePositive;
 import static java.time.Duration.ofNanos;
 import static java.util.Objects.requireNonNull;
@@ -86,6 +87,8 @@ abstract class AbstractTimeoutHttpFilter implements HttpExecutionStrategyInfluen
         this.timeoutExecutor = requireNonNull(timeoutExecutor, "timeoutExecutor");
     }
 
+    abstract boolean isService();
+
     @Override
     public final HttpExecutionStrategy requiredOffloads() {
         return HttpExecutionStrategies.offloadNone();
@@ -108,7 +111,7 @@ abstract class AbstractTimeoutHttpFilter implements HttpExecutionStrategyInfluen
             final ExecutionContext<HttpExecutionStrategy> context) {
         return Single.defer(() -> {
             final Executor useForTimeout = null != this.timeoutExecutor ?
-                    this.timeoutExecutor : contextExecutor(context);
+                    this.timeoutExecutor : contextExecutor(request, context);
             final Duration timeout = timeoutForRequest.apply(request, useForTimeout);
             Single<StreamingHttpResponse> response = responseFunction.apply(request);
             if (null != timeout) {
@@ -133,8 +136,17 @@ abstract class AbstractTimeoutHttpFilter implements HttpExecutionStrategyInfluen
         });
     }
 
-    private static Executor contextExecutor(ExecutionContext<HttpExecutionStrategy> context) {
-        return context.executionStrategy().hasOffloads() ? context.executor() : context.ioExecutor();
+    private Executor contextExecutor(final HttpRequestMetaData requestMetaData,
+                                     final ExecutionContext<HttpExecutionStrategy> context) {
+        if (isService()) {
+            return context.executionStrategy().isSendOffloaded() ? context.executor() : context.ioExecutor();
+        }
+        // For clients, we have to consider the strategy associated with the request.
+        final HttpExecutionStrategy strategy = requestMetaData.context()
+                .getOrDefault(HTTP_EXECUTION_STRATEGY_KEY, context.executionStrategy());
+        assert strategy != null;
+        return strategy.isMetadataReceiveOffloaded() || strategy.isDataReceiveOffloaded() ?
+                context.executor() : context.ioExecutor();
     }
 
     private static final class MappedTimeoutException extends TimeoutException {
