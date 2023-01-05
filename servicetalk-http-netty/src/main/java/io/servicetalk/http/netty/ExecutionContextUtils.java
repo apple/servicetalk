@@ -15,11 +15,13 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.http.api.DelegatingHttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.transport.api.IoExecutor;
 
 import io.netty.channel.Channel;
+import io.netty.channel.EventLoop;
 import io.netty.util.concurrent.FastThreadLocal;
 
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.fromNettyEventLoop;
@@ -32,6 +34,16 @@ final class ExecutionContextUtils {
         // No instances
     }
 
+    /**
+     * Utility that maps {@link Channel#eventLoop()} into {@link IoExecutor} and caches the result for future mappings
+     * to reduce allocations. Because {@link IoExecutor} implements {@link ListenableAsyncCloseable} interface, its
+     * allocation cost is relatively high.
+     *
+     * @param channel {@link Channel} registered for a single {@link EventLoop} thread
+     * @param builderExecutionContext {@link HttpExecutionContext} pre-computed by the builder for new connections
+     * @return {@link HttpExecutionContext} which has {@link IoExecutor} backed by a single {@link EventLoop} thread
+     * associated with the passed {@link Channel}.
+     */
     static HttpExecutionContext channelExecutionContext(final Channel channel,
                                                         final HttpExecutionContext builderExecutionContext) {
         final IoExecutor channelIoExecutor = fromChannel(channel,
