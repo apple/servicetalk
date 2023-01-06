@@ -250,7 +250,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
                 final ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> proxy =
                         new ProxyConnectConnectionFactoryFilter<>(roConfig.connectAddress());
                 assert !proxy.requiredOffloads().hasOffloads();
-                connectionFactoryFilter = proxy.append(connectionFactoryFilter);
+                connectionFactoryFilter = appendConnectionFilter(proxy, connectionFactoryFilter);
             }
 
             final HttpExecutionStrategy builderStrategy = executionContext.executionStrategy();
@@ -337,6 +337,14 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
             closeOnException.closeAsync().subscribe();
             throw t;
         }
+    }
+
+    private static <R> ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> appendConnectionFilter(
+            final ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> first,
+            final ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> second) {
+        // For now this delegates to the deprecated method but needs to be fixed up once the deprecated append
+        // method is being removed.
+        return first.append(second);
     }
 
     private static StreamingHttpRequestResponseFactory defaultReqRespFactory(ReadOnlyHttpClientConfig roConfig,
@@ -521,7 +529,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> appendConnectionFactoryFilter(
             final ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> factory) {
-        connectionFactoryFilter = connectionFactoryFilter.append(requireNonNull(factory));
+        connectionFactoryFilter = appendConnectionFilter(connectionFactoryFilter, requireNonNull(factory));
         strategyComputation.add(factory);
         return this;
     }

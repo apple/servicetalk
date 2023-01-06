@@ -67,7 +67,9 @@ public interface ConnectionFactoryFilter<ResolvedAddress, C extends ListenableAs
      * @param before the function to apply before this function is applied
      * @return a composed function that first applies the {@code before}
      * function and then applies this function
+     * @deprecated consider using higher level client builders to append filters.
      */
+    @Deprecated // FIXME: 0.43 - remove deprecated method
     default ConnectionFactoryFilter<ResolvedAddress, C> append(ConnectionFactoryFilter<ResolvedAddress, C> before) {
         requireNonNull(before);
         return withStrategy(service -> create(before.create(

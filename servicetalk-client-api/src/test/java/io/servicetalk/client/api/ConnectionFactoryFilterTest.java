@@ -54,7 +54,7 @@ class ConnectionFactoryFilterTest {
         Deque<Integer> connectOrder = new ArrayDeque<>();
         class FactoryOrder implements ConnectionFactory<InetSocketAddress, ListenableAsyncCloseable> {
             final int order;
-            ConnectionFactory<InetSocketAddress, ListenableAsyncCloseable> original;
+            final ConnectionFactory<InetSocketAddress, ListenableAsyncCloseable> original;
             FactoryOrder(int order, ConnectionFactory<InetSocketAddress, ListenableAsyncCloseable> original) {
                 this.order = order;
                 this.original = original;
