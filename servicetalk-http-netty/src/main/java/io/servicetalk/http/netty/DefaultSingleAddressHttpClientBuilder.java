@@ -19,7 +19,6 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.buffer.api.CharSequences;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
-import io.servicetalk.client.api.DeprecatedToNewConnectionFactoryFilter;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
@@ -343,20 +342,9 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     private static <R> ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> appendConnectionFilter(
             final ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> first,
             final ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> second) {
-        return new ConnectionFactoryFilter<R, FilterableStreamingHttpConnection>() {
-            @Override
-            public ConnectionFactory<R, FilterableStreamingHttpConnection> create(
-                    final ConnectionFactory<R, FilterableStreamingHttpConnection> original) {
-                return first.create(second.create(
-                        new DeprecatedToNewConnectionFactoryFilter<R, FilterableStreamingHttpConnection>()
-                                .create(original)));
-            }
-
-            @Override
-            public ExecutionStrategy requiredOffloads() {
-                return first.requiredOffloads().merge(second.requiredOffloads());
-            }
-        };
+        // For now this delegates to the deprecated method but needs to be fixed up once the deprecated append
+        // method is being removed.
+        return first.append(second);
     }
 
     private static StreamingHttpRequestResponseFactory defaultReqRespFactory(ReadOnlyHttpClientConfig roConfig,

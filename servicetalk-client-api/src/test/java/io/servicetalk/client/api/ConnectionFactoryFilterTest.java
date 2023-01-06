@@ -97,10 +97,7 @@ class ConnectionFactoryFilterTest {
         FilterOrder first = new FilterOrder(1);
         FilterOrder second = new FilterOrder(2);
 
-        ConnectionFactoryFilter<InetSocketAddress, ListenableAsyncCloseable> combined =
-                original -> first.create(second.create(
-                        new DeprecatedToNewConnectionFactoryFilter<InetSocketAddress, ListenableAsyncCloseable>()
-                                .create(original)));
+        ConnectionFactoryFilter<InetSocketAddress, ListenableAsyncCloseable> combined = first.append(second);
 
         ConnectionFactory<InetSocketAddress, ListenableAsyncCloseable> root = new FactoryOrder(999,
                 new ConnectionFactory<InetSocketAddress, ListenableAsyncCloseable>() {
