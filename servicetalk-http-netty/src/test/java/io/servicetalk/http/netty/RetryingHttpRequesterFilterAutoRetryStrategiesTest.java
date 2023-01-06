@@ -286,6 +286,6 @@ class RetryingHttpRequesterFilterAutoRetryStrategiesTest {
     @Nonnull
     private Completable applyRetry(final ContextAwareRetryingHttpClientFilter filter,
                                    final int count, final Throwable t) {
-        return filter.retryStrategy(immediate(), REQUEST_META_DATA).apply(count, t);
+        return filter.retryStrategy(REQUEST_META_DATA, filter.executionContext()).apply(count, t);
     }
 }

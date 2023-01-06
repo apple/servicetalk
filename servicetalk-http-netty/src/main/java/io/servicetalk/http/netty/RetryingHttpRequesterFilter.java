@@ -39,6 +39,7 @@ import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 import io.servicetalk.transport.api.RetryableException;
 
@@ -58,6 +59,7 @@ import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponential
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoffFullJitter;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HeaderUtils.DEFAULT_HEADER_FILTER;
+import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
 import static io.servicetalk.http.api.HttpHeaderNames.EXPECT;
 import static io.servicetalk.http.api.HttpHeaderValues.CONTINUE;
 import static io.servicetalk.http.api.HttpResponseStatus.EXPECTATION_FAILED;
@@ -120,7 +122,6 @@ public final class RetryingHttpRequesterFilter
 
     final class ContextAwareRetryingHttpClientFilter extends StreamingHttpClientFilter {
 
-        private final Executor executor;
         @Nullable
         private Completable sdStatus;
 
@@ -137,8 +138,6 @@ public final class RetryingHttpRequesterFilter
          */
         private ContextAwareRetryingHttpClientFilter(final FilterableStreamingHttpClient delegate) {
             super(delegate);
-            this.executor = delegate.executionContext().executionStrategy().hasOffloads() ?
-                    delegate.executionContext().executor() : delegate.executionContext().ioExecutor();
         }
 
         void inject(@Nullable final Publisher<Object> lbEventStream,
@@ -203,16 +202,20 @@ public final class RetryingHttpRequesterFilter
         }
 
         // Visible for testing
-        BiIntFunction<Throwable, Completable> retryStrategy(final Executor executor,
-                                                            final HttpRequestMetaData requestMetaData) {
-            return new OuterRetryStrategy(executor, requestMetaData);
+        BiIntFunction<Throwable, Completable> retryStrategy(final HttpRequestMetaData requestMetaData,
+                                                            final ExecutionContext<HttpExecutionStrategy> context) {
+            final HttpExecutionStrategy strategy = requestMetaData.context()
+                    .getOrDefault(HTTP_EXECUTION_STRATEGY_KEY, context.executionStrategy());
+            assert strategy != null;
+            return new OuterRetryStrategy(strategy.isRequestResponseOffloaded() ?
+                    context.executor() : context.ioExecutor(), requestMetaData);
         }
 
         @Override
         public Single<? extends FilterableReservedStreamingHttpConnection> reserveConnection(
                 final HttpRequestMetaData metaData) {
             return delegate().reserveConnection(metaData)
-                    .retryWhen(retryStrategy(executor, metaData));
+                    .retryWhen(retryStrategy(metaData, executionContext()));
         }
 
         @Override
@@ -229,7 +232,7 @@ public final class RetryingHttpRequesterFilter
                 });
             }
 
-            return single.retryWhen(retryStrategy(executor, request));
+            return single.retryWhen(retryStrategy(request, executionContext()));
         }
 
         @Override

@@ -160,7 +160,8 @@ abstract class AbstractTimeoutHttpFilterTest {
                     .flatMapPublisher(StreamingHttpResponse::payloadBody))
                 .thenRequest(MAX_VALUE)
                 .expectErrorMatches(t -> TimeoutException.class.isInstance(t) &&
-                        (Thread.currentThread() instanceof IoThreadFactory.IoThread ^ strategy.hasOffloads()))
+                        (Thread.currentThread() instanceof IoThreadFactory.IoThread ^
+                                strategy.isRequestResponseOffloaded()))
                 .verify();
         assertThat("Response did not succeeded", responseSucceeded.get(), is(true));
         assertThat("No subscribe for payload body", payloadBody.isSubscribed(), is(true));
