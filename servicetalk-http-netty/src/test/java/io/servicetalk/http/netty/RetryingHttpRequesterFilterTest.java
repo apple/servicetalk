@@ -56,6 +56,7 @@ import static io.servicetalk.http.netty.HttpClients.forResolvedAddress;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.http.netty.HttpServers.forAddress;
 import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolicy.ofImmediate;
+import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolicy.ofImmediateBounded;
 import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolicy.ofNoRetries;
 import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.Builder;
 import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.HttpResponseException;
@@ -139,7 +140,7 @@ class RetryingHttpRequesterFilterTest {
                 .appendClientFilter(new Builder()
                         .retryRetryableExceptions((requestMetaData, e) -> ofNoRetries())
                         .retryOther((requestMetaData, throwable) ->
-                                requestMetaData.requestTarget().equals("/retry") ? ofImmediate() :
+                                requestMetaData.requestTarget().equals("/retry") ? ofImmediateBounded() :
                                         ofNoRetries()).build())
                 .buildBlocking();
         assertRequestRetryingPred(failingClient);
@@ -151,7 +152,7 @@ class RetryingHttpRequesterFilterTest {
                 .appendClientFilter((__) -> true, new Builder()
                         .retryRetryableExceptions((requestMetaData, e) -> ofNoRetries())
                         .retryOther((requestMetaData, throwable) ->
-                                requestMetaData.requestTarget().equals("/retry") ? ofImmediate() :
+                                requestMetaData.requestTarget().equals("/retry") ? ofImmediateBounded() :
                                         ofNoRetries()).build())
                 .buildBlocking();
         assertRequestRetryingPred(failingClient);
