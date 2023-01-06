@@ -37,10 +37,6 @@ abstract class AbstractNettyIoExecutor<T extends EventLoopGroup> implements Nett
     protected final boolean interruptOnCancel;
     private final CompletableSource.Processor closingProcessor = newCompletableProcessor();
 
-    AbstractNettyIoExecutor(T eventLoop, boolean interruptOnCancel) {
-        this(eventLoop, interruptOnCancel, false);
-    }
-
     AbstractNettyIoExecutor(T eventLoop, boolean interruptOnCancel, boolean isIoThreadSupported) {
         this.eventLoop = eventLoop;
         this.interruptOnCancel = interruptOnCancel;

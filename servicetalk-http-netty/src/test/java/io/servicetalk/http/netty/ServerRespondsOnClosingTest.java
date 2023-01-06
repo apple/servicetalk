@@ -74,7 +74,7 @@ class ServerRespondsOnClosingTest {
         ExecutionContextUtils.clearThreadLocal();
         channel = new EmbeddedDuplexChannel(false);
         DefaultHttpExecutionContext httpExecutionContext = new DefaultHttpExecutionContext(DEFAULT_ALLOCATOR,
-                fromNettyEventLoop(channel.eventLoop()), immediate(), offloadNone());
+                fromNettyEventLoop(channel.eventLoop(), false), immediate(), offloadNone());
         final HttpServerConfig httpServerConfig = new HttpServerConfig();
         httpServerConfig.tcpConfig().enableWireLogging("servicetalk-tests-wire-logger", TRACE,
                 Boolean.TRUE::booleanValue);
