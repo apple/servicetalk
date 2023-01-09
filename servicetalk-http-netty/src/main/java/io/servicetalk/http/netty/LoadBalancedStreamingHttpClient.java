@@ -156,14 +156,11 @@ final class LoadBalancedStreamingHttpClient implements FilterableStreamingHttpCl
     public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpRequestMetaData metaData) {
         return Single.defer(() -> {
             final ContextMap context = metaData.context();
-            final Boolean forceNew = context.get(HttpContextKeys.HTTP_FORCE_NEW_CONNECTION);
+            final boolean forceNew = Boolean.TRUE.equals(context.get(HttpContextKeys.HTTP_FORCE_NEW_CONNECTION));
 
-            Single<ReservedStreamingHttpConnection> connection;
-            if (forceNew != null && forceNew) {
-                connection = loadBalancer.newConnection(context).map(identity());
-            } else {
-                connection = loadBalancer.selectConnection(SELECTOR_FOR_RESERVE, context).map(identity());
-            }
+            Single<ReservedStreamingHttpConnection> connection = forceNew ?
+                    loadBalancer.newConnection(context).map(identity()) :
+                    loadBalancer.selectConnection(SELECTOR_FOR_RESERVE, context).map(identity());
 
             final HttpExecutionStrategy strategy = requestExecutionStrategy(metaData,
                     executionContext().executionStrategy());

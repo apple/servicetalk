@@ -440,10 +440,10 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
         return establishConnection
                 .flatMap(newCnx -> {
                     if (forceNewConnectionAndReserve && !newCnx.tryReserve()) {
-                        return failed(StacklessConnectionRejectedException.newInstance(
+                        return newCnx.closeAsync().concat(failed(StacklessConnectionRejectedException.newInstance(
                                 "Newly created connection " + newCnx + " for " + targetResource
                                         + " could not be reserved.",
-                                RoundRobinLoadBalancer.class, "selectConnection0(...)"));
+                                RoundRobinLoadBalancer.class, "selectConnection0(...)")));
                     }
 
                     // Invoke the selector before adding the connection to the pool, otherwise, connection can be

@@ -116,7 +116,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 abstract class RoundRobinLoadBalancerTest {
@@ -761,13 +763,7 @@ abstract class RoundRobinLoadBalancerTest {
     @Test
     void registersNewConnections() throws Exception {
         serviceDiscoveryPublisher.onComplete();
-
-        lb = (RoundRobinLoadBalancer<String, TestLoadBalancedConnection>)
-                new RoundRobinLoadBalancerFactory.Builder<String, TestLoadBalancedConnection>()
-                        .healthCheckInterval(ofMillis(50), ofMillis(10))
-                        .backgroundExecutor(testExecutor)
-                        .build()
-                        .newLoadBalancer(serviceDiscoveryPublisher, connectionFactory, "test-service");
+        lb = defaultLb();
 
         assertAddresses(lb.usedAddresses(), EMPTY_ARRAY);
 
@@ -775,10 +771,13 @@ abstract class RoundRobinLoadBalancerTest {
         assertAddresses(lb.usedAddresses(), "address-1");
 
         assertTrue(connectionsCreated.isEmpty());
-        lb.newConnection(null).toFuture().get();
+        TestLoadBalancedConnection conn1 = lb.newConnection(null).toFuture().get();
         assertEquals(1, connectionsCreated.size());
-        lb.newConnection(null).toFuture().get();
+        TestLoadBalancedConnection conn2 = lb.newConnection(null).toFuture().get();
         assertEquals(2, connectionsCreated.size());
+
+        verify(conn1, atLeastOnce()).tryReserve();
+        verify(conn2, atLeastOnce()).tryReserve();
     }
 
     void sendServiceDiscoveryEvents(final ServiceDiscovererEvent... events) {
