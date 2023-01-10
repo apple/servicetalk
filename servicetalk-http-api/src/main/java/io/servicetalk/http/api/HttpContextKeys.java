@@ -47,6 +47,17 @@ public final class HttpContextKeys {
     public static final Key<Object> HTTP_TARGET_ADDRESS_BEHIND_PROXY =
             newKey("HTTP_TARGET_ADDRESS_BEHIND_PROXY", Object.class);
 
+    /**
+     * If set to true, forces creating a new connection versus potentially selecting an already established one.
+     * <p>
+     * This key is only available when reserving a connection and will be ignored when performing a regular
+     * request on the client (for example through {@link HttpClient#request(HttpRequest)}).
+     *
+     * @see HttpClient#reserveConnection(HttpRequestMetaData)
+     */
+    public static final Key<Boolean> HTTP_FORCE_NEW_CONNECTION =
+            newKey("HTTP_FORCE_NEW_CONNECTION", Boolean.class);
+
     private HttpContextKeys() {
         // No instances
     }

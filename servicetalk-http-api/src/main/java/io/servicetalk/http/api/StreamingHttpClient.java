@@ -27,11 +27,15 @@ import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
 public interface StreamingHttpClient extends FilterableStreamingHttpClient, GracefulAutoCloseable {
     /**
      * Reserve a {@link StreamingHttpConnection} based on provided {@link HttpRequestMetaData}.
+     * <p>
+     * If a new connection should be opened instead of potentially reusing an already established one, the
+     * {@link HttpContextKeys#HTTP_FORCE_NEW_CONNECTION} must be set.
      *
      * @param metaData Allows the underlying layers to know what {@link StreamingHttpConnection}s are valid to
      * reserve for future {@link StreamingHttpRequest requests} with the same {@link HttpRequestMetaData}.
      * For example this may provide some insight into shard or other info.
      * @return a {@link Single} that provides the {@link ReservedStreamingHttpConnection} upon completion.
+     * @see HttpContextKeys#HTTP_FORCE_NEW_CONNECTION
      */
     @Override
     Single<ReservedStreamingHttpConnection> reserveConnection(HttpRequestMetaData metaData);

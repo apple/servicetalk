@@ -19,10 +19,12 @@ import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TerminalSignalConsumer;
+import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.context.api.ContextMap.Key;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpConnectionContext;
+import io.servicetalk.http.api.HttpContextKeys;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequestMetaData;
@@ -50,7 +52,6 @@ import static io.servicetalk.http.netty.AbstractStreamingHttpConnection.requestE
 import static io.servicetalk.http.netty.LoadBalancedStreamingHttpClient.OnStreamClosedRunnable.areStreamsSupported;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
-import static java.util.function.Function.identity;
 
 final class LoadBalancedStreamingHttpClient implements FilterableStreamingHttpClient {
 
@@ -153,8 +154,13 @@ final class LoadBalancedStreamingHttpClient implements FilterableStreamingHttpCl
     @Override
     public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpRequestMetaData metaData) {
         return Single.defer(() -> {
-            Single<ReservedStreamingHttpConnection> connection =
-                    loadBalancer.selectConnection(SELECTOR_FOR_RESERVE, metaData.context()).map(identity());
+            final ContextMap context = metaData.context();
+            final boolean forceNew = Boolean.TRUE.equals(context.get(HttpContextKeys.HTTP_FORCE_NEW_CONNECTION));
+
+            Single<FilterableStreamingHttpLoadBalancedConnection> connection = forceNew ?
+                    loadBalancer.newConnection(context) :
+                    loadBalancer.selectConnection(SELECTOR_FOR_RESERVE, context);
+
             final HttpExecutionStrategy strategy = requestExecutionStrategy(metaData,
                     executionContext().executionStrategy());
             return (strategy.isMetadataReceiveOffloaded() || strategy.isDataReceiveOffloaded() ?

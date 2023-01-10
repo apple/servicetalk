@@ -111,11 +111,14 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 abstract class RoundRobinLoadBalancerTest {
@@ -753,6 +756,30 @@ abstract class RoundRobinLoadBalancerTest {
         assertAddresses(lb.usedAddresses(), "address-1");
     }
 
+    /**
+     * This test verifies that the {@link io.servicetalk.client.api.LoadBalancer#newConnection(ContextMap)} API is
+     * supported.
+     */
+    @Test
+    void registersNewConnections() throws Exception {
+        serviceDiscoveryPublisher.onComplete();
+        lb = defaultLb();
+
+        assertAddresses(lb.usedAddresses(), EMPTY_ARRAY);
+
+        sendServiceDiscoveryEvents(upEvent("address-1"));
+        assertAddresses(lb.usedAddresses(), "address-1");
+
+        assertTrue(connectionsCreated.isEmpty());
+        TestLoadBalancedConnection conn1 = lb.newConnection(null).toFuture().get();
+        assertEquals(1, connectionsCreated.size());
+        TestLoadBalancedConnection conn2 = lb.newConnection(null).toFuture().get();
+        assertEquals(2, connectionsCreated.size());
+
+        verify(conn1, times(1)).tryReserve();
+        verify(conn2, times(1)).tryReserve();
+    }
+
     void sendServiceDiscoveryEvents(final ServiceDiscovererEvent... events) {
         sendServiceDiscoveryEvents(serviceDiscoveryPublisher, events);
     }
@@ -847,6 +874,7 @@ abstract class RoundRobinLoadBalancerTest {
         when(cnx.onClosing()).thenReturn(closeable.onClosing());
         when(cnx.address()).thenReturn(address);
         when(cnx.toString()).thenReturn(address + '@' + cnx.hashCode());
+        when(cnx.tryReserve()).thenReturn(true);
 
         connectionsCreated.add(cnx);
         return cnx;
