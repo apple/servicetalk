@@ -29,6 +29,8 @@ import io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer;
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ConnectionObserver.MultiplexedObserver;
 import io.servicetalk.transport.api.ConnectionObserver.StreamObserver;
+import io.servicetalk.transport.api.EarlyConnectionAcceptor;
+import io.servicetalk.transport.api.LateConnectionAcceptor;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.netty.internal.ChannelCloseUtils;
@@ -87,7 +89,9 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                                           final SocketAddress listenAddress,
                                           @Nullable final InfluencerConnectionAcceptor connectionAcceptor,
                                           final StreamingHttpService service,
-                                          final boolean drainRequestPayloadBody) {
+                                          final boolean drainRequestPayloadBody,
+                                          @Nullable final EarlyConnectionAcceptor earlyConnectionAcceptor,
+                                          @Nullable final LateConnectionAcceptor lateConnectionAcceptor) {
         if (config.h2Config() == null) {
             return failed(newH2ConfigException());
         }
@@ -97,7 +101,8 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                 (channel, connectionObserver) -> initChannel(listenAddress, channel, executionContext, config,
                         new TcpServerChannelInitializer(tcpServerConfig, connectionObserver), service,
                         drainRequestPayloadBody, connectionObserver),
-                serverConnection -> { /* nothing to do as h2 uses auto read on the parent channel */ })
+                serverConnection -> { /* nothing to do as h2 uses auto read on the parent channel */ },
+                        earlyConnectionAcceptor, lateConnectionAcceptor)
                 .map(delegate -> {
                     LOGGER.debug("Started HTTP/2 server with prior-knowledge for address {}", delegate.listenAddress());
                     // The ServerContext returned by TcpServerBinder takes care of closing the connectionAcceptor.

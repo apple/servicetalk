@@ -20,7 +20,9 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ConnectionAcceptorFactory;
+import io.servicetalk.transport.api.EarlyConnectionAcceptor;
 import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.transport.api.LateConnectionAcceptor;
 import io.servicetalk.transport.api.ServerSslConfig;
 import io.servicetalk.transport.api.TransportObserver;
 
@@ -125,6 +127,18 @@ public class DelegatingHttpServerBuilder implements HttpServerBuilder {
     @Override
     public HttpServerBuilder appendConnectionAcceptorFilter(final ConnectionAcceptorFactory factory) {
         delegate = delegate.appendConnectionAcceptorFilter(factory);
+        return this;
+    }
+
+    @Override
+    public HttpServerBuilder appendEarlyConnectionAcceptor(final EarlyConnectionAcceptor factory) {
+        delegate = delegate.appendEarlyConnectionAcceptor(factory);
+        return this;
+    }
+
+    @Override
+    public HttpServerBuilder appendLateConnectionAcceptor(final LateConnectionAcceptor factory) {
+        delegate = delegate.appendLateConnectionAcceptor(factory);
         return this;
     }
 

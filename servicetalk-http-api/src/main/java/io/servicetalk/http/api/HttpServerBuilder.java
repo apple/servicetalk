@@ -23,8 +23,10 @@ import io.servicetalk.transport.api.ConnectExecutionStrategy;
 import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionAcceptorFactory;
 import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.EarlyConnectionAcceptor;
 import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.transport.api.LateConnectionAcceptor;
 import io.servicetalk.transport.api.ServerSslConfig;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 import io.servicetalk.transport.api.TransportObserver;
@@ -182,6 +184,10 @@ public interface HttpServerBuilder {
      * @return {@code this}
      */
     HttpServerBuilder appendConnectionAcceptorFilter(ConnectionAcceptorFactory factory);
+
+    HttpServerBuilder appendEarlyConnectionAcceptor(EarlyConnectionAcceptor acceptor);
+
+    HttpServerBuilder appendLateConnectionAcceptor(LateConnectionAcceptor acceptor);
 
     /**
      * Appends a non-offloading filter to the chain of filters used to decorate the {@link StreamingHttpService} used

@@ -47,6 +47,8 @@ import io.servicetalk.tcp.netty.internal.TcpServerBinder;
 import io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ConnectionObserver;
+import io.servicetalk.transport.api.EarlyConnectionAcceptor;
+import io.servicetalk.transport.api.LateConnectionAcceptor;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.netty.internal.ChannelCloseUtils;
@@ -117,7 +119,9 @@ final class NettyHttpServer {
                                           final SocketAddress address,
                                           @Nullable final InfluencerConnectionAcceptor connectionAcceptor,
                                           final StreamingHttpService service,
-                                          final boolean drainRequestPayloadBody) {
+                                          final boolean drainRequestPayloadBody,
+                                          @Nullable final EarlyConnectionAcceptor earlyConnectionAcceptor,
+                                          @Nullable final LateConnectionAcceptor lateConnectionAcceptor) {
         if (config.h1Config() == null) {
             return failed(newH1ConfigException());
         }
@@ -128,7 +132,8 @@ final class NettyHttpServer {
                 (channel, connectionObserver) -> initChannel(channel, executionContext, config,
                         new TcpServerChannelInitializer(tcpServerConfig, connectionObserver), service,
                         drainRequestPayloadBody, connectionObserver),
-                serverConnection -> serverConnection.process(true))
+                serverConnection -> serverConnection.process(true),
+                        earlyConnectionAcceptor, lateConnectionAcceptor)
                 .map(delegate -> {
                     LOGGER.debug("Started HTTP/1.1 server for address {}.", delegate.listenAddress());
                     // The ServerContext returned by TcpServerBinder takes care of closing the connectionAcceptor.

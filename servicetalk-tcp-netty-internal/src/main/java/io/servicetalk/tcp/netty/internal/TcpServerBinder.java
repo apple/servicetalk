@@ -15,18 +15,25 @@
  */
 package io.servicetalk.tcp.netty.internal;
 
+import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ConnectionObserver;
+import io.servicetalk.transport.api.EarlyConnectionAcceptor;
 import io.servicetalk.transport.api.ExecutionContext;
+import io.servicetalk.transport.api.IoThreadFactory;
+import io.servicetalk.transport.api.LateConnectionAcceptor;
+import io.servicetalk.transport.api.ReducedConnectionInfo;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.BuilderUtils;
 import io.servicetalk.transport.netty.internal.ChannelSet;
 import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
 import io.servicetalk.transport.netty.internal.InfluencerConnectionAcceptor;
 import io.servicetalk.transport.netty.internal.NettyConnection;
+import io.servicetalk.transport.netty.internal.NettyIoExecutor;
 import io.servicetalk.transport.netty.internal.NettyServerContext;
 
 import io.netty.bootstrap.ServerBootstrap;
@@ -54,6 +61,7 @@ import static io.servicetalk.transport.netty.internal.BuilderUtils.toNettyAddres
 import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.close;
 import static io.servicetalk.transport.netty.internal.CopyByteBufHandlerChannelInitializer.POOLED_ALLOCATOR;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
+import static io.servicetalk.transport.netty.internal.NettyIoExecutors.fromNettyEventLoop;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -79,6 +87,8 @@ public final class TcpServerBinder {
      * @param connectionFunction Used to create a new {@link NettyConnection} from a {@link Channel}.
      * @param connectionConsumer Used to consume the result of {@code connectionFunction} after initialization and
      * filtering is done. This can be used for protocol specific initialization and to start data flow.
+     * @param earlyConnectionAcceptor the {@link EarlyConnectionAcceptor} to filter newly accepted sockets early.
+     * @param lateConnectionAcceptor the {@link LateConnectionAcceptor} to filter newly accepted sockets.
      * @param <CC> The type of {@link ConnectionContext} that is created for each accepted socket.
      * @return a {@link Single} that completes with a {@link ServerContext} that represents a socket which is bound and
      * listening on the {@code listenAddress}.
@@ -87,7 +97,9 @@ public final class TcpServerBinder {
             final ReadOnlyTcpServerConfig config, final boolean autoRead, final ExecutionContext<?> executionContext,
             @Nullable final InfluencerConnectionAcceptor connectionAcceptor,
             final BiFunction<Channel, ConnectionObserver, Single<CC>> connectionFunction,
-            final Consumer<CC> connectionConsumer) {
+            final Consumer<CC> connectionConsumer,
+            @Nullable final EarlyConnectionAcceptor earlyConnectionAcceptor,
+            @Nullable final LateConnectionAcceptor lateConnectionAcceptor) {
         requireNonNull(connectionFunction);
         requireNonNull(connectionConsumer);
         listenAddress = toNettyAddress(listenAddress);
@@ -125,19 +137,13 @@ public final class TcpServerBinder {
         });
         bs.childHandler(new io.netty.channel.ChannelInitializer<Channel>() {
             @Override
-            protected void initChannel(Channel channel) {
+            protected void initChannel(final Channel channel) {
                 Single<CC> connectionSingle = connectionFunction.apply(channel,
                         config.transportObserver().onNewConnection(channel.localAddress(), channel.remoteAddress()));
-                if (connectionAcceptor != null) {
-                    connectionSingle = connectionSingle.flatMap(conn ->
-                            // Defer is required to isolate context for ConnectionAcceptor#accept and the rest
-                            // of connection processing.
-                            defer(() -> connectionAcceptor.accept(conn).concat(succeeded(conn)))
-                                    // subscribeOn is required to offload calls to connectionAcceptor#accept
-                                    .subscribeOn(connectionAcceptor.requiredOffloads().isConnectOffloaded() ?
-                                        executionContext.executor() : immediate())
-                    );
-                }
+
+                connectionSingle = wrapConnectionAcceptors(connectionSingle, channel, executionContext,
+                        earlyConnectionAcceptor, lateConnectionAcceptor, connectionAcceptor);
+
                 connectionSingle.beforeOnError(cause -> {
                     // Getting the remote-address may involve volatile reads and potentially a syscall, so guard it.
                     if (LOGGER.isDebugEnabled()) {
@@ -167,6 +173,72 @@ public final class TcpServerBinder {
                 });
             }
         };
+    }
+
+    private static <CC extends ConnectionContext> Single<CC> wrapConnectionAcceptors(
+            Single<CC> connection,
+            final Channel channel,
+            final ExecutionContext<?> executionContext,
+            @Nullable final EarlyConnectionAcceptor earlyConnectionAcceptor,
+            @Nullable final LateConnectionAcceptor lateConnectionAcceptor,
+            @Nullable final InfluencerConnectionAcceptor connectionAcceptor) {
+        final Executor offloadExecutor = executionContext.executor();
+
+        if (earlyConnectionAcceptor != null) {
+            ReducedConnectionInfo info = new ReducedConnectionInfo() {
+                @Override
+                public SocketAddress localAddress() {
+                    return channel.localAddress();
+                }
+
+                @Override
+                public SocketAddress remoteAddress() {
+                    return channel.remoteAddress();
+                }
+
+                @Override
+                public ExecutionContext<?> executionContext() {
+                    return executionContext;
+                }
+            };
+
+            final boolean ioThreadSupported = executionContext.ioExecutor().isIoThreadSupported();
+            final NettyIoExecutor ioExecutor = fromNettyEventLoop(channel.eventLoop(), ioThreadSupported);
+
+            final EarlyConnectionAcceptorHandler acceptorHandler = new EarlyConnectionAcceptorHandler();
+            channel.pipeline().addLast(acceptorHandler);
+
+            connection = Completable.defer(() -> earlyConnectionAcceptor.accept(info))
+                    .subscribeOn(offloadExecutor, () -> earlyConnectionAcceptor.requiredOffloads().isConnectOffloaded())
+                    .publishOn(ioExecutor, () -> !IoThreadFactory.IoThread.currentThreadIsIoThread())
+                    .whenOnComplete(acceptorHandler::releaseEvents)
+                    .concat(connection);
+        }
+
+        if (lateConnectionAcceptor != null) {
+            connection = connection.flatMap(conn -> defer(() -> lateConnectionAcceptor
+                    .accept(conn)
+                    .concat(succeeded(conn)))
+                    .subscribeOn(offloadExecutor,
+                            () -> lateConnectionAcceptor.requiredOffloads().isConnectOffloaded() &&
+                                    IoThreadFactory.IoThread.currentThreadIsIoThread())
+            );
+        }
+
+        if (connectionAcceptor != null) {
+            // Defer is required to isolate context for ConnectionAcceptor#accept and the rest
+            // of connection processing.
+            connection = connection.flatMap(conn -> defer(() -> connectionAcceptor
+                    .accept(conn)
+                    .concat(succeeded(conn)))
+                    // subscribeOn is required to offload calls to connectionAcceptor#accept
+                    .subscribeOn(offloadExecutor,
+                            () -> connectionAcceptor.requiredOffloads().isConnectOffloaded() &&
+                                    IoThreadFactory.IoThread.currentThreadIsIoThread())
+            );
+        }
+
+        return connection;
     }
 
     private static void configure(ReadOnlyTcpServerConfig config, boolean autoRead, ServerBootstrap bs,

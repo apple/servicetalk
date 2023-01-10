@@ -39,7 +39,9 @@ import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.transport.api.ConnectionAcceptorFactory;
+import io.servicetalk.transport.api.EarlyConnectionAcceptor;
 import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.transport.api.LateConnectionAcceptor;
 import io.servicetalk.transport.api.ServerSslConfig;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.ExecutionContextBuilder;
@@ -294,6 +296,18 @@ final class DefaultGrpcServerBuilder implements GrpcServerBuilder, ServerBinder 
         @Override
         public HttpServerBuilder appendConnectionAcceptorFilter(final ConnectionAcceptorFactory factory) {
             delegate.appendConnectionAcceptorFilter(factory);
+            return this;
+        }
+
+        @Override
+        public HttpServerBuilder appendEarlyConnectionAcceptor(final EarlyConnectionAcceptor factory) {
+            delegate.appendEarlyConnectionAcceptor(factory);
+            return this;
+        }
+
+        @Override
+        public HttpServerBuilder appendLateConnectionAcceptor(final LateConnectionAcceptor factory) {
+            delegate.appendLateConnectionAcceptor(factory);
             return this;
         }
 
