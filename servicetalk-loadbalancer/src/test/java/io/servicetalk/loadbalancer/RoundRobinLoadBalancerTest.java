@@ -116,8 +116,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -776,8 +776,8 @@ abstract class RoundRobinLoadBalancerTest {
         TestLoadBalancedConnection conn2 = lb.newConnection(null).toFuture().get();
         assertEquals(2, connectionsCreated.size());
 
-        verify(conn1, atLeastOnce()).tryReserve();
-        verify(conn2, atLeastOnce()).tryReserve();
+        verify(conn1, times(1)).tryReserve();
+        verify(conn2, times(1)).tryReserve();
     }
 
     void sendServiceDiscoveryEvents(final ServiceDiscovererEvent... events) {

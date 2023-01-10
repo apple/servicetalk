@@ -52,7 +52,6 @@ import static io.servicetalk.http.netty.AbstractStreamingHttpConnection.requestE
 import static io.servicetalk.http.netty.LoadBalancedStreamingHttpClient.OnStreamClosedRunnable.areStreamsSupported;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
-import static java.util.function.Function.identity;
 
 final class LoadBalancedStreamingHttpClient implements FilterableStreamingHttpClient {
 
@@ -158,9 +157,9 @@ final class LoadBalancedStreamingHttpClient implements FilterableStreamingHttpCl
             final ContextMap context = metaData.context();
             final boolean forceNew = Boolean.TRUE.equals(context.get(HttpContextKeys.HTTP_FORCE_NEW_CONNECTION));
 
-            Single<ReservedStreamingHttpConnection> connection = forceNew ?
-                    loadBalancer.newConnection(context).map(identity()) :
-                    loadBalancer.selectConnection(SELECTOR_FOR_RESERVE, context).map(identity());
+            Single<FilterableStreamingHttpLoadBalancedConnection> connection = forceNew ?
+                    loadBalancer.newConnection(context) :
+                    loadBalancer.selectConnection(SELECTOR_FOR_RESERVE, context);
 
             final HttpExecutionStrategy strategy = requestExecutionStrategy(metaData,
                     executionContext().executionStrategy());
