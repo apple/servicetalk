@@ -16,6 +16,7 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.logging.api.LogLevel;
@@ -185,8 +186,50 @@ public interface HttpServerBuilder {
      */
     HttpServerBuilder appendConnectionAcceptorFilter(ConnectionAcceptorFactory factory);
 
+    /**
+     * Appends the {@link EarlyConnectionAcceptor} to be called when a new connection has been created.
+     * <p>
+     * The order of execution of these acceptors are in order of append. If 3 acceptors are added as follows:
+     * <pre>
+     *     builder
+     *          .appendEarlyConnectionAcceptor(acceptor1)
+     *          .appendEarlyConnectionAcceptor(acceptor2)
+     *          .appendEarlyConnectionAcceptor(acceptor3)
+     * </pre>
+     * the order of invocation of these filters will be:
+     * <pre>
+     *     acceptor1 ⇒ acceptor2 ⇒ acceptor3
+     * </pre>
+     * <p>
+     * The acceptor is offloaded by default. If an acceptor in the chain fails the {@link Completable}, the later ones
+     * will not be called.
+     *
+     * @param acceptor the acceptor to append to the chain of acceptors.
+     * @return this {@link HttpServerBuilder} for chaining purposes.
+     */
     HttpServerBuilder appendEarlyConnectionAcceptor(EarlyConnectionAcceptor acceptor);
 
+    /**
+     * Appends the {@link LateConnectionAcceptor} to be called when a new connection has been created.
+     * <p>
+     * The order of execution of these acceptors are in order of append. If 3 acceptors are added as follows:
+     * <pre>
+     *     builder
+     *          .appendLateConnectionAcceptor(acceptor1)
+     *          .appendLateConnectionAcceptor(acceptor2)
+     *          .appendLateConnectionAcceptor(acceptor3)
+     * </pre>
+     * the order of invocation of these filters will be:
+     * <pre>
+     *     acceptor1 ⇒ acceptor2 ⇒ acceptor3
+     * </pre>
+     * <p>
+     * The acceptor is offloaded by default. If an acceptor in the chain fails the {@link Completable}, the later ones
+     * will not be called.
+     *
+     * @param acceptor the acceptor to append to the chain of acceptors.
+     * @return this {@link HttpServerBuilder} for chaining purposes.
+     */
     HttpServerBuilder appendLateConnectionAcceptor(LateConnectionAcceptor acceptor);
 
     /**

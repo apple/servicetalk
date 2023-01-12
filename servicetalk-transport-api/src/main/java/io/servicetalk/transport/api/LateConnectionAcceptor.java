@@ -20,18 +20,32 @@ import io.servicetalk.concurrent.api.Completable;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
 
+/**
+ * Allows to accept or reject connections later in the connection setup stage.
+ */
 @FunctionalInterface
 public interface LateConnectionAcceptor extends ExecutionStrategyInfluencer<ConnectExecutionStrategy>, AsyncCloseable {
 
+    /**
+     * Accept or reject an incoming connection.
+     *
+     * @param info additional information about the connection to make an acceptance decision.
+     * @return a completed (to accept) or a failed (to reject) {@link Completable}
+     */
     Completable accept(ConnectionInfo info);
+
+    /**
+     * Customize the offloading strategy for this acceptor.
+     *
+     * @return the {@link ConnectExecutionStrategy} for this acceptor.
+     */
+    @Override
+    default ConnectExecutionStrategy requiredOffloads() {
+        return ConnectExecutionStrategy.offloadAll();
+    }
 
     @Override
     default Completable closeAsync() {
         return completed();
-    }
-
-    @Override
-    default ConnectExecutionStrategy requiredOffloads() {
-        return ConnectExecutionStrategy.offloadAll();
     }
 }

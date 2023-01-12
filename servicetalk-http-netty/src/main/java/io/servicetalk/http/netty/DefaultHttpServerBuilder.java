@@ -410,6 +410,12 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
                 builderStrategy.hasOffloads() ? builderStrategy.merge(computedStrategy) : builderStrategy;
     }
 
+    /**
+     * Combines all early acceptors into one by concatenating the callbacks and merging their execution strategies.
+     *
+     * @param acceptors the acceptors to combine into one.
+     * @return the combined acceptor with merged execution strategies.
+     */
     @Nullable
     private EarlyConnectionAcceptor buildEarlyConnectionAcceptor(final List<EarlyConnectionAcceptor> acceptors) {
         return acceptors
@@ -428,6 +434,12 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
                 .orElse(null);
     }
 
+    /**
+     * Combines all late acceptors into one by concatenating their callbacks and merging their execution strategies.
+     *
+     * @param acceptors the acceptors to combine into one.
+     * @return the combined acceptor with merged execution strategies.
+     */
     @Nullable
     private LateConnectionAcceptor buildLateConnectionAcceptor(final List<LateConnectionAcceptor> acceptors) {
         return acceptors

@@ -23,6 +23,9 @@ import java.util.NoSuchElementException;
 import java.util.Queue;
 import javax.annotation.Nullable;
 
+/**
+ * Netty handler which queues pipeline events until {@link #releaseEvents()} is called or the handler is removed.
+ */
 class EarlyConnectionAcceptorHandler extends ChannelInboundHandlerAdapter {
 
     private final Queue<Runnable> queuedEvents = new ArrayDeque<>();
@@ -30,6 +33,9 @@ class EarlyConnectionAcceptorHandler extends ChannelInboundHandlerAdapter {
     @Nullable
     private ChannelHandlerContext channelHandlerContext;
 
+    /**
+     * Releases all queued events and disables further queueing (all further events will be propagated immediately).
+     */
     public void releaseEvents() {
         assert channelHandlerContext != null;
 
@@ -55,7 +61,7 @@ class EarlyConnectionAcceptorHandler extends ChannelInboundHandlerAdapter {
     private void enqueueOrRunEvent(final Runnable event) {
         if (queueingEnabled) {
             if (!queuedEvents.offer(event)) {
-                throw new RuntimeException("Failed to queue events during early connection acceptance");
+                throw new RuntimeException("Failed to enqueue (offer) events for the EarlyConnectionAcceptor");
             }
         } else {
             event.run();

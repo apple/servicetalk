@@ -175,6 +175,18 @@ public final class TcpServerBinder {
         };
     }
 
+    /**
+     * Wraps the connection function with early and late acceptors.
+     *
+     * @param connection the connection function which establishes the pipeline.
+     * @param channel the netty channel on which the connection is run.
+     * @param executionContext The {@link ExecutionContext} to use for the bind socket.
+     * @param earlyConnectionAcceptor the {@link EarlyConnectionAcceptor} to filter newly accepted sockets early.
+     * @param lateConnectionAcceptor the {@link LateConnectionAcceptor} to filter newly accepted sockets.
+     * @param connectionAcceptor The {@link ConnectionAcceptor} used to filter newly accepted sockets.
+     * @param <CC> The type of {@link ConnectionContext} that is created for each accepted socket.
+     * @return the wrapped connection function with the connection acceptors (if any).
+     */
     private static <CC extends ConnectionContext> Single<CC> wrapConnectionAcceptors(
             Single<CC> connection,
             final Channel channel,
