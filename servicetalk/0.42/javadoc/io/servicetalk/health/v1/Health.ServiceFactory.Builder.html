@@ -110,7 +110,9 @@ loadScripts(document, 'script');</script>
 </div>
 <div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(io.servicetalk.router.api.RouteExecutionStrategyFactory)" class="member-name-link">Builder</a><wbr>(<a href="../../router/api/RouteExecutionStrategyFactory.html" title="interface in io.servicetalk.router.api">RouteExecutionStrategyFactory</a>&lt;<a href="../../grpc/api/GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api">GrpcExecutionStrategy</a>&gt;&nbsp;strategyFactory)</code></div>
 <div class="col-last odd-row-color">
-<div class="block">Create a new instance.</div>
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">use <a href="#routeExecutionStrategyFactory(io.servicetalk.router.api.RouteExecutionStrategyFactory)"><code>routeExecutionStrategyFactory(RouteExecutionStrategyFactory)</code></a> on the Builder instead.</div>
+</div>
 </div>
 <div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(io.servicetalk.router.api.RouteExecutionStrategyFactory,java.util.List)" class="member-name-link">Builder</a><wbr>(<a href="../../router/api/RouteExecutionStrategyFactory.html" title="interface in io.servicetalk.router.api">RouteExecutionStrategyFactory</a>&lt;<a href="../../grpc/api/GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api">GrpcExecutionStrategy</a>&gt;&nbsp;strategyFactory,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="../../encoding/api/ContentCodec.html" title="interface in io.servicetalk.encoding.api">ContentCodec</a>&gt;&nbsp;supportedMessageCodings)</code></div>
@@ -186,19 +188,24 @@ loadScripts(document, 'script');</script>
 <div class="block"><span class="deprecated-label">Deprecated.</span></div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="Health.ServiceFactory.Builder.html" title="class in io.servicetalk.health.v1">Health.ServiceFactory.Builder</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#watch(io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.health.v1.Health.WatchRpc)" class="member-name-link">watch</a><wbr>(<a href="../../grpc/api/GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api">GrpcExecutionStrategy</a>&nbsp;strategy,
- <a href="Health.WatchRpc.html" title="interface in io.servicetalk.health.v1">Health.WatchRpc</a>&nbsp;rpc)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#routeExecutionStrategyFactory(io.servicetalk.router.api.RouteExecutionStrategyFactory)" class="member-name-link">routeExecutionStrategyFactory</a><wbr>(<a href="../../router/api/RouteExecutionStrategyFactory.html" title="interface in io.servicetalk.router.api">RouteExecutionStrategyFactory</a>&lt;<a href="../../grpc/api/GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api">GrpcExecutionStrategy</a>&gt;&nbsp;strategyFactory)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Setter for the <a href="../../router/api/RouteExecutionStrategyFactory.html" title="interface in io.servicetalk.router.api"><code>RouteExecutionStrategyFactory</code></a>, intended to be made public by implementations.</div>
+</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="Health.ServiceFactory.Builder.html" title="class in io.servicetalk.health.v1">Health.ServiceFactory.Builder</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#watch(io.servicetalk.health.v1.Health.WatchRpc)" class="member-name-link">watch</a><wbr>(<a href="Health.WatchRpc.html" title="interface in io.servicetalk.health.v1">Health.WatchRpc</a>&nbsp;rpc)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#watch(io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.health.v1.Health.WatchRpc)" class="member-name-link">watch</a><wbr>(<a href="../../grpc/api/GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api">GrpcExecutionStrategy</a>&nbsp;strategy,
+ <a href="Health.WatchRpc.html" title="interface in io.servicetalk.health.v1">Health.WatchRpc</a>&nbsp;rpc)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="Health.ServiceFactory.Builder.html" title="class in io.servicetalk.health.v1">Health.ServiceFactory.Builder</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#watchBlocking(io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.health.v1.Health.BlockingWatchRpc)" class="member-name-link">watchBlocking</a><wbr>(<a href="../../grpc/api/GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api">GrpcExecutionStrategy</a>&nbsp;strategy,
- <a href="Health.BlockingWatchRpc.html" title="interface in io.servicetalk.health.v1">Health.BlockingWatchRpc</a>&nbsp;rpc)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#watch(io.servicetalk.health.v1.Health.WatchRpc)" class="member-name-link">watch</a><wbr>(<a href="Health.WatchRpc.html" title="interface in io.servicetalk.health.v1">Health.WatchRpc</a>&nbsp;rpc)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="Health.ServiceFactory.Builder.html" title="class in io.servicetalk.health.v1">Health.ServiceFactory.Builder</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#watchBlocking(io.servicetalk.health.v1.Health.BlockingWatchRpc)" class="member-name-link">watchBlocking</a><wbr>(<a href="Health.BlockingWatchRpc.html" title="interface in io.servicetalk.health.v1">Health.BlockingWatchRpc</a>&nbsp;rpc)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#watchBlocking(io.servicetalk.grpc.api.GrpcExecutionStrategy,io.servicetalk.health.v1.Health.BlockingWatchRpc)" class="member-name-link">watchBlocking</a><wbr>(<a href="../../grpc/api/GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api">GrpcExecutionStrategy</a>&nbsp;strategy,
+ <a href="Health.BlockingWatchRpc.html" title="interface in io.servicetalk.health.v1">Health.BlockingWatchRpc</a>&nbsp;rpc)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="Health.ServiceFactory.Builder.html" title="class in io.servicetalk.health.v1">Health.ServiceFactory.Builder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#watchBlocking(io.servicetalk.health.v1.Health.BlockingWatchRpc)" class="member-name-link">watchBlocking</a><wbr>(<a href="Health.BlockingWatchRpc.html" title="interface in io.servicetalk.health.v1">Health.BlockingWatchRpc</a>&nbsp;rpc)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 </div>
 </div>
 </div>
@@ -244,7 +251,11 @@ loadScripts(document, 'script');</script>
 <li>
 <section class="detail" id="&lt;init&gt;(io.servicetalk.router.api.RouteExecutionStrategyFactory)">
 <h3>Builder</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">Builder</span><wbr><span class="parameters">(<a href="../../router/api/RouteExecutionStrategyFactory.html" title="interface in io.servicetalk.router.api">RouteExecutionStrategyFactory</a>&lt;<a href="../../grpc/api/GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api">GrpcExecutionStrategy</a>&gt;&nbsp;strategyFactory)</span></div>
+<div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">public</span>&nbsp;<span class="element-name">Builder</span><wbr><span class="parameters">(<a href="../../router/api/RouteExecutionStrategyFactory.html" title="interface in io.servicetalk.router.api">RouteExecutionStrategyFactory</a>&lt;<a href="../../grpc/api/GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api">GrpcExecutionStrategy</a>&gt;&nbsp;strategyFactory)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">use <a href="#routeExecutionStrategyFactory(io.servicetalk.router.api.RouteExecutionStrategyFactory)"><code>routeExecutionStrategyFactory(RouteExecutionStrategyFactory)</code></a> on the Builder instead.</div>
+</div>
 <div class="block">Create a new instance.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
@@ -287,6 +298,22 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="bufferEncoders(java.util.List)">
 <h3>bufferEncoders</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="Health.ServiceFactory.Builder.html" title="class in io.servicetalk.health.v1">Health.ServiceFactory.Builder</a></span>&nbsp;<span class="element-name">bufferEncoders</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="../../encoding/api/BufferEncoder.html" title="interface in io.servicetalk.encoding.api">BufferEncoder</a>&gt;&nbsp;bufferEncoders)</span></div>
+</section>
+</li>
+<li>
+<section class="detail" id="routeExecutionStrategyFactory(io.servicetalk.router.api.RouteExecutionStrategyFactory)">
+<h3>routeExecutionStrategyFactory</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="Health.ServiceFactory.Builder.html" title="class in io.servicetalk.health.v1">Health.ServiceFactory.Builder</a></span>&nbsp;<span class="element-name">routeExecutionStrategyFactory</span><wbr><span class="parameters">(<a href="../../router/api/RouteExecutionStrategyFactory.html" title="interface in io.servicetalk.router.api">RouteExecutionStrategyFactory</a>&lt;<a href="../../grpc/api/GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api">GrpcExecutionStrategy</a>&gt;&nbsp;strategyFactory)</span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from class:&nbsp;<code><a href="../../grpc/api/GrpcRoutes.html#routeExecutionStrategyFactory(io.servicetalk.router.api.RouteExecutionStrategyFactory)">GrpcRoutes</a></code></span></div>
+<div class="block">Setter for the <a href="../../router/api/RouteExecutionStrategyFactory.html" title="interface in io.servicetalk.router.api"><code>RouteExecutionStrategyFactory</code></a>, intended to be made public by implementations.</div>
+<dl class="notes">
+<dt>Overrides:</dt>
+<dd><code><a href="../../grpc/api/GrpcRoutes.html#routeExecutionStrategyFactory(io.servicetalk.router.api.RouteExecutionStrategyFactory)">routeExecutionStrategyFactory</a></code>&nbsp;in class&nbsp;<code><a href="../../grpc/api/GrpcRoutes.html" title="class in io.servicetalk.grpc.api">GrpcRoutes</a>&lt;<a href="Health.HealthService.html" title="interface in io.servicetalk.health.v1">Health.HealthService</a>&gt;</code></dd>
+<dt>Parameters:</dt>
+<dd><code>strategyFactory</code> - the factory to set.</dd>
+<dt>Returns:</dt>
+<dd>this instance for chaining purposes.</dd>
+</dl>
 </section>
 </li>
 <li>

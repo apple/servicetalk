@@ -709,7 +709,7 @@ loadScripts(document, 'script');</script>
 </li>
 </ul>
 </li>
-<li class="circle">io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpService.html" class="type-name-link" title="interface in io.servicetalk.http.api">HttpService</a> (also extends io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpExecutionStrategyInfluencer.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategyInfluencer</a>)</li>
+<li class="circle">io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpService.html" class="type-name-link" title="interface in io.servicetalk.http.api">HttpService</a> (also extends io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpServiceBase.html" title="interface in io.servicetalk.http.api">HttpServiceBase</a>)</li>
 <li class="circle">io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/ListenableAsyncCloseable.html" class="type-name-link" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a>
 <ul>
 <li class="circle">io.servicetalk.client.api.<a href="io/servicetalk/client/api/ClientGroup.html" class="type-name-link" title="interface in io.servicetalk.client.api">ClientGroup</a>&lt;Key,<wbr>Client&gt;</li>
@@ -803,7 +803,7 @@ loadScripts(document, 'script');</script>
 </li>
 </ul>
 </li>
-<li class="circle">io.servicetalk.http.api.<a href="io/servicetalk/http/api/StreamingHttpService.html" class="type-name-link" title="interface in io.servicetalk.http.api">StreamingHttpService</a> (also extends io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpExecutionStrategyInfluencer.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategyInfluencer</a>)</li>
+<li class="circle">io.servicetalk.http.api.<a href="io/servicetalk/http/api/StreamingHttpService.html" class="type-name-link" title="interface in io.servicetalk.http.api">StreamingHttpService</a> (also extends io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpServiceBase.html" title="interface in io.servicetalk.http.api">HttpServiceBase</a>)</li>
 </ul>
 </li>
 <li class="circle">io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/AsyncCloseables.CloseableResource.html" class="type-name-link" title="interface in io.servicetalk.concurrent.api">AsyncCloseables.CloseableResource</a></li>
@@ -871,7 +871,7 @@ loadScripts(document, 'script');</script>
 </li>
 </ul>
 </li>
-<li class="circle">io.servicetalk.http.api.<a href="io/servicetalk/http/api/BlockingHttpService.html" class="type-name-link" title="interface in io.servicetalk.http.api">BlockingHttpService</a> (also extends io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpExecutionStrategyInfluencer.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategyInfluencer</a>)</li>
+<li class="circle">io.servicetalk.http.api.<a href="io/servicetalk/http/api/BlockingHttpService.html" class="type-name-link" title="interface in io.servicetalk.http.api">BlockingHttpService</a> (also extends io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpServiceBase.html" title="interface in io.servicetalk.http.api">HttpServiceBase</a>)</li>
 <li class="circle">io.servicetalk.http.api.<a href="io/servicetalk/http/api/BlockingStreamingHttpRequester.html" class="type-name-link" title="interface in io.servicetalk.http.api">BlockingStreamingHttpRequester</a> (also extends io.servicetalk.http.api.<a href="io/servicetalk/http/api/BlockingStreamingHttpRequestFactory.html" title="interface in io.servicetalk.http.api">BlockingStreamingHttpRequestFactory</a>)
 <ul>
 <li class="circle">io.servicetalk.http.api.<a href="io/servicetalk/http/api/BlockingStreamingHttpClient.html" class="type-name-link" title="interface in io.servicetalk.http.api">BlockingStreamingHttpClient</a></li>
@@ -882,7 +882,7 @@ loadScripts(document, 'script');</script>
 </li>
 </ul>
 </li>
-<li class="circle">io.servicetalk.http.api.<a href="io/servicetalk/http/api/BlockingStreamingHttpService.html" class="type-name-link" title="interface in io.servicetalk.http.api">BlockingStreamingHttpService</a> (also extends io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpExecutionStrategyInfluencer.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategyInfluencer</a>)</li>
+<li class="circle">io.servicetalk.http.api.<a href="io/servicetalk/http/api/BlockingStreamingHttpService.html" class="type-name-link" title="interface in io.servicetalk.http.api">BlockingStreamingHttpService</a> (also extends io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpServiceBase.html" title="interface in io.servicetalk.http.api">HttpServiceBase</a>)</li>
 <li class="circle">io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/CompositeCloseable.html" class="type-name-link" title="interface in io.servicetalk.concurrent.api">CompositeCloseable</a> (also extends io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/AsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">AsyncCloseable</a>)</li>
 <li class="circle">io.servicetalk.grpc.api.<a href="io/servicetalk/grpc/api/GrpcClient.html" class="type-name-link" title="interface in io.servicetalk.grpc.api">GrpcClient</a>&lt;BlockingClient&gt; (also extends io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/ListenableAsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">ListenableAsyncCloseable</a>)
 <ul>
@@ -1085,12 +1085,16 @@ loadScripts(document, 'script');</script>
 <li class="circle">io.servicetalk.client.api.<a href="io/servicetalk/client/api/ConnectionFactoryFilter.html" class="type-name-link" title="interface in io.servicetalk.client.api">ConnectionFactoryFilter</a>&lt;ResolvedAddress,<wbr>C&gt;</li>
 <li class="circle">io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpExecutionStrategyInfluencer.html" class="type-name-link" title="interface in io.servicetalk.http.api">HttpExecutionStrategyInfluencer</a>
 <ul>
+<li class="circle">io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpServiceBase.html" class="type-name-link" title="interface in io.servicetalk.http.api">HttpServiceBase</a>
+<ul>
 <li class="circle">io.servicetalk.http.api.<a href="io/servicetalk/http/api/BlockingHttpService.html" class="type-name-link" title="interface in io.servicetalk.http.api">BlockingHttpService</a> (also extends io.servicetalk.concurrent.<a href="io/servicetalk/concurrent/GracefulAutoCloseable.html" title="interface in io.servicetalk.concurrent">GracefulAutoCloseable</a>)</li>
 <li class="circle">io.servicetalk.http.api.<a href="io/servicetalk/http/api/BlockingStreamingHttpService.html" class="type-name-link" title="interface in io.servicetalk.http.api">BlockingStreamingHttpService</a> (also extends io.servicetalk.concurrent.<a href="io/servicetalk/concurrent/GracefulAutoCloseable.html" title="interface in io.servicetalk.concurrent">GracefulAutoCloseable</a>)</li>
 <li class="circle">io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpService.html" class="type-name-link" title="interface in io.servicetalk.http.api">HttpService</a> (also extends io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/AsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">AsyncCloseable</a>)</li>
+<li class="circle">io.servicetalk.http.api.<a href="io/servicetalk/http/api/StreamingHttpService.html" class="type-name-link" title="interface in io.servicetalk.http.api">StreamingHttpService</a> (also extends io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/AsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">AsyncCloseable</a>)</li>
+</ul>
+</li>
 <li class="circle">io.servicetalk.http.api.<a href="io/servicetalk/http/api/StreamingHttpClientFilterFactory.html" class="type-name-link" title="interface in io.servicetalk.http.api">StreamingHttpClientFilterFactory</a></li>
 <li class="circle">io.servicetalk.http.api.<a href="io/servicetalk/http/api/StreamingHttpConnectionFilterFactory.html" class="type-name-link" title="interface in io.servicetalk.http.api">StreamingHttpConnectionFilterFactory</a></li>
-<li class="circle">io.servicetalk.http.api.<a href="io/servicetalk/http/api/StreamingHttpService.html" class="type-name-link" title="interface in io.servicetalk.http.api">StreamingHttpService</a> (also extends io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/AsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">AsyncCloseable</a>)</li>
 <li class="circle">io.servicetalk.http.api.<a href="io/servicetalk/http/api/StreamingHttpServiceFilterFactory.html" class="type-name-link" title="interface in io.servicetalk.http.api">StreamingHttpServiceFilterFactory</a></li>
 <li class="circle">io.servicetalk.http.utils.<a href="io/servicetalk/http/utils/TimeoutFromRequest.html" class="type-name-link" title="interface in io.servicetalk.http.utils">TimeoutFromRequest</a> (also extends io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/ExecutionStrategyInfluencer.html" title="interface in io.servicetalk.transport.api">ExecutionStrategyInfluencer</a>&lt;S&gt;, java.util.function.<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Function.html" title="class or interface in java.util.function" class="external-link">Function</a>&lt;T,<wbr>R&gt;)</li>
 </ul>

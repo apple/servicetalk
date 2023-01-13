@@ -218,6 +218,7 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/api/HttpApiConversions.ServiceAdapterHolder.html#adaptor()" class="member-name-link">adaptor()</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpApiConversions.ServiceAdapterHolder.html" title="interface in io.servicetalk.http.api">HttpApiConversions.ServiceAdapterHolder</a></dt>
 <dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block"><a href="io/servicetalk/http/api/StreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpService</code></a> that adapts another <code>service</code> to the streaming programming model.</div>
 </dd>
 <dt><a href="io/servicetalk/client/api/internal/partition/PowerSetPartitionMap.html#add(io.servicetalk.client.api.partition.PartitionAttributes)" class="member-name-link">add(PartitionAttributes)</a> - Method in class io.servicetalk.client.api.internal.partition.<a href="io/servicetalk/client/api/internal/partition/PowerSetPartitionMap.html" title="class in io.servicetalk.client.api.internal.partition">PowerSetPartitionMap</a></dt>
@@ -1169,8 +1170,9 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/client/api/ConnectionFactoryFilter.html#append(io.servicetalk.client.api.ConnectionFactoryFilter)" class="member-name-link">append(ConnectionFactoryFilter&lt;ResolvedAddress, C&gt;)</a> - Method in interface io.servicetalk.client.api.<a href="io/servicetalk/client/api/ConnectionFactoryFilter.html" title="interface in io.servicetalk.client.api">ConnectionFactoryFilter</a></dt>
 <dd>
-<div class="block">Returns a composed function that first applies the <code>before</code> function to its input, and then applies
- this function to the result.</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">consider using higher level client builders to append filters.</div>
+</div>
 </dd>
 <dt><a href="io/servicetalk/grpc/api/GrpcClientBuilder.HttpInitializer.html#append(io.servicetalk.grpc.api.GrpcClientBuilder.HttpInitializer)" class="member-name-link">append(GrpcClientBuilder.HttpInitializer&lt;U, R&gt;)</a> - Method in interface io.servicetalk.grpc.api.<a href="io/servicetalk/grpc/api/GrpcClientBuilder.HttpInitializer.html" title="interface in io.servicetalk.grpc.api">GrpcClientBuilder.HttpInitializer</a></dt>
 <dd>
@@ -1415,7 +1417,9 @@ loadScripts(document, 'script');</script>
 <div class="block">Every time a new write that requires custom flushes is initiated, this method is invoked.</div>
 </dd>
 <dt><a href="io/servicetalk/transport/netty/internal/SplittingFlushStrategy.html#apply(io.servicetalk.transport.netty.internal.FlushStrategy.FlushSender)" class="member-name-link">apply(FlushStrategy.FlushSender)</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/SplittingFlushStrategy.html" title="class in io.servicetalk.transport.netty.internal">SplittingFlushStrategy</a></dt>
-<dd>&nbsp;</dd>
+<dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+&nbsp;</dd>
 <dt><a href="io/servicetalk/http/utils/auth/BasicAuthHttpServiceFilter.CredentialsVerifier.html#apply(java.lang.String,java.lang.String)" class="member-name-link">apply(String, String)</a> - Method in interface io.servicetalk.http.utils.auth.<a href="io/servicetalk/http/utils/auth/BasicAuthHttpServiceFilter.CredentialsVerifier.html" title="interface in io.servicetalk.http.utils.auth">BasicAuthHttpServiceFilter.CredentialsVerifier</a></dt>
 <dd>
 <div class="block">Verifies <code>user-id</code> and <code>password</code>, parsed from the 'Basic' HTTP Authentication Scheme
@@ -2669,7 +2673,9 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/health/v1/Health.ServiceFactory.Builder.html#%3Cinit%3E(io.servicetalk.router.api.RouteExecutionStrategyFactory)" class="member-name-link">Builder(RouteExecutionStrategyFactory&lt;GrpcExecutionStrategy&gt;)</a> - Constructor for class io.servicetalk.health.v1.<a href="io/servicetalk/health/v1/Health.ServiceFactory.Builder.html" title="class in io.servicetalk.health.v1">Health.ServiceFactory.Builder</a></dt>
 <dd>
-<div class="block">Create a new instance.</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">use <a href="io/servicetalk/health/v1/Health.ServiceFactory.Builder.html#routeExecutionStrategyFactory(io.servicetalk.router.api.RouteExecutionStrategyFactory)"><code>Health.ServiceFactory.Builder.routeExecutionStrategyFactory(RouteExecutionStrategyFactory)</code></a> on the Builder instead.</div>
+</div>
 </dd>
 <dt><a href="io/servicetalk/health/v1/Health.ServiceFactory.Builder.html#%3Cinit%3E(io.servicetalk.router.api.RouteExecutionStrategyFactory,java.util.List)" class="member-name-link">Builder(RouteExecutionStrategyFactory&lt;GrpcExecutionStrategy&gt;, List&lt;ContentCodec&gt;)</a> - Constructor for class io.servicetalk.health.v1.<a href="io/servicetalk/health/v1/Health.ServiceFactory.Builder.html" title="class in io.servicetalk.health.v1">Health.ServiceFactory.Builder</a></dt>
 <dd>
@@ -5814,6 +5820,7 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/transport/netty/internal/SplittingFlushStrategy.FlushBoundaryProvider.html#detectBoundary(java.lang.Object)" class="member-name-link">detectBoundary(Object)</a> - Method in interface io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/SplittingFlushStrategy.FlushBoundaryProvider.html" title="interface in io.servicetalk.transport.netty.internal">SplittingFlushStrategy.FlushBoundaryProvider</a></dt>
 <dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Detect the <a href="io/servicetalk/transport/netty/internal/SplittingFlushStrategy.FlushBoundaryProvider.FlushBoundary.html" title="enum class in io.servicetalk.transport.netty.internal"><code>SplittingFlushStrategy.FlushBoundaryProvider.FlushBoundary</code></a> for the passed <code>itemWritten</code>.</div>
 </dd>
 <dt><a href="io/servicetalk/http/api/HttpExecutionStrategies.html#difference(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.HttpExecutionStrategy)" class="member-name-link">difference(HttpExecutionStrategy, HttpExecutionStrategy)</a> - Static method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpExecutionStrategies.html" title="class in io.servicetalk.http.api">HttpExecutionStrategies</a></dt>
@@ -6181,7 +6188,9 @@ loadScripts(document, 'script');</script>
 <div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 &nbsp;</dd>
 <dt><a href="io/servicetalk/transport/netty/internal/SplittingFlushStrategy.FlushBoundaryProvider.FlushBoundary.html#End" class="member-name-link">End</a> - Enum constant in enum class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/SplittingFlushStrategy.FlushBoundaryProvider.FlushBoundary.html" title="enum class in io.servicetalk.transport.netty.internal">SplittingFlushStrategy.FlushBoundaryProvider.FlushBoundary</a></dt>
-<dd>&nbsp;</dd>
+<dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+&nbsp;</dd>
 <dt><a href="io/servicetalk/http/utils/EnforceSequentialModeRequesterFilter.html" class="type-name-link" title="class in io.servicetalk.http.utils">EnforceSequentialModeRequesterFilter</a> - Class in <a href="io/servicetalk/http/utils/package-summary.html">io.servicetalk.http.utils</a></dt>
 <dd>
 <div class="block">Enforces sequential behavior of the client, deferring return of the response until after the request payload body is
@@ -7645,7 +7654,9 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/transport/netty/internal/NettyIoExecutors.html#fromNettyEventLoop(io.netty.channel.EventLoop)" class="member-name-link">fromNettyEventLoop(EventLoop)</a> - Static method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NettyIoExecutors.html" title="class in io.servicetalk.transport.netty.internal">NettyIoExecutors</a></dt>
 <dd>
-<div class="block">Creates a new instance of <a href="io/servicetalk/transport/netty/internal/NettyIoExecutor.html" title="interface in io.servicetalk.transport.netty.internal"><code>NettyIoExecutor</code></a> using the passed <code>EventLoop</code>.</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="io/servicetalk/transport/netty/internal/NettyIoExecutors.html#fromNettyEventLoop(io.netty.channel.EventLoop,boolean)"><code>NettyIoExecutors.fromNettyEventLoop(EventLoop, boolean)</code></a>.</div>
+</div>
 </dd>
 <dt><a href="io/servicetalk/transport/netty/internal/NettyIoExecutors.html#fromNettyEventLoop(io.netty.channel.EventLoop,boolean)" class="member-name-link">fromNettyEventLoop(EventLoop, boolean)</a> - Static method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NettyIoExecutors.html" title="class in io.servicetalk.transport.netty.internal">NettyIoExecutors</a></dt>
 <dd>
@@ -7653,7 +7664,9 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/transport/netty/internal/NettyIoExecutors.html#fromNettyEventLoopGroup(io.netty.channel.EventLoopGroup)" class="member-name-link">fromNettyEventLoopGroup(EventLoopGroup)</a> - Static method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NettyIoExecutors.html" title="class in io.servicetalk.transport.netty.internal">NettyIoExecutors</a></dt>
 <dd>
-<div class="block">Creates a new instance of <a href="io/servicetalk/transport/netty/internal/NettyIoExecutor.html" title="interface in io.servicetalk.transport.netty.internal"><code>NettyIoExecutor</code></a> using the passed <code>EventLoopGroup</code>.</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="io/servicetalk/transport/netty/internal/NettyIoExecutors.html#fromNettyEventLoopGroup(io.netty.channel.EventLoopGroup,boolean)"><code>NettyIoExecutors.fromNettyEventLoopGroup(EventLoopGroup, boolean)</code></a>.</div>
+</div>
 </dd>
 <dt><a href="io/servicetalk/transport/netty/internal/NettyIoExecutors.html#fromNettyEventLoopGroup(io.netty.channel.EventLoopGroup,boolean)" class="member-name-link">fromNettyEventLoopGroup(EventLoopGroup, boolean)</a> - Static method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NettyIoExecutors.html" title="class in io.servicetalk.transport.netty.internal">NettyIoExecutors</a></dt>
 <dd>
@@ -8667,7 +8680,9 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/grpc/api/GrpcRoutes.html#%3Cinit%3E(io.servicetalk.router.api.RouteExecutionStrategyFactory)" class="member-name-link">GrpcRoutes(RouteExecutionStrategyFactory&lt;GrpcExecutionStrategy&gt;)</a> - Constructor for class io.servicetalk.grpc.api.<a href="io/servicetalk/grpc/api/GrpcRoutes.html" title="class in io.servicetalk.grpc.api">GrpcRoutes</a></dt>
 <dd>
-<div class="block">Create new instance.</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">this constructor is not needed anymore, use <a href="io/servicetalk/grpc/api/GrpcRoutes.html#%3Cinit%3E()"><code>GrpcRoutes()</code></a> instead.</div>
+</div>
 </dd>
 <dt><a href="io/servicetalk/grpc/api/GrpcRoutes.AllGrpcRoutes.html" class="type-name-link" title="interface in io.servicetalk.grpc.api">GrpcRoutes.AllGrpcRoutes</a> - Interface in <a href="io/servicetalk/grpc/api/package-summary.html">io.servicetalk.grpc.api</a></dt>
 <dd>
@@ -9417,6 +9432,10 @@ loadScripts(document, 'script');</script>
 <div class="block">Allows using a custom <a href="io/servicetalk/http/api/HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> for the HTTP message execution, when present in the meta-data
  <a href="io/servicetalk/http/api/HttpMetaData.html#context()"><code>context</code></a>.</div>
 </dd>
+<dt><a href="io/servicetalk/http/api/HttpContextKeys.html#HTTP_FORCE_NEW_CONNECTION" class="member-name-link">HTTP_FORCE_NEW_CONNECTION</a> - Static variable in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpContextKeys.html" title="class in io.servicetalk.http.api">HttpContextKeys</a></dt>
+<dd>
+<div class="block">If set to true, forces creating a new connection versus potentially selecting an already established one.</div>
+</dd>
 <dt><a href="io/servicetalk/http/api/HttpContextKeys.html#HTTP_TARGET_ADDRESS_BEHIND_PROXY" class="member-name-link">HTTP_TARGET_ADDRESS_BEHIND_PROXY</a> - Static variable in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpContextKeys.html" title="class in io.servicetalk.http.api">HttpContextKeys</a></dt>
 <dd>
 <div class="block">When opening a connection to a proxy, this key tells what is the actual (unresolved) target address behind the
@@ -9465,7 +9484,9 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/http/api/HttpApiConversions.ServiceAdapterHolder.html" class="type-name-link" title="interface in io.servicetalk.http.api">HttpApiConversions.ServiceAdapterHolder</a> - Interface in <a href="io/servicetalk/http/api/package-summary.html">io.servicetalk.http.api</a></dt>
 <dd>
-<div class="block">A holder for <a href="io/servicetalk/http/api/StreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpService</code></a> that adapts another <code>service</code> to the streaming programming model.</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">this interface is not needed anymore and will be removed in a future version with no replacement.</div>
+</div>
 </dd>
 <dt><a href="io/servicetalk/http/api/HttpClient.html" class="type-name-link" title="interface in io.servicetalk.http.api">HttpClient</a> - Interface in <a href="io/servicetalk/http/api/package-summary.html">io.servicetalk.http.api</a></dt>
 <dd>
@@ -9813,6 +9834,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Same as <a href="io/servicetalk/http/api/StreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpService</code></a> but that accepts <a href="io/servicetalk/http/api/HttpRequest.html" title="interface in io.servicetalk.http.api"><code>HttpRequest</code></a> and returns <a href="io/servicetalk/http/api/HttpResponse.html" title="interface in io.servicetalk.http.api"><code>HttpResponse</code></a>.</div>
 </dd>
+<dt><a href="io/servicetalk/http/api/HttpServiceBase.html" class="type-name-link" title="interface in io.servicetalk.http.api">HttpServiceBase</a> - Interface in <a href="io/servicetalk/http/api/package-summary.html">io.servicetalk.http.api</a></dt>
+<dd>
+<div class="block">Parent interface for all available HTTP services.</div>
+</dd>
 <dt><a href="io/servicetalk/http/api/HttpServiceContext.html" class="type-name-link" title="class in io.servicetalk.http.api">HttpServiceContext</a> - Class in <a href="io/servicetalk/http/api/package-summary.html">io.servicetalk.http.api</a></dt>
 <dd>
 <div class="block">A <a href="io/servicetalk/http/api/HttpConnectionContext.html" title="interface in io.servicetalk.http.api"><code>HttpConnectionContext</code></a> for use in the <a href="io/servicetalk/http/api/HttpService.html" title="interface in io.servicetalk.http.api"><code>HttpService</code></a> context.</div>
@@ -10127,22 +10152,29 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html#initChannel(io.netty.channel.Channel,io.servicetalk.buffer.api.BufferAllocator,io.servicetalk.concurrent.api.Executor,io.servicetalk.transport.api.IoExecutor,io.servicetalk.transport.netty.internal.CloseHandler,io.servicetalk.transport.netty.internal.FlushStrategy,long,io.servicetalk.transport.api.SslConfig,io.servicetalk.transport.netty.internal.ChannelInitializer,io.servicetalk.transport.api.ExecutionStrategy,io.servicetalk.transport.api.ConnectionInfo.Protocol,io.servicetalk.transport.api.ConnectionObserver,boolean,java.util.function.Predicate)" class="member-name-link">initChannel(Channel, BufferAllocator, Executor, IoExecutor, CloseHandler, FlushStrategy, long, SslConfig, ChannelInitializer, ExecutionStrategy, ConnectionInfo.Protocol, ConnectionObserver, boolean, Predicate&lt;Object&gt;)</a> - Static method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal">DefaultNettyConnection</a></dt>
 <dd>
-<div class="block">Given a <code>Channel</code> this will initialize the <code>ChannelPipeline</code> and create a
- <a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal"><code>DefaultNettyConnection</code></a>.</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <code>#initChannel(Channel, ExecutionContext, CloseHandler, FlushStrategy, long, SslConfig,
+ ChannelInitializer, Protocol, ConnectionObserver, boolean, Predicate)</code>.</div>
+</div>
 </dd>
 <dt><a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html#initChannel(io.netty.channel.Channel,io.servicetalk.buffer.api.BufferAllocator,io.servicetalk.concurrent.api.Executor,io.servicetalk.transport.api.IoExecutor,io.servicetalk.transport.netty.internal.CloseHandler,io.servicetalk.transport.netty.internal.FlushStrategy,java.lang.Long,io.servicetalk.transport.netty.internal.ChannelInitializer,io.servicetalk.transport.api.ExecutionStrategy,io.servicetalk.transport.api.ConnectionInfo.Protocol,io.servicetalk.transport.api.ConnectionObserver,boolean)" class="member-name-link">initChannel(Channel, BufferAllocator, Executor, IoExecutor, CloseHandler, FlushStrategy, Long, ChannelInitializer, ExecutionStrategy, ConnectionInfo.Protocol, ConnectionObserver, boolean)</a> - Static method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal">DefaultNettyConnection</a></dt>
 <dd>
 <div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
-<div class="deprecation-comment">Use <code>#initChannel(Channel, BufferAllocator, Executor, IoExecutor, CloseHandler, FlushStrategy,
- long, SslConfig, ChannelInitializer, ExecutionStrategy, Protocol, ConnectionObserver, boolean, Predicate)</code>.</div>
+<div class="deprecation-comment">Use <code>#initChannel(Channel, ExecutionContext, CloseHandler, FlushStrategy, long, SslConfig,
+ ChannelInitializer, Protocol, ConnectionObserver, boolean, Predicate)</code>.</div>
 </div>
 </dd>
 <dt><a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html#initChannel(io.netty.channel.Channel,io.servicetalk.buffer.api.BufferAllocator,io.servicetalk.concurrent.api.Executor,io.servicetalk.transport.api.IoExecutor,io.servicetalk.transport.netty.internal.CloseHandler,io.servicetalk.transport.netty.internal.FlushStrategy,java.lang.Long,io.servicetalk.transport.netty.internal.ChannelInitializer,io.servicetalk.transport.api.ExecutionStrategy,io.servicetalk.transport.api.ConnectionInfo.Protocol,io.servicetalk.transport.api.ConnectionObserver,boolean,java.util.function.Predicate)" class="member-name-link">initChannel(Channel, BufferAllocator, Executor, IoExecutor, CloseHandler, FlushStrategy, Long, ChannelInitializer, ExecutionStrategy, ConnectionInfo.Protocol, ConnectionObserver, boolean, Predicate&lt;Object&gt;)</a> - Static method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal">DefaultNettyConnection</a></dt>
 <dd>
 <div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
-<div class="deprecation-comment">Use <code>#initChannel(Channel, BufferAllocator, Executor, IoExecutor, CloseHandler, FlushStrategy,
- long, SslConfig, ChannelInitializer, ExecutionStrategy, Protocol, ConnectionObserver, boolean, Predicate)</code>.</div>
+<div class="deprecation-comment">Use <code>#initChannel(Channel, ExecutionContext, CloseHandler, FlushStrategy, long, SslConfig,
+ ChannelInitializer, Protocol, ConnectionObserver, boolean, Predicate)</code>.</div>
 </div>
+</dd>
+<dt><a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html#initChannel(io.netty.channel.Channel,io.servicetalk.transport.api.ExecutionContext,io.servicetalk.transport.netty.internal.CloseHandler,io.servicetalk.transport.netty.internal.FlushStrategy,long,io.servicetalk.transport.api.SslConfig,io.servicetalk.transport.netty.internal.ChannelInitializer,io.servicetalk.transport.api.ConnectionInfo.Protocol,io.servicetalk.transport.api.ConnectionObserver,boolean,java.util.function.Predicate)" class="member-name-link">initChannel(Channel, ExecutionContext&lt;?&gt;, CloseHandler, FlushStrategy, long, SslConfig, ChannelInitializer, ConnectionInfo.Protocol, ConnectionObserver, boolean, Predicate&lt;Object&gt;)</a> - Static method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal">DefaultNettyConnection</a></dt>
+<dd>
+<div class="block">Given a <code>Channel</code> this will initialize the <code>ChannelPipeline</code> and create a
+ <a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal"><code>DefaultNettyConnection</code></a>.</div>
 </dd>
 <dt><a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html#initChildChannel(io.netty.channel.Channel,io.servicetalk.transport.api.ConnectionContext,io.servicetalk.transport.netty.internal.CloseHandler,io.servicetalk.transport.netty.internal.FlushStrategy,long,io.servicetalk.transport.api.ConnectionInfo.Protocol,io.netty.channel.ChannelConfig,io.servicetalk.transport.api.ConnectionObserver.StreamObserver,boolean,java.util.function.Predicate,java.util.function.UnaryOperator)" class="member-name-link">initChildChannel(Channel, ConnectionContext, CloseHandler, FlushStrategy, long, ConnectionInfo.Protocol, ChannelConfig, ConnectionObserver.StreamObserver, boolean, Predicate&lt;Object&gt;, UnaryOperator&lt;Throwable&gt;)</a> - Static method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal">DefaultNettyConnection</a></dt>
 <dd>
@@ -10313,7 +10345,9 @@ loadScripts(document, 'script');</script>
 <div class="block">A <code>Tracer</code> that works with <a href="io/servicetalk/opentracing/inmemory/api/InMemorySpan.html" title="interface in io.servicetalk.opentracing.inmemory.api"><code>InMemorySpan</code></a> instances.</div>
 </dd>
 <dt><a href="io/servicetalk/transport/netty/internal/SplittingFlushStrategy.FlushBoundaryProvider.FlushBoundary.html#InProgress" class="member-name-link">InProgress</a> - Enum constant in enum class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/SplittingFlushStrategy.FlushBoundaryProvider.FlushBoundary.html" title="enum class in io.servicetalk.transport.netty.internal">SplittingFlushStrategy.FlushBoundaryProvider.FlushBoundary</a></dt>
-<dd>&nbsp;</dd>
+<dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+&nbsp;</dd>
 <dt><a href="io/servicetalk/client/api/internal/partition/PowerSetPartitionMapFactory.html#INSTANCE" class="member-name-link">INSTANCE</a> - Static variable in class io.servicetalk.client.api.internal.partition.<a href="io/servicetalk/client/api/internal/partition/PowerSetPartitionMapFactory.html" title="class in io.servicetalk.client.api.internal.partition">PowerSetPartitionMapFactory</a></dt>
 <dd>
 <div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
@@ -11408,6 +11442,14 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/SocketOption.html" title="class or interface in java.net" class="external-link"><code>SocketOption</code></a>s that are applied to the server socket channel which listens/accepts socket
  channels.</div>
+</dd>
+<dt><a href="io/servicetalk/http/api/HttpServerBuilder.html#listenService(io.servicetalk.http.api.HttpServiceBase)" class="member-name-link">listenService(HttpServiceBase)</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></dt>
+<dd>
+<div class="block">Starts this server and returns the <a href="io/servicetalk/http/api/HttpServerContext.html" title="interface in io.servicetalk.http.api"><code>HttpServerContext</code></a> after the server has been successfully started.</div>
+</dd>
+<dt><a href="io/servicetalk/http/api/HttpServerBuilder.html#listenServiceAndAwait(io.servicetalk.http.api.HttpServiceBase)" class="member-name-link">listenServiceAndAwait(HttpServiceBase)</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></dt>
+<dd>
+<div class="block">Starts this server and returns the <a href="io/servicetalk/http/api/HttpServerContext.html" title="interface in io.servicetalk.http.api"><code>HttpServerContext</code></a> after the server has been successfully started.</div>
 </dd>
 <dt><a href="io/servicetalk/http/api/DelegatingHttpServerBuilder.html#listenSocketOption(java.net.SocketOption,T)" class="member-name-link">listenSocketOption(SocketOption&lt;T&gt;, T)</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/DelegatingHttpServerBuilder.html" title="class in io.servicetalk.http.api">DelegatingHttpServerBuilder</a></dt>
 <dd>&nbsp;</dd>
@@ -12647,6 +12689,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Creates and asynchronously returns a connection for this address.</div>
 </dd>
+<dt><a href="io/servicetalk/client/api/LoadBalancer.html#newConnection(io.servicetalk.context.api.ContextMap)" class="member-name-link">newConnection(ContextMap)</a> - Method in interface io.servicetalk.client.api.<a href="io/servicetalk/client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api">LoadBalancer</a></dt>
+<dd>
+<div class="block">Opens a new connection for a request instead of potentially reusing one.</div>
+</dd>
 <dt><a href="io/servicetalk/client/api/ConnectionFactory.html#newConnection(ResolvedAddress,io.servicetalk.context.api.ContextMap,io.servicetalk.transport.api.TransportObserver)" class="member-name-link">newConnection(ResolvedAddress, ContextMap, TransportObserver)</a> - Method in interface io.servicetalk.client.api.<a href="io/servicetalk/client/api/ConnectionFactory.html" title="interface in io.servicetalk.client.api">ConnectionFactory</a></dt>
 <dd>
 <div class="block">Creates and asynchronously returns a connection.</div>
@@ -13428,8 +13474,7 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/grpc/api/GrpcExecutionStrategies.html#offloadNever()" class="member-name-link">offloadNever()</a> - Static method in class io.servicetalk.grpc.api.<a href="io/servicetalk/grpc/api/GrpcExecutionStrategies.html" title="class in io.servicetalk.grpc.api">GrpcExecutionStrategies</a></dt>
 <dd>
 <div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
-<div class="deprecation-comment">Use a custom strategy with no offloads instead;
- <code>GrpcExecutionStrategies.customStrategyBuilder().offloadNone().build()</code></div>
+<div class="deprecation-comment">Use <a href="io/servicetalk/grpc/api/GrpcExecutionStrategies.html#offloadNone()"><code>GrpcExecutionStrategies.offloadNone()</code></a> instead.</div>
 </div>
 </dd>
 <dt><a href="io/servicetalk/http/api/HttpExecutionStrategies.html#offloadNever()" class="member-name-link">offloadNever()</a> - Static method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpExecutionStrategies.html" title="class in io.servicetalk.http.api">HttpExecutionStrategies</a></dt>
@@ -13441,6 +13486,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/grpc/api/GrpcExecutionStrategies.Builder.html#offloadNone()" class="member-name-link">offloadNone()</a> - Method in class io.servicetalk.grpc.api.<a href="io/servicetalk/grpc/api/GrpcExecutionStrategies.Builder.html" title="class in io.servicetalk.grpc.api">GrpcExecutionStrategies.Builder</a></dt>
 <dd>
 <div class="block">Disable all offloads.</div>
+</dd>
+<dt><a href="io/servicetalk/grpc/api/GrpcExecutionStrategies.html#offloadNone()" class="member-name-link">offloadNone()</a> - Static method in class io.servicetalk.grpc.api.<a href="io/servicetalk/grpc/api/GrpcExecutionStrategies.html" title="class in io.servicetalk.grpc.api">GrpcExecutionStrategies</a></dt>
+<dd>
+<div class="block">An <a href="io/servicetalk/grpc/api/GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api"><code>GrpcExecutionStrategy</code></a> that requires no offloads on the request-response path or transport event path.</div>
 </dd>
 <dt><a href="io/servicetalk/http/api/HttpExecutionStrategies.Builder.html#offloadNone()" class="member-name-link">offloadNone()</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpExecutionStrategies.Builder.html" title="class in io.servicetalk.http.api">HttpExecutionStrategies.Builder</a></dt>
 <dd>
@@ -13494,11 +13543,17 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.BackOffPolicy.html#ofImmediate()" class="member-name-link">ofImmediate()</a> - Static method in class io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.BackOffPolicy.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.BackOffPolicy</a></dt>
 <dd>
-<div class="block">Creates a new <a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.BackOffPolicy.html" title="class in io.servicetalk.http.netty"><code>RetryingHttpRequesterFilter.BackOffPolicy</code></a> that retries failures instantly up-to 3 max retries.</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.BackOffPolicy.html#ofImmediateBounded()"><code>RetryingHttpRequesterFilter.BackOffPolicy.ofImmediateBounded()</code></a>.</div>
+</div>
 </dd>
 <dt><a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.BackOffPolicy.html#ofImmediate(int)" class="member-name-link">ofImmediate(int)</a> - Static method in class io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.BackOffPolicy.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.BackOffPolicy</a></dt>
 <dd>
 <div class="block">Creates a new <a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.BackOffPolicy.html" title="class in io.servicetalk.http.netty"><code>RetryingHttpRequesterFilter.BackOffPolicy</code></a> that retries failures instantly up-to provided max retries.</div>
+</dd>
+<dt><a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.BackOffPolicy.html#ofImmediateBounded()" class="member-name-link">ofImmediateBounded()</a> - Static method in class io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.BackOffPolicy.html" title="class in io.servicetalk.http.netty">RetryingHttpRequesterFilter.BackOffPolicy</a></dt>
+<dd>
+<div class="block">Creates a new <a href="io/servicetalk/http/netty/RetryingHttpRequesterFilter.BackOffPolicy.html" title="class in io.servicetalk.http.netty"><code>RetryingHttpRequesterFilter.BackOffPolicy</code></a> that retries failures instantly up-to 3 max retries.</div>
 </dd>
 <dt><a href="io/servicetalk/transport/api/HostAndPort.html#ofIpPort(java.lang.String)" class="member-name-link">ofIpPort(String)</a> - Static method in interface io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a></dt>
 <dd>
@@ -16777,6 +16832,12 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Indicates that a resource class or method needs a specific execution strategy.</div>
 </dd>
+<dt><a href="io/servicetalk/grpc/api/GrpcRoutes.html#routeExecutionStrategyFactory(io.servicetalk.router.api.RouteExecutionStrategyFactory)" class="member-name-link">routeExecutionStrategyFactory(RouteExecutionStrategyFactory&lt;GrpcExecutionStrategy&gt;)</a> - Method in class io.servicetalk.grpc.api.<a href="io/servicetalk/grpc/api/GrpcRoutes.html" title="class in io.servicetalk.grpc.api">GrpcRoutes</a></dt>
+<dd>
+<div class="block">Setter for the <a href="io/servicetalk/router/api/RouteExecutionStrategyFactory.html" title="interface in io.servicetalk.router.api"><code>RouteExecutionStrategyFactory</code></a>, intended to be made public by implementations.</div>
+</dd>
+<dt><a href="io/servicetalk/health/v1/Health.ServiceFactory.Builder.html#routeExecutionStrategyFactory(io.servicetalk.router.api.RouteExecutionStrategyFactory)" class="member-name-link">routeExecutionStrategyFactory(RouteExecutionStrategyFactory&lt;GrpcExecutionStrategy&gt;)</a> - Method in class io.servicetalk.health.v1.<a href="io/servicetalk/health/v1/Health.ServiceFactory.Builder.html" title="class in io.servicetalk.health.v1">Health.ServiceFactory.Builder</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/router/jersey/HttpJerseyRouterBuilder.html#routeExecutionStrategyFactory(io.servicetalk.router.api.RouteExecutionStrategyFactory)" class="member-name-link">routeExecutionStrategyFactory(RouteExecutionStrategyFactory&lt;HttpExecutionStrategy&gt;)</a> - Method in class io.servicetalk.http.router.jersey.<a href="io/servicetalk/http/router/jersey/HttpJerseyRouterBuilder.html" title="class in io.servicetalk.http.router.jersey">HttpJerseyRouterBuilder</a></dt>
 <dd>
 <div class="block">Set a <a href="io/servicetalk/router/api/RouteExecutionStrategyFactory.html" title="interface in io.servicetalk.router.api"><code>RouteExecutionStrategyFactory&lt;HttpExecutionStrategy&gt;</code></a> for
@@ -17557,7 +17618,9 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/health/v1/Health.ServiceFactory.html#%3Cinit%3E(io.servicetalk.health.v1.Health.BlockingHealthService,io.servicetalk.router.api.RouteExecutionStrategyFactory)" class="member-name-link">ServiceFactory(Health.BlockingHealthService, RouteExecutionStrategyFactory&lt;GrpcExecutionStrategy&gt;)</a> - Constructor for class io.servicetalk.health.v1.<a href="io/servicetalk/health/v1/Health.ServiceFactory.html" title="class in io.servicetalk.health.v1">Health.ServiceFactory</a></dt>
 <dd>
-<div class="block">Create a new instance.</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="io/servicetalk/health/v1/Health.ServiceFactory.Builder.html#%3Cinit%3E()"><code>Builder()</code></a> and set the custom strategy on <a href="io/servicetalk/health/v1/Health.ServiceFactory.Builder.html#routeExecutionStrategyFactory(io.servicetalk.router.api.RouteExecutionStrategyFactory)"><code>Health.ServiceFactory.Builder.routeExecutionStrategyFactory(RouteExecutionStrategyFactory)</code></a> instead.</div>
+</div>
 </dd>
 <dt><a href="io/servicetalk/health/v1/Health.ServiceFactory.html#%3Cinit%3E(io.servicetalk.health.v1.Health.BlockingHealthService,io.servicetalk.router.api.RouteExecutionStrategyFactory,java.util.List)" class="member-name-link">ServiceFactory(Health.BlockingHealthService, RouteExecutionStrategyFactory&lt;GrpcExecutionStrategy&gt;, List&lt;ContentCodec&gt;)</a> - Constructor for class io.servicetalk.health.v1.<a href="io/servicetalk/health/v1/Health.ServiceFactory.html" title="class in io.servicetalk.health.v1">Health.ServiceFactory</a></dt>
 <dd>
@@ -17577,7 +17640,9 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/health/v1/Health.ServiceFactory.html#%3Cinit%3E(io.servicetalk.health.v1.Health.HealthService,io.servicetalk.router.api.RouteExecutionStrategyFactory)" class="member-name-link">ServiceFactory(Health.HealthService, RouteExecutionStrategyFactory&lt;GrpcExecutionStrategy&gt;)</a> - Constructor for class io.servicetalk.health.v1.<a href="io/servicetalk/health/v1/Health.ServiceFactory.html" title="class in io.servicetalk.health.v1">Health.ServiceFactory</a></dt>
 <dd>
-<div class="block">Create a new instance.</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="io/servicetalk/health/v1/Health.ServiceFactory.Builder.html#%3Cinit%3E()"><code>Builder()</code></a> and set the custom strategy on <a href="io/servicetalk/health/v1/Health.ServiceFactory.Builder.html#routeExecutionStrategyFactory(io.servicetalk.router.api.RouteExecutionStrategyFactory)"><code>Health.ServiceFactory.Builder.routeExecutionStrategyFactory(RouteExecutionStrategyFactory)</code></a> instead.</div>
+</div>
 </dd>
 <dt><a href="io/servicetalk/health/v1/Health.ServiceFactory.html#%3Cinit%3E(io.servicetalk.health.v1.Health.HealthService,io.servicetalk.router.api.RouteExecutionStrategyFactory,java.util.List)" class="member-name-link">ServiceFactory(Health.HealthService, RouteExecutionStrategyFactory&lt;GrpcExecutionStrategy&gt;, List&lt;ContentCodec&gt;)</a> - Constructor for class io.servicetalk.health.v1.<a href="io/servicetalk/health/v1/Health.ServiceFactory.html" title="class in io.servicetalk.health.v1">Health.ServiceFactory</a></dt>
 <dd>
@@ -17593,6 +17658,7 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/http/api/HttpApiConversions.ServiceAdapterHolder.html#serviceInvocationStrategy()" class="member-name-link">serviceInvocationStrategy()</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpApiConversions.ServiceAdapterHolder.html" title="interface in io.servicetalk.http.api">HttpApiConversions.ServiceAdapterHolder</a></dt>
 <dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block"><a href="io/servicetalk/http/api/HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> that should be used to invoke the service returned by <a href="io/servicetalk/http/api/HttpApiConversions.ServiceAdapterHolder.html#adaptor()"><code>HttpApiConversions.ServiceAdapterHolder.adaptor()</code></a>.</div>
 </dd>
 <dt><a href="io/servicetalk/utils/internal/ServiceLoaderUtils.html" class="type-name-link" title="class in io.servicetalk.utils.internal">ServiceLoaderUtils</a> - Class in <a href="io/servicetalk/utils/internal/package-summary.html">io.servicetalk.utils.internal</a></dt>
@@ -18120,7 +18186,9 @@ loadScripts(document, 'script');</script>
 <div class="block">Returns <code>true</code> if pending writes, if any, MUST be flushed when the connection is not writable.</div>
 </dd>
 <dt><a href="io/servicetalk/transport/netty/internal/SplittingFlushStrategy.html#shouldFlushOnUnwritable()" class="member-name-link">shouldFlushOnUnwritable()</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/SplittingFlushStrategy.html" title="class in io.servicetalk.transport.netty.internal">SplittingFlushStrategy</a></dt>
-<dd>&nbsp;</dd>
+<dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+&nbsp;</dd>
 <dt><a href="io/servicetalk/transport/api/IoExecutor.html#shouldOffloadSupplier()" class="member-name-link">shouldOffloadSupplier()</a> - Method in interface io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/IoExecutor.html" title="interface in io.servicetalk.transport.api">IoExecutor</a></dt>
 <dd>
 <div class="block">Returns a boolean supplier, if this IoExecutor supports <a href="io/servicetalk/transport/api/IoThreadFactory.IoThread.html" title="interface in io.servicetalk.transport.api"><code>IoThreadFactory.IoThread</code></a> markers, that
@@ -18359,19 +18427,24 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/transport/netty/internal/SplittingFlushStrategy.html" class="type-name-link" title="class in io.servicetalk.transport.netty.internal">SplittingFlushStrategy</a> - Class in <a href="io/servicetalk/transport/netty/internal/package-summary.html">io.servicetalk.transport.netty.internal</a></dt>
 <dd>
-<div class="block">A <a href="io/servicetalk/transport/netty/internal/FlushStrategy.html" title="interface in io.servicetalk.transport.netty.internal"><code>FlushStrategy</code></a> that splits writes into logical write boundaries and manages flush state across those logical
- write boundaries.</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">This class will be removed in the future releases.</div>
+</div>
 </dd>
 <dt><a href="io/servicetalk/transport/netty/internal/SplittingFlushStrategy.html#%3Cinit%3E(io.servicetalk.transport.netty.internal.FlushStrategy,io.servicetalk.transport.netty.internal.SplittingFlushStrategy.FlushBoundaryProvider)" class="member-name-link">SplittingFlushStrategy(FlushStrategy, SplittingFlushStrategy.FlushBoundaryProvider)</a> - Constructor for class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/SplittingFlushStrategy.html" title="class in io.servicetalk.transport.netty.internal">SplittingFlushStrategy</a></dt>
 <dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Create a new instance.</div>
 </dd>
 <dt><a href="io/servicetalk/transport/netty/internal/SplittingFlushStrategy.FlushBoundaryProvider.html" class="type-name-link" title="interface in io.servicetalk.transport.netty.internal">SplittingFlushStrategy.FlushBoundaryProvider</a> - Interface in <a href="io/servicetalk/transport/netty/internal/package-summary.html">io.servicetalk.transport.netty.internal</a></dt>
 <dd>
-<div class="block">A provider of <a href="io/servicetalk/transport/netty/internal/SplittingFlushStrategy.FlushBoundaryProvider.FlushBoundary.html" title="enum class in io.servicetalk.transport.netty.internal"><code>SplittingFlushStrategy.FlushBoundaryProvider.FlushBoundary</code></a> for each written item.</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">This interface will be removed in the future releases.</div>
+</div>
 </dd>
 <dt><a href="io/servicetalk/transport/netty/internal/SplittingFlushStrategy.FlushBoundaryProvider.FlushBoundary.html" class="type-name-link" title="enum class in io.servicetalk.transport.netty.internal">SplittingFlushStrategy.FlushBoundaryProvider.FlushBoundary</a> - Enum Class in <a href="io/servicetalk/transport/netty/internal/package-summary.html">io.servicetalk.transport.netty.internal</a></dt>
 <dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">An enumeration for boundary of flushes on which this <a href="io/servicetalk/transport/netty/internal/SplittingFlushStrategy.html" title="class in io.servicetalk.transport.netty.internal"><code>SplittingFlushStrategy</code></a> splits writes.</div>
 </dd>
 <dt><a href="io/servicetalk/transport/api/SslClientAuthMode.html" class="type-name-link" title="enum class in io.servicetalk.transport.api">SslClientAuthMode</a> - Enum Class in <a href="io/servicetalk/transport/api/package-summary.html">io.servicetalk.transport.api</a></dt>
@@ -18498,7 +18571,9 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/opentracing/inmemory/api/InMemorySpanBuilder.html#start()" class="member-name-link">start()</a> - Method in interface io.servicetalk.opentracing.inmemory.api.<a href="io/servicetalk/opentracing/inmemory/api/InMemorySpanBuilder.html" title="interface in io.servicetalk.opentracing.inmemory.api">InMemorySpanBuilder</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/transport/netty/internal/SplittingFlushStrategy.FlushBoundaryProvider.FlushBoundary.html#Start" class="member-name-link">Start</a> - Enum constant in enum class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/SplittingFlushStrategy.FlushBoundaryProvider.FlushBoundary.html" title="enum class in io.servicetalk.transport.netty.internal">SplittingFlushStrategy.FlushBoundaryProvider.FlushBoundary</a></dt>
-<dd>&nbsp;</dd>
+<dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+&nbsp;</dd>
 <dt><a href="io/servicetalk/opentracing/inmemory/api/InMemorySpan.html#startEpochMicros()" class="member-name-link">startEpochMicros()</a> - Method in interface io.servicetalk.opentracing.inmemory.api.<a href="io/servicetalk/opentracing/inmemory/api/InMemorySpan.html" title="interface in io.servicetalk.opentracing.inmemory.api">InMemorySpan</a></dt>
 <dd>
 <div class="block">Returns the starting epoch in milliseconds.</div>
@@ -19836,7 +19911,9 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/transport/netty/internal/NettyIoExecutors.html#toNettyIoExecutor(io.servicetalk.transport.api.IoExecutor)" class="member-name-link">toNettyIoExecutor(IoExecutor)</a> - Static method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/NettyIoExecutors.html" title="class in io.servicetalk.transport.netty.internal">NettyIoExecutors</a></dt>
 <dd>
-<div class="block">Attempts to convert the passed <a href="io/servicetalk/transport/api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a> to a <a href="io/servicetalk/transport/netty/internal/NettyIoExecutor.html" title="interface in io.servicetalk.transport.netty.internal"><code>NettyIoExecutor</code></a>.</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="io/servicetalk/transport/netty/internal/EventLoopAwareNettyIoExecutors.html#toEventLoopAwareNettyIoExecutor(io.servicetalk.transport.api.IoExecutor)"><code>EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor(IoExecutor)</code></a>.</div>
+</div>
 </dd>
 <dt><a href="io/servicetalk/buffer/api/Buffer.html#toNioBuffer()" class="member-name-link">toNioBuffer()</a> - Method in interface io.servicetalk.buffer.api.<a href="io/servicetalk/buffer/api/Buffer.html" title="interface in io.servicetalk.buffer.api">Buffer</a></dt>
 <dd>
@@ -20010,32 +20087,50 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/api/HttpApiConversions.html#toStreamingHttpService(io.servicetalk.http.api.BlockingHttpService,io.servicetalk.http.api.HttpExecutionStrategy)" class="member-name-link">toStreamingHttpService(BlockingHttpService, HttpExecutionStrategy)</a> - Static method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpApiConversions.html" title="class in io.servicetalk.http.api">HttpApiConversions</a></dt>
 <dd>
-<div class="block">Convert from a <a href="io/servicetalk/http/api/BlockingStreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>BlockingStreamingHttpService</code></a> to a <a href="io/servicetalk/http/api/StreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpService</code></a>.</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="io/servicetalk/http/api/HttpApiConversions.html#toStreamingHttpService(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.BlockingHttpService)"><code>HttpApiConversions.toStreamingHttpService(HttpExecutionStrategy, BlockingHttpService)</code></a> instead.</div>
+</div>
 </dd>
 <dt><a href="io/servicetalk/http/api/HttpApiConversions.html#toStreamingHttpService(io.servicetalk.http.api.BlockingHttpService,io.servicetalk.http.api.HttpExecutionStrategyInfluencer)" class="member-name-link">toStreamingHttpService(BlockingHttpService, HttpExecutionStrategyInfluencer)</a> - Static method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpApiConversions.html" title="class in io.servicetalk.http.api">HttpApiConversions</a></dt>
 <dd>
 <div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
-<div class="deprecation-comment">Use overload with <a href="io/servicetalk/http/api/HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> rather than <a href="io/servicetalk/http/api/HttpExecutionStrategyInfluencer.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategyInfluencer</code></a></div>
+<div class="deprecation-comment">Use <a href="io/servicetalk/http/api/HttpApiConversions.html#toStreamingHttpService(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.BlockingHttpService)"><code>HttpApiConversions.toStreamingHttpService(HttpExecutionStrategy, BlockingHttpService)</code></a> instead.</div>
 </div>
 </dd>
 <dt><a href="io/servicetalk/http/api/HttpApiConversions.html#toStreamingHttpService(io.servicetalk.http.api.BlockingStreamingHttpService,io.servicetalk.http.api.HttpExecutionStrategy)" class="member-name-link">toStreamingHttpService(BlockingStreamingHttpService, HttpExecutionStrategy)</a> - Static method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpApiConversions.html" title="class in io.servicetalk.http.api">HttpApiConversions</a></dt>
 <dd>
-<div class="block">Convert from a <a href="io/servicetalk/http/api/BlockingStreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>BlockingStreamingHttpService</code></a> to a <a href="io/servicetalk/http/api/StreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpService</code></a>.</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">use <a href="io/servicetalk/http/api/HttpApiConversions.html#toStreamingHttpService(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.BlockingStreamingHttpService)"><code>HttpApiConversions.toStreamingHttpService(HttpExecutionStrategy, BlockingStreamingHttpService)</code></a> instead.</div>
+</div>
 </dd>
 <dt><a href="io/servicetalk/http/api/HttpApiConversions.html#toStreamingHttpService(io.servicetalk.http.api.BlockingStreamingHttpService,io.servicetalk.http.api.HttpExecutionStrategyInfluencer)" class="member-name-link">toStreamingHttpService(BlockingStreamingHttpService, HttpExecutionStrategyInfluencer)</a> - Static method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpApiConversions.html" title="class in io.servicetalk.http.api">HttpApiConversions</a></dt>
 <dd>
 <div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
-<div class="deprecation-comment">Use overload with <a href="io/servicetalk/http/api/HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> rather than <a href="io/servicetalk/http/api/HttpExecutionStrategyInfluencer.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategyInfluencer</code></a></div>
+<div class="deprecation-comment">Use <a href="io/servicetalk/http/api/HttpApiConversions.html#toStreamingHttpService(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.BlockingStreamingHttpService)"><code>HttpApiConversions.toStreamingHttpService(HttpExecutionStrategy, BlockingStreamingHttpService)</code></a> instead.</div>
 </div>
+</dd>
+<dt><a href="io/servicetalk/http/api/HttpApiConversions.html#toStreamingHttpService(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.BlockingHttpService)" class="member-name-link">toStreamingHttpService(HttpExecutionStrategy, BlockingHttpService)</a> - Static method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpApiConversions.html" title="class in io.servicetalk.http.api">HttpApiConversions</a></dt>
+<dd>
+<div class="block">Convert from a <a href="io/servicetalk/http/api/BlockingHttpService.html" title="interface in io.servicetalk.http.api"><code>BlockingHttpService</code></a> to a <a href="io/servicetalk/http/api/StreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpService</code></a>.</div>
+</dd>
+<dt><a href="io/servicetalk/http/api/HttpApiConversions.html#toStreamingHttpService(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.BlockingStreamingHttpService)" class="member-name-link">toStreamingHttpService(HttpExecutionStrategy, BlockingStreamingHttpService)</a> - Static method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpApiConversions.html" title="class in io.servicetalk.http.api">HttpApiConversions</a></dt>
+<dd>
+<div class="block">Convert from a <a href="io/servicetalk/http/api/BlockingStreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>BlockingStreamingHttpService</code></a> to a <a href="io/servicetalk/http/api/StreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpService</code></a>.</div>
+</dd>
+<dt><a href="io/servicetalk/http/api/HttpApiConversions.html#toStreamingHttpService(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.HttpService)" class="member-name-link">toStreamingHttpService(HttpExecutionStrategy, HttpService)</a> - Static method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpApiConversions.html" title="class in io.servicetalk.http.api">HttpApiConversions</a></dt>
+<dd>
+<div class="block">Convert from a <a href="io/servicetalk/http/api/HttpService.html" title="interface in io.servicetalk.http.api"><code>HttpService</code></a> to a <a href="io/servicetalk/http/api/StreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpService</code></a>.</div>
 </dd>
 <dt><a href="io/servicetalk/http/api/HttpApiConversions.html#toStreamingHttpService(io.servicetalk.http.api.HttpService,io.servicetalk.http.api.HttpExecutionStrategy)" class="member-name-link">toStreamingHttpService(HttpService, HttpExecutionStrategy)</a> - Static method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpApiConversions.html" title="class in io.servicetalk.http.api">HttpApiConversions</a></dt>
 <dd>
-<div class="block">Convert from a <a href="io/servicetalk/http/api/HttpService.html" title="interface in io.servicetalk.http.api"><code>HttpService</code></a> to a <a href="io/servicetalk/http/api/StreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpService</code></a>.</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">use <a href="io/servicetalk/http/api/HttpApiConversions.html#toStreamingHttpService(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.HttpService)"><code>HttpApiConversions.toStreamingHttpService(HttpExecutionStrategy, HttpService)</code></a> instead.</div>
+</div>
 </dd>
 <dt><a href="io/servicetalk/http/api/HttpApiConversions.html#toStreamingHttpService(io.servicetalk.http.api.HttpService,io.servicetalk.http.api.HttpExecutionStrategyInfluencer)" class="member-name-link">toStreamingHttpService(HttpService, HttpExecutionStrategyInfluencer)</a> - Static method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpApiConversions.html" title="class in io.servicetalk.http.api">HttpApiConversions</a></dt>
 <dd>
 <div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
-<div class="deprecation-comment">Use overload with <a href="io/servicetalk/http/api/HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> rather than <a href="io/servicetalk/http/api/HttpExecutionStrategyInfluencer.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategyInfluencer</code></a></div>
+<div class="deprecation-comment">Use <a href="io/servicetalk/http/api/HttpApiConversions.html#toStreamingHttpService(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.HttpService)"><code>HttpApiConversions.toStreamingHttpService(HttpExecutionStrategy, HttpService)</code></a> instead.</div>
 </div>
 </dd>
 <dt><a href="io/servicetalk/http/api/BlockingStreamingHttpRequest.html#toStreamingRequest()" class="member-name-link">toStreamingRequest()</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/BlockingStreamingHttpRequest.html" title="interface in io.servicetalk.http.api">BlockingStreamingHttpRequest</a></dt>
@@ -20804,10 +20899,12 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/transport/netty/internal/SplittingFlushStrategy.html#updateFlushStrategy(io.servicetalk.transport.netty.internal.NettyConnectionContext.FlushStrategyProvider)" class="member-name-link">updateFlushStrategy(NettyConnectionContext.FlushStrategyProvider)</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/SplittingFlushStrategy.html" title="class in io.servicetalk.transport.netty.internal">SplittingFlushStrategy</a></dt>
 <dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Updates the <a href="io/servicetalk/transport/netty/internal/FlushStrategy.html" title="interface in io.servicetalk.transport.netty.internal"><code>FlushStrategy</code></a> that is used for flushing each delineated write boundary.</div>
 </dd>
 <dt><a href="io/servicetalk/transport/netty/internal/SplittingFlushStrategy.html#updateFlushStrategy(io.servicetalk.transport.netty.internal.NettyConnectionContext.FlushStrategyProvider,int)" class="member-name-link">updateFlushStrategy(NettyConnectionContext.FlushStrategyProvider, int)</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/SplittingFlushStrategy.html" title="class in io.servicetalk.transport.netty.internal">SplittingFlushStrategy</a></dt>
 <dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Updates the <a href="io/servicetalk/transport/netty/internal/FlushStrategy.html" title="interface in io.servicetalk.transport.netty.internal"><code>FlushStrategy</code></a> that is used for flushing each delineated write boundary.</div>
 </dd>
 <dt><a href="io/servicetalk/http/api/HttpHeaderNames.html#UPGRADE" class="member-name-link">UPGRADE</a> - Static variable in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpHeaderNames.html" title="class in io.servicetalk.http.api">HttpHeaderNames</a></dt>
@@ -21013,6 +21110,7 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/transport/netty/internal/SplittingFlushStrategy.FlushBoundaryProvider.FlushBoundary.html#valueOf(java.lang.String)" class="member-name-link">valueOf(String)</a> - Static method in enum class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/SplittingFlushStrategy.FlushBoundaryProvider.FlushBoundary.html" title="enum class in io.servicetalk.transport.netty.internal">SplittingFlushStrategy.FlushBoundaryProvider.FlushBoundary</a></dt>
 <dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Returns the enum constant of this class with the specified name.</div>
 </dd>
 <dt><a href="io/servicetalk/client/api/internal/RequestConcurrencyController.Result.html#values()" class="member-name-link">values()</a> - Static method in enum class io.servicetalk.client.api.internal.<a href="io/servicetalk/client/api/internal/RequestConcurrencyController.Result.html" title="enum class in io.servicetalk.client.api.internal">RequestConcurrencyController.Result</a></dt>
@@ -21078,6 +21176,7 @@ the order they are declared.</div>
 </dd>
 <dt><a href="io/servicetalk/transport/netty/internal/SplittingFlushStrategy.FlushBoundaryProvider.FlushBoundary.html#values()" class="member-name-link">values()</a> - Static method in enum class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/SplittingFlushStrategy.FlushBoundaryProvider.FlushBoundary.html" title="enum class in io.servicetalk.transport.netty.internal">SplittingFlushStrategy.FlushBoundaryProvider.FlushBoundary</a></dt>
 <dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Returns an array containing the constants of this enum class, in
 the order they are declared.</div>
 </dd>

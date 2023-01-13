@@ -160,9 +160,9 @@ implements <a href="NettyConnection.html" title="interface in io.servicetalk.tra
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Get the <a href="../../api/ExecutionContext.html" title="interface in io.servicetalk.transport.api"><code>ExecutionContext</code></a> for this <a href="../../api/ConnectionInfo.html" title="interface in io.servicetalk.transport.api"><code>ConnectionInfo</code></a>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static &lt;Read,<wbr>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code>static &lt;Read,<wbr>
 Write&gt;<br><a href="../../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal">DefaultNettyConnection</a>&lt;Read,<wbr>Write&gt;&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#initChannel(io.netty.channel.Channel,io.servicetalk.buffer.api.BufferAllocator,io.servicetalk.concurrent.api.Executor,io.servicetalk.transport.api.IoExecutor,io.servicetalk.transport.netty.internal.CloseHandler,io.servicetalk.transport.netty.internal.FlushStrategy,long,io.servicetalk.transport.api.SslConfig,io.servicetalk.transport.netty.internal.ChannelInitializer,io.servicetalk.transport.api.ExecutionStrategy,io.servicetalk.transport.api.ConnectionInfo.Protocol,io.servicetalk.transport.api.ConnectionObserver,boolean,java.util.function.Predicate)" class="member-name-link">initChannel</a><wbr>(io.netty.channel.Channel&nbsp;channel,
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#initChannel(io.netty.channel.Channel,io.servicetalk.buffer.api.BufferAllocator,io.servicetalk.concurrent.api.Executor,io.servicetalk.transport.api.IoExecutor,io.servicetalk.transport.netty.internal.CloseHandler,io.servicetalk.transport.netty.internal.FlushStrategy,long,io.servicetalk.transport.api.SslConfig,io.servicetalk.transport.netty.internal.ChannelInitializer,io.servicetalk.transport.api.ExecutionStrategy,io.servicetalk.transport.api.ConnectionInfo.Protocol,io.servicetalk.transport.api.ConnectionObserver,boolean,java.util.function.Predicate)" class="member-name-link">initChannel</a><wbr>(io.netty.channel.Channel&nbsp;channel,
  <a href="../../../buffer/api/BufferAllocator.html" title="interface in io.servicetalk.buffer.api">BufferAllocator</a>&nbsp;allocator,
  <a href="../../../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;executor,
  <a href="../../api/IoExecutor.html" title="interface in io.servicetalk.transport.api">IoExecutor</a>&nbsp;ioExecutor,
@@ -176,9 +176,11 @@ Write&gt;<br><a href="../../../concurrent/api/Single.html" title="class in io.se
  <a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver</a>&nbsp;observer,
  boolean&nbsp;isClient,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Predicate.html" title="class or interface in java.util.function" class="external-link">Predicate</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&gt;&nbsp;shouldWait)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
-<div class="block">Given a <code>Channel</code> this will initialize the <code>ChannelPipeline</code> and create a
- <a href="DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal"><code>DefaultNettyConnection</code></a>.</div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <code>#initChannel(Channel, ExecutionContext, CloseHandler, FlushStrategy, long, SslConfig,
+ ChannelInitializer, Protocol, ConnectionObserver, boolean, Predicate)</code>.</div>
+</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code>static &lt;Read,<wbr>
 Write&gt;<br><a href="../../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal">DefaultNettyConnection</a>&lt;Read,<wbr>Write&gt;&gt;</code></div>
@@ -196,8 +198,8 @@ Write&gt;<br><a href="../../../concurrent/api/Single.html" title="class in io.se
  boolean&nbsp;isClient)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6">
 <div class="block"><span class="deprecated-label">Deprecated.</span>
-<div class="deprecation-comment">Use <code>#initChannel(Channel, BufferAllocator, Executor, IoExecutor, CloseHandler, FlushStrategy,
- long, SslConfig, ChannelInitializer, ExecutionStrategy, Protocol, ConnectionObserver, boolean, Predicate)</code>.</div>
+<div class="deprecation-comment">Use <code>#initChannel(Channel, ExecutionContext, CloseHandler, FlushStrategy, long, SslConfig,
+ ChannelInitializer, Protocol, ConnectionObserver, boolean, Predicate)</code>.</div>
 </div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code>static &lt;Read,<wbr>
@@ -217,13 +219,30 @@ Write&gt;<br><a href="../../../concurrent/api/Single.html" title="class in io.se
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Predicate.html" title="class or interface in java.util.function" class="external-link">Predicate</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&gt;&nbsp;shouldWait)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6">
 <div class="block"><span class="deprecated-label">Deprecated.</span>
-<div class="deprecation-comment">Use <code>#initChannel(Channel, BufferAllocator, Executor, IoExecutor, CloseHandler, FlushStrategy,
- long, SslConfig, ChannelInitializer, ExecutionStrategy, Protocol, ConnectionObserver, boolean, Predicate)</code>.</div>
+<div class="deprecation-comment">Use <code>#initChannel(Channel, ExecutionContext, CloseHandler, FlushStrategy, long, SslConfig,
+ ChannelInitializer, Protocol, ConnectionObserver, boolean, Predicate)</code>.</div>
 </div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static &lt;Read,<wbr>
+Write&gt;<br><a href="../../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal">DefaultNettyConnection</a>&lt;Read,<wbr>Write&gt;&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#initChannel(io.netty.channel.Channel,io.servicetalk.transport.api.ExecutionContext,io.servicetalk.transport.netty.internal.CloseHandler,io.servicetalk.transport.netty.internal.FlushStrategy,long,io.servicetalk.transport.api.SslConfig,io.servicetalk.transport.netty.internal.ChannelInitializer,io.servicetalk.transport.api.ConnectionInfo.Protocol,io.servicetalk.transport.api.ConnectionObserver,boolean,java.util.function.Predicate)" class="member-name-link">initChannel</a><wbr>(io.netty.channel.Channel&nbsp;channel,
+ <a href="../../api/ExecutionContext.html" title="interface in io.servicetalk.transport.api">ExecutionContext</a>&lt;?&gt;&nbsp;executionContext,
+ <a href="CloseHandler.html" title="class in io.servicetalk.transport.netty.internal">CloseHandler</a>&nbsp;closeHandler,
+ <a href="FlushStrategy.html" title="interface in io.servicetalk.transport.netty.internal">FlushStrategy</a>&nbsp;flushStrategy,
+ long&nbsp;idleTimeoutMs,
+ <a href="../../api/SslConfig.html" title="interface in io.servicetalk.transport.api">SslConfig</a>&nbsp;sslConfig,
+ <a href="ChannelInitializer.html" title="interface in io.servicetalk.transport.netty.internal">ChannelInitializer</a>&nbsp;initializer,
+ <a href="../../api/ConnectionInfo.Protocol.html" title="interface in io.servicetalk.transport.api">ConnectionInfo.Protocol</a>&nbsp;protocol,
+ <a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver</a>&nbsp;observer,
+ boolean&nbsp;isClient,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Predicate.html" title="class or interface in java.util.function" class="external-link">Predicate</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&gt;&nbsp;shouldWait)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">Given a <code>Channel</code> this will initialize the <code>ChannelPipeline</code> and create a
+ <a href="DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal"><code>DefaultNettyConnection</code></a>.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static &lt;Read,<wbr>
 Write&gt;<br><a href="DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal">DefaultNettyConnection</a>&lt;Read,<wbr>Write&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#initChildChannel(io.netty.channel.Channel,io.servicetalk.transport.api.ConnectionContext,io.servicetalk.transport.netty.internal.CloseHandler,io.servicetalk.transport.netty.internal.FlushStrategy,long,io.servicetalk.transport.api.ConnectionInfo.Protocol,io.netty.channel.ChannelConfig,io.servicetalk.transport.api.ConnectionObserver.StreamObserver,boolean,java.util.function.Predicate,java.util.function.UnaryOperator)" class="member-name-link">initChildChannel</a><wbr>(io.netty.channel.Channel&nbsp;channel,
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#initChildChannel(io.netty.channel.Channel,io.servicetalk.transport.api.ConnectionContext,io.servicetalk.transport.netty.internal.CloseHandler,io.servicetalk.transport.netty.internal.FlushStrategy,long,io.servicetalk.transport.api.ConnectionInfo.Protocol,io.netty.channel.ChannelConfig,io.servicetalk.transport.api.ConnectionObserver.StreamObserver,boolean,java.util.function.Predicate,java.util.function.UnaryOperator)" class="member-name-link">initChildChannel</a><wbr>(io.netty.channel.Channel&nbsp;channel,
  <a href="../../api/ConnectionContext.html" title="interface in io.servicetalk.transport.api">ConnectionContext</a>&nbsp;parent,
  <a href="CloseHandler.html" title="class in io.servicetalk.transport.netty.internal">CloseHandler</a>&nbsp;closeHandler,
  <a href="FlushStrategy.html" title="interface in io.servicetalk.transport.netty.internal">FlushStrategy</a>&nbsp;flushStrategy,
@@ -234,39 +253,19 @@ Write&gt;<br><a href="DefaultNettyConnection.html" title="class in io.servicetal
  boolean&nbsp;isClient,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Predicate.html" title="class or interface in java.util.function" class="external-link">Predicate</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&gt;&nbsp;shouldWait,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/UnaryOperator.html" title="class or interface in java.util.function" class="external-link">UnaryOperator</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&gt;&nbsp;enrichProtocolError)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Given a <code>Channel</code> this will initialize the <code>ChannelPipeline</code> just to create a
  <a href="DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal"><code>DefaultNettyConnection</code></a>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code>static &lt;Read,<wbr>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code>static &lt;Read,<wbr>
 Write&gt;<br><a href="DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal">DefaultNettyConnection</a>&lt;Read,<wbr>Write&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#initChildChannel(io.netty.channel.Channel,io.servicetalk.transport.api.ExecutionContext,io.servicetalk.transport.netty.internal.CloseHandler,io.servicetalk.transport.netty.internal.FlushStrategy,long,io.servicetalk.transport.api.ConnectionInfo.Protocol,io.servicetalk.transport.api.SslConfig,javax.net.ssl.SSLSession,io.netty.channel.ChannelConfig,io.servicetalk.transport.api.ConnectionObserver.StreamObserver,boolean,java.util.function.Predicate,java.util.function.UnaryOperator)" class="member-name-link">initChildChannel</a><wbr>(io.netty.channel.Channel&nbsp;channel,
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#initChildChannel(io.netty.channel.Channel,io.servicetalk.transport.api.ExecutionContext,io.servicetalk.transport.netty.internal.CloseHandler,io.servicetalk.transport.netty.internal.FlushStrategy,long,io.servicetalk.transport.api.ConnectionInfo.Protocol,io.servicetalk.transport.api.SslConfig,javax.net.ssl.SSLSession,io.netty.channel.ChannelConfig,io.servicetalk.transport.api.ConnectionObserver.StreamObserver,boolean,java.util.function.Predicate,java.util.function.UnaryOperator)" class="member-name-link">initChildChannel</a><wbr>(io.netty.channel.Channel&nbsp;channel,
  <a href="../../api/ExecutionContext.html" title="interface in io.servicetalk.transport.api">ExecutionContext</a>&lt;?&gt;&nbsp;executionContext,
  <a href="CloseHandler.html" title="class in io.servicetalk.transport.netty.internal">CloseHandler</a>&nbsp;closeHandler,
  <a href="FlushStrategy.html" title="interface in io.servicetalk.transport.netty.internal">FlushStrategy</a>&nbsp;flushStrategy,
  long&nbsp;idleTimeoutMs,
  <a href="../../api/ConnectionInfo.Protocol.html" title="interface in io.servicetalk.transport.api">ConnectionInfo.Protocol</a>&nbsp;protocol,
  <a href="../../api/SslConfig.html" title="interface in io.servicetalk.transport.api">SslConfig</a>&nbsp;sslConfig,
- <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/SSLSession.html" title="class or interface in javax.net.ssl" class="external-link">SSLSession</a>&nbsp;sslSession,
- io.netty.channel.ChannelConfig&nbsp;parentChannelConfig,
- <a href="../../api/ConnectionObserver.StreamObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.StreamObserver</a>&nbsp;streamObserver,
- boolean&nbsp;isClient,
- <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Predicate.html" title="class or interface in java.util.function" class="external-link">Predicate</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&gt;&nbsp;shouldWait,
- <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/UnaryOperator.html" title="class or interface in java.util.function" class="external-link">UnaryOperator</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&gt;&nbsp;enrichProtocolError)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6">
-<div class="block"><span class="deprecated-label">Deprecated.</span>
-<div class="deprecation-comment">Use <code>#initChildChannel(Channel, ConnectionContext, CloseHandler, FlushStrategy, long, Protocol,
- ChannelConfig, StreamObserver, boolean, Predicate, UnaryOperator)</code>.</div>
-</div>
-</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code>static &lt;Read,<wbr>
-Write&gt;<br><a href="DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal">DefaultNettyConnection</a>&lt;Read,<wbr>Write&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#initChildChannel(io.netty.channel.Channel,io.servicetalk.transport.api.ExecutionContext,io.servicetalk.transport.netty.internal.CloseHandler,io.servicetalk.transport.netty.internal.FlushStrategy,java.lang.Long,io.servicetalk.transport.api.ConnectionInfo.Protocol,javax.net.ssl.SSLSession,io.netty.channel.ChannelConfig,io.servicetalk.transport.api.ConnectionObserver.StreamObserver,boolean,java.util.function.Predicate,java.util.function.UnaryOperator)" class="member-name-link">initChildChannel</a><wbr>(io.netty.channel.Channel&nbsp;channel,
- <a href="../../api/ExecutionContext.html" title="interface in io.servicetalk.transport.api">ExecutionContext</a>&lt;?&gt;&nbsp;executionContext,
- <a href="CloseHandler.html" title="class in io.servicetalk.transport.netty.internal">CloseHandler</a>&nbsp;closeHandler,
- <a href="FlushStrategy.html" title="interface in io.servicetalk.transport.netty.internal">FlushStrategy</a>&nbsp;flushStrategy,
- <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Long.html" title="class or interface in java.lang" class="external-link">Long</a>&nbsp;idleTimeoutMs,
- <a href="../../api/ConnectionInfo.Protocol.html" title="interface in io.servicetalk.transport.api">ConnectionInfo.Protocol</a>&nbsp;protocol,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/SSLSession.html" title="class or interface in javax.net.ssl" class="external-link">SSLSession</a>&nbsp;sslSession,
  io.netty.channel.ChannelConfig&nbsp;parentChannelConfig,
  <a href="../../api/ConnectionObserver.StreamObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.StreamObserver</a>&nbsp;streamObserver,
@@ -281,7 +280,27 @@ Write&gt;<br><a href="DefaultNettyConnection.html" title="class in io.servicetal
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code>static &lt;Read,<wbr>
 Write&gt;<br><a href="DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal">DefaultNettyConnection</a>&lt;Read,<wbr>Write&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#initChildChannel(io.netty.channel.Channel,io.servicetalk.transport.api.ExecutionContext,io.servicetalk.transport.netty.internal.CloseHandler,io.servicetalk.transport.netty.internal.FlushStrategy,java.lang.Long,io.servicetalk.transport.api.ConnectionInfo.Protocol,javax.net.ssl.SSLSession,io.netty.channel.ChannelConfig,io.servicetalk.transport.api.ConnectionObserver.StreamObserver,boolean,java.util.function.UnaryOperator)" class="member-name-link">initChildChannel</a><wbr>(io.netty.channel.Channel&nbsp;channel,
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#initChildChannel(io.netty.channel.Channel,io.servicetalk.transport.api.ExecutionContext,io.servicetalk.transport.netty.internal.CloseHandler,io.servicetalk.transport.netty.internal.FlushStrategy,java.lang.Long,io.servicetalk.transport.api.ConnectionInfo.Protocol,javax.net.ssl.SSLSession,io.netty.channel.ChannelConfig,io.servicetalk.transport.api.ConnectionObserver.StreamObserver,boolean,java.util.function.Predicate,java.util.function.UnaryOperator)" class="member-name-link">initChildChannel</a><wbr>(io.netty.channel.Channel&nbsp;channel,
+ <a href="../../api/ExecutionContext.html" title="interface in io.servicetalk.transport.api">ExecutionContext</a>&lt;?&gt;&nbsp;executionContext,
+ <a href="CloseHandler.html" title="class in io.servicetalk.transport.netty.internal">CloseHandler</a>&nbsp;closeHandler,
+ <a href="FlushStrategy.html" title="interface in io.servicetalk.transport.netty.internal">FlushStrategy</a>&nbsp;flushStrategy,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Long.html" title="class or interface in java.lang" class="external-link">Long</a>&nbsp;idleTimeoutMs,
+ <a href="../../api/ConnectionInfo.Protocol.html" title="interface in io.servicetalk.transport.api">ConnectionInfo.Protocol</a>&nbsp;protocol,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/SSLSession.html" title="class or interface in javax.net.ssl" class="external-link">SSLSession</a>&nbsp;sslSession,
+ io.netty.channel.ChannelConfig&nbsp;parentChannelConfig,
+ <a href="../../api/ConnectionObserver.StreamObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.StreamObserver</a>&nbsp;streamObserver,
+ boolean&nbsp;isClient,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Predicate.html" title="class or interface in java.util.function" class="external-link">Predicate</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&gt;&nbsp;shouldWait,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/UnaryOperator.html" title="class or interface in java.util.function" class="external-link">UnaryOperator</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&gt;&nbsp;enrichProtocolError)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <code>#initChildChannel(Channel, ConnectionContext, CloseHandler, FlushStrategy, long, Protocol,
+ ChannelConfig, StreamObserver, boolean, Predicate, UnaryOperator)</code>.</div>
+</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code>static &lt;Read,<wbr>
+Write&gt;<br><a href="DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal">DefaultNettyConnection</a>&lt;Read,<wbr>Write&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#initChildChannel(io.netty.channel.Channel,io.servicetalk.transport.api.ExecutionContext,io.servicetalk.transport.netty.internal.CloseHandler,io.servicetalk.transport.netty.internal.FlushStrategy,java.lang.Long,io.servicetalk.transport.api.ConnectionInfo.Protocol,javax.net.ssl.SSLSession,io.netty.channel.ChannelConfig,io.servicetalk.transport.api.ConnectionObserver.StreamObserver,boolean,java.util.function.UnaryOperator)" class="member-name-link">initChildChannel</a><wbr>(io.netty.channel.Channel&nbsp;channel,
  <a href="../../api/ExecutionContext.html" title="interface in io.servicetalk.transport.api">ExecutionContext</a>&lt;?&gt;&nbsp;executionContext,
  <a href="CloseHandler.html" title="class in io.servicetalk.transport.netty.internal">CloseHandler</a>&nbsp;closeHandler,
  <a href="FlushStrategy.html" title="interface in io.servicetalk.transport.netty.internal">FlushStrategy</a>&nbsp;flushStrategy,
@@ -292,87 +311,87 @@ Write&gt;<br><a href="DefaultNettyConnection.html" title="class in io.servicetal
  <a href="../../api/ConnectionObserver.StreamObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.StreamObserver</a>&nbsp;streamObserver,
  boolean&nbsp;isClient,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/UnaryOperator.html" title="class or interface in java.util.function" class="external-link">UnaryOperator</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&gt;&nbsp;enrichProtocolError)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6">
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6">
 <div class="block"><span class="deprecated-label">Deprecated.</span>
 <div class="deprecation-comment">Use <code>#initChildChannel(Channel, ConnectionContext, CloseHandler, FlushStrategy, long, Protocol,
  ChannelConfig, StreamObserver, boolean, Predicate, UnaryOperator)</code>.</div>
 </div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#listenerDiscard(java.lang.Throwable)" class="member-name-link">listenerDiscard</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&nbsp;cause)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/SocketAddress.html" title="class or interface in java.net" class="external-link">SocketAddress</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#localAddress()" class="member-name-link">localAddress</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#listenerDiscard(java.lang.Throwable)" class="member-name-link">listenerDiscard</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&nbsp;cause)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/SocketAddress.html" title="class or interface in java.net" class="external-link">SocketAddress</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#localAddress()" class="member-name-link">localAddress</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">The <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/SocketAddress.html" title="class or interface in java.net" class="external-link"><code>SocketAddress</code></a> to which the associated connection is bound.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>io.netty.channel.Channel</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#nettyChannel()" class="member-name-link">nettyChannel</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>io.netty.channel.Channel</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#nettyChannel()" class="member-name-link">nettyChannel</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Return the Netty <code>Channel</code> backing this connection.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../../api/ConnectionContext.html" title="interface in io.servicetalk.transport.api">ConnectionContext</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#parent()" class="member-name-link">parent</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../../api/ConnectionContext.html" title="interface in io.servicetalk.transport.api">ConnectionContext</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#parent()" class="member-name-link">parent</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns a reference to a parent <a href="../../api/ConnectionContext.html" title="interface in io.servicetalk.transport.api"><code>ConnectionContext</code></a> if any.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../../api/ConnectionInfo.Protocol.html" title="interface in io.servicetalk.transport.api">ConnectionInfo.Protocol</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#protocol()" class="member-name-link">protocol</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../../api/ConnectionInfo.Protocol.html" title="interface in io.servicetalk.transport.api">ConnectionInfo.Protocol</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#protocol()" class="member-name-link">protocol</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Get the <a href="../../api/ConnectionInfo.Protocol.html" title="interface in io.servicetalk.transport.api"><code>ConnectionInfo.Protocol</code></a> for this <a href="../../api/ConnectionInfo.html" title="interface in io.servicetalk.transport.api"><code>ConnectionInfo</code></a>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="DefaultNettyConnection.html" title="type parameter in DefaultNettyConnection">Read</a>&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#read()" class="member-name-link">read</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="DefaultNettyConnection.html" title="type parameter in DefaultNettyConnection">Read</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#read()" class="member-name-link">read</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns <a href="../../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> that emits all items as read from this connection.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/SocketAddress.html" title="class or interface in java.net" class="external-link">SocketAddress</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#remoteAddress()" class="member-name-link">remoteAddress</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/SocketAddress.html" title="class or interface in java.net" class="external-link">SocketAddress</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#remoteAddress()" class="member-name-link">remoteAddress</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">The <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/SocketAddress.html" title="class or interface in java.net" class="external-link"><code>SocketAddress</code></a> to which the associated connection is connected.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>&lt;T&gt;&nbsp;T</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#socketOption(java.net.SocketOption)" class="member-name-link">socketOption</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/SocketOption.html" title="class or interface in java.net" class="external-link">SocketOption</a>&lt;T&gt;&nbsp;option)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>&lt;T&gt;&nbsp;T</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#socketOption(java.net.SocketOption)" class="member-name-link">socketOption</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/SocketOption.html" title="class or interface in java.net" class="external-link">SocketOption</a>&lt;T&gt;&nbsp;option)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Get the <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/SocketOption.html" title="class or interface in java.net" class="external-link"><code>SocketOption</code></a> value of type <code>T</code> for this <a href="../../api/ConnectionInfo.html" title="interface in io.servicetalk.transport.api"><code>ConnectionInfo</code></a>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../../api/SslConfig.html" title="interface in io.servicetalk.transport.api">SslConfig</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#sslConfig()" class="member-name-link">sslConfig</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../../api/SslConfig.html" title="interface in io.servicetalk.transport.api">SslConfig</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#sslConfig()" class="member-name-link">sslConfig</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Get the <a href="../../api/SslConfig.html" title="interface in io.servicetalk.transport.api"><code>SslConfig</code></a> for this connection.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/SSLSession.html" title="class or interface in javax.net.ssl" class="external-link">SSLSession</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#sslSession()" class="member-name-link">sslSession</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/SSLSession.html" title="class or interface in javax.net.ssl" class="external-link">SSLSession</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#sslSession()" class="member-name-link">sslSession</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Get the <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/SSLSession.html" title="class or interface in javax.net.ssl" class="external-link"><code>SSLSession</code></a> for this connection.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#terminateSource()" class="member-name-link">terminateSource</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toString()" class="member-name-link">toString</a>()</code></div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#terminateSource()" class="member-name-link">terminateSource</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#transportError()" class="member-name-link">transportError</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toString()" class="member-name-link">toString</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#transportError()" class="member-name-link">transportError</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns a <a href="../../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link"><code>Throwable</code></a>&gt; that may terminate with an error, if an error is observed at
  the transport.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../../../concurrent/Cancellable.html" title="interface in io.servicetalk.concurrent">Cancellable</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#updateFlushStrategy(io.servicetalk.transport.netty.internal.NettyConnectionContext.FlushStrategyProvider)" class="member-name-link">updateFlushStrategy</a><wbr>(<a href="NettyConnectionContext.FlushStrategyProvider.html" title="interface in io.servicetalk.transport.netty.internal">NettyConnectionContext.FlushStrategyProvider</a>&nbsp;strategyProvider)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../../../concurrent/Cancellable.html" title="interface in io.servicetalk.concurrent">Cancellable</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#updateFlushStrategy(io.servicetalk.transport.netty.internal.NettyConnectionContext.FlushStrategyProvider)" class="member-name-link">updateFlushStrategy</a><wbr>(<a href="NettyConnectionContext.FlushStrategyProvider.html" title="interface in io.servicetalk.transport.netty.internal">NettyConnectionContext.FlushStrategyProvider</a>&nbsp;strategyProvider)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Updates <a href="FlushStrategy.html" title="interface in io.servicetalk.transport.netty.internal"><code>FlushStrategy</code></a> associated with this connection.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#write(io.servicetalk.concurrent.api.Publisher)" class="member-name-link">write</a><wbr>(<a href="../../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="DefaultNettyConnection.html" title="type parameter in DefaultNettyConnection">Write</a>&gt;&nbsp;write)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#write(io.servicetalk.concurrent.api.Publisher)" class="member-name-link">write</a><wbr>(<a href="../../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="DefaultNettyConnection.html" title="type parameter in DefaultNettyConnection">Write</a>&gt;&nbsp;write)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Writes all elements emitted by the passed <a href="../../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> on this connection.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#write(io.servicetalk.concurrent.api.Publisher,java.util.function.Supplier,java.util.function.Supplier)" class="member-name-link">write</a><wbr>(<a href="../../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="DefaultNettyConnection.html" title="type parameter in DefaultNettyConnection">Write</a>&gt;&nbsp;write,
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#write(io.servicetalk.concurrent.api.Publisher,java.util.function.Supplier,java.util.function.Supplier)" class="member-name-link">write</a><wbr>(<a href="../../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a>&lt;<a href="DefaultNettyConnection.html" title="type parameter in DefaultNettyConnection">Write</a>&gt;&nbsp;write,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Supplier.html" title="class or interface in java.util.function" class="external-link">Supplier</a>&lt;<a href="FlushStrategy.html" title="interface in io.servicetalk.transport.netty.internal">FlushStrategy</a>&gt;&nbsp;flushStrategySupplier,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Supplier.html" title="class or interface in java.util.function" class="external-link">Supplier</a>&lt;<a href="WriteDemandEstimator.html" title="interface in io.servicetalk.transport.netty.internal">WriteDemandEstimator</a>&gt;&nbsp;demandEstimatorSupplier)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Writes all elements emitted by the passed <a href="../../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> on this connection.</div>
 </div>
 </div>
@@ -613,8 +632,8 @@ Write&gt;</span>
  <a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver</a>&nbsp;observer,
  boolean&nbsp;isClient)</span></div>
 <div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
-<div class="deprecation-comment">Use <code>#initChannel(Channel, BufferAllocator, Executor, IoExecutor, CloseHandler, FlushStrategy,
- long, SslConfig, ChannelInitializer, ExecutionStrategy, Protocol, ConnectionObserver, boolean, Predicate)</code>.</div>
+<div class="deprecation-comment">Use <code>#initChannel(Channel, ExecutionContext, CloseHandler, FlushStrategy, long, SslConfig,
+ ChannelInitializer, Protocol, ConnectionObserver, boolean, Predicate)</code>.</div>
 </div>
 <div class="block">Given a <code>Channel</code> this will initialize the <code>ChannelPipeline</code> and create a
  <a href="DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal"><code>DefaultNettyConnection</code></a>. The resulting single will complete after the TLS handshake has completed
@@ -663,8 +682,8 @@ Write&gt;</span>
  boolean&nbsp;isClient,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Predicate.html" title="class or interface in java.util.function" class="external-link">Predicate</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&gt;&nbsp;shouldWait)</span></div>
 <div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
-<div class="deprecation-comment">Use <code>#initChannel(Channel, BufferAllocator, Executor, IoExecutor, CloseHandler, FlushStrategy,
- long, SslConfig, ChannelInitializer, ExecutionStrategy, Protocol, ConnectionObserver, boolean, Predicate)</code>.</div>
+<div class="deprecation-comment">Use <code>#initChannel(Channel, ExecutionContext, CloseHandler, FlushStrategy, long, SslConfig,
+ ChannelInitializer, Protocol, ConnectionObserver, boolean, Predicate)</code>.</div>
 </div>
 <div class="block">Given a <code>Channel</code> this will initialize the <code>ChannelPipeline</code> and create a
  <a href="DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal"><code>DefaultNettyConnection</code></a>. The resulting single will complete after the TLS handshake has completed
@@ -696,7 +715,8 @@ Write&gt;</span>
 <li>
 <section class="detail" id="initChannel(io.netty.channel.Channel,io.servicetalk.buffer.api.BufferAllocator,io.servicetalk.concurrent.api.Executor,io.servicetalk.transport.api.IoExecutor,io.servicetalk.transport.netty.internal.CloseHandler,io.servicetalk.transport.netty.internal.FlushStrategy,long,io.servicetalk.transport.api.SslConfig,io.servicetalk.transport.netty.internal.ChannelInitializer,io.servicetalk.transport.api.ExecutionStrategy,io.servicetalk.transport.api.ConnectionInfo.Protocol,io.servicetalk.transport.api.ConnectionObserver,boolean,java.util.function.Predicate)">
 <h3>initChannel</h3>
-<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="type-parameters">&lt;Read,<wbr>
+<div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">public static</span>&nbsp;<span class="type-parameters">&lt;Read,<wbr>
 Write&gt;</span>
 <span class="return-type"><a href="../../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal">DefaultNettyConnection</a>&lt;Read,<wbr>Write&gt;&gt;</span>&nbsp;<span class="element-name">initChannel</span><wbr><span class="parameters">(io.netty.channel.Channel&nbsp;channel,
  <a href="../../../buffer/api/BufferAllocator.html" title="interface in io.servicetalk.buffer.api">BufferAllocator</a>&nbsp;allocator,
@@ -714,6 +734,10 @@ Write&gt;</span>
  <a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver</a>&nbsp;observer,
  boolean&nbsp;isClient,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Predicate.html" title="class or interface in java.util.function" class="external-link">Predicate</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&gt;&nbsp;shouldWait)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <code>#initChannel(Channel, ExecutionContext, CloseHandler, FlushStrategy, long, SslConfig,
+ ChannelInitializer, Protocol, ConnectionObserver, boolean, Predicate)</code>.</div>
+</div>
 <div class="block">Given a <code>Channel</code> this will initialize the <code>ChannelPipeline</code> and create a
  <a href="DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal"><code>DefaultNettyConnection</code></a>. The resulting single will complete after the TLS handshake has completed
  (if applicable) or otherwise after the channel is active and ready to use.</div>
@@ -732,6 +756,50 @@ Write&gt;</span>
 <dd><code>sslConfig</code> - The <a href="../../api/SslConfig.html" title="interface in io.servicetalk.transport.api"><code>SslConfig</code></a> to use for the <a href="DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal"><code>DefaultNettyConnection</code></a>.</dd>
 <dd><code>initializer</code> - Synchronously initializes the pipeline upon subscribe.</dd>
 <dd><code>executionStrategy</code> - <a href="../../api/ExecutionStrategy.html" title="interface in io.servicetalk.transport.api"><code>ExecutionStrategy</code></a> to use for this connection.</dd>
+<dd><code>protocol</code> - <a href="../../api/ConnectionInfo.Protocol.html" title="interface in io.servicetalk.transport.api"><code>ConnectionInfo.Protocol</code></a> for the returned <a href="DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal"><code>DefaultNettyConnection</code></a>.</dd>
+<dd><code>observer</code> - <a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver</code></a> to report network events.</dd>
+<dd><code>isClient</code> - tells if this <code>Channel</code> is for the client.</dd>
+<dd><code>shouldWait</code> - predicate that tells when request payload body should wait for continuation signal.</dd>
+<dt>Returns:</dt>
+<dd>A <a href="../../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> that completes with a <a href="DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal"><code>DefaultNettyConnection</code></a> after the channel is activated and
+ ready to use.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="initChannel(io.netty.channel.Channel,io.servicetalk.transport.api.ExecutionContext,io.servicetalk.transport.netty.internal.CloseHandler,io.servicetalk.transport.netty.internal.FlushStrategy,long,io.servicetalk.transport.api.SslConfig,io.servicetalk.transport.netty.internal.ChannelInitializer,io.servicetalk.transport.api.ConnectionInfo.Protocol,io.servicetalk.transport.api.ConnectionObserver,boolean,java.util.function.Predicate)">
+<h3>initChannel</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="type-parameters">&lt;Read,<wbr>
+Write&gt;</span>
+<span class="return-type"><a href="../../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal">DefaultNettyConnection</a>&lt;Read,<wbr>Write&gt;&gt;</span>&nbsp;<span class="element-name">initChannel</span><wbr><span class="parameters">(io.netty.channel.Channel&nbsp;channel,
+ <a href="../../api/ExecutionContext.html" title="interface in io.servicetalk.transport.api">ExecutionContext</a>&lt;?&gt;&nbsp;executionContext,
+ <a href="CloseHandler.html" title="class in io.servicetalk.transport.netty.internal">CloseHandler</a>&nbsp;closeHandler,
+ <a href="FlushStrategy.html" title="interface in io.servicetalk.transport.netty.internal">FlushStrategy</a>&nbsp;flushStrategy,
+ long&nbsp;idleTimeoutMs,
+ @Nullable
+ <a href="../../api/SslConfig.html" title="interface in io.servicetalk.transport.api">SslConfig</a>&nbsp;sslConfig,
+ <a href="ChannelInitializer.html" title="interface in io.servicetalk.transport.netty.internal">ChannelInitializer</a>&nbsp;initializer,
+ <a href="../../api/ConnectionInfo.Protocol.html" title="interface in io.servicetalk.transport.api">ConnectionInfo.Protocol</a>&nbsp;protocol,
+ <a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver</a>&nbsp;observer,
+ boolean&nbsp;isClient,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Predicate.html" title="class or interface in java.util.function" class="external-link">Predicate</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&gt;&nbsp;shouldWait)</span></div>
+<div class="block">Given a <code>Channel</code> this will initialize the <code>ChannelPipeline</code> and create a
+ <a href="DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal"><code>DefaultNettyConnection</code></a>. The resulting single will complete after the TLS handshake has completed
+ (if applicable) or otherwise after the channel is active and ready to use.</div>
+<dl class="notes">
+<dt>Type Parameters:</dt>
+<dd><code>Read</code> - Type of objects read from the <a href="NettyConnection.html" title="interface in io.servicetalk.transport.netty.internal"><code>NettyConnection</code></a>.</dd>
+<dd><code>Write</code> - Type of objects written to the <a href="NettyConnection.html" title="interface in io.servicetalk.transport.netty.internal"><code>NettyConnection</code></a>.</dd>
+<dt>Parameters:</dt>
+<dd><code>channel</code> - A newly created <code>Channel</code>.</dd>
+<dd><code>executionContext</code> - The <a href="../../api/ExecutionContext.html" title="interface in io.servicetalk.transport.api"><code>ExecutionContext</code></a> to use for the <a href="DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal"><code>DefaultNettyConnection</code></a>. Note:
+ <a href="../../api/ExecutionContext.html#ioExecutor()"><code>ExecutionContext.ioExecutor()</code></a> must be backed by a single <code>EventLoop</code> thread identical to
+ <code>Channel.eventLoop()</code> for the specified channel.</dd>
+<dd><code>closeHandler</code> - Manages the half closure of the <a href="DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal"><code>DefaultNettyConnection</code></a>.</dd>
+<dd><code>flushStrategy</code> - Manages flushing of data for the <a href="DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal"><code>DefaultNettyConnection</code></a>.</dd>
+<dd><code>idleTimeoutMs</code> - Value for <a href="../../api/ServiceTalkSocketOptions.html#IDLE_TIMEOUT"><code>IDLE_TIMEOUT</code></a> socket option.</dd>
+<dd><code>sslConfig</code> - The <a href="../../api/SslConfig.html" title="interface in io.servicetalk.transport.api"><code>SslConfig</code></a> to use for the <a href="DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal"><code>DefaultNettyConnection</code></a>.</dd>
+<dd><code>initializer</code> - Synchronously initializes the pipeline upon subscribe.</dd>
 <dd><code>protocol</code> - <a href="../../api/ConnectionInfo.Protocol.html" title="interface in io.servicetalk.transport.api"><code>ConnectionInfo.Protocol</code></a> for the returned <a href="DefaultNettyConnection.html" title="class in io.servicetalk.transport.netty.internal"><code>DefaultNettyConnection</code></a>.</dd>
 <dd><code>observer</code> - <a href="../../api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api"><code>ConnectionObserver</code></a> to report network events.</dd>
 <dd><code>isClient</code> - tells if this <code>Channel</code> is for the client.</dd>

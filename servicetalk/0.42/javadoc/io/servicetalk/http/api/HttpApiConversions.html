@@ -94,7 +94,9 @@ loadScripts(document, 'script');</script>
 <div class="col-first even-row-color"><code>static interface&nbsp;</code></div>
 <div class="col-second even-row-color"><code><a href="HttpApiConversions.ServiceAdapterHolder.html" class="type-name-link" title="interface in io.servicetalk.http.api">HttpApiConversions.ServiceAdapterHolder</a></code></div>
 <div class="col-last even-row-color">
-<div class="block">A holder for <a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpService</code></a> that adapts another <code>service</code> to the streaming programming model.</div>
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">this interface is not needed anymore and will be removed in a future version with no replacement.</div>
+</div>
 </div>
 </div>
 </section>
@@ -267,46 +269,70 @@ loadScripts(document, 'script');</script>
 <div class="deprecation-comment">Use overload with <a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> rather than <a href="HttpExecutionStrategyInfluencer.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategyInfluencer</code></a></div>
 </div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="HttpApiConversions.ServiceAdapterHolder.html" title="interface in io.servicetalk.http.api">HttpApiConversions.ServiceAdapterHolder</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#toStreamingHttpService(io.servicetalk.http.api.BlockingHttpService,io.servicetalk.http.api.HttpExecutionStrategy)" class="member-name-link">toStreamingHttpService</a><wbr>(<a href="BlockingHttpService.html" title="interface in io.servicetalk.http.api">BlockingHttpService</a>&nbsp;service,
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code>static <a href="HttpApiConversions.ServiceAdapterHolder.html" title="interface in io.servicetalk.http.api">HttpApiConversions.ServiceAdapterHolder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#toStreamingHttpService(io.servicetalk.http.api.BlockingHttpService,io.servicetalk.http.api.HttpExecutionStrategy)" class="member-name-link">toStreamingHttpService</a><wbr>(<a href="BlockingHttpService.html" title="interface in io.servicetalk.http.api">BlockingHttpService</a>&nbsp;service,
  <a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategy</a>&nbsp;strategy)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
-<div class="block">Convert from a <a href="BlockingStreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>BlockingStreamingHttpService</code></a> to a <a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpService</code></a>.</div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="#toStreamingHttpService(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.BlockingHttpService)"><code>toStreamingHttpService(HttpExecutionStrategy, BlockingHttpService)</code></a> instead.</div>
+</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code>static <a href="HttpApiConversions.ServiceAdapterHolder.html" title="interface in io.servicetalk.http.api">HttpApiConversions.ServiceAdapterHolder</a></code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#toStreamingHttpService(io.servicetalk.http.api.BlockingHttpService,io.servicetalk.http.api.HttpExecutionStrategyInfluencer)" class="member-name-link">toStreamingHttpService</a><wbr>(<a href="BlockingHttpService.html" title="interface in io.servicetalk.http.api">BlockingHttpService</a>&nbsp;service,
  <a href="HttpExecutionStrategyInfluencer.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategyInfluencer</a>&nbsp;influencer)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6">
 <div class="block"><span class="deprecated-label">Deprecated.</span>
-<div class="deprecation-comment">Use overload with <a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> rather than <a href="HttpExecutionStrategyInfluencer.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategyInfluencer</code></a></div>
+<div class="deprecation-comment">Use <a href="#toStreamingHttpService(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.BlockingHttpService)"><code>toStreamingHttpService(HttpExecutionStrategy, BlockingHttpService)</code></a> instead.</div>
 </div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="HttpApiConversions.ServiceAdapterHolder.html" title="interface in io.servicetalk.http.api">HttpApiConversions.ServiceAdapterHolder</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#toStreamingHttpService(io.servicetalk.http.api.BlockingStreamingHttpService,io.servicetalk.http.api.HttpExecutionStrategy)" class="member-name-link">toStreamingHttpService</a><wbr>(<a href="BlockingStreamingHttpService.html" title="interface in io.servicetalk.http.api">BlockingStreamingHttpService</a>&nbsp;service,
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code>static <a href="HttpApiConversions.ServiceAdapterHolder.html" title="interface in io.servicetalk.http.api">HttpApiConversions.ServiceAdapterHolder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#toStreamingHttpService(io.servicetalk.http.api.BlockingStreamingHttpService,io.servicetalk.http.api.HttpExecutionStrategy)" class="member-name-link">toStreamingHttpService</a><wbr>(<a href="BlockingStreamingHttpService.html" title="interface in io.servicetalk.http.api">BlockingStreamingHttpService</a>&nbsp;service,
  <a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategy</a>&nbsp;strategy)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
-<div class="block">Convert from a <a href="BlockingStreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>BlockingStreamingHttpService</code></a> to a <a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpService</code></a>.</div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">use <a href="#toStreamingHttpService(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.BlockingStreamingHttpService)"><code>toStreamingHttpService(HttpExecutionStrategy, BlockingStreamingHttpService)</code></a> instead.</div>
+</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code>static <a href="HttpApiConversions.ServiceAdapterHolder.html" title="interface in io.servicetalk.http.api">HttpApiConversions.ServiceAdapterHolder</a></code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#toStreamingHttpService(io.servicetalk.http.api.BlockingStreamingHttpService,io.servicetalk.http.api.HttpExecutionStrategyInfluencer)" class="member-name-link">toStreamingHttpService</a><wbr>(<a href="BlockingStreamingHttpService.html" title="interface in io.servicetalk.http.api">BlockingStreamingHttpService</a>&nbsp;service,
  <a href="HttpExecutionStrategyInfluencer.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategyInfluencer</a>&nbsp;influencer)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6">
 <div class="block"><span class="deprecated-label">Deprecated.</span>
-<div class="deprecation-comment">Use overload with <a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> rather than <a href="HttpExecutionStrategyInfluencer.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategyInfluencer</code></a></div>
+<div class="deprecation-comment">Use <a href="#toStreamingHttpService(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.BlockingStreamingHttpService)"><code>toStreamingHttpService(HttpExecutionStrategy, BlockingStreamingHttpService)</code></a> instead.</div>
 </div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="HttpApiConversions.ServiceAdapterHolder.html" title="interface in io.servicetalk.http.api">HttpApiConversions.ServiceAdapterHolder</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#toStreamingHttpService(io.servicetalk.http.api.HttpService,io.servicetalk.http.api.HttpExecutionStrategy)" class="member-name-link">toStreamingHttpService</a><wbr>(<a href="HttpService.html" title="interface in io.servicetalk.http.api">HttpService</a>&nbsp;service,
- <a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategy</a>&nbsp;strategy)</code></div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api">StreamingHttpService</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#toStreamingHttpService(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.BlockingHttpService)" class="member-name-link">toStreamingHttpService</a><wbr>(<a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategy</a>&nbsp;strategy,
+ <a href="BlockingHttpService.html" title="interface in io.servicetalk.http.api">BlockingHttpService</a>&nbsp;service)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">Convert from a <a href="BlockingHttpService.html" title="interface in io.servicetalk.http.api"><code>BlockingHttpService</code></a> to a <a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpService</code></a>.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api">StreamingHttpService</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#toStreamingHttpService(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.BlockingStreamingHttpService)" class="member-name-link">toStreamingHttpService</a><wbr>(<a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategy</a>&nbsp;strategy,
+ <a href="BlockingStreamingHttpService.html" title="interface in io.servicetalk.http.api">BlockingStreamingHttpService</a>&nbsp;service)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">Convert from a <a href="BlockingStreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>BlockingStreamingHttpService</code></a> to a <a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpService</code></a>.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api">StreamingHttpService</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#toStreamingHttpService(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.HttpService)" class="member-name-link">toStreamingHttpService</a><wbr>(<a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategy</a>&nbsp;strategy,
+ <a href="HttpService.html" title="interface in io.servicetalk.http.api">HttpService</a>&nbsp;service)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Convert from a <a href="HttpService.html" title="interface in io.servicetalk.http.api"><code>HttpService</code></a> to a <a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpService</code></a>.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code>static <a href="HttpApiConversions.ServiceAdapterHolder.html" title="interface in io.servicetalk.http.api">HttpApiConversions.ServiceAdapterHolder</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#toStreamingHttpService(io.servicetalk.http.api.HttpService,io.servicetalk.http.api.HttpExecutionStrategyInfluencer)" class="member-name-link">toStreamingHttpService</a><wbr>(<a href="HttpService.html" title="interface in io.servicetalk.http.api">HttpService</a>&nbsp;service,
- <a href="HttpExecutionStrategyInfluencer.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategyInfluencer</a>&nbsp;influencer)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#toStreamingHttpService(io.servicetalk.http.api.HttpService,io.servicetalk.http.api.HttpExecutionStrategy)" class="member-name-link">toStreamingHttpService</a><wbr>(<a href="HttpService.html" title="interface in io.servicetalk.http.api">HttpService</a>&nbsp;service,
+ <a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategy</a>&nbsp;strategy)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6">
 <div class="block"><span class="deprecated-label">Deprecated.</span>
-<div class="deprecation-comment">Use overload with <a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> rather than <a href="HttpExecutionStrategyInfluencer.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategyInfluencer</code></a></div>
+<div class="deprecation-comment">use <a href="#toStreamingHttpService(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.HttpService)"><code>toStreamingHttpService(HttpExecutionStrategy, HttpService)</code></a> instead.</div>
+</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code>static <a href="HttpApiConversions.ServiceAdapterHolder.html" title="interface in io.servicetalk.http.api">HttpApiConversions.ServiceAdapterHolder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#toStreamingHttpService(io.servicetalk.http.api.HttpService,io.servicetalk.http.api.HttpExecutionStrategyInfluencer)" class="member-name-link">toStreamingHttpService</a><wbr>(<a href="HttpService.html" title="interface in io.servicetalk.http.api">HttpService</a>&nbsp;service,
+ <a href="HttpExecutionStrategyInfluencer.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategyInfluencer</a>&nbsp;influencer)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="#toStreamingHttpService(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.HttpService)"><code>toStreamingHttpService(HttpExecutionStrategy, HttpService)</code></a> instead.</div>
 </div>
 </div>
 </div>
@@ -651,7 +677,7 @@ loadScripts(document, 'script');</script>
 </span><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="HttpApiConversions.ServiceAdapterHolder.html" title="interface in io.servicetalk.http.api">HttpApiConversions.ServiceAdapterHolder</a></span>&nbsp;<span class="element-name">toStreamingHttpService</span><wbr><span class="parameters">(<a href="HttpService.html" title="interface in io.servicetalk.http.api">HttpService</a>&nbsp;service,
  <a href="HttpExecutionStrategyInfluencer.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategyInfluencer</a>&nbsp;influencer)</span></div>
 <div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
-<div class="deprecation-comment">Use overload with <a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> rather than <a href="HttpExecutionStrategyInfluencer.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategyInfluencer</code></a></div>
+<div class="deprecation-comment">Use <a href="#toStreamingHttpService(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.HttpService)"><code>toStreamingHttpService(HttpExecutionStrategy, HttpService)</code></a> instead.</div>
 </div>
 <div class="block">Convert from a <a href="HttpService.html" title="interface in io.servicetalk.http.api"><code>HttpService</code></a> to a <a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpService</code></a>.</div>
 <dl class="notes">
@@ -667,15 +693,34 @@ loadScripts(document, 'script');</script>
 <li>
 <section class="detail" id="toStreamingHttpService(io.servicetalk.http.api.HttpService,io.servicetalk.http.api.HttpExecutionStrategy)">
 <h3>toStreamingHttpService</h3>
-<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="HttpApiConversions.ServiceAdapterHolder.html" title="interface in io.servicetalk.http.api">HttpApiConversions.ServiceAdapterHolder</a></span>&nbsp;<span class="element-name">toStreamingHttpService</span><wbr><span class="parameters">(<a href="HttpService.html" title="interface in io.servicetalk.http.api">HttpService</a>&nbsp;service,
+<div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="HttpApiConversions.ServiceAdapterHolder.html" title="interface in io.servicetalk.http.api">HttpApiConversions.ServiceAdapterHolder</a></span>&nbsp;<span class="element-name">toStreamingHttpService</span><wbr><span class="parameters">(<a href="HttpService.html" title="interface in io.servicetalk.http.api">HttpService</a>&nbsp;service,
  <a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategy</a>&nbsp;strategy)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">use <a href="#toStreamingHttpService(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.HttpService)"><code>toStreamingHttpService(HttpExecutionStrategy, HttpService)</code></a> instead.</div>
+</div>
+<div class="block">Convert from a <a href="HttpService.html" title="interface in io.servicetalk.http.api"><code>HttpService</code></a> to a <a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpService</code></a>.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>service</code> - The <a href="HttpService.html" title="interface in io.servicetalk.http.api"><code>HttpService</code></a> to convert.</dd>
+<dd><code>strategy</code> - required strategy for the service when invoking the resulting <a href="HttpApiConversions.ServiceAdapterHolder.html" title="interface in io.servicetalk.http.api"><code>HttpApiConversions.ServiceAdapterHolder</code></a>.</dd>
+<dt>Returns:</dt>
+<dd><a href="HttpApiConversions.ServiceAdapterHolder.html" title="interface in io.servicetalk.http.api"><code>HttpApiConversions.ServiceAdapterHolder</code></a> containing the service adapted to the streaming programming model.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="toStreamingHttpService(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.HttpService)">
+<h3>toStreamingHttpService</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api">StreamingHttpService</a></span>&nbsp;<span class="element-name">toStreamingHttpService</span><wbr><span class="parameters">(<a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategy</a>&nbsp;strategy,
+ <a href="HttpService.html" title="interface in io.servicetalk.http.api">HttpService</a>&nbsp;service)</span></div>
 <div class="block">Convert from a <a href="HttpService.html" title="interface in io.servicetalk.http.api"><code>HttpService</code></a> to a <a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpService</code></a>.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>service</code> - The <a href="HttpService.html" title="interface in io.servicetalk.http.api"><code>HttpService</code></a> to convert.</dd>
 <dd><code>strategy</code> - required strategy for the service when invoking the resulting <a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpService</code></a>.</dd>
 <dt>Returns:</dt>
-<dd><a href="HttpApiConversions.ServiceAdapterHolder.html" title="interface in io.servicetalk.http.api"><code>HttpApiConversions.ServiceAdapterHolder</code></a> containing the service adapted to the streaming programming model.</dd>
+<dd>the converted <a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpService</code></a> to be used for the streaming programming model.</dd>
 </dl>
 </section>
 </li>
@@ -686,7 +731,7 @@ loadScripts(document, 'script');</script>
 </span><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="HttpApiConversions.ServiceAdapterHolder.html" title="interface in io.servicetalk.http.api">HttpApiConversions.ServiceAdapterHolder</a></span>&nbsp;<span class="element-name">toStreamingHttpService</span><wbr><span class="parameters">(<a href="BlockingStreamingHttpService.html" title="interface in io.servicetalk.http.api">BlockingStreamingHttpService</a>&nbsp;service,
  <a href="HttpExecutionStrategyInfluencer.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategyInfluencer</a>&nbsp;influencer)</span></div>
 <div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
-<div class="deprecation-comment">Use overload with <a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> rather than <a href="HttpExecutionStrategyInfluencer.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategyInfluencer</code></a></div>
+<div class="deprecation-comment">Use <a href="#toStreamingHttpService(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.BlockingStreamingHttpService)"><code>toStreamingHttpService(HttpExecutionStrategy, BlockingStreamingHttpService)</code></a> instead.</div>
 </div>
 <div class="block">Convert from a <a href="BlockingStreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>BlockingStreamingHttpService</code></a> to a <a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpService</code></a>.</div>
 <dl class="notes">
@@ -702,8 +747,12 @@ loadScripts(document, 'script');</script>
 <li>
 <section class="detail" id="toStreamingHttpService(io.servicetalk.http.api.BlockingStreamingHttpService,io.servicetalk.http.api.HttpExecutionStrategy)">
 <h3>toStreamingHttpService</h3>
-<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="HttpApiConversions.ServiceAdapterHolder.html" title="interface in io.servicetalk.http.api">HttpApiConversions.ServiceAdapterHolder</a></span>&nbsp;<span class="element-name">toStreamingHttpService</span><wbr><span class="parameters">(<a href="BlockingStreamingHttpService.html" title="interface in io.servicetalk.http.api">BlockingStreamingHttpService</a>&nbsp;service,
+<div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="HttpApiConversions.ServiceAdapterHolder.html" title="interface in io.servicetalk.http.api">HttpApiConversions.ServiceAdapterHolder</a></span>&nbsp;<span class="element-name">toStreamingHttpService</span><wbr><span class="parameters">(<a href="BlockingStreamingHttpService.html" title="interface in io.servicetalk.http.api">BlockingStreamingHttpService</a>&nbsp;service,
  <a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategy</a>&nbsp;strategy)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">use <a href="#toStreamingHttpService(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.BlockingStreamingHttpService)"><code>toStreamingHttpService(HttpExecutionStrategy, BlockingStreamingHttpService)</code></a> instead.</div>
+</div>
 <div class="block">Convert from a <a href="BlockingStreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>BlockingStreamingHttpService</code></a> to a <a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpService</code></a>.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
@@ -711,6 +760,21 @@ loadScripts(document, 'script');</script>
 <dd><code>strategy</code> - required strategy for the service when invoking the resulting <a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpService</code></a>.</dd>
 <dt>Returns:</dt>
 <dd><a href="HttpApiConversions.ServiceAdapterHolder.html" title="interface in io.servicetalk.http.api"><code>HttpApiConversions.ServiceAdapterHolder</code></a> containing the service adapted to the streaming programming model.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="toStreamingHttpService(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.BlockingStreamingHttpService)">
+<h3>toStreamingHttpService</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api">StreamingHttpService</a></span>&nbsp;<span class="element-name">toStreamingHttpService</span><wbr><span class="parameters">(<a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategy</a>&nbsp;strategy,
+ <a href="BlockingStreamingHttpService.html" title="interface in io.servicetalk.http.api">BlockingStreamingHttpService</a>&nbsp;service)</span></div>
+<div class="block">Convert from a <a href="BlockingStreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>BlockingStreamingHttpService</code></a> to a <a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpService</code></a>.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>strategy</code> - required strategy for the service when invoking the resulting <a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpService</code></a>.</dd>
+<dd><code>service</code> - The <a href="BlockingStreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>BlockingStreamingHttpService</code></a> to convert.</dd>
+<dt>Returns:</dt>
+<dd>the converted <a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpService</code></a> to be used for the streaming programming model.</dd>
 </dl>
 </section>
 </li>
@@ -721,12 +785,12 @@ loadScripts(document, 'script');</script>
 </span><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="HttpApiConversions.ServiceAdapterHolder.html" title="interface in io.servicetalk.http.api">HttpApiConversions.ServiceAdapterHolder</a></span>&nbsp;<span class="element-name">toStreamingHttpService</span><wbr><span class="parameters">(<a href="BlockingHttpService.html" title="interface in io.servicetalk.http.api">BlockingHttpService</a>&nbsp;service,
  <a href="HttpExecutionStrategyInfluencer.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategyInfluencer</a>&nbsp;influencer)</span></div>
 <div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
-<div class="deprecation-comment">Use overload with <a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> rather than <a href="HttpExecutionStrategyInfluencer.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategyInfluencer</code></a></div>
+<div class="deprecation-comment">Use <a href="#toStreamingHttpService(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.BlockingHttpService)"><code>toStreamingHttpService(HttpExecutionStrategy, BlockingHttpService)</code></a> instead.</div>
 </div>
-<div class="block">Convert from a <a href="BlockingStreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>BlockingStreamingHttpService</code></a> to a <a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpService</code></a>.</div>
+<div class="block">Convert from a <a href="BlockingHttpService.html" title="interface in io.servicetalk.http.api"><code>BlockingHttpService</code></a> to a <a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpService</code></a>.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>service</code> - The <a href="BlockingStreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>BlockingStreamingHttpService</code></a> to convert.</dd>
+<dd><code>service</code> - The <a href="BlockingHttpService.html" title="interface in io.servicetalk.http.api"><code>BlockingHttpService</code></a> to convert.</dd>
 <dd><code>influencer</code> - <a href="HttpExecutionStrategyInfluencer.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategyInfluencer</code></a> to influence the strategy for invoking the resulting
  <a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpService</code></a>.</dd>
 <dt>Returns:</dt>
@@ -737,15 +801,34 @@ loadScripts(document, 'script');</script>
 <li>
 <section class="detail" id="toStreamingHttpService(io.servicetalk.http.api.BlockingHttpService,io.servicetalk.http.api.HttpExecutionStrategy)">
 <h3>toStreamingHttpService</h3>
-<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="HttpApiConversions.ServiceAdapterHolder.html" title="interface in io.servicetalk.http.api">HttpApiConversions.ServiceAdapterHolder</a></span>&nbsp;<span class="element-name">toStreamingHttpService</span><wbr><span class="parameters">(<a href="BlockingHttpService.html" title="interface in io.servicetalk.http.api">BlockingHttpService</a>&nbsp;service,
+<div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="HttpApiConversions.ServiceAdapterHolder.html" title="interface in io.servicetalk.http.api">HttpApiConversions.ServiceAdapterHolder</a></span>&nbsp;<span class="element-name">toStreamingHttpService</span><wbr><span class="parameters">(<a href="BlockingHttpService.html" title="interface in io.servicetalk.http.api">BlockingHttpService</a>&nbsp;service,
  <a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategy</a>&nbsp;strategy)</span></div>
-<div class="block">Convert from a <a href="BlockingStreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>BlockingStreamingHttpService</code></a> to a <a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpService</code></a>.</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="#toStreamingHttpService(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.BlockingHttpService)"><code>toStreamingHttpService(HttpExecutionStrategy, BlockingHttpService)</code></a> instead.</div>
+</div>
+<div class="block">Convert from a <a href="BlockingHttpService.html" title="interface in io.servicetalk.http.api"><code>BlockingHttpService</code></a> to a <a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpService</code></a>.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>service</code> - The <a href="BlockingStreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>BlockingStreamingHttpService</code></a> to convert.</dd>
-<dd><code>strategy</code> - required strategy for the service when invoking the resulting <a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpService</code></a>.</dd>
+<dd><code>service</code> - The <a href="BlockingHttpService.html" title="interface in io.servicetalk.http.api"><code>BlockingHttpService</code></a> to convert.</dd>
+<dd><code>strategy</code> - required strategy for the service when invoking the resulting <a href="HttpApiConversions.ServiceAdapterHolder.html" title="interface in io.servicetalk.http.api"><code>HttpApiConversions.ServiceAdapterHolder</code></a>.</dd>
 <dt>Returns:</dt>
 <dd><a href="HttpApiConversions.ServiceAdapterHolder.html" title="interface in io.servicetalk.http.api"><code>HttpApiConversions.ServiceAdapterHolder</code></a> containing the service adapted to the streaming programming model.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="toStreamingHttpService(io.servicetalk.http.api.HttpExecutionStrategy,io.servicetalk.http.api.BlockingHttpService)">
+<h3>toStreamingHttpService</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api">StreamingHttpService</a></span>&nbsp;<span class="element-name">toStreamingHttpService</span><wbr><span class="parameters">(<a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api">HttpExecutionStrategy</a>&nbsp;strategy,
+ <a href="BlockingHttpService.html" title="interface in io.servicetalk.http.api">BlockingHttpService</a>&nbsp;service)</span></div>
+<div class="block">Convert from a <a href="BlockingHttpService.html" title="interface in io.servicetalk.http.api"><code>BlockingHttpService</code></a> to a <a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpService</code></a>.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>strategy</code> - required strategy for the service when invoking the resulting <a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpService</code></a>.</dd>
+<dd><code>service</code> - The <a href="BlockingHttpService.html" title="interface in io.servicetalk.http.api"><code>BlockingHttpService</code></a> to convert.</dd>
+<dt>Returns:</dt>
+<dd>the converted <a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpService</code></a> to be used for the streaming programming model.</dd>
 </dl>
 </section>
 </li>

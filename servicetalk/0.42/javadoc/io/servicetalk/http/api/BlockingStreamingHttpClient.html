@@ -142,7 +142,10 @@ extends <a href="BlockingStreamingHttpRequester.html" title="interface in io.ser
 <h3>reserveConnection</h3>
 <div class="member-signature"><span class="return-type"><a href="ReservedBlockingStreamingHttpConnection.html" title="interface in io.servicetalk.http.api">ReservedBlockingStreamingHttpConnection</a></span>&nbsp;<span class="element-name">reserveConnection</span><wbr><span class="parameters">(<a href="HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a>&nbsp;metaData)</span>
                                                    throws <span class="exceptions"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Exception.html" title="class or interface in java.lang" class="external-link">Exception</a></span></div>
-<div class="block">Reserve a <a href="BlockingStreamingHttpConnection.html" title="interface in io.servicetalk.http.api"><code>BlockingStreamingHttpConnection</code></a> based on provided <a href="HttpRequestMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpRequestMetaData</code></a>.</div>
+<div class="block">Reserve a <a href="BlockingStreamingHttpConnection.html" title="interface in io.servicetalk.http.api"><code>BlockingStreamingHttpConnection</code></a> based on provided <a href="HttpRequestMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpRequestMetaData</code></a>.
+ <p>
+ If a new connection should be opened instead of potentially reusing an already established one, the
+ <a href="HttpContextKeys.html#HTTP_FORCE_NEW_CONNECTION"><code>HttpContextKeys.HTTP_FORCE_NEW_CONNECTION</code></a> must be set.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>metaData</code> - Allows the underlying layers to know what <a href="BlockingStreamingHttpConnection.html" title="interface in io.servicetalk.http.api"><code>BlockingStreamingHttpConnection</code></a>s are valid to
@@ -152,6 +155,12 @@ extends <a href="BlockingStreamingHttpRequester.html" title="interface in io.ser
 <dd>a <a href="ReservedBlockingStreamingHttpConnection.html" title="interface in io.servicetalk.http.api"><code>ReservedBlockingStreamingHttpConnection</code></a>.</dd>
 <dt>Throws:</dt>
 <dd><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Exception.html" title="class or interface in java.lang" class="external-link">Exception</a></code> - if a exception occurs during the reservation process.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="HttpContextKeys.html#HTTP_FORCE_NEW_CONNECTION"><code>HttpContextKeys.HTTP_FORCE_NEW_CONNECTION</code></a></li>
+</ul>
+</dd>
 </dl>
 </section>
 </li>

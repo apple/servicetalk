@@ -93,9 +93,14 @@ loadScripts(document, 'script');</script>
 <div class="block">Allows using a custom <a href="HttpExecutionStrategy.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategy</code></a> for the HTTP message execution, when present in the meta-data
  <a href="HttpMetaData.html#context()"><code>context</code></a>.</div>
 </div>
-<div class="col-first odd-row-color"><code>static final <a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&gt;</code></div>
-<div class="col-second odd-row-color"><code><a href="#HTTP_TARGET_ADDRESS_BEHIND_PROXY" class="member-name-link">HTTP_TARGET_ADDRESS_BEHIND_PROXY</a></code></div>
+<div class="col-first odd-row-color"><code>static final <a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&gt;</code></div>
+<div class="col-second odd-row-color"><code><a href="#HTTP_FORCE_NEW_CONNECTION" class="member-name-link">HTTP_FORCE_NEW_CONNECTION</a></code></div>
 <div class="col-last odd-row-color">
+<div class="block">If set to true, forces creating a new connection versus potentially selecting an already established one.</div>
+</div>
+<div class="col-first even-row-color"><code>static final <a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&gt;</code></div>
+<div class="col-second even-row-color"><code><a href="#HTTP_TARGET_ADDRESS_BEHIND_PROXY" class="member-name-link">HTTP_TARGET_ADDRESS_BEHIND_PROXY</a></code></div>
+<div class="col-last even-row-color">
 <div class="block">When opening a connection to a proxy, this key tells what is the actual (unresolved) target address behind the
  proxy this connection will be established to.</div>
 </div>
@@ -144,6 +149,24 @@ loadScripts(document, 'script');</script>
 <dd>
 <ul class="see-list-long">
 <li><a href="SingleAddressHttpClientBuilder.html#proxyAddress(U)"><code>SingleAddressHttpClientBuilder.proxyAddress(Object)</code></a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="HTTP_FORCE_NEW_CONNECTION">
+<h3>HTTP_FORCE_NEW_CONNECTION</h3>
+<div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="../../context/api/ContextMap.Key.html" title="class in io.servicetalk.context.api">ContextMap.Key</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Boolean.html" title="class or interface in java.lang" class="external-link">Boolean</a>&gt;</span>&nbsp;<span class="element-name">HTTP_FORCE_NEW_CONNECTION</span></div>
+<div class="block">If set to true, forces creating a new connection versus potentially selecting an already established one.
+ <p>
+ This key is only available when reserving a connection and will be ignored when performing a regular
+ request on the client (for example through <a href="HttpRequester.html#request(io.servicetalk.http.api.HttpRequest)"><code>HttpRequester.request(HttpRequest)</code></a>).</div>
+<dl class="notes">
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="HttpClient.html#reserveConnection(io.servicetalk.http.api.HttpRequestMetaData)"><code>HttpClient.reserveConnection(HttpRequestMetaData)</code></a></li>
 </ul>
 </dd>
 </dl>

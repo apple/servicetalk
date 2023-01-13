@@ -125,9 +125,13 @@ loadScripts(document, 'script');</script>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#offloadNever()" class="member-name-link">offloadNever</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6">
 <div class="block"><span class="deprecated-label">Deprecated.</span>
-<div class="deprecation-comment">Use a custom strategy with no offloads instead;
- <code>GrpcExecutionStrategies.customStrategyBuilder().offloadNone().build()</code></div>
+<div class="deprecation-comment">Use <a href="#offloadNone()"><code>offloadNone()</code></a> instead.</div>
 </div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api">GrpcExecutionStrategy</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#offloadNone()" class="member-name-link">offloadNone</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">An <a href="GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api"><code>GrpcExecutionStrategy</code></a> that requires no offloads on the request-response path or transport event path.</div>
 </div>
 </div>
 </div>
@@ -166,8 +170,7 @@ loadScripts(document, 'script');</script>
 <div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
 </span><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api">GrpcExecutionStrategy</a></span>&nbsp;<span class="element-name">offloadNever</span>()</div>
 <div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
-<div class="deprecation-comment">Use a custom strategy with no offloads instead;
- <code>GrpcExecutionStrategies.customStrategyBuilder().offloadNone().build()</code></div>
+<div class="deprecation-comment">Use <a href="#offloadNone()"><code>offloadNone()</code></a> instead.</div>
 </div>
 <div class="block">A special <a href="GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api"><code>GrpcExecutionStrategy</code></a> that disables all offloads on the request-response and transport event
  paths. This strategy is intended to be used only for client and server builders; it should not be returned by
@@ -176,6 +179,33 @@ loadScripts(document, 'script');</script>
 <dl class="notes">
 <dt>Returns:</dt>
 <dd><a href="GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api"><code>GrpcExecutionStrategy</code></a> that disables all request-response path offloads.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list">
+<li><a href="#offloadNone()"><code>offloadNone()</code></a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="offloadNone()">
+<h3>offloadNone</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api">GrpcExecutionStrategy</a></span>&nbsp;<span class="element-name">offloadNone</span>()</div>
+<div class="block">An <a href="GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api"><code>GrpcExecutionStrategy</code></a> that requires no offloads on the request-response path or transport event path.
+ <p>
+ For <a href="../../http/api/HttpExecutionStrategyInfluencer.html" title="interface in io.servicetalk.http.api"><code>HttpExecutionStrategyInfluencer</code></a>s that do not block, the
+ <a href="../../http/api/HttpExecutionStrategyInfluencer.html#requiredOffloads()"><code>HttpExecutionStrategyInfluencer.requiredOffloads()</code></a> method should return this value. Unlike
+ <a href="#offloadNever()"><code>offloadNever()</code></a>, this strategy merges normally with other execution strategy instances.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd><a href="GrpcExecutionStrategy.html" title="interface in io.servicetalk.grpc.api"><code>GrpcExecutionStrategy</code></a> that requires no request-response path offloads.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list">
+<li><a href="#offloadNever()"><code>offloadNever()</code></a></li>
+</ul>
+</dd>
 </dl>
 </section>
 </li>

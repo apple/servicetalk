@@ -104,17 +104,22 @@ extends <a href="../../concurrent/api/ListenableAsyncCloseable.html" title="inte
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">A <a href="../../concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> of events provided by this <a href="LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6"><code>default <a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="LoadBalancer.html" title="type parameter in LoadBalancer">C</a>&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6"><code><a href="#selectConnection(java.util.function.Predicate)" class="member-name-link">selectConnection</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Predicate.html" title="class or interface in java.util.function" class="external-link">Predicate</a>&lt;<a href="LoadBalancer.html" title="type parameter in LoadBalancer">C</a>&gt;&nbsp;selector)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="LoadBalancer.html" title="type parameter in LoadBalancer">C</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#newConnection(io.servicetalk.context.api.ContextMap)" class="member-name-link">newConnection</a><wbr>(<a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api">ContextMap</a>&nbsp;context)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
+<div class="block">Opens a new connection for a request instead of potentially reusing one.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6"><code>default <a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="LoadBalancer.html" title="type parameter in LoadBalancer">C</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6"><code><a href="#selectConnection(java.util.function.Predicate)" class="member-name-link">selectConnection</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Predicate.html" title="class or interface in java.util.function" class="external-link">Predicate</a>&lt;<a href="LoadBalancer.html" title="type parameter in LoadBalancer">C</a>&gt;&nbsp;selector)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6">
 <div class="block"><span class="deprecated-label">Deprecated.</span>
 <div class="deprecation-comment">Use <a href="#selectConnection(java.util.function.Predicate,io.servicetalk.context.api.ContextMap)"><code>selectConnection(Predicate, ContextMap)</code></a>.</div>
 </div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="LoadBalancer.html" title="type parameter in LoadBalancer">C</a>&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#selectConnection(java.util.function.Predicate,io.servicetalk.context.api.ContextMap)" class="member-name-link">selectConnection</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Predicate.html" title="class or interface in java.util.function" class="external-link">Predicate</a>&lt;<a href="LoadBalancer.html" title="type parameter in LoadBalancer">C</a>&gt;&nbsp;selector,
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="LoadBalancer.html" title="type parameter in LoadBalancer">C</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#selectConnection(java.util.function.Predicate,io.servicetalk.context.api.ContextMap)" class="member-name-link">selectConnection</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Predicate.html" title="class or interface in java.util.function" class="external-link">Predicate</a>&lt;<a href="LoadBalancer.html" title="type parameter in LoadBalancer">C</a>&gt;&nbsp;selector,
  <a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api">ContextMap</a>&nbsp;context)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
 <div class="block">Select the most appropriate connection for a request.</div>
 </div>
 </div>
@@ -180,6 +185,29 @@ extends <a href="../../concurrent/api/ListenableAsyncCloseable.html" title="inte
  <a href="../../concurrent/api/Single.html#failed(java.lang.Throwable)"><code>failed Single</code></a> with <a href="NoAvailableHostException.html" title="class in io.servicetalk.client.api"><code>NoAvailableHostException</code></a> can be returned if no
  connection can be selected at this time or with <a href="ConnectionRejectedException.html" title="class in io.servicetalk.client.api"><code>ConnectionRejectedException</code></a> if a newly created connection
  was rejected by the <code>selector</code> or this load balancer.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="newConnection(io.servicetalk.context.api.ContextMap)">
+<h3>newConnection</h3>
+<div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="LoadBalancer.html" title="type parameter in LoadBalancer">C</a>&gt;</span>&nbsp;<span class="element-name">newConnection</span><wbr><span class="parameters">(@Nullable
+ <a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api">ContextMap</a>&nbsp;context)</span></div>
+<div class="block">Opens a new connection for a request instead of potentially reusing one.
+ <p>
+ If the returned connection is <a href="LoadBalancedConnection.html#releaseAsync()"><code>released</code></a>, it is returned to the
+ pool and made available for other connection requests sent via <a href="#selectConnection(java.util.function.Predicate,io.servicetalk.context.api.ContextMap)"><code>selectConnection(Predicate, ContextMap)</code></a>.
+ If the connection should not be returned to the pool, it must be explicitly
+ <a href="../../concurrent/api/AsyncCloseable.html#closeAsync()"><code>closed</code></a> by the caller.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>context</code> - A <a href="../../context/api/ContextMap.html" title="interface in io.servicetalk.context.api"><code>context</code></a> of the caller (e.g. request context) or <code>null</code> if no context
+ provided.</dd>
+<dt>Returns:</dt>
+<dd>a <a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> that completes with a new connection to use. A
+ <a href="../../concurrent/api/Single.html#failed(java.lang.Throwable)"><code>failed Single</code></a> with <a href="NoAvailableHostException.html" title="class in io.servicetalk.client.api"><code>NoAvailableHostException</code></a> can be returned if no
+ connection can be created at this time or with <a href="ConnectionRejectedException.html" title="class in io.servicetalk.client.api"><code>ConnectionRejectedException</code></a> if a newly created connection
+ was rejected by this load balancer.</dd>
 </dl>
 </section>
 </li>

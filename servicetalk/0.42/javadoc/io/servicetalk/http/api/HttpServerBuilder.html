@@ -198,6 +198,16 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
 <div class="block">Starts this server and returns the <a href="HttpServerContext.html" title="interface in io.servicetalk.http.api"><code>HttpServerContext</code></a> after the server has been successfully started.</div>
 </div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="HttpServerContext.html" title="interface in io.servicetalk.http.api">HttpServerContext</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#listenService(io.servicetalk.http.api.HttpServiceBase)" class="member-name-link">listenService</a><wbr>(<a href="HttpServiceBase.html" title="interface in io.servicetalk.http.api">HttpServiceBase</a>&nbsp;service)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
+<div class="block">Starts this server and returns the <a href="HttpServerContext.html" title="interface in io.servicetalk.http.api"><code>HttpServerContext</code></a> after the server has been successfully started.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="HttpServerContext.html" title="interface in io.servicetalk.http.api">HttpServerContext</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#listenServiceAndAwait(io.servicetalk.http.api.HttpServiceBase)" class="member-name-link">listenServiceAndAwait</a><wbr>(<a href="HttpServiceBase.html" title="interface in io.servicetalk.http.api">HttpServiceBase</a>&nbsp;service)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
+<div class="block">Starts this server and returns the <a href="HttpServerContext.html" title="interface in io.servicetalk.http.api"><code>HttpServerContext</code></a> after the server has been successfully started.</div>
+</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>&lt;T&gt;&nbsp;<a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#listenSocketOption(java.net.SocketOption,T)" class="member-name-link">listenSocketOption</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/SocketOption.html" title="class or interface in java.net" class="external-link">SocketOption</a>&lt;T&gt;&nbsp;option,
  T&nbsp;value)</code></div>
@@ -646,6 +656,32 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
+<section class="detail" id="listenServiceAndAwait(io.servicetalk.http.api.HttpServiceBase)">
+<h3>listenServiceAndAwait</h3>
+<div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="HttpServerContext.html" title="interface in io.servicetalk.http.api">HttpServerContext</a></span>&nbsp;<span class="element-name">listenServiceAndAwait</span><wbr><span class="parameters">(<a href="HttpServiceBase.html" title="interface in io.servicetalk.http.api">HttpServiceBase</a>&nbsp;service)</span>
+                                         throws <span class="exceptions"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Exception.html" title="class or interface in java.lang" class="external-link">Exception</a></span></div>
+<div class="block">Starts this server and returns the <a href="HttpServerContext.html" title="interface in io.servicetalk.http.api"><code>HttpServerContext</code></a> after the server has been successfully started.
+ <p>
+ If the underlying protocol (e.g. TCP) supports it this will result in a socket bind/listen on <code>address</code>.
+ <p>
+ Note that this method is generic in the sense that it accepts all HTTP <a href="HttpServiceBase.html" title="interface in io.servicetalk.http.api"><code>HttpServiceBase</code></a> implementations
+ to be passed in, namely <a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpService</code></a>, <a href="HttpService.html" title="interface in io.servicetalk.http.api"><code>HttpService</code></a>, <a href="BlockingStreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>BlockingStreamingHttpService</code></a>
+ and <a href="BlockingHttpService.html" title="interface in io.servicetalk.http.api"><code>BlockingHttpService</code></a>. It is especially useful when Dependency Injection is used and the type of
+ service is not known at compile time.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>service</code> - Service invoked for every request received by this server. The returned <a href="HttpServerContext.html" title="interface in io.servicetalk.http.api"><code>HttpServerContext</code></a>
+ manages the lifecycle of the <code>service</code>, ensuring it is closed when the <a href="HttpServerContext.html" title="interface in io.servicetalk.http.api"><code>HttpServerContext</code></a> is closed.</dd>
+<dt>Returns:</dt>
+<dd>A <a href="HttpServerContext.html" title="interface in io.servicetalk.http.api"><code>HttpServerContext</code></a> by blocking the calling thread until the server is successfully started or
+ throws an <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Exception.html" title="class or interface in java.lang" class="external-link"><code>Exception</code></a> if the server could not be started.</dd>
+<dt>Throws:</dt>
+<dd><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/IllegalArgumentException.html" title="class or interface in java.lang" class="external-link">IllegalArgumentException</a></code> - if an unsupported <a href="HttpServiceBase.html" title="interface in io.servicetalk.http.api"><code>HttpServiceBase</code></a> type is being provided.</dd>
+<dd><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Exception.html" title="class or interface in java.lang" class="external-link">Exception</a></code> - if the server could not be started.</dd>
+</dl>
+</section>
+</li>
+<li>
 <section class="detail" id="listenAndAwait(io.servicetalk.http.api.HttpService)">
 <h3>listenAndAwait</h3>
 <div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="HttpServerContext.html" title="interface in io.servicetalk.http.api">HttpServerContext</a></span>&nbsp;<span class="element-name">listenAndAwait</span><wbr><span class="parameters">(<a href="HttpService.html" title="interface in io.servicetalk.http.api">HttpService</a>&nbsp;service)</span>
@@ -722,6 +758,30 @@ loadScripts(document, 'script');</script>
  throws an <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Exception.html" title="class or interface in java.lang" class="external-link"><code>Exception</code></a> if the server could not be started.</dd>
 <dt>Throws:</dt>
 <dd><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Exception.html" title="class or interface in java.lang" class="external-link">Exception</a></code> - if the server could not be started.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="listenService(io.servicetalk.http.api.HttpServiceBase)">
+<h3>listenService</h3>
+<div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="HttpServerContext.html" title="interface in io.servicetalk.http.api">HttpServerContext</a>&gt;</span>&nbsp;<span class="element-name">listenService</span><wbr><span class="parameters">(<a href="HttpServiceBase.html" title="interface in io.servicetalk.http.api">HttpServiceBase</a>&nbsp;service)</span></div>
+<div class="block">Starts this server and returns the <a href="HttpServerContext.html" title="interface in io.servicetalk.http.api"><code>HttpServerContext</code></a> after the server has been successfully started.
+ <p>
+ If the underlying protocol (e.g. TCP) supports it this will result in a socket bind/listen on <code>address</code>.
+ <p>
+ Note that this method is generic in the sense that it accepts all HTTP <a href="HttpServiceBase.html" title="interface in io.servicetalk.http.api"><code>HttpServiceBase</code></a> implementations
+ to be passed in, namely <a href="StreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpService</code></a>, <a href="HttpService.html" title="interface in io.servicetalk.http.api"><code>HttpService</code></a>, <a href="BlockingStreamingHttpService.html" title="interface in io.servicetalk.http.api"><code>BlockingStreamingHttpService</code></a>
+ and <a href="BlockingHttpService.html" title="interface in io.servicetalk.http.api"><code>BlockingHttpService</code></a>. It is especially useful when Dependency Injection is used and the type of
+ service is not known at compile time.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>service</code> - Service invoked for every request received by this server. The returned <a href="HttpServerContext.html" title="interface in io.servicetalk.http.api"><code>HttpServerContext</code></a>
+ manages the lifecycle of the <code>service</code>, ensuring it is closed when the <a href="HttpServerContext.html" title="interface in io.servicetalk.http.api"><code>HttpServerContext</code></a> is closed.</dd>
+<dt>Returns:</dt>
+<dd>A <a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> that completes when the server is successfully started or terminates with an error if
+ the server could not be started.</dd>
+<dt>Throws:</dt>
+<dd><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/IllegalArgumentException.html" title="class or interface in java.lang" class="external-link">IllegalArgumentException</a></code> - if an unsupported <a href="HttpServiceBase.html" title="interface in io.servicetalk.http.api"><code>HttpServiceBase</code></a> type is being provided.</dd>
 </dl>
 </section>
 </li>

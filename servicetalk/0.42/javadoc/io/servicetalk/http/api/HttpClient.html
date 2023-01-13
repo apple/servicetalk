@@ -154,7 +154,10 @@ extends <a href="HttpRequester.html" title="interface in io.servicetalk.http.api
 <section class="detail" id="reserveConnection(io.servicetalk.http.api.HttpRequestMetaData)">
 <h3>reserveConnection</h3>
 <div class="member-signature"><span class="return-type"><a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api">Single</a>&lt;<a href="ReservedHttpConnection.html" title="interface in io.servicetalk.http.api">ReservedHttpConnection</a>&gt;</span>&nbsp;<span class="element-name">reserveConnection</span><wbr><span class="parameters">(<a href="HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a>&nbsp;metaData)</span></div>
-<div class="block">Reserve an <a href="HttpConnection.html" title="interface in io.servicetalk.http.api"><code>HttpConnection</code></a> based on provided <a href="HttpRequestMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpRequestMetaData</code></a>.</div>
+<div class="block">Reserve an <a href="HttpConnection.html" title="interface in io.servicetalk.http.api"><code>HttpConnection</code></a> based on provided <a href="HttpRequestMetaData.html" title="interface in io.servicetalk.http.api"><code>HttpRequestMetaData</code></a>.
+ <p>
+ If a new connection should be opened instead of potentially reusing an already established one, the
+ <a href="HttpContextKeys.html#HTTP_FORCE_NEW_CONNECTION"><code>HttpContextKeys.HTTP_FORCE_NEW_CONNECTION</code></a> must be set.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>metaData</code> - Allows the underlying layers to know what <a href="HttpConnection.html" title="interface in io.servicetalk.http.api"><code>HttpConnection</code></a>s are valid to
@@ -162,6 +165,12 @@ extends <a href="HttpRequester.html" title="interface in io.servicetalk.http.api
  For example this may provide some insight into shard or other info.</dd>
 <dt>Returns:</dt>
 <dd>a <a href="../../concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> that provides the <a href="ReservedHttpConnection.html" title="interface in io.servicetalk.http.api"><code>ReservedHttpConnection</code></a> upon completion.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="HttpContextKeys.html#HTTP_FORCE_NEW_CONNECTION"><code>HttpContextKeys.HTTP_FORCE_NEW_CONNECTION</code></a></li>
+</ul>
+</dd>
 </dl>
 </section>
 </li>
