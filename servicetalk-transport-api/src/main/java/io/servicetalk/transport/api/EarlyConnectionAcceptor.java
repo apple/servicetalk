@@ -32,7 +32,7 @@ public interface EarlyConnectionAcceptor extends ExecutionStrategyInfluencer<Con
      * @param info additional information about the connection to make an acceptance decision.
      * @return a completed (to accept) or a failed (to reject) {@link Completable}
      */
-    Completable accept(ReducedConnectionInfo info);
+    Completable accept(ConnectionInfo info);
 
     /**
      * Customize the offloading strategy for this acceptor.

@@ -21,19 +21,19 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.EarlyConnectionAcceptor;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.IoThreadFactory;
 import io.servicetalk.transport.api.LateConnectionAcceptor;
-import io.servicetalk.transport.api.ReducedConnectionInfo;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.netty.internal.BuilderUtils;
 import io.servicetalk.transport.netty.internal.ChannelSet;
 import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
 import io.servicetalk.transport.netty.internal.InfluencerConnectionAcceptor;
 import io.servicetalk.transport.netty.internal.NettyConnection;
-import io.servicetalk.transport.netty.internal.NettyIoExecutor;
 import io.servicetalk.transport.netty.internal.NettyServerContext;
 
 import io.netty.bootstrap.ServerBootstrap;
@@ -49,10 +49,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.SocketAddress;
+import java.net.SocketOption;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
+import javax.net.ssl.SSLSession;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Single.defer;
@@ -61,7 +63,8 @@ import static io.servicetalk.transport.netty.internal.BuilderUtils.toNettyAddres
 import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.close;
 import static io.servicetalk.transport.netty.internal.CopyByteBufHandlerChannelInitializer.POOLED_ALLOCATOR;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
-import static io.servicetalk.transport.netty.internal.NettyIoExecutors.fromNettyEventLoop;
+import static io.servicetalk.transport.netty.internal.ExecutionContextUtils.channelExecutionContext;
+import static io.servicetalk.transport.netty.internal.SocketOptionUtils.getOption;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -73,6 +76,33 @@ public final class TcpServerBinder {
 
     private TcpServerBinder() {
         // no instances
+    }
+
+    /**
+     * Create a {@link ServerContext} that represents a socket which is bound and listening on the
+     * {@code listenAddress}.
+     *
+     * @param listenAddress The address to bind to.
+     * @param config The {@link ReadOnlyTcpServerConfig} to use for the bind socket and newly accepted sockets.
+     * @param autoRead if {@code true} auto read will be enabled for new {@link Channel}s.
+     * @param executionContext The {@link ExecutionContext} to use for the bind socket.
+     * @param connectionAcceptor The {@link ConnectionAcceptor} used to filter newly accepted sockets.
+     * @param connectionFunction Used to create a new {@link NettyConnection} from a {@link Channel}.
+     * @param connectionConsumer Used to consume the result of {@code connectionFunction} after initialization and
+     * filtering is done. This can be used for protocol specific initialization and to start data flow.
+     * @param <CC> The type of {@link ConnectionContext} that is created for each accepted socket.
+     * @return a {@link Single} that completes with a {@link ServerContext} that represents a socket which is bound and
+     * listening on the {@code listenAddress}.
+     * @deprecated use the bind method with early and late acceptors instead.
+     */
+    @Deprecated // FIXME: 0.43 - remove deprecated method
+    public static <CC extends ConnectionContext> Single<ServerContext> bind(SocketAddress listenAddress,
+            final ReadOnlyTcpServerConfig config, final boolean autoRead, final ExecutionContext<?> executionContext,
+            @Nullable final InfluencerConnectionAcceptor connectionAcceptor,
+            final BiFunction<Channel, ConnectionObserver, Single<CC>> connectionFunction,
+            final Consumer<CC> connectionConsumer) {
+        return bind(listenAddress, config, autoRead, executionContext, connectionAcceptor, connectionFunction,
+                connectionConsumer, null, null);
     }
 
     /**
@@ -141,7 +171,7 @@ public final class TcpServerBinder {
                 Single<CC> connectionSingle = connectionFunction.apply(channel,
                         config.transportObserver().onNewConnection(channel.localAddress(), channel.remoteAddress()));
 
-                connectionSingle = wrapConnectionAcceptors(connectionSingle, channel, executionContext,
+                connectionSingle = wrapConnectionAcceptors(connectionSingle, channel, executionContext, config,
                         earlyConnectionAcceptor, lateConnectionAcceptor, connectionAcceptor);
 
                 connectionSingle.beforeOnError(cause -> {
@@ -191,13 +221,16 @@ public final class TcpServerBinder {
             Single<CC> connection,
             final Channel channel,
             final ExecutionContext<?> executionContext,
+            final ReadOnlyTcpServerConfig config,
             @Nullable final EarlyConnectionAcceptor earlyConnectionAcceptor,
             @Nullable final LateConnectionAcceptor lateConnectionAcceptor,
             @Nullable final InfluencerConnectionAcceptor connectionAcceptor) {
         final Executor offloadExecutor = executionContext.executor();
 
         if (earlyConnectionAcceptor != null) {
-            ReducedConnectionInfo info = new ReducedConnectionInfo() {
+            final ExecutionContext<?> channelExecutionContext = channelExecutionContext(channel, executionContext);
+
+            ConnectionInfo info = new ConnectionInfo() {
                 @Override
                 public SocketAddress localAddress() {
                     return channel.localAddress();
@@ -210,44 +243,73 @@ public final class TcpServerBinder {
 
                 @Override
                 public ExecutionContext<?> executionContext() {
-                    return executionContext;
+                    return channelExecutionContext;
+                }
+
+                @Nullable
+                @Override
+                public SslConfig sslConfig() {
+                    return config.sslConfig();
+                }
+
+                @Nullable
+                @Override
+                public SSLSession sslSession() {
+                    return null;
+                }
+
+                @Nullable
+                @Override
+                public <T> T socketOption(final SocketOption<T> option) {
+                    return getOption(option, channel.config(), config.idleTimeoutMs());
+                }
+
+                @Override
+                public Protocol protocol() {
+                    return () -> "TCP";
                 }
             };
-
-            final boolean ioThreadSupported = executionContext.ioExecutor().isIoThreadSupported();
-            final NettyIoExecutor ioExecutor = fromNettyEventLoop(channel.eventLoop(), ioThreadSupported);
 
             final EarlyConnectionAcceptorHandler acceptorHandler = new EarlyConnectionAcceptorHandler();
             channel.pipeline().addLast(acceptorHandler);
 
-            connection = Completable.defer(() -> earlyConnectionAcceptor.accept(info))
-                    .subscribeOn(offloadExecutor, () -> earlyConnectionAcceptor.requiredOffloads().isConnectOffloaded())
-                    .publishOn(ioExecutor, () -> !IoThreadFactory.IoThread.currentThreadIsIoThread())
-                    .whenOnComplete(acceptorHandler::releaseEvents)
-                    .concat(connection);
+            // Defer is required to isolate the context between the user accept callback and the rest of the connection
+            Completable earlyCompletable = Completable.defer(() -> earlyConnectionAcceptor.accept(info));
+
+            if (earlyConnectionAcceptor.requiredOffloads().isConnectOffloaded()) {
+                earlyCompletable = earlyCompletable.subscribeOn(offloadExecutor);
+            }
+
+            connection = earlyCompletable
+                    .publishOn(channelExecutionContext.ioExecutor(), () -> !channel.eventLoop().inEventLoop())
+                    .concat(connection)
+                    .whenFinally(acceptorHandler::releaseEvents);
         }
 
         if (lateConnectionAcceptor != null) {
-            connection = connection.flatMap(conn -> defer(() -> lateConnectionAcceptor
-                    .accept(conn)
-                    .concat(succeeded(conn)))
-                    .subscribeOn(offloadExecutor,
-                            () -> lateConnectionAcceptor.requiredOffloads().isConnectOffloaded() &&
-                                    IoThreadFactory.IoThread.currentThreadIsIoThread())
-            );
+            connection = connection.flatMap(conn -> {
+                // Defer is required to isolate the context between the user accept callback and
+                // the rest of the connection
+                Single<CC> deferred = defer(() -> lateConnectionAcceptor.accept(conn).concat(succeeded(conn)));
+                if (lateConnectionAcceptor.requiredOffloads().isConnectOffloaded()) {
+                    // TODO: change in 0.43 after removal of the old connection acceptor
+                    // currentThreadIsIoThread check can be removed once the old connectionAcceptor is removed.
+                    deferred = deferred.subscribeOn(offloadExecutor, IoThreadFactory.IoThread::currentThreadIsIoThread);
+                }
+                return deferred;
+            });
         }
 
         if (connectionAcceptor != null) {
-            // Defer is required to isolate context for ConnectionAcceptor#accept and the rest
-            // of connection processing.
-            connection = connection.flatMap(conn -> defer(() -> connectionAcceptor
-                    .accept(conn)
-                    .concat(succeeded(conn)))
-                    // subscribeOn is required to offload calls to connectionAcceptor#accept
-                    .subscribeOn(offloadExecutor,
-                            () -> connectionAcceptor.requiredOffloads().isConnectOffloaded() &&
-                                    IoThreadFactory.IoThread.currentThreadIsIoThread())
-            );
+            connection = connection.flatMap(conn -> {
+                // Defer is required to isolate the context between the user accept callback and
+                // the rest of the connection
+                Single<CC> deferred = defer(() -> connectionAcceptor.accept(conn).concat(succeeded(conn)));
+                if (connectionAcceptor.requiredOffloads().isConnectOffloaded()) {
+                    deferred = deferred.subscribeOn(offloadExecutor);
+                }
+                return deferred;
+            });
         }
 
         return connection;

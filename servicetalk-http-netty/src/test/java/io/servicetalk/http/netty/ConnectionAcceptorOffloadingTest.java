@@ -27,7 +27,6 @@ import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.EarlyConnectionAcceptor;
 import io.servicetalk.transport.api.IoThreadFactory;
 import io.servicetalk.transport.api.LateConnectionAcceptor;
-import io.servicetalk.transport.api.ReducedConnectionInfo;
 import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.jupiter.api.Test;
@@ -72,7 +71,7 @@ class ConnectionAcceptorOffloadingTest {
 
         HttpServerBuilder builder = HttpServers.forPort(0).appendEarlyConnectionAcceptor(new EarlyConnectionAcceptor() {
             @Override
-            public Completable accept(final ReducedConnectionInfo info) {
+            public Completable accept(final ConnectionInfo info) {
                 assertNotNull(info);
                 offloaded.set(!IoThreadFactory.IoThread.currentThreadIsIoThread());
                 return Completable.completed();
@@ -122,7 +121,7 @@ class ConnectionAcceptorOffloadingTest {
 
         EarlyConnectionAcceptor notOffloaded = new EarlyConnectionAcceptor() {
             @Override
-            public Completable accept(final ReducedConnectionInfo info) {
+            public Completable accept(final ConnectionInfo info) {
                 if (!IoThreadFactory.IoThread.currentThreadIsIoThread()) {
                     numOffloaded.incrementAndGet();
                 }

@@ -26,6 +26,7 @@ import io.servicetalk.http.netty.NettyHttpServer.NettyHttpServerConnection;
 import io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer;
 import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.netty.internal.EmbeddedDuplexChannel;
+import io.servicetalk.transport.netty.internal.ExecutionContextUtils;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopConnectionObserver;
 
 import io.netty.buffer.ByteBuf;

@@ -22,15 +22,12 @@ import io.servicetalk.transport.api.IoExecutor;
 
 import io.netty.channel.Channel;
 import io.netty.channel.EventLoop;
-import io.netty.util.concurrent.FastThreadLocal;
 
-import static io.servicetalk.transport.netty.internal.NettyIoExecutors.fromNettyEventLoop;
+import static io.servicetalk.transport.netty.internal.ExecutionContextUtils.fromChannel;
 
-final class ExecutionContextUtils {
+final class HttpExecutionContextUtils {
 
-    private static final FastThreadLocal<IoExecutor> CHANNEL_IO_EXECUTOR = new FastThreadLocal<>();
-
-    private ExecutionContextUtils() {
+    private HttpExecutionContextUtils() {
         // No instances
     }
 
@@ -54,21 +51,5 @@ final class ExecutionContextUtils {
                 return channelIoExecutor;
             }
         };
-    }
-
-    private static IoExecutor fromChannel(final Channel channel, boolean isIoThreadSupported) {
-        assert channel.eventLoop().inEventLoop();
-        IoExecutor ioExecutor = CHANNEL_IO_EXECUTOR.getIfExists();
-        if (ioExecutor != null) {
-            return ioExecutor;
-        }
-        ioExecutor = fromNettyEventLoop(channel.eventLoop(), isIoThreadSupported);
-        CHANNEL_IO_EXECUTOR.set(ioExecutor);
-        return ioExecutor;
-    }
-
-    // for tests only
-    static void clearThreadLocal() {
-        CHANNEL_IO_EXECUTOR.remove();
     }
 }

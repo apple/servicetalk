@@ -81,6 +81,12 @@ class EarlyConnectionAcceptorHandler extends ChannelInboundHandlerAdapter {
     }
 
     @Override
+    public void channelRead(final ChannelHandlerContext ctx, final Object msg) throws Exception {
+        enqueueOrRunEvent(() -> ctx.fireChannelRead(msg));
+        releaseEvents();
+    }
+
+    @Override
     public void channelRegistered(final ChannelHandlerContext ctx) {
         enqueueOrRunEvent(ctx::fireChannelRegistered);
     }
@@ -98,11 +104,6 @@ class EarlyConnectionAcceptorHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelInactive(final ChannelHandlerContext ctx) {
         enqueueOrRunEvent(ctx::fireChannelInactive);
-    }
-
-    @Override
-    public void channelRead(final ChannelHandlerContext ctx, final Object msg) throws Exception {
-        enqueueOrRunEvent(() -> ctx.fireChannelRead(msg));
     }
 
     @Override

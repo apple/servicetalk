@@ -53,7 +53,7 @@ import static io.netty.util.ReferenceCountUtil.release;
 import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
-import static io.servicetalk.http.netty.ExecutionContextUtils.channelExecutionContext;
+import static io.servicetalk.http.netty.HttpExecutionContextUtils.channelExecutionContext;
 import static io.servicetalk.http.netty.NettyHttp2ExceptionUtils.wrapIfNecessary;
 import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.assignConnectionError;
 import static io.servicetalk.transport.netty.internal.NettyPipelineSslUtils.extractSslSessionAndReport;

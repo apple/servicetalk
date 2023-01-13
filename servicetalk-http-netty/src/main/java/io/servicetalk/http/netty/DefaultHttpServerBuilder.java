@@ -48,7 +48,6 @@ import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.LateConnectionAcceptor;
-import io.servicetalk.transport.api.ReducedConnectionInfo;
 import io.servicetalk.transport.api.ServerSslConfig;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.InfluencerConnectionAcceptor;
@@ -66,6 +65,7 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.Completable.defer;
 import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
@@ -417,13 +417,14 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
      * @return the combined acceptor with merged execution strategies.
      */
     @Nullable
-    private EarlyConnectionAcceptor buildEarlyConnectionAcceptor(final List<EarlyConnectionAcceptor> acceptors) {
+    private static EarlyConnectionAcceptor buildEarlyConnectionAcceptor(final List<EarlyConnectionAcceptor> acceptors) {
         return acceptors
                 .stream()
                 .reduce((prev, acceptor) -> new EarlyConnectionAcceptor() {
                     @Override
-                    public Completable accept(final ReducedConnectionInfo info) {
-                        return prev.accept(info).concat(acceptor.accept(info));
+                    public Completable accept(final ConnectionInfo info) {
+                        // Defer is required to isolate the context for the individual acceptors.
+                        return prev.accept(info).concat(defer(() -> acceptor.accept(info)));
                     }
 
                     @Override
@@ -441,13 +442,14 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
      * @return the combined acceptor with merged execution strategies.
      */
     @Nullable
-    private LateConnectionAcceptor buildLateConnectionAcceptor(final List<LateConnectionAcceptor> acceptors) {
+    private static LateConnectionAcceptor buildLateConnectionAcceptor(final List<LateConnectionAcceptor> acceptors) {
         return acceptors
                 .stream()
                 .reduce((prev, acceptor) -> new LateConnectionAcceptor() {
                     @Override
                     public Completable accept(final ConnectionInfo info) {
-                        return prev.accept(info).concat(acceptor.accept(info));
+                        // Defer is required to isolate the context for the individual acceptors.
+                        return prev.accept(info).concat(defer(() -> acceptor.accept(info)));
                     }
 
                     @Override

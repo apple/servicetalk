@@ -24,6 +24,7 @@ import io.servicetalk.transport.api.ConnectExecutionStrategy;
 import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionAcceptorFactory;
 import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.ConnectionInfo;
 import io.servicetalk.transport.api.EarlyConnectionAcceptor;
 import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 import io.servicetalk.transport.api.IoExecutor;
@@ -189,6 +190,12 @@ public interface HttpServerBuilder {
     /**
      * Appends the {@link EarlyConnectionAcceptor} to be called when a new connection has been created.
      * <p>
+     * The difference between the {@link EarlyConnectionAcceptor} and the {@link LateConnectionAcceptor} is that the
+     * early one is called right after the connection has been accepted - and most importantly - before any TLS
+     * handshake has been performed. This allows to terminate connections quickly and spend less CPU resources if the
+     * amount of information provided to make such a decision is sufficient. When used on an unsecured connection,
+     * the late acceptor will be called immediately after all early acceptors completed.
+     * <p>
      * The order of execution of these acceptors are in order of append. If 3 acceptors are added as follows:
      * <pre>
      *     builder
@@ -207,10 +214,19 @@ public interface HttpServerBuilder {
      * @param acceptor the acceptor to append to the chain of acceptors.
      * @return this {@link HttpServerBuilder} for chaining purposes.
      */
-    HttpServerBuilder appendEarlyConnectionAcceptor(EarlyConnectionAcceptor acceptor);
+    default HttpServerBuilder appendEarlyConnectionAcceptor(EarlyConnectionAcceptor acceptor) {
+        throw new UnsupportedOperationException("appendEarlyConnectionAcceptor is not supported " +
+                "by this HttpServerBuilder");
+    }
 
     /**
      * Appends the {@link LateConnectionAcceptor} to be called when a new connection has been created.
+     * <p>
+     * The {@link LateConnectionAcceptor} (compared to the {@link EarlyConnectionAcceptor}) gets called later in the
+     * connection establishment process. Instead of being invoked right after the connection has been created, this
+     * acceptor gets called after the TLS handshake completes and as a result has more contextual information available
+     * in the {@link ConnectionInfo}. When used on an unsecured connection, the late acceptor will be called immediately
+     * after all early acceptors completed.
      * <p>
      * The order of execution of these acceptors are in order of append. If 3 acceptors are added as follows:
      * <pre>
@@ -230,7 +246,10 @@ public interface HttpServerBuilder {
      * @param acceptor the acceptor to append to the chain of acceptors.
      * @return this {@link HttpServerBuilder} for chaining purposes.
      */
-    HttpServerBuilder appendLateConnectionAcceptor(LateConnectionAcceptor acceptor);
+    default HttpServerBuilder appendLateConnectionAcceptor(LateConnectionAcceptor acceptor) {
+        throw new UnsupportedOperationException("appendLateConnectionAcceptor is not supported " +
+                "by this HttpServerBuilder");
+    }
 
     /**
      * Appends a non-offloading filter to the chain of filters used to decorate the {@link StreamingHttpService} used
