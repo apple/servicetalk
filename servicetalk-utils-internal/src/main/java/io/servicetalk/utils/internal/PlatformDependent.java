@@ -40,11 +40,11 @@ import org.jctools.queues.atomic.MpscLinkedAtomicQueue;
 import org.jctools.queues.atomic.MpscUnboundedAtomicArrayQueue;
 import org.jctools.queues.atomic.SpscGrowableAtomicArrayQueue;
 import org.jctools.queues.atomic.SpscUnboundedAtomicArrayQueue;
-import org.jctools.queues.ea.unpadded.MpscChunkedUnpaddedArrayQueue;
-import org.jctools.queues.ea.unpadded.MpscLinkedUnpaddedQueue;
-import org.jctools.queues.ea.unpadded.MpscUnboundedUnpaddedArrayQueue;
-import org.jctools.queues.ea.unpadded.SpscChunkedUnpaddedArrayQueue;
-import org.jctools.queues.ea.unpadded.SpscUnboundedUnpaddedArrayQueue;
+import org.jctools.queues.unpadded.MpscChunkedUnpaddedArrayQueue;
+import org.jctools.queues.unpadded.MpscLinkedUnpaddedQueue;
+import org.jctools.queues.unpadded.MpscUnboundedUnpaddedArrayQueue;
+import org.jctools.queues.unpadded.SpscChunkedUnpaddedArrayQueue;
+import org.jctools.queues.unpadded.SpscUnboundedUnpaddedArrayQueue;
 import org.jctools.util.Pow2;
 import org.jctools.util.UnsafeAccess;
 import org.slf4j.Logger;
@@ -56,9 +56,10 @@ import java.security.PrivilegedAction;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import static java.lang.Boolean.getBoolean;
+import static java.lang.Boolean.parseBoolean;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
+import static java.lang.System.getProperty;
 
 /**
  * Provide utilities that are dependent on the current runtime environment.
@@ -277,12 +278,13 @@ public final class PlatformDependent {
         static {
             // Internal property, subject to removal after validation completed.
             final String useUnpaddedQueuesName = "io.servicetalk.internal.queues.useUnpadded";
-            boolean useUnpaddedQueues = getBoolean(useUnpaddedQueuesName);
+            boolean useUnpaddedQueues = parseBoolean(getProperty(useUnpaddedQueuesName, "false"));
             if (useUnpaddedQueues) {
                 Queue<Integer> queue = null;
                 try {
-                    // org.jctools.queues.ea.unpadded classes may be moved to another package name in the future.
-                    // Don't use them if they are not available due to failure to link/initialize the classes.
+                    // Queues were added in JCTools 4.x. Add a defensive check in-case there are class path conflicts
+                    // resulting in older library on the classpath. This can be removed after some time after folks
+                    // have upgraded.
                     queue = new MpscLinkedUnpaddedQueue<>();
                 } catch (Throwable ignored) {
                     useUnpaddedQueues = false;
