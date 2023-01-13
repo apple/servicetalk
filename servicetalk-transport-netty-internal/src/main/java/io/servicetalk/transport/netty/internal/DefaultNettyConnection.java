@@ -371,8 +371,8 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
      * @param <Write> Type of objects written to the {@link NettyConnection}.
      * @return A {@link Single} that completes with a {@link DefaultNettyConnection} after the channel is activated and
      * ready to use.
-     * @deprecated Use {@code #initChannel(Channel, BufferAllocator, Executor, IoExecutor, CloseHandler, FlushStrategy,
-     * long, SslConfig, ChannelInitializer, ExecutionStrategy, Protocol, ConnectionObserver, boolean, Predicate)}.
+     * @deprecated Use {@code #initChannel(Channel, ExecutionContext, CloseHandler, FlushStrategy, long, SslConfig,
+     * ChannelInitializer, Protocol, ConnectionObserver, boolean, Predicate)}.
      */
     @Deprecated // FIXME: 0.43 - remove deprecated method
     public static <Read, Write> Single<DefaultNettyConnection<Read, Write>> initChannel(
@@ -405,8 +405,8 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
      * @param <Write> Type of objects written to the {@link NettyConnection}.
      * @return A {@link Single} that completes with a {@link DefaultNettyConnection} after the channel is activated and
      * ready to use.
-     * @deprecated Use {@code #initChannel(Channel, BufferAllocator, Executor, IoExecutor, CloseHandler, FlushStrategy,
-     * long, SslConfig, ChannelInitializer, ExecutionStrategy, Protocol, ConnectionObserver, boolean, Predicate)}.
+     * @deprecated Use {@code #initChannel(Channel, ExecutionContext, CloseHandler, FlushStrategy, long, SslConfig,
+     * ChannelInitializer, Protocol, ConnectionObserver, boolean, Predicate)}.
      */
     @Deprecated // FIXME: 0.43 - remove deprecated method
     public static <Read, Write> Single<DefaultNettyConnection<Read, Write>> initChannel(
@@ -440,7 +440,10 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
      * @param <Write> Type of objects written to the {@link NettyConnection}.
      * @return A {@link Single} that completes with a {@link DefaultNettyConnection} after the channel is activated and
      * ready to use.
+     * @deprecated Use {@code #initChannel(Channel, ExecutionContext, CloseHandler, FlushStrategy, long, SslConfig,
+     * ChannelInitializer, Protocol, ConnectionObserver, boolean, Predicate)}.
      */
+    @Deprecated
     public static <Read, Write> Single<DefaultNettyConnection<Read, Write>> initChannel(
             Channel channel, BufferAllocator allocator, Executor executor, @Nullable IoExecutor ioExecutor,
             CloseHandler closeHandler, FlushStrategy flushStrategy, long idleTimeoutMs,
