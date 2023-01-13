@@ -278,7 +278,7 @@ public final class PlatformDependent {
         static {
             // Internal property, subject to removal after validation completed.
             final String useUnpaddedQueuesName = "io.servicetalk.internal.queues.useUnpadded";
-            boolean useUnpaddedQueues = parseBoolean(getProperty(useUnpaddedQueuesName, "false"));
+            boolean useUnpaddedQueues = parseBoolean(getProperty(useUnpaddedQueuesName, "true"));
             if (useUnpaddedQueues) {
                 Queue<Integer> queue = null;
                 try {
