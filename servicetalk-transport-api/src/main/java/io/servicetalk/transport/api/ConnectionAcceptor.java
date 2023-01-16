@@ -24,8 +24,10 @@ import static io.servicetalk.concurrent.api.Completable.completed;
  * A contract that defines the connection acceptance criterion.
  *
  * @see ConnectionAcceptorFactory
+ * @deprecated use {@link LateConnectionAcceptor} instead.
  */
 @FunctionalInterface
+@Deprecated // FIXME 0.43 - remove deprecated interface
 public interface ConnectionAcceptor extends AsyncCloseable {
 
     /**

@@ -184,8 +184,13 @@ public interface HttpServerBuilder {
      * @param factory {@link ConnectionAcceptorFactory} to append. Lifetime of this
      * {@link ConnectionAcceptorFactory} is managed by this builder and the server started thereof.
      * @return {@code this}
+     * @deprecated use {@link #appendLateConnectionAcceptor(LateConnectionAcceptor)} instead.
      */
-    HttpServerBuilder appendConnectionAcceptorFilter(ConnectionAcceptorFactory factory);
+    @Deprecated // FIXME 0.43 - remove deprecated method
+    default HttpServerBuilder appendConnectionAcceptorFilter(ConnectionAcceptorFactory factory) {
+        throw new UnsupportedOperationException("This method should not be implemented - consider " +
+                "using appendLateConnectionAcceptor instead");
+    }
 
     /**
      * Appends the {@link EarlyConnectionAcceptor} to be called when a new connection has been created.
