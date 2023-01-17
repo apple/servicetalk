@@ -20,6 +20,7 @@ import io.servicetalk.transport.api.DelegatingExecutionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.transport.api.IoThreadFactory;
 
 import io.netty.channel.Channel;
 import io.netty.channel.EventLoop;
@@ -34,6 +35,17 @@ public final class ExecutionContextUtils {
         // No instances
     }
 
+    /**
+     * Creates an {@link IoExecutor} around the Channel {@link EventLoop}.
+     * <p>
+     * This method must only be called from inside the {@link EventLoop}, since for performance reasons it will
+     * cache the {@link IoExecutor} in a thread local and reuse it if present.
+     *
+     * @param channel the netty channel to pick the event loop from.
+     * @param isIoThreadSupported if threads used by the {@link IoExecutor} are marked with
+     * {@link IoThreadFactory.IoThread} interface.
+     * @return The (potentially cached) {@link IoExecutor} wrapped around the Channel {@link EventLoop}.
+     */
     public static IoExecutor fromChannel(final Channel channel, boolean isIoThreadSupported) {
         assert channel.eventLoop().inEventLoop();
         IoExecutor ioExecutor = CHANNEL_IO_EXECUTOR.getIfExists();

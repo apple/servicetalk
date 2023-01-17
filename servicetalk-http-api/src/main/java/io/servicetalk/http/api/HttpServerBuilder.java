@@ -193,8 +193,7 @@ public interface HttpServerBuilder {
      * The difference between the {@link EarlyConnectionAcceptor} and the {@link LateConnectionAcceptor} is that the
      * early one is called right after the connection has been accepted - and most importantly - before any TLS
      * handshake has been performed. This allows to terminate connections quickly and spend less CPU resources if the
-     * amount of information provided to make such a decision is sufficient. When used on an unsecured connection,
-     * the late acceptor will be called immediately after all early acceptors completed.
+     * amount of information provided to make such a decision is sufficient.
      * <p>
      * The order of execution of these acceptors are in order of append. If 3 acceptors are added as follows:
      * <pre>
@@ -213,20 +212,20 @@ public interface HttpServerBuilder {
      *
      * @param acceptor the acceptor to append to the chain of acceptors.
      * @return this {@link HttpServerBuilder} for chaining purposes.
+     * @see #appendLateConnectionAcceptor(LateConnectionAcceptor)
      */
     default HttpServerBuilder appendEarlyConnectionAcceptor(EarlyConnectionAcceptor acceptor) {
         throw new UnsupportedOperationException("appendEarlyConnectionAcceptor is not supported " +
-                "by this HttpServerBuilder");
+                "by " + getClass());
     }
 
     /**
      * Appends the {@link LateConnectionAcceptor} to be called when a new connection has been created.
      * <p>
      * The {@link LateConnectionAcceptor} (compared to the {@link EarlyConnectionAcceptor}) gets called later in the
-     * connection establishment process. Instead of being invoked right after the connection has been created, this
-     * acceptor gets called after the TLS handshake completes and as a result has more contextual information available
-     * in the {@link ConnectionInfo}. When used on an unsecured connection, the late acceptor will be called immediately
-     * after all early acceptors completed.
+     * connection establishment process. Instead of being invoked right after the connection has been accepted, this
+     * acceptor gets called after the connection is fully initialized, the TLS handshake has been completed and as a
+     * result has more contextual information available in the {@link ConnectionInfo}.
      * <p>
      * The order of execution of these acceptors are in order of append. If 3 acceptors are added as follows:
      * <pre>
@@ -245,10 +244,11 @@ public interface HttpServerBuilder {
      *
      * @param acceptor the acceptor to append to the chain of acceptors.
      * @return this {@link HttpServerBuilder} for chaining purposes.
+     * @see #appendEarlyConnectionAcceptor(EarlyConnectionAcceptor)
      */
     default HttpServerBuilder appendLateConnectionAcceptor(LateConnectionAcceptor acceptor) {
         throw new UnsupportedOperationException("appendLateConnectionAcceptor is not supported " +
-                "by this HttpServerBuilder");
+                "by " + getClass());
     }
 
     /**

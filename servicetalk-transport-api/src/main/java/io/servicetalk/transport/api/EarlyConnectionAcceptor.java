@@ -28,6 +28,9 @@ public interface EarlyConnectionAcceptor extends ExecutionStrategyInfluencer<Con
 
     /**
      * Accept or reject an incoming connection.
+     * <p>
+     * Note that the {@link ConnectionInfo#sslSession()} will always return null with this acceptor since it is called
+     * before the TLS handshake is performed (and as a result no SSL session has been established).
      *
      * @param info additional information about the connection to make an acceptance decision.
      * @return a completed (to accept) or a failed (to reject) {@link Completable}

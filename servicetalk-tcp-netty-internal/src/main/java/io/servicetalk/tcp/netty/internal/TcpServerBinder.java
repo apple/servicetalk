@@ -283,7 +283,7 @@ public final class TcpServerBinder {
             connection = earlyCompletable
                     .publishOn(channelExecutionContext.ioExecutor(), () -> !channel.eventLoop().inEventLoop())
                     .concat(connection)
-                    .whenFinally(acceptorHandler::releaseEvents);
+                    .whenOnSuccess(ignored -> acceptorHandler.releaseEvents());
         }
 
         if (lateConnectionAcceptor != null) {

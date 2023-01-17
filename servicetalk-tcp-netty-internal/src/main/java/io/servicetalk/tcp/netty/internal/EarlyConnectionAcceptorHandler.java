@@ -15,6 +15,8 @@
  */
 package io.servicetalk.tcp.netty.internal;
 
+import io.servicetalk.concurrent.internal.QueueFullException;
+
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
@@ -26,9 +28,13 @@ import javax.annotation.Nullable;
 /**
  * Netty handler which queues pipeline events until {@link #releaseEvents()} is called or the handler is removed.
  */
-class EarlyConnectionAcceptorHandler extends ChannelInboundHandlerAdapter {
+final class EarlyConnectionAcceptorHandler extends ChannelInboundHandlerAdapter {
 
-    private final Queue<Runnable> queuedEvents = new ArrayDeque<>();
+    /**
+     * Starting with small number of elements since this queue is unlikely to contain lots of elements
+     * (optimizing for memory usage).
+     */
+    private final Queue<Runnable> queuedEvents = new ArrayDeque<>(4);
     private boolean queueingEnabled = true;
     @Nullable
     private ChannelHandlerContext channelHandlerContext;
@@ -36,8 +42,9 @@ class EarlyConnectionAcceptorHandler extends ChannelInboundHandlerAdapter {
     /**
      * Releases all queued events and disables further queueing (all further events will be propagated immediately).
      */
-    public void releaseEvents() {
+    void releaseEvents() {
         assert channelHandlerContext != null;
+        assert channelHandlerContext.channel().eventLoop().inEventLoop();
 
         if (queueingEnabled) {
             queueingEnabled = false;
@@ -61,7 +68,7 @@ class EarlyConnectionAcceptorHandler extends ChannelInboundHandlerAdapter {
     private void enqueueOrRunEvent(final Runnable event) {
         if (queueingEnabled) {
             if (!queuedEvents.offer(event)) {
-                throw new RuntimeException("Failed to enqueue (offer) events for the EarlyConnectionAcceptor");
+                throw new QueueFullException(getClass().getName() + "#queuedEvents");
             }
         } else {
             event.run();
@@ -81,7 +88,7 @@ class EarlyConnectionAcceptorHandler extends ChannelInboundHandlerAdapter {
     }
 
     @Override
-    public void channelRead(final ChannelHandlerContext ctx, final Object msg) throws Exception {
+    public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
         enqueueOrRunEvent(() -> ctx.fireChannelRead(msg));
         releaseEvents();
     }
@@ -112,7 +119,7 @@ class EarlyConnectionAcceptorHandler extends ChannelInboundHandlerAdapter {
     }
 
     @Override
-    public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) throws Exception {
+    public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) {
         enqueueOrRunEvent(() -> ctx.fireUserEventTriggered(evt));
     }
 
