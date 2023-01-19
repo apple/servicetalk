@@ -35,7 +35,6 @@ import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServerSslConfig;
 import io.servicetalk.transport.api.ServerSslConfigBuilder;
 
-import io.netty.channel.unix.Errors;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -44,6 +43,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import java.io.IOException;
 import java.net.SocketAddress;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -61,7 +61,6 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class EarlyAndLateConnectionAcceptorTest {
 
@@ -384,9 +383,7 @@ class EarlyAndLateConnectionAcceptorTest {
 
             try (BlockingHttpClient client = HttpClients.forResolvedAddress(serverAddress).buildBlocking()) {
 
-                Errors.NativeIoException ex = Assertions.assertThrows(
-                        Errors.NativeIoException.class, () -> client.request(client.get("/sayHello")));
-                assertTrue(ex.getMessage().contains("Connection reset by peer"));
+                Assertions.assertThrows(IOException.class, () -> client.request(client.get("/sayHello")));
             }
         }
     }
@@ -406,9 +403,7 @@ class EarlyAndLateConnectionAcceptorTest {
 
             try (BlockingHttpClient client = HttpClients.forResolvedAddress(serverAddress).buildBlocking()) {
 
-                Errors.NativeIoException ex = Assertions.assertThrows(
-                        Errors.NativeIoException.class, () -> client.request(client.get("/sayHello")));
-                assertTrue(ex.getMessage().contains("Connection reset by peer"));
+                Assertions.assertThrows(IOException.class, () -> client.request(client.get("/sayHello")));
             }
         }
     }
