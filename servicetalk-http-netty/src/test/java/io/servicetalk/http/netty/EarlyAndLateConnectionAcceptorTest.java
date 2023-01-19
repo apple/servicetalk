@@ -37,6 +37,7 @@ import io.servicetalk.transport.api.ServerSslConfigBuilder;
 
 import io.netty.channel.unix.Errors;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -63,19 +64,20 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class EarlyAndLateConnectionAcceptorTest {
+
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
     void testSingleAcceptorOffloading(boolean offload) throws Exception {
         AtomicReference<Boolean> offloaded = new AtomicReference<>();
 
-        HttpServerBuilder builder = HttpServers.forPort(0).appendConnectionAcceptorFilter(
+        HttpServerBuilder builder = serverBuilder().appendConnectionAcceptorFilter(
                 ConnectionAcceptorFactory.withStrategy(original ->
                         context -> {
                             offloaded.set(!IoThreadFactory.IoThread.currentThreadIsIoThread());
                             return original.accept(context);
                         },
                         offload ? ConnectExecutionStrategy.offloadAll() : ConnectExecutionStrategy.offloadNone()));
-        doSuccessRequestResponse(builder, ServerType.HTTP_1);
+        doSuccessRequestResponse(builder, ServerType.H1);
 
         assertThat("ConnectionAcceptor was not invoked", offloaded.get(), is(notNullValue()));
         assertThat("Incorrect offloading for ConnectionAcceptor", offloaded.get(), is(offload));
@@ -86,7 +88,7 @@ class EarlyAndLateConnectionAcceptorTest {
     void testSingleEarlyAcceptorOffloading(boolean offload) throws Exception {
         AtomicReference<Boolean> offloaded = new AtomicReference<>();
 
-        HttpServerBuilder builder = HttpServers.forPort(0).appendEarlyConnectionAcceptor(new EarlyConnectionAcceptor() {
+        HttpServerBuilder builder = serverBuilder().appendEarlyConnectionAcceptor(new EarlyConnectionAcceptor() {
             @Override
             public Completable accept(final ConnectionInfo info) {
                 assertNotNull(info);
@@ -99,7 +101,7 @@ class EarlyAndLateConnectionAcceptorTest {
                 return offload ? ConnectExecutionStrategy.offloadAll() : ConnectExecutionStrategy.offloadNone();
             }
         });
-        doSuccessRequestResponse(builder, ServerType.HTTP_1);
+        doSuccessRequestResponse(builder, ServerType.H1);
 
         assertThat("EarlyConnectionAcceptor was not invoked", offloaded.get(), is(notNullValue()));
         assertThat("Incorrect offloading for EarlyConnectionAcceptor", offloaded.get(), is(offload));
@@ -110,7 +112,7 @@ class EarlyAndLateConnectionAcceptorTest {
     void testSingleLateAcceptorOffloading(boolean offload) throws Exception {
         AtomicReference<Boolean> offloaded = new AtomicReference<>();
 
-        HttpServerBuilder builder = HttpServers.forPort(0).appendLateConnectionAcceptor(new LateConnectionAcceptor() {
+        HttpServerBuilder builder = serverBuilder().appendLateConnectionAcceptor(new LateConnectionAcceptor() {
             @Override
             public Completable accept(final ConnectionInfo info) {
                 assertNotNull(info);
@@ -123,7 +125,7 @@ class EarlyAndLateConnectionAcceptorTest {
                 return offload ? ConnectExecutionStrategy.offloadAll() : ConnectExecutionStrategy.offloadNone();
             }
         });
-        doSuccessRequestResponse(builder, ServerType.HTTP_1);
+        doSuccessRequestResponse(builder, ServerType.H1);
 
         assertThat("LateConnectionAcceptor was not invoked", offloaded.get(), is(notNullValue()));
         assertThat("Incorrect offloading for LateConnectionAcceptor", offloaded.get(), is(offload));
@@ -134,15 +136,13 @@ class EarlyAndLateConnectionAcceptorTest {
      */
     @ParameterizedTest
     @MethodSource("multipleAcceptorsOffloadingArgs")
-    void testMultipleAcceptorsOffloading(boolean firstOffloaded, boolean secondOffloaded, boolean thirdOffloaded,
-                                         ServerType serverType)
+    void testMultipleAcceptorsOffloadingH1(boolean firstOffloaded, boolean secondOffloaded, boolean thirdOffloaded)
             throws Exception {
         final AtomicInteger earlyOffloaded = new AtomicInteger();
         final AtomicInteger lateOffloaded = new AtomicInteger();
         final Queue<Integer> executionOrder = new ArrayBlockingQueue<>(6);
 
-        HttpServerBuilder builder = HttpServers
-                .forPort(0)
+        HttpServerBuilder builder = serverBuilder()
                 .appendEarlyConnectionAcceptor(earlyAcceptor(firstOffloaded, earlyOffloaded, executionOrder, 1))
                 .appendEarlyConnectionAcceptor(earlyAcceptor(secondOffloaded, earlyOffloaded, executionOrder, 2))
                 .appendEarlyConnectionAcceptor(earlyAcceptor(thirdOffloaded, earlyOffloaded, executionOrder, 3))
@@ -150,7 +150,100 @@ class EarlyAndLateConnectionAcceptorTest {
                 .appendLateConnectionAcceptor(lateAcceptor(secondOffloaded, lateOffloaded, executionOrder, 5))
                 .appendLateConnectionAcceptor(lateAcceptor(thirdOffloaded, lateOffloaded, executionOrder, 6));
 
-        doSuccessRequestResponse(builder, serverType);
+        doSuccessRequestResponse(builder, ServerType.H1);
+
+        assertEquals(3, earlyOffloaded.get());
+        assertEquals(3, lateOffloaded.get());
+        assertArrayEquals(new Integer[] {1, 2, 3, 4, 5, 6}, executionOrder.toArray(new Integer[0]));
+    }
+
+    @ParameterizedTest
+    @MethodSource("multipleAcceptorsOffloadingArgs")
+    void testMultipleAcceptorsOffloadingH1TLS(boolean firstOffloaded, boolean secondOffloaded, boolean thirdOffloaded)
+            throws Exception {
+        final AtomicInteger earlyOffloaded = new AtomicInteger();
+        final AtomicInteger lateOffloaded = new AtomicInteger();
+        final Queue<Integer> executionOrder = new ArrayBlockingQueue<>(6);
+
+        HttpServerBuilder builder = serverBuilder()
+                .appendEarlyConnectionAcceptor(earlyAcceptor(firstOffloaded, earlyOffloaded, executionOrder, 1))
+                .appendEarlyConnectionAcceptor(earlyAcceptor(secondOffloaded, earlyOffloaded, executionOrder, 2))
+                .appendEarlyConnectionAcceptor(earlyAcceptor(thirdOffloaded, earlyOffloaded, executionOrder, 3))
+                .appendLateConnectionAcceptor(lateAcceptor(firstOffloaded, lateOffloaded, executionOrder, 4))
+                .appendLateConnectionAcceptor(lateAcceptor(secondOffloaded, lateOffloaded, executionOrder, 5))
+                .appendLateConnectionAcceptor(lateAcceptor(thirdOffloaded, lateOffloaded, executionOrder, 6));
+
+        doSuccessRequestResponse(builder, ServerType.H1_TLS);
+
+        assertEquals(3, earlyOffloaded.get());
+        assertEquals(3, lateOffloaded.get());
+        assertArrayEquals(new Integer[] {1, 2, 3, 4, 5, 6}, executionOrder.toArray(new Integer[0]));
+    }
+
+    @ParameterizedTest
+    @MethodSource("multipleAcceptorsOffloadingArgs")
+    @Disabled("Disabled due to a H2 plain AUTO_READ issue which will be addressed in a later commit")
+    void testMultipleAcceptorsOffloadingH2(boolean firstOffloaded, boolean secondOffloaded, boolean thirdOffloaded)
+            throws Exception {
+        final AtomicInteger earlyOffloaded = new AtomicInteger();
+        final AtomicInteger lateOffloaded = new AtomicInteger();
+        final Queue<Integer> executionOrder = new ArrayBlockingQueue<>(6);
+
+        HttpServerBuilder builder = serverBuilder()
+                .appendEarlyConnectionAcceptor(earlyAcceptor(firstOffloaded, earlyOffloaded, executionOrder, 1))
+                .appendEarlyConnectionAcceptor(earlyAcceptor(secondOffloaded, earlyOffloaded, executionOrder, 2))
+                .appendEarlyConnectionAcceptor(earlyAcceptor(thirdOffloaded, earlyOffloaded, executionOrder, 3))
+                .appendLateConnectionAcceptor(lateAcceptor(firstOffloaded, lateOffloaded, executionOrder, 4))
+                .appendLateConnectionAcceptor(lateAcceptor(secondOffloaded, lateOffloaded, executionOrder, 5))
+                .appendLateConnectionAcceptor(lateAcceptor(thirdOffloaded, lateOffloaded, executionOrder, 6));
+
+        doSuccessRequestResponse(builder, ServerType.H2);
+
+        assertEquals(3, earlyOffloaded.get());
+        assertEquals(3, lateOffloaded.get());
+        assertArrayEquals(new Integer[] {1, 2, 3, 4, 5, 6}, executionOrder.toArray(new Integer[0]));
+    }
+
+    @ParameterizedTest
+    @MethodSource("multipleAcceptorsOffloadingArgs")
+    void testMultipleAcceptorsOffloadingH2TLS(boolean firstOffloaded, boolean secondOffloaded, boolean thirdOffloaded)
+            throws Exception {
+        final AtomicInteger earlyOffloaded = new AtomicInteger();
+        final AtomicInteger lateOffloaded = new AtomicInteger();
+        final Queue<Integer> executionOrder = new ArrayBlockingQueue<>(6);
+
+        HttpServerBuilder builder = serverBuilder()
+                .appendEarlyConnectionAcceptor(earlyAcceptor(firstOffloaded, earlyOffloaded, executionOrder, 1))
+                .appendEarlyConnectionAcceptor(earlyAcceptor(secondOffloaded, earlyOffloaded, executionOrder, 2))
+                .appendEarlyConnectionAcceptor(earlyAcceptor(thirdOffloaded, earlyOffloaded, executionOrder, 3))
+                .appendLateConnectionAcceptor(lateAcceptor(firstOffloaded, lateOffloaded, executionOrder, 4))
+                .appendLateConnectionAcceptor(lateAcceptor(secondOffloaded, lateOffloaded, executionOrder, 5))
+                .appendLateConnectionAcceptor(lateAcceptor(thirdOffloaded, lateOffloaded, executionOrder, 6));
+
+        doSuccessRequestResponse(builder, ServerType.H2_TLS);
+
+        assertEquals(3, earlyOffloaded.get());
+        assertEquals(3, lateOffloaded.get());
+        assertArrayEquals(new Integer[] {1, 2, 3, 4, 5, 6}, executionOrder.toArray(new Integer[0]));
+    }
+
+    @ParameterizedTest
+    @MethodSource("multipleAcceptorsOffloadingArgs")
+    void testMultipleAcceptorsOffloadingH2ALPN(boolean firstOffloaded, boolean secondOffloaded, boolean thirdOffloaded)
+            throws Exception {
+        final AtomicInteger earlyOffloaded = new AtomicInteger();
+        final AtomicInteger lateOffloaded = new AtomicInteger();
+        final Queue<Integer> executionOrder = new ArrayBlockingQueue<>(6);
+
+        HttpServerBuilder builder = serverBuilder()
+                .appendEarlyConnectionAcceptor(earlyAcceptor(firstOffloaded, earlyOffloaded, executionOrder, 1))
+                .appendEarlyConnectionAcceptor(earlyAcceptor(secondOffloaded, earlyOffloaded, executionOrder, 2))
+                .appendEarlyConnectionAcceptor(earlyAcceptor(thirdOffloaded, earlyOffloaded, executionOrder, 3))
+                .appendLateConnectionAcceptor(lateAcceptor(firstOffloaded, lateOffloaded, executionOrder, 4))
+                .appendLateConnectionAcceptor(lateAcceptor(secondOffloaded, lateOffloaded, executionOrder, 5))
+                .appendLateConnectionAcceptor(lateAcceptor(thirdOffloaded, lateOffloaded, executionOrder, 6));
+
+        doSuccessRequestResponse(builder, ServerType.H2_ALPN);
 
         assertEquals(3, earlyOffloaded.get());
         assertEquals(3, lateOffloaded.get());
@@ -159,15 +252,9 @@ class EarlyAndLateConnectionAcceptorTest {
 
     private static Stream<Arguments> multipleAcceptorsOffloadingArgs() {
         return Stream.of(
-                Arguments.of(true, false, false, ServerType.HTTP_1),
-                Arguments.of(false, true, false, ServerType.HTTP_1),
-                Arguments.of(false, false, true, ServerType.HTTP_1),
-                Arguments.of(true, false, false, ServerType.HTTP_1_TLS),
-                Arguments.of(false, true, false, ServerType.HTTP_1_TLS),
-                Arguments.of(false, false, true, ServerType.HTTP_1_TLS),
-                Arguments.of(true, false, false, ServerType.HTTP_2),
-                Arguments.of(false, true, false, ServerType.HTTP_2),
-                Arguments.of(false, false, true, ServerType.HTTP_2)
+                Arguments.of(true, false, false),
+                Arguments.of(false, true, false),
+                Arguments.of(false, false, true)
         );
     }
 
@@ -230,9 +317,11 @@ class EarlyAndLateConnectionAcceptorTest {
     }
 
     enum ServerType {
-        HTTP_1,
-        HTTP_1_TLS,
-        HTTP_2
+        H1,
+        H1_TLS,
+        H2,
+        H2_TLS,
+        H2_ALPN
     }
 
     private static void doSuccessRequestResponse(final HttpServerBuilder serverBuilder, final ServerType serverType)
@@ -241,12 +330,16 @@ class EarlyAndLateConnectionAcceptorTest {
         ServerSslConfig serverSslConfig = new ServerSslConfigBuilder(
                 DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey).build();
 
-        if (serverType == ServerType.HTTP_1) {
+        if (serverType == ServerType.H1) {
             serverBuilder.protocols(h1Default());
-        } else if (serverType == ServerType.HTTP_1_TLS) {
+        } else if (serverType == ServerType.H1_TLS) {
             serverBuilder.protocols(h1Default()).sslConfig(serverSslConfig);
-        } else if (serverType == ServerType.HTTP_2) {
+        } else if (serverType == ServerType.H2) {
+            serverBuilder.protocols(h2Default());
+        } else if (serverType == ServerType.H2_TLS) {
             serverBuilder.protocols(h2Default()).sslConfig(serverSslConfig);
+        } else if (serverType == ServerType.H2_ALPN) {
+            serverBuilder.protocols(h2Default(), h1Default()).sslConfig(serverSslConfig);
         }
 
         final HttpService service = (ctx, request, responseFactory) ->
@@ -257,12 +350,16 @@ class EarlyAndLateConnectionAcceptorTest {
             ClientSslConfig clientSslConfig = new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem).build();
             final SingleAddressHttpClientBuilder<SocketAddress, SocketAddress> clientBuilder =
                     HttpClients.forResolvedAddress(serverAddress);
-            if (serverType == ServerType.HTTP_1) {
+            if (serverType == ServerType.H1) {
                 clientBuilder.protocols(h1Default());
-            } else if (serverType == ServerType.HTTP_1_TLS) {
+            } else if (serverType == ServerType.H1_TLS) {
                 clientBuilder.protocols(h1Default()).sslConfig(clientSslConfig);
-            } else if (serverType == ServerType.HTTP_2) {
+            } else if (serverType == ServerType.H2) {
+                clientBuilder.protocols(h2Default());
+            } else if (serverType == ServerType.H2_TLS) {
                 clientBuilder.protocols(h2Default()).sslConfig(clientSslConfig);
+            } else if (serverType == ServerType.H2_ALPN) {
+                clientBuilder.protocols(h2Default(), h1Default()).sslConfig(clientSslConfig);
             }
 
             try (BlockingHttpClient client = clientBuilder.buildBlocking()) {
@@ -277,7 +374,7 @@ class EarlyAndLateConnectionAcceptorTest {
      */
     @Test
     void earlyConnectionAcceptorCanReject() throws Exception {
-        HttpServerBuilder builder = HttpServers.forPort(0)
+        HttpServerBuilder builder = serverBuilder()
                 .appendEarlyConnectionAcceptor(info -> Completable.failed(new Exception("woops")));
 
         final HttpService service = (ctx, request, responseFactory) ->
@@ -299,7 +396,7 @@ class EarlyAndLateConnectionAcceptorTest {
      */
     @Test
     void lateConnectionAcceptorCanReject() throws Exception {
-        HttpServerBuilder builder = HttpServers.forPort(0)
+        HttpServerBuilder builder = serverBuilder()
                 .appendLateConnectionAcceptor(info -> Completable.failed(new Exception("woops")));
 
         final HttpService service = (ctx, request, responseFactory) ->
@@ -314,5 +411,9 @@ class EarlyAndLateConnectionAcceptorTest {
                 assertTrue(ex.getMessage().contains("Connection reset by peer"));
             }
         }
+    }
+
+    private static HttpServerBuilder serverBuilder() {
+        return HttpServers.forPort(0);
     }
 }

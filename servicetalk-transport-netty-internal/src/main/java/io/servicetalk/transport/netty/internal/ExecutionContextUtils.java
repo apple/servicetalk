@@ -28,6 +28,9 @@ import io.netty.util.concurrent.FastThreadLocal;
 
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.fromNettyEventLoop;
 
+/**
+ * Provides utilities around Executors, ExecutionContexts and how they interact with netty Channels.
+ */
 public final class ExecutionContextUtils {
     private static final FastThreadLocal<IoExecutor> CHANNEL_IO_EXECUTOR = new FastThreadLocal<>();
 
