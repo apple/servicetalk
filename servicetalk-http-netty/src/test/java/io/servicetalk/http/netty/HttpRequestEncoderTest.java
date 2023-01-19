@@ -436,7 +436,7 @@ class HttpRequestEncoderTest extends HttpEncoderTest<HttpRequestMetaData> {
 
             ReadOnlyTcpServerConfig sConfig = new TcpServerConfig().asReadOnly();
             ServerContext serverContext = resources.prepend(
-                    TcpServerBinder.bind(localAddress(0), sConfig, false,
+                    TcpServerBinder.bind(localAddress(0), sConfig,
                             SEC, null,
                             (channel, observer) -> DefaultNettyConnection.initChannel(channel, SEC.bufferAllocator(),
                                     SEC.executor(), SEC.ioExecutor(),

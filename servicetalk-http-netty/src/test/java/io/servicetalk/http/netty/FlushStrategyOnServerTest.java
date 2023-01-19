@@ -30,7 +30,6 @@ import io.servicetalk.tcp.netty.internal.ReadOnlyTcpServerConfig;
 import io.servicetalk.tcp.netty.internal.TcpServerBinder;
 import io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer;
 import io.servicetalk.tcp.netty.internal.TcpServerConfig;
-import io.servicetalk.transport.api.ConnectionObserver;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
@@ -117,15 +116,14 @@ class FlushStrategyOnServerTest {
         final ReadOnlyTcpServerConfig tcpReadOnly = new TcpServerConfig().asReadOnly();
 
         try {
-            serverContext = TcpServerBinder.bind(localAddress(0), tcpReadOnly, true,
+            serverContext = TcpServerBinder.bind(localAddress(0), tcpReadOnly,
                     httpExecutionContext, null,
                     (channel, observer) -> {
-                        final ConnectionObserver connectionObserver = config.tcpConfig().transportObserver()
-                                .onNewConnection(channel.localAddress(), channel.remoteAddress());
+                        channel.config().setAutoRead(true);
                         return initChannel(channel, httpExecutionContext, config,
-                                new TcpServerChannelInitializer(tcpReadOnly, connectionObserver)
+                                new TcpServerChannelInitializer(tcpReadOnly, observer)
                                         .andThen(channel1 -> channel1.pipeline().addLast(interceptor)), service,
-                                true, connectionObserver);
+                                true, observer);
                     },
                     connection -> connection.process(true), null, null)
                     .map(delegate -> new NettyHttpServerContext(delegate, service, httpExecutionContext))

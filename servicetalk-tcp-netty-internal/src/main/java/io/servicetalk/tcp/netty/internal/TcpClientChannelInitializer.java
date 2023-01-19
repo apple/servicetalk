@@ -33,7 +33,7 @@ import static io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer.init
 /**
  * {@link ChannelInitializer} for TCP client.
  */
-public class TcpClientChannelInitializer implements ChannelInitializer {
+public class TcpClientChannelInitializer implements ChannelInitializer {    // FIXME: 0.43 - make this class final
 
     private final ChannelInitializer delegate;
 

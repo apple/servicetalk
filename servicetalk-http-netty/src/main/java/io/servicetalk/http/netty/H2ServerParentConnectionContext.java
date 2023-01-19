@@ -96,8 +96,7 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
             return failed(newH2ConfigException());
         }
         final ReadOnlyTcpServerConfig tcpServerConfig = config.tcpConfig();
-        // Auto read is required for h2
-        return TcpServerBinder.bind(listenAddress, tcpServerConfig, true, executionContext, connectionAcceptor,
+        return TcpServerBinder.bind(listenAddress, tcpServerConfig, executionContext, connectionAcceptor,
                 (channel, connectionObserver) -> initChannel(listenAddress, channel, executionContext, config,
                         new TcpServerChannelInitializer(tcpServerConfig, connectionObserver), service,
                         drainRequestPayloadBody, connectionObserver),

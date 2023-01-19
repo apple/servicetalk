@@ -101,7 +101,7 @@ public final class TcpServerBinder {
             @Nullable final InfluencerConnectionAcceptor connectionAcceptor,
             final BiFunction<Channel, ConnectionObserver, Single<CC>> connectionFunction,
             final Consumer<CC> connectionConsumer) {
-        return bind(listenAddress, config, autoRead, executionContext, connectionAcceptor, connectionFunction,
+        return bind(listenAddress, config, executionContext, connectionAcceptor, connectionFunction,
                 connectionConsumer, null, null);
     }
 
@@ -111,7 +111,6 @@ public final class TcpServerBinder {
      *
      * @param listenAddress The address to bind to.
      * @param config The {@link ReadOnlyTcpServerConfig} to use for the bind socket and newly accepted sockets.
-     * @param autoRead if {@code true} auto read will be enabled for new {@link Channel}s.
      * @param executionContext The {@link ExecutionContext} to use for the bind socket.
      * @param connectionAcceptor The {@link ConnectionAcceptor} used to filter newly accepted sockets.
      * @param connectionFunction Used to create a new {@link NettyConnection} from a {@link Channel}.
@@ -124,7 +123,7 @@ public final class TcpServerBinder {
      * listening on the {@code listenAddress}.
      */
     public static <CC extends ConnectionContext> Single<ServerContext> bind(SocketAddress listenAddress,
-            final ReadOnlyTcpServerConfig config, final boolean autoRead, final ExecutionContext<?> executionContext,
+            final ReadOnlyTcpServerConfig config, final ExecutionContext<?> executionContext,
             @Nullable final InfluencerConnectionAcceptor connectionAcceptor,
             final BiFunction<Channel, ConnectionObserver, Single<CC>> connectionFunction,
             final Consumer<CC> connectionConsumer,
@@ -135,7 +134,7 @@ public final class TcpServerBinder {
         listenAddress = toNettyAddress(listenAddress);
         EventLoopAwareNettyIoExecutor nettyIoExecutor = toEventLoopAwareNettyIoExecutor(executionContext.ioExecutor());
         ServerBootstrap bs = new ServerBootstrap();
-        configure(config, autoRead, bs, nettyIoExecutor.eventLoopGroup(), listenAddress.getClass());
+        configure(config, bs, nettyIoExecutor.eventLoopGroup(), listenAddress.getClass());
 
         ChannelSet channelSet = new ChannelSet(
                 executionContext.executionStrategy().isCloseOffloaded() ? executionContext.executor() : immediate());
@@ -315,7 +314,7 @@ public final class TcpServerBinder {
         return connection;
     }
 
-    private static void configure(ReadOnlyTcpServerConfig config, boolean autoRead, ServerBootstrap bs,
+    private static void configure(ReadOnlyTcpServerConfig config, ServerBootstrap bs,
                                   @Nullable EventLoopGroup eventLoopGroup,
                                   Class<? extends SocketAddress> bindAddressClass) {
         if (eventLoopGroup == null) {
@@ -335,7 +334,10 @@ public final class TcpServerBinder {
             bs.option(option, opt.getValue());
         }
 
-        bs.childOption(ChannelOption.AUTO_READ, autoRead);
+        // We disable AUTO_READ by default to prevent reading any data before the decision to accept the connection is
+        // made and to allow managing back-pressure after that. Protocols that require AUTO_READ have to enable it at
+        // their handler.
+        bs.childOption(ChannelOption.AUTO_READ, false);
 
         // Set the correct ByteBufAllocator based on our BufferAllocator to minimize memory copies.
         ByteBufAllocator byteBufAllocator = POOLED_ALLOCATOR;

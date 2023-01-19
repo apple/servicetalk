@@ -82,7 +82,7 @@ public class TcpServer {
                               Function<NettyConnection<Buffer, Buffer>, Completable> service,
                               ExecutionStrategy executionStrategy)
             throws ExecutionException, InterruptedException {
-        return TcpServerBinder.bind(localAddress(port), config, false, executionContext, connectionAcceptor,
+        return TcpServerBinder.bind(localAddress(port), config, executionContext, connectionAcceptor,
                 (channel, connectionObserver) -> DefaultNettyConnection.<Buffer, Buffer>initChannel(channel,
                         executionContext.bufferAllocator(), executionContext.executor(), executionContext.ioExecutor(),
                         UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, config.flushStrategy(), config.idleTimeoutMs(),

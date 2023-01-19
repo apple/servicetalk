@@ -32,7 +32,7 @@ import javax.annotation.Nullable;
 /**
  * {@link ChannelInitializer} for TCP.
  */
-public class TcpServerChannelInitializer implements ChannelInitializer {
+public class TcpServerChannelInitializer implements ChannelInitializer {    // FIXME: 0.43 - make this class final
 
     private final ChannelInitializer delegate;
 
