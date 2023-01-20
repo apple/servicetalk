@@ -68,9 +68,7 @@ final class DeferredServerChannelBinder {
                 (channel, connectionObserver) -> alpnInitChannel(listenAddress, channel, config, executionContext,
                         service, drainRequestPayloadBody, connectionObserver);
 
-        // We disable auto read by default so we can handle stuff in the ConnectionFilter before we accept any content.
-        // In case ALPN negotiates h2, h2 connection MUST enable auto read for its Channel.
-        return TcpServerBinder.bind(listenAddress, tcpConfig, false, executionContext, connectionAcceptor, channelInit,
+        return TcpServerBinder.bind(listenAddress, tcpConfig, executionContext, connectionAcceptor, channelInit,
                 serverConnection -> {
                     // Start processing requests on http/1.1 connection:
                     if (serverConnection instanceof NettyHttpServerConnection) {

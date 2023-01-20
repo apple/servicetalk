@@ -64,7 +64,6 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 class EarlyAndLateConnectionAcceptorTest {
 
@@ -163,8 +162,6 @@ class EarlyAndLateConnectionAcceptorTest {
     @ParameterizedTest(name = "{displayName} [{index}] protocol={0}")
     @EnumSource(Protocol.class)
     void testEarlyAcceptorWithOffloadingAndDifferentProtocols(Protocol protocol) throws Exception {
-        assumeFalse(protocol == Protocol.H2,
-                "Disabled due to a H2 plain AUTO_READ issue which will be addressed in a later commit");
         final AtomicInteger earlyOffloaded = new AtomicInteger();
 
         HttpServerBuilder builder = serverBuilder()
@@ -175,7 +172,6 @@ class EarlyAndLateConnectionAcceptorTest {
                     return info.executionContext().executor().timer(ofMillis(50));
                 });
         doSuccessRequestResponse(builder, protocol);
-
         assertEquals(1, earlyOffloaded.get());
     }
 
