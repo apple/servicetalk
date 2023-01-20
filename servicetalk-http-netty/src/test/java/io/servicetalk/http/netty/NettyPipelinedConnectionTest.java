@@ -33,6 +33,7 @@ import io.servicetalk.transport.api.RetryableException;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.transport.netty.internal.EmbeddedDuplexChannel;
+import io.servicetalk.transport.netty.internal.ExecutionContextUtils;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopConnectionObserver;

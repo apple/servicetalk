@@ -127,7 +127,7 @@ class FlushStrategyOnServerTest {
                                         .andThen(channel1 -> channel1.pipeline().addLast(interceptor)), service,
                                 true, connectionObserver);
                     },
-                    connection -> connection.process(true))
+                    connection -> connection.process(true), null, null)
                     .map(delegate -> new NettyHttpServerContext(delegate, service, httpExecutionContext))
                     .toFuture().get();
         } catch (Exception e) {

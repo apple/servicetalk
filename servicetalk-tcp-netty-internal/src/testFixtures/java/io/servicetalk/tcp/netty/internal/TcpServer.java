@@ -93,7 +93,7 @@ public class TcpServer {
                 serverConnection -> service.apply(serverConnection)
                         .beforeOnError(throwable -> LOGGER.error("Error handling a connection.", throwable))
                         .beforeFinally(() -> serverConnection.closeAsync().subscribe())
-                        .subscribe())
+                        .subscribe(), null, null)
                 .beforeOnSuccess(ctx -> LOGGER.info("Server started on port {}.", getServerPort(ctx)))
                 .beforeOnError(throwable -> LOGGER.error("Failed starting server on port {}.", port))
                 .toFuture().get();

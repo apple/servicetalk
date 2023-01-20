@@ -447,7 +447,7 @@ class HttpRequestEncoderTest extends HttpEncoderTest<HttpRequestMetaData> {
                                                 serverChannelRef.compareAndSet(null, channel2);
                                                 serverChannelLatch.countDown();
                                             }), defaultStrategy(), mock(Protocol.class), observer, false, __ -> false),
-                            connection -> { }).toFuture().get());
+                            connection -> { }, null, null).toFuture().get());
             ReadOnlyHttpClientConfig cConfig = new HttpClientConfig().asReadOnly();
             assert cConfig.h1Config() != null;
 

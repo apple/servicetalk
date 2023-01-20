@@ -16,6 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.BlockingHttpService;
@@ -39,10 +40,14 @@ import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import io.servicetalk.logging.api.LogLevel;
+import io.servicetalk.transport.api.ConnectExecutionStrategy;
 import io.servicetalk.transport.api.ConnectionAcceptorFactory;
+import io.servicetalk.transport.api.ConnectionInfo;
+import io.servicetalk.transport.api.EarlyConnectionAcceptor;
 import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.transport.api.LateConnectionAcceptor;
 import io.servicetalk.transport.api.ServerSslConfig;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.InfluencerConnectionAcceptor;
@@ -60,6 +65,7 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.Completable.defer;
 import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
@@ -78,6 +84,8 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
     private ConnectionAcceptorFactory connectionAcceptorFactory;
     private final List<StreamingHttpServiceFilterFactory> noOffloadServiceFilters = new ArrayList<>();
     private final List<StreamingHttpServiceFilterFactory> serviceFilters = new ArrayList<>();
+    private final List<EarlyConnectionAcceptor> earlyConnectionAcceptors = new ArrayList<>();
+    private final List<LateConnectionAcceptor> lateConnectionAcceptors = new ArrayList<>();
     private HttpExecutionStrategy strategy = defaultStrategy();
     private boolean drainRequestPayloadBody = true;
     private final HttpServerConfig config = new HttpServerConfig();
@@ -143,6 +151,18 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
         } else {
             connectionAcceptorFactory = connectionAcceptorFactory.append(factory);
         }
+        return this;
+    }
+
+    @Override
+    public HttpServerBuilder appendEarlyConnectionAcceptor(final EarlyConnectionAcceptor acceptor) {
+        earlyConnectionAcceptors.add(requireNonNull(acceptor));
+        return this;
+    }
+
+    @Override
+    public HttpServerBuilder appendLateConnectionAcceptor(final LateConnectionAcceptor acceptor) {
+        lateConnectionAcceptors.add(requireNonNull(acceptor));
         return this;
     }
 
@@ -309,6 +329,9 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
                 InfluencerConnectionAcceptor.withStrategy(connectionAcceptorFactory.create(ACCEPT_ALL),
                         connectionAcceptorFactory.requiredOffloads());
 
+        EarlyConnectionAcceptor earlyConnectionAcceptor = buildEarlyConnectionAcceptor(earlyConnectionAcceptors);
+        LateConnectionAcceptor lateConnectionAcceptor = buildLateConnectionAcceptor(lateConnectionAcceptors);
+
         final StreamingHttpService filteredService;
         final HttpExecutionContext executionContext;
 
@@ -334,7 +357,8 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
         }
 
         final HttpExecutionStrategy builderStrategy = this.strategy;
-        return doBind(executionContext, connectionAcceptor, filteredService)
+        return doBind(executionContext, connectionAcceptor, filteredService, earlyConnectionAcceptor,
+                lateConnectionAcceptor)
                 .afterOnSuccess(serverContext -> {
                     if (builderStrategy != defaultStrategy() &&
                             builderStrategy.missing(computedStrategy) != offloadNone()) {
@@ -356,22 +380,24 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
 
     private Single<HttpServerContext> doBind(final HttpExecutionContext executionContext,
                                              @Nullable final InfluencerConnectionAcceptor connectionAcceptor,
-                                             final StreamingHttpService service) {
+                                             final StreamingHttpService service,
+                                             @Nullable final EarlyConnectionAcceptor earlyConnectionAcceptor,
+                                             @Nullable final LateConnectionAcceptor lateConnectionAcceptor) {
         ReadOnlyHttpServerConfig roConfig = config.asReadOnly();
         StreamingHttpService filteredService = applyInternalFilters(service, roConfig.lifecycleObserver());
 
         if (roConfig.tcpConfig().isAlpnConfigured()) {
             return DeferredServerChannelBinder.bind(executionContext, roConfig, address, connectionAcceptor,
-                    filteredService, drainRequestPayloadBody, false);
+                    filteredService, drainRequestPayloadBody, false, earlyConnectionAcceptor, lateConnectionAcceptor);
         } else if (roConfig.tcpConfig().sniMapping() != null) {
             return DeferredServerChannelBinder.bind(executionContext, roConfig, address, connectionAcceptor,
-                    filteredService, drainRequestPayloadBody, true);
+                    filteredService, drainRequestPayloadBody, true, earlyConnectionAcceptor, lateConnectionAcceptor);
         } else if (roConfig.isH2PriorKnowledge()) {
             return H2ServerParentConnectionContext.bind(executionContext, roConfig, address, connectionAcceptor,
-                    filteredService, drainRequestPayloadBody);
+                    filteredService, drainRequestPayloadBody, earlyConnectionAcceptor, lateConnectionAcceptor);
         }
         return NettyHttpServer.bind(executionContext, roConfig, address, connectionAcceptor,
-                filteredService, drainRequestPayloadBody);
+                filteredService, drainRequestPayloadBody, earlyConnectionAcceptor, lateConnectionAcceptor);
     }
 
     private <T extends HttpExecutionStrategyInfluencer> HttpExecutionStrategy computeServiceStrategy(
@@ -382,6 +408,56 @@ final class DefaultHttpServerBuilder implements HttpServerBuilder {
         final HttpExecutionStrategy computedStrategy = computeRequiredStrategy(serviceFilters, serviceStrategy);
         return defaultStrategy() == builderStrategy ? computedStrategy :
                 builderStrategy.hasOffloads() ? builderStrategy.merge(computedStrategy) : builderStrategy;
+    }
+
+    /**
+     * Combines all early acceptors into one by concatenating the callbacks and merging their execution strategies.
+     *
+     * @param acceptors the acceptors to combine into one.
+     * @return the combined acceptor with merged execution strategies.
+     */
+    @Nullable
+    private static EarlyConnectionAcceptor buildEarlyConnectionAcceptor(final List<EarlyConnectionAcceptor> acceptors) {
+        return acceptors
+                .stream()
+                .reduce((prev, acceptor) -> new EarlyConnectionAcceptor() {
+                    @Override
+                    public Completable accept(final ConnectionInfo info) {
+                        // Defer is required to isolate the context for the individual acceptors.
+                        return prev.accept(info).concat(defer(() -> acceptor.accept(info)));
+                    }
+
+                    @Override
+                    public ConnectExecutionStrategy requiredOffloads() {
+                        return prev.requiredOffloads().merge(acceptor.requiredOffloads());
+                    }
+                })
+                .orElse(null);
+    }
+
+    /**
+     * Combines all late acceptors into one by concatenating their callbacks and merging their execution strategies.
+     *
+     * @param acceptors the acceptors to combine into one.
+     * @return the combined acceptor with merged execution strategies.
+     */
+    @Nullable
+    private static LateConnectionAcceptor buildLateConnectionAcceptor(final List<LateConnectionAcceptor> acceptors) {
+        return acceptors
+                .stream()
+                .reduce((prev, acceptor) -> new LateConnectionAcceptor() {
+                    @Override
+                    public Completable accept(final ConnectionInfo info) {
+                        // Defer is required to isolate the context for the individual acceptors.
+                        return prev.accept(info).concat(defer(() -> acceptor.accept(info)));
+                    }
+
+                    @Override
+                    public ConnectExecutionStrategy requiredOffloads() {
+                        return prev.requiredOffloads().merge(acceptor.requiredOffloads());
+                    }
+                })
+                .orElse(null);
     }
 
     private static StreamingHttpService applyInternalFilters(StreamingHttpService service,

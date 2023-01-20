@@ -25,6 +25,8 @@ import io.servicetalk.tcp.netty.internal.ReadOnlyTcpServerConfig;
 import io.servicetalk.tcp.netty.internal.TcpServerBinder;
 import io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer;
 import io.servicetalk.transport.api.ConnectionObserver;
+import io.servicetalk.transport.api.EarlyConnectionAcceptor;
+import io.servicetalk.transport.api.LateConnectionAcceptor;
 import io.servicetalk.transport.netty.internal.InfluencerConnectionAcceptor;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
@@ -54,7 +56,9 @@ final class DeferredServerChannelBinder {
                                           @Nullable final InfluencerConnectionAcceptor connectionAcceptor,
                                           final StreamingHttpService service,
                                           final boolean drainRequestPayloadBody,
-                                          final boolean sniOnly) {
+                                          final boolean sniOnly,
+                                          @Nullable final EarlyConnectionAcceptor earlyConnectionAcceptor,
+                                          @Nullable final LateConnectionAcceptor lateConnectionAcceptor) {
         final ReadOnlyTcpServerConfig tcpConfig = config.tcpConfig();
         assert tcpConfig.sslContext() != null;
 
@@ -73,7 +77,7 @@ final class DeferredServerChannelBinder {
                         ((NettyHttpServerConnection) serverConnection).process(true);
                     }
                     // Nothing to do otherwise as h2 uses auto read on the parent channel
-                })
+                }, earlyConnectionAcceptor, lateConnectionAcceptor)
                 .map(delegate -> {
                     LOGGER.debug("Started HTTP server with ALPN for address {}", delegate.listenAddress());
                     // The ServerContext returned by TcpServerBinder takes care of closing the connectionAcceptor.

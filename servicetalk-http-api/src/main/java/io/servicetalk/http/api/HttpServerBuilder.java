@@ -16,6 +16,7 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.logging.api.LogLevel;
@@ -23,8 +24,11 @@ import io.servicetalk.transport.api.ConnectExecutionStrategy;
 import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionAcceptorFactory;
 import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.ConnectionInfo;
+import io.servicetalk.transport.api.EarlyConnectionAcceptor;
 import io.servicetalk.transport.api.ExecutionStrategyInfluencer;
 import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.transport.api.LateConnectionAcceptor;
 import io.servicetalk.transport.api.ServerSslConfig;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 import io.servicetalk.transport.api.TransportObserver;
@@ -182,6 +186,70 @@ public interface HttpServerBuilder {
      * @return {@code this}
      */
     HttpServerBuilder appendConnectionAcceptorFilter(ConnectionAcceptorFactory factory);
+
+    /**
+     * Appends the {@link EarlyConnectionAcceptor} to be called when a new connection has been created.
+     * <p>
+     * The difference between the {@link EarlyConnectionAcceptor} and the {@link LateConnectionAcceptor} is that the
+     * early one is called right after the connection has been accepted - and most importantly - before any TLS
+     * handshake has been performed. This allows to terminate connections quickly and spend less CPU resources if the
+     * amount of information provided to make such a decision is sufficient.
+     * <p>
+     * The order of execution of these acceptors are in order of append. If 3 acceptors are added as follows:
+     * <pre>
+     *     builder
+     *          .appendEarlyConnectionAcceptor(acceptor1)
+     *          .appendEarlyConnectionAcceptor(acceptor2)
+     *          .appendEarlyConnectionAcceptor(acceptor3)
+     * </pre>
+     * the order of invocation of these filters will be:
+     * <pre>
+     *     acceptor1 ⇒ acceptor2 ⇒ acceptor3
+     * </pre>
+     * <p>
+     * The acceptor is offloaded by default. If an acceptor in the chain fails the {@link Completable}, the later ones
+     * will not be called.
+     *
+     * @param acceptor the acceptor to append to the chain of acceptors.
+     * @return this {@link HttpServerBuilder} for chaining purposes.
+     * @see #appendLateConnectionAcceptor(LateConnectionAcceptor)
+     */
+    default HttpServerBuilder appendEarlyConnectionAcceptor(EarlyConnectionAcceptor acceptor) {
+        throw new UnsupportedOperationException("appendEarlyConnectionAcceptor is not supported " +
+                "by " + getClass());
+    }
+
+    /**
+     * Appends the {@link LateConnectionAcceptor} to be called when a new connection has been created.
+     * <p>
+     * The {@link LateConnectionAcceptor} (compared to the {@link EarlyConnectionAcceptor}) gets called later in the
+     * connection establishment process. Instead of being invoked right after the connection has been accepted, this
+     * acceptor gets called after the connection is fully initialized, the TLS handshake has been completed and as a
+     * result has more contextual information available in the {@link ConnectionInfo}.
+     * <p>
+     * The order of execution of these acceptors are in order of append. If 3 acceptors are added as follows:
+     * <pre>
+     *     builder
+     *          .appendLateConnectionAcceptor(acceptor1)
+     *          .appendLateConnectionAcceptor(acceptor2)
+     *          .appendLateConnectionAcceptor(acceptor3)
+     * </pre>
+     * the order of invocation of these filters will be:
+     * <pre>
+     *     acceptor1 ⇒ acceptor2 ⇒ acceptor3
+     * </pre>
+     * <p>
+     * The acceptor is offloaded by default. If an acceptor in the chain fails the {@link Completable}, the later ones
+     * will not be called.
+     *
+     * @param acceptor the acceptor to append to the chain of acceptors.
+     * @return this {@link HttpServerBuilder} for chaining purposes.
+     * @see #appendEarlyConnectionAcceptor(EarlyConnectionAcceptor)
+     */
+    default HttpServerBuilder appendLateConnectionAcceptor(LateConnectionAcceptor acceptor) {
+        throw new UnsupportedOperationException("appendLateConnectionAcceptor is not supported " +
+                "by " + getClass());
+    }
 
     /**
      * Appends a non-offloading filter to the chain of filters used to decorate the {@link StreamingHttpService} used
