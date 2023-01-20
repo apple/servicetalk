@@ -16,6 +16,7 @@
 package io.servicetalk.transport.api;
 
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
@@ -54,6 +55,8 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
     private long sessionTimeout;
     @Nullable
     private SslProvider provider;
+    @Nullable
+    private List<CertificateCompressionAlgorithm> certificateCompressionAlgorithms;
 
     /**
      * Set the {@link TrustManagerFactory} used for verifying the remote endpoint's certificate.
@@ -317,6 +320,37 @@ abstract class AbstractSslConfigBuilder<T extends AbstractSslConfigBuilder<T>> {
     @Nullable
     final SslProvider provider() {
         return provider;
+    }
+
+    /**
+     * Sets the certificate compression algorithms to advertise if the feature is supported at runtime.
+     *
+     * @param algorithms the certificate compression algorithms to use.
+     * @return {@code this}.
+     * @see CertificateCompressionAlgorithms
+     */
+    public final T certificateCompressionAlgorithms(final List<CertificateCompressionAlgorithm> algorithms) {
+        if (algorithms.isEmpty()) {
+            throw new IllegalArgumentException("algorithms cannot be empty");
+        }
+        this.certificateCompressionAlgorithms = algorithms;
+        return thisT();
+    }
+
+    /**
+     * Sets the certificate compression algorithms to advertise if the feature is supported at runtime.
+     *
+     * @param algorithms the certificate compression algorithms to use.
+     * @return {@code this}.
+     * @see CertificateCompressionAlgorithms
+     */
+    public final T certificateCompressionAlgorithms(final CertificateCompressionAlgorithm... algorithms) {
+        return certificateCompressionAlgorithms(Arrays.asList(algorithms));
+    }
+
+    @Nullable
+    final List<CertificateCompressionAlgorithm> certificateCompressionAlgorithms() {
+        return certificateCompressionAlgorithms;
     }
 
     abstract T thisT();

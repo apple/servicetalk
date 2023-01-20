@@ -136,4 +136,25 @@ public interface SslConfig {
      */
     @Nullable
     SslProvider provider();
+
+    /**
+     * Get the list of usable {@link CertificateCompressionAlgorithm CertificateCompressionAlgorithms} to advertise.
+     * <p>
+     * If this method returns null (by default) or an empty list, no certificate compression algorithms will be
+     * advertised during the TLS handshake which effectively disables this feature. Note that even though they
+     * are advertised, the other side is not required per RFC to compress so certificates might still be sent
+     * uncompressed.
+     * <p>
+     * Also note that this feature is only available with
+     * <a href="https://netty.io/wiki/forked-tomcat-native.html">BoringSSL</a> implementation of
+     * {@link SslProvider#OPENSSL}. Provided compression algorithms are ignored when the {@link SslProvider#JDK} is
+     * used.
+     *
+     * @return the list of certificate compression algorithms to advertise.
+     * @see <a href="https://www.rfc-editor.org/rfc/rfc8879">RFC8879 - TLS Certificate Compression</a>
+     */
+    @Nullable // FIXME 0.43 - remove default implementation
+    default List<CertificateCompressionAlgorithm> certificateCompressionAlgorithms() {
+        return null;
+    }
 }
