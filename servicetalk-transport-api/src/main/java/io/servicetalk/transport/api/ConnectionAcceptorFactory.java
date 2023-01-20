@@ -19,8 +19,11 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * A factory of {@link ConnectionAcceptor}.
+ *
+ * @deprecated use {@link LateConnectionAcceptor} instead.
  */
 @FunctionalInterface
+@Deprecated // FIXME 0.43 - remove deprecated interface
 public interface ConnectionAcceptorFactory extends ExecutionStrategyInfluencer<ConnectExecutionStrategy> {
 
     /**
