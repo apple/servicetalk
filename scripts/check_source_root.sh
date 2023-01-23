@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+set -eu
 
 TEMPLATE="""// Configure {source-root} values based on how this document is rendered: on GitHub or not
 ifdef::env-github[]
@@ -11,42 +11,49 @@ ifndef::source-root[:source-root: https://github.com/apple/servicetalk/blob/{pag
 endif::[]
 """
 
-FIX=false
+REPAIR=false
 EXIT_SUCCESS=true
 
 function usage {
-    echo "Usage $(basename $0) -f [optional filename]"
-    echo "      -f causes the files to be fixed"
+    echo "Usage $(basename $0) -r [optional filename]"
+    echo "      -r causes the files to be fixed"
+}
 
+function exit_abnormal {
+    usage
     exit 1
 }
 
 # evaluate whether the passed file properly defines and uses the source-root variable
 function eval_file() {
-    local f=$1
+    local file="$1"
 
-    local has_def=$(grep ':source\-root:' $f)
+    if ! [ -f "$file" ]; then
+        echo "File $file doesn't exist. Exiting."
+        exit 1
+    fi
+
+    local has_def=$(grep ':source\-root:' $file)
 
     # We assume that we never wat a bare {source-root} and it will always have a '/something'.
     # Otherwise, we can't distinguish it from the header.
-    local has_ref=$(grep '{source\-root}/' $f)
+    local has_ref=$(grep -n '{source\-root}/' $file)
 
     if [ -z "$has_def" ] && [ -n "$has_ref" ]; then
-        # def is defined but ref is not
-
-        if $FIX
+        # source-root is not defined but there is a reference to it.
+        if $REPAIR
         then
-            echo "INFO: adding definition for source-root to $f."
-            local contents=$(cat $f)
-            echo "$TEMPLATE" > $f
-            echo "$contents" >> $f
+            echo "INFO: adding definition for source-root to $file."
+            local contents=$(cat $file)
+            echo "$TEMPLATE" > $file
+            echo "$contents" >> $file
         else
-            echo "ERROR: reference to 'source-root' found but no definition: $f"
+            echo "ERROR: reference to 'source-root' found but no definition. $file: $has_ref"
             EXIT_SUCCESS=false
         fi
 
     elif [ -n "$has_def" ] && [ -z "$has_ref" ]; then
-        echo "WARNING: definition of 'source-root' found but no references: $f"
+        echo "WARNING: definition of 'source-root' found but no references: $file"
     fi
     }
 
@@ -56,25 +63,33 @@ function process_all() {
         eval_file $DOCFILE
     done
 
-    if ! $EXIT_SUCCESS
-    then
-        echo "Command found errors. Exiting."
-        exit 1
-    fi
-
 }
 
-optstring=":f"
-
-while getopts ${optstring} arg; do
+while getopts ":rh" arg; do
     case "${arg}" in
-        f) FIX=true ;;
+        r) REPAIR=true ;;
+        h)
+           usage
+           exit 1
+           ;;
         ?) 
            echo "Invalid options: ${OPTARG}."
-           usage
+           exit_abnormal
            ;;
     esac
 done
 
-process_all
+shift "$((OPTIND-1))"
+
+if [ -z "${1-}" ]; then
+    process_all
+else
+    eval_file $1
+fi
+
+if ! $EXIT_SUCCESS
+then
+    echo "Found errors. Exiting."
+    exit 1
+fi
 
