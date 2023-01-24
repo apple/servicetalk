@@ -104,6 +104,8 @@ fi
 
 if ! $EXIT_SUCCESS
 then
-    echo "Found errors. Exiting."
+    echo "Found missing source-root definitions."
+    echo "Try running with the -r flag to automatically fix missing source-root definitions."
+    echo "Exiting."
     exit 1
 fi

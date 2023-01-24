@@ -22,6 +22,8 @@ jobs:
         run: java -version
       - name: Make gradlew Executable
         run: chmod +x gradlew
+      - name: Documentation Linter
+        run: bash scripts/check-source-root.sh
       - name: Build with Gradle
         run: ./gradlew --parallel clean quality
       - name: Upload CheckStyle Results
