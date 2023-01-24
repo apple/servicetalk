@@ -359,7 +359,7 @@ final class DefaultDnsClient implements DnsClient {
                                             }
                                         }
                                     }
-                                    promise.setSuccess(dnsAnswer);
+                                    promise.trySuccess(dnsAnswer);
                                 }
                             });
                     return promise;
@@ -409,7 +409,7 @@ final class DefaultDnsClient implements DnsClient {
                                 dnsAnswerPromise.setFailure(cause2);
                                 return;
                             }
-                            dnsAnswerPromise.setSuccess(dnsAnswer);
+                            dnsAnswerPromise.trySuccess(dnsAnswer);
                         }
                     });
                     return dnsAnswerPromise;
