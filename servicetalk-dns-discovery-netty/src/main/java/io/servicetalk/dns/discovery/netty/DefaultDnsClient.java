@@ -323,7 +323,7 @@ final class DefaultDnsClient implements DnsClient {
                             .addListener((Future<? super List<DnsRecord>> completedFuture) -> {
                                 Throwable cause = completedFuture.cause();
                                 if (cause != null) {
-                                    promise.setFailure(cause);
+                                    promise.tryFailure(cause);
                                 } else {
                                     final DnsAnswer<HostAndPort> dnsAnswer;
                                     long minTTLSeconds = Long.MAX_VALUE;
@@ -395,7 +395,7 @@ final class DefaultDnsClient implements DnsClient {
                     resolver.resolveAll(name).addListener(completedFuture -> {
                         Throwable cause = completedFuture.cause();
                         if (cause != null) {
-                            dnsAnswerPromise.setFailure(cause);
+                            dnsAnswerPromise.tryFailure(cause);
                         } else {
                             final DnsAnswer<InetAddress> dnsAnswer;
                             try {
