@@ -350,7 +350,7 @@ final class DefaultDnsClient implements DnsClient {
                                         }
                                         dnsAnswer = new DnsAnswer<>(hostAndPorts, SECONDS.toNanos(minTTLSeconds));
                                     } catch (Throwable cause2) {
-                                        promise.setFailure(cause2);
+                                        promise.tryFailure(cause2);
                                         return;
                                     } finally {
                                         if (toRelease != null) {
@@ -406,7 +406,7 @@ final class DefaultDnsClient implements DnsClient {
                                                 (List<InetAddress>) completedFuture.getNow());
                                 dnsAnswer = new DnsAnswer<>(addresses, SECONDS.toNanos(ttlCache.minTtl(name)));
                             } catch (Throwable cause2) {
-                                dnsAnswerPromise.setFailure(cause2);
+                                dnsAnswerPromise.tryFailure(cause2);
                                 return;
                             }
                             dnsAnswerPromise.trySuccess(dnsAnswer);
