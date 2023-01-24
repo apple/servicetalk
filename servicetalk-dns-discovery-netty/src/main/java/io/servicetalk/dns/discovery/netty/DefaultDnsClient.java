@@ -323,7 +323,7 @@ final class DefaultDnsClient implements DnsClient {
                             .addListener((Future<? super List<DnsRecord>> completedFuture) -> {
                                 Throwable cause = completedFuture.cause();
                                 if (cause != null) {
-                                    promise.setFailure(cause);
+                                    promise.tryFailure(cause);
                                 } else {
                                     final DnsAnswer<HostAndPort> dnsAnswer;
                                     long minTTLSeconds = Long.MAX_VALUE;
@@ -350,7 +350,7 @@ final class DefaultDnsClient implements DnsClient {
                                         }
                                         dnsAnswer = new DnsAnswer<>(hostAndPorts, SECONDS.toNanos(minTTLSeconds));
                                     } catch (Throwable cause2) {
-                                        promise.setFailure(cause2);
+                                        promise.tryFailure(cause2);
                                         return;
                                     } finally {
                                         if (toRelease != null) {
@@ -359,7 +359,7 @@ final class DefaultDnsClient implements DnsClient {
                                             }
                                         }
                                     }
-                                    promise.setSuccess(dnsAnswer);
+                                    promise.trySuccess(dnsAnswer);
                                 }
                             });
                     return promise;
@@ -395,7 +395,7 @@ final class DefaultDnsClient implements DnsClient {
                     resolver.resolveAll(name).addListener(completedFuture -> {
                         Throwable cause = completedFuture.cause();
                         if (cause != null) {
-                            dnsAnswerPromise.setFailure(cause);
+                            dnsAnswerPromise.tryFailure(cause);
                         } else {
                             final DnsAnswer<InetAddress> dnsAnswer;
                             try {
@@ -406,10 +406,10 @@ final class DefaultDnsClient implements DnsClient {
                                                 (List<InetAddress>) completedFuture.getNow());
                                 dnsAnswer = new DnsAnswer<>(addresses, SECONDS.toNanos(ttlCache.minTtl(name)));
                             } catch (Throwable cause2) {
-                                dnsAnswerPromise.setFailure(cause2);
+                                dnsAnswerPromise.tryFailure(cause2);
                                 return;
                             }
-                            dnsAnswerPromise.setSuccess(dnsAnswer);
+                            dnsAnswerPromise.trySuccess(dnsAnswer);
                         }
                     });
                     return dnsAnswerPromise;
