@@ -122,6 +122,11 @@ final class DefaultGrpcServiceContext extends DefaultGrpcMetadata implements Grp
         return connectionContext.closeAsyncGracefully();
     }
 
+    @Override
+    public String toString() {
+        return connectionContext.toString();
+    }
+
     private static final class DefaultGrpcProtocol implements GrpcProtocol {
         private final HttpProtocolVersion httpProtocol;
 
