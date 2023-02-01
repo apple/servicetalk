@@ -145,10 +145,13 @@ public interface SslConfig {
      * are advertised, the other side is not required per RFC to compress so certificates might still be sent
      * uncompressed.
      * <p>
-     * Also note that this feature is only available with
-     * <a href="https://netty.io/wiki/forked-tomcat-native.html">BoringSSL</a> implementation of
-     * {@link SslProvider#OPENSSL}. Provided compression algorithms are ignored when the {@link SslProvider#JDK} is
-     * used.
+     * Also note that this feature is only available with:
+     * <ul>
+     *     <li><a href="https://netty.io/wiki/forked-tomcat-native.html">BoringSSL</a> implementation of
+     *     {@link SslProvider#OPENSSL}. Provided compression algorithms are ignored when the {@link SslProvider#JDK} is
+     *     used.</li>
+     *     <li>TLSv1.3 or above.</li>
+     * </ul>
      *
      * @return the list of certificate compression algorithms to advertise.
      * @see <a href="https://www.rfc-editor.org/rfc/rfc8879">RFC8879 - TLS Certificate Compression</a>

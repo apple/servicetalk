@@ -34,7 +34,7 @@ class ZlibOpenSslCertificateCompressionAlgorithmTest {
     void compressAndDecompressCertificate() throws Exception {
         byte[] originalCert = inputStreamToArray(DefaultTestCerts.loadServerPem());
 
-        OpenSslCertificateCompressionAlgorithm algorithm = new ZlibOpenSslCertificateCompressionAlgorithm();
+        OpenSslCertificateCompressionAlgorithm algorithm = ZlibOpenSslCertificateCompressionAlgorithm.INSTANCE;
         byte[] compressedCert = algorithm.compress(null, originalCert);
         byte[] uncompressedCert = algorithm.decompress(null, originalCert.length, compressedCert);
 

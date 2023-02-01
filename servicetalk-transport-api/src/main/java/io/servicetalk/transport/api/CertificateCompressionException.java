@@ -15,10 +15,13 @@
  */
 package io.servicetalk.transport.api;
 
+import javax.net.ssl.SSLException;
+
 /**
  * When thrown contains information about a failure during TLS certificate compression.
  */
-public final class CertificateCompressionException extends RuntimeException {
+public final class CertificateCompressionException extends SSLException {
+    private static final long serialVersionUID = -8127714610191317316L;
 
     /**
      * Create a new {@link CertificateCompressionException} with just a message.

@@ -32,8 +32,13 @@ import javax.net.ssl.SSLEngine;
  */
 final class ZlibOpenSslCertificateCompressionAlgorithm implements OpenSslCertificateCompressionAlgorithm {
 
+    static final ZlibOpenSslCertificateCompressionAlgorithm INSTANCE = new ZlibOpenSslCertificateCompressionAlgorithm();
+
+    private ZlibOpenSslCertificateCompressionAlgorithm() {
+    }
+
     @Override
-    public byte[] compress(final SSLEngine engine, final byte[] uncompressedCertificate) {
+    public byte[] compress(final SSLEngine engine, final byte[] uncompressedCertificate) throws Exception {
         int uncompressedLength = uncompressedCertificate.length;
         if (uncompressedLength == 0) {
             return uncompressedCertificate;
@@ -52,18 +57,21 @@ final class ZlibOpenSslCertificateCompressionAlgorithm implements OpenSslCertifi
             byte[] compressionBuffer = new byte[bufferSizeEstimate];
             while (!deflater.finished()) {
                 int bytesCompressed = deflater.deflate(compressionBuffer);
-                outputStream.write(compressionBuffer, 0, bytesCompressed);
+                if (bytesCompressed > 0) {
+                    outputStream.write(compressionBuffer, 0, bytesCompressed);
+                }
             }
             return outputStream.toByteArray();
         } catch (Exception cause) {
-            throw new CertificateCompressionException("Failed to compress certificate with " + getClass(), cause);
+            throw new CertificateCompressionException("Failed to compress certificate with ZLIB", cause);
         } finally {
             deflater.end();
         }
     }
 
     @Override
-    public byte[] decompress(final SSLEngine engine, final int uncompressedLen, final byte[] compressedCertificate) {
+    public byte[] decompress(final SSLEngine engine, final int uncompressedLen, final byte[] compressedCertificate)
+            throws Exception {
         if (compressedCertificate.length == 0) {
             return compressedCertificate;
         }
@@ -81,13 +89,13 @@ final class ZlibOpenSslCertificateCompressionAlgorithm implements OpenSslCertifi
                 int decompressedBytes = inflater.inflate(output, bytesWritten, uncompressedLen - bytesWritten);
                 bytesWritten += decompressedBytes;
                 if (bytesWritten > uncompressedLen) {
-                    throw new CertificateCompressionException("Number of bytes written exceeds the " +
-                            "uncompressed certificate length");
+                    throw new CertificateCompressionException("Number of bytes written (" + bytesWritten + ") " +
+                            "exceeds the uncompressed certificate length (" + uncompressedLen + ")");
                 }
             }
             return output;
         } catch (Exception cause) {
-            throw new CertificateCompressionException("Failed to decompress certificate with " + getClass(), cause);
+            throw new CertificateCompressionException("Failed to decompress certificate with ZLIB", cause);
         } finally {
             inflater.end();
         }

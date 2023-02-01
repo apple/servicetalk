@@ -192,7 +192,7 @@ public final class SslContextFactory {
             // the API is opened up this logic needs to change and take user-fed algorithms into account.
             if (algorithm.algorithmId() == CertificateCompressionAlgorithms.ZLIB_ALGORITHM_ID) {
                 configBuilder.addAlgorithm(
-                        new ZlibOpenSslCertificateCompressionAlgorithm(),
+                        ZlibOpenSslCertificateCompressionAlgorithm.INSTANCE,
                         OpenSslCertificateCompressionConfig.AlgorithmMode.Both
                 );
             } else {

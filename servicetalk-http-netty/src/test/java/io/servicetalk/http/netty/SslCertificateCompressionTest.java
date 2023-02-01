@@ -32,7 +32,8 @@ import io.servicetalk.transport.api.SslProvider;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver;
 
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.net.InetSocketAddress;
 import java.util.Collections;
@@ -44,6 +45,7 @@ import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 class SslCertificateCompressionTest {
@@ -51,8 +53,9 @@ class SslCertificateCompressionTest {
     /**
      * Compares the bytes written and read when certificate compression is enabled vs. when it is not.
      */
-    @Test
-    void negotiatesServerCertCompression() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @ValueSource(booleans = {true, false})
+    void negotiatesCertificateCompression(boolean clientEnabled) throws Exception {
         final HttpService service = (ctx, request, responseFactory) ->
             succeeded(responseFactory.ok().payloadBody("Hello World!", textSerializerUtf8()));
 
@@ -72,7 +75,7 @@ class SslCertificateCompressionTest {
 
         try (ServerContext server = serverBuilder(true).listenAndAwait(service)) {
             SslBytesReadTransportObserver observer = new SslBytesReadTransportObserver();
-            try (BlockingHttpClient client = clientBuilder(server, true, observer).buildBlocking()) {
+            try (BlockingHttpClient client = clientBuilder(server, clientEnabled, observer).buildBlocking()) {
                 client.request(client.get("/sayHello"));
                 readWithCompression = observer.handshakeBytesRead;
                 writtenWithCompression = observer.handshakeBytesWritten;
@@ -81,8 +84,15 @@ class SslCertificateCompressionTest {
 
         // We cannot assert "smaller than" with compression since depending on the certificate and the compression
         // algorithm chosen the result might not actually be smaller - but it is certainly different.
-        assertNotEquals(readWithCompression, readWithoutCompression);
-        assertNotEquals(writtenWithCompression, writtenWithoutCompression);
+        if (clientEnabled) {
+            assertNotEquals(readWithCompression, readWithoutCompression);
+            assertNotEquals(writtenWithCompression, writtenWithoutCompression);
+        } else {
+            // When the client does not advertise its support to the server, the server will not perform
+            // any compression.
+            assertEquals(readWithCompression, readWithoutCompression);
+            assertEquals(writtenWithCompression, writtenWithoutCompression);
+        }
     }
 
     private static HttpServerBuilder serverBuilder(final boolean withCompression) {
