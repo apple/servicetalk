@@ -15,13 +15,18 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.servicetalk.transport.api.CertificateCompressionAlgorithm;
+import io.servicetalk.transport.api.CertificateCompressionAlgorithms;
 import io.servicetalk.transport.api.ClientSslConfig;
 import io.servicetalk.transport.api.ServerSslConfig;
 import io.servicetalk.transport.api.SslConfig;
 
 import io.netty.handler.ssl.ClientAuth;
+import io.netty.handler.ssl.OpenSslCertificateCompressionConfig;
+import io.netty.handler.ssl.OpenSslContextOption;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
+import io.netty.handler.ssl.SslProvider;
 
 import java.io.InputStream;
 import java.util.List;
@@ -72,11 +77,16 @@ public final class SslContextFactory {
             }
         }
         List<String> alpnProtocols = config.alpnProtocols();
-        builder.sslProvider(toNettySslProvider(config.provider(), alpnProtocols != null && !alpnProtocols.isEmpty()));
+        SslProvider nettySslProvider =
+                toNettySslProvider(config.provider(), alpnProtocols != null && !alpnProtocols.isEmpty());
+        builder.sslProvider(nettySslProvider);
 
         builder.protocols(config.sslProtocols());
         builder.ciphers(config.ciphers());
         builder.applicationProtocolConfig(nettyApplicationProtocol(alpnProtocols));
+
+        configureCertificateCompression(config, builder, nettySslProvider, false);
+
         try {
             return builder.build();
         } catch (SSLException e) {
@@ -132,7 +142,12 @@ public final class SslContextFactory {
         builder.protocols(config.sslProtocols());
         builder.ciphers(config.ciphers());
 
-        builder.sslProvider(toNettySslProvider(config.provider(), alpnProtocols != null && !alpnProtocols.isEmpty()));
+        io.netty.handler.ssl.SslProvider nettySslProvider =
+                toNettySslProvider(config.provider(), alpnProtocols != null && !alpnProtocols.isEmpty());
+        builder.sslProvider(nettySslProvider);
+
+        configureCertificateCompression(config, builder, nettySslProvider, true);
+
         try {
             return builder.build();
         } catch (SSLException e) {
@@ -151,6 +166,40 @@ public final class SslContextFactory {
                 closeAndRethrowUnchecked(trustManagerStream);
             }
         }
+    }
+
+    private static void configureCertificateCompression(SslConfig config, SslContextBuilder builder,
+                                                        @Nullable io.netty.handler.ssl.SslProvider nettySslProvider,
+                                                        boolean forServer) {
+        final List<CertificateCompressionAlgorithm> algorithms = config.certificateCompressionAlgorithms();
+        if (algorithms == null || algorithms.isEmpty()) {
+            return;
+        }
+
+        if (nettySslProvider == null) {
+            nettySslProvider = forServer ? SslContext.defaultServerProvider() : SslContext.defaultClientProvider();
+        }
+
+        // TODO: change once https://github.com/netty/netty/pull/13145 is merged and released
+        if (nettySslProvider != SslProvider.OPENSSL) {
+            return;
+        }
+
+        final OpenSslCertificateCompressionConfig.Builder configBuilder =
+                OpenSslCertificateCompressionConfig.newBuilder();
+        for (CertificateCompressionAlgorithm algorithm : algorithms) {
+            // Right now all we support is ZLIB - and it is not possible for the user to extend the list. Once
+            // the API is opened up this logic needs to change and take user-fed algorithms into account.
+            if (algorithm.algorithmId() == CertificateCompressionAlgorithms.ZLIB_ALGORITHM_ID) {
+                configBuilder.addAlgorithm(
+                        ZlibOpenSslCertificateCompressionAlgorithm.INSTANCE,
+                        OpenSslCertificateCompressionConfig.AlgorithmMode.Both
+                );
+            } else {
+                throw new IllegalArgumentException("Unsupported: " + algorithm);
+            }
+        }
+        builder.option(OpenSslContextOption.CERTIFICATE_COMPRESSION_ALGORITHMS, configBuilder.build());
     }
 
     @Nullable

@@ -116,4 +116,10 @@ public abstract class DelegatingSslConfig<T extends SslConfig> implements SslCon
     public SslProvider provider() {
         return delegate.provider();
     }
+
+    @Nullable
+    @Override
+    public List<CertificateCompressionAlgorithm> certificateCompressionAlgorithms() {
+        return delegate.certificateCompressionAlgorithms();
+    }
 }
