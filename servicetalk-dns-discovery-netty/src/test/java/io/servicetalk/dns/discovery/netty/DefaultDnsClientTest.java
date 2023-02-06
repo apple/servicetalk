@@ -27,6 +27,7 @@ import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.net.InetAddress;
@@ -49,7 +50,9 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes.IPV4_ONLY;
 import static io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes.IPV4_PREFERRED;
+import static io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes.IPV4_PREFERRED_RETURN_ALL;
 import static io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes.IPV6_ONLY;
+import static io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes.IPV6_PREFERRED;
 import static io.servicetalk.dns.discovery.netty.DnsTestUtils.nextIp;
 import static io.servicetalk.dns.discovery.netty.DnsTestUtils.nextIp6;
 import static io.servicetalk.dns.discovery.netty.TestRecordStore.createCnameRecord;
@@ -61,6 +64,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.function.Function.identity;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -727,11 +731,169 @@ class DefaultDnsClientTest {
         client = dnsClientBuilder(missingRecordStatus).completeOncePreferredResolved(false)
                 .dnsResolverAddressTypes(IPV4_PREFERRED).build();
 
-        final String ipv4 = nextIp();
+        final String ipv4A = nextIp();
+        final String ipv4B = nextIp();
         final String ipv6 = nextIp6();
         final String domain = "servicetalk.io";
         recordStore.addIPv6Address(domain, DEFAULT_TTL, ipv6);
+        recordStore.addIPv4Address(domain, DEFAULT_TTL, ipv4A);
+        recordStore.addIPv4Address(domain, DEFAULT_TTL, ipv4B);
+
+        TestPublisherSubscriber<ServiceDiscovererEvent<InetAddress>> subscriber = dnsQuery(domain);
+        Subscription subscription = subscriber.awaitSubscription();
+        subscription.request(Long.MAX_VALUE);
+
+        List<ServiceDiscovererEvent<InetAddress>> signals = subscriber.takeOnNext(2);
+        assertHasEvent(signals, ipv4A, AVAILABLE);
+        assertHasEvent(signals, ipv4B, AVAILABLE);
+        assertThat(subscriber.pollAllOnNext(), is(empty()));
+
+        // Removal of IPv6 doesn't affect output as long as there is at least one IPv4
+        recordStore.removeIPv6Address(domain, DEFAULT_TTL, ipv6);
+        recordStore.removeIPv4Address(domain, DEFAULT_TTL, ipv4A);
+        assertEvent(subscriber.takeOnNext(), ipv4A, missingRecordStatus);
+        assertThat(subscriber.pollAllOnNext(), is(empty()));
+    }
+
+    @ParameterizedTest(name = "missing-record-status={0}")
+    @MethodSource("missingRecordStatus")
+    void preferIpv6(ServiceDiscovererEvent.Status missingRecordStatus) throws Exception {
+        setup(missingRecordStatus);
+        client.closeAsync().toFuture().get();
+        client = dnsClientBuilder(missingRecordStatus).completeOncePreferredResolved(false)
+                .dnsResolverAddressTypes(IPV6_PREFERRED).build();
+
+        final String ipv4 = nextIp();
+        final String ipv6A = nextIp6();
+        final String ipv6B = nextIp6();
+        final String domain = "servicetalk.io";
         recordStore.addIPv4Address(domain, DEFAULT_TTL, ipv4);
+        recordStore.addIPv6Address(domain, DEFAULT_TTL, ipv6A);
+        recordStore.addIPv6Address(domain, DEFAULT_TTL, ipv6B);
+
+        TestPublisherSubscriber<ServiceDiscovererEvent<InetAddress>> subscriber = dnsQuery(domain);
+        Subscription subscription = subscriber.awaitSubscription();
+        subscription.request(Long.MAX_VALUE);
+
+        List<ServiceDiscovererEvent<InetAddress>> signals = subscriber.takeOnNext(2);
+        assertHasEvent(signals, ipv6A, AVAILABLE);
+        assertHasEvent(signals, ipv6B, AVAILABLE);
+        assertThat(subscriber.pollAllOnNext(), is(empty()));
+
+        // Removal of IPv4 doesn't affect output as long as there is at least one IPv6
+        recordStore.removeIPv4Address(domain, DEFAULT_TTL, ipv4);
+        recordStore.removeIPv6Address(domain, DEFAULT_TTL, ipv6A);
+        assertEvent(subscriber.takeOnNext(), ipv6A, missingRecordStatus);
+        assertThat(subscriber.pollAllOnNext(), is(empty()));
+    }
+
+    @ParameterizedTest(name = "missing-record-status={0}")
+    @MethodSource("missingRecordStatus")
+    void preferIpv4FallbackToIpv6(ServiceDiscovererEvent.Status missingRecordStatus) throws Exception {
+        setup(missingRecordStatus);
+        client.closeAsync().toFuture().get();
+        client = dnsClientBuilder(missingRecordStatus).completeOncePreferredResolved(false)
+                .dnsResolverAddressTypes(IPV4_PREFERRED).build();
+
+        final String ipv4A = nextIp();
+        final String ipv4B = nextIp();
+        final String ipv6A = nextIp6();
+        final String ipv6B = nextIp6();
+        final String domain = "servicetalk.io";
+        recordStore.addIPv4Address(domain, DEFAULT_TTL, ipv4A);
+        recordStore.addIPv4Address(domain, DEFAULT_TTL, ipv4B);
+        recordStore.addIPv6Address(domain, DEFAULT_TTL, ipv6A);
+        recordStore.addIPv6Address(domain, DEFAULT_TTL, ipv6B);
+
+        TestPublisherSubscriber<ServiceDiscovererEvent<InetAddress>> subscriber = dnsQuery(domain);
+        Subscription subscription = subscriber.awaitSubscription();
+        subscription.request(Long.MAX_VALUE);
+
+        List<ServiceDiscovererEvent<InetAddress>> signals = subscriber.takeOnNext(2);
+        assertHasEvent(signals, ipv4A, AVAILABLE);
+        assertHasEvent(signals, ipv4B, AVAILABLE);
+        assertThat(subscriber.pollAllOnNext(), is(empty()));
+
+        // Removal of IPv4 results in a fallback to IPv6
+        recordStore.removeIPv4Address(domain, DEFAULT_TTL, ipv4A);
+        recordStore.removeIPv4Address(domain, DEFAULT_TTL, ipv4B);
+        signals = subscriber.takeOnNext(4);
+        assertHasEvent(signals, ipv6A, AVAILABLE);
+        assertHasEvent(signals, ipv6B, AVAILABLE);
+        assertHasEvent(signals, ipv4A, missingRecordStatus);
+        assertHasEvent(signals, ipv4B, missingRecordStatus);
+        assertThat(subscriber.pollAllOnNext(), is(empty()));
+
+        // Return back to IPv4 as soon as it appears in the result again
+        recordStore.addIPv4Address(domain, DEFAULT_TTL, ipv4A);
+        signals = subscriber.takeOnNext(3);
+        assertHasEvent(signals, ipv4A, AVAILABLE);
+        assertHasEvent(signals, ipv6A, missingRecordStatus);
+        assertHasEvent(signals, ipv6B, missingRecordStatus);
+        assertThat(subscriber.pollAllOnNext(), is(empty()));
+    }
+
+    @ParameterizedTest(name = "missing-record-status={0}")
+    @MethodSource("missingRecordStatus")
+    void preferIpv6FallbackToIpv4(ServiceDiscovererEvent.Status missingRecordStatus) throws Exception {
+        setup(missingRecordStatus);
+        client.closeAsync().toFuture().get();
+        client = dnsClientBuilder(missingRecordStatus).completeOncePreferredResolved(false)
+                .dnsResolverAddressTypes(IPV6_PREFERRED).build();
+
+        final String ipv4A = nextIp();
+        final String ipv4B = nextIp();
+        final String ipv6A = nextIp6();
+        final String ipv6B = nextIp6();
+        final String domain = "servicetalk.io";
+        recordStore.addIPv4Address(domain, DEFAULT_TTL, ipv4A);
+        recordStore.addIPv4Address(domain, DEFAULT_TTL, ipv4B);
+        recordStore.addIPv6Address(domain, DEFAULT_TTL, ipv6A);
+        recordStore.addIPv6Address(domain, DEFAULT_TTL, ipv6B);
+
+        TestPublisherSubscriber<ServiceDiscovererEvent<InetAddress>> subscriber = dnsQuery(domain);
+        Subscription subscription = subscriber.awaitSubscription();
+        subscription.request(Long.MAX_VALUE);
+
+        List<ServiceDiscovererEvent<InetAddress>> signals = subscriber.takeOnNext(2);
+        assertHasEvent(signals, ipv6A, AVAILABLE);
+        assertHasEvent(signals, ipv6B, AVAILABLE);
+        assertThat(subscriber.pollAllOnNext(), is(empty()));
+
+        // Removal of IPv6 results in a fallback to IPv4
+        recordStore.removeIPv6Address(domain, DEFAULT_TTL, ipv6A);
+        recordStore.removeIPv6Address(domain, DEFAULT_TTL, ipv6B);
+        signals = subscriber.takeOnNext(4);
+        assertHasEvent(signals, ipv4A, AVAILABLE);
+        assertHasEvent(signals, ipv4B, AVAILABLE);
+        assertHasEvent(signals, ipv6A, missingRecordStatus);
+        assertHasEvent(signals, ipv6B, missingRecordStatus);
+        assertThat(subscriber.pollAllOnNext(), is(empty()));
+
+        // Return back to IPv6 as soon as it appears in the result again
+        recordStore.addIPv6Address(domain, DEFAULT_TTL, ipv6A);
+        signals = subscriber.takeOnNext(3);
+        assertHasEvent(signals, ipv6A, AVAILABLE);
+        assertHasEvent(signals, ipv4A, missingRecordStatus);
+        assertHasEvent(signals, ipv4B, missingRecordStatus);
+        assertThat(subscriber.pollAllOnNext(), is(empty()));
+    }
+
+    @ParameterizedTest(name = "missing-record-status={0}, dnsResolverAddressTypes={1}")
+    @CsvSource({"EXPIRED,IPV4_PREFERRED_RETURN_ALL", "UNAVAILABLE,IPV4_PREFERRED_RETURN_ALL",
+            "EXPIRED,IPV6_PREFERRED_RETURN_ALL", "UNAVAILABLE,IPV6_PREFERRED_RETURN_ALL"})
+    void returnAll(ServiceDiscovererEvent.Status missingRecordStatus,
+                   DnsResolverAddressTypes addressTypes) throws Exception {
+        setup(missingRecordStatus);
+        client.closeAsync().toFuture().get();
+        client = dnsClientBuilder(missingRecordStatus).dnsResolverAddressTypes(addressTypes)
+                .completeOncePreferredResolved(false).build();
+
+        final String ipv4 = nextIp();
+        final String ipv6 = nextIp6();
+        final String domain = "servicetalk.io";
+        recordStore.addIPv4Address(domain, DEFAULT_TTL, ipv4);
+        recordStore.addIPv6Address(domain, DEFAULT_TTL, ipv6);
 
         TestPublisherSubscriber<ServiceDiscovererEvent<InetAddress>> subscriber = dnsQuery(domain);
         Subscription subscription = subscriber.awaitSubscription();
@@ -741,17 +903,24 @@ class DefaultDnsClientTest {
         assertHasEvent(signals, ipv4, AVAILABLE);
         assertHasEvent(signals, ipv6, AVAILABLE);
 
-        // Remove the ipv4
-        recordStore.removeIPv4Address(domain, DEFAULT_TTL, ipv4);
-        assertEvent(subscriber.takeOnNext(), ipv4, missingRecordStatus);
+        // Remove one
+        if (addressTypes == IPV4_PREFERRED_RETURN_ALL) {
+            recordStore.removeIPv4Address(domain, DEFAULT_TTL, ipv4);
+            assertEvent(subscriber.takeOnNext(), ipv4, missingRecordStatus);
+        } else {
+            recordStore.removeIPv6Address(domain, DEFAULT_TTL, ipv6);
+            assertEvent(subscriber.takeOnNext(), ipv6, missingRecordStatus);
+        }
     }
 
-    @ParameterizedTest(name = "missing-record-status={0}")
-    @MethodSource("missingRecordStatus")
-    void preferIpv4ButOnlyAAAARecordIsPresent(ServiceDiscovererEvent.Status missingRecordStatus) throws Exception {
+    @ParameterizedTest(name = "missing-record-status={0}, dnsResolverAddressTypes={1}")
+    @CsvSource({"EXPIRED,IPV4_PREFERRED", "UNAVAILABLE,IPV4_PREFERRED",
+            "EXPIRED,IPV4_PREFERRED_RETURN_ALL", "UNAVAILABLE,IPV4_PREFERRED_RETURN_ALL"})
+    void preferIpv4ButOnlyAAAARecordIsPresent(ServiceDiscovererEvent.Status missingRecordStatus,
+                                              DnsResolverAddressTypes addressTypes) throws Exception {
         setup(missingRecordStatus);
         client.closeAsync().toFuture().get();
-        client = dnsClientBuilder(missingRecordStatus).dnsResolverAddressTypes(IPV4_PREFERRED).build();
+        client = dnsClientBuilder(missingRecordStatus).dnsResolverAddressTypes(addressTypes).build();
         final String ipv6 = nextIp6();
         final String domain = "servicetalk.io";
         recordStore.addIPv6Address(domain, DEFAULT_TTL, ipv6);
@@ -764,6 +933,29 @@ class DefaultDnsClientTest {
 
         // Remove all ips
         recordStore.removeIPv6Address(domain, DEFAULT_TTL, ipv6);
+        assertThat(subscriber.awaitOnError(), instanceOf(UnknownHostException.class));
+    }
+
+    @ParameterizedTest(name = "missing-record-status={0}, dnsResolverAddressTypes={1}")
+    @CsvSource({"EXPIRED,IPV6_PREFERRED", "UNAVAILABLE,IPV6_PREFERRED",
+            "EXPIRED,IPV6_PREFERRED_RETURN_ALL", "UNAVAILABLE,IPV6_PREFERRED_RETURN_ALL"})
+    void preferIpv6ButOnlyARecordIsPresent(ServiceDiscovererEvent.Status missingRecordStatus,
+                                           DnsResolverAddressTypes addressTypes) throws Exception {
+        setup(missingRecordStatus);
+        client.closeAsync().toFuture().get();
+        client = dnsClientBuilder(missingRecordStatus).dnsResolverAddressTypes(addressTypes).build();
+        final String ipv4 = nextIp();
+        final String domain = "servicetalk.io";
+        recordStore.addIPv4Address(domain, DEFAULT_TTL, ipv4);
+
+        TestPublisherSubscriber<ServiceDiscovererEvent<InetAddress>> subscriber = dnsQuery(domain);
+        Subscription subscription = subscriber.awaitSubscription();
+        subscription.request(Long.MAX_VALUE);
+
+        assertEvent(subscriber.takeOnNext(), ipv4, AVAILABLE);
+
+        // Remove all ips
+        recordStore.removeIPv4Address(domain, DEFAULT_TTL, ipv4);
         assertThat(subscriber.awaitOnError(), instanceOf(UnknownHostException.class));
     }
 

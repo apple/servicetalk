@@ -41,7 +41,6 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.dns.DefaultDnsQuestion;
 import io.netty.handler.codec.dns.DnsRawRecord;
 import io.netty.handler.codec.dns.DnsRecord;
-import io.netty.resolver.ResolvedAddressTypes;
 import io.netty.resolver.dns.DefaultDnsCache;
 import io.netty.resolver.dns.DnsNameResolver;
 import io.netty.resolver.dns.DnsNameResolverBuilder;
@@ -52,6 +51,8 @@ import io.netty.util.concurrent.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.Inet4Address;
+import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.channels.ClosedChannelException;
@@ -85,6 +86,8 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionFor
 import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnError;
 import static io.servicetalk.concurrent.internal.ThrowableUtils.unknownStackTrace;
 import static io.servicetalk.dns.discovery.netty.DnsClients.mapEventList;
+import static io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes.IPV4_PREFERRED;
+import static io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes.IPV6_PREFERRED;
 import static io.servicetalk.dns.discovery.netty.ServiceDiscovererUtils.calculateDifference;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.datagramChannel;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.socketChannel;
@@ -119,6 +122,7 @@ final class DefaultDnsClient implements DnsClient {
     private final boolean srvFilterDuplicateEvents;
     private final boolean inactiveEventsOnError;
     private final long ttlJitterNanos;
+    private final DnsResolverAddressTypes addressTypes;
     private boolean closed;
 
     DefaultDnsClient(final IoExecutor ioExecutor, final int minTTL, final long ttlJitterNanos,
@@ -127,10 +131,10 @@ final class DefaultDnsClient implements DnsClient {
                      Duration srvHostNameRepeatInitialDelay, Duration srvHostNameRepeatJitter,
                      @Nullable Integer maxUdpPayloadSize, @Nullable final Integer ndots,
                      @Nullable final Boolean optResourceEnabled, @Nullable final Duration queryTimeout,
-                     @Nullable final DnsResolverAddressTypes dnsResolverAddressTypes,
+                     final DnsResolverAddressTypes dnsResolverAddressTypes,
                      @Nullable final DnsServerAddressStreamProvider dnsServerAddressStreamProvider,
                      @Nullable final DnsServiceDiscovererObserver observer,
-                     ServiceDiscovererEvent.Status missingRecordStatus) {
+                     final ServiceDiscovererEvent.Status missingRecordStatus) {
         if (srvConcurrency <= 0) {
             throw new IllegalArgumentException("srvConcurrency: " + srvConcurrency + " (expected >0)");
         }
@@ -182,9 +186,8 @@ final class DefaultDnsClient implements DnsClient {
         if (dnsServerAddressStreamProvider != null) {
             builder.nameServerProvider(toNettyType(dnsServerAddressStreamProvider));
         }
-        if (dnsResolverAddressTypes != null) {
-            builder.resolvedAddressTypes(toNettyType(dnsResolverAddressTypes));
-        }
+        builder.resolvedAddressTypes(
+                DnsResolverAddressTypes.toNettyType(this.addressTypes = dnsResolverAddressTypes));
 
         resolver = builder.build();
     }
@@ -399,12 +402,8 @@ final class DefaultDnsClient implements DnsClient {
                         } else {
                             final DnsAnswer<InetAddress> dnsAnswer;
                             try {
-                                // Make a copy of the address List in-case the underlying cache modifies the List we
-                                // can avoid a ConcurrentModificationException.
-                                @SuppressWarnings("unchecked")
-                                final List<InetAddress> addresses = new ArrayList<>(
-                                                (List<InetAddress>) completedFuture.getNow());
-                                dnsAnswer = new DnsAnswer<>(addresses, SECONDS.toNanos(ttlCache.minTtl(name)));
+                                dnsAnswer = new DnsAnswer<>(toAddresses(completedFuture),
+                                        SECONDS.toNanos(ttlCache.minTtl(name)));
                             } catch (Throwable cause2) {
                                 dnsAnswerPromise.tryFailure(cause2);
                                 return;
@@ -418,6 +417,39 @@ final class DefaultDnsClient implements DnsClient {
                 @Override
                 protected Comparator<InetAddress> comparator() {
                     return INET_ADDRESS_COMPARATOR;
+                }
+
+                private List<InetAddress> toAddresses(Future<? super List<InetAddress>> completedFuture) {
+                    @SuppressWarnings("unchecked")
+                    final List<InetAddress> original = (List<InetAddress>) completedFuture.getNow();
+                    if (addressTypes == IPV4_PREFERRED || addressTypes == IPV6_PREFERRED) {
+                        // Filter out addresses to keep only preferred if both available.
+                        int ipv4Cnt = 0;
+                        int ipv6Cnt = 0;
+                        for (InetAddress address : original) {
+                            if (address instanceof Inet4Address) {
+                                ++ipv4Cnt;
+                            } else {
+                                assert address instanceof Inet6Address;
+                                ++ipv6Cnt;
+                            }
+                        }
+                        if (ipv4Cnt > 0 && ipv6Cnt > 0) {
+                            final int capacity = addressTypes == IPV4_PREFERRED ? ipv4Cnt : ipv6Cnt;
+                            final List<InetAddress> result = new ArrayList<>(capacity);
+                            for (InetAddress address : original) {
+                                if ((addressTypes == IPV4_PREFERRED && address instanceof Inet4Address) ||
+                                        (addressTypes == IPV6_PREFERRED && address instanceof Inet6Address)) {
+                                    result.add(address);
+                                }
+                            }
+                            assert result.size() == capacity;
+                            return result;
+                        }
+                    }
+                    // Make a copy of the address List in-case the underlying cache modifies the List we
+                    // can avoid a ConcurrentModificationException.
+                    return new ArrayList<>(original);
                 }
             };
         }
@@ -803,21 +835,6 @@ final class DefaultDnsClient implements DnsClient {
     private static <T> Publisher<T> newDuplicateSrv(String serviceName, String resolvedAddress) {
         return failed(new IllegalStateException("Duplicate SRV entry for SRV name " + serviceName + " for address " +
                 resolvedAddress));
-    }
-
-    private static ResolvedAddressTypes toNettyType(final DnsResolverAddressTypes dnsResolverAddressTypes) {
-        switch (dnsResolverAddressTypes) {
-            case IPV4_ONLY:
-                return ResolvedAddressTypes.IPV4_ONLY;
-            case IPV6_ONLY:
-                return ResolvedAddressTypes.IPV6_ONLY;
-            case IPV6_PREFERRED:
-                return ResolvedAddressTypes.IPV6_PREFERRED;
-            case IPV4_PREFERRED:
-                return ResolvedAddressTypes.IPV4_PREFERRED;
-            default:
-                throw new Error();
-        }
     }
 
     private static io.netty.resolver.dns.DnsServerAddressStreamProvider toNettyType(

@@ -28,6 +28,7 @@ import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.AVAILABLE;
 import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.EXPIRED;
 import static io.servicetalk.dns.discovery.netty.DnsClients.asHostAndPortDiscoverer;
 import static io.servicetalk.dns.discovery.netty.DnsClients.asSrvDiscoverer;
+import static io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes.systemDefault;
 import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
 import static io.servicetalk.utils.internal.DurationUtils.ensurePositive;
 import static java.time.Duration.ofSeconds;
@@ -40,8 +41,7 @@ import static java.util.Objects.requireNonNull;
 public final class DefaultDnsServiceDiscovererBuilder {
     @Nullable
     private DnsServerAddressStreamProvider dnsServerAddressStreamProvider;
-    @Nullable
-    private DnsResolverAddressTypes dnsResolverAddressTypes;
+    private DnsResolverAddressTypes dnsResolverAddressTypes = systemDefault();
     @Nullable
     private Integer maxUdpPayloadSize;
     @Nullable
@@ -162,12 +162,14 @@ public final class DefaultDnsServiceDiscovererBuilder {
     /**
      * Sets the list of the protocol families of the address resolved.
      *
-     * @param dnsResolverAddressTypes the address types.
+     * @param dnsResolverAddressTypes the address types or {@code null} to use the default value, based on "java.net"
+     * system properties: {@code java.net.preferIPv4Stack} and {@code java.net.preferIPv6Stack}.
      * @return {@code this}.
      */
     public DefaultDnsServiceDiscovererBuilder dnsResolverAddressTypes(
             @Nullable final DnsResolverAddressTypes dnsResolverAddressTypes) {
-        this.dnsResolverAddressTypes = dnsResolverAddressTypes;
+        this.dnsResolverAddressTypes = dnsResolverAddressTypes != null ? dnsResolverAddressTypes :
+                systemDefault();
         return this;
     }
 
