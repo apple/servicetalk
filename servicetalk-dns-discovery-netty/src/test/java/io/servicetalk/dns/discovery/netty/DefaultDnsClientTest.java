@@ -35,6 +35,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -64,7 +65,9 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes.IPV4_ONLY;
 import static io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes.IPV4_PREFERRED;
+import static io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes.IPV4_PREFERRED_RETURN_ALL;
 import static io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes.IPV6_ONLY;
+import static io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes.IPV6_PREFERRED;
 import static io.servicetalk.dns.discovery.netty.DnsTestUtils.nextIp;
 import static io.servicetalk.dns.discovery.netty.DnsTestUtils.nextIp6;
 import static io.servicetalk.dns.discovery.netty.TestRecordStore.createCnameRecord;
@@ -76,6 +79,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.function.Function.identity;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -706,11 +710,167 @@ class DefaultDnsClientTest {
                 .completeOncePreferredResolved(false)
                 .dnsResolverAddressTypes(IPV4_PREFERRED));
 
-        final String ipv4 = nextIp();
+        final String ipv4A = nextIp();
+        final String ipv4B = nextIp();
         final String ipv6 = nextIp6();
         final String domain = "servicetalk.io";
         recordStore.addIPv6Address(domain, DEFAULT_TTL, ipv6);
+        recordStore.addIPv4Address(domain, DEFAULT_TTL, ipv4A);
+        recordStore.addIPv4Address(domain, DEFAULT_TTL, ipv4B);
+
+        TestPublisherSubscriber<ServiceDiscovererEvent<InetAddress>> subscriber = dnsQuery(domain);
+        Subscription subscription = subscriber.awaitSubscription();
+        subscription.request(Long.MAX_VALUE);
+
+        List<ServiceDiscovererEvent<InetAddress>> signals = subscriber.takeOnNext(2);
+        assertHasEvent(signals, ipv4A, AVAILABLE);
+        assertHasEvent(signals, ipv4B, AVAILABLE);
+        assertThat(subscriber.pollAllOnNext(), is(empty()));
+
+        // Removal of IPv6 doesn't affect output as long as there is at least one IPv4
+        recordStore.removeIPv6Address(domain, DEFAULT_TTL, ipv6);
+        recordStore.removeIPv4Address(domain, DEFAULT_TTL, ipv4A);
+        advanceTime();
+        assertEvent(subscriber.takeOnNext(), ipv4A, EXPIRED);
+        assertThat(subscriber.pollAllOnNext(), is(empty()));
+    }
+
+    @Test
+    void preferIpv6() throws Exception {
+        setup(builder -> builder
+                .completeOncePreferredResolved(false)
+                .dnsResolverAddressTypes(IPV6_PREFERRED));
+
+        final String ipv4 = nextIp();
+        final String ipv6A = nextIp6();
+        final String ipv6B = nextIp6();
+        final String domain = "servicetalk.io";
         recordStore.addIPv4Address(domain, DEFAULT_TTL, ipv4);
+        recordStore.addIPv6Address(domain, DEFAULT_TTL, ipv6A);
+        recordStore.addIPv6Address(domain, DEFAULT_TTL, ipv6B);
+
+        TestPublisherSubscriber<ServiceDiscovererEvent<InetAddress>> subscriber = dnsQuery(domain);
+        Subscription subscription = subscriber.awaitSubscription();
+        subscription.request(Long.MAX_VALUE);
+
+        List<ServiceDiscovererEvent<InetAddress>> signals = subscriber.takeOnNext(2);
+        assertHasEvent(signals, ipv6A, AVAILABLE);
+        assertHasEvent(signals, ipv6B, AVAILABLE);
+        assertThat(subscriber.pollAllOnNext(), is(empty()));
+
+        // Removal of IPv4 doesn't affect output as long as there is at least one IPv6
+        recordStore.removeIPv4Address(domain, DEFAULT_TTL, ipv4);
+        recordStore.removeIPv6Address(domain, DEFAULT_TTL, ipv6A);
+        advanceTime();
+        assertEvent(subscriber.takeOnNext(), ipv6A, EXPIRED);
+        assertThat(subscriber.pollAllOnNext(), is(empty()));
+    }
+
+    @Test
+    void preferIpv4FallbackToIpv6() throws Exception {
+        setup(builder -> builder
+                .completeOncePreferredResolved(false)
+                .dnsResolverAddressTypes(IPV4_PREFERRED));
+
+        final String ipv4A = nextIp();
+        final String ipv4B = nextIp();
+        final String ipv6A = nextIp6();
+        final String ipv6B = nextIp6();
+        final String domain = "servicetalk.io";
+        recordStore.addIPv4Address(domain, DEFAULT_TTL, ipv4A);
+        recordStore.addIPv4Address(domain, DEFAULT_TTL, ipv4B);
+        recordStore.addIPv6Address(domain, DEFAULT_TTL, ipv6A);
+        recordStore.addIPv6Address(domain, DEFAULT_TTL, ipv6B);
+
+        TestPublisherSubscriber<ServiceDiscovererEvent<InetAddress>> subscriber = dnsQuery(domain);
+        Subscription subscription = subscriber.awaitSubscription();
+        subscription.request(Long.MAX_VALUE);
+
+        List<ServiceDiscovererEvent<InetAddress>> signals = subscriber.takeOnNext(2);
+        assertHasEvent(signals, ipv4A, AVAILABLE);
+        assertHasEvent(signals, ipv4B, AVAILABLE);
+        assertThat(subscriber.pollAllOnNext(), is(empty()));
+
+        // Removal of IPv4 results in a fallback to IPv6
+        recordStore.removeIPv4Address(domain, DEFAULT_TTL, ipv4A);
+        recordStore.removeIPv4Address(domain, DEFAULT_TTL, ipv4B);
+        advanceTime();
+        signals = subscriber.takeOnNext(4);
+        assertHasEvent(signals, ipv6A, AVAILABLE);
+        assertHasEvent(signals, ipv6B, AVAILABLE);
+        assertHasEvent(signals, ipv4A, EXPIRED);
+        assertHasEvent(signals, ipv4B, EXPIRED);
+        assertThat(subscriber.pollAllOnNext(), is(empty()));
+
+        // Return back to IPv4 as soon as it appears in the result again
+        recordStore.addIPv4Address(domain, DEFAULT_TTL, ipv4A);
+        advanceTime();
+        signals = subscriber.takeOnNext(3);
+        assertHasEvent(signals, ipv4A, AVAILABLE);
+        assertHasEvent(signals, ipv6A, EXPIRED);
+        assertHasEvent(signals, ipv6B, EXPIRED);
+        assertThat(subscriber.pollAllOnNext(), is(empty()));
+    }
+
+    @Test
+    void preferIpv6FallbackToIpv4() throws Exception {
+        setup(builder -> builder
+                .completeOncePreferredResolved(false)
+                .dnsResolverAddressTypes(IPV6_PREFERRED));
+
+        final String ipv4A = nextIp();
+        final String ipv4B = nextIp();
+        final String ipv6A = nextIp6();
+        final String ipv6B = nextIp6();
+        final String domain = "servicetalk.io";
+        recordStore.addIPv4Address(domain, DEFAULT_TTL, ipv4A);
+        recordStore.addIPv4Address(domain, DEFAULT_TTL, ipv4B);
+        recordStore.addIPv6Address(domain, DEFAULT_TTL, ipv6A);
+        recordStore.addIPv6Address(domain, DEFAULT_TTL, ipv6B);
+
+        TestPublisherSubscriber<ServiceDiscovererEvent<InetAddress>> subscriber = dnsQuery(domain);
+        Subscription subscription = subscriber.awaitSubscription();
+        subscription.request(Long.MAX_VALUE);
+
+        List<ServiceDiscovererEvent<InetAddress>> signals = subscriber.takeOnNext(2);
+        assertHasEvent(signals, ipv6A, AVAILABLE);
+        assertHasEvent(signals, ipv6B, AVAILABLE);
+        assertThat(subscriber.pollAllOnNext(), is(empty()));
+
+        // Removal of IPv6 results in a fallback to IPv4
+        recordStore.removeIPv6Address(domain, DEFAULT_TTL, ipv6A);
+        recordStore.removeIPv6Address(domain, DEFAULT_TTL, ipv6B);
+        advanceTime();
+        signals = subscriber.takeOnNext(4);
+        assertHasEvent(signals, ipv4A, AVAILABLE);
+        assertHasEvent(signals, ipv4B, AVAILABLE);
+        assertHasEvent(signals, ipv6A, EXPIRED);
+        assertHasEvent(signals, ipv6B, EXPIRED);
+        assertThat(subscriber.pollAllOnNext(), is(empty()));
+
+        // Return back to IPv6 as soon as it appears in the result again
+        recordStore.addIPv6Address(domain, DEFAULT_TTL, ipv6A);
+        advanceTime();
+        signals = subscriber.takeOnNext(3);
+        assertHasEvent(signals, ipv6A, AVAILABLE);
+        assertHasEvent(signals, ipv4A, EXPIRED);
+        assertHasEvent(signals, ipv4B, EXPIRED);
+        assertThat(subscriber.pollAllOnNext(), is(empty()));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] dnsResolverAddressTypes={0}")
+    @EnumSource(value = DnsResolverAddressTypes.class,
+            names = {"IPV4_PREFERRED_RETURN_ALL", "IPV6_PREFERRED_RETURN_ALL"})
+    void returnAll(DnsResolverAddressTypes addressTypes) throws Exception {
+        setup(builder -> builder
+                .completeOncePreferredResolved(false)
+                .dnsResolverAddressTypes(addressTypes));
+
+        final String ipv4 = nextIp();
+        final String ipv6 = nextIp6();
+        final String domain = "servicetalk.io";
+        recordStore.addIPv4Address(domain, DEFAULT_TTL, ipv4);
+        recordStore.addIPv6Address(domain, DEFAULT_TTL, ipv6);
 
         TestPublisherSubscriber<ServiceDiscovererEvent<InetAddress>> subscriber = dnsQuery(domain);
         Subscription subscription = subscriber.awaitSubscription();
@@ -720,15 +880,22 @@ class DefaultDnsClientTest {
         assertHasEvent(signals, ipv4, AVAILABLE);
         assertHasEvent(signals, ipv6, AVAILABLE);
 
-        // Remove the ipv4
-        recordStore.removeIPv4Address(domain, DEFAULT_TTL, ipv4);
-        advanceTime();
-        assertEvent(subscriber.takeOnNext(), ipv4, EXPIRED);
+        // Remove one
+        if (addressTypes == IPV4_PREFERRED_RETURN_ALL) {
+            recordStore.removeIPv4Address(domain, DEFAULT_TTL, ipv4);
+            advanceTime();
+            assertEvent(subscriber.takeOnNext(), ipv4, EXPIRED);
+        } else {
+            recordStore.removeIPv6Address(domain, DEFAULT_TTL, ipv6);
+            advanceTime();
+            assertEvent(subscriber.takeOnNext(), ipv6, EXPIRED);
+        }
     }
 
-    @Test
-    void preferIpv4ButOnlyAAAARecordIsPresent() throws Exception {
-        setup(builder -> builder.dnsResolverAddressTypes(IPV4_PREFERRED));
+    @ParameterizedTest(name = "{displayName} [{index}] dnsResolverAddressTypes={0}")
+    @EnumSource(value = DnsResolverAddressTypes.class, names = {"IPV4_PREFERRED", "IPV4_PREFERRED_RETURN_ALL"})
+    void preferIpv4ButOnlyAAAARecordIsPresent(DnsResolverAddressTypes addressTypes) throws Exception {
+        setup(builder -> builder.dnsResolverAddressTypes(addressTypes));
         final String ipv6 = nextIp6();
         final String domain = "servicetalk.io";
         recordStore.addIPv6Address(domain, DEFAULT_TTL, ipv6);
@@ -741,6 +908,26 @@ class DefaultDnsClientTest {
 
         // Remove all ips
         recordStore.removeIPv6Address(domain, DEFAULT_TTL, ipv6);
+        advanceTime();
+        assertThat(subscriber.awaitOnError(), instanceOf(UnknownHostException.class));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] dnsResolverAddressTypes={0}")
+    @EnumSource(value = DnsResolverAddressTypes.class, names = {"IPV6_PREFERRED", "IPV6_PREFERRED_RETURN_ALL"})
+    void preferIpv6ButOnlyARecordIsPresent(DnsResolverAddressTypes addressTypes) throws Exception {
+        setup(builder -> builder.dnsResolverAddressTypes(addressTypes));
+        final String ipv4 = nextIp();
+        final String domain = "servicetalk.io";
+        recordStore.addIPv4Address(domain, DEFAULT_TTL, ipv4);
+
+        TestPublisherSubscriber<ServiceDiscovererEvent<InetAddress>> subscriber = dnsQuery(domain);
+        Subscription subscription = subscriber.awaitSubscription();
+        subscription.request(Long.MAX_VALUE);
+
+        assertEvent(subscriber.takeOnNext(), ipv4, AVAILABLE);
+
+        // Remove all ips
+        recordStore.removeIPv4Address(domain, DEFAULT_TTL, ipv4);
         advanceTime();
         assertThat(subscriber.awaitOnError(), instanceOf(UnknownHostException.class));
     }
