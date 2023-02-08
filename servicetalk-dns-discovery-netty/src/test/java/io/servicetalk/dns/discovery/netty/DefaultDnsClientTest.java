@@ -887,7 +887,8 @@ class DefaultDnsClientTest {
         private final TestExecutor timer;
 
         NettyIoExecutorWithTestTimer(EventLoopAwareNettyIoExecutor delegate, TestExecutor timer) {
-            this.delegate = delegate.next();    // Take a single EventLoopIoExecutor
+            // We need to take a single EventLoopIoExecutor to make sure that isCurrentThreadEventLoop() works.
+            this.delegate = delegate.next();
             this.timer = timer;
         }
 
@@ -979,11 +980,15 @@ class DefaultDnsClientTest {
         @Override
         public Cancellable schedule(final Runnable task, final long delay, final TimeUnit unit)
                 throws RejectedExecutionException {
+            // Original IoExecutor schedules and executes tasks on EventLoop. If we move scheduling to TestExecutor,
+            // we need to offload the task back to EventLoop thread.
             return timer.schedule(() -> delegate.execute(task), delay, unit);
         }
 
         @Override
         public Cancellable schedule(final Runnable task, final Duration delay) throws RejectedExecutionException {
+            // Original IoExecutor schedules and executes tasks on EventLoop. If we move scheduling to TestExecutor,
+            // we need to offload the task back to EventLoop thread.
             return timer.schedule(() -> delegate.execute(task), delay);
         }
 
