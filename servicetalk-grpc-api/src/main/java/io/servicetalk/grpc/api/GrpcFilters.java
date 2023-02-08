@@ -59,19 +59,31 @@ public final class GrpcFilters {
      */
     public static StreamingHttpServiceFilterFactory newGrpcDeadlineServerFilterFactory(
             @Nullable Duration defaultTimeout) {
-        return new TimeoutHttpServiceFilter(grpcDetermineTimeout(
-                defaultTimeout == null ? null : ensurePositive(defaultTimeout, "defaultTimeout")), true);
+        // Use an inner class instead of a lambda to capture the external state (defaultTimeout) for visibility during
+        // heap dump analysis.
+        return new TimeoutHttpServiceFilter(new GrpcDetermineTimeoutForRequestFunction(defaultTimeout), true);
     }
 
-    private static BiFunction<HttpRequestMetaData, TimeSource, Duration> grpcDetermineTimeout(
-            @Nullable Duration defaultTimeout) {
-        return (request, timeSource) -> {
-            /*
-             * Return the timeout duration extracted from the GRPC timeout HTTP header if present or default timeout.
-             *
-             * @param request The HTTP request to be used as source of the GRPC timeout header
-             * @return The non-negative timeout duration which may be null
-             */
+    private static final class GrpcDetermineTimeoutForRequestFunction
+            implements BiFunction<HttpRequestMetaData, TimeSource, Duration> {
+
+        @Nullable
+        private final Duration defaultTimeout;
+
+        GrpcDetermineTimeoutForRequestFunction(final @Nullable Duration defaultTimeout) {
+            this.defaultTimeout = defaultTimeout == null ? null : ensurePositive(defaultTimeout, "defaultTimeout");
+        }
+
+        /**
+         * Return the timeout duration extracted from the GRPC timeout HTTP header if present or default timeout.
+         *
+         * @param request The HTTP request to be used as source of the GRPC timeout header
+         * @param timeSource The source of time to calculate the deadline
+         * @return The non-negative timeout duration or {@code null} if not identified
+         */
+        @Nullable
+        @Override
+        public Duration apply(final HttpRequestMetaData request, final TimeSource timeSource) {
             @Nullable
             Duration requestTimeout = readTimeoutHeader(request);
             @Nullable
@@ -85,6 +97,13 @@ public final class GrpcFilters {
             }
 
             return timeout;
-        };
+        }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName() +
+                    "{defaultTimeout=" + defaultTimeout +
+                    '}';
+        }
     }
 }
