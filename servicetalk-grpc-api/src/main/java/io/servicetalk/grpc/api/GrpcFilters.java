@@ -59,6 +59,8 @@ public final class GrpcFilters {
      */
     public static StreamingHttpServiceFilterFactory newGrpcDeadlineServerFilterFactory(
             @Nullable Duration defaultTimeout) {
+        // Use an inner class instead of a lambda to capture the external state (defaultTimeout) for visibility during
+        // heap dump analysis.
         return new TimeoutHttpServiceFilter(new GrpcDetermineTimeoutForRequestFunction(defaultTimeout), true);
     }
 
@@ -95,6 +97,13 @@ public final class GrpcFilters {
             }
 
             return timeout;
+        }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName() +
+                    "{defaultTimeout=" + defaultTimeout +
+                    '}';
         }
     }
 }
