@@ -333,6 +333,8 @@ final class DefaultDnsClient implements DnsClient {
                                 if (cause != null) {
                                     promise.tryFailure(cause);
                                 } else {
+                                    LOGGER.trace("DnsClient {}, original result for {}: {}",
+                                            DefaultDnsClient.this, SrvRecordPublisher.this, completedFuture.getNow());
                                     final DnsAnswer<HostAndPort> dnsAnswer;
                                     long minTTLSeconds = Long.MAX_VALUE;
                                     List<DnsRecord> toRelease = null;

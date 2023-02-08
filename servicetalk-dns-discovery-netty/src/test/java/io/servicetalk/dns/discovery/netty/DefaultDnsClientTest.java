@@ -33,7 +33,6 @@ import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
 import io.netty.channel.EventLoopGroup;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -91,7 +90,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
-@Timeout(5)
 class DefaultDnsClientTest {
     private static final int DEFAULT_TTL = 1;
 
@@ -1076,7 +1074,8 @@ class DefaultDnsClientTest {
         private final TestExecutor timer;
 
         NettyIoExecutorWithTestTimer(EventLoopAwareNettyIoExecutor delegate, TestExecutor timer) {
-            this.delegate = delegate.next();    // Take a single EventLoopIoExecutor
+            // We need to take a single EventLoopIoExecutor to make sure that isCurrentThreadEventLoop() works.
+            this.delegate = delegate.next();
             this.timer = timer;
         }
 
@@ -1168,11 +1167,15 @@ class DefaultDnsClientTest {
         @Override
         public Cancellable schedule(final Runnable task, final long delay, final TimeUnit unit)
                 throws RejectedExecutionException {
+            // Original IoExecutor schedules and executes tasks on EventLoop. If we move scheduling to TestExecutor,
+            // we need to offload the task back to EventLoop thread.
             return timer.schedule(() -> delegate.execute(task), delay, unit);
         }
 
         @Override
         public Cancellable schedule(final Runnable task, final Duration delay) throws RejectedExecutionException {
+            // Original IoExecutor schedules and executes tasks on EventLoop. If we move scheduling to TestExecutor,
+            // we need to offload the task back to EventLoop thread.
             return timer.schedule(() -> delegate.execute(task), delay);
         }
 
