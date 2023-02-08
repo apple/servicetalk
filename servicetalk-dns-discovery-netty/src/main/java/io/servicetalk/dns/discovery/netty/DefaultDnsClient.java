@@ -189,6 +189,11 @@ final class DefaultDnsClient implements DnsClient {
         resolver = builder.build();
     }
 
+    // visible for testing
+    MinTtlCache ttlCache() {
+        return ttlCache;
+    }
+
     @Nullable
     private DnsDiscoveryObserver newDiscoveryObserver(final String address) {
         if (observer == null) {
@@ -325,6 +330,8 @@ final class DefaultDnsClient implements DnsClient {
                                 if (cause != null) {
                                     promise.tryFailure(cause);
                                 } else {
+                                    LOGGER.trace("DnsClient {}, original result for {}: {}",
+                                            DefaultDnsClient.this, SrvRecordPublisher.this, completedFuture.getNow());
                                     final DnsAnswer<HostAndPort> dnsAnswer;
                                     long minTTLSeconds = Long.MAX_VALUE;
                                     List<DnsRecord> toRelease = null;
@@ -397,6 +404,8 @@ final class DefaultDnsClient implements DnsClient {
                         if (cause != null) {
                             dnsAnswerPromise.tryFailure(cause);
                         } else {
+                            LOGGER.trace("DnsClient {}, original result for {}: {}",
+                                    DefaultDnsClient.this, ARecordPublisher.this, completedFuture.getNow());
                             final DnsAnswer<InetAddress> dnsAnswer;
                             try {
                                 // Make a copy of the address List in-case the underlying cache modifies the List we
