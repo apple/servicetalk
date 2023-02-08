@@ -17,6 +17,8 @@ package io.servicetalk.dns.discovery.netty;
 
 import io.netty.util.internal.PlatformDependent;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 import static java.util.Arrays.setAll;
 
 final class DnsTestUtils {
@@ -33,6 +35,8 @@ final class DnsTestUtils {
             "1:1:1:1:1:1:1:1",
     };
 
+    private static final AtomicInteger ipv6Idx = new AtomicInteger();
+
     static {
         setAll(NUMBERS, i -> i + 1);
     }
@@ -46,7 +50,7 @@ final class DnsTestUtils {
     }
 
     static String nextIp6() {
-        return IPV6_ADDRESSES[index(IPV6_ADDRESSES.length)];
+        return IPV6_ADDRESSES[ipv6Idx.getAndIncrement() % IPV6_ADDRESSES.length];
     }
 
     private static int index(int arrayLength) {
