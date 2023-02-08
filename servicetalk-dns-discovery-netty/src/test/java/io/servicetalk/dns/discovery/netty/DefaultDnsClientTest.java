@@ -17,16 +17,24 @@ package io.servicetalk.dns.discovery.netty;
 
 import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
+import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.concurrent.api.ExecutorExtension;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.TestExecutor;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
 
+import io.netty.channel.EventLoopGroup;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -42,15 +50,18 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.AVAILABLE;
 import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.EXPIRED;
-import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes.IPV4_ONLY;
@@ -80,14 +91,23 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
+@Timeout(5)
 class DefaultDnsClientTest {
     private static final int DEFAULT_TTL = 1;
 
-    private EventLoopAwareNettyIoExecutor nettyIoExecutor;
+    @RegisterExtension
+    static final ExecutorExtension<TestExecutor> timerExecutor = ExecutorExtension.withTestExecutor()
+            .setClassLevel(true);
+
+    @RegisterExtension
+    static final ExecutorExtension<EventLoopAwareNettyIoExecutor> ioExecutor = ExecutorExtension
+            .withExecutor(() -> createIoExecutor(1))
+            .setClassLevel(true);
+
     private final TestRecordStore recordStore = new TestRecordStore();
     private TestDnsServer dnsServer;
     private TestDnsServer dnsServer2;
-    private DnsClient client;
+    private DefaultDnsClient client;
 
     void setup() throws Exception {
         setup(UnaryOperator.identity());
@@ -95,8 +115,6 @@ class DefaultDnsClientTest {
 
     @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
     void setup(UnaryOperator<DefaultDnsServiceDiscovererBuilder> builderFunction) throws Exception {
-        nettyIoExecutor = createIoExecutor(1);
-
         dnsServer = new TestDnsServer(recordStore);
         dnsServer.start();
 
@@ -112,7 +130,7 @@ class DefaultDnsClientTest {
             dnsServer2.start();
         }
 
-        client = builderFunction.apply(dnsClientBuilder()).build();
+        client = (DefaultDnsClient) builderFunction.apply(dnsClientBuilder()).build();
     }
 
     @AfterEach
@@ -120,7 +138,18 @@ class DefaultDnsClientTest {
         client.closeAsync().toFuture().get();
         dnsServer.stop();
         dnsServer2.stop();
-        nettyIoExecutor.closeAsync().toFuture().get();
+    }
+
+    private void advanceTime() throws Exception {
+        advanceTime(DEFAULT_TTL);
+    }
+
+    private void advanceTime(int ttl) throws Exception {
+        // Netty schedules cache invalidation on the EventLoop, using real time. Because we schedule subsequent
+        // resolutions on TestExecutor, we need to clear the cache manually before we advance time.
+        ioExecutor.executor().submit(() -> client.ttlCache().clear()).toFuture().get();
+        // Add one more second to make sure we cover the jitter.
+        timerExecutor.executor().advanceTimeBy(ttl + 1, SECONDS);
     }
 
     static Stream<ServiceDiscovererEvent.Status> missingRecordStatus() {
@@ -219,6 +248,7 @@ class DefaultDnsClientTest {
         assertHasEvent(signals, ip3, targetPort3, AVAILABLE);
 
         recordStore.removeSrv(domain, targetDomain2, targetPort2, 1);
+        advanceTime();
         assertEvent(subscriber.takeOnNext(), ip2, targetPort2, missingRecordStatus);
     }
 
@@ -258,10 +288,10 @@ class DefaultDnsClientTest {
         final String targetDomain1 = "target1.mysvc.servicetalk.io";
         final int targetPort = 9876;
         final String ip1 = nextIp();
-        final int ttl = DEFAULT_TTL + 3;
+        final int ttl = DEFAULT_TTL + 2;
         recordStore.addCNAME(domain, srvCNAME, ttl);
         recordStore.addSrv(domain, targetDomain1, targetPort, ttl);
-        recordStore.addSrv(srvCNAME, targetDomain1, targetPort, 1);
+        recordStore.addSrv(srvCNAME, targetDomain1, targetPort, DEFAULT_TTL);
         recordStore.addIPv4Address(targetDomain1, ttl, ip1);
 
         TestPublisherSubscriber<ServiceDiscovererEvent<InetSocketAddress>> subscriber = dnsSrvQuery(domain);
@@ -270,7 +300,8 @@ class DefaultDnsClientTest {
 
         assertEvent(subscriber.takeOnNext(), ip1, targetPort, AVAILABLE);
         recordStore.removeSrv(srvCNAME, targetDomain1, targetPort, 1);
-        assertNull(subscriber.pollTerminal(ttl, SECONDS));
+        advanceTime(ttl);
+        assertNull(subscriber.pollTerminal(50, MILLISECONDS));
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] inactiveEventsOnError={0}")
@@ -310,6 +341,7 @@ class DefaultDnsClientTest {
                 createSrvRecord(domain, targetDomain1, targetPort, ttl),
                 createSrvRecord(domain, targetDomain2, targetPort, ttl));
 
+        advanceTime();
         if (inactiveEventsOnError) {
             signals = subscriber.takeOnNext(2);
             assertHasEvent(signals, ip1, targetPort, EXPIRED);
@@ -361,7 +393,7 @@ class DefaultDnsClientTest {
                 createSrvRecord(domain, targetDomain1, targetPort, DEFAULT_TTL),
                 createSrvRecord(domain, targetDomain2, targetPort, DEFAULT_TTL),
                 createSrvRecord(domain, targetDomain3, targetPort, DEFAULT_TTL));
-
+        advanceTime();
         Collection<ServiceDiscovererEvent<InetSocketAddress>> next = subscriber.takeOnNext();
         assertNotNull(next);
         assertHasEvent(next, ip1, targetPort, missingRecordStatus);
@@ -396,7 +428,7 @@ class DefaultDnsClientTest {
         recordStore.removeRecords(
                 createSrvRecord(domain, targetDomain1, targetPort, DEFAULT_TTL),
                 createSrvRecord(domain, targetDomain2, targetPort, DEFAULT_TTL));
-
+        advanceTime();
         assertThat(subscriber.awaitOnError(), instanceOf(UnknownHostException.class));
     }
 
@@ -423,13 +455,16 @@ class DefaultDnsClientTest {
         if (srvFilterDuplicateEvents) {
             assertThat(subscriber.pollOnNext(50, MILLISECONDS), is(nullValue()));
             recordStore.removeIPv4Address(targetDomain1, 1, ip1);
+            advanceTime();
             assertThat(subscriber.pollOnNext(50, MILLISECONDS), is(nullValue()));
         } else {
             assertEvent(subscriber.takeOnNext(), ip1, targetPort, AVAILABLE);
             recordStore.removeIPv4Address(targetDomain1, 1, ip1);
+            advanceTime();
             assertEvent(subscriber.takeOnNext(), ip1, targetPort, EXPIRED);
         }
         recordStore.removeIPv4Address(targetDomain2, 1, ip1);
+        advanceTime();
         assertEvent(subscriber.takeOnNext(), ip1, targetPort, EXPIRED);
     }
 
@@ -461,9 +496,11 @@ class DefaultDnsClientTest {
         assertHasEvent(signals, ip2, targetPort, AVAILABLE);
 
         recordStore.removeIPv6Address(targetDomain1, DEFAULT_TTL, ip1);
+        advanceTime();
         assertEvent(subscriber.takeOnNext(), ip1, targetPort, EXPIRED);
 
         recordStore.addIPv6Address(targetDomain1, DEFAULT_TTL, ip1);
+        advanceTime();
         assertEvent(subscriber.takeOnNext(), ip1, targetPort, AVAILABLE);
     }
 
@@ -492,9 +529,11 @@ class DefaultDnsClientTest {
         assertHasEvent(signals, ip2, targetPort, AVAILABLE);
 
         recordStore.removeSrv(domain, targetDomain1, targetPort, DEFAULT_TTL);
+        advanceTime();
         assertEvent(subscriber.takeOnNext(), ip1, targetPort, EXPIRED);
 
         recordStore.removeSrv(domain, targetDomain2, targetPort, DEFAULT_TTL);
+        advanceTime();
         if (inactiveEventsOnError) {
             assertEvent(subscriber.takeOnNext(), ip2, targetPort, EXPIRED);
         }
@@ -527,6 +566,7 @@ class DefaultDnsClientTest {
         // Remove the ip
         recordStore.removeIPv4Address(domain, DEFAULT_TTL, ip);
         subscription.request(1);
+        advanceTime();
         assertThat(subscriber.awaitOnError(), instanceOf(UnknownHostException.class));
     }
 
@@ -548,6 +588,7 @@ class DefaultDnsClientTest {
         // Remove all the ips
         recordStore.removeIPv4Address(domain, DEFAULT_TTL, ips);
         subscription.request(1);
+        advanceTime();
         assertThat(subscriber.awaitOnError(), instanceOf(UnknownHostException.class));
     }
 
@@ -595,6 +636,7 @@ class DefaultDnsClientTest {
         final String[] ips2 = new String[] {nextIp(), nextIp(), nextIp(), nextIp(), nextIp()};
         recordStore.addIPv4Address(domain, DEFAULT_TTL, ips2);
         subscription.request(ips2.length);
+        advanceTime();
         signals = subscriber.takeOnNext(ips2.length);
         for (String ip : ips2) {
             assertHasEvent(signals, ip, AVAILABLE);
@@ -604,6 +646,7 @@ class DefaultDnsClientTest {
         recordStore.removeIPv4Address(domain, DEFAULT_TTL, ips);
         recordStore.removeIPv4Address(domain, DEFAULT_TTL, ips2);
         subscription.request(1);
+        advanceTime();
         assertThat(subscriber.awaitOnError(), instanceOf(UnknownHostException.class));
     }
 
@@ -633,6 +676,7 @@ class DefaultDnsClientTest {
         recordStore.removeIPv4Address(domain2, DEFAULT_TTL, ip2);
         subscription1.request(1);
         subscription2.request(1);
+        advanceTime();
         assertThat(subscriber1.awaitOnError(), instanceOf(UnknownHostException.class));
         assertThat(subscriber2.awaitOnError(), instanceOf(UnknownHostException.class));
     }
@@ -640,19 +684,25 @@ class DefaultDnsClientTest {
     @ParameterizedTest(name = "{displayName} [{index}] missingRecordStatus={0}")
     @MethodSource("missingRecordStatus")
     void repeatDiscoverNxDomainAndRecover(ServiceDiscovererEvent.Status missingRecordStatus) throws Exception {
-        setup(builder -> withRetry(builder.inactiveEventsOnError(true).missingRecordStatus(missingRecordStatus)));
+        setup(builder -> builder
+                .inactiveEventsOnError(true)
+                .missingRecordStatus(missingRecordStatus));
         final String ip = nextIp();
         final String domain = "servicetalk.io";
         recordStore.addIPv4Address(domain, DEFAULT_TTL, ip);
 
-        TestPublisherSubscriber<ServiceDiscovererEvent<InetAddress>> subscriber = dnsQuery(domain);
+        BiIntFunction<Throwable, ? extends Completable> retryStrategy =
+                (i, t) -> timerExecutor.executor().timer(ofMillis(50));
+        TestPublisherSubscriber<ServiceDiscovererEvent<InetAddress>> subscriber = dnsQuery(domain, retryStrategy);
         Subscription subscription = subscriber.awaitSubscription();
         subscription.request(4);
 
         assertEvent(subscriber.takeOnNext(), ip, AVAILABLE);
         recordStore.removeIPv4Address(domain, DEFAULT_TTL, ip);
+        advanceTime();
         assertEvent(subscriber.takeOnNext(), ip, missingRecordStatus);
         recordStore.addIPv4Address(domain, DEFAULT_TTL, ip);
+        advanceTime();
         assertEvent(subscriber.takeOnNext(), ip, AVAILABLE);
     }
 
@@ -682,6 +732,7 @@ class DefaultDnsClientTest {
         // Removal of IPv6 doesn't affect output as long as there is at least one IPv4
         recordStore.removeIPv6Address(domain, DEFAULT_TTL, ipv6);
         recordStore.removeIPv4Address(domain, DEFAULT_TTL, ipv4A);
+        advanceTime();
         assertEvent(subscriber.takeOnNext(), ipv4A, EXPIRED);
         assertThat(subscriber.pollAllOnNext(), is(empty()));
     }
@@ -712,6 +763,7 @@ class DefaultDnsClientTest {
         // Removal of IPv4 doesn't affect output as long as there is at least one IPv6
         recordStore.removeIPv4Address(domain, DEFAULT_TTL, ipv4);
         recordStore.removeIPv6Address(domain, DEFAULT_TTL, ipv6A);
+        advanceTime();
         assertEvent(subscriber.takeOnNext(), ipv6A, EXPIRED);
         assertThat(subscriber.pollAllOnNext(), is(empty()));
     }
@@ -744,6 +796,7 @@ class DefaultDnsClientTest {
         // Removal of IPv4 results in a fallback to IPv6
         recordStore.removeIPv4Address(domain, DEFAULT_TTL, ipv4A);
         recordStore.removeIPv4Address(domain, DEFAULT_TTL, ipv4B);
+        advanceTime();
         signals = subscriber.takeOnNext(4);
         assertHasEvent(signals, ipv6A, AVAILABLE);
         assertHasEvent(signals, ipv6B, AVAILABLE);
@@ -753,6 +806,7 @@ class DefaultDnsClientTest {
 
         // Return back to IPv4 as soon as it appears in the result again
         recordStore.addIPv4Address(domain, DEFAULT_TTL, ipv4A);
+        advanceTime();
         signals = subscriber.takeOnNext(3);
         assertHasEvent(signals, ipv4A, AVAILABLE);
         assertHasEvent(signals, ipv6A, EXPIRED);
@@ -788,6 +842,7 @@ class DefaultDnsClientTest {
         // Removal of IPv6 results in a fallback to IPv4
         recordStore.removeIPv6Address(domain, DEFAULT_TTL, ipv6A);
         recordStore.removeIPv6Address(domain, DEFAULT_TTL, ipv6B);
+        advanceTime();
         signals = subscriber.takeOnNext(4);
         assertHasEvent(signals, ipv4A, AVAILABLE);
         assertHasEvent(signals, ipv4B, AVAILABLE);
@@ -797,6 +852,7 @@ class DefaultDnsClientTest {
 
         // Return back to IPv6 as soon as it appears in the result again
         recordStore.addIPv6Address(domain, DEFAULT_TTL, ipv6A);
+        advanceTime();
         signals = subscriber.takeOnNext(3);
         assertHasEvent(signals, ipv6A, AVAILABLE);
         assertHasEvent(signals, ipv4A, EXPIRED);
@@ -829,9 +885,11 @@ class DefaultDnsClientTest {
         // Remove one
         if (addressTypes == IPV4_PREFERRED_RETURN_ALL) {
             recordStore.removeIPv4Address(domain, DEFAULT_TTL, ipv4);
+            advanceTime();
             assertEvent(subscriber.takeOnNext(), ipv4, EXPIRED);
         } else {
             recordStore.removeIPv6Address(domain, DEFAULT_TTL, ipv6);
+            advanceTime();
             assertEvent(subscriber.takeOnNext(), ipv6, EXPIRED);
         }
     }
@@ -852,6 +910,7 @@ class DefaultDnsClientTest {
 
         // Remove all ips
         recordStore.removeIPv6Address(domain, DEFAULT_TTL, ipv6);
+        advanceTime();
         assertThat(subscriber.awaitOnError(), instanceOf(UnknownHostException.class));
     }
 
@@ -871,6 +930,7 @@ class DefaultDnsClientTest {
 
         // Remove all ips
         recordStore.removeIPv4Address(domain, DEFAULT_TTL, ipv4);
+        advanceTime();
         assertThat(subscriber.awaitOnError(), instanceOf(UnknownHostException.class));
     }
 
@@ -922,6 +982,7 @@ class DefaultDnsClientTest {
         // Remove the srv address because the mapped publishers don't propagate errors, so we want the outer SRV resolve
         // to fail.
         recordStore.removeSrv(domain, targetDomain1, targetPort, DEFAULT_TTL);
+        advanceTime();
         latchOnError.await();
     }
 
@@ -959,7 +1020,13 @@ class DefaultDnsClientTest {
     }
 
     private TestPublisherSubscriber<ServiceDiscovererEvent<InetAddress>> dnsQuery(String domain) {
+        return dnsQuery(domain, (i, t) -> Completable.failed(t));
+    }
+
+    private TestPublisherSubscriber<ServiceDiscovererEvent<InetAddress>> dnsQuery(String domain,
+            BiIntFunction<Throwable, ? extends Completable> retryStrategy) {
         Publisher<ServiceDiscovererEvent<InetAddress>> publisher = client.dnsQuery(domain)
+                .retryWhen(retryStrategy)
                 .flatMapConcatIterable(identity());
         TestPublisherSubscriber<ServiceDiscovererEvent<InetAddress>> subscriber =
                 new TestPublisherSubscriber<>();
@@ -969,7 +1036,7 @@ class DefaultDnsClientTest {
 
     private DefaultDnsServiceDiscovererBuilder dnsClientBuilder() {
         return new DefaultDnsServiceDiscovererBuilder()
-                .ioExecutor(nettyIoExecutor)
+                .ioExecutor(new NettyIoExecutorWithTestTimer(ioExecutor.executor(), timerExecutor.executor()))
                 .dnsResolverAddressTypes(IPV4_ONLY)
                 .optResourceEnabled(false)
                 .srvConcurrency(512)
@@ -977,22 +1044,6 @@ class DefaultDnsClientTest {
                 .ndots(1)
                 .minTTL(1)
                 .ttlJitter(Duration.ofNanos(1));
-    }
-
-    private DefaultDnsServiceDiscovererBuilder withRetry(DefaultDnsServiceDiscovererBuilder builder) {
-        final BiIntFunction<Throwable, ? extends Completable> retryStrategy = (i, t) -> immediate().timer(ofMillis(50));
-        return builder.appendFilter(client -> new DnsClientFilter(client) {
-                    @Override
-                    public Publisher<Collection<ServiceDiscovererEvent<InetAddress>>> dnsQuery(final String hostName) {
-                        return super.dnsQuery(hostName).retryWhen(retryStrategy);
-                    }
-
-                    @Override
-                    public Publisher<Collection<ServiceDiscovererEvent<InetSocketAddress>>> dnsSrvQuery(
-                            final String serviceName) {
-                        return super.dnsSrvQuery(serviceName).retryWhen(retryStrategy);
-                    }
-                });
     }
 
     private static void assertEvent(@Nullable ServiceDiscovererEvent<InetSocketAddress> event,
@@ -1012,11 +1063,127 @@ class DefaultDnsClientTest {
         assertThat(events, hasItems(new DefaultServiceDiscovererEvent<>(getByName(ip), status)));
     }
 
-    @SuppressWarnings("unchecked")
     private static void assertHasEvent(Collection<ServiceDiscovererEvent<InetSocketAddress>> events,
                                        String ip, int port, ServiceDiscovererEvent.Status status)
             throws UnknownHostException {
         assertThat(events, hasItems(new DefaultServiceDiscovererEvent<>(
                 new InetSocketAddress(getByName(ip), port), status)));
+    }
+
+    private static final class NettyIoExecutorWithTestTimer implements EventLoopAwareNettyIoExecutor {
+
+        private final EventLoopAwareNettyIoExecutor delegate;
+        private final TestExecutor timer;
+
+        NettyIoExecutorWithTestTimer(EventLoopAwareNettyIoExecutor delegate, TestExecutor timer) {
+            this.delegate = delegate.next();    // Take a single EventLoopIoExecutor
+            this.timer = timer;
+        }
+
+        @Override
+        public Completable closeAsync() {
+            return delegate.closeAsync();
+        }
+
+        @Override
+        public Completable closeAsyncGracefully() {
+            return delegate.closeAsyncGracefully();
+        }
+
+        @Override
+        public Completable onClose() {
+            return delegate.onClose();
+        }
+
+        @Override
+        public Completable onClosing() {
+            return delegate.onClosing();
+        }
+
+        @Override
+        public boolean isUnixDomainSocketSupported() {
+            return delegate.isUnixDomainSocketSupported();
+        }
+
+        @Override
+        public boolean isFileDescriptorSocketAddressSupported() {
+            return delegate.isFileDescriptorSocketAddressSupported();
+        }
+
+        @Override
+        public boolean isIoThreadSupported() {
+            return delegate.isIoThreadSupported();
+        }
+
+        @Override
+        public boolean isCurrentThreadEventLoop() {
+            return delegate.isCurrentThreadEventLoop();
+        }
+
+        @Override
+        public EventLoopGroup eventLoopGroup() {
+            return delegate.eventLoopGroup();
+        }
+
+        @Override
+        public EventLoopAwareNettyIoExecutor next() {
+            return this;
+        }
+
+        @Override
+        public Cancellable execute(final Runnable task) throws RejectedExecutionException {
+            return delegate.execute(task);
+        }
+
+        @Override
+        public Completable submit(final Runnable runnable) {
+            return delegate.submit(runnable);
+        }
+
+        @Override
+        public Completable submitRunnable(final Supplier<Runnable> runnableSupplier) {
+            return delegate.submitRunnable(runnableSupplier);
+        }
+
+        @Override
+        public <T> Single<T> submit(final Callable<? extends T> callable) {
+            return delegate.submit(callable);
+        }
+
+        @Override
+        public <T> Single<T> submitCallable(final Supplier<? extends Callable<? extends T>> callableSupplier) {
+            return delegate.submitCallable(callableSupplier);
+        }
+
+        @Override
+        public Executor asExecutor() {
+            return timer;
+        }
+
+        @Override
+        public long currentTime(final TimeUnit unit) {
+            return timer.currentTime(unit);
+        }
+
+        @Override
+        public Cancellable schedule(final Runnable task, final long delay, final TimeUnit unit)
+                throws RejectedExecutionException {
+            return timer.schedule(() -> delegate.execute(task), delay, unit);
+        }
+
+        @Override
+        public Cancellable schedule(final Runnable task, final Duration delay) throws RejectedExecutionException {
+            return timer.schedule(() -> delegate.execute(task), delay);
+        }
+
+        @Override
+        public Completable timer(final long delay, final TimeUnit unit) {
+            return timer.timer(delay, unit).publishOn(delegate);
+        }
+
+        @Override
+        public Completable timer(final Duration delay) {
+            return timer.timer(delay).publishOn(delegate);
+        }
     }
 }

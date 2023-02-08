@@ -192,6 +192,11 @@ final class DefaultDnsClient implements DnsClient {
         resolver = builder.build();
     }
 
+    // visible for testing
+    MinTtlCache ttlCache() {
+        return ttlCache;
+    }
+
     @Nullable
     private DnsDiscoveryObserver newDiscoveryObserver(final String address) {
         if (observer == null) {
@@ -400,6 +405,8 @@ final class DefaultDnsClient implements DnsClient {
                         if (cause != null) {
                             dnsAnswerPromise.tryFailure(cause);
                         } else {
+                            LOGGER.trace("DnsClient {}, original result for {}: {}",
+                                    DefaultDnsClient.this, ARecordPublisher.this, completedFuture.getNow());
                             final DnsAnswer<InetAddress> dnsAnswer;
                             try {
                                 dnsAnswer = new DnsAnswer<>(toAddresses(completedFuture),
