@@ -32,6 +32,7 @@ import io.servicetalk.transport.api.SslProvider;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver;
 
+import io.netty.handler.ssl.OpenSsl;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -47,6 +48,7 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 class SslCertificateCompressionTest {
 
@@ -56,6 +58,8 @@ class SslCertificateCompressionTest {
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @ValueSource(booleans = {true, false})
     void negotiatesCertificateCompression(boolean clientEnabled) throws Exception {
+        assumeTrue(OpenSsl.isAvailable());
+
         final HttpService service = (ctx, request, responseFactory) ->
             succeeded(responseFactory.ok().payloadBody("Hello World!", textSerializerUtf8()));
 
