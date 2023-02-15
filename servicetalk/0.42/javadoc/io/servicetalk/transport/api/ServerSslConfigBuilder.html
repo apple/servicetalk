@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.5.1.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.6.0.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -135,6 +135,16 @@ loadScripts(document, 'script');</script>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#build()" class="member-name-link">build</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Build a new <a href="ServerSslConfig.html" title="interface in io.servicetalk.transport.api"><code>ServerSslConfig</code></a>.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="ServerSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ServerSslConfigBuilder</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#certificateCompressionAlgorithms(io.servicetalk.transport.api.CertificateCompressionAlgorithm...)" class="member-name-link">certificateCompressionAlgorithms</a><wbr>(<a href="CertificateCompressionAlgorithm.html" title="interface in io.servicetalk.transport.api">CertificateCompressionAlgorithm</a>...&nbsp;algorithms)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Sets the certificate compression algorithms to advertise if the feature is supported at runtime.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="ServerSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ServerSslConfigBuilder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#certificateCompressionAlgorithms(java.util.List)" class="member-name-link">certificateCompressionAlgorithms</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="CertificateCompressionAlgorithm.html" title="interface in io.servicetalk.transport.api">CertificateCompressionAlgorithm</a>&gt;&nbsp;algorithms)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Sets the certificate compression algorithms to advertise if the feature is supported at runtime.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final <a href="ServerSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ServerSslConfigBuilder</a></code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#ciphers(java.lang.String...)" class="member-name-link">ciphers</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>...&nbsp;ciphers)</code></div>
@@ -564,6 +574,44 @@ loadScripts(document, 'script');</script>
 <dd><code>provider</code> - the <a href="SslProvider.html" title="enum class in io.servicetalk.transport.api"><code>SslProvider</code></a> to use.</dd>
 <dt>Returns:</dt>
 <dd><code>this</code>.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="certificateCompressionAlgorithms(java.util.List)">
+<h3>certificateCompressionAlgorithms</h3>
+<div class="member-signature"><span class="modifiers">public final</span>&nbsp;<span class="return-type"><a href="ServerSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ServerSslConfigBuilder</a></span>&nbsp;<span class="element-name">certificateCompressionAlgorithms</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/List.html" title="class or interface in java.util" class="external-link">List</a>&lt;<a href="CertificateCompressionAlgorithm.html" title="interface in io.servicetalk.transport.api">CertificateCompressionAlgorithm</a>&gt;&nbsp;algorithms)</span></div>
+<div class="block">Sets the certificate compression algorithms to advertise if the feature is supported at runtime.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>algorithms</code> - the certificate compression algorithms to use.</dd>
+<dt>Returns:</dt>
+<dd><code>this</code>.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="CertificateCompressionAlgorithms.html" title="class in io.servicetalk.transport.api"><code>CertificateCompressionAlgorithms</code></a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="certificateCompressionAlgorithms(io.servicetalk.transport.api.CertificateCompressionAlgorithm...)">
+<h3>certificateCompressionAlgorithms</h3>
+<div class="member-signature"><span class="modifiers">public final</span>&nbsp;<span class="return-type"><a href="ServerSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ServerSslConfigBuilder</a></span>&nbsp;<span class="element-name">certificateCompressionAlgorithms</span><wbr><span class="parameters">(<a href="CertificateCompressionAlgorithm.html" title="interface in io.servicetalk.transport.api">CertificateCompressionAlgorithm</a>...&nbsp;algorithms)</span></div>
+<div class="block">Sets the certificate compression algorithms to advertise if the feature is supported at runtime.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>algorithms</code> - the certificate compression algorithms to use.</dd>
+<dt>Returns:</dt>
+<dd><code>this</code>.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="CertificateCompressionAlgorithms.html" title="class in io.servicetalk.transport.api"><code>CertificateCompressionAlgorithms</code></a></li>
+</ul>
+</dd>
 </dl>
 </section>
 </li>

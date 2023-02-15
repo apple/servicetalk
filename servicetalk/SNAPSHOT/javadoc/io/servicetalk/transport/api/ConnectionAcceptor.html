@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.5.1.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.6.0.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -90,8 +90,12 @@ loadScripts(document, 'script');</script>
 </dl>
 <hr>
 <div class="type-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/FunctionalInterface.html" title="class or interface in java.lang" class="external-link">@FunctionalInterface</a>
+<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
 </span><span class="modifiers">public interface </span><span class="element-name type-name-label">ConnectionAcceptor</span><span class="extends-implements">
 extends <a href="../../concurrent/api/AsyncCloseable.html" title="interface in io.servicetalk.concurrent.api">AsyncCloseable</a></span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">use <a href="LateConnectionAcceptor.html" title="interface in io.servicetalk.transport.api"><code>LateConnectionAcceptor</code></a> instead.</div>
+</div>
 <div class="block">A contract that defines the connection acceptance criterion.</div>
 <dl class="notes">
 <dt>See Also:</dt>
@@ -116,6 +120,7 @@ extends <a href="../../concurrent/api/AsyncCloseable.html" title="interface in i
 <div class="col-first even-row-color"><code>static final <a href="ConnectionAcceptor.html" title="interface in io.servicetalk.transport.api">ConnectionAcceptor</a></code></div>
 <div class="col-second even-row-color"><code><a href="#ACCEPT_ALL" class="member-name-link">ACCEPT_ALL</a></code></div>
 <div class="col-last even-row-color">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">ACCEPT all connections.</div>
 </div>
 </div>
@@ -126,26 +131,29 @@ extends <a href="../../concurrent/api/AsyncCloseable.html" title="interface in i
 <section class="method-summary" id="method-summary">
 <h2>Method Summary</h2>
 <div id="method-summary-table">
-<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab3" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab3', 3)" class="table-tab">Abstract Methods</button><button id="method-summary-table-tab5" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab5', 3)" class="table-tab">Default Methods</button></div>
+<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab3" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab3', 3)" class="table-tab">Abstract Methods</button><button id="method-summary-table-tab5" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab5', 3)" class="table-tab">Default Methods</button><button id="method-summary-table-tab6" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab6', 3)" class="table-tab">Deprecated Methods</button></div>
 <div id="method-summary-table.tabpanel" role="tabpanel">
 <div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#accept(io.servicetalk.transport.api.ConnectionContext)" class="member-name-link">accept</a><wbr>(<a href="ConnectionContext.html" title="interface in io.servicetalk.transport.api">ConnectionContext</a>&nbsp;context)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code><a href="../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code><a href="#accept(io.servicetalk.transport.api.ConnectionContext)" class="member-name-link">accept</a><wbr>(<a href="ConnectionContext.html" title="interface in io.servicetalk.transport.api">ConnectionContext</a>&nbsp;context)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Evaluate the passed <a href="ConnectionContext.html" title="interface in io.servicetalk.transport.api"><code>ConnectionContext</code></a> to accept or reject.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="ConnectionAcceptor.html" title="interface in io.servicetalk.transport.api">ConnectionAcceptor</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#append(io.servicetalk.transport.api.ConnectionAcceptor)" class="member-name-link">append</a><wbr>(<a href="ConnectionAcceptor.html" title="interface in io.servicetalk.transport.api">ConnectionAcceptor</a>&nbsp;after)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6"><code>default <a href="ConnectionAcceptor.html" title="interface in io.servicetalk.transport.api">ConnectionAcceptor</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6"><code><a href="#append(io.servicetalk.transport.api.ConnectionAcceptor)" class="member-name-link">append</a><wbr>(<a href="ConnectionAcceptor.html" title="interface in io.servicetalk.transport.api">ConnectionAcceptor</a>&nbsp;after)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Returns a composed <a href="ConnectionAcceptor.html" title="interface in io.servicetalk.transport.api"><code>ConnectionAcceptor</code></a> that first applies <code>this</code> <a href="ConnectionAcceptor.html" title="interface in io.servicetalk.transport.api"><code>ConnectionAcceptor</code></a>, and if
  this is successful then applies <code>after</code> <a href="ConnectionAcceptor.html" title="interface in io.servicetalk.transport.api"><code>ConnectionAcceptor</code></a>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#closeAsync()" class="member-name-link">closeAsync</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6"><code>default <a href="../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6"><code><a href="#closeAsync()" class="member-name-link">closeAsync</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Used to close/shutdown a resource.</div>
 </div>
 </div>
@@ -169,6 +177,7 @@ extends <a href="../../concurrent/api/AsyncCloseable.html" title="interface in i
 <section class="detail" id="ACCEPT_ALL">
 <h3>ACCEPT_ALL</h3>
 <div class="member-signature"><span class="modifiers">static final</span>&nbsp;<span class="return-type"><a href="ConnectionAcceptor.html" title="interface in io.servicetalk.transport.api">ConnectionAcceptor</a></span>&nbsp;<span class="element-name">ACCEPT_ALL</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">ACCEPT all connections.</div>
 </section>
 </li>
@@ -184,6 +193,7 @@ extends <a href="../../concurrent/api/AsyncCloseable.html" title="interface in i
 <section class="detail" id="accept(io.servicetalk.transport.api.ConnectionContext)">
 <h3>accept</h3>
 <div class="member-signature"><span class="return-type"><a href="../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></span>&nbsp;<span class="element-name">accept</span><wbr><span class="parameters">(<a href="ConnectionContext.html" title="interface in io.servicetalk.transport.api">ConnectionContext</a>&nbsp;context)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Evaluate the passed <a href="ConnectionContext.html" title="interface in io.servicetalk.transport.api"><code>ConnectionContext</code></a> to accept or reject. If the returned <a href="../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> terminates
  successfully then the passed <a href="ConnectionContext.html" title="interface in io.servicetalk.transport.api"><code>ConnectionContext</code></a> will be accepted, otherwise rejected.</div>
 <dl class="notes">
@@ -199,6 +209,7 @@ extends <a href="../../concurrent/api/AsyncCloseable.html" title="interface in i
 <section class="detail" id="append(io.servicetalk.transport.api.ConnectionAcceptor)">
 <h3>append</h3>
 <div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="ConnectionAcceptor.html" title="interface in io.servicetalk.transport.api">ConnectionAcceptor</a></span>&nbsp;<span class="element-name">append</span><wbr><span class="parameters">(<a href="ConnectionAcceptor.html" title="interface in io.servicetalk.transport.api">ConnectionAcceptor</a>&nbsp;after)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Returns a composed <a href="ConnectionAcceptor.html" title="interface in io.servicetalk.transport.api"><code>ConnectionAcceptor</code></a> that first applies <code>this</code> <a href="ConnectionAcceptor.html" title="interface in io.servicetalk.transport.api"><code>ConnectionAcceptor</code></a>, and if
  this is successful then applies <code>after</code> <a href="ConnectionAcceptor.html" title="interface in io.servicetalk.transport.api"><code>ConnectionAcceptor</code></a>.
  <p>
@@ -225,6 +236,7 @@ extends <a href="../../concurrent/api/AsyncCloseable.html" title="interface in i
 <section class="detail" id="closeAsync()">
 <h3>closeAsync</h3>
 <div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></span>&nbsp;<span class="element-name">closeAsync</span>()</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="../../concurrent/api/AsyncCloseable.html#closeAsync()">AsyncCloseable</a></code></span></div>
 <div class="block">Used to close/shutdown a resource.</div>
 <dl class="notes">

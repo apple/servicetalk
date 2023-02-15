@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.5.1.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.6.0.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -123,6 +123,16 @@ implements <a href="HttpServerBuilder.html" title="interface in io.servicetalk.h
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#appendConnectionAcceptorFilter(io.servicetalk.transport.api.ConnectionAcceptorFactory)" class="member-name-link">appendConnectionAcceptorFilter</a><wbr>(<a href="../../transport/api/ConnectionAcceptorFactory.html" title="interface in io.servicetalk.transport.api">ConnectionAcceptorFactory</a>&nbsp;factory)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Appends the filter to the chain of filters used to decorate the <a href="../../transport/api/ConnectionAcceptor.html" title="interface in io.servicetalk.transport.api"><code>ConnectionAcceptor</code></a> used by this builder.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#appendEarlyConnectionAcceptor(io.servicetalk.transport.api.EarlyConnectionAcceptor)" class="member-name-link">appendEarlyConnectionAcceptor</a><wbr>(<a href="../../transport/api/EarlyConnectionAcceptor.html" title="interface in io.servicetalk.transport.api">EarlyConnectionAcceptor</a>&nbsp;factory)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Appends the <a href="../../transport/api/EarlyConnectionAcceptor.html" title="interface in io.servicetalk.transport.api"><code>EarlyConnectionAcceptor</code></a> to be called when a new connection has been created.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#appendLateConnectionAcceptor(io.servicetalk.transport.api.LateConnectionAcceptor)" class="member-name-link">appendLateConnectionAcceptor</a><wbr>(<a href="../../transport/api/LateConnectionAcceptor.html" title="interface in io.servicetalk.transport.api">LateConnectionAcceptor</a>&nbsp;factory)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Appends the <a href="../../transport/api/LateConnectionAcceptor.html" title="interface in io.servicetalk.transport.api"><code>LateConnectionAcceptor</code></a> to be called when a new connection has been created.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#appendNonOffloadingServiceFilter(io.servicetalk.http.api.StreamingHttpServiceFilterFactory)" class="member-name-link">appendNonOffloadingServiceFilter</a><wbr>(<a href="StreamingHttpServiceFilterFactory.html" title="interface in io.servicetalk.http.api">StreamingHttpServiceFilterFactory</a>&nbsp;factory)</code></div>
@@ -576,6 +586,90 @@ implements <a href="HttpServerBuilder.html" title="interface in io.servicetalk.h
  <a href="../../transport/api/ConnectionAcceptorFactory.html" title="interface in io.servicetalk.transport.api"><code>ConnectionAcceptorFactory</code></a> is managed by this builder and the server started thereof.</dd>
 <dt>Returns:</dt>
 <dd><code>this</code></dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="appendEarlyConnectionAcceptor(io.servicetalk.transport.api.EarlyConnectionAcceptor)">
+<h3>appendEarlyConnectionAcceptor</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></span>&nbsp;<span class="element-name">appendEarlyConnectionAcceptor</span><wbr><span class="parameters">(<a href="../../transport/api/EarlyConnectionAcceptor.html" title="interface in io.servicetalk.transport.api">EarlyConnectionAcceptor</a>&nbsp;factory)</span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="HttpServerBuilder.html#appendEarlyConnectionAcceptor(io.servicetalk.transport.api.EarlyConnectionAcceptor)">HttpServerBuilder</a></code></span></div>
+<div class="block">Appends the <a href="../../transport/api/EarlyConnectionAcceptor.html" title="interface in io.servicetalk.transport.api"><code>EarlyConnectionAcceptor</code></a> to be called when a new connection has been created.
+ <p>
+ The difference between the <a href="../../transport/api/EarlyConnectionAcceptor.html" title="interface in io.servicetalk.transport.api"><code>EarlyConnectionAcceptor</code></a> and the <a href="../../transport/api/LateConnectionAcceptor.html" title="interface in io.servicetalk.transport.api"><code>LateConnectionAcceptor</code></a> is that the
+ early one is called right after the connection has been accepted - and most importantly - before any TLS
+ handshake has been performed. This allows to terminate connections quickly and spend less CPU resources if the
+ amount of information provided to make such a decision is sufficient.
+ <p>
+ The order of execution of these acceptors are in order of append. If 3 acceptors are added as follows:
+ <pre>
+     builder
+          .appendEarlyConnectionAcceptor(acceptor1)
+          .appendEarlyConnectionAcceptor(acceptor2)
+          .appendEarlyConnectionAcceptor(acceptor3)
+ </pre>
+ the order of invocation of these filters will be:
+ <pre>
+     acceptor1 ⇒ acceptor2 ⇒ acceptor3
+ </pre>
+ <p>
+ The acceptor is offloaded by default. If an acceptor in the chain fails the <a href="../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a>, the later ones
+ will not be called.</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="HttpServerBuilder.html#appendEarlyConnectionAcceptor(io.servicetalk.transport.api.EarlyConnectionAcceptor)">appendEarlyConnectionAcceptor</a></code>&nbsp;in interface&nbsp;<code><a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></code></dd>
+<dt>Parameters:</dt>
+<dd><code>factory</code> - the acceptor to append to the chain of acceptors.</dd>
+<dt>Returns:</dt>
+<dd>this <a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api"><code>HttpServerBuilder</code></a> for chaining purposes.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="HttpServerBuilder.html#appendLateConnectionAcceptor(io.servicetalk.transport.api.LateConnectionAcceptor)"><code>HttpServerBuilder.appendLateConnectionAcceptor(LateConnectionAcceptor)</code></a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="appendLateConnectionAcceptor(io.servicetalk.transport.api.LateConnectionAcceptor)">
+<h3>appendLateConnectionAcceptor</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></span>&nbsp;<span class="element-name">appendLateConnectionAcceptor</span><wbr><span class="parameters">(<a href="../../transport/api/LateConnectionAcceptor.html" title="interface in io.servicetalk.transport.api">LateConnectionAcceptor</a>&nbsp;factory)</span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="HttpServerBuilder.html#appendLateConnectionAcceptor(io.servicetalk.transport.api.LateConnectionAcceptor)">HttpServerBuilder</a></code></span></div>
+<div class="block">Appends the <a href="../../transport/api/LateConnectionAcceptor.html" title="interface in io.servicetalk.transport.api"><code>LateConnectionAcceptor</code></a> to be called when a new connection has been created.
+ <p>
+ The <a href="../../transport/api/LateConnectionAcceptor.html" title="interface in io.servicetalk.transport.api"><code>LateConnectionAcceptor</code></a> (compared to the <a href="../../transport/api/EarlyConnectionAcceptor.html" title="interface in io.servicetalk.transport.api"><code>EarlyConnectionAcceptor</code></a>) gets called later in the
+ connection establishment process. Instead of being invoked right after the connection has been accepted, this
+ acceptor gets called after the connection is fully initialized, the TLS handshake has been completed and as a
+ result has more contextual information available in the <a href="../../transport/api/ConnectionInfo.html" title="interface in io.servicetalk.transport.api"><code>ConnectionInfo</code></a>.
+ <p>
+ The order of execution of these acceptors are in order of append. If 3 acceptors are added as follows:
+ <pre>
+     builder
+          .appendLateConnectionAcceptor(acceptor1)
+          .appendLateConnectionAcceptor(acceptor2)
+          .appendLateConnectionAcceptor(acceptor3)
+ </pre>
+ the order of invocation of these filters will be:
+ <pre>
+     acceptor1 ⇒ acceptor2 ⇒ acceptor3
+ </pre>
+ <p>
+ The acceptor is offloaded by default. If an acceptor in the chain fails the <a href="../../concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a>, the later ones
+ will not be called.</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="HttpServerBuilder.html#appendLateConnectionAcceptor(io.servicetalk.transport.api.LateConnectionAcceptor)">appendLateConnectionAcceptor</a></code>&nbsp;in interface&nbsp;<code><a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></code></dd>
+<dt>Parameters:</dt>
+<dd><code>factory</code> - the acceptor to append to the chain of acceptors.</dd>
+<dt>Returns:</dt>
+<dd>this <a href="HttpServerBuilder.html" title="interface in io.servicetalk.http.api"><code>HttpServerBuilder</code></a> for chaining purposes.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="HttpServerBuilder.html#appendEarlyConnectionAcceptor(io.servicetalk.transport.api.EarlyConnectionAcceptor)"><code>HttpServerBuilder.appendEarlyConnectionAcceptor(EarlyConnectionAcceptor)</code></a></li>
+</ul>
+</dd>
 </dl>
 </section>
 </li>

@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../../script.js"></script>
-<script type="text/javascript" src="../../../../../script-dir/jquery-3.5.1.min.js"></script>
+<script type="text/javascript" src="../../../../../script-dir/jquery-3.6.0.min.js"></script>
 <script type="text/javascript" src="../../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -111,15 +111,23 @@ loadScripts(document, 'script');</script>
 </div>
 <div class="col-first odd-row-color"><code><a href="#IPV4_PREFERRED" class="member-name-link">IPV4_PREFERRED</a></code></div>
 <div class="col-last odd-row-color">
-<div class="block">Prefer IPv4 addresses over IPv6 ones.</div>
+<div class="block">Attempt to resolve both, prefer IPv4 addresses over IPv6 ones.</div>
 </div>
-<div class="col-first even-row-color"><code><a href="#IPV6_ONLY" class="member-name-link">IPV6_ONLY</a></code></div>
+<div class="col-first even-row-color"><code><a href="#IPV4_PREFERRED_RETURN_ALL" class="member-name-link">IPV4_PREFERRED_RETURN_ALL</a></code></div>
 <div class="col-last even-row-color">
+<div class="block">Attempt to resolve IPv4 and IPv6 addresses, return all results.</div>
+</div>
+<div class="col-first odd-row-color"><code><a href="#IPV6_ONLY" class="member-name-link">IPV6_ONLY</a></code></div>
+<div class="col-last odd-row-color">
 <div class="block">Only resolve IPv6 addresses.</div>
 </div>
-<div class="col-first odd-row-color"><code><a href="#IPV6_PREFERRED" class="member-name-link">IPV6_PREFERRED</a></code></div>
+<div class="col-first even-row-color"><code><a href="#IPV6_PREFERRED" class="member-name-link">IPV6_PREFERRED</a></code></div>
+<div class="col-last even-row-color">
+<div class="block">Attempt to resolve both, prefer IPv6 addresses over IPv4 ones.</div>
+</div>
+<div class="col-first odd-row-color"><code><a href="#IPV6_PREFERRED_RETURN_ALL" class="member-name-link">IPV6_PREFERRED_RETURN_ALL</a></code></div>
 <div class="col-last odd-row-color">
-<div class="block">Prefer IPv6 addresses over IPv4 ones.</div>
+<div class="block">Attempt to resolve IPv6 and IPv4 addresses, return all results.</div>
 </div>
 </div>
 </section>
@@ -184,14 +192,32 @@ the order they are declared.</div>
 <section class="detail" id="IPV4_PREFERRED">
 <h3>IPV4_PREFERRED</h3>
 <div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="DnsResolverAddressTypes.html" title="enum class in io.servicetalk.dns.discovery.netty">DnsResolverAddressTypes</a></span>&nbsp;<span class="element-name">IPV4_PREFERRED</span></div>
-<div class="block">Prefer IPv4 addresses over IPv6 ones.</div>
+<div class="block">Attempt to resolve both, prefer IPv4 addresses over IPv6 ones.
+ Failure to resolve IPv6 won't result in an error.</div>
 </section>
 </li>
 <li>
 <section class="detail" id="IPV6_PREFERRED">
 <h3>IPV6_PREFERRED</h3>
 <div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="DnsResolverAddressTypes.html" title="enum class in io.servicetalk.dns.discovery.netty">DnsResolverAddressTypes</a></span>&nbsp;<span class="element-name">IPV6_PREFERRED</span></div>
-<div class="block">Prefer IPv6 addresses over IPv4 ones.</div>
+<div class="block">Attempt to resolve both, prefer IPv6 addresses over IPv4 ones.
+ Failure to resolve IPv4 won't result in an error.</div>
+</section>
+</li>
+<li>
+<section class="detail" id="IPV4_PREFERRED_RETURN_ALL">
+<h3>IPV4_PREFERRED_RETURN_ALL</h3>
+<div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="DnsResolverAddressTypes.html" title="enum class in io.servicetalk.dns.discovery.netty">DnsResolverAddressTypes</a></span>&nbsp;<span class="element-name">IPV4_PREFERRED_RETURN_ALL</span></div>
+<div class="block">Attempt to resolve IPv4 and IPv6 addresses, return all results.
+ Failure to resolve IPv6 won't result in an error.</div>
+</section>
+</li>
+<li>
+<section class="detail" id="IPV6_PREFERRED_RETURN_ALL">
+<h3>IPV6_PREFERRED_RETURN_ALL</h3>
+<div class="member-signature"><span class="modifiers">public static final</span>&nbsp;<span class="return-type"><a href="DnsResolverAddressTypes.html" title="enum class in io.servicetalk.dns.discovery.netty">DnsResolverAddressTypes</a></span>&nbsp;<span class="element-name">IPV6_PREFERRED_RETURN_ALL</span></div>
+<div class="block">Attempt to resolve IPv6 and IPv4 addresses, return all results.
+ Failure to resolve IPv4 won't result in an error.</div>
 </section>
 </li>
 </ul>

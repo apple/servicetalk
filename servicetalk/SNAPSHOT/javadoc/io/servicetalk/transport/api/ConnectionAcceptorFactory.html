@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.5.1.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.6.0.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -82,8 +82,12 @@ loadScripts(document, 'script');</script>
 </dl>
 <hr>
 <div class="type-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/FunctionalInterface.html" title="class or interface in java.lang" class="external-link">@FunctionalInterface</a>
+<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
 </span><span class="modifiers">public interface </span><span class="element-name type-name-label">ConnectionAcceptorFactory</span><span class="extends-implements">
 extends <a href="ExecutionStrategyInfluencer.html" title="interface in io.servicetalk.transport.api">ExecutionStrategyInfluencer</a>&lt;<a href="ConnectExecutionStrategy.html" title="interface in io.servicetalk.transport.api">ConnectExecutionStrategy</a>&gt;</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">use <a href="LateConnectionAcceptor.html" title="interface in io.servicetalk.transport.api"><code>LateConnectionAcceptor</code></a> instead.</div>
+</div>
 <div class="block">A factory of <a href="ConnectionAcceptor.html" title="interface in io.servicetalk.transport.api"><code>ConnectionAcceptor</code></a>.</div>
 </section>
 <section class="summary">
@@ -93,37 +97,42 @@ extends <a href="ExecutionStrategyInfluencer.html" title="interface in io.servic
 <section class="method-summary" id="method-summary">
 <h2>Method Summary</h2>
 <div id="method-summary-table">
-<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab1" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab1', 3)" class="table-tab">Static Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab3" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab3', 3)" class="table-tab">Abstract Methods</button><button id="method-summary-table-tab5" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab5', 3)" class="table-tab">Default Methods</button></div>
+<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab1" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab1', 3)" class="table-tab">Static Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab3" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab3', 3)" class="table-tab">Abstract Methods</button><button id="method-summary-table-tab5" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab5', 3)" class="table-tab">Default Methods</button><button id="method-summary-table-tab6" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab6', 3)" class="table-tab">Deprecated Methods</button></div>
 <div id="method-summary-table.tabpanel" role="tabpanel">
 <div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="ConnectionAcceptorFactory.html" title="interface in io.servicetalk.transport.api">ConnectionAcceptorFactory</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#append(io.servicetalk.transport.api.ConnectionAcceptorFactory)" class="member-name-link">append</a><wbr>(<a href="ConnectionAcceptorFactory.html" title="interface in io.servicetalk.transport.api">ConnectionAcceptorFactory</a>&nbsp;before)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6"><code>default <a href="ConnectionAcceptorFactory.html" title="interface in io.servicetalk.transport.api">ConnectionAcceptorFactory</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6"><code><a href="#append(io.servicetalk.transport.api.ConnectionAcceptorFactory)" class="member-name-link">append</a><wbr>(<a href="ConnectionAcceptorFactory.html" title="interface in io.servicetalk.transport.api">ConnectionAcceptorFactory</a>&nbsp;before)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Returns a composed function that first applies the <code>before</code> function to its input, and then applies
  this function to the result.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="ConnectionAcceptor.html" title="interface in io.servicetalk.transport.api">ConnectionAcceptor</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#create(io.servicetalk.transport.api.ConnectionAcceptor)" class="member-name-link">create</a><wbr>(<a href="ConnectionAcceptor.html" title="interface in io.servicetalk.transport.api">ConnectionAcceptor</a>&nbsp;original)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code><a href="ConnectionAcceptor.html" title="interface in io.servicetalk.transport.api">ConnectionAcceptor</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code><a href="#create(io.servicetalk.transport.api.ConnectionAcceptor)" class="member-name-link">create</a><wbr>(<a href="ConnectionAcceptor.html" title="interface in io.servicetalk.transport.api">ConnectionAcceptor</a>&nbsp;original)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Create a <a href="ConnectionAcceptor.html" title="interface in io.servicetalk.transport.api"><code>ConnectionAcceptor</code></a> using the provided <a href="ConnectionAcceptor.html" title="interface in io.servicetalk.transport.api"><code>ConnectionAcceptor</code></a>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab1"><code>static <a href="ConnectionAcceptorFactory.html" title="interface in io.servicetalk.transport.api">ConnectionAcceptorFactory</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab1"><code><a href="#identity()" class="member-name-link">identity</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab1">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab6"><code>static <a href="ConnectionAcceptorFactory.html" title="interface in io.servicetalk.transport.api">ConnectionAcceptorFactory</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab6"><code><a href="#identity()" class="member-name-link">identity</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Returns a function that always returns its input <a href="ConnectionAcceptor.html" title="interface in io.servicetalk.transport.api"><code>ConnectionAcceptor</code></a>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="ConnectExecutionStrategy.html" title="interface in io.servicetalk.transport.api">ConnectExecutionStrategy</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#requiredOffloads()" class="member-name-link">requiredOffloads</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6"><code>default <a href="ConnectExecutionStrategy.html" title="interface in io.servicetalk.transport.api">ConnectExecutionStrategy</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6"><code><a href="#requiredOffloads()" class="member-name-link">requiredOffloads</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Return an <a href="ExecutionStrategy.html" title="interface in io.servicetalk.transport.api"><code>ExecutionStrategy</code></a> that describes the offloads required by the influencer.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab1"><code>static <a href="ConnectionAcceptorFactory.html" title="interface in io.servicetalk.transport.api">ConnectionAcceptorFactory</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab1"><code><a href="#withStrategy(io.servicetalk.transport.api.ConnectionAcceptorFactory,io.servicetalk.transport.api.ConnectExecutionStrategy)" class="member-name-link">withStrategy</a><wbr>(<a href="ConnectionAcceptorFactory.html" title="interface in io.servicetalk.transport.api">ConnectionAcceptorFactory</a>&nbsp;original,
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab6"><code>static <a href="ConnectionAcceptorFactory.html" title="interface in io.servicetalk.transport.api">ConnectionAcceptorFactory</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab6"><code><a href="#withStrategy(io.servicetalk.transport.api.ConnectionAcceptorFactory,io.servicetalk.transport.api.ConnectExecutionStrategy)" class="member-name-link">withStrategy</a><wbr>(<a href="ConnectionAcceptorFactory.html" title="interface in io.servicetalk.transport.api">ConnectionAcceptorFactory</a>&nbsp;original,
  <a href="ConnectExecutionStrategy.html" title="interface in io.servicetalk.transport.api">ConnectExecutionStrategy</a>&nbsp;strategy)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab1">
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Wraps a <a href="ConnectionAcceptorFactory.html" title="interface in io.servicetalk.transport.api"><code>ConnectionAcceptorFactory</code></a> to return a specific execution strategy.</div>
 </div>
 </div>
@@ -144,6 +153,7 @@ extends <a href="ExecutionStrategyInfluencer.html" title="interface in io.servic
 <section class="detail" id="create(io.servicetalk.transport.api.ConnectionAcceptor)">
 <h3>create</h3>
 <div class="member-signature"><span class="return-type"><a href="ConnectionAcceptor.html" title="interface in io.servicetalk.transport.api">ConnectionAcceptor</a></span>&nbsp;<span class="element-name">create</span><wbr><span class="parameters">(<a href="ConnectionAcceptor.html" title="interface in io.servicetalk.transport.api">ConnectionAcceptor</a>&nbsp;original)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Create a <a href="ConnectionAcceptor.html" title="interface in io.servicetalk.transport.api"><code>ConnectionAcceptor</code></a> using the provided <a href="ConnectionAcceptor.html" title="interface in io.servicetalk.transport.api"><code>ConnectionAcceptor</code></a>.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
@@ -157,6 +167,7 @@ extends <a href="ExecutionStrategyInfluencer.html" title="interface in io.servic
 <section class="detail" id="append(io.servicetalk.transport.api.ConnectionAcceptorFactory)">
 <h3>append</h3>
 <div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="ConnectionAcceptorFactory.html" title="interface in io.servicetalk.transport.api">ConnectionAcceptorFactory</a></span>&nbsp;<span class="element-name">append</span><wbr><span class="parameters">(<a href="ConnectionAcceptorFactory.html" title="interface in io.servicetalk.transport.api">ConnectionAcceptorFactory</a>&nbsp;before)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Returns a composed function that first applies the <code>before</code> function to its input, and then applies
  this function to the result.
  <p>
@@ -182,6 +193,7 @@ extends <a href="ExecutionStrategyInfluencer.html" title="interface in io.servic
 <section class="detail" id="identity()">
 <h3>identity</h3>
 <div class="member-signature"><span class="modifiers">static</span>&nbsp;<span class="return-type"><a href="ConnectionAcceptorFactory.html" title="interface in io.servicetalk.transport.api">ConnectionAcceptorFactory</a></span>&nbsp;<span class="element-name">identity</span>()</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Returns a function that always returns its input <a href="ConnectionAcceptor.html" title="interface in io.servicetalk.transport.api"><code>ConnectionAcceptor</code></a>.</div>
 <dl class="notes">
 <dt>Returns:</dt>
@@ -193,6 +205,7 @@ extends <a href="ExecutionStrategyInfluencer.html" title="interface in io.servic
 <section class="detail" id="requiredOffloads()">
 <h3>requiredOffloads</h3>
 <div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="ConnectExecutionStrategy.html" title="interface in io.servicetalk.transport.api">ConnectExecutionStrategy</a></span>&nbsp;<span class="element-name">requiredOffloads</span>()</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Return an <a href="ExecutionStrategy.html" title="interface in io.servicetalk.transport.api"><code>ExecutionStrategy</code></a> that describes the offloads required by the influencer.
 
  <p>The strategy returned will be applied to the connection acceptor instance returned by
@@ -211,6 +224,7 @@ extends <a href="ExecutionStrategyInfluencer.html" title="interface in io.servic
 <h3>withStrategy</h3>
 <div class="member-signature"><span class="modifiers">static</span>&nbsp;<span class="return-type"><a href="ConnectionAcceptorFactory.html" title="interface in io.servicetalk.transport.api">ConnectionAcceptorFactory</a></span>&nbsp;<span class="element-name">withStrategy</span><wbr><span class="parameters">(<a href="ConnectionAcceptorFactory.html" title="interface in io.servicetalk.transport.api">ConnectionAcceptorFactory</a>&nbsp;original,
  <a href="ConnectExecutionStrategy.html" title="interface in io.servicetalk.transport.api">ConnectExecutionStrategy</a>&nbsp;strategy)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Wraps a <a href="ConnectionAcceptorFactory.html" title="interface in io.servicetalk.transport.api"><code>ConnectionAcceptorFactory</code></a> to return a specific execution strategy.</div>
 <dl class="notes">
 <dt>Parameters:</dt>

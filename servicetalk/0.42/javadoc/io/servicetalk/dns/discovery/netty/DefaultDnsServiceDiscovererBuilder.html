@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../../script.js"></script>
-<script type="text/javascript" src="../../../../../script-dir/jquery-3.5.1.min.js"></script>
+<script type="text/javascript" src="../../../../../script-dir/jquery-3.6.0.min.js"></script>
 <script type="text/javascript" src="../../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -316,7 +316,8 @@ loadScripts(document, 'script');</script>
 <div class="block">Sets the list of the protocol families of the address resolved.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
-<dd><code>dnsResolverAddressTypes</code> - the address types.</dd>
+<dd><code>dnsResolverAddressTypes</code> - the address types or <code>null</code> to use the default value, based on "java.net"
+ system properties: <code>java.net.preferIPv4Stack</code> and <code>java.net.preferIPv6Stack</code>.</dd>
 <dt>Returns:</dt>
 <dd><code>this</code>.</dd>
 </dl>

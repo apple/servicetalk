@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.5.1.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.6.0.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="package-declaration-page">
@@ -69,103 +69,119 @@ loadScripts(document, 'script');</script>
 <ul class="summary-list">
 <li>
 <div id="class-summary">
-<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="class-summary-tab0" role="tab" aria-selected="true" aria-controls="class-summary.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary', 2)" class="active-table-tab">All Classes and Interfaces</button><button id="class-summary-tab1" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab1', 2)" class="table-tab">Interfaces</button><button id="class-summary-tab2" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab2', 2)" class="table-tab">Classes</button><button id="class-summary-tab3" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab3', 2)" class="table-tab">Enum Classes</button></div>
+<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="class-summary-tab0" role="tab" aria-selected="true" aria-controls="class-summary.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary', 2)" class="active-table-tab">All Classes and Interfaces</button><button id="class-summary-tab1" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab1', 2)" class="table-tab">Interfaces</button><button id="class-summary-tab2" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab2', 2)" class="table-tab">Classes</button><button id="class-summary-tab3" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab3', 2)" class="table-tab">Enum Classes</button><button id="class-summary-tab5" role="tab" aria-selected="false" aria-controls="class-summary.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('class-summary', 'class-summary-tab5', 2)" class="table-tab">Exceptions</button></div>
 <div id="class-summary.tabpanel" role="tabpanel">
 <div class="summary-table two-column-summary" aria-labelledby="class-summary-tab0">
 <div class="table-header col-first">Class</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color class-summary class-summary-tab1"><a href="ClientSslConfig.html" title="interface in io.servicetalk.transport.api">ClientSslConfig</a></div>
+<div class="col-first even-row-color class-summary class-summary-tab1"><a href="CertificateCompressionAlgorithm.html" title="interface in io.servicetalk.transport.api">CertificateCompressionAlgorithm</a></div>
 <div class="col-last even-row-color class-summary class-summary-tab1">
+<div class="block">Represents an algorithm that can compress and decompress SSL certificates.</div>
+</div>
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="CertificateCompressionAlgorithms.html" title="class in io.servicetalk.transport.api">CertificateCompressionAlgorithms</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="block">A factory to create <a href="CertificateCompressionAlgorithm.html" title="interface in io.servicetalk.transport.api"><code>Certificate Compression Algorithms</code></a>.</div>
+</div>
+<div class="col-first even-row-color class-summary class-summary-tab5"><a href="CertificateCompressionException.html" title="class in io.servicetalk.transport.api">CertificateCompressionException</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab5">
+<div class="block">When thrown contains information about a failure during TLS certificate compression.</div>
+</div>
+<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="ClientSslConfig.html" title="interface in io.servicetalk.transport.api">ClientSslConfig</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab1">
 <div class="block">Specifies the configuration for client side TLS/SSL.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="ClientSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ClientSslConfigBuilder</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="ClientSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ClientSslConfigBuilder</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">Default builder for <a href="ClientSslConfig.html" title="interface in io.servicetalk.transport.api"><code>ClientSslConfig</code></a> objects.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab1"><a href="ConnectExecutionStrategy.html" title="interface in io.servicetalk.transport.api">ConnectExecutionStrategy</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab1">
+<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="ConnectExecutionStrategy.html" title="interface in io.servicetalk.transport.api">ConnectExecutionStrategy</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab1">
 <div class="block">An execution strategy for creating or accepting connections.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="ConnectionAcceptor.html" title="interface in io.servicetalk.transport.api">ConnectionAcceptor</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab1">
-<div class="block">A contract that defines the connection acceptance criterion.</div>
+<div class="col-first even-row-color class-summary class-summary-tab1"><a href="ConnectionAcceptor.html" title="interface in io.servicetalk.transport.api">ConnectionAcceptor</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab1">Deprecated.
+<div class="deprecation-comment">use <a href="LateConnectionAcceptor.html" title="interface in io.servicetalk.transport.api"><code>LateConnectionAcceptor</code></a> instead.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab1"><a href="ConnectionAcceptorFactory.html" title="interface in io.servicetalk.transport.api">ConnectionAcceptorFactory</a></div>
+<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="ConnectionAcceptorFactory.html" title="interface in io.servicetalk.transport.api">ConnectionAcceptorFactory</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab1">Deprecated.
+<div class="deprecation-comment">use <a href="LateConnectionAcceptor.html" title="interface in io.servicetalk.transport.api"><code>LateConnectionAcceptor</code></a> instead.</div>
+</div>
+<div class="col-first even-row-color class-summary class-summary-tab1"><a href="ConnectionContext.html" title="interface in io.servicetalk.transport.api">ConnectionContext</a></div>
 <div class="col-last even-row-color class-summary class-summary-tab1">
-<div class="block">A factory of <a href="ConnectionAcceptor.html" title="interface in io.servicetalk.transport.api"><code>ConnectionAcceptor</code></a>.</div>
-</div>
-<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="ConnectionContext.html" title="interface in io.servicetalk.transport.api">ConnectionContext</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab1">
 <div class="block">A context for a connection.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab1"><a href="ConnectionInfo.html" title="interface in io.servicetalk.transport.api">ConnectionInfo</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab1">
+<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="ConnectionInfo.html" title="interface in io.servicetalk.transport.api">ConnectionInfo</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab1">
 <div class="block">Provides information about a connection.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="ConnectionInfo.Protocol.html" title="interface in io.servicetalk.transport.api">ConnectionInfo.Protocol</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab1">
+<div class="col-first even-row-color class-summary class-summary-tab1"><a href="ConnectionInfo.Protocol.html" title="interface in io.servicetalk.transport.api">ConnectionInfo.Protocol</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab1">
 <div class="block">Provides information about the network protocol.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab1"><a href="ConnectionObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab1">
+<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="ConnectionObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab1">
 <div class="block">An observer interface that provides visibility into events associated with a network connection.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="ConnectionObserver.DataObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.DataObserver</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab1">
+<div class="col-first even-row-color class-summary class-summary-tab1"><a href="ConnectionObserver.DataObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.DataObserver</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab1">
 <div class="block">An observer interface that provides visibility into read and write events related to data flow.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab1"><a href="ConnectionObserver.MultiplexedObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.MultiplexedObserver</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab1">
+<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="ConnectionObserver.MultiplexedObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.MultiplexedObserver</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab1">
 <div class="block">An observer interface that provides visibility into new streams created by a multiplexed connection.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="ConnectionObserver.ReadObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.ReadObserver</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab1">
+<div class="col-first even-row-color class-summary class-summary-tab1"><a href="ConnectionObserver.ReadObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.ReadObserver</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab1">
 <div class="block">An observer interface that provides visibility into <strong>read</strong> events.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab1"><a href="ConnectionObserver.SecurityHandshakeObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.SecurityHandshakeObserver</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab1">
+<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="ConnectionObserver.SecurityHandshakeObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.SecurityHandshakeObserver</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab1">
 <div class="block">An observer interface that provides visibility into security handshake events.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="ConnectionObserver.StreamObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.StreamObserver</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab1">
+<div class="col-first even-row-color class-summary class-summary-tab1"><a href="ConnectionObserver.StreamObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.StreamObserver</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab1">
 <div class="block">An observer interface that provides visibility into stream events.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab1"><a href="ConnectionObserver.WriteObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.WriteObserver</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab1">
+<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="ConnectionObserver.WriteObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver.WriteObserver</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab1">
 <div class="block">An observer interface that provides visibility into <strong>write</strong> events.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="DefaultExecutionContext.html" title="class in io.servicetalk.transport.api">DefaultExecutionContext</a>&lt;ES extends <a href="ExecutionStrategy.html" title="interface in io.servicetalk.transport.api">ExecutionStrategy</a>&gt;</div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="DefaultExecutionContext.html" title="class in io.servicetalk.transport.api">DefaultExecutionContext</a>&lt;ES extends <a href="ExecutionStrategy.html" title="interface in io.servicetalk.transport.api">ExecutionStrategy</a>&gt;</div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">A default implementation of <a href="ExecutionContext.html" title="interface in io.servicetalk.transport.api"><code>ExecutionContext</code></a>.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="DelegatingClientSslConfig.html" title="class in io.servicetalk.transport.api">DelegatingClientSslConfig</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="DelegatingClientSslConfig.html" title="class in io.servicetalk.transport.api">DelegatingClientSslConfig</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">Wrap a <a href="ClientSslConfig.html" title="interface in io.servicetalk.transport.api"><code>ClientSslConfig</code></a> and delegate all methods to it.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="DelegatingConnectionAcceptor.html" title="class in io.servicetalk.transport.api">DelegatingConnectionAcceptor</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="DelegatingConnectionAcceptor.html" title="class in io.servicetalk.transport.api">DelegatingConnectionAcceptor</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">An implementation of <a href="ConnectionAcceptor.html" title="interface in io.servicetalk.transport.api"><code>ConnectionAcceptor</code></a> that delegates all methods to another <a href="ConnectionAcceptor.html" title="interface in io.servicetalk.transport.api"><code>ConnectionAcceptor</code></a>.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="DelegatingConnectionContext.html" title="class in io.servicetalk.transport.api">DelegatingConnectionContext</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="DelegatingConnectionContext.html" title="class in io.servicetalk.transport.api">DelegatingConnectionContext</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">A <a href="ConnectionContext.html" title="interface in io.servicetalk.transport.api"><code>ConnectionContext</code></a> implementation that delegates all calls to a provided <a href="ConnectionContext.html" title="interface in io.servicetalk.transport.api"><code>ConnectionContext</code></a>.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="DelegatingExecutionContext.html" title="class in io.servicetalk.transport.api">DelegatingExecutionContext</a>&lt;ES extends <a href="ExecutionStrategy.html" title="interface in io.servicetalk.transport.api">ExecutionStrategy</a>&gt;</div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="DelegatingExecutionContext.html" title="class in io.servicetalk.transport.api">DelegatingExecutionContext</a>&lt;ES extends <a href="ExecutionStrategy.html" title="interface in io.servicetalk.transport.api">ExecutionStrategy</a>&gt;</div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">An <a href="ExecutionContext.html" title="interface in io.servicetalk.transport.api"><code>ExecutionContext</code></a> implementation that delegates all calls to a provided <a href="ExecutionContext.html" title="interface in io.servicetalk.transport.api"><code>ExecutionContext</code></a>.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="DelegatingServerSslConfig.html" title="class in io.servicetalk.transport.api">DelegatingServerSslConfig</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="DelegatingServerSslConfig.html" title="class in io.servicetalk.transport.api">DelegatingServerSslConfig</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">Wrap a <a href="ServerSslConfig.html" title="interface in io.servicetalk.transport.api"><code>ServerSslConfig</code></a> and delegate all methods to it.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="DelegatingSslConfig.html" title="class in io.servicetalk.transport.api">DelegatingSslConfig</a>&lt;T extends <a href="SslConfig.html" title="interface in io.servicetalk.transport.api">SslConfig</a>&gt;</div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="DelegatingSslConfig.html" title="class in io.servicetalk.transport.api">DelegatingSslConfig</a>&lt;T extends <a href="SslConfig.html" title="interface in io.servicetalk.transport.api">SslConfig</a>&gt;</div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">Wrap a <a href="SslConfig.html" title="interface in io.servicetalk.transport.api"><code>SslConfig</code></a> and delegate all methods to it.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="DomainSocketAddress.html" title="class in io.servicetalk.transport.api">DomainSocketAddress</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="DomainSocketAddress.html" title="class in io.servicetalk.transport.api">DomainSocketAddress</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block">An address which represents a socket belonging to the
  <a href="https://man7.org/linux/man-pages/man7/unix.7.html">AF_UNIX socket family</a>.</div>
+</div>
+<div class="col-first even-row-color class-summary class-summary-tab1"><a href="EarlyConnectionAcceptor.html" title="interface in io.servicetalk.transport.api">EarlyConnectionAcceptor</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab1">
+<div class="block">Allows to accept or reject connections early in the connection setup stage.</div>
 </div>
 <div class="col-first odd-row-color class-summary class-summary-tab1"><a href="ExecutionContext.html" title="interface in io.servicetalk.transport.api">ExecutionContext</a>&lt;ES extends <a href="ExecutionStrategy.html" title="interface in io.servicetalk.transport.api">ExecutionStrategy</a>&gt;</div>
 <div class="col-last odd-row-color class-summary class-summary-tab1">
@@ -199,49 +215,53 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color class-summary class-summary-tab1">
 <div class="block">Marker interface for IO Threads.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="RetryableException.html" title="interface in io.servicetalk.transport.api">RetryableException</a></div>
+<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="LateConnectionAcceptor.html" title="interface in io.servicetalk.transport.api">LateConnectionAcceptor</a></div>
 <div class="col-last odd-row-color class-summary class-summary-tab1">
+<div class="block">Allows to accept or reject connections later in the connection setup stage.</div>
+</div>
+<div class="col-first even-row-color class-summary class-summary-tab1"><a href="RetryableException.html" title="interface in io.servicetalk.transport.api">RetryableException</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab1">
 <div class="block">A marker-interface for exceptions which are safely retryable and occur only before ServiceTalk starts writing a
  request to the network.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab1"><a href="ServerContext.html" title="interface in io.servicetalk.transport.api">ServerContext</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab1">
+<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="ServerContext.html" title="interface in io.servicetalk.transport.api">ServerContext</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab1">
 <div class="block">Context for servers.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="ServerListenContext.html" title="interface in io.servicetalk.transport.api">ServerListenContext</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab1">
+<div class="col-first even-row-color class-summary class-summary-tab1"><a href="ServerListenContext.html" title="interface in io.servicetalk.transport.api">ServerListenContext</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab1">
 <div class="block">Context for controlling listen behavior.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab1"><a href="ServerSslConfig.html" title="interface in io.servicetalk.transport.api">ServerSslConfig</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab1">
+<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="ServerSslConfig.html" title="interface in io.servicetalk.transport.api">ServerSslConfig</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab1">
 <div class="block">Specifies the configuration for server side TLS/SSL.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="ServerSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ServerSslConfigBuilder</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="ServerSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ServerSslConfigBuilder</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">Default builder for <a href="ServerSslConfig.html" title="interface in io.servicetalk.transport.api"><code>ServerSslConfig</code></a> objects.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab2"><a href="ServiceTalkSocketOptions.html" title="class in io.servicetalk.transport.api">ServiceTalkSocketOptions</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="ServiceTalkSocketOptions.html" title="class in io.servicetalk.transport.api">ServiceTalkSocketOptions</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
 <div class="block"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/SocketOption.html" title="class or interface in java.net" class="external-link"><code>SocketOption</code></a>s that can be used beside <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/StandardSocketOptions.html" title="class or interface in java.net" class="external-link"><code>StandardSocketOptions</code></a>.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab3"><a href="SslClientAuthMode.html" title="enum class in io.servicetalk.transport.api">SslClientAuthMode</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab3">
+<div class="col-first even-row-color class-summary class-summary-tab3"><a href="SslClientAuthMode.html" title="enum class in io.servicetalk.transport.api">SslClientAuthMode</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab3">
 <div class="block">Indicates the state of the <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/SSLEngine.html" title="class or interface in javax.net.ssl" class="external-link"><code>SSLEngine</code></a> with respect to client authentication.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab1"><a href="SslConfig.html" title="interface in io.servicetalk.transport.api">SslConfig</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab1">
+<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="SslConfig.html" title="interface in io.servicetalk.transport.api">SslConfig</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab1">
 <div class="block">Specifies the configuration for TLS/SSL.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab3"><a href="SslProvider.html" title="enum class in io.servicetalk.transport.api">SslProvider</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab3">
+<div class="col-first even-row-color class-summary class-summary-tab3"><a href="SslProvider.html" title="enum class in io.servicetalk.transport.api">SslProvider</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab3">
 <div class="block">The provider to use for <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/javax/net/ssl/SSLEngine.html" title="class or interface in javax.net.ssl" class="external-link"><code>SSLEngine</code></a>.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab1"><a href="TransportObserver.html" title="interface in io.servicetalk.transport.api">TransportObserver</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab1">
+<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="TransportObserver.html" title="interface in io.servicetalk.transport.api">TransportObserver</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab1">
 <div class="block">An observer interface that provides visibility into transport events.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="TransportObservers.html" title="class in io.servicetalk.transport.api">TransportObservers</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="col-first even-row-color class-summary class-summary-tab2"><a href="TransportObservers.html" title="class in io.servicetalk.transport.api">TransportObservers</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab2">
 <div class="block">A factory to create different <a href="TransportObserver.html" title="interface in io.servicetalk.transport.api"><code>TransportObserver</code></a>s.</div>
 </div>
 </div>

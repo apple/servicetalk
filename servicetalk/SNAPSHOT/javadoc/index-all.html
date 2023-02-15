@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="script.js"></script>
-<script type="text/javascript" src="script-dir/jquery-3.5.1.min.js"></script>
+<script type="text/javascript" src="script-dir/jquery-3.6.0.min.js"></script>
 <script type="text/javascript" src="script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="index-page">
@@ -79,10 +79,19 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/transport/api/ConnectionAcceptor.html#accept(io.servicetalk.transport.api.ConnectionContext)" class="member-name-link">accept(ConnectionContext)</a> - Method in interface io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/ConnectionAcceptor.html" title="interface in io.servicetalk.transport.api">ConnectionAcceptor</a></dt>
 <dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Evaluate the passed <a href="io/servicetalk/transport/api/ConnectionContext.html" title="interface in io.servicetalk.transport.api"><code>ConnectionContext</code></a> to accept or reject.</div>
 </dd>
 <dt><a href="io/servicetalk/transport/api/DelegatingConnectionAcceptor.html#accept(io.servicetalk.transport.api.ConnectionContext)" class="member-name-link">accept(ConnectionContext)</a> - Method in class io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/DelegatingConnectionAcceptor.html" title="class in io.servicetalk.transport.api">DelegatingConnectionAcceptor</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/transport/api/EarlyConnectionAcceptor.html#accept(io.servicetalk.transport.api.ConnectionInfo)" class="member-name-link">accept(ConnectionInfo)</a> - Method in interface io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/EarlyConnectionAcceptor.html" title="interface in io.servicetalk.transport.api">EarlyConnectionAcceptor</a></dt>
+<dd>
+<div class="block">Accept or reject an incoming connection.</div>
+</dd>
+<dt><a href="io/servicetalk/transport/api/LateConnectionAcceptor.html#accept(io.servicetalk.transport.api.ConnectionInfo)" class="member-name-link">accept(ConnectionInfo)</a> - Method in interface io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/LateConnectionAcceptor.html" title="interface in io.servicetalk.transport.api">LateConnectionAcceptor</a></dt>
+<dd>
+<div class="block">Accept or reject an incoming connection.</div>
+</dd>
 <dt><a href="io/servicetalk/http/api/StatelessTrailersTransformer.html#accept(java.lang.Void,Payload)" class="member-name-link">accept(Void, Payload)</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/StatelessTrailersTransformer.html" title="class in io.servicetalk.http.api">StatelessTrailersTransformer</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/api/StatelessTrailersTransformer.html#accept(Payload)" class="member-name-link">accept(Payload)</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/StatelessTrailersTransformer.html" title="class in io.servicetalk.http.api">StatelessTrailersTransformer</a></dt>
@@ -103,6 +112,7 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/transport/api/ConnectionAcceptor.html#ACCEPT_ALL" class="member-name-link">ACCEPT_ALL</a> - Static variable in interface io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/ConnectionAcceptor.html" title="interface in io.servicetalk.transport.api">ConnectionAcceptor</a></dt>
 <dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">ACCEPT all connections.</div>
 </dd>
 <dt><a href="io/servicetalk/http/api/HttpHeaderNames.html#ACCEPT_CHARSET" class="member-name-link">ACCEPT_CHARSET</a> - Static variable in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpHeaderNames.html" title="class in io.servicetalk.http.api">HttpHeaderNames</a></dt>
@@ -949,6 +959,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block"><code>"age"</code></div>
 </dd>
+<dt><a href="io/servicetalk/transport/api/CertificateCompressionAlgorithm.html#algorithmId()" class="member-name-link">algorithmId()</a> - Method in interface io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/CertificateCompressionAlgorithm.html" title="interface in io.servicetalk.transport.api">CertificateCompressionAlgorithm</a></dt>
+<dd>
+<div class="block">Get the unique identifier for this algorithm.</div>
+</dd>
 <dt><a href="io/servicetalk/utils/internal/PlatformDependent.html#allocateMemory(long)" class="member-name-link">allocateMemory(long)</a> - Static method in class io.servicetalk.utils.internal.<a href="io/servicetalk/utils/internal/PlatformDependent.html" title="class in io.servicetalk.utils.internal">PlatformDependent</a></dt>
 <dd>
 <div class="block">Allocates direct memory.</div>
@@ -1210,11 +1224,13 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/transport/api/ConnectionAcceptor.html#append(io.servicetalk.transport.api.ConnectionAcceptor)" class="member-name-link">append(ConnectionAcceptor)</a> - Method in interface io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/ConnectionAcceptor.html" title="interface in io.servicetalk.transport.api">ConnectionAcceptor</a></dt>
 <dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Returns a composed <a href="io/servicetalk/transport/api/ConnectionAcceptor.html" title="interface in io.servicetalk.transport.api"><code>ConnectionAcceptor</code></a> that first applies <code>this</code> <a href="io/servicetalk/transport/api/ConnectionAcceptor.html" title="interface in io.servicetalk.transport.api"><code>ConnectionAcceptor</code></a>, and if
  this is successful then applies <code>after</code> <a href="io/servicetalk/transport/api/ConnectionAcceptor.html" title="interface in io.servicetalk.transport.api"><code>ConnectionAcceptor</code></a>.</div>
 </dd>
 <dt><a href="io/servicetalk/transport/api/ConnectionAcceptorFactory.html#append(io.servicetalk.transport.api.ConnectionAcceptorFactory)" class="member-name-link">append(ConnectionAcceptorFactory)</a> - Method in interface io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/ConnectionAcceptorFactory.html" title="interface in io.servicetalk.transport.api">ConnectionAcceptorFactory</a></dt>
 <dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Returns a composed function that first applies the <code>before</code> function to its input, and then applies
  this function to the result.</div>
 </dd>
@@ -1253,7 +1269,9 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/api/HttpServerBuilder.html#appendConnectionAcceptorFilter(io.servicetalk.transport.api.ConnectionAcceptorFactory)" class="member-name-link">appendConnectionAcceptorFilter(ConnectionAcceptorFactory)</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></dt>
 <dd>
-<div class="block">Appends the filter to the chain of filters used to decorate the <a href="io/servicetalk/transport/api/ConnectionAcceptor.html" title="interface in io.servicetalk.transport.api"><code>ConnectionAcceptor</code></a> used by this builder.</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">use <a href="io/servicetalk/http/api/HttpServerBuilder.html#appendLateConnectionAcceptor(io.servicetalk.transport.api.LateConnectionAcceptor)"><code>HttpServerBuilder.appendLateConnectionAcceptor(LateConnectionAcceptor)</code></a> instead.</div>
+</div>
 </dd>
 <dt><a href="io/servicetalk/http/api/DelegatingSingleAddressHttpClientBuilder.html#appendConnectionFactoryFilter(io.servicetalk.client.api.ConnectionFactoryFilter)" class="member-name-link">appendConnectionFactoryFilter(ConnectionFactoryFilter&lt;R, FilterableStreamingHttpConnection&gt;)</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/DelegatingSingleAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api">DelegatingSingleAddressHttpClientBuilder</a></dt>
 <dd>&nbsp;</dd>
@@ -1276,10 +1294,22 @@ loadScripts(document, 'script');</script>
 <div class="block">Appends the filter to the chain of filters used to decorate the <a href="io/servicetalk/http/api/StreamingHttpConnection.html" title="interface in io.servicetalk.http.api"><code>StreamingHttpConnection</code></a> created by this
  builder, for every request that passes the provided <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Predicate.html" title="class or interface in java.util.function" class="external-link"><code>Predicate</code></a>.</div>
 </dd>
+<dt><a href="io/servicetalk/http/api/DelegatingHttpServerBuilder.html#appendEarlyConnectionAcceptor(io.servicetalk.transport.api.EarlyConnectionAcceptor)" class="member-name-link">appendEarlyConnectionAcceptor(EarlyConnectionAcceptor)</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/DelegatingHttpServerBuilder.html" title="class in io.servicetalk.http.api">DelegatingHttpServerBuilder</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/http/api/HttpServerBuilder.html#appendEarlyConnectionAcceptor(io.servicetalk.transport.api.EarlyConnectionAcceptor)" class="member-name-link">appendEarlyConnectionAcceptor(EarlyConnectionAcceptor)</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></dt>
+<dd>
+<div class="block">Appends the <a href="io/servicetalk/transport/api/EarlyConnectionAcceptor.html" title="interface in io.servicetalk.transport.api"><code>EarlyConnectionAcceptor</code></a> to be called when a new connection has been created.</div>
+</dd>
 <dt><a href="io/servicetalk/http/api/StrategyInfluencerChainBuilder.html#appendIfInfluencer(java.lang.Object)" class="member-name-link">appendIfInfluencer(Object)</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/StrategyInfluencerChainBuilder.html" title="class in io.servicetalk.http.api">StrategyInfluencerChainBuilder</a></dt>
 <dd>
 <div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">If the passed <code>mayBeInfluencer</code> is an <a href="io/servicetalk/transport/api/ExecutionStrategyInfluencer.html" title="interface in io.servicetalk.transport.api"><code>ExecutionStrategyInfluencer</code></a> then add it to this chain.</div>
+</dd>
+<dt><a href="io/servicetalk/http/api/DelegatingHttpServerBuilder.html#appendLateConnectionAcceptor(io.servicetalk.transport.api.LateConnectionAcceptor)" class="member-name-link">appendLateConnectionAcceptor(LateConnectionAcceptor)</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/DelegatingHttpServerBuilder.html" title="class in io.servicetalk.http.api">DelegatingHttpServerBuilder</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/http/api/HttpServerBuilder.html#appendLateConnectionAcceptor(io.servicetalk.transport.api.LateConnectionAcceptor)" class="member-name-link">appendLateConnectionAcceptor(LateConnectionAcceptor)</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpServerBuilder.html" title="interface in io.servicetalk.http.api">HttpServerBuilder</a></dt>
+<dd>
+<div class="block">Appends the <a href="io/servicetalk/transport/api/LateConnectionAcceptor.html" title="interface in io.servicetalk.transport.api"><code>LateConnectionAcceptor</code></a> to be called when a new connection has been created.</div>
 </dd>
 <dt><a href="io/servicetalk/http/api/DelegatingHttpServerBuilder.html#appendNonOffloadingServiceFilter(io.servicetalk.http.api.StreamingHttpServiceFilterFactory)" class="member-name-link">appendNonOffloadingServiceFilter(StreamingHttpServiceFilterFactory)</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/DelegatingHttpServerBuilder.html" title="class in io.servicetalk.http.api">DelegatingHttpServerBuilder</a></dt>
 <dd>&nbsp;</dd>
@@ -2142,6 +2172,12 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/tcp/netty/internal/TcpServerBinder.html#bind(java.net.SocketAddress,io.servicetalk.tcp.netty.internal.ReadOnlyTcpServerConfig,boolean,io.servicetalk.transport.api.ExecutionContext,io.servicetalk.transport.netty.internal.InfluencerConnectionAcceptor,java.util.function.BiFunction,java.util.function.Consumer)" class="member-name-link">bind(SocketAddress, ReadOnlyTcpServerConfig, boolean, ExecutionContext&lt;?&gt;, InfluencerConnectionAcceptor, BiFunction&lt;Channel, ConnectionObserver, Single&lt;CC&gt;&gt;, Consumer&lt;CC&gt;)</a> - Static method in class io.servicetalk.tcp.netty.internal.<a href="io/servicetalk/tcp/netty/internal/TcpServerBinder.html" title="class in io.servicetalk.tcp.netty.internal">TcpServerBinder</a></dt>
 <dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">use the bind method with early and late acceptors instead.</div>
+</div>
+</dd>
+<dt><a href="io/servicetalk/tcp/netty/internal/TcpServerBinder.html#bind(java.net.SocketAddress,io.servicetalk.tcp.netty.internal.ReadOnlyTcpServerConfig,io.servicetalk.transport.api.ExecutionContext,io.servicetalk.transport.netty.internal.InfluencerConnectionAcceptor,java.util.function.BiFunction,java.util.function.Consumer,io.servicetalk.transport.api.EarlyConnectionAcceptor,io.servicetalk.transport.api.LateConnectionAcceptor)" class="member-name-link">bind(SocketAddress, ReadOnlyTcpServerConfig, ExecutionContext&lt;?&gt;, InfluencerConnectionAcceptor, BiFunction&lt;Channel, ConnectionObserver, Single&lt;CC&gt;&gt;, Consumer&lt;CC&gt;, EarlyConnectionAcceptor, LateConnectionAcceptor)</a> - Static method in class io.servicetalk.tcp.netty.internal.<a href="io/servicetalk/tcp/netty/internal/TcpServerBinder.html" title="class in io.servicetalk.tcp.netty.internal">TcpServerBinder</a></dt>
+<dd>
 <div class="block">Create a <a href="io/servicetalk/transport/api/ServerContext.html" title="interface in io.servicetalk.transport.api"><code>ServerContext</code></a> that represents a socket which is bound and listening on the
  <code>listenAddress</code>.</div>
 </dd>
@@ -2978,6 +3014,40 @@ loadScripts(document, 'script');</script>
  then <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html#getCause()" title="class or interface in java.lang" class="external-link"><code>Throwable.getCause()</code></a>.</div>
 </div>
 </dd>
+<dt><a href="io/servicetalk/transport/api/CertificateCompressionAlgorithm.html" class="type-name-link" title="interface in io.servicetalk.transport.api">CertificateCompressionAlgorithm</a> - Interface in <a href="io/servicetalk/transport/api/package-summary.html">io.servicetalk.transport.api</a></dt>
+<dd>
+<div class="block">Represents an algorithm that can compress and decompress SSL certificates.</div>
+</dd>
+<dt><a href="io/servicetalk/transport/api/DelegatingSslConfig.html#certificateCompressionAlgorithms()" class="member-name-link">certificateCompressionAlgorithms()</a> - Method in class io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/DelegatingSslConfig.html" title="class in io.servicetalk.transport.api">DelegatingSslConfig</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/transport/api/SslConfig.html#certificateCompressionAlgorithms()" class="member-name-link">certificateCompressionAlgorithms()</a> - Method in interface io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/SslConfig.html" title="interface in io.servicetalk.transport.api">SslConfig</a></dt>
+<dd>
+<div class="block">Get the list of usable <a href="io/servicetalk/transport/api/CertificateCompressionAlgorithm.html" title="interface in io.servicetalk.transport.api"><code>CertificateCompressionAlgorithms</code></a> to advertise.</div>
+</dd>
+<dt><a href="io/servicetalk/transport/api/ServerSslConfigBuilder.html#certificateCompressionAlgorithms(io.servicetalk.transport.api.CertificateCompressionAlgorithm...)" class="member-name-link">certificateCompressionAlgorithms(CertificateCompressionAlgorithm...)</a> - Method in class io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/ServerSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ServerSslConfigBuilder</a></dt>
+<dd>
+<div class="block">Sets the certificate compression algorithms to advertise if the feature is supported at runtime.</div>
+</dd>
+<dt><a href="io/servicetalk/transport/api/ServerSslConfigBuilder.html#certificateCompressionAlgorithms(java.util.List)" class="member-name-link">certificateCompressionAlgorithms(List&lt;CertificateCompressionAlgorithm&gt;)</a> - Method in class io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/ServerSslConfigBuilder.html" title="class in io.servicetalk.transport.api">ServerSslConfigBuilder</a></dt>
+<dd>
+<div class="block">Sets the certificate compression algorithms to advertise if the feature is supported at runtime.</div>
+</dd>
+<dt><a href="io/servicetalk/transport/api/CertificateCompressionAlgorithms.html" class="type-name-link" title="class in io.servicetalk.transport.api">CertificateCompressionAlgorithms</a> - Class in <a href="io/servicetalk/transport/api/package-summary.html">io.servicetalk.transport.api</a></dt>
+<dd>
+<div class="block">A factory to create <a href="io/servicetalk/transport/api/CertificateCompressionAlgorithm.html" title="interface in io.servicetalk.transport.api"><code>Certificate Compression Algorithms</code></a>.</div>
+</dd>
+<dt><a href="io/servicetalk/transport/api/CertificateCompressionException.html" class="type-name-link" title="class in io.servicetalk.transport.api">CertificateCompressionException</a> - Exception in <a href="io/servicetalk/transport/api/package-summary.html">io.servicetalk.transport.api</a></dt>
+<dd>
+<div class="block">When thrown contains information about a failure during TLS certificate compression.</div>
+</dd>
+<dt><a href="io/servicetalk/transport/api/CertificateCompressionException.html#%3Cinit%3E(java.lang.String)" class="member-name-link">CertificateCompressionException(String)</a> - Constructor for exception io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/CertificateCompressionException.html" title="class in io.servicetalk.transport.api">CertificateCompressionException</a></dt>
+<dd>
+<div class="block">Create a new <a href="io/servicetalk/transport/api/CertificateCompressionException.html" title="class in io.servicetalk.transport.api"><code>CertificateCompressionException</code></a> with just a message.</div>
+</dd>
+<dt><a href="io/servicetalk/transport/api/CertificateCompressionException.html#%3Cinit%3E(java.lang.String,java.lang.Throwable)" class="member-name-link">CertificateCompressionException(String, Throwable)</a> - Constructor for exception io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/CertificateCompressionException.html" title="class in io.servicetalk.transport.api">CertificateCompressionException</a></dt>
+<dd>
+<div class="block">Create a new <a href="io/servicetalk/transport/api/CertificateCompressionException.html" title="class in io.servicetalk.transport.api"><code>CertificateCompressionException</code></a> with message and cause.</div>
+</dd>
 <dt><a href="io/servicetalk/http/api/RedirectConfigBuilder.html#changePostToGet(boolean)" class="member-name-link">changePostToGet(boolean)</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/RedirectConfigBuilder.html" title="class in io.servicetalk.http.api">RedirectConfigBuilder</a></dt>
 <dd>
 <div class="block">Enforces change of the request method from <a href="io/servicetalk/http/api/HttpRequestMethod.html#POST"><code>POST</code></a> to
@@ -3008,6 +3078,11 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/transport/netty/internal/ChannelCloseUtils.html#channelError(io.netty.channel.Channel)" class="member-name-link">channelError(Channel)</a> - Static method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/ChannelCloseUtils.html" title="class in io.servicetalk.transport.netty.internal">ChannelCloseUtils</a></dt>
 <dd>
 <div class="block">Returns an <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link"><code>error</code></a> associated with the passed <code>Channel</code>.</div>
+</dd>
+<dt><a href="io/servicetalk/transport/netty/internal/ExecutionContextUtils.html#channelExecutionContext(io.netty.channel.Channel,io.servicetalk.transport.api.ExecutionContext)" class="member-name-link">channelExecutionContext(Channel, ExecutionContext&lt;ES&gt;)</a> - Static method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/ExecutionContextUtils.html" title="class in io.servicetalk.transport.netty.internal">ExecutionContextUtils</a></dt>
+<dd>
+<div class="block">Utility that maps <code>Channel.eventLoop()</code> into <a href="io/servicetalk/transport/api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a> and caches the result for future mappings
+ to reduce allocations.</div>
 </dd>
 <dt><a href="io/servicetalk/transport/netty/internal/ByteToMessageDecoder.html#channelInactive(io.netty.channel.ChannelHandlerContext)" class="member-name-link">channelInactive(ChannelHandlerContext)</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/ByteToMessageDecoder.html" title="class in io.servicetalk.transport.netty.internal">ByteToMessageDecoder</a></dt>
 <dd>&nbsp;</dd>
@@ -3203,6 +3278,8 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Clears the health status record of a service.</div>
 </dd>
+<dt><a href="io/servicetalk/transport/netty/internal/ExecutionContextUtils.html#clearThreadLocal()" class="member-name-link">clearThreadLocal()</a> - Static method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/ExecutionContextUtils.html" title="class in io.servicetalk.transport.netty.internal">ExecutionContextUtils</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/api/HttpResponseStatus.StatusClass.html#CLIENT_ERROR_4XX" class="member-name-link">CLIENT_ERROR_4XX</a> - Enum constant in enum class io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpResponseStatus.StatusClass.html" title="enum class in io.servicetalk.http.api">HttpResponseStatus.StatusClass</a></dt>
 <dd>
 <div class="block"><a href="https://tools.ietf.org/html/rfc7231#section-6.5">Client Error 4xx</a>.</div>
@@ -3441,10 +3518,16 @@ loadScripts(document, 'script');</script>
 <div class="block">Attempts to close the configured <code>Reporter</code>.</div>
 </dd>
 <dt><a href="io/servicetalk/transport/api/ConnectionAcceptor.html#closeAsync()" class="member-name-link">closeAsync()</a> - Method in interface io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/ConnectionAcceptor.html" title="interface in io.servicetalk.transport.api">ConnectionAcceptor</a></dt>
-<dd>&nbsp;</dd>
+<dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+&nbsp;</dd>
 <dt><a href="io/servicetalk/transport/api/DelegatingConnectionAcceptor.html#closeAsync()" class="member-name-link">closeAsync()</a> - Method in class io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/DelegatingConnectionAcceptor.html" title="class in io.servicetalk.transport.api">DelegatingConnectionAcceptor</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/transport/api/DelegatingConnectionContext.html#closeAsync()" class="member-name-link">closeAsync()</a> - Method in class io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/DelegatingConnectionContext.html" title="class in io.servicetalk.transport.api">DelegatingConnectionContext</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/transport/api/EarlyConnectionAcceptor.html#closeAsync()" class="member-name-link">closeAsync()</a> - Method in interface io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/EarlyConnectionAcceptor.html" title="interface in io.servicetalk.transport.api">EarlyConnectionAcceptor</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/transport/api/LateConnectionAcceptor.html#closeAsync()" class="member-name-link">closeAsync()</a> - Method in interface io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/LateConnectionAcceptor.html" title="interface in io.servicetalk.transport.api">LateConnectionAcceptor</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/transport/netty/internal/ChannelSet.html#closeAsync()" class="member-name-link">closeAsync()</a> - Method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/ChannelSet.html" title="class in io.servicetalk.transport.netty.internal">ChannelSet</a></dt>
 <dd>&nbsp;</dd>
@@ -4001,11 +4084,15 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/transport/api/ConnectionAcceptor.html" class="type-name-link" title="interface in io.servicetalk.transport.api">ConnectionAcceptor</a> - Interface in <a href="io/servicetalk/transport/api/package-summary.html">io.servicetalk.transport.api</a></dt>
 <dd>
-<div class="block">A contract that defines the connection acceptance criterion.</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">use <a href="io/servicetalk/transport/api/LateConnectionAcceptor.html" title="interface in io.servicetalk.transport.api"><code>LateConnectionAcceptor</code></a> instead.</div>
+</div>
 </dd>
 <dt><a href="io/servicetalk/transport/api/ConnectionAcceptorFactory.html" class="type-name-link" title="interface in io.servicetalk.transport.api">ConnectionAcceptorFactory</a> - Interface in <a href="io/servicetalk/transport/api/package-summary.html">io.servicetalk.transport.api</a></dt>
 <dd>
-<div class="block">A factory of <a href="io/servicetalk/transport/api/ConnectionAcceptor.html" title="interface in io.servicetalk.transport.api"><code>ConnectionAcceptor</code></a>.</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">use <a href="io/servicetalk/transport/api/LateConnectionAcceptor.html" title="interface in io.servicetalk.transport.api"><code>LateConnectionAcceptor</code></a> instead.</div>
+</div>
 </dd>
 <dt><a href="io/servicetalk/transport/api/ConnectionObserver.html#connectionClosed()" class="member-name-link">connectionClosed()</a> - Method in interface io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/ConnectionObserver.html" title="interface in io.servicetalk.transport.api">ConnectionObserver</a></dt>
 <dd>
@@ -4667,6 +4754,7 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/transport/api/ConnectionAcceptorFactory.html#create(io.servicetalk.transport.api.ConnectionAcceptor)" class="member-name-link">create(ConnectionAcceptor)</a> - Method in interface io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/ConnectionAcceptorFactory.html" title="interface in io.servicetalk.transport.api">ConnectionAcceptorFactory</a></dt>
 <dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Create a <a href="io/servicetalk/transport/api/ConnectionAcceptor.html" title="interface in io.servicetalk.transport.api"><code>ConnectionAcceptor</code></a> using the provided <a href="io/servicetalk/transport/api/ConnectionAcceptor.html" title="interface in io.servicetalk.transport.api"><code>ConnectionAcceptor</code></a>.</div>
 </dd>
 <dt><a href="io/servicetalk/grpc/api/GrpcServiceFilterFactory.html#create(Service)" class="member-name-link">create(Service)</a> - Method in interface io.servicetalk.grpc.api.<a href="io/servicetalk/grpc/api/GrpcServiceFilterFactory.html" title="interface in io.servicetalk.grpc.api">GrpcServiceFilterFactory</a></dt>
@@ -5987,6 +6075,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">103 Early Hints</div>
 </dd>
+<dt><a href="io/servicetalk/transport/api/EarlyConnectionAcceptor.html" class="type-name-link" title="interface in io.servicetalk.transport.api">EarlyConnectionAcceptor</a> - Interface in <a href="io/servicetalk/transport/api/package-summary.html">io.servicetalk.transport.api</a></dt>
+<dd>
+<div class="block">Allows to accept or reject connections early in the connection setup stage.</div>
+</dd>
 <dt><a href="io/servicetalk/http/api/BlockingStreamingHttpResponseFactory.html#earlyHints()" class="member-name-link">earlyHints()</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/BlockingStreamingHttpResponseFactory.html" title="interface in io.servicetalk.http.api">BlockingStreamingHttpResponseFactory</a></dt>
 <dd>
 <div class="block">Create a new <a href="io/servicetalk/http/api/HttpResponseStatus.html#EARLY_HINTS"><code>HttpResponseStatus.EARLY_HINTS</code></a> response.</div>
@@ -6452,6 +6544,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/transport/netty/internal/ExecutionContextBuilder.html#%3Cinit%3E(io.servicetalk.transport.netty.internal.ExecutionContextBuilder)" class="member-name-link">ExecutionContextBuilder(ExecutionContextBuilder&lt;ES&gt;)</a> - Constructor for class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/ExecutionContextBuilder.html" title="class in io.servicetalk.transport.netty.internal">ExecutionContextBuilder</a></dt>
 <dd>
 <div class="block">Copy constructor.</div>
+</dd>
+<dt><a href="io/servicetalk/transport/netty/internal/ExecutionContextUtils.html" class="type-name-link" title="class in io.servicetalk.transport.netty.internal">ExecutionContextUtils</a> - Class in <a href="io/servicetalk/transport/netty/internal/package-summary.html">io.servicetalk.transport.netty.internal</a></dt>
+<dd>
+<div class="block">Provides utilities around Executors, ExecutionContexts and how they interact with netty Channels.</div>
 </dd>
 <dt><a href="io/servicetalk/grpc/api/GrpcExecutionContext.html#executionStrategy()" class="member-name-link">executionStrategy()</a> - Method in interface io.servicetalk.grpc.api.<a href="io/servicetalk/grpc/api/GrpcExecutionContext.html" title="interface in io.servicetalk.grpc.api">GrpcExecutionContext</a></dt>
 <dd>
@@ -7598,6 +7694,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Creates a <a href="io/servicetalk/concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> which when subscribed will invoke <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/Callable.html#call()" title="class or interface in java.util.concurrent" class="external-link"><code>Callable.call()</code></a> on the passed
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/Callable.html" title="class or interface in java.util.concurrent" class="external-link"><code>Callable</code></a> and emit the value returned by that invocation from the returned <a href="io/servicetalk/concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a>.</div>
+</dd>
+<dt><a href="io/servicetalk/transport/netty/internal/ExecutionContextUtils.html#fromChannel(io.netty.channel.Channel,boolean)" class="member-name-link">fromChannel(Channel, boolean)</a> - Static method in class io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/ExecutionContextUtils.html" title="class in io.servicetalk.transport.netty.internal">ExecutionContextUtils</a></dt>
+<dd>
+<div class="block">Creates an <a href="io/servicetalk/transport/api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a> around the Channel <code>EventLoop</code>.</div>
 </dd>
 <dt><a href="io/servicetalk/grpc/api/GrpcStatus.html#fromCodeValue(int)" class="member-name-link">fromCodeValue(int)</a> - Static method in class io.servicetalk.grpc.api.<a href="io/servicetalk/grpc/api/GrpcStatus.html" title="class in io.servicetalk.grpc.api">GrpcStatus</a></dt>
 <dd>
@@ -9913,6 +10013,7 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/transport/api/ConnectionAcceptorFactory.html#identity()" class="member-name-link">identity()</a> - Static method in interface io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/ConnectionAcceptorFactory.html" title="interface in io.servicetalk.transport.api">ConnectionAcceptorFactory</a></dt>
 <dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Returns a function that always returns its input <a href="io/servicetalk/transport/api/ConnectionAcceptor.html" title="interface in io.servicetalk.transport.api"><code>ConnectionAcceptor</code></a>.</div>
 </dd>
 <dt><a href="io/servicetalk/encoding/api/Identity.html" class="type-name-link" title="class in io.servicetalk.encoding.api">Identity</a> - Class in <a href="io/servicetalk/encoding/api/package-summary.html">io.servicetalk.encoding.api</a></dt>
@@ -10787,7 +10888,11 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/dns/discovery/netty/DnsResolverAddressTypes.html#IPV4_PREFERRED" class="member-name-link">IPV4_PREFERRED</a> - Enum constant in enum class io.servicetalk.dns.discovery.netty.<a href="io/servicetalk/dns/discovery/netty/DnsResolverAddressTypes.html" title="enum class in io.servicetalk.dns.discovery.netty">DnsResolverAddressTypes</a></dt>
 <dd>
-<div class="block">Prefer IPv4 addresses over IPv6 ones.</div>
+<div class="block">Attempt to resolve both, prefer IPv4 addresses over IPv6 ones.</div>
+</dd>
+<dt><a href="io/servicetalk/dns/discovery/netty/DnsResolverAddressTypes.html#IPV4_PREFERRED_RETURN_ALL" class="member-name-link">IPV4_PREFERRED_RETURN_ALL</a> - Enum constant in enum class io.servicetalk.dns.discovery.netty.<a href="io/servicetalk/dns/discovery/netty/DnsResolverAddressTypes.html" title="enum class in io.servicetalk.dns.discovery.netty">DnsResolverAddressTypes</a></dt>
+<dd>
+<div class="block">Attempt to resolve IPv4 and IPv6 addresses, return all results.</div>
 </dd>
 <dt><a href="io/servicetalk/dns/discovery/netty/DnsResolverAddressTypes.html#IPV6_ONLY" class="member-name-link">IPV6_ONLY</a> - Enum constant in enum class io.servicetalk.dns.discovery.netty.<a href="io/servicetalk/dns/discovery/netty/DnsResolverAddressTypes.html" title="enum class in io.servicetalk.dns.discovery.netty">DnsResolverAddressTypes</a></dt>
 <dd>
@@ -10795,7 +10900,11 @@ loadScripts(document, 'script');</script>
 </dd>
 <dt><a href="io/servicetalk/dns/discovery/netty/DnsResolverAddressTypes.html#IPV6_PREFERRED" class="member-name-link">IPV6_PREFERRED</a> - Enum constant in enum class io.servicetalk.dns.discovery.netty.<a href="io/servicetalk/dns/discovery/netty/DnsResolverAddressTypes.html" title="enum class in io.servicetalk.dns.discovery.netty">DnsResolverAddressTypes</a></dt>
 <dd>
-<div class="block">Prefer IPv6 addresses over IPv4 ones.</div>
+<div class="block">Attempt to resolve both, prefer IPv6 addresses over IPv4 ones.</div>
+</dd>
+<dt><a href="io/servicetalk/dns/discovery/netty/DnsResolverAddressTypes.html#IPV6_PREFERRED_RETURN_ALL" class="member-name-link">IPV6_PREFERRED_RETURN_ALL</a> - Enum constant in enum class io.servicetalk.dns.discovery.netty.<a href="io/servicetalk/dns/discovery/netty/DnsResolverAddressTypes.html" title="enum class in io.servicetalk.dns.discovery.netty">DnsResolverAddressTypes</a></dt>
+<dd>
+<div class="block">Attempt to resolve IPv6 and IPv4 addresses, return all results.</div>
 </dd>
 <dt><a href="io/servicetalk/tcp/netty/internal/ReadOnlyTcpServerConfig.html#isAlpnConfigured()" class="member-name-link">isAlpnConfigured()</a> - Method in class io.servicetalk.tcp.netty.internal.<a href="io/servicetalk/tcp/netty/internal/ReadOnlyTcpServerConfig.html" title="class in io.servicetalk.tcp.netty.internal">ReadOnlyTcpServerConfig</a></dt>
 <dd>
@@ -11253,6 +11362,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Get the last seen value.</div>
+</dd>
+<dt><a href="io/servicetalk/transport/api/LateConnectionAcceptor.html" class="type-name-link" title="interface in io.servicetalk.transport.api">LateConnectionAcceptor</a> - Interface in <a href="io/servicetalk/transport/api/package-summary.html">io.servicetalk.transport.api</a></dt>
+<dd>
+<div class="block">Allows to accept or reject connections later in the connection setup stage.</div>
 </dd>
 <dt><a href="io/servicetalk/concurrent/internal/LatestValueSubscriber.html" class="type-name-link" title="class in io.servicetalk.concurrent.internal">LatestValueSubscriber</a>&lt;<a href="io/servicetalk/concurrent/internal/LatestValueSubscriber.html" title="type parameter in LatestValueSubscriber">T</a>&gt; - Class in <a href="io/servicetalk/concurrent/internal/package-summary.html">io.servicetalk.concurrent.internal</a></dt>
 <dd>
@@ -16515,11 +16628,20 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/transport/api/ConnectionAcceptorFactory.html#requiredOffloads()" class="member-name-link">requiredOffloads()</a> - Method in interface io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/ConnectionAcceptorFactory.html" title="interface in io.servicetalk.transport.api">ConnectionAcceptorFactory</a></dt>
 <dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Return an <a href="io/servicetalk/transport/api/ExecutionStrategy.html" title="interface in io.servicetalk.transport.api"><code>ExecutionStrategy</code></a> that describes the offloads required by the influencer.</div>
+</dd>
+<dt><a href="io/servicetalk/transport/api/EarlyConnectionAcceptor.html#requiredOffloads()" class="member-name-link">requiredOffloads()</a> - Method in interface io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/EarlyConnectionAcceptor.html" title="interface in io.servicetalk.transport.api">EarlyConnectionAcceptor</a></dt>
+<dd>
+<div class="block">Customize the offloading strategy for this acceptor.</div>
 </dd>
 <dt><a href="io/servicetalk/transport/api/ExecutionStrategyInfluencer.html#requiredOffloads()" class="member-name-link">requiredOffloads()</a> - Method in interface io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/ExecutionStrategyInfluencer.html" title="interface in io.servicetalk.transport.api">ExecutionStrategyInfluencer</a></dt>
 <dd>
 <div class="block">Return an <a href="io/servicetalk/transport/api/ExecutionStrategy.html" title="interface in io.servicetalk.transport.api"><code>ExecutionStrategy</code></a> that describes the offloads required by the influencer.</div>
+</dd>
+<dt><a href="io/servicetalk/transport/api/LateConnectionAcceptor.html#requiredOffloads()" class="member-name-link">requiredOffloads()</a> - Method in interface io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/LateConnectionAcceptor.html" title="interface in io.servicetalk.transport.api">LateConnectionAcceptor</a></dt>
+<dd>
+<div class="block">Customize the offloading strategy for this acceptor.</div>
 </dd>
 <dt><a href="io/servicetalk/transport/netty/internal/InfluencerConnectionAcceptor.html#requiredOffloads()" class="member-name-link">requiredOffloads()</a> - Method in interface io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/InfluencerConnectionAcceptor.html" title="interface in io.servicetalk.transport.netty.internal">InfluencerConnectionAcceptor</a></dt>
 <dd>&nbsp;</dd>
@@ -21723,6 +21845,7 @@ the order they are declared.</div>
 </dd>
 <dt><a href="io/servicetalk/transport/api/ConnectionAcceptorFactory.html#withStrategy(io.servicetalk.transport.api.ConnectionAcceptorFactory,io.servicetalk.transport.api.ConnectExecutionStrategy)" class="member-name-link">withStrategy(ConnectionAcceptorFactory, ConnectExecutionStrategy)</a> - Static method in interface io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/ConnectionAcceptorFactory.html" title="interface in io.servicetalk.transport.api">ConnectionAcceptorFactory</a></dt>
 <dd>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Wraps a <a href="io/servicetalk/transport/api/ConnectionAcceptorFactory.html" title="interface in io.servicetalk.transport.api"><code>ConnectionAcceptorFactory</code></a> to return a specific execution strategy.</div>
 </dd>
 <dt><a href="io/servicetalk/transport/netty/internal/InfluencerConnectionAcceptor.html#withStrategy(io.servicetalk.transport.api.ConnectionAcceptor,io.servicetalk.transport.api.ConnectExecutionStrategy)" class="member-name-link">withStrategy(ConnectionAcceptor, ConnectExecutionStrategy)</a> - Static method in interface io.servicetalk.transport.netty.internal.<a href="io/servicetalk/transport/netty/internal/InfluencerConnectionAcceptor.html" title="interface in io.servicetalk.transport.netty.internal">InfluencerConnectionAcceptor</a></dt>
@@ -22313,6 +22436,15 @@ the order they are declared.</div>
 <dd>
 <div class="block">Create a new <a href="io/servicetalk/concurrent/api/Single.html" title="class in io.servicetalk.concurrent.api"><code>Single</code></a> that emits the results of a specified zipper <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/BiFunction.html" title="class or interface in java.util.function" class="external-link"><code>BiFunction</code></a> to items emitted by
  <code>this</code> and <code>other</code>.</div>
+</dd>
+<dt><a href="io/servicetalk/transport/api/CertificateCompressionAlgorithms.html#ZLIB_ALGORITHM_ID" class="member-name-link">ZLIB_ALGORITHM_ID</a> - Static variable in class io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/CertificateCompressionAlgorithms.html" title="class in io.servicetalk.transport.api">CertificateCompressionAlgorithms</a></dt>
+<dd>
+<div class="block">Unique ZLIB algorithm ID as defined in
+ <a href="https://www.rfc-editor.org/rfc/rfc8879#name-compression-algorithms">RFC8879</a>.</div>
+</dd>
+<dt><a href="io/servicetalk/transport/api/CertificateCompressionAlgorithms.html#zlibDefault()" class="member-name-link">zlibDefault()</a> - Static method in class io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/CertificateCompressionAlgorithms.html" title="class in io.servicetalk.transport.api">CertificateCompressionAlgorithms</a></dt>
+<dd>
+<div class="block">Get the default ZLIB <a href="io/servicetalk/transport/api/CertificateCompressionAlgorithm.html" title="interface in io.servicetalk.transport.api"><code>CertificateCompressionAlgorithm</code></a>.</div>
 </dd>
 </dl>
 <a href="#I:A">A</a>&nbsp;<a href="#I:B">B</a>&nbsp;<a href="#I:C">C</a>&nbsp;<a href="#I:D">D</a>&nbsp;<a href="#I:E">E</a>&nbsp;<a href="#I:F">F</a>&nbsp;<a href="#I:G">G</a>&nbsp;<a href="#I:H">H</a>&nbsp;<a href="#I:I">I</a>&nbsp;<a href="#I:J">J</a>&nbsp;<a href="#I:K">K</a>&nbsp;<a href="#I:L">L</a>&nbsp;<a href="#I:M">M</a>&nbsp;<a href="#I:N">N</a>&nbsp;<a href="#I:O">O</a>&nbsp;<a href="#I:P">P</a>&nbsp;<a href="#I:Q">Q</a>&nbsp;<a href="#I:R">R</a>&nbsp;<a href="#I:S">S</a>&nbsp;<a href="#I:T">T</a>&nbsp;<a href="#I:U">U</a>&nbsp;<a href="#I:V">V</a>&nbsp;<a href="#I:W">W</a>&nbsp;<a href="#I:X">X</a>&nbsp;<a href="#I:Z">Z</a>&nbsp;<br><a href="allclasses-index.html">All&nbsp;Classes&nbsp;and&nbsp;Interfaces</a><span class="vertical-separator">|</span><a href="allpackages-index.html">All&nbsp;Packages</a><span class="vertical-separator">|</span><a href="constant-values.html">Constant&nbsp;Field&nbsp;Values</a><span class="vertical-separator">|</span><a href="serialized-form.html">Serialized&nbsp;Form</a></main>
