@@ -125,6 +125,7 @@ final class DefaultDnsClient implements DnsClient {
     private final boolean inactiveEventsOnError;
     private final long ttlJitterNanos;
     private final DnsResolverAddressTypes addressTypes;
+    private final String id;
     private boolean closed;
 
     DefaultDnsClient(final IoExecutor ioExecutor, final int minTTL, final long ttlJitterNanos,
@@ -137,7 +138,7 @@ final class DefaultDnsClient implements DnsClient {
                      @Nullable final DnsServerAddressStreamProvider dnsServerAddressStreamProvider,
                      @Nullable final DnsServiceDiscovererObserver observer,
                      final ServiceDiscovererEvent.Status missingRecordStatus,
-                     final int maxTTL) {
+                     final int maxTTL, final String id) {
         if (srvConcurrency <= 0) {
             throw new IllegalArgumentException("srvConcurrency: " + srvConcurrency + " (expected >0)");
         }
@@ -155,6 +156,7 @@ final class DefaultDnsClient implements DnsClient {
         this.ttlJitterNanos = ttlJitterNanos;
         this.observer = observer;
         this.missingRecordStatus = missingRecordStatus;
+        this.id = id;
         asyncCloseable = toAsyncCloseable(graceful -> {
             if (nettyIoExecutor.isCurrentThreadEventLoop()) {
                 closeAsync0();
@@ -198,8 +200,7 @@ final class DefaultDnsClient implements DnsClient {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + // FIXME: change to the name/id when builder requires it
-                '@' + toHexString(hashCode());
+        return id;
     }
 
     // visible for testing

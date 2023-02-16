@@ -21,7 +21,7 @@ import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.dns.discovery.netty.DefaultDnsServiceDiscovererBuilder;
+import io.servicetalk.dns.discovery.netty.DnsServiceDiscoverers;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.HostAndPort;
 
@@ -86,7 +86,7 @@ final class GlobalDnsServiceDiscoverer {
 
     private static final class HostAndPortClientInitializer {
         static final ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>>
-                HOST_PORT_SD = new DefaultDnsServiceDiscovererBuilder().buildARecordDiscoverer();
+                HOST_PORT_SD = DnsServiceDiscoverers.builder("global-host-port").buildARecordDiscoverer();
 
         static {
             LOGGER.debug("Initialized HostAndPortClientInitializer");
@@ -99,7 +99,7 @@ final class GlobalDnsServiceDiscoverer {
 
     private static final class SrvClientInitializer {
         static final ServiceDiscoverer<String, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>> SRV_SD =
-                new DefaultDnsServiceDiscovererBuilder().buildSrvDiscoverer();
+                DnsServiceDiscoverers.builder("global-srv").buildSrvDiscoverer();
 
         static {
             LOGGER.debug("Initialized SrvClientInitializer");

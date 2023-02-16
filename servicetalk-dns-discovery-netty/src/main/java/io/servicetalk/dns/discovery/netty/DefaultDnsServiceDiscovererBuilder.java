@@ -23,6 +23,7 @@ import io.servicetalk.transport.api.IoExecutor;
 import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
+import java.util.UUID;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.AVAILABLE;
@@ -39,7 +40,10 @@ import static java.util.Objects.requireNonNull;
  * Builder for <a href="https://tools.ietf.org/html/rfc1035">DNS</a> {@link ServiceDiscoverer} which will attempt to
  * resolve {@code A}, {@code AAAA}, {@code CNAME}, and  {@code SRV} type queries.
  */
-public final class DefaultDnsServiceDiscovererBuilder {
+public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDiscovererBuilder {
+
+    private final String id;
+
     @Nullable
     private DnsServerAddressStreamProvider dnsServerAddressStreamProvider;
     private DnsResolverAddressTypes dnsResolverAddressTypes = systemDefault();
@@ -69,11 +73,20 @@ public final class DefaultDnsServiceDiscovererBuilder {
     private ServiceDiscovererEvent.Status missingRecordStatus = EXPIRED;
 
     /**
-     * The minimum allowed TTL. This will be the minimum poll interval.
+     * Creates a new {@link DefaultDnsServiceDiscovererBuilder}.
      *
-     * @param minTTLSeconds The minimum amount of time a cache entry will be considered valid (in seconds).
-     * @return {@code this}.
+     * @deprecated use {@link DnsServiceDiscoverers#builder(String)} instead.
      */
+    @Deprecated
+    public DefaultDnsServiceDiscovererBuilder() {
+        this(UUID.randomUUID().toString());
+    }
+
+    DefaultDnsServiceDiscovererBuilder(final String id) {
+        this.id = requireNonNull(id);
+    }
+
+    @Override
     public DefaultDnsServiceDiscovererBuilder minTTL(final int minTTLSeconds) {
         if (minTTLSeconds <= 0) {
             throw new IllegalArgumentException("minTTLSeconds: " + minTTLSeconds + " (expected > 0)");
@@ -105,46 +118,27 @@ public final class DefaultDnsServiceDiscovererBuilder {
      * @param ttlJitter The jitter to apply to schedule the next query after TTL.
      * @return {@code this}.
      */
+    @Override
     public DefaultDnsServiceDiscovererBuilder ttlJitter(final Duration ttlJitter) {
         ensurePositive(ttlJitter, "jitter");
         this.ttlJitter = ttlJitter;
         return this;
     }
 
-    /**
-     * Set the {@link DnsServerAddressStreamProvider} which determines which DNS server should be used per query.
-     *
-     * @param dnsServerAddressStreamProvider the {@link DnsServerAddressStreamProvider} which determines which DNS
-     * server should be used per query.
-     * @return {@code this}.
-     */
+    @Override
     public DefaultDnsServiceDiscovererBuilder dnsServerAddressStreamProvider(
             @Nullable final DnsServerAddressStreamProvider dnsServerAddressStreamProvider) {
         this.dnsServerAddressStreamProvider = dnsServerAddressStreamProvider;
         return this;
     }
 
-    /**
-     * Enable the automatic inclusion of a optional records that tries to give the remote DNS server a hint about
-     * how much data the resolver can read per response. Some DNSServer may not support this and so fail to answer
-     * queries. If you find problems you may want to disable this.
-     *
-     * @param optResourceEnabled if optional records inclusion is enabled.
-     * @return {@code this}.
-     */
+    @Override
     public DefaultDnsServiceDiscovererBuilder optResourceEnabled(final boolean optResourceEnabled) {
         this.optResourceEnabled = optResourceEnabled;
         return this;
     }
 
-    /**
-     * Set the maximum size of the receiving UDP datagram (in bytes).
-     * <p>
-     * If the DNS response exceeds this amount the request will be automatically retried via TCP.
-     *
-     * @param maxUdpPayloadSize the maximum size of the receiving UDP datagram (in bytes)
-     * @return {@code this}.
-     */
+    @Override
     public DefaultDnsServiceDiscovererBuilder maxUdpPayloadSize(final int maxUdpPayloadSize) {
         if (maxUdpPayloadSize <= 0) {
             throw new IllegalArgumentException("maxUdpPayloadSize: " + maxUdpPayloadSize + " (expected > 0)");
@@ -153,35 +147,19 @@ public final class DefaultDnsServiceDiscovererBuilder {
         return this;
     }
 
-    /**
-     * Set the number of dots which must appear in a name before an initial absolute query is made.
-     *
-     * @param ndots the ndots value.
-     * @return {@code this}.
-     */
+    @Override
     public DefaultDnsServiceDiscovererBuilder ndots(final int ndots) {
         this.ndots = ndots;
         return this;
     }
 
-    /**
-     * Sets the timeout of each DNS query performed by this service discoverer.
-     *
-     * @param queryTimeout the query timeout value
-     * @return {@code this}.
-     */
+    @Override
     public DefaultDnsServiceDiscovererBuilder queryTimeout(final Duration queryTimeout) {
         this.queryTimeout = queryTimeout;
         return this;
     }
 
-    /**
-     * Sets the list of the protocol families of the address resolved.
-     *
-     * @param dnsResolverAddressTypes the address types or {@code null} to use the default value, based on "java.net"
-     * system properties: {@code java.net.preferIPv4Stack} and {@code java.net.preferIPv6Stack}.
-     * @return {@code this}.
-     */
+    @Override
     public DefaultDnsServiceDiscovererBuilder dnsResolverAddressTypes(
             @Nullable final DnsResolverAddressTypes dnsResolverAddressTypes) {
         this.dnsResolverAddressTypes = dnsResolverAddressTypes != null ? dnsResolverAddressTypes :
@@ -189,37 +167,19 @@ public final class DefaultDnsServiceDiscovererBuilder {
         return this;
     }
 
-    /**
-     * Sets the {@link IoExecutor}.
-     *
-     * @param ioExecutor {@link IoExecutor} to use.
-     * @return {@code this}.
-     */
+    @Override
     public DefaultDnsServiceDiscovererBuilder ioExecutor(final IoExecutor ioExecutor) {
         this.ioExecutor = ioExecutor;
         return this;
     }
 
-    /**
-     * Sets a {@link DnsServiceDiscovererObserver} that provides visibility into
-     * <a href="https://tools.ietf.org/html/rfc1034">DNS</a> {@link ServiceDiscoverer} built by this builder.
-     *
-     * @param observer a {@link DnsServiceDiscovererObserver} that provides visibility into
-     * <a href="https://tools.ietf.org/html/rfc1034">DNS</a> {@link ServiceDiscoverer} built by this builder
-     * @return {@code this}.
-     */
+    @Override
     public DefaultDnsServiceDiscovererBuilder observer(final DnsServiceDiscovererObserver observer) {
         this.observer = requireNonNull(observer);
         return this;
     }
 
-    /**
-     * Sets which {@link ServiceDiscovererEvent.Status} to use in {@link ServiceDiscovererEvent#status()} when a record
-     * for a previously seen address is missing in the response.
-     *
-     * @param status a {@link ServiceDiscovererEvent.Status} for missing records.
-     * @return {@code this}.
-     */
+    @Override
     public DefaultDnsServiceDiscovererBuilder missingRecordStatus(ServiceDiscovererEvent.Status status) {
         if (AVAILABLE.equals(status)) {
             throw new IllegalArgumentException(AVAILABLE + " status can not be used as missing records' status.");
@@ -228,27 +188,13 @@ public final class DefaultDnsServiceDiscovererBuilder {
         return this;
     }
 
-    /**
-     * Build a new {@link ServiceDiscoverer} which queries
-     * <a href="https://tools.ietf.org/html/rfc2782">SRV Resource Records</a> corresponding to {@code serviceName}. For
-     * each SRV answer capture the <strong>Port</strong> and resolve the <strong>Target</strong>.
-     * @return a new {@link ServiceDiscoverer} which queries
-     * <a href="https://tools.ietf.org/html/rfc2782">SRV Resource Records</a> corresponding to {@code serviceName}. For
-     * each SRV answer capture the <strong>Port</strong> and resolve the <strong>Target</strong>.
-     */
+    @Override
     public ServiceDiscoverer<String, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>>
     buildSrvDiscoverer() {
         return asSrvDiscoverer(build());
     }
 
-    /**
-     * Build a new {@link ServiceDiscoverer} which targets
-     * <a href="https://tools.ietf.org/html/rfc1035">host addresses</a> (e.g. A or AAAA records) and uses
-     * a fixed port derived from the {@link HostAndPort}.
-     * @return a new {@link ServiceDiscoverer} which targets
-     * <a href="https://tools.ietf.org/html/rfc1035">host addresses</a> (e.g. A or AAAA records) and uses
-     * a fixed port derived from the {@link HostAndPort}.
-     */
+    @Override
     public ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>>
     buildARecordDiscoverer() {
         return asHostAndPortDiscoverer(build());
@@ -333,7 +279,7 @@ public final class DefaultDnsServiceDiscovererBuilder {
                 inactiveEventsOnError, completeOncePreferredResolved, srvFilterDuplicateEvents,
                 srvHostNameRepeatInitialDelay, srvHostNameRepeatJitter, maxUdpPayloadSize, ndots, optResourceEnabled,
                 queryTimeout, dnsResolverAddressTypes, dnsServerAddressStreamProvider, observer, missingRecordStatus,
-                maxTTLSeconds);
+                maxTTLSeconds, id);
         return filterFactory == null ? rawClient : filterFactory.create(rawClient);
     }
 }

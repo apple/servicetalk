@@ -84,7 +84,7 @@ class DnsServiceDiscovererObserverTest {
     }
 
     private DnsClient dnsClient(DnsServiceDiscovererObserver observer) {
-        return toClose.append(new DefaultDnsServiceDiscovererBuilder()
+        return toClose.append(new DefaultDnsServiceDiscovererBuilder("test")
                 .observer(observer)
                 .dnsResolverAddressTypes(DnsResolverAddressTypes.IPV4_PREFERRED)
                 .optResourceEnabled(false)
