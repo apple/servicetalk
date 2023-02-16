@@ -114,6 +114,7 @@ final class DefaultDnsClient implements DnsClient {
     private final EventLoopAwareNettyIoExecutor nettyIoExecutor;
     private final DnsNameResolver resolver;
     private final MinTtlCache ttlCache;
+    private final int maxTTL;
     private final ListenableAsyncCloseable asyncCloseable;
     @Nullable
     private final DnsServiceDiscovererObserver observer;
@@ -135,10 +136,12 @@ final class DefaultDnsClient implements DnsClient {
                      final DnsResolverAddressTypes dnsResolverAddressTypes,
                      @Nullable final DnsServerAddressStreamProvider dnsServerAddressStreamProvider,
                      @Nullable final DnsServiceDiscovererObserver observer,
-                     final ServiceDiscovererEvent.Status missingRecordStatus) {
+                     final ServiceDiscovererEvent.Status missingRecordStatus,
+                     final int maxTTL) {
         if (srvConcurrency <= 0) {
             throw new IllegalArgumentException("srvConcurrency: " + srvConcurrency + " (expected >0)");
         }
+        this.maxTTL = maxTTL;
         this.srvConcurrency = srvConcurrency;
         this.srvFilterDuplicateEvents = srvFilterDuplicateEvents;
         this.inactiveEventsOnError = inactiveEventsOnError;
@@ -147,7 +150,7 @@ final class DefaultDnsClient implements DnsClient {
         // We must use nettyIoExecutor for the repeater for thread safety!
         srvHostNameRepeater = repeatWithConstantBackoffDeltaJitter(
                 srvHostNameRepeatInitialDelay, srvHostNameRepeatJitter, nettyIoExecutor);
-        this.ttlCache = new MinTtlCache(new DefaultDnsCache(minTTL, Integer.MAX_VALUE, minTTL), minTTL,
+        this.ttlCache = new MinTtlCache(new DefaultDnsCache(minTTL, maxTTL, minTTL), minTTL,
                 nettyIoExecutor);
         this.ttlJitterNanos = ttlJitterNanos;
         this.observer = observer;
@@ -341,7 +344,7 @@ final class DefaultDnsClient implements DnsClient {
                                     promise.tryFailure(cause);
                                 } else {
                                     final DnsAnswer<HostAndPort> dnsAnswer;
-                                    long minTTLSeconds = Long.MAX_VALUE;
+                                    long answerTTL = Long.MAX_VALUE;
                                     List<DnsRecord> toRelease = null;
                                     try {
                                         @SuppressWarnings("unchecked")
@@ -353,8 +356,14 @@ final class DefaultDnsClient implements DnsClient {
                                                 throw new IllegalArgumentException(
                                                         "Unsupported DNS record type for SRV query: " + dnsRecord);
                                             }
-                                            if (dnsRecord.timeToLive() < minTTLSeconds) {
-                                                minTTLSeconds = dnsRecord.timeToLive();
+                                            if (dnsRecord.timeToLive() < answerTTL) {
+                                                answerTTL = dnsRecord.timeToLive();
+                                            }
+                                            if (answerTTL > maxTTL) {
+                                                answerTTL = maxTTL;
+                                                LOGGER.info("DNS Record {} has a high TTL of {}s which is " +
+                                                        "larger than maxTTL of {}, capping to maxTTL.",
+                                                        dnsRecord, dnsRecord.timeToLive(), maxTTL);
                                             }
                                             ByteBuf content = ((DnsRawRecord) dnsRecord).content();
                                             // https://tools.ietf.org/html/rfc2782
@@ -365,8 +374,8 @@ final class DefaultDnsClient implements DnsClient {
                                         }
                                         LOGGER.trace("{} original result for {}: {}, minTTL: {} second(s).",
                                                 DefaultDnsClient.this, SrvRecordPublisher.this,
-                                                completedFuture.getNow(), minTTLSeconds);
-                                        dnsAnswer = new DnsAnswer<>(hostAndPorts, SECONDS.toNanos(minTTLSeconds));
+                                                completedFuture.getNow(), answerTTL);
+                                        dnsAnswer = new DnsAnswer<>(hostAndPorts, SECONDS.toNanos(answerTTL));
                                     } catch (Throwable cause2) {
                                         promise.tryFailure(cause2);
                                         return;
