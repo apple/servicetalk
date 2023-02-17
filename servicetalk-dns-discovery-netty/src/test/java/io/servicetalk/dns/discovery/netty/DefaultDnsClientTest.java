@@ -984,6 +984,25 @@ class DefaultDnsClientTest {
         latchOnError.await();
     }
 
+    @Test
+    void capsMaxTTL() throws Exception {
+        setup(builder -> builder.maxTTL(3));
+        final String domain = "servicetalk.io";
+        String ip = nextIp();
+        recordStore.addIPv4Address(domain, 5, ip);
+
+        TestPublisherSubscriber<ServiceDiscovererEvent<InetAddress>> subscriber = dnsQuery(domain);
+        Subscription subscription = subscriber.awaitSubscription();
+        subscription.request(Long.MAX_VALUE);
+
+        System.err.println(subscriber.takeOnNext());
+        recordStore.removeIPv4Address(domain, 1, ip);
+        advanceTime(3);
+        System.err.println(subscriber.takeOnNext());
+
+        //assertEvent(subscriber.takeOnNext(), ipv6, AVAILABLE);
+    }
+
     private static <T> Subscriber<ServiceDiscovererEvent<T>> mockThrowSubscriber(
             CountDownLatch latchOnError, Queue<ServiceDiscovererEvent<T>> queue) {
         @SuppressWarnings("unchecked")

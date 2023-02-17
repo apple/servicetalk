@@ -114,7 +114,7 @@ final class DefaultDnsClient implements DnsClient {
     private final EventLoopAwareNettyIoExecutor nettyIoExecutor;
     private final DnsNameResolver resolver;
     private final MinTtlCache ttlCache;
-    private final int maxTTL;
+    private final long maxTTLNanos;
     private final ListenableAsyncCloseable asyncCloseable;
     @Nullable
     private final DnsServiceDiscovererObserver observer;
@@ -141,7 +141,7 @@ final class DefaultDnsClient implements DnsClient {
         if (srvConcurrency <= 0) {
             throw new IllegalArgumentException("srvConcurrency: " + srvConcurrency + " (expected >0)");
         }
-        this.maxTTL = maxTTL;
+        this.maxTTLNanos = SECONDS.toNanos(maxTTL);
         this.srvConcurrency = srvConcurrency;
         this.srvFilterDuplicateEvents = srvFilterDuplicateEvents;
         this.inactiveEventsOnError = inactiveEventsOnError;
@@ -344,7 +344,7 @@ final class DefaultDnsClient implements DnsClient {
                                     promise.tryFailure(cause);
                                 } else {
                                     final DnsAnswer<HostAndPort> dnsAnswer;
-                                    long answerTTL = Long.MAX_VALUE;
+                                    long minTTLSeconds = Long.MAX_VALUE;
                                     List<DnsRecord> toRelease = null;
                                     try {
                                         @SuppressWarnings("unchecked")
@@ -356,14 +356,8 @@ final class DefaultDnsClient implements DnsClient {
                                                 throw new IllegalArgumentException(
                                                         "Unsupported DNS record type for SRV query: " + dnsRecord);
                                             }
-                                            if (dnsRecord.timeToLive() < answerTTL) {
-                                                answerTTL = dnsRecord.timeToLive();
-                                            }
-                                            if (answerTTL > maxTTL) {
-                                                answerTTL = maxTTL;
-                                                LOGGER.info("DNS Record {} has a high TTL of {}s which is " +
-                                                        "larger than maxTTL of {}, capping to maxTTL.",
-                                                        dnsRecord, dnsRecord.timeToLive(), maxTTL);
+                                            if (dnsRecord.timeToLive() < minTTLSeconds) {
+                                                minTTLSeconds = dnsRecord.timeToLive();
                                             }
                                             ByteBuf content = ((DnsRawRecord) dnsRecord).content();
                                             // https://tools.ietf.org/html/rfc2782
@@ -374,8 +368,8 @@ final class DefaultDnsClient implements DnsClient {
                                         }
                                         LOGGER.trace("{} original result for {}: {}, minTTL: {} second(s).",
                                                 DefaultDnsClient.this, SrvRecordPublisher.this,
-                                                completedFuture.getNow(), answerTTL);
-                                        dnsAnswer = new DnsAnswer<>(hostAndPorts, SECONDS.toNanos(answerTTL));
+                                                completedFuture.getNow(), minTTLSeconds);
+                                        dnsAnswer = new DnsAnswer<>(hostAndPorts, SECONDS.toNanos(minTTLSeconds));
                                     } catch (Throwable cause2) {
                                         promise.tryFailure(cause2);
                                         return;
@@ -733,7 +727,15 @@ final class DefaultDnsClient implements DnsClient {
                             comparator(), resolutionObserver == null ? null : (nAvailable, nMissing) ->
                                     reportResolutionResult(resolutionObserver, dnsAnswer, nAvailable, nMissing),
                             missingRecordStatus);
+
                     ttlNanos = dnsAnswer.ttlNanos();
+                    if (ttlNanos > maxTTLNanos) {
+                        LOGGER.info("{} DNS Record {} has a high TTL of {}ms which is larger than maxTTL of {}ms, " +
+                                        "capping to maxTTL.", DefaultDnsClient.this, addresses,
+                                NANOSECONDS.toMillis(ttlNanos), NANOSECONDS.toMillis(maxTTLNanos));
+                        ttlNanos = maxTTLNanos;
+                    }
+
                     if (events != null) {
                         activeAddresses = addresses;
                         if (--pendingRequests > 0) {
