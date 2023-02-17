@@ -26,9 +26,15 @@ import io.netty.handler.ssl.OpenSslCertificateCompressionConfig;
 import io.netty.handler.ssl.OpenSslContextOption;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
+import io.netty.handler.ssl.SslContextOption;
 import io.netty.handler.ssl.SslProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.util.List;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
@@ -38,11 +44,32 @@ import javax.net.ssl.SSLException;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.closeAndRethrowUnchecked;
 import static io.servicetalk.transport.netty.internal.SslUtils.nettyApplicationProtocol;
 import static io.servicetalk.transport.netty.internal.SslUtils.toNettySslProvider;
+import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
 
 /**
  * A factory for creating {@link SslContext}s.
  */
 public final class SslContextFactory {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SslContextFactory.class);
+
+    @Nullable
+    private static final MethodHandle SSL_PROVIDER_OPTION_SUPPORTED;
+
+    static {
+        MethodHandle sslProviderOptionSupported;
+        try {
+            sslProviderOptionSupported = MethodHandles.publicLookup().findStatic(
+                    SslProvider.class, "isOptionSupported",
+                    MethodType.methodType(boolean.class, SslProvider.class, SslContextOption.class));
+        } catch (Throwable cause) {
+            LOGGER.debug("SSLProvider#isOptionSupported(SslProvider, SslContextOption) is available only " +
+                    "starting from Netty 4.1.88.Final. Detected Netty version: {}",
+                    SslProvider.class.getPackage().getImplementationVersion(), cause);
+            sslProviderOptionSupported = null;
+        }
+        SSL_PROVIDER_OPTION_SUPPORTED = sslProviderOptionSupported;
+    }
 
     private SslContextFactory() {
         // No instances.
@@ -186,7 +213,7 @@ public final class SslContextFactory {
                                                         @Nullable io.netty.handler.ssl.SslProvider nettySslProvider,
                                                         boolean forServer) {
         final List<CertificateCompressionAlgorithm> algorithms = config.certificateCompressionAlgorithms();
-        if (algorithms == null || algorithms.isEmpty()) {
+        if (algorithms == null || algorithms.isEmpty() || SSL_PROVIDER_OPTION_SUPPORTED == null) {
             return;
         }
 
@@ -194,8 +221,14 @@ public final class SslContextFactory {
             nettySslProvider = forServer ? SslContext.defaultServerProvider() : SslContext.defaultClientProvider();
         }
 
-        if (!SslProvider.isOptionSupported(nettySslProvider, OpenSslContextOption.CERTIFICATE_COMPRESSION_ALGORITHMS)) {
-            return;
+        try {
+            boolean compressionSupported = (boolean) SSL_PROVIDER_OPTION_SUPPORTED.invokeExact(
+                    nettySslProvider, (SslContextOption<?>) OpenSslContextOption.CERTIFICATE_COMPRESSION_ALGORITHMS);
+            if (!compressionSupported) {
+                return;
+            }
+        } catch (Throwable throwable) {
+            throwException(throwable);
         }
 
         final OpenSslCertificateCompressionConfig.Builder configBuilder =
