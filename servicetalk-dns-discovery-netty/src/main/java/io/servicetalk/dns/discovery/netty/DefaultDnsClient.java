@@ -93,6 +93,7 @@ import static io.servicetalk.transport.netty.internal.BuilderUtils.datagramChann
 import static io.servicetalk.transport.netty.internal.BuilderUtils.socketChannel;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
 import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
+import static java.lang.Integer.toHexString;
 import static java.nio.ByteBuffer.wrap;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
@@ -192,6 +193,12 @@ final class DefaultDnsClient implements DnsClient {
         resolver = builder.build();
     }
 
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + // FIXME: change to the name/id when builder requires it
+                '@' + toHexString(hashCode());
+    }
+
     // visible for testing
     MinTtlCache ttlCache() {
         return ttlCache;
@@ -205,8 +212,8 @@ final class DefaultDnsClient implements DnsClient {
         try {
             return observer.onNewDiscovery(address);
         } catch (Throwable unexpected) {
-            LOGGER.warn("Unexpected exception from {} while reporting new DNS discovery for {}",
-                    observer, address, unexpected);
+            LOGGER.warn("{} unexpected exception from {} while reporting new DNS discovery for {}",
+                    DefaultDnsClient.this, observer, address, unexpected);
             return null;
         }
     }
@@ -317,7 +324,7 @@ final class DefaultDnsClient implements DnsClient {
 
         @Override
         public String toString() {
-            return "SRV lookups for " + name;
+            return "SRV records of " + name + " @" + toHexString(hashCode());
         }
 
         @Override
@@ -333,8 +340,6 @@ final class DefaultDnsClient implements DnsClient {
                                 if (cause != null) {
                                     promise.tryFailure(cause);
                                 } else {
-                                    LOGGER.trace("DnsClient {}, original result for {}: {}",
-                                            DefaultDnsClient.this, SrvRecordPublisher.this, completedFuture.getNow());
                                     final DnsAnswer<HostAndPort> dnsAnswer;
                                     long minTTLSeconds = Long.MAX_VALUE;
                                     List<DnsRecord> toRelease = null;
@@ -358,6 +363,9 @@ final class DefaultDnsClient implements DnsClient {
                                             final int port = content.readUnsignedShort();
                                             hostAndPorts.add(HostAndPort.of(decodeName(content), port));
                                         }
+                                        LOGGER.trace("{} original result for {}: {}, minTTL: {} second(s).",
+                                                DefaultDnsClient.this, SrvRecordPublisher.this,
+                                                completedFuture.getNow(), minTTLSeconds);
                                         dnsAnswer = new DnsAnswer<>(hostAndPorts, SECONDS.toNanos(minTTLSeconds));
                                     } catch (Throwable cause2) {
                                         promise.tryFailure(cause2);
@@ -390,7 +398,7 @@ final class DefaultDnsClient implements DnsClient {
 
         @Override
         public String toString() {
-            return "A* lookups for " + name;
+            return "A* records of " + name + " @" + toHexString(hashCode());
         }
 
         @Override
@@ -407,12 +415,14 @@ final class DefaultDnsClient implements DnsClient {
                         if (cause != null) {
                             dnsAnswerPromise.tryFailure(cause);
                         } else {
-                            LOGGER.trace("DnsClient {}, original result for {}: {}",
-                                    DefaultDnsClient.this, ARecordPublisher.this, completedFuture.getNow());
                             final DnsAnswer<InetAddress> dnsAnswer;
+                            final long minTTLSeconds = ttlCache.minTtl(name);
+                            LOGGER.trace("{} original result for {}: {}, minTTL: {} second(s).",
+                                    DefaultDnsClient.this, ARecordPublisher.this,
+                                    completedFuture.getNow(), minTTLSeconds);
                             try {
                                 dnsAnswer = new DnsAnswer<>(toAddresses(completedFuture),
-                                        SECONDS.toNanos(ttlCache.minTtl(name)));
+                                        SECONDS.toNanos(minTTLSeconds));
                             } catch (Throwable cause2) {
                                 dnsAnswerPromise.tryFailure(cause2);
                                 return;
@@ -499,6 +509,7 @@ final class DefaultDnsClient implements DnsClient {
         AbstractDnsPublisher(final String name, @Nullable final DnsDiscoveryObserver discoveryObserver) {
             this.name = name;
             this.discoveryObserver = discoveryObserver;
+            LOGGER.debug("{} initializing a new publisher for {}.", DefaultDnsClient.this, this);
         }
 
         /**
@@ -636,7 +647,7 @@ final class DefaultDnsClient implements DnsClient {
                     handleTerminalError0(new ClosedDnsServiceDiscovererException());
                 } else {
                     final DnsResolutionObserver resolutionObserver = newResolutionObserver();
-                    LOGGER.trace("DnsClient {}, querying DNS for {}", DefaultDnsClient.this, AbstractDnsPublisher.this);
+                    LOGGER.trace("{} querying DNS for {}", DefaultDnsClient.this, AbstractDnsPublisher.this);
                     final Future<DnsAnswer<T>> addressFuture = doDnsQuery();
                     cancellableForQuery = () -> addressFuture.cancel(true);
                     if (addressFuture.isDone()) {
@@ -657,8 +668,8 @@ final class DefaultDnsClient implements DnsClient {
                 try {
                     return discoveryObserver.onNewResolution(name);
                 } catch (Throwable unexpected) {
-                    LOGGER.warn("Unexpected exception from {} while reporting new DNS resolution for: {}",
-                            observer, name, unexpected);
+                    LOGGER.warn("{} unexpected exception from {} while reporting new DNS resolution for: {}",
+                            DefaultDnsClient.this, observer, name, unexpected);
                     return null;
                 }
             }
@@ -685,7 +696,7 @@ final class DefaultDnsClient implements DnsClient {
 
                 final long delay = ThreadLocalRandom.current()
                         .nextLong(nanos, addWithOverflowProtection(nanos, ttlJitterNanos));
-                LOGGER.debug("DnsClient {}, scheduling DNS query for {} after {}ms, original TTL: {}ms.",
+                LOGGER.debug("{} scheduling DNS query for {} after {}ms, original TTL: {}ms.",
                         DefaultDnsClient.this, AbstractDnsPublisher.this, NANOSECONDS.toMillis(delay),
                         NANOSECONDS.toMillis(nanos));
 
@@ -723,17 +734,18 @@ final class DefaultDnsClient implements DnsClient {
                             cancellableForQuery = null;
                         }
                         try {
-                            LOGGER.debug("DnsClient {}, sending events for address: {} (size {}) {}.",
-                                    DefaultDnsClient.this, AbstractDnsPublisher.this, events.size(), events);
+                            LOGGER.debug("{} sending events for {} (size={}, ttl={}ms) {}.",
+                                    DefaultDnsClient.this, AbstractDnsPublisher.this, events.size(),
+                                    NANOSECONDS.toMillis(ttlNanos), events);
 
                             subscriber.onNext(events);
                         } catch (final Throwable error) {
                             handleTerminalError0(error);
                         }
                     } else {
-                        LOGGER.trace("DnsClient {}, resolution done but no changes for address: {} (size {}) {}.",
+                        LOGGER.trace("{} resolution done but no changes for {} (size={}, ttl={}ms) {}.",
                                 DefaultDnsClient.this, AbstractDnsPublisher.this, activeAddresses.size(),
-                                activeAddresses);
+                                NANOSECONDS.toMillis(ttlNanos), activeAddresses);
 
                         scheduleQuery0(ttlNanos);
                     }
@@ -749,8 +761,8 @@ final class DefaultDnsClient implements DnsClient {
                     resolutionObserver.resolutionFailed(cause);
                 } catch (Throwable unexpected) {
                     addSuppressed(unexpected, cause);
-                    LOGGER.warn("Unexpected exception from {} while reporting DNS resolution failure",
-                            resolutionObserver, unexpected);
+                    LOGGER.warn("{} unexpected exception from {} while reporting DNS resolution failure",
+                            DefaultDnsClient.this, resolutionObserver, unexpected);
                 }
             }
 
@@ -762,8 +774,8 @@ final class DefaultDnsClient implements DnsClient {
                 try {
                     resolutionObserver.resolutionCompleted(result);
                 } catch (Throwable unexpected) {
-                    LOGGER.warn("Unexpected exception from {} while reporting DNS resolution result {}",
-                            resolutionObserver, result, unexpected);
+                    LOGGER.warn("{} unexpected exception from {} while reporting DNS resolution result {}",
+                            DefaultDnsClient.this, resolutionObserver, result, unexpected);
                 }
             }
 
