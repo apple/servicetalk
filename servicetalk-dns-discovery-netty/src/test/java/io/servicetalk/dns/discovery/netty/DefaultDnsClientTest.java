@@ -985,22 +985,53 @@ class DefaultDnsClientTest {
     }
 
     @Test
-    void capsMaxTTL() throws Exception {
+    void capsMaxTTLForARecord() throws Exception {
         setup(builder -> builder.maxTTL(3));
         final String domain = "servicetalk.io";
-        String ip = nextIp();
-        recordStore.addIPv4Address(domain, 5, ip);
+        String ip1 = nextIp();
+        String ip2 = nextIp();
+        recordStore.addIPv4Address(domain, 5, ip1);
 
         TestPublisherSubscriber<ServiceDiscovererEvent<InetAddress>> subscriber = dnsQuery(domain);
         Subscription subscription = subscriber.awaitSubscription();
         subscription.request(Long.MAX_VALUE);
 
-        System.err.println(subscriber.takeOnNext());
-        recordStore.removeIPv4Address(domain, 1, ip);
+        assertEvent(subscriber.takeOnNext(), ip1, AVAILABLE);
+        recordStore.removeIPv4Address(domain, 5, ip1);
+        recordStore.addIPv4Address(domain, 5, ip2);
         advanceTime(3);
-        System.err.println(subscriber.takeOnNext());
 
-        //assertEvent(subscriber.takeOnNext(), ipv6, AVAILABLE);
+        List<ServiceDiscovererEvent<InetAddress>> signals = subscriber.takeOnNext(2);
+        assertHasEvent(signals, ip2, AVAILABLE);
+        assertHasEvent(signals, ip1, EXPIRED);
+    }
+
+    @Test
+    void capsMaxTTLForSrvRecord() throws Exception {
+        setup(builder -> builder.maxTTL(3));
+        final String domain = "servicetalk.io";
+        String ip1 = nextIp();
+        String ip2 = nextIp();
+        final String targetDomain1 = "target1.mysvc.servicetalk.io";
+        final String targetDomain2 = "target2.mysvc.servicetalk.io";
+
+        recordStore.addIPv4Address(targetDomain1, 5, ip1);
+        recordStore.addIPv4Address(targetDomain2, 5, ip2);
+        recordStore.addSrv(domain, targetDomain1, 1234, 5);
+        //recordStore.addIPv4Address(domain, 5, ip1);
+
+        TestPublisherSubscriber<ServiceDiscovererEvent<InetSocketAddress>> subscriber = dnsSrvQuery(domain);
+        Subscription subscription = subscriber.awaitSubscription();
+        subscription.request(Long.MAX_VALUE);
+
+        assertEvent(subscriber.takeOnNext(), ip1, 1234, AVAILABLE);
+        recordStore.removeSrv(domain, targetDomain1, 1234, 5);
+        recordStore.addSrv(domain, targetDomain2, 1234, 5);
+
+        advanceTime(3);
+        List<ServiceDiscovererEvent<InetSocketAddress>> signals = subscriber.takeOnNext(2);
+        assertHasEvent(signals, ip1, 1234, EXPIRED);
+        assertHasEvent(signals, ip2, 1234, AVAILABLE);
     }
 
     private static <T> Subscriber<ServiceDiscovererEvent<T>> mockThrowSubscriber(

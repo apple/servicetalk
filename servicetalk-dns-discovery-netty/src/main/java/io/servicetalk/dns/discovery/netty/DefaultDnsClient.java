@@ -730,9 +730,9 @@ final class DefaultDnsClient implements DnsClient {
 
                     ttlNanos = dnsAnswer.ttlNanos();
                     if (ttlNanos > maxTTLNanos) {
-                        LOGGER.info("{} DNS Record {} has a high TTL of {}ms which is larger than maxTTL of {}ms, " +
-                                        "capping to maxTTL.", DefaultDnsClient.this, addresses,
-                                NANOSECONDS.toMillis(ttlNanos), NANOSECONDS.toMillis(maxTTLNanos));
+                        LOGGER.info("{} result for {} has a high TTL={}s which is larger than configured maxTTL={}s.",
+                                DefaultDnsClient.this, AbstractDnsPublisher.this,
+                                NANOSECONDS.toSeconds(ttlNanos), NANOSECONDS.toSeconds(maxTTLNanos));
                         ttlNanos = maxTTLNanos;
                     }
 
