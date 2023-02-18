@@ -213,7 +213,7 @@ public final class SslContextFactory {
                                                         @Nullable io.netty.handler.ssl.SslProvider nettySslProvider,
                                                         boolean forServer) {
         final List<CertificateCompressionAlgorithm> algorithms = config.certificateCompressionAlgorithms();
-        if (algorithms == null || algorithms.isEmpty() || SSL_PROVIDER_OPTION_SUPPORTED == null) {
+        if (algorithms == null || algorithms.isEmpty()) {
             return;
         }
 
@@ -222,9 +222,15 @@ public final class SslContextFactory {
         }
 
         try {
-            boolean compressionSupported = (boolean) SSL_PROVIDER_OPTION_SUPPORTED.invokeExact(
-                    nettySslProvider, (SslContextOption<?>) OpenSslContextOption.CERTIFICATE_COMPRESSION_ALGORITHMS);
-            if (!compressionSupported) {
+            // If the newer SSL_PROVIDER_OPTION_SUPPORTED is available through the MethodHandle, use this option
+            // to check since it more targeted/narrow to what we need.
+            if (SSL_PROVIDER_OPTION_SUPPORTED != null) {
+                if (!((boolean) SSL_PROVIDER_OPTION_SUPPORTED.invokeExact(nettySslProvider,
+                        (SslContextOption<?>) OpenSslContextOption.CERTIFICATE_COMPRESSION_ALGORITHMS))) {
+                    return;
+                }
+            // Otherwise fall-back to just checking if OpenSSL is used which is good enough as a fallback.
+            } else if (nettySslProvider != SslProvider.OPENSSL) {
                 return;
             }
         } catch (Throwable throwable) {
