@@ -18,7 +18,6 @@ package io.servicetalk.concurrent.internal;
 import io.servicetalk.concurrent.Cancellable;
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
@@ -32,14 +31,13 @@ public class SequentialCancellable implements Cancellable {
 
     private static final AtomicReferenceFieldUpdater<SequentialCancellable, Cancellable> currentUpdater =
             newUpdater(SequentialCancellable.class, Cancellable.class, "current");
-    @SuppressWarnings("unused")
-    @Nullable
     private volatile Cancellable current;
 
     /**
      * Create a new instance with no current {@link Cancellable}.
      */
     public SequentialCancellable() {
+        this(IGNORE_CANCEL);
     }
 
     /**
@@ -56,7 +54,8 @@ public class SequentialCancellable implements Cancellable {
      * @param next to set.
      */
     public final void nextCancellable(Cancellable next) {
-        Cancellable oldVal = currentUpdater.getAndSet(this, requireNonNull(next));
+        Cancellable oldVal = currentUpdater.getAndAccumulate(this, requireNonNull(next),
+                (prev, x) -> prev == CANCELLED ? CANCELLED : x);
         if (oldVal == CANCELLED) {
             next.cancel();
         }
@@ -65,10 +64,8 @@ public class SequentialCancellable implements Cancellable {
     @Override
     public final void cancel() {
         Cancellable oldVal = currentUpdater.getAndSet(this, CANCELLED);
-        if (oldVal != null) {
             oldVal.cancel();
         }
-    }
 
     /**
      * Returns {@code true} if this {@link Cancellable} is cancelled.
