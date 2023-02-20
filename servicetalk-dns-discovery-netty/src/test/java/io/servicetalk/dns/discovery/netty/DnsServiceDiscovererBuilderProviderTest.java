@@ -15,9 +15,16 @@
  */
 package io.servicetalk.dns.discovery.netty;
 
+import io.servicetalk.client.api.ServiceDiscoverer;
+import io.servicetalk.client.api.ServiceDiscovererEvent;
+import io.servicetalk.transport.api.HostAndPort;
+
 import org.junit.jupiter.api.Test;
 
+import java.net.InetSocketAddress;
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -27,13 +34,17 @@ class DnsServiceDiscovererBuilderProviderTest {
 
     private static final AtomicInteger buildCounter = new AtomicInteger();
     private static final AtomicReference<String> buildId = new AtomicReference<>();
+    private static final AtomicLong ttlJitterIntercept = new AtomicLong();
 
     @Test
     void appliesBuilderProvider() {
         assertEquals(0, buildCounter.get());
-        assertNotNull(DnsServiceDiscoverers.builder("test"));
+        final ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>> disco =
+                DnsServiceDiscoverers.builder("test").ttlJitter(Duration.ofSeconds(5)).buildARecordDiscoverer();
+        assertNotNull(disco);
         assertEquals(1, buildCounter.get());
         assertEquals("test", buildId.get());
+        assertEquals(5000, ttlJitterIntercept.get());
     }
 
     public static final class TestDnsServiceDiscovererBuilderProvider
@@ -42,7 +53,13 @@ class DnsServiceDiscovererBuilderProviderTest {
         public DnsServiceDiscovererBuilder newBuilder(final String id, final DnsServiceDiscovererBuilder builder) {
             buildCounter.incrementAndGet();
             buildId.set(id);
-            return new DelegatingDnsServiceDiscovererBuilder(builder);
+            return new DelegatingDnsServiceDiscovererBuilder(builder) {
+                @Override
+                public DnsServiceDiscovererBuilder ttlJitter(final Duration ttlJitter) {
+                    ttlJitterIntercept.set(ttlJitter.toMillis());
+                    return super.ttlJitter(ttlJitter);
+                }
+            };
         }
     }
 }

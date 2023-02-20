@@ -86,7 +86,7 @@ final class GlobalDnsServiceDiscoverer {
 
     private static final class HostAndPortClientInitializer {
         static final ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>>
-                HOST_PORT_SD = DnsServiceDiscoverers.builder("global-host-port").buildARecordDiscoverer();
+                HOST_PORT_SD = DnsServiceDiscoverers.builder("global-a").buildARecordDiscoverer();
 
         static {
             LOGGER.debug("Initialized HostAndPortClientInitializer");

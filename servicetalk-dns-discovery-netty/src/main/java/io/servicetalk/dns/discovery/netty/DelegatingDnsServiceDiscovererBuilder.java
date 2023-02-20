@@ -26,12 +26,24 @@ import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * A {@link DnsServiceDiscovererBuilder} that delegates all methods to another {@link DnsServiceDiscovererBuilder}.
+ */
 public class DelegatingDnsServiceDiscovererBuilder implements DnsServiceDiscovererBuilder {
 
     private DnsServiceDiscovererBuilder delegate;
 
     public DelegatingDnsServiceDiscovererBuilder(final DnsServiceDiscovererBuilder delegate) {
         this.delegate = requireNonNull(delegate);
+    }
+
+    /**
+     * Returns the {@link DnsServiceDiscovererBuilder} delegate.
+     *
+     * @return Delegate {@link DnsServiceDiscovererBuilder}.
+     */
+    protected final DnsServiceDiscovererBuilder delegate() {
+        return delegate;
     }
 
     @Override

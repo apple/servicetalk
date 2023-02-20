@@ -24,8 +24,11 @@ import java.net.InetSocketAddress;
 import java.time.Duration;
 import javax.annotation.Nullable;
 
+/**
+ * Builder for <a href="https://tools.ietf.org/html/rfc1035">DNS</a> {@link ServiceDiscoverer} which will attempt to
+ * resolve {@code A}, {@code AAAA}, {@code CNAME}, and {@code SRV} type queries.
+ */
 public interface DnsServiceDiscovererBuilder {
-
     /**
      * The minimum allowed TTL. This will be the minimum poll interval.
      *

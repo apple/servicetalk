@@ -200,7 +200,7 @@ final class DefaultDnsClient implements DnsClient {
 
     @Override
     public String toString() {
-        return id;
+        return id + " (instance @" + toHexString(hashCode()) + ')';
     }
 
     // visible for testing

@@ -22,6 +22,9 @@ import java.util.List;
 
 import static io.servicetalk.utils.internal.ServiceLoaderUtils.loadProviders;
 
+/**
+ * A factory to create DNS {@link io.servicetalk.client.api.ServiceDiscoverer ServiceDiscoverers}.
+ */
 public final class DnsServiceDiscoverers {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DnsServiceDiscoverers.class);
@@ -37,13 +40,22 @@ public final class DnsServiceDiscoverers {
         // No instances.
     }
 
-    private static DnsServiceDiscovererBuilder applyProviders(final String id, DnsServiceDiscovererBuilder builder) {
+    private static DnsServiceDiscovererBuilder applyProviders(String id, DnsServiceDiscovererBuilder builder) {
         for (DnsServiceDiscovererBuilderProvider provider : PROVIDERS) {
             builder = provider.newBuilder(id, builder);
         }
         return builder;
     }
 
+    /**
+     * A new {@link DnsServiceDiscovererBuilder} instance.
+     * <p>
+     * The returned builder can be customized using {@link DnsServiceDiscovererBuilderProvider}.
+     *
+     * @param id a (unique) ID to identify the created {@link DnsClient}.
+     * @return a new {@link DnsServiceDiscovererBuilder}.
+     */
+    @SuppressWarnings("deprecation")
     public static DnsServiceDiscovererBuilder builder(final String id) {
         return applyProviders(id, new DefaultDnsServiceDiscovererBuilder(id));
     }

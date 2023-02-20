@@ -38,12 +38,14 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * Builder for <a href="https://tools.ietf.org/html/rfc1035">DNS</a> {@link ServiceDiscoverer} which will attempt to
- * resolve {@code A}, {@code AAAA}, {@code CNAME}, and  {@code SRV} type queries.
+ * resolve {@code A}, {@code AAAA}, {@code CNAME}, and {@code SRV} type queries.
+ *
+ * @deprecated this class will be made package-private in the future, rely on the {@link DnsServiceDiscovererBuilder}
+ * instead.
  */
+@Deprecated // FIXME: 0.43 - make package private
 public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDiscovererBuilder {
-
     private final String id;
-
     @Nullable
     private DnsServerAddressStreamProvider dnsServerAddressStreamProvider;
     private DnsResolverAddressTypes dnsResolverAddressTypes = systemDefault();
@@ -77,7 +79,7 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
      *
      * @deprecated use {@link DnsServiceDiscoverers#builder(String)} instead.
      */
-    @Deprecated
+    @Deprecated // FIXME: 0.43 - remove deprecated constructor
     public DefaultDnsServiceDiscovererBuilder() {
         this(UUID.randomUUID().toString());
     }
