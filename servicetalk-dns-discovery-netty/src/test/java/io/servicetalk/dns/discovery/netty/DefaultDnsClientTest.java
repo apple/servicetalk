@@ -1008,27 +1008,29 @@ class DefaultDnsClientTest {
 
     @Test
     void capsMaxTTLForSrvRecord() throws Exception {
-        setup(builder -> builder.maxTTL(3));
+        final int cappedMaxTTL = 3;
+        int dnsServerMaxTTL = cappedMaxTTL * 2;
+
+        setup(builder -> builder.maxTTL(cappedMaxTTL));
         final String domain = "servicetalk.io";
         String ip1 = nextIp();
         String ip2 = nextIp();
         final String targetDomain1 = "target1.mysvc.servicetalk.io";
         final String targetDomain2 = "target2.mysvc.servicetalk.io";
 
-        recordStore.addIPv4Address(targetDomain1, 5, ip1);
-        recordStore.addIPv4Address(targetDomain2, 5, ip2);
-        recordStore.addSrv(domain, targetDomain1, 1234, 5);
-        //recordStore.addIPv4Address(domain, 5, ip1);
+        recordStore.addIPv4Address(targetDomain1, dnsServerMaxTTL, ip1);
+        recordStore.addIPv4Address(targetDomain2, dnsServerMaxTTL, ip2);
+        recordStore.addSrv(domain, targetDomain1, 1234, dnsServerMaxTTL);
 
         TestPublisherSubscriber<ServiceDiscovererEvent<InetSocketAddress>> subscriber = dnsSrvQuery(domain);
         Subscription subscription = subscriber.awaitSubscription();
         subscription.request(Long.MAX_VALUE);
 
         assertEvent(subscriber.takeOnNext(), ip1, 1234, AVAILABLE);
-        recordStore.removeSrv(domain, targetDomain1, 1234, 5);
-        recordStore.addSrv(domain, targetDomain2, 1234, 5);
+        recordStore.removeSrv(domain, targetDomain1, 1234, dnsServerMaxTTL);
+        recordStore.addSrv(domain, targetDomain2, 1234, dnsServerMaxTTL);
 
-        advanceTime(3);
+        advanceTime(cappedMaxTTL);
         List<ServiceDiscovererEvent<InetSocketAddress>> signals = subscriber.takeOnNext(2);
         assertHasEvent(signals, ip1, 1234, EXPIRED);
         assertHasEvent(signals, ip2, 1234, AVAILABLE);
