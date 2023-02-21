@@ -22,6 +22,7 @@ import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.InetSocketAddress;
 import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.AVAILABLE;
@@ -53,6 +54,7 @@ public final class DefaultDnsServiceDiscovererBuilder {
     @Nullable
     private Duration queryTimeout;
     private int minTTLSeconds = 10;
+    private int maxTTLSeconds = (int) TimeUnit.MINUTES.toSeconds(5);
     private Duration ttlJitter = ofSeconds(4);
     private int srvConcurrency = 2048;
     private boolean inactiveEventsOnError;
@@ -77,6 +79,20 @@ public final class DefaultDnsServiceDiscovererBuilder {
             throw new IllegalArgumentException("minTTLSeconds: " + minTTLSeconds + " (expected > 0)");
         }
         this.minTTLSeconds = minTTLSeconds;
+        return this;
+    }
+
+    /**
+     * The maximum allowed TTL. This will be the maximum poll interval as well as the maximum dns cache value.
+     *
+     * @param maxTTLSeconds the maximum amount of time a cache entry will be considered valid (in seconds).
+     * @return {@code this}.
+     */
+    public DefaultDnsServiceDiscovererBuilder maxTTL(final int maxTTLSeconds) {
+        if (minTTLSeconds <= 0) {
+            throw new IllegalArgumentException("maxTTLSeconds: " + maxTTLSeconds + " (expected > 0)");
+        }
+        this.maxTTLSeconds = maxTTLSeconds;
         return this;
     }
 
@@ -306,12 +322,18 @@ public final class DefaultDnsServiceDiscovererBuilder {
      * @return a new instance of {@link DnsClient}.
      */
     DnsClient build() {
+        if (minTTLSeconds > maxTTLSeconds) {
+            throw new IllegalArgumentException("minTTLSeconds (" + minTTLSeconds + ") must not be larger " +
+                    "than maxTTLSeconds (" + maxTTLSeconds + ")");
+        }
+
         final DnsClient rawClient = new DefaultDnsClient(
                 ioExecutor == null ? globalExecutionContext().ioExecutor() : ioExecutor, minTTLSeconds,
                 ttlJitter.toNanos(), srvConcurrency,
                 inactiveEventsOnError, completeOncePreferredResolved, srvFilterDuplicateEvents,
                 srvHostNameRepeatInitialDelay, srvHostNameRepeatJitter, maxUdpPayloadSize, ndots, optResourceEnabled,
-                queryTimeout, dnsResolverAddressTypes, dnsServerAddressStreamProvider, observer, missingRecordStatus);
+                queryTimeout, dnsResolverAddressTypes, dnsServerAddressStreamProvider, observer, missingRecordStatus,
+                maxTTLSeconds);
         return filterFactory == null ? rawClient : filterFactory.create(rawClient);
     }
 }

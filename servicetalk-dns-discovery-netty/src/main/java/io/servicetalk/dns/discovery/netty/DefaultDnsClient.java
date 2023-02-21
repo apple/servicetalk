@@ -114,6 +114,7 @@ final class DefaultDnsClient implements DnsClient {
     private final EventLoopAwareNettyIoExecutor nettyIoExecutor;
     private final DnsNameResolver resolver;
     private final MinTtlCache ttlCache;
+    private final long maxTTLNanos;
     private final ListenableAsyncCloseable asyncCloseable;
     @Nullable
     private final DnsServiceDiscovererObserver observer;
@@ -135,10 +136,12 @@ final class DefaultDnsClient implements DnsClient {
                      final DnsResolverAddressTypes dnsResolverAddressTypes,
                      @Nullable final DnsServerAddressStreamProvider dnsServerAddressStreamProvider,
                      @Nullable final DnsServiceDiscovererObserver observer,
-                     final ServiceDiscovererEvent.Status missingRecordStatus) {
+                     final ServiceDiscovererEvent.Status missingRecordStatus,
+                     final int maxTTL) {
         if (srvConcurrency <= 0) {
             throw new IllegalArgumentException("srvConcurrency: " + srvConcurrency + " (expected >0)");
         }
+        this.maxTTLNanos = SECONDS.toNanos(maxTTL);
         this.srvConcurrency = srvConcurrency;
         this.srvFilterDuplicateEvents = srvFilterDuplicateEvents;
         this.inactiveEventsOnError = inactiveEventsOnError;
@@ -147,7 +150,7 @@ final class DefaultDnsClient implements DnsClient {
         // We must use nettyIoExecutor for the repeater for thread safety!
         srvHostNameRepeater = repeatWithConstantBackoffDeltaJitter(
                 srvHostNameRepeatInitialDelay, srvHostNameRepeatJitter, nettyIoExecutor);
-        this.ttlCache = new MinTtlCache(new DefaultDnsCache(minTTL, Integer.MAX_VALUE, minTTL), minTTL,
+        this.ttlCache = new MinTtlCache(new DefaultDnsCache(minTTL, maxTTL, minTTL), minTTL,
                 nettyIoExecutor);
         this.ttlJitterNanos = ttlJitterNanos;
         this.observer = observer;
@@ -724,7 +727,15 @@ final class DefaultDnsClient implements DnsClient {
                             comparator(), resolutionObserver == null ? null : (nAvailable, nMissing) ->
                                     reportResolutionResult(resolutionObserver, dnsAnswer, nAvailable, nMissing),
                             missingRecordStatus);
+
                     ttlNanos = dnsAnswer.ttlNanos();
+                    if (ttlNanos > maxTTLNanos) {
+                        LOGGER.info("{} result for {} has a high TTL={}s which is larger than configured maxTTL={}s.",
+                                DefaultDnsClient.this, AbstractDnsPublisher.this,
+                                NANOSECONDS.toSeconds(ttlNanos), NANOSECONDS.toSeconds(maxTTLNanos));
+                        ttlNanos = maxTTLNanos;
+                    }
+
                     if (events != null) {
                         activeAddresses = addresses;
                         if (--pendingRequests > 0) {
