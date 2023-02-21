@@ -15,6 +15,8 @@
  */
 package io.servicetalk.dns.discovery.netty;
 
+import io.servicetalk.client.api.ServiceDiscoverer;
+
 /**
  * Provider for {@link DnsServiceDiscovererBuilder}.
  */
@@ -28,7 +30,7 @@ public interface DnsServiceDiscovererBuilderProvider {
      * This method may return the pre-initialized {@code builder} as-is, or apply custom builder settings before
      * returning it, or wrap it ({@link DelegatingDnsServiceDiscovererBuilder} may be helpful).
      *
-     * @param id a (unique) identifier used to identify the underlying {@link DnsClient}.
+     * @param id a (unique) identifier used to identify the underlying {@link ServiceDiscoverer}.
      * @param builder pre-initialized {@link DnsServiceDiscovererBuilder}.
      * @return a {@link DnsServiceDiscovererBuilder} based on the unique ID and the
      * pre-initialized {@link DnsServiceDiscovererBuilder}.

@@ -38,6 +38,14 @@ public interface DnsServiceDiscovererBuilder {
     DnsServiceDiscovererBuilder minTTL(int minTTLSeconds);
 
     /**
+     * The maximum allowed TTL. This will be the maximum poll interval as well as the maximum dns cache value.
+     *
+     * @param maxTTLSeconds the maximum amount of time a cache entry will be considered valid (in seconds).
+     * @return {@code this}.
+     */
+    DnsServiceDiscovererBuilder maxTTL(final int maxTTLSeconds);
+
+    /**
      * The jitter to apply to schedule the next query after TTL.
      * <p>
      * The jitter value will be added on top of the TTL value returned from the DNS server to help spread out

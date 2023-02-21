@@ -15,6 +15,8 @@
  */
 package io.servicetalk.dns.discovery.netty;
 
+import io.servicetalk.client.api.ServiceDiscoverer;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,7 +54,7 @@ public final class DnsServiceDiscoverers {
      * <p>
      * The returned builder can be customized using {@link DnsServiceDiscovererBuilderProvider}.
      *
-     * @param id a (unique) ID to identify the created {@link DnsClient}.
+     * @param id a (unique) ID to identify the created {@link ServiceDiscoverer}.
      * @return a new {@link DnsServiceDiscovererBuilder}.
      */
     @SuppressWarnings("deprecation")

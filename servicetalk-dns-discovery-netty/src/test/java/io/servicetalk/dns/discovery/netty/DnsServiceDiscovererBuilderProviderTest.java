@@ -57,7 +57,8 @@ class DnsServiceDiscovererBuilderProviderTest {
                 @Override
                 public DnsServiceDiscovererBuilder ttlJitter(final Duration ttlJitter) {
                     ttlJitterIntercept.set(ttlJitter.toMillis());
-                    return super.ttlJitter(ttlJitter);
+                    delegate().ttlJitter(ttlJitter);
+                    return this;
                 }
             };
         }

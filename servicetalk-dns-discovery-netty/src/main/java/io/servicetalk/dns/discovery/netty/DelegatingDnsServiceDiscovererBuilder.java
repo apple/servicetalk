@@ -33,6 +33,11 @@ public class DelegatingDnsServiceDiscovererBuilder implements DnsServiceDiscover
 
     private DnsServiceDiscovererBuilder delegate;
 
+    /**
+     * Creates a new builder which delegates to the provided {@link DnsServiceDiscovererBuilder}.
+     *
+     * @param delegate the delegate builder.
+     */
     public DelegatingDnsServiceDiscovererBuilder(final DnsServiceDiscovererBuilder delegate) {
         this.delegate = requireNonNull(delegate);
     }
@@ -49,6 +54,12 @@ public class DelegatingDnsServiceDiscovererBuilder implements DnsServiceDiscover
     @Override
     public DnsServiceDiscovererBuilder minTTL(final int minTTLSeconds) {
         delegate = delegate.minTTL(minTTLSeconds);
+        return this;
+    }
+
+    @Override
+    public DnsServiceDiscovererBuilder maxTTL(final int maxTTLSeconds) {
+        delegate = delegate.maxTTL(maxTTLSeconds);
         return this;
     }
 

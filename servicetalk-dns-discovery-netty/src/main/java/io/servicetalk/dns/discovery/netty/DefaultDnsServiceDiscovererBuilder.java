@@ -97,12 +97,7 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
         return this;
     }
 
-    /**
-     * The maximum allowed TTL. This will be the maximum poll interval as well as the maximum dns cache value.
-     *
-     * @param maxTTLSeconds the maximum amount of time a cache entry will be considered valid (in seconds).
-     * @return {@code this}.
-     */
+    @Override
     public DefaultDnsServiceDiscovererBuilder maxTTL(final int maxTTLSeconds) {
         if (minTTLSeconds <= 0) {
             throw new IllegalArgumentException("maxTTLSeconds: " + maxTTLSeconds + " (expected > 0)");
@@ -111,15 +106,6 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
         return this;
     }
 
-    /**
-     * The jitter to apply to schedule the next query after TTL.
-     * <p>
-     * The jitter value will be added on top of the TTL value returned from the DNS server to help spread out
-     * subsequent DNS queries.
-     *
-     * @param ttlJitter The jitter to apply to schedule the next query after TTL.
-     * @return {@code this}.
-     */
     @Override
     public DefaultDnsServiceDiscovererBuilder ttlJitter(final Duration ttlJitter) {
         ensurePositive(ttlJitter, "jitter");
