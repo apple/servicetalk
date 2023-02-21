@@ -184,24 +184,32 @@ public final class TestSingle<T> extends Single<T> implements SingleSource<T> {
 
         /**
          * Allow concurrent subscribers. Default is to allow only sequential subscribers.
+         * <p>
+         * This mode automatically {@link #disableAutoOnSubscribe() disables auto on-subscribe}.
          *
          * @return this.
          * @see ConcurrentSingleSubscriberFunction
+         * @see #disableAutoOnSubscribe()
          */
         public Builder<T> concurrentSubscribers() {
             subscriberCardinalityFunction = new ConcurrentSingleSubscriberFunction<>();
+            disableAutoOnSubscribe();
             return this;
         }
 
         /**
          * Allow concurrent subscribers, with the specified {@link ConcurrentSingleSubscriberFunction}.
          * Default is to allow only sequential subscribers.
+         * <p>
+         * This mode automatically {@link #disableAutoOnSubscribe() disables auto on-subscribe}.
          *
          * @param function the {@link ConcurrentSingleSubscriberFunction} to use.
          * @return this.
+         * @see #disableAutoOnSubscribe()
          */
         public Builder<T> concurrentSubscribers(final ConcurrentSingleSubscriberFunction<T> function) {
             subscriberCardinalityFunction = requireNonNull(function);
+            disableAutoOnSubscribe();
             return this;
         }
 
@@ -299,9 +307,8 @@ public final class TestSingle<T> extends Single<T> implements SingleSource<T> {
         }
 
         private Function<Subscriber<? super T>, Subscriber<? super T>> buildSubscriberFunction() {
-            Function<Subscriber<? super T>, Subscriber<? super T>> subscriberFunction =
-                    autoOnSubscribeFunction;
-            subscriberFunction = andThen(subscriberFunction, subscriberCardinalityFunction);
+            Function<Subscriber<? super T>, Subscriber<? super T>> subscriberFunction = subscriberCardinalityFunction;
+            subscriberFunction = andThen(subscriberFunction, autoOnSubscribeFunction);
             assert subscriberFunction != null;
             return subscriberFunction;
         }

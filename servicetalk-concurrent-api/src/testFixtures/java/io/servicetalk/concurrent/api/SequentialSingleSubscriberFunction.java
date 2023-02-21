@@ -64,6 +64,7 @@ public final class SequentialSingleSubscriberFunction<T>
 
             private void reset(final Subscriber<? super T> subscriber) {
                 if (SequentialSingleSubscriberFunction.this.subscriber == subscriber) {
+                    SequentialSingleSubscriberFunction.this.subscriber = null;
                     subscribed.set(false);
                 }
             }
@@ -71,9 +72,9 @@ public final class SequentialSingleSubscriberFunction<T>
     }
 
     /**
-     * Returns the most recently subscribed {@link Subscriber}.
+     * Returns the currently subscribed {@link Subscriber}.
      *
-     * @return the most recently subscribed {@link Subscriber}.
+     * @return the currently subscribed {@link Subscriber}.
      */
     @Nullable
     public Subscriber<? super T> subscriber() {
