@@ -38,7 +38,7 @@ class SequentialCancellableTest {
     }
 
     @Test
-    void testWithCancel() {
+    void testOnlyLastIsCancelled() {
         SequentialCancellable sc = new SequentialCancellable();
         Cancellable first = mock(Cancellable.class);
         sc.nextCancellable(first);
@@ -51,5 +51,19 @@ class SequentialCancellableTest {
         sc.cancel();
         verify(second).cancel();
         verifyNoInteractions(first);
+    }
+
+    @Test
+    void allNextCancelledAfterCancel() {
+        SequentialCancellable sc = new SequentialCancellable();
+        sc.cancel();
+
+        Cancellable first = mock(Cancellable.class);
+        sc.nextCancellable(first);
+        verify(first).cancel();
+
+        Cancellable second = mock(Cancellable.class);
+        sc.nextCancellable(second);
+        verify(second).cancel();
     }
 }
