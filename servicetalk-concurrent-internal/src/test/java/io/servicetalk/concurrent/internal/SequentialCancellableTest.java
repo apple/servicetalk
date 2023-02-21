@@ -19,6 +19,9 @@ import io.servicetalk.concurrent.Cancellable;
 
 import org.junit.jupiter.api.Test;
 
+import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -28,12 +31,14 @@ class SequentialCancellableTest {
     @Test
     void testWithIgnoreCancel() {
         SequentialCancellable sc = new SequentialCancellable();
-        sc.nextCancellable(Cancellable.IGNORE_CANCEL);
+        sc.nextCancellable(IGNORE_CANCEL);
         Cancellable next = mock(Cancellable.class);
         sc.nextCancellable(next);
         verifyNoInteractions(next);
 
+        assertThat(sc.isCancelled(), is(false));
         sc.cancel();
+        assertThat(sc.isCancelled(), is(true));
         verify(next).cancel();
     }
 
@@ -48,15 +53,39 @@ class SequentialCancellableTest {
         verifyNoInteractions(first);
         verifyNoInteractions(second);
 
+        assertThat(sc.isCancelled(), is(false));
         sc.cancel();
+        assertThat(sc.isCancelled(), is(true));
         verify(second).cancel();
         verifyNoInteractions(first);
     }
 
     @Test
+    void cancelCurrent() {
+        SequentialCancellable sc = new SequentialCancellable();
+        Cancellable first = mock(Cancellable.class);
+        sc.nextCancellable(first);
+        sc.cancelCurrent();
+        verify(first).cancel();
+        assertThat(sc.isCancelled(), is(false));
+
+        Cancellable second = mock(Cancellable.class);
+        sc.nextCancellable(second);
+        verifyNoInteractions(second);
+        sc.cancelCurrent();
+        verify(second).cancel();
+        assertThat(sc.isCancelled(), is(false));
+
+        sc.cancel();
+        assertThat(sc.isCancelled(), is(true));
+    }
+
+    @Test
     void allNextCancelledAfterCancel() {
         SequentialCancellable sc = new SequentialCancellable();
+        assertThat(sc.isCancelled(), is(false));
         sc.cancel();
+        assertThat(sc.isCancelled(), is(true));
 
         Cancellable first = mock(Cancellable.class);
         sc.nextCancellable(first);
@@ -65,5 +94,7 @@ class SequentialCancellableTest {
         Cancellable second = mock(Cancellable.class);
         sc.nextCancellable(second);
         verify(second).cancel();
+
+        assertThat(sc.isCancelled(), is(true));
     }
 }
