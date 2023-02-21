@@ -1085,7 +1085,7 @@ class DefaultDnsClientTest {
     }
 
     private DefaultDnsServiceDiscovererBuilder dnsClientBuilder() {
-        return new DefaultDnsServiceDiscovererBuilder()
+        return new DefaultDnsServiceDiscovererBuilder("test")
                 .ioExecutor(new NettyIoExecutorWithTestTimer(ioExecutor.executor(), timerExecutor.executor()))
                 .dnsResolverAddressTypes(IPV4_ONLY)
                 .optResourceEnabled(false)
