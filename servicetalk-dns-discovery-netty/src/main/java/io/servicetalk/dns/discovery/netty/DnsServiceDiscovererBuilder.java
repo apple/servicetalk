@@ -43,7 +43,7 @@ public interface DnsServiceDiscovererBuilder {
      * @param maxTTLSeconds the maximum amount of time a cache entry will be considered valid (in seconds).
      * @return {@code this}.
      */
-    DnsServiceDiscovererBuilder maxTTL(final int maxTTLSeconds);
+    DnsServiceDiscovererBuilder maxTTL(int maxTTLSeconds);
 
     /**
      * The jitter to apply to schedule the next query after TTL.

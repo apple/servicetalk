@@ -22,8 +22,8 @@ import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.InetSocketAddress;
 import java.time.Duration;
-import java.util.concurrent.TimeUnit;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.AVAILABLE;
