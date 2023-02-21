@@ -68,6 +68,22 @@ public final class DurationUtils {
     }
 
     /**
+     * Ensures the duration is non-negative.
+     *
+     * @param duration the {@link Duration} to validate
+     * @param name name of the {@link Duration} variable
+     * @return the passed duration if all checks pass
+     * @throws NullPointerException if the passed duration is {@code null}
+     * @throws IllegalArgumentException if the passed duration is not greater or equal to {@link Duration#ZERO}
+     */
+    public static Duration ensureNonNegative(final Duration duration, final String name) {
+        if (duration.isNegative()) {
+            throw new IllegalArgumentException(name + ": " + duration + " (expected >= 0)");
+        }
+        return duration;
+    }
+
+    /**
      * Checks if the duration is considered "infinite".
      *
      * @param duration the {@link Duration} to validate

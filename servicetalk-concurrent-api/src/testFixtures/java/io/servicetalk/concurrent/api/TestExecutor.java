@@ -59,7 +59,12 @@ public class TestExecutor implements Executor {
         this(ThreadLocalRandom.current().nextLong());
     }
 
-    TestExecutor(final long epochNanos) {
+    /**
+     * Create a new instance.
+     *
+     * @param epochNanos initial value for {@link #currentTime(TimeUnit)} in nanoseconds
+     */
+    public TestExecutor(final long epochNanos) {
         currentNanos = epochNanos;
         nanoOffset = epochNanos - Long.MIN_VALUE;
     }

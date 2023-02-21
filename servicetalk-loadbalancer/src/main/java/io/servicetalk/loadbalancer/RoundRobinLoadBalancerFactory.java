@@ -19,6 +19,7 @@ import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
+import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executor;
@@ -35,8 +36,10 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.utils.internal.DurationUtils.ensureNonNegative;
+import static io.servicetalk.utils.internal.DurationUtils.ensurePositive;
+import static io.servicetalk.utils.internal.DurationUtils.isPositive;
 import static java.time.Duration.ofSeconds;
-import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
@@ -78,6 +81,7 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
 
     private static final Duration DEFAULT_HEALTH_CHECK_INTERVAL = ofSeconds(5);
     private static final Duration DEFAULT_HEALTH_CHECK_JITTER = ofSeconds(3);
+    static final Duration DEFAULT_HEALTH_CHECK_RESUBSCRIBE_INTERVAL = ofSeconds(10);
     static final int DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD = 5; // higher than default for AutoRetryStrategy
 
     private final int linearSearchSpace;
@@ -96,7 +100,7 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
             final String targetResource,
             final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
             final ConnectionFactory<ResolvedAddress, T> connectionFactory) {
-        return new RoundRobinLoadBalancer<>(requireNonNull(targetResource), eventPublisher, connectionFactory,
+        return new RoundRobinLoadBalancer<>(targetResource, eventPublisher, connectionFactory,
                 linearSearchSpace, healthCheckConfig);
     }
 
@@ -105,7 +109,7 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
             final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
             final ConnectionFactory<ResolvedAddress, C> connectionFactory,
             final String targetResource) {
-        return new RoundRobinLoadBalancer<>(requireNonNull(targetResource), eventPublisher, connectionFactory,
+        return new RoundRobinLoadBalancer<>(targetResource, eventPublisher, connectionFactory,
                 linearSearchSpace, healthCheckConfig);
     }
 
@@ -128,6 +132,10 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
         private Duration healthCheckInterval = DEFAULT_HEALTH_CHECK_INTERVAL;
         private Duration healthCheckJitter = DEFAULT_HEALTH_CHECK_JITTER;
         private int healthCheckFailedConnectionsThreshold = DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD;
+        private long healthCheckResubscribeLowerBound =
+                DEFAULT_HEALTH_CHECK_RESUBSCRIBE_INTERVAL.minus(DEFAULT_HEALTH_CHECK_JITTER).toNanos();
+        private long healthCheckResubscribeUpperBound =
+                DEFAULT_HEALTH_CHECK_RESUBSCRIBE_INTERVAL.plus(DEFAULT_HEALTH_CHECK_JITTER).toNanos();;
 
         /**
          * Creates a new instance with default settings.
@@ -174,7 +182,7 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
          */
         public RoundRobinLoadBalancerFactory.Builder<ResolvedAddress, C> backgroundExecutor(
                 Executor backgroundExecutor) {
-            this.backgroundExecutor = requireNonNull(backgroundExecutor);
+            this.backgroundExecutor = new NormalizedTimeSourceExecutor(backgroundExecutor);
             return this;
         }
 
@@ -184,6 +192,7 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
          * <p>
          * {@link #healthCheckFailedConnectionsThreshold(int)} can be used to disable the health checking mechanism
          * and always consider all hosts for establishing new connections.
+         *
          * @param interval interval at which a background health check will be scheduled.
          * @return {@code this}.
          * @see #healthCheckFailedConnectionsThreshold(int)
@@ -192,7 +201,7 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
         @Deprecated
         public RoundRobinLoadBalancerFactory.Builder<ResolvedAddress, C> healthCheckInterval(Duration interval) {
             return healthCheckInterval(interval,
-                    interval.compareTo(DEFAULT_HEALTH_CHECK_INTERVAL) <= 0 ? interval.dividedBy(2) :
+                    interval.compareTo(DEFAULT_HEALTH_CHECK_INTERVAL) < 0 ? interval.dividedBy(2) :
                             DEFAULT_HEALTH_CHECK_JITTER);
         }
 
@@ -202,6 +211,7 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
          * <p>
          * {@link #healthCheckFailedConnectionsThreshold(int)} can be used to disable the health checking mechanism
          * and always consider all hosts for establishing new connections.
+         *
          * @param interval interval at which a background health check will be scheduled.
          * @param jitter the amount of jitter to apply to each retry {@code interval}.
          * @return {@code this}.
@@ -209,18 +219,49 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
          */
         public RoundRobinLoadBalancerFactory.Builder<ResolvedAddress, C> healthCheckInterval(Duration interval,
                                                                                              Duration jitter) {
-            if (interval.isNegative() || interval.isZero()) {
-                throw new IllegalArgumentException("Health check interval should be greater than 0");
-            }
-            if (jitter.isNegative() || jitter.isZero()) {
-                throw new IllegalArgumentException("Jitter interval should be greater than 0");
-            }
-            if (interval.minus(jitter).isNegative() || interval.plus(jitter).isNegative()) {
-                throw new IllegalArgumentException("Jitter plus/minus interval underflow/overflow");
-            }
+            validate(interval, jitter);
             this.healthCheckInterval = interval;
             this.healthCheckJitter = jitter;
             return this;
+        }
+
+        /**
+         * Configure an interval for re-subscribing to the original events stream in case all existing hosts become
+         * unhealthy.
+         * <p>
+         * In situations when there is a latency between {@link ServiceDiscoverer} propagating the updated state and all
+         * known hosts become unhealthy, which could happen due to intermediate caching layers, re-subscribe to the
+         * events stream can help to exit from a dead state.
+         * <p>
+         * {@link #healthCheckFailedConnectionsThreshold(int)} can be used to disable the health checking mechanism
+         * and always consider all hosts for establishing new connections.
+         *
+         * @param interval interval at which re-subscribes will be scheduled.
+         * @param jitter the amount of jitter to apply to each re-subscribe {@code interval}.
+         * @return {@code this}.
+         * @see #healthCheckFailedConnectionsThreshold(int)
+         */
+        public RoundRobinLoadBalancerFactory.Builder<ResolvedAddress, C> healthCheckResubscribeInterval(
+                Duration interval, Duration jitter) {
+            validate(interval, jitter);
+            this.healthCheckResubscribeLowerBound = interval.minus(jitter).toNanos();
+            this.healthCheckResubscribeUpperBound = interval.plus(jitter).toNanos();
+            return this;
+        }
+
+        private static void validate(Duration interval, Duration jitter) {
+            ensurePositive(interval, "interval");
+            ensureNonNegative(jitter, "jitter");
+            final Duration lowerBound = interval.minus(jitter);
+            if (!isPositive(lowerBound)) {
+                throw new IllegalArgumentException("interval (" + interval + ") minus jitter (" + jitter +
+                        ") must be greater than 0, current=" + lowerBound);
+            }
+            final Duration upperBound = interval.plus(jitter);
+            if (!isPositive(upperBound)) {
+                throw new IllegalArgumentException("interval (" + interval + ") plus jitter (" + jitter +
+                        ") must not overflow, current=" + upperBound);
+            }
         }
 
         /**
@@ -231,6 +272,7 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
          * load balancing selection.
          * <p>
          * Use a negative value of the argument to disable health checking.
+         *
          * @param threshold number of consecutive connection failures to consider a host unhealthy and eligible for
          * background health checking. Use negative value to disable the health checking mechanism.
          * @return {@code this}.
@@ -258,17 +300,18 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
 
             HealthCheckConfig healthCheckConfig = new HealthCheckConfig(
                             this.backgroundExecutor == null ? SharedExecutor.getInstance() : this.backgroundExecutor,
-                    healthCheckInterval, healthCheckJitter, healthCheckFailedConnectionsThreshold);
+                    healthCheckInterval, healthCheckJitter, healthCheckFailedConnectionsThreshold,
+                    healthCheckResubscribeLowerBound, healthCheckResubscribeUpperBound);
 
             return new RoundRobinLoadBalancerFactory<>(linearSearchSpace, healthCheckConfig);
         }
     }
 
     static final class SharedExecutor {
-        private static final Executor INSTANCE = Executors.from(
+        private static final Executor INSTANCE = new NormalizedTimeSourceExecutor(Executors.from(
                 new ThreadPoolExecutor(1, 1, 60, SECONDS,
                         new LinkedBlockingQueue<>(),
-                        new DefaultThreadFactory("round-robin-load-balancer-executor")));
+                        new DefaultThreadFactory("round-robin-load-balancer-executor"))));
 
         private SharedExecutor() {
         }
