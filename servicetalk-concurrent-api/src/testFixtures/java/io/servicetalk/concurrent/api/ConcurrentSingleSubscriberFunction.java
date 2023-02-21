@@ -26,8 +26,12 @@ import java.util.function.Function;
 /**
  * Allows multiple {@link Subscriber}s to be concurrently subscribed to a {@link TestSingle}, and multicasts signals
  * to them all.
+ * <p>
+ * This function should be used only when auto on-subscribe is disabled and {@link Subscriber#onSubscribe(Cancellable)}
+ * have to be invoked with a new {@link Cancellable} for each {@link Subscriber} in {@link #subscribers()} list.
  *
  * @param <T> Type of items received by the {@code Subscriber}.
+ * @see TestSingle.Builder#disableAutoOnSubscribe()
  */
 public final class ConcurrentSingleSubscriberFunction<T>
         implements Function<Subscriber<? super T>, Subscriber<? super T>> {

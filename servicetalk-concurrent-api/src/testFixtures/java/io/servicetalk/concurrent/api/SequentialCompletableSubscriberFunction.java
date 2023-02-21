@@ -62,6 +62,7 @@ public final class SequentialCompletableSubscriberFunction
 
             private void reset(final Subscriber subscriber) {
                 if (SequentialCompletableSubscriberFunction.this.subscriber == subscriber) {
+                    SequentialCompletableSubscriberFunction.this.subscriber = null;
                     subscribed.set(false);
                 }
             }
@@ -69,9 +70,9 @@ public final class SequentialCompletableSubscriberFunction
     }
 
     /**
-     * Returns the most recently subscribed {@link Subscriber}.
+     * Returns the currently subscribed {@link Subscriber}.
      *
-     * @return the most recently subscribed {@link Subscriber}.
+     * @return the currently subscribed {@link Subscriber}.
      */
     @Nullable
     public Subscriber subscriber() {

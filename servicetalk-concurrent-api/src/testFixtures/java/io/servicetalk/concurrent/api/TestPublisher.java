@@ -209,24 +209,32 @@ public final class TestPublisher<T> extends Publisher<T> implements PublisherSou
 
         /**
          * Allow concurrent subscribers. Default is to allow only sequential subscribers.
+         * <p>
+         * This mode automatically {@link #disableAutoOnSubscribe() disables auto on-subscribe}.
          *
          * @return this.
          * @see ConcurrentPublisherSubscriberFunction
+         * @see #disableAutoOnSubscribe()
          */
         public Builder<T> concurrentSubscribers() {
             subscriberCardinalityFunction = new ConcurrentPublisherSubscriberFunction<>();
+            disableAutoOnSubscribe();
             return this;
         }
 
         /**
          * Allow concurrent subscribers, with the specified {@link ConcurrentPublisherSubscriberFunction}.
          * Default is to allow only sequential subscribers.
+         * <p>
+         * This mode automatically {@link #disableAutoOnSubscribe() disables auto on-subscribe}.
          *
          * @param function the {@link ConcurrentPublisherSubscriberFunction} to use.
          * @return this.
+         * @see #disableAutoOnSubscribe()
          */
         public Builder<T> concurrentSubscribers(final ConcurrentPublisherSubscriberFunction<T> function) {
             subscriberCardinalityFunction = requireNonNull(function);
+            disableAutoOnSubscribe();
             return this;
         }
 
@@ -359,8 +367,8 @@ public final class TestPublisher<T> extends Publisher<T> implements PublisherSou
         private Function<Subscriber<? super T>, Subscriber<? super T>> buildSubscriberFunction() {
             Function<Subscriber<? super T>, Subscriber<? super T>> subscriberFunction =
                     demandCheckingSubscriberFunction;
-            subscriberFunction = andThen(subscriberFunction, autoOnSubscribeSubscriberFunction);
             subscriberFunction = andThen(subscriberFunction, subscriberCardinalityFunction);
+            subscriberFunction = andThen(subscriberFunction, autoOnSubscribeSubscriberFunction);
             assert subscriberFunction != null;
             return subscriberFunction;
         }

@@ -15,15 +15,20 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
 import org.junit.jupiter.api.Test;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasProperty;
+import static org.hamcrest.Matchers.hasToString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -57,14 +62,51 @@ class TestSingleTest {
     @Test
     void testSequentialSubscribeSingle() {
         TestSingle<String> source = new TestSingle.Builder<String>()
+                .sequentialSubscribers()
                 .build();
 
         source.subscribe(subscriber1);
+        subscriber1.awaitSubscription();
         source.onSuccess("a");
         assertThat(subscriber1.awaitOnSuccess(), is("a"));
 
         source.subscribe(subscriber2);
+        subscriber2.awaitSubscription();
+        assertThat(subscriber2.pollTerminal(10, MILLISECONDS), is(nullValue()));
         source.onSuccess("b");
+        assertThat(subscriber2.awaitOnSuccess(), is("b"));
+    }
+
+    @Test
+    void testSequentialSubscribeSingleCancelResetsSubscriber() {
+        SequentialSingleSubscriberFunction<String> sequentialSingleSubscriberFunction =
+                new SequentialSingleSubscriberFunction<>();
+        TestSingle<String> source = new TestSingle.Builder<String>()
+                .sequentialSubscribers(sequentialSingleSubscriberFunction)
+                .build();
+
+        assertThat(sequentialSingleSubscriberFunction.subscriber(), is(nullValue()));
+        assertThat(sequentialSingleSubscriberFunction.isSubscribed(), is(false));
+
+        source.subscribe(subscriber1);
+        Cancellable cancellable1 = subscriber1.awaitSubscription();
+        assertThat(sequentialSingleSubscriberFunction.subscriber(),
+                hasToString(containsString(subscriber1.toString())));
+        assertThat(sequentialSingleSubscriberFunction.isSubscribed(), is(true));
+        cancellable1.cancel();
+        assertThat(sequentialSingleSubscriberFunction.subscriber(), is(nullValue()));
+        assertThat(sequentialSingleSubscriberFunction.isSubscribed(), is(false));
+        subscriber1.pollTerminal(10, MILLISECONDS);
+
+        source.subscribe(subscriber2);
+        subscriber2.awaitSubscription();
+        assertThat(sequentialSingleSubscriberFunction.subscriber(),
+                hasToString(containsString(subscriber2.toString())));
+        assertThat(sequentialSingleSubscriberFunction.isSubscribed(), is(true));
+        assertThat(subscriber2.pollTerminal(10, MILLISECONDS), is(nullValue()));
+        source.onSuccess("b");
+        assertThat(sequentialSingleSubscriberFunction.subscriber(), is(nullValue()));
+        assertThat(sequentialSingleSubscriberFunction.isSubscribed(), is(false));
         assertThat(subscriber2.awaitOnSuccess(), is("b"));
     }
 
@@ -75,8 +117,13 @@ class TestSingleTest {
                 .build();
 
         source.subscribe(subscriber1);
-
         source.subscribe(subscriber2);
+
+        // It's acceptable to share the same Cancellable across all Subscribers for this test because Subscribers don't
+        // interact with the passed Cancellable.
+        source.onSubscribe(new TestCancellable());
+        subscriber1.awaitSubscription();
+        subscriber2.awaitSubscription();
 
         source.onSuccess("a");
         assertThat(subscriber1.awaitOnSuccess(), is("a"));

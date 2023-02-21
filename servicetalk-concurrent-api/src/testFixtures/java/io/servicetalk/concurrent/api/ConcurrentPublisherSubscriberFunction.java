@@ -26,8 +26,12 @@ import java.util.function.Function;
 /**
  * Allows multiple {@link Subscriber}s to be concurrently subscribed to a {@link TestPublisher}, and multicasts signals
  * to them all.
+ * <p>
+ * This function should be used only when auto on-subscribe is disabled and {@link Subscriber#onSubscribe(Subscription)}
+ * have to be invoked with a new {@link Subscription} for each {@link Subscriber} in {@link #subscribers()} list.
  *
  * @param <T> Type of items received by the {@code Subscriber}.
+ * @see TestPublisher.Builder#disableAutoOnSubscribe()
  */
 public final class ConcurrentPublisherSubscriberFunction<T>
         implements Function<Subscriber<? super T>, Subscriber<? super T>> {

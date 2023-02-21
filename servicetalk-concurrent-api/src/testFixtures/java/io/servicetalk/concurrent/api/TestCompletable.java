@@ -179,24 +179,32 @@ public final class TestCompletable extends Completable implements CompletableSou
 
         /**
          * Allow concurrent subscribers. Default is to allow only sequential subscribers.
+         * <p>
+         * This mode automatically {@link #disableAutoOnSubscribe() disables auto on-subscribe}.
          *
          * @return this.
          * @see ConcurrentCompletableSubscriberFunction
+         * @see #disableAutoOnSubscribe()
          */
         public Builder concurrentSubscribers() {
             subscriberCardinalityFunction = new ConcurrentCompletableSubscriberFunction();
+            disableAutoOnSubscribe();
             return this;
         }
 
         /**
          * Allow concurrent subscribers, with the specified {@link ConcurrentCompletableSubscriberFunction}.
          * Default is to allow only sequential subscribers.
+         * <p>
+         * This mode automatically {@link #disableAutoOnSubscribe() disables auto on-subscribe}.
          *
          * @param function the {@link ConcurrentCompletableSubscriberFunction} to use.
          * @return this.
+         * @see #disableAutoOnSubscribe()
          */
         public Builder concurrentSubscribers(final ConcurrentCompletableSubscriberFunction function) {
             subscriberCardinalityFunction = requireNonNull(function);
+            disableAutoOnSubscribe();
             return this;
         }
 
@@ -294,9 +302,8 @@ public final class TestCompletable extends Completable implements CompletableSou
         }
 
         private Function<Subscriber, Subscriber> buildSubscriberFunction() {
-            Function<Subscriber, Subscriber> subscriberFunction =
-                    autoOnSubscribeFunction;
-            subscriberFunction = andThen(subscriberFunction, subscriberCardinalityFunction);
+            Function<Subscriber, Subscriber> subscriberFunction = subscriberCardinalityFunction;
+            subscriberFunction = andThen(subscriberFunction, autoOnSubscribeFunction);
             assert subscriberFunction != null;
             return subscriberFunction;
         }
