@@ -32,6 +32,9 @@ import io.servicetalk.transport.api.SslProvider;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver;
 
+import io.netty.handler.ssl.OpenSsl;
+import io.netty.handler.ssl.OpenSslContextOption;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -50,11 +53,19 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 class SslCertificateCompressionTest {
 
+    private static boolean certCompressionAvailable() {
+        return OpenSsl.isAvailable() && io.netty.handler.ssl.SslProvider.isOptionSupported(
+                io.netty.handler.ssl.SslProvider.OPENSSL, OpenSslContextOption.CERTIFICATE_COMPRESSION_ALGORITHMS);
+    }
+
     /**
      * Compares the bytes written and read when certificate compression is enabled vs. when it is not.
      */
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @ValueSource(booleans = {true, false})
+    @EnabledIf(
+            value = "certCompressionAvailable",
+            disabledReason = "OpenSSL not available or certificate compression is not supported")
     void negotiatesCertificateCompression(boolean clientEnabled) throws Exception {
         final HttpService service = (ctx, request, responseFactory) ->
             succeeded(responseFactory.ok().payloadBody("Hello World!", textSerializerUtf8()));

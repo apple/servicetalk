@@ -26,9 +26,15 @@ import io.netty.handler.ssl.OpenSslCertificateCompressionConfig;
 import io.netty.handler.ssl.OpenSslContextOption;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
+import io.netty.handler.ssl.SslContextOption;
 import io.netty.handler.ssl.SslProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.util.List;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
@@ -38,11 +44,32 @@ import javax.net.ssl.SSLException;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.closeAndRethrowUnchecked;
 import static io.servicetalk.transport.netty.internal.SslUtils.nettyApplicationProtocol;
 import static io.servicetalk.transport.netty.internal.SslUtils.toNettySslProvider;
+import static io.servicetalk.utils.internal.ThrowableUtils.throwException;
 
 /**
  * A factory for creating {@link SslContext}s.
  */
 public final class SslContextFactory {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SslContextFactory.class);
+
+    @Nullable
+    private static final MethodHandle SSL_PROVIDER_OPTION_SUPPORTED;
+
+    static {
+        MethodHandle sslProviderOptionSupported;
+        try {
+            sslProviderOptionSupported = MethodHandles.publicLookup().findStatic(
+                    SslProvider.class, "isOptionSupported",
+                    MethodType.methodType(boolean.class, SslProvider.class, SslContextOption.class));
+        } catch (Throwable cause) {
+            LOGGER.debug("SSLProvider#isOptionSupported(SslProvider, SslContextOption) is available only " +
+                    "starting from Netty 4.1.88.Final. Detected Netty version: {}",
+                    SslProvider.class.getPackage().getImplementationVersion(), cause);
+            sslProviderOptionSupported = null;
+        }
+        SSL_PROVIDER_OPTION_SUPPORTED = sslProviderOptionSupported;
+    }
 
     private SslContextFactory() {
         // No instances.
@@ -168,6 +195,20 @@ public final class SslContextFactory {
         }
     }
 
+    /**
+     * Configures TLS Certificate Compression if enabled and available.
+     * <p>
+     * Note that in addition to the application actually enabling and configuring TLS certificate compression on the
+     * {@link SslConfig}, it must also be available in the environment. Right now it is only supported through
+     * BoringSSL and as such the code checks if the {@link OpenSslContextOption} is available at runtime. If it is not,
+     * no error is raised but the feature is not enabled. This is by design, since certificate compression is a pure
+     * optimization instead of a security feature.
+     *
+     * @param config the ServiceTalk TLS config which enables and configures cert compression.
+     * @param builder netty's builder for the SSL context.
+     * @param nettySslProvider the (potentially null) SSL provider used with netty.
+     * @param forServer if this is for a server or client context.
+     */
     private static void configureCertificateCompression(SslConfig config, SslContextBuilder builder,
                                                         @Nullable io.netty.handler.ssl.SslProvider nettySslProvider,
                                                         boolean forServer) {
@@ -180,9 +221,20 @@ public final class SslContextFactory {
             nettySslProvider = forServer ? SslContext.defaultServerProvider() : SslContext.defaultClientProvider();
         }
 
-        // TODO: change once https://github.com/netty/netty/pull/13145 is merged and released
-        if (nettySslProvider != SslProvider.OPENSSL) {
-            return;
+        try {
+            // If the newer SSL_PROVIDER_OPTION_SUPPORTED is available through the MethodHandle, use this option
+            // to check since it more targeted/narrow to what we need.
+            if (SSL_PROVIDER_OPTION_SUPPORTED != null) {
+                if (!((boolean) SSL_PROVIDER_OPTION_SUPPORTED.invokeExact(nettySslProvider,
+                        (SslContextOption<?>) OpenSslContextOption.CERTIFICATE_COMPRESSION_ALGORITHMS))) {
+                    return;
+                }
+            // Otherwise fall-back to just checking if OpenSSL is used which is good enough as a fallback.
+            } else if (nettySslProvider != SslProvider.OPENSSL) {
+                return;
+            }
+        } catch (Throwable throwable) {
+            throwException(throwable);
         }
 
         final OpenSslCertificateCompressionConfig.Builder configBuilder =
