@@ -68,7 +68,7 @@ public class SequentialCancellable implements Cancellable {
     }
 
     /**
-     * Cancels only the {@link Cancellable} that is currently hold without side effect for any
+     * Cancels only the {@link Cancellable} that is currently held without side effect for any
      * {@link #nextCancellable(Cancellable)}.
      */
     public void cancelCurrent() {
