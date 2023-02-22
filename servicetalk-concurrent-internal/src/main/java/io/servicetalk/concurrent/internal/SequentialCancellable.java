@@ -64,8 +64,17 @@ public class SequentialCancellable implements Cancellable {
     @Override
     public final void cancel() {
         Cancellable oldVal = currentUpdater.getAndSet(this, CANCELLED);
-            oldVal.cancel();
-        }
+        oldVal.cancel();
+    }
+
+    /**
+     * Cancels only the {@link Cancellable} that is currently held without side effect for any
+     * {@link #nextCancellable(Cancellable)}.
+     */
+    public void cancelCurrent() {
+        Cancellable oldVal = currentUpdater.getAndUpdate(this, prev -> prev == CANCELLED ? CANCELLED : IGNORE_CANCEL);
+        oldVal.cancel();
+    }
 
     /**
      * Returns {@code true} if this {@link Cancellable} is cancelled.
