@@ -700,15 +700,15 @@ final class DefaultDnsClient implements DnsClient {
                 }
             }
 
-            private void scheduleQuery0(final long nanos) {
-                scheduleQuery0(nanos, nanos);
+            private void scheduleQuery0(final long remainingTtlNanos) {
+                scheduleQuery0(remainingTtlNanos, remainingTtlNanos);
             }
 
-            private void scheduleQuery0(final long nanos, final long originalTtlNanos) {
+            private void scheduleQuery0(final long remainingTtlNanos, final long originalTtlNanos) {
                 assertInEventloop();
 
                 final long delay = ThreadLocalRandom.current()
-                        .nextLong(nanos, addWithOverflowProtection(nanos, ttlJitterNanos));
+                        .nextLong(remainingTtlNanos, addWithOverflowProtection(remainingTtlNanos, ttlJitterNanos));
                 LOGGER.debug("{} scheduling DNS query for {} after {}ms (TTL={}s, jitter={}ms).",
                         DefaultDnsClient.this, AbstractDnsPublisher.this, NANOSECONDS.toMillis(delay),
                         NANOSECONDS.toSeconds(originalTtlNanos), NANOSECONDS.toMillis(ttlJitterNanos));
