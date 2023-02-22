@@ -30,24 +30,49 @@ import javax.annotation.Nullable;
  */
 public interface DnsServiceDiscovererBuilder {
     /**
-     * Controls min/max TTL values that will affect polling interval and caching.
+     * Controls min/max TTL values that will influence polling intervals.
      * <p>
      * The created {@link ServiceDiscoverer} polls DNS server based on TTL value of the resolved records. Min/max values
-     * help to make sure polling stays within reasonable boundaries. The 3rd argument controls if the resolved records
-     * should be cached or not. Cache is helpful in scenarios when multiple concurrent resolutions are possible for the
-     * same address: either an application runs multiple client instances for the same remote address (not recommended)
-     * or clients perform DNS resolutions per new connection instead of background polling.
+     * help to make sure polling stays within reasonable boundaries. Too frequent DNS queries may generate too much load
+     * for the DNS server, too rare DNS queries may lead to incorrect state if the remote servers changed IPs before
+     * original TTL expired.
+     * <p>
+     * With this overload, there will be no local caching for resolved records.
      *
      * @param minSeconds The minimum about of time the result will be considered valid (in seconds), must be greater
      * than {@code 0}.
      * @param maxSeconds The maximum about of time the result will be considered valid (in seconds), must be greater
-     * than {@code minSeconds}.
-     * @param cache If {@code true}, DNS responses will be cached locally for the specified time. Any concurrent
-     * resolutions for the same address will hit the cache if it's not expired. Otherwise, all resolutions will generate
-     * a new query for DNS server.
+     * than or equal to {@code minSeconds}.
      * @return {@code this}.
+     * @see #ttl(int, int, int, int)
      */
-    DnsServiceDiscovererBuilder ttl(int minSeconds, int maxSeconds, boolean cache);
+    DnsServiceDiscovererBuilder ttl(int minSeconds, int maxSeconds);
+
+    /**
+     * Controls min/max TTL values that will affect polling intervals and local caching.
+     * <p>
+     * The created {@link ServiceDiscoverer} polls DNS server based on TTL value of the resolved records. Min/max values
+     * help to make sure polling stays within reasonable boundaries. Too frequent DNS queries may generate too much load
+     * for the DNS server, too rare DNS queries may lead to incorrect state if the remote servers changed IPs before
+     * original TTL expired.
+     * <p>
+     * The second min/max pair controls for how long the resolved records should be cached locally. Cache is helpful in
+     * scenarios when multiple concurrent resolutions are possible for the same address: either an application runs
+     * multiple client instances for the same hostname or clients perform DNS resolutions per new connection instead of
+     * background polling.
+     *
+     * @param minSeconds The minimum about of time the result will be considered valid (in seconds), must be greater
+     * than {@code 0}.
+     * @param maxSeconds The maximum about of time the result will be considered valid (in seconds), must be greater
+     * than or equal to {@code minSeconds}.
+     * @param minCacheSeconds The minimum about of time the result will be cached locally (in seconds), must be greater
+     * than or equal to {@code 0}, and less than or equal to {@code minSeconds}.
+     * @param maxCacheSeconds The maximum about of time the result will be cached locally (in seconds), must be greater
+     * than or equal to {@code minCacheSeconds}, and less than or equal to {@code maxSeconds}.
+     * @return {@code this}.
+     * @see #ttl(int, int)
+     */
+    DnsServiceDiscovererBuilder ttl(int minSeconds, int maxSeconds, int minCacheSeconds, int maxCacheSeconds);
 
     /**
      * The jitter to apply for scheduling the next query after TTL to help spread out subsequent DNS queries.

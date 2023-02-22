@@ -1005,7 +1005,7 @@ class DefaultDnsClientTest {
         final int cappedMaxTTL = 3;
         final int dnsServerMaxTTL = cappedMaxTTL * 2;
 
-        setup(builder -> builder.ttl(1, cappedMaxTTL, cache));
+        setup(builder -> builder.ttl(1, cappedMaxTTL));
         final String domain = "servicetalk.io";
         String ip1 = nextIp();
         String ip2 = nextIp();
@@ -1034,7 +1034,7 @@ class DefaultDnsClientTest {
         final int cappedMaxTTL = 3;
         final int dnsServerMaxTTL = cappedMaxTTL * 2;
 
-        setup(builder -> builder.ttl(1, cappedMaxTTL, cache));
+        setup(builder -> builder.ttl(1, cappedMaxTTL));
         final String domain = "servicetalk.io";
         String ip1 = nextIp();
         String ip2 = nextIp();
@@ -1066,7 +1066,7 @@ class DefaultDnsClientTest {
     @ValueSource(booleans = {false, true})
     void cacheForARecord(boolean resubscribe) throws Exception {
         int ttl = 5;
-        setup(builder -> builder.ttl(1, ttl, true));
+        setup(builder -> builder.ttl(1, ttl, 1, ttl));
         final String domain = "servicetalk.io";
         String ip1 = nextIp();
         String ip2 = nextIp();
@@ -1170,7 +1170,7 @@ class DefaultDnsClientTest {
                 .srvConcurrency(512)
                 .dnsServerAddressStreamProvider(new SingletonDnsServerAddressStreamProvider(dnsServer.localAddress()))
                 .ndots(1)
-                .ttl(1, 5, false)
+                .ttl(1, 5)
                 .ttlJitter(Duration.ofNanos(1));
     }
 

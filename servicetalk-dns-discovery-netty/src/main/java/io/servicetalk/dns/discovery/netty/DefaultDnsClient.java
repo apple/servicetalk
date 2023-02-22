@@ -116,6 +116,7 @@ final class DefaultDnsClient implements DnsClient {
     private final DnsNameResolver resolver;
     private final MinTtlCache ttlCache;
     private final long maxTTLNanos;
+    private final long ttlJitterNanos;
     private final ListenableAsyncCloseable asyncCloseable;
     @Nullable
     private final DnsServiceDiscovererObserver observer;
@@ -124,14 +125,13 @@ final class DefaultDnsClient implements DnsClient {
     private final int srvConcurrency;
     private final boolean srvFilterDuplicateEvents;
     private final boolean inactiveEventsOnError;
-    private final long ttlJitterNanos;
     private final DnsResolverAddressTypes addressTypes;
     private final String id;
     private boolean closed;
 
     DefaultDnsClient(final String id, final IoExecutor ioExecutor,
-                     final int minTTL, final int maxTTL, final boolean cache, final long ttlJitterNanos,
-                     final int srvConcurrency, final boolean inactiveEventsOnError,
+                     final int minTTL, final int maxTTL, final int minCacheTTL, final int maxCacheTTL,
+                     final long ttlJitterNanos, final int srvConcurrency, final boolean inactiveEventsOnError,
                      final boolean completeOncePreferredResolved, final boolean srvFilterDuplicateEvents,
                      Duration srvHostNameRepeatInitialDelay, Duration srvHostNameRepeatJitter,
                      @Nullable Integer maxUdpPayloadSize, @Nullable final Integer ndots,
@@ -140,7 +140,6 @@ final class DefaultDnsClient implements DnsClient {
                      @Nullable final DnsServerAddressStreamProvider dnsServerAddressStreamProvider,
                      @Nullable final DnsServiceDiscovererObserver observer,
                      final ServiceDiscovererEvent.Status missingRecordStatus) {
-        this.maxTTLNanos = SECONDS.toNanos(maxTTL);
         this.srvConcurrency = srvConcurrency;
         this.srvFilterDuplicateEvents = srvFilterDuplicateEvents;
         this.inactiveEventsOnError = inactiveEventsOnError;
@@ -149,8 +148,10 @@ final class DefaultDnsClient implements DnsClient {
         // We must use nettyIoExecutor for the repeater for thread safety!
         srvHostNameRepeater = repeatWithConstantBackoffDeltaJitter(
                 srvHostNameRepeatInitialDelay, srvHostNameRepeatJitter, nettyIoExecutor);
-        this.ttlCache = new MinTtlCache(cache ? new DefaultDnsCache(minTTL, maxTTL, 0) : NoopDnsCache.INSTANCE,
+        this.ttlCache = new MinTtlCache(
+                maxCacheTTL == 0 ? NoopDnsCache.INSTANCE : new DefaultDnsCache(minCacheTTL, maxCacheTTL, 0),
                 minTTL, nettyIoExecutor);
+        this.maxTTLNanos = SECONDS.toNanos(maxTTL);
         this.ttlJitterNanos = ttlJitterNanos;
         this.observer = observer;
         this.missingRecordStatus = missingRecordStatus;
