@@ -30,26 +30,29 @@ import javax.annotation.Nullable;
  */
 public interface DnsServiceDiscovererBuilder {
     /**
-     * The minimum allowed TTL. This will be the minimum poll interval.
-     *
-     * @param minTTLSeconds The minimum amount of time a cache entry will be considered valid (in seconds).
-     * @return {@code this}.
-     */
-    DnsServiceDiscovererBuilder minTTL(int minTTLSeconds);
-
-    /**
-     * The maximum allowed TTL. This will be the maximum poll interval as well as the maximum dns cache value.
-     *
-     * @param maxTTLSeconds the maximum amount of time a cache entry will be considered valid (in seconds).
-     * @return {@code this}.
-     */
-    DnsServiceDiscovererBuilder maxTTL(int maxTTLSeconds);
-
-    /**
-     * The jitter to apply to schedule the next query after TTL.
+     * Controls min/max TTL values that will affect polling interval and caching.
      * <p>
-     * The jitter value will be added on top of the TTL value returned from the DNS server to help spread out
-     * subsequent DNS queries.
+     * The created {@link ServiceDiscoverer} polls DNS server based on TTL value of the resolved records. Min/max values
+     * help to make sure polling stays within reasonable boundaries. The 3rd argument controls if the resolved records
+     * should be cached or not. Cache is helpful in scenarios when multiple concurrent resolutions are possible for the
+     * same address: either an application runs multiple client instances for the same remote address (not recommended)
+     * or clients perform DNS resolutions per new connection instead of background polling.
+     *
+     * @param minSeconds The minimum about of time the result will be considered valid (in seconds), must be greater
+     * than {@code 0}.
+     * @param maxSeconds The maximum about of time the result will be considered valid (in seconds), must be greater
+     * than {@code minSeconds}.
+     * @param cache If {@code true}, DNS responses will be cached locally for the specified time. Any concurrent
+     * resolutions for the same address will hit the cache if it's not expired. Otherwise, all resolutions will generate
+     * a new query for DNS server.
+     * @return {@code this}.
+     */
+    DnsServiceDiscovererBuilder ttl(int minSeconds, int maxSeconds, boolean cache);
+
+    /**
+     * The jitter to apply for scheduling the next query after TTL to help spread out subsequent DNS queries.
+     * <p>
+     * The jitter value will be added on top of the TTL value returned from the DNS server to avoid hitting the cache.
      *
      * @param ttlJitter The jitter to apply to schedule the next query after TTL.
      * @return {@code this}.

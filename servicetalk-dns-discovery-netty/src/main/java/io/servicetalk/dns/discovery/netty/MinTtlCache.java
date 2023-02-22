@@ -83,11 +83,12 @@ final class MinTtlCache implements DnsCache {
     @Override
     public List<? extends DnsCacheEntry> get(final String hostname, final DnsRecord[] additionals) {
         final List<? extends DnsCacheEntry> entries = cache.get(hostname, additionals);
-        if (entries != null) {
+        if (entries != null && !entries.isEmpty()) {
             // This means that either:
             //  1. there were multiple `discover` calls for the same hostname (on `DefaultDnsClient`), or
-            //  2. the scheduled lookup happened before the cache expired the entries.
-            // #1 is ok. #2 means that stale results will be returned until the next TTL scheduled lookup.
+            //  2. the consumer of events re-subscribed before the cache expired the entries, or
+            //  3. the scheduled lookup happened before the cache expired the entries.
+            // #1 and #2 are ok. #2 means that stale results will be returned until the next TTL scheduled lookup.
             LOGGER.debug("Found cached entries for {}: {}", hostname, entries);
         }
         return entries;

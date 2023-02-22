@@ -38,6 +38,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -91,6 +93,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
 class DefaultDnsClientTest {
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultDnsClientTest.class);
     private static final int DEFAULT_TTL = 1;
 
     @RegisterExtension
@@ -143,11 +146,20 @@ class DefaultDnsClientTest {
     }
 
     private void advanceTime(int ttl) throws Exception {
-        // Netty schedules cache invalidation on the EventLoop, using real time. Because we schedule subsequent
+        // To make sure that the time is advanced after all prior work on the EvenLoop is complete, we advance it from
+        // the EventLoop too.
+        ioExecutor.executor().submit(() -> {
+            // Add one more second to make sure we cover the jitter.
+            final int time = ttl + 1;
+            LOGGER.debug("Advance time by {}s.", time);
+            timerExecutor.executor().advanceTimeBy(time, SECONDS);
+        }).toFuture().get();
+    }
+
+    private void expireCache() throws Exception {
+        // Netty schedules cache expiration on the EventLoop using real time. Because we schedule subsequent
         // resolutions on TestExecutor, we need to clear the cache manually before we advance time.
         ioExecutor.executor().submit(() -> client.ttlCache().clear()).toFuture().get();
-        // Add one more second to make sure we cover the jitter.
-        timerExecutor.executor().advanceTimeBy(ttl + 1, SECONDS);
     }
 
     static Stream<ServiceDiscovererEvent.Status> missingRecordStatus() {
@@ -344,6 +356,8 @@ class DefaultDnsClientTest {
             signals = subscriber.takeOnNext(2);
             assertHasEvent(signals, ip1, targetPort, EXPIRED);
             assertHasEvent(signals, ip2, targetPort, EXPIRED);
+        } else {
+            assertThat(subscriber.pollOnNext(50, MILLISECONDS), is(nullValue()));
         }
         assertThat(subscriber.awaitOnError(), instanceOf(UnknownHostException.class));
     }
@@ -427,6 +441,7 @@ class DefaultDnsClientTest {
                 createSrvRecord(domain, targetDomain1, targetPort, DEFAULT_TTL),
                 createSrvRecord(domain, targetDomain2, targetPort, DEFAULT_TTL));
         advanceTime();
+        assertThat(subscriber.pollOnNext(50, MILLISECONDS), is(nullValue()));
         assertThat(subscriber.awaitOnError(), instanceOf(UnknownHostException.class));
     }
 
@@ -984,34 +999,42 @@ class DefaultDnsClientTest {
         latchOnError.await();
     }
 
-    @Test
-    void capsMaxTTLForARecord() throws Exception {
-        setup(builder -> builder.maxTTL(3));
+    @ParameterizedTest(name = "{displayName} [{index}] cache={0}")
+    @ValueSource(booleans = {false, true})
+    void capsMaxTTLForARecord(boolean cache) throws Exception {
+        final int cappedMaxTTL = 3;
+        final int dnsServerMaxTTL = cappedMaxTTL * 2;
+
+        setup(builder -> builder.ttl(1, cappedMaxTTL, cache));
         final String domain = "servicetalk.io";
         String ip1 = nextIp();
         String ip2 = nextIp();
-        recordStore.addIPv4Address(domain, 5, ip1);
+        recordStore.addIPv4Address(domain, dnsServerMaxTTL, ip1);
 
         TestPublisherSubscriber<ServiceDiscovererEvent<InetAddress>> subscriber = dnsQuery(domain);
         Subscription subscription = subscriber.awaitSubscription();
         subscription.request(Long.MAX_VALUE);
 
         assertEvent(subscriber.takeOnNext(), ip1, AVAILABLE);
-        recordStore.removeIPv4Address(domain, 5, ip1);
-        recordStore.addIPv4Address(domain, 5, ip2);
-        advanceTime(3);
+        recordStore.removeIPv4Address(domain, dnsServerMaxTTL, ip1);
+        recordStore.addIPv4Address(domain, dnsServerMaxTTL, ip2);
+        if (cache) {
+            expireCache();
+        }
+        advanceTime(cappedMaxTTL);
 
         List<ServiceDiscovererEvent<InetAddress>> signals = subscriber.takeOnNext(2);
         assertHasEvent(signals, ip2, AVAILABLE);
         assertHasEvent(signals, ip1, EXPIRED);
     }
 
-    @Test
-    void capsMaxTTLForSrvRecord() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] cache={0}")
+    @ValueSource(booleans = {false, true})
+    void capsMaxTTLForSrvRecord(boolean cache) throws Exception {
         final int cappedMaxTTL = 3;
-        int dnsServerMaxTTL = cappedMaxTTL * 2;
+        final int dnsServerMaxTTL = cappedMaxTTL * 2;
 
-        setup(builder -> builder.maxTTL(cappedMaxTTL));
+        setup(builder -> builder.ttl(1, cappedMaxTTL, cache));
         final String domain = "servicetalk.io";
         String ip1 = nextIp();
         String ip2 = nextIp();
@@ -1030,10 +1053,65 @@ class DefaultDnsClientTest {
         recordStore.removeSrv(domain, targetDomain1, 1234, dnsServerMaxTTL);
         recordStore.addSrv(domain, targetDomain2, 1234, dnsServerMaxTTL);
 
+        if (cache) {
+            expireCache();
+        }
         advanceTime(cappedMaxTTL);
         List<ServiceDiscovererEvent<InetSocketAddress>> signals = subscriber.takeOnNext(2);
         assertHasEvent(signals, ip1, 1234, EXPIRED);
         assertHasEvent(signals, ip2, 1234, AVAILABLE);
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] resubscribe={0}")
+    @ValueSource(booleans = {false, true})
+    void cacheForARecord(boolean resubscribe) throws Exception {
+        int ttl = 5;
+        setup(builder -> builder.ttl(1, ttl, true));
+        final String domain = "servicetalk.io";
+        String ip1 = nextIp();
+        String ip2 = nextIp();
+        recordStore.addIPv4Address(domain, ttl, ip1);
+
+        TestPublisherSubscriber<ServiceDiscovererEvent<InetAddress>> subscriber = dnsQuery(domain);
+        Subscription subscription = subscriber.awaitSubscription();
+        subscription.request(Long.MAX_VALUE);
+        assertEvent(subscriber.takeOnNext(), ip1, AVAILABLE);
+        assertThat(subscriber.pollOnNext(50, MILLISECONDS), is(nullValue()));
+
+        // Update DNS records
+        recordStore.removeIPv4Address(domain, ttl, ip1);
+        recordStore.addIPv4Address(domain, ttl, ip2);
+
+        // New resolution hits the cache
+        if (resubscribe) {
+            advanceTime(1);
+            subscription.cancel();
+            subscriber = dnsQuery(domain);
+            subscription = subscriber.awaitSubscription();
+            subscription.request(Long.MAX_VALUE);
+            assertEvent(subscriber.takeOnNext(), ip1, AVAILABLE);
+        } else {
+            // Don't expire cache before advanceTime to simulate that we hit the cache
+            advanceTime(ttl);
+        }
+        assertThat(subscriber.pollOnNext(50, MILLISECONDS), is(nullValue()));
+
+        // Getting new results after cache expires
+        expireCache();
+        if (resubscribe) {
+            advanceTime(1);
+            subscription.cancel();
+            subscriber = dnsQuery(domain);
+            subscription = subscriber.awaitSubscription();
+            subscription.request(Long.MAX_VALUE);
+            assertEvent(subscriber.takeOnNext(), ip2, AVAILABLE);
+        } else {
+            advanceTime(ttl);
+            List<ServiceDiscovererEvent<InetAddress>> signals = subscriber.takeOnNext(2);
+            assertHasEvent(signals, ip2, AVAILABLE);
+            assertHasEvent(signals, ip1, EXPIRED);
+        }
+        assertThat(subscriber.pollOnNext(50, MILLISECONDS), is(nullValue()));
     }
 
     private static <T> Subscriber<ServiceDiscovererEvent<T>> mockThrowSubscriber(
@@ -1092,7 +1170,7 @@ class DefaultDnsClientTest {
                 .srvConcurrency(512)
                 .dnsServerAddressStreamProvider(new SingletonDnsServerAddressStreamProvider(dnsServer.localAddress()))
                 .ndots(1)
-                .minTTL(1)
+                .ttl(1, 5, false)
                 .ttlJitter(Duration.ofNanos(1));
     }
 
