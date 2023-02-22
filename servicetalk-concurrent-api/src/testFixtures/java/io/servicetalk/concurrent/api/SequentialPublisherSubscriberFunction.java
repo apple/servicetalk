@@ -33,7 +33,7 @@ public final class SequentialPublisherSubscriberFunction<T>
         implements Function<Subscriber<? super T>, Subscriber<? super T>> {
 
     private final AtomicBoolean subscribed = new AtomicBoolean();
-    private final AtomicInteger numberOfSubscribers = new AtomicInteger();
+    private final AtomicInteger numberOfSubscribersSeen = new AtomicInteger();
     @Nullable
     private volatile Subscriber<? super T> subscriber;
 
@@ -43,7 +43,7 @@ public final class SequentialPublisherSubscriberFunction<T>
             throw new IllegalStateException("Duplicate subscriber: " + subscriber);
         }
         this.subscriber = subscriber;
-        numberOfSubscribers.incrementAndGet();
+        numberOfSubscribersSeen.incrementAndGet();
         return new DelegatingPublisherSubscriber<T>(subscriber) {
             @Override
             public void onSubscribe(final Subscription s) {
@@ -108,7 +108,7 @@ public final class SequentialPublisherSubscriberFunction<T>
      *
      * @return total number of observed {@link Subscriber}s.
      */
-    public int numberOfSubscribers() {
-        return numberOfSubscribers.get();
+    public int numberOfSubscribersSeen() {
+        return numberOfSubscribersSeen.get();
     }
 }

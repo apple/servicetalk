@@ -710,7 +710,7 @@ abstract class RoundRobinLoadBalancerTest {
     void resubscribeToEventsWhenAllHostsAreUnhealthy(boolean sdReturnsDelta) throws Exception {
         serviceDiscoveryPublisher.onComplete();
         assertThat(sequentialPublisherSubscriberFunction.isSubscribed(), is(false));
-        assertThat(sequentialPublisherSubscriberFunction.numberOfSubscribers(), is(1));
+        assertThat(sequentialPublisherSubscriberFunction.numberOfSubscribersSeen(), is(1));
 
         DelegatingConnectionFactory alwaysFail12ConnectionFactory = new DelegatingConnectionFactory(address -> {
             switch (address) {
@@ -724,7 +724,7 @@ abstract class RoundRobinLoadBalancerTest {
         lb = defaultLb(alwaysFail12ConnectionFactory);
 
         assertThat(sequentialPublisherSubscriberFunction.isSubscribed(), is(true));
-        assertThat(sequentialPublisherSubscriberFunction.numberOfSubscribers(), is(2));
+        assertThat(sequentialPublisherSubscriberFunction.numberOfSubscribersSeen(), is(2));
 
         assertAddresses(lb.usedAddresses(), EMPTY_ARRAY);
         sendServiceDiscoveryEvents(upEvent("address-1"));
@@ -735,12 +735,12 @@ abstract class RoundRobinLoadBalancerTest {
         for (int i = 0; i < DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD * lb.usedAddresses().size(); ++i) {
             assertSelectThrows(is(UNHEALTHY_HOST_EXCEPTION));
         }
-        assertThat(sequentialPublisherSubscriberFunction.numberOfSubscribers(), is(2));
+        assertThat(sequentialPublisherSubscriberFunction.numberOfSubscribersSeen(), is(2));
         // Assert the next select attempt after resubscribe internal triggers re-subscribe
         testExecutor.advanceTimeBy(DEFAULT_HEALTH_CHECK_RESUBSCRIBE_INTERVAL.toMillis() * 2, MILLISECONDS);
-        assertThat(sequentialPublisherSubscriberFunction.numberOfSubscribers(), is(2));
+        assertThat(sequentialPublisherSubscriberFunction.numberOfSubscribersSeen(), is(2));
         assertSelectThrows(instanceOf(NoAvailableHostException.class));
-        assertThat(sequentialPublisherSubscriberFunction.numberOfSubscribers(), is(3));
+        assertThat(sequentialPublisherSubscriberFunction.numberOfSubscribersSeen(), is(3));
 
         // Verify state after re-subscribe
         assertAddresses(lb.usedAddresses(), "address-1", "address-2");
@@ -768,7 +768,7 @@ abstract class RoundRobinLoadBalancerTest {
     void resubscribeToEventsNotTriggeredWhenDisabled() throws Exception {
         serviceDiscoveryPublisher.onComplete();
         assertThat(sequentialPublisherSubscriberFunction.isSubscribed(), is(false));
-        assertThat(sequentialPublisherSubscriberFunction.numberOfSubscribers(), is(1));
+        assertThat(sequentialPublisherSubscriberFunction.numberOfSubscribersSeen(), is(1));
 
         DelegatingConnectionFactory alwaysFailConnectionFactory =
                 new DelegatingConnectionFactory(address -> Single.failed(UNHEALTHY_HOST_EXCEPTION));
@@ -782,7 +782,7 @@ abstract class RoundRobinLoadBalancerTest {
                         .newLoadBalancer(serviceDiscoveryPublisher, alwaysFailConnectionFactory, "test-service");
 
         assertThat(sequentialPublisherSubscriberFunction.isSubscribed(), is(true));
-        assertThat(sequentialPublisherSubscriberFunction.numberOfSubscribers(), is(2));
+        assertThat(sequentialPublisherSubscriberFunction.numberOfSubscribersSeen(), is(2));
 
         assertAddresses(lb.usedAddresses(), EMPTY_ARRAY);
         sendServiceDiscoveryEvents(upEvent("address-1"));
@@ -793,11 +793,11 @@ abstract class RoundRobinLoadBalancerTest {
         for (int i = 0; i < DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD * lb.usedAddresses().size(); ++i) {
             assertSelectThrows(is(UNHEALTHY_HOST_EXCEPTION));
         }
-        assertThat(sequentialPublisherSubscriberFunction.numberOfSubscribers(), is(2));
+        assertThat(sequentialPublisherSubscriberFunction.numberOfSubscribersSeen(), is(2));
         testExecutor.advanceTimeBy(DEFAULT_HEALTH_CHECK_RESUBSCRIBE_INTERVAL.toMillis() * 2, MILLISECONDS);
-        assertThat(sequentialPublisherSubscriberFunction.numberOfSubscribers(), is(2));
+        assertThat(sequentialPublisherSubscriberFunction.numberOfSubscribersSeen(), is(2));
         assertSelectThrows(instanceOf(NoAvailableHostException.class));
-        assertThat(sequentialPublisherSubscriberFunction.numberOfSubscribers(), is(2));
+        assertThat(sequentialPublisherSubscriberFunction.numberOfSubscribersSeen(), is(2));
     }
 
     @Test

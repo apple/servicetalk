@@ -196,6 +196,8 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
     }
 
     private void subscribeToEvents(boolean resubscribe) {
+        // This method is invoked only when we are in RESUBSCRIBING state. Only one thread can own this state.
+        assert nextResubscribeTime == RESUBSCRIBING;
         if (resubscribe) {
             discoveryCancellable.cancelCurrent();
         }
