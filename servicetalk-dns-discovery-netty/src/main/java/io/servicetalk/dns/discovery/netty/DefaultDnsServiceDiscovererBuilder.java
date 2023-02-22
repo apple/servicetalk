@@ -98,7 +98,7 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
      *
      * @param minTTLSeconds The minimum amount of time a cache entry will be considered valid (in seconds).
      * @return {@code this}.
-     * @deprecated Use {@link #ttl(int, int, boolean)}.
+     * @deprecated Use {@link #ttl(int, int)}.
      */
     @Deprecated
     public DefaultDnsServiceDiscovererBuilder minTTL(final int minTTLSeconds) {
