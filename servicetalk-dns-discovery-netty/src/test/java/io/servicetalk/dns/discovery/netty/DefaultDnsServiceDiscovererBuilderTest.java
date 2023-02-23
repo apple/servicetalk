@@ -15,18 +15,24 @@
  */
 package io.servicetalk.dns.discovery.netty;
 
+import io.servicetalk.client.api.ServiceDiscoverer;
+import io.servicetalk.client.api.ServiceDiscovererEvent;
+
 import org.junit.jupiter.api.Test;
 
+import java.net.InetSocketAddress;
 import java.time.Duration;
 
 import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.AVAILABLE;
 import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.EXPIRED;
 import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.UNAVAILABLE;
 import static java.lang.Integer.MAX_VALUE;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class DnsServiceDiscovererBuilderValidationTest {
+class DefaultDnsServiceDiscovererBuilderTest {
 
     private final DnsServiceDiscovererBuilder builder = DnsServiceDiscoverers.builder(getClass().getSimpleName());
 
@@ -84,5 +90,21 @@ class DnsServiceDiscovererBuilderValidationTest {
         assertThrows(IllegalArgumentException.class, () -> builder.missingRecordStatus(AVAILABLE));
         assertDoesNotThrow(() -> builder.missingRecordStatus(EXPIRED));
         assertDoesNotThrow(() -> builder.missingRecordStatus(UNAVAILABLE));
+    }
+
+    @Test
+    void testToStringContainsId() throws Exception {
+        testToStringContainsId(builder.buildARecordDiscoverer());
+        testToStringContainsId(builder.buildSrvDiscoverer());
+    }
+
+    private <U> void testToStringContainsId(
+            ServiceDiscoverer<U, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>> sd)
+            throws Exception {
+        try {
+            assertThat(sd.toString(), containsString(getClass().getSimpleName()));
+        } finally {
+            sd.closeAsync().toFuture().get();
+        }
     }
 }
