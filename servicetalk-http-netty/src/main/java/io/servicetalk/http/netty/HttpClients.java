@@ -22,6 +22,7 @@ import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.client.api.partition.PartitionAttributes;
 import io.servicetalk.client.api.partition.PartitionAttributesBuilder;
 import io.servicetalk.client.api.partition.PartitionedServiceDiscovererEvent;
+import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
@@ -36,7 +37,6 @@ import io.servicetalk.http.api.PartitionedHttpClientBuilder;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.transport.api.HostAndPort;
-import io.servicetalk.transport.netty.internal.BuilderUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,6 +52,8 @@ import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalDnsServiceDiscoverer;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalSrvDnsServiceDiscoverer;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.mappingServiceDiscoverer;
+import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.resolvedServiceDiscoverer;
+import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.unresolvedServiceDiscoverer;
 import static io.servicetalk.utils.internal.ServiceLoaderUtils.loadProviders;
 import static java.util.function.Function.identity;
 
@@ -107,6 +109,35 @@ public final class HttpClients {
      */
     public static MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forMultiAddressUrl() {
         return applyProviders(new DefaultMultiAddressUrlHttpClientBuilder(HttpClients::forSingleAddress));
+    }
+
+    /**
+     * Creates a {@link MultiAddressHttpClientBuilder} for clients capable of parsing an <a
+     * href="https://tools.ietf.org/html/rfc7230#section-5.3.2">absolute-form URL</a>, connecting to multiple addresses
+     * with default {@link LoadBalancer} and DNS {@link ServiceDiscoverer} that will run resolutions before creating a
+     * new connection.
+     * <p>
+     * When a <a href="https://tools.ietf.org/html/rfc3986#section-4.2">relative URL</a> is passed in the {@link
+     * StreamingHttpRequest#requestTarget(String)} this client requires a {@link HttpHeaderNames#HOST} present in
+     * order to infer the remote address.
+     * <p>
+     * Important side effects to take into account:
+     * <ol>
+     *     <li>The total latency for opening a new connection will be increased by a latency of DNS resolution.</li>
+     *     <li>If the target host has more than one resolved address, created clients loose ability to load balance for
+     *     each request. Instead, the balancing will happen only for every new created connection.</li>
+     *     <li>Created clients won't be able to move/shift traffic based on changes in DNS records until the remote
+     *     server closes existing connections.</li>
+     * </ol>
+     * <p>
+     * The returned builder can be customized using {@link MultiAddressHttpClientBuilderProvider}.
+     *
+     * @return new builder with default configuration
+     * @see MultiAddressHttpClientBuilderProvider
+     */
+    public static MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forMultiAddressUrlResolveOnDemand() {
+        return applyProviders(new DefaultMultiAddressUrlHttpClientBuilder(
+                HttpClients::forSingleAddressResolveOnDemand));
     }
 
     /**
@@ -176,6 +207,65 @@ public final class HttpClients {
     }
 
     /**
+     * Creates a {@link SingleAddressHttpClientBuilder} for an address with default {@link LoadBalancer} and DNS {@link
+     * ServiceDiscoverer} that will run resolutions before creating a new connection.
+     * <p>
+     * Important side effects to take into account:
+     * <ol>
+     *     <li>The total latency for opening a new connection will be increased by a latency of DNS resolution.</li>
+     *     <li>If the target host has more than one resolved address, created clients loose ability to load balance for
+     *     each request. Instead, the balancing will happen only for every new created connection.</li>
+     *     <li>Created clients won't be able to move/shift traffic based on changes in DNS records until the remote
+     *     server closes existing connections.</li>
+     * </ol>
+     * <p>
+     * The returned builder can be customized using {@link SingleAddressHttpClientBuilderProvider}.
+     *
+     * @param host host to connect to, resolved by default using a DNS {@link ServiceDiscoverer} for every new
+     * connection. This will also be used for the {@link HttpHeaderNames#HOST} together with the {@code port}. Use
+     * {@link SingleAddressHttpClientBuilder#unresolvedAddressToHost(Function)} if you want to override that value
+     * or {@link SingleAddressHttpClientBuilder#hostHeaderFallback(boolean)} if you want to disable this behavior.
+     * @param port port to connect to
+     * @return new builder for the address
+     * @see SingleAddressHttpClientBuilderProvider
+     */
+    public static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forSingleAddressResolveOnDemand(
+            final String host, final int port) {
+        return forSingleAddressResolveOnDemand(HostAndPort.of(host, port));
+    }
+
+    /**
+     * Creates a {@link SingleAddressHttpClientBuilder} for an address with default {@link LoadBalancer} and DNS {@link
+     * ServiceDiscoverer} that will run resolutions before creating a new connection.
+     * <p>
+     * Important side effects to take into account:
+     * <ol>
+     *     <li>The total latency for opening a new connection will be increased by a latency of DNS resolution.</li>
+     *     <li>If the target host has more than one resolved address, created clients loose ability to load balance for
+     *     each request. Instead, the balancing will happen only for every new created connection.</li>
+     *     <li>Created clients won't be able to move/shift traffic based on changes in DNS records until the remote
+     *     server closes existing connections.</li>
+     * </ol>
+     * <p>
+     * The returned builder can be customized using {@link SingleAddressHttpClientBuilderProvider}.
+     *
+     * @param address the {@code UnresolvedAddress} to connect to, resolved using a DNS {@link ServiceDiscoverer} for
+     * every new connection. This address will also be used for the {@link HttpHeaderNames#HOST} header value.
+     * Use {@link SingleAddressHttpClientBuilder#unresolvedAddressToHost(Function)} if you want to override that
+     * value or {@link SingleAddressHttpClientBuilder#hostHeaderFallback(boolean)} if you want to disable this behavior.
+     * @return new builder for the address
+     * @see SingleAddressHttpClientBuilderProvider
+     */
+    public static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forSingleAddressResolveOnDemand(
+            final HostAndPort address) {
+        return applyProviders(address,
+                new DefaultSingleAddressHttpClientBuilder<>(address, unresolvedServiceDiscoverer()))
+                // Apply after providers to let them see these customizations.
+                .appendConnectionFactoryFilter(ResolvingConnectionFactoryFilter.INSTANCE)
+                .retryServiceDiscoveryErrors(NoRetriesStrategy.INSTANCE);
+    }
+
+    /**
      * Creates a {@link SingleAddressHttpClientBuilder} for the passed {@code serviceName} with default
      * {@link LoadBalancer} and a DNS {@link ServiceDiscoverer} using
      * <a href="https://tools.ietf.org/html/rfc2782">SRV record</a> lookups.
@@ -235,7 +325,9 @@ public final class HttpClients {
     public static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forResolvedAddress(
             final HostAndPort address) {
         return applyProviders(address, new DefaultSingleAddressHttpClientBuilder<>(address,
-                mappingServiceDiscoverer(BuilderUtils::toResolvedInetSocketAddress)));
+                resolvedServiceDiscoverer()))
+                // Apply after providers to let them see these customizations.
+                .retryServiceDiscoveryErrors(NoRetriesStrategy.INSTANCE);
     }
 
     /**
@@ -253,7 +345,9 @@ public final class HttpClients {
      */
     public static <R extends SocketAddress> SingleAddressHttpClientBuilder<R, R> forResolvedAddress(final R address) {
         return applyProviders(address,
-                new DefaultSingleAddressHttpClientBuilder<>(address, mappingServiceDiscoverer(identity())));
+                new DefaultSingleAddressHttpClientBuilder<>(address, mappingServiceDiscoverer(identity())))
+                // Apply after providers to let them see these customizations.
+                .retryServiceDiscoveryErrors(NoRetriesStrategy.INSTANCE);
     }
 
     /**
@@ -334,5 +428,22 @@ public final class HttpClients {
                                 return closeable.closeAsyncGracefully();
                             }
                         }, address), serviceDiscoverer, partitionAttributesBuilderFactory);
+    }
+
+    /**
+     * A retry strategy that never retries. Useful for {@link ServiceDiscoverer} instances that are known to never fail.
+     */
+    private static final class NoRetriesStrategy implements BiIntFunction<Throwable, Completable> {
+
+        static final BiIntFunction<Throwable, Completable> INSTANCE = new NoRetriesStrategy();
+
+        private NoRetriesStrategy() {
+            // Singleton
+        }
+
+        @Override
+        public Completable apply(final int i, final Throwable t) {
+            return Completable.failed(t);
+        }
     }
 }

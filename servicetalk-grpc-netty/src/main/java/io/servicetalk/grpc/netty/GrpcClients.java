@@ -91,6 +91,58 @@ public final class GrpcClients {
     }
 
     /**
+     * Creates a {@link GrpcClientBuilder} for an address with default {@link LoadBalancer} and DNS
+     * {@link ServiceDiscoverer} that will run resolutions before creating a new connection.
+     * <p>
+     * Important side effects to take into account:
+     * <ol>
+     *     <li>The total latency for opening a new connection will be increased by a latency of DNS resolution.</li>
+     *     <li>If the target host has more than one resolved address, created clients loose ability to load balance for
+     *     each request. Instead, the balancing will happen only for every new created connection.</li>
+     *     <li>Created clients won't be able to move/shift traffic based on changes in DNS records until the remote
+     *     server closes existing connections.</li>
+     * </ol>
+     * <p>
+     * The returned builder can be customized using {@link GrpcClientBuilderProvider}.
+     *
+     * @param host host to connect to, resolved by default using a DNS {@link ServiceDiscoverer} for every new
+     * connection.
+     * @param port port to connect to
+     * @return new builder for the address
+     * @see GrpcClientBuilderProvider
+     */
+    public static GrpcClientBuilder<HostAndPort, InetSocketAddress> forAddressResolveOnDemand(
+            final String host, final int port) {
+        return forAddressResolveOnDemand(HostAndPort.of(host, port));
+    }
+
+    /**
+     * Creates a {@link GrpcClientBuilder} for an address with default {@link LoadBalancer} and DNS
+     * {@link ServiceDiscoverer} that will run resolutions before creating a new connection.
+     * <p>
+     * Important side effects to take into account:
+     * <ol>
+     *     <li>The total latency for opening a new connection will be increased by a latency of DNS resolution.</li>
+     *     <li>If the target host has more than one resolved address, created clients loose ability to load balance for
+     *     each request. Instead, the balancing will happen only for every new created connection.</li>
+     *     <li>Created clients won't be able to move/shift traffic based on changes in DNS records until the remote
+     *     server closes existing connections.</li>
+     * </ol>
+     * <p>
+     * The returned builder can be customized using {@link GrpcClientBuilderProvider}.
+     *
+     * @param address the {@code UnresolvedAddress} to connect to, resolved using a DNS {@link ServiceDiscoverer} for
+     * every new connection.
+     * @return new builder for the address
+     * @see GrpcClientBuilderProvider
+     */
+    public static GrpcClientBuilder<HostAndPort, InetSocketAddress> forAddressResolveOnDemand(
+            final HostAndPort address) {
+        return applyProviders(address,
+                new DefaultGrpcClientBuilder<>(() -> HttpClients.forSingleAddressResolveOnDemand(address)));
+    }
+
+    /**
      * Creates a {@link GrpcClientBuilder} for the passed {@code serviceName} with default {@link LoadBalancer} and a
      * DNS {@link ServiceDiscoverer} using <a href="https://tools.ietf.org/html/rfc2782">SRV record</a> lookups.
      * <p>
