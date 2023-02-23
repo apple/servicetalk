@@ -32,6 +32,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 
@@ -48,9 +49,13 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -62,6 +67,7 @@ class DnsServiceDiscovererObserverTest {
     private static final String SERVICE_NAME = "servicetalk";
     private static final String INVALID = "invalid.";
     private static final int DEFAULT_TTL = 1;
+    private static final String DISCOVERER_ID = "test";
 
     private final TestRecordStore recordStore = new TestRecordStore();
     private final TestDnsServer dnsServer = new TestDnsServer(recordStore);
@@ -84,7 +90,7 @@ class DnsServiceDiscovererObserverTest {
     }
 
     private DnsClient dnsClient(DnsServiceDiscovererObserver observer) {
-        return toClose.append(new DefaultDnsServiceDiscovererBuilder("test")
+        return toClose.append(new DefaultDnsServiceDiscovererBuilder(DISCOVERER_ID)
                 .observer(observer)
                 .dnsResolverAddressTypes(DnsResolverAddressTypes.IPV4_PREFERRED)
                 .optResourceEnabled(false)
@@ -107,9 +113,37 @@ class DnsServiceDiscovererObserverTest {
     private void testNewDiscoveryObserver(BiFunction<DnsClient, String, Publisher<?>> publisherFactory,
                                           String expectedName) throws Exception {
         BlockingQueue<String> newDiscoveryCalls = new LinkedBlockingDeque<>();
-        DnsClient client = dnsClient(name -> {
-            newDiscoveryCalls.add(name);
-            return NoopDnsDiscoveryObserver.INSTANCE;
+        final AtomicBoolean discoveryCanceledCalled = new AtomicBoolean();
+        DnsClient client = dnsClient(new DnsServiceDiscovererObserver() {
+            @Override
+            public DnsDiscoveryObserver onNewDiscovery(final String name) {
+                fail("This method must not be called anymore when overridden");
+                return null;
+            }
+
+            @Override
+            public DnsDiscoveryObserver onNewDiscovery(final String serviceDiscovererId, final String name) {
+                newDiscoveryCalls.add(name);
+                assertEquals(DISCOVERER_ID, serviceDiscovererId);
+                return new DnsDiscoveryObserver() {
+                    @Override
+                    public DnsResolutionObserver onNewResolution(final String name) {
+                        return NoopDnsResolutionObserver.INSTANCE;
+                    }
+
+                    @Override
+                    public void discoveryCanceled() {
+                        // the takeAtMost operator below will trigger a cancellation, not a completion event
+                        discoveryCanceledCalled.set(true);
+                    }
+
+                    @Override
+                    public void discoveryCompleted() { }
+
+                    @Override
+                    public void discoveryFailed(final Throwable cause) { }
+                };
+            }
         });
 
         Publisher<?> publisher = publisherFactory.apply(client, expectedName);
@@ -118,6 +152,7 @@ class DnsServiceDiscovererObserverTest {
         publisher.takeAtMost(1).ignoreElements().toFuture().get();
         assertThat("Unexpected number of calls to newDiscovery(name)", newDiscoveryCalls, hasSize(1));
         assertThat("Unexpected name for newDiscovery(name)", newDiscoveryCalls, hasItem(equalTo(expectedName)));
+        assertTrue(discoveryCanceledCalled.get());
     }
 
     @Test
@@ -153,6 +188,47 @@ class DnsServiceDiscovererObserverTest {
         assertThat("Unexpected name for newResolution(name)", newResolution, hasItem(equalTo(SERVICE_NAME)));
         assertThat("Unexpected name for newResolution(name)", newResolution,
                 hasItem(anyOf(equalTo(HOST_NAME), equalTo(HOST_NAME + '.'))));
+    }
+
+    @Test
+    void aQueryFailedDiscovery() {
+        testFailedDiscovery(DnsClient::dnsQuery);
+    }
+
+    @Test
+    void srvQueryFailedDiscovery() {
+        testFailedDiscovery(DnsClient::dnsSrvQuery);
+    }
+
+    private void testFailedDiscovery(BiFunction<DnsClient, String, Publisher<?>> publisherFactory) {
+        BlockingQueue<Throwable> discoveryFailures = new LinkedBlockingDeque<>();
+        DnsClient client = dnsClient(name -> new DnsDiscoveryObserver() {
+            @Override
+            public DnsResolutionObserver onNewResolution(final String name) {
+                return NoopDnsResolutionObserver.INSTANCE;
+            }
+
+            @Override
+            public void discoveryCanceled() { }
+
+            @Override
+            public void discoveryCompleted() { }
+
+            @Override
+            public void discoveryFailed(final Throwable cause) {
+                discoveryFailures.add(cause);
+            }
+        });
+
+        Publisher<?> publisher = publisherFactory.apply(client, INVALID);
+        assertThat("Unexpected calls to discoveryFailed(t)", discoveryFailures, hasSize(0));
+        // Wait until SD returns at least one address:
+        ExecutionException ee = assertThrows(ExecutionException.class,
+                () -> publisher.takeAtMost(1).ignoreElements().toFuture().get());
+        Throwable cause = ee.getCause();
+        assertThat(cause, instanceOf(UnknownHostException.class));
+        assertThat("Unexpected number of calls to discoveryFailed(t)", discoveryFailures, hasSize(1));
+        assertThat("Unexpected name for discoveryFailed(t)", discoveryFailures, hasItem(sameInstance(cause)));
     }
 
     @Test
@@ -289,34 +365,34 @@ class DnsServiceDiscovererObserverTest {
     @Test
     void aQueryOnNewDiscoveryThrows() throws Exception {
         DnsServiceDiscovererObserver observer = mock(DnsServiceDiscovererObserver.class);
-        when(observer.onNewDiscovery(anyString())).thenThrow(DELIBERATE_EXCEPTION);
+        when(observer.onNewDiscovery(eq(DISCOVERER_ID), anyString())).thenThrow(DELIBERATE_EXCEPTION);
 
         DnsClient client = dnsClient(observer);
         Publisher<?> publisher = client.dnsQuery(HOST_NAME);
         verifyNoInteractions(observer);
         // Wait until SD returns at least one address:
         publisher.takeAtMost(1).ignoreElements().toFuture().get();
-        verify(observer).onNewDiscovery(HOST_NAME);
+        verify(observer).onNewDiscovery(DISCOVERER_ID, HOST_NAME);
     }
 
     @Test
     void srvQueryOnNewDiscoveryThrows() throws Exception {
         DnsServiceDiscovererObserver observer = mock(DnsServiceDiscovererObserver.class);
-        when(observer.onNewDiscovery(anyString())).thenThrow(DELIBERATE_EXCEPTION);
+        when(observer.onNewDiscovery(eq(DISCOVERER_ID), anyString())).thenThrow(DELIBERATE_EXCEPTION);
 
         DnsClient client = dnsClient(observer);
         Publisher<?> publisher = client.dnsSrvQuery(SERVICE_NAME);
         verifyNoInteractions(observer);
         // Wait until SD returns at least one address:
         publisher.takeAtMost(1).ignoreElements().toFuture().get();
-        verify(observer).onNewDiscovery(SERVICE_NAME);
+        verify(observer).onNewDiscovery(DISCOVERER_ID, SERVICE_NAME);
     }
 
     @Test
     void onNewResolutionThrows() throws Exception {
         DnsServiceDiscovererObserver observer = mock(DnsServiceDiscovererObserver.class);
         DnsDiscoveryObserver discoveryObserver = mock(DnsDiscoveryObserver.class);
-        when(observer.onNewDiscovery(anyString())).thenReturn(discoveryObserver);
+        when(observer.onNewDiscovery(eq(DISCOVERER_ID), anyString())).thenReturn(discoveryObserver);
         when(discoveryObserver.onNewResolution(anyString())).thenThrow(DELIBERATE_EXCEPTION);
 
         DnsClient client = dnsClient(observer);
@@ -324,16 +400,16 @@ class DnsServiceDiscovererObserverTest {
         verifyNoInteractions(observer, discoveryObserver);
         // Wait until SD returns at least one address:
         publisher.takeAtMost(1).ignoreElements().toFuture().get();
-        verify(observer).onNewDiscovery(HOST_NAME);
+        verify(observer).onNewDiscovery(DISCOVERER_ID, HOST_NAME);
         verify(discoveryObserver).onNewResolution(HOST_NAME);
     }
 
     @Test
-    void resolutionFailedThrows() throws Exception {
+    void resolutionFailedThrows() {
         DnsServiceDiscovererObserver observer = mock(DnsServiceDiscovererObserver.class);
         DnsDiscoveryObserver discoveryObserver = mock(DnsDiscoveryObserver.class);
         DnsResolutionObserver resolutionObserver = mock(DnsResolutionObserver.class);
-        when(observer.onNewDiscovery(anyString())).thenReturn(discoveryObserver);
+        when(observer.onNewDiscovery(eq(DISCOVERER_ID), anyString())).thenReturn(discoveryObserver);
         when(discoveryObserver.onNewResolution(anyString())).thenReturn(resolutionObserver);
         doThrow(DELIBERATE_EXCEPTION).when(resolutionObserver).resolutionFailed(any());
 
@@ -343,7 +419,7 @@ class DnsServiceDiscovererObserverTest {
         // Wait until SD returns at least one address:
         ExecutionException ee = assertThrows(ExecutionException.class,
                 () -> publisher.takeAtMost(1).ignoreElements().toFuture().get());
-        verify(observer).onNewDiscovery(INVALID);
+        verify(observer).onNewDiscovery(DISCOVERER_ID, INVALID);
         verify(discoveryObserver).onNewResolution(INVALID);
         verify(resolutionObserver).resolutionFailed(ee.getCause());
     }
@@ -353,7 +429,7 @@ class DnsServiceDiscovererObserverTest {
         DnsServiceDiscovererObserver observer = mock(DnsServiceDiscovererObserver.class);
         DnsDiscoveryObserver discoveryObserver = mock(DnsDiscoveryObserver.class);
         DnsResolutionObserver resolutionObserver = mock(DnsResolutionObserver.class);
-        when(observer.onNewDiscovery(anyString())).thenReturn(discoveryObserver);
+        when(observer.onNewDiscovery(eq(DISCOVERER_ID), anyString())).thenReturn(discoveryObserver);
         when(discoveryObserver.onNewResolution(anyString())).thenReturn(resolutionObserver);
         doThrow(DELIBERATE_EXCEPTION).when(resolutionObserver).resolutionCompleted(any());
 
@@ -362,22 +438,9 @@ class DnsServiceDiscovererObserverTest {
         verifyNoInteractions(observer, discoveryObserver, resolutionObserver);
         // Wait until SD returns at least one address:
         publisher.takeAtMost(1).ignoreElements().toFuture().get();
-        verify(observer).onNewDiscovery(HOST_NAME);
+        verify(observer).onNewDiscovery(DISCOVERER_ID, HOST_NAME);
         verify(discoveryObserver).onNewResolution(HOST_NAME);
         verify(resolutionObserver).resolutionCompleted(any());
-    }
-
-    private static final class NoopDnsDiscoveryObserver implements DnsDiscoveryObserver {
-        static final DnsDiscoveryObserver INSTANCE = new NoopDnsDiscoveryObserver();
-
-        private NoopDnsDiscoveryObserver() {
-            // Singleton
-        }
-
-        @Override
-        public DnsResolutionObserver onNewResolution(final String name) {
-            return NoopDnsResolutionObserver.INSTANCE;
-        }
     }
 
     private static class NoopDnsResolutionObserver implements DnsResolutionObserver {

@@ -20,7 +20,7 @@ import io.servicetalk.client.api.ServiceDiscovererEvent;
 
 /**
  * An observer that provides visibility into <a href="https://tools.ietf.org/html/rfc1034">DNS</a>
- * {@link ServiceDiscoverer} built by {@link DefaultDnsServiceDiscovererBuilder}.
+ * {@link ServiceDiscoverer} built by {@link DnsServiceDiscovererBuilder}.
  */
 public interface DnsServiceDiscovererObserver {
 
@@ -30,8 +30,22 @@ public interface DnsServiceDiscovererObserver {
      * @param name the name of DNS record to be discovered
      * @return {@link DnsDiscoveryObserver} that provides visibility into individual DNS resolutions behind the
      * associated discovery
+     * @deprecated use {@link #onNewDiscovery(String, String)} instead.
      */
+    @Deprecated // FIXME 0.43: remove deprecated method
     DnsDiscoveryObserver onNewDiscovery(String name);
+
+    /**
+     * Notifies that a new {@link ServiceDiscoverer#discover(Object) discovery} started.
+     *
+     * @param serviceDiscovererId the ID of the {@link ServiceDiscoverer}.
+     * @param name the name of DNS record to be discovered
+     * @return {@link DnsDiscoveryObserver} that provides visibility into individual DNS resolutions behind the
+     * associated discovery
+     */
+    default DnsDiscoveryObserver onNewDiscovery(String serviceDiscovererId, String name) { // FIXME: 0.43 remove default
+        return onNewDiscovery(name);
+    }
 
     /**
      * An observer that provides visibility into individual DNS resolutions.
@@ -46,6 +60,23 @@ public interface DnsServiceDiscovererObserver {
          * @return {@link DnsResolutionObserver} that provides visibility into results of the current DNS resolution
          */
         DnsResolutionObserver onNewResolution(String name);
+
+        /**
+         * Notifies that the current DNS discovery got canceled (did not complete successfully).
+         */
+        default void discoveryCanceled() { } // FIXME: 0.43 remove default
+
+        /**
+         * Notifies that the current DNS discovery completed successfully.
+         */
+        default void discoveryCompleted() { } // FIXME: 0.43 remove default
+
+        /**
+         * Notifies that the current DNS discovery failed.
+         *
+         * @param cause {@link Throwable} as a cause for the failure
+         */
+        default void discoveryFailed(Throwable cause) { } // FIXME: 0.43 remove default
     }
 
     /**

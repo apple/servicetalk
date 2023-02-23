@@ -213,7 +213,7 @@ final class DefaultDnsClient implements DnsClient {
             return null;
         }
         try {
-            return observer.onNewDiscovery(address);
+            return observer.onNewDiscovery(id, address);
         } catch (Throwable unexpected) {
             LOGGER.warn("{} unexpected exception from {} while reporting new DNS discovery for {}",
                     DefaultDnsClient.this, observer, address, unexpected);
@@ -225,8 +225,27 @@ final class DefaultDnsClient implements DnsClient {
     public Publisher<Collection<ServiceDiscovererEvent<InetAddress>>> dnsQuery(final String address) {
         requireNonNull(address);
         return defer(() -> {
-            ARecordPublisher pub = new ARecordPublisher(address, newDiscoveryObserver(address));
-            return inactiveEventsOnError ? recoverWithInactiveEvents(pub, false) : pub;
+            final DnsDiscoveryObserver discoveryObserver = newDiscoveryObserver(address);
+            ARecordPublisher pub = new ARecordPublisher(address, discoveryObserver);
+            Publisher<? extends Collection<ServiceDiscovererEvent<InetAddress>>> events = inactiveEventsOnError ?
+                    recoverWithInactiveEvents(pub, false) :
+                    pub;
+            return events
+                    .afterCancel(() -> {
+                        if (discoveryObserver != null) {
+                            discoveryObserver.discoveryCanceled();
+                        }
+                    })
+                    .afterOnError(cause -> {
+                        if (discoveryObserver != null) {
+                            discoveryObserver.discoveryFailed(cause);
+                        }
+                    })
+                    .afterOnComplete(() -> {
+                        if (discoveryObserver != null) {
+                            discoveryObserver.discoveryCompleted();
+                        }
+                    });
         });
     }
 
@@ -282,7 +301,22 @@ final class DefaultDnsClient implements DnsClient {
                     return empty();
                 }
             }, srvConcurrency)
-            .liftSync(inactiveEventsOnError ? SrvInactiveCombinerOperator.EMIT : SrvInactiveCombinerOperator.NO_EMIT);
+            .liftSync(inactiveEventsOnError ? SrvInactiveCombinerOperator.EMIT : SrvInactiveCombinerOperator.NO_EMIT)
+            .afterCancel(() -> {
+                if (discoveryObserver != null) {
+                    discoveryObserver.discoveryCanceled();
+                }
+            })
+            .afterOnError(cause -> {
+                if (discoveryObserver != null) {
+                    discoveryObserver.discoveryFailed(cause);
+                }
+            })
+            .afterOnComplete(() -> {
+                if (discoveryObserver != null) {
+                    discoveryObserver.discoveryCompleted();
+                }
+            });
         });
     }
 
