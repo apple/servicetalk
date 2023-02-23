@@ -76,7 +76,7 @@ final class DnsClients {
 
             @Override
             public String toString() {
-                return "DefaultDnsServiceDiscoverer{recordTypes=[SRV]}";
+                return "DefaultDnsServiceDiscoverer{id=\"" + dns + "\",recordTypes=[SRV]}";
             }
         };
     }
@@ -123,7 +123,7 @@ final class DnsClients {
 
             @Override
             public String toString() {
-                return "DefaultDnsServiceDiscoverer{recordTypes=[A,AAAA]}";
+                return "DefaultDnsServiceDiscoverer{id=\"" + dns + "\",recordTypes=[A,AAAA]}";
             }
         };
     }
