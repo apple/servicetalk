@@ -67,11 +67,6 @@ public interface DnsServiceDiscovererObserver {
         default void discoveryCanceled() { } // FIXME: 0.43 remove default
 
         /**
-         * Notifies that the current DNS discovery completed successfully.
-         */
-        default void discoveryCompleted() { } // FIXME: 0.43 remove default
-
-        /**
          * Notifies that the current DNS discovery failed.
          *
          * @param cause {@link Throwable} as a cause for the failure

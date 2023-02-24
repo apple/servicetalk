@@ -24,6 +24,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.PublisherOperator;
+import io.servicetalk.concurrent.api.TerminalSignalConsumer;
 import io.servicetalk.concurrent.api.internal.SubscribablePublisher;
 import io.servicetalk.concurrent.internal.CancelImmediatelySubscriber;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
@@ -230,22 +231,30 @@ final class DefaultDnsClient implements DnsClient {
             Publisher<? extends Collection<ServiceDiscovererEvent<InetAddress>>> events = inactiveEventsOnError ?
                     recoverWithInactiveEvents(pub, false) :
                     pub;
-            return events
-                    .afterCancel(() -> {
-                        if (discoveryObserver != null) {
-                            discoveryObserver.discoveryCanceled();
-                        }
-                    })
-                    .afterOnError(cause -> {
-                        if (discoveryObserver != null) {
+            return discoveryObserver == null ? events : events.beforeFinally(new TerminalSignalConsumer() {
+                    @Override
+                    public void onComplete() {
+                        // this event will never be triggered
+                    }
+
+                    @Override
+                    public void onError(final Throwable cause) {
+                        try {
                             discoveryObserver.discoveryFailed(cause);
+                        } catch (Throwable err) {
+                            LOGGER.warn("Unexpected exception from observer while reporting error event", err);
                         }
-                    })
-                    .afterOnComplete(() -> {
-                        if (discoveryObserver != null) {
-                            discoveryObserver.discoveryCompleted();
+                    }
+
+                    @Override
+                    public void cancel() {
+                        try {
+                            discoveryObserver.discoveryCanceled();
+                        } catch (Throwable err) {
+                            LOGGER.warn("Unexpected exception from observer while reporting cancel event", err);
                         }
-                    });
+                    }
+                });
         });
     }
 
@@ -261,7 +270,8 @@ final class DefaultDnsClient implements DnsClient {
         // We "recover" unconditionally to force inactive events to propagate to all mapped A* publishers to cancel
         // any pending scheduled tasks. SrvInactiveCombinerOperator is used to filter the aggregated collection of
         // inactive events if necessary.
-        return recoverWithInactiveEvents(new SrvRecordPublisher(serviceName, discoveryObserver), true)
+        Publisher<Collection<ServiceDiscovererEvent<InetSocketAddress>>> events =
+                recoverWithInactiveEvents(new SrvRecordPublisher(serviceName, discoveryObserver), true)
                 .flatMapConcatIterable(identity())
                 .flatMapMerge(srvEvent -> {
                 assertInEventloop();
@@ -279,7 +289,7 @@ final class DefaultDnsClient implements DnsClient {
                                 recoverWithInactiveEvents(aPublisher, false);
                         return srvFilterDuplicateEvents ?
                                 srvFilterDups(returnPub, availableAddresses, srvEvent.address().port()) :
-                                returnPub.map(events -> mapEventList(events, inetAddress ->
+                                returnPub.map(ev -> mapEventList(ev, inetAddress ->
                                         new InetSocketAddress(inetAddress, srvEvent.address().port())));
                     }).retryWhen((i, cause) -> {
                         assertInEventloop();
@@ -301,20 +311,30 @@ final class DefaultDnsClient implements DnsClient {
                     return empty();
                 }
             }, srvConcurrency)
-            .liftSync(inactiveEventsOnError ? SrvInactiveCombinerOperator.EMIT : SrvInactiveCombinerOperator.NO_EMIT)
-            .afterCancel(() -> {
-                if (discoveryObserver != null) {
-                    discoveryObserver.discoveryCanceled();
+            .liftSync(inactiveEventsOnError ? SrvInactiveCombinerOperator.EMIT : SrvInactiveCombinerOperator.NO_EMIT);
+
+            return discoveryObserver == null ? events : events.beforeFinally(new TerminalSignalConsumer() {
+                @Override
+                public void onComplete() {
+                    // this event will never be triggered
                 }
-            })
-            .afterOnError(cause -> {
-                if (discoveryObserver != null) {
-                    discoveryObserver.discoveryFailed(cause);
+
+                @Override
+                public void onError(final Throwable cause) {
+                    try {
+                        discoveryObserver.discoveryFailed(cause);
+                    } catch (Throwable err) {
+                        LOGGER.warn("Unexpected exception from observer while reporting error event", err);
+                    }
                 }
-            })
-            .afterOnComplete(() -> {
-                if (discoveryObserver != null) {
-                    discoveryObserver.discoveryCompleted();
+
+                @Override
+                public void cancel() {
+                    try {
+                        discoveryObserver.discoveryCanceled();
+                    } catch (Throwable err) {
+                        LOGGER.warn("Unexpected exception from observer while reporting cancel event", err);
+                    }
                 }
             });
         });

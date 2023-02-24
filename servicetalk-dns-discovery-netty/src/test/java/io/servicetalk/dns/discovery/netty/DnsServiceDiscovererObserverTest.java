@@ -28,10 +28,12 @@ import org.junit.jupiter.api.Test;
 
 import java.net.UnknownHostException;
 import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 import javax.annotation.Nullable;
@@ -39,6 +41,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.dns.discovery.netty.DnsTestUtils.nextIp;
+import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.equalTo;
@@ -49,10 +52,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -67,7 +67,7 @@ class DnsServiceDiscovererObserverTest {
     private static final String SERVICE_NAME = "servicetalk";
     private static final String INVALID = "invalid.";
     private static final int DEFAULT_TTL = 1;
-    private static final String DISCOVERER_ID = "test";
+    private static final String DISCOVERER_ID = DnsServiceDiscovererObserverTest.class.getSimpleName();
 
     private final TestRecordStore recordStore = new TestRecordStore();
     private final TestDnsServer dnsServer = new TestDnsServer(recordStore);
@@ -114,17 +114,19 @@ class DnsServiceDiscovererObserverTest {
                                           String expectedName) throws Exception {
         BlockingQueue<String> newDiscoveryCalls = new LinkedBlockingDeque<>();
         final AtomicBoolean discoveryCanceledCalled = new AtomicBoolean();
+        final AtomicBoolean discoveryFailedCalled = new AtomicBoolean();
+        Queue<Throwable> errors = new LinkedBlockingQueue<>();
         DnsClient client = dnsClient(new DnsServiceDiscovererObserver() {
             @Override
             public DnsDiscoveryObserver onNewDiscovery(final String name) {
-                fail("This method must not be called anymore when overridden");
-                return null;
+                errors.add(new AssertionError("This method must not be called anymore when overridden"));
+                return ignored -> NoopDnsResolutionObserver.INSTANCE;
             }
 
             @Override
             public DnsDiscoveryObserver onNewDiscovery(final String serviceDiscovererId, final String name) {
                 newDiscoveryCalls.add(name);
-                assertEquals(DISCOVERER_ID, serviceDiscovererId);
+                assertThat("Unexpected serviceDiscovererId", serviceDiscovererId, equalTo(DISCOVERER_ID));
                 return new DnsDiscoveryObserver() {
                     @Override
                     public DnsResolutionObserver onNewResolution(final String name) {
@@ -138,10 +140,9 @@ class DnsServiceDiscovererObserverTest {
                     }
 
                     @Override
-                    public void discoveryCompleted() { }
-
-                    @Override
-                    public void discoveryFailed(final Throwable cause) { }
+                    public void discoveryFailed(final Throwable cause) {
+                        discoveryFailedCalled.set(true);
+                    }
                 };
             }
         });
@@ -152,7 +153,9 @@ class DnsServiceDiscovererObserverTest {
         publisher.takeAtMost(1).ignoreElements().toFuture().get();
         assertThat("Unexpected number of calls to newDiscovery(name)", newDiscoveryCalls, hasSize(1));
         assertThat("Unexpected name for newDiscovery(name)", newDiscoveryCalls, hasItem(equalTo(expectedName)));
-        assertTrue(discoveryCanceledCalled.get());
+        assertThat("Cancellation callback not called", discoveryCanceledCalled.get(), is(true));
+        assertThat("Failure callback called unexpectedly", discoveryFailedCalled.get(), is(false));
+        assertNoAsyncErrors(errors);
     }
 
     @Test
@@ -202,6 +205,7 @@ class DnsServiceDiscovererObserverTest {
 
     private void testFailedDiscovery(BiFunction<DnsClient, String, Publisher<?>> publisherFactory) {
         BlockingQueue<Throwable> discoveryFailures = new LinkedBlockingDeque<>();
+        final AtomicBoolean discoveryCanceledCalled = new AtomicBoolean();
         DnsClient client = dnsClient(name -> new DnsDiscoveryObserver() {
             @Override
             public DnsResolutionObserver onNewResolution(final String name) {
@@ -209,10 +213,9 @@ class DnsServiceDiscovererObserverTest {
             }
 
             @Override
-            public void discoveryCanceled() { }
-
-            @Override
-            public void discoveryCompleted() { }
+            public void discoveryCanceled() {
+                discoveryCanceledCalled.set(true);
+            }
 
             @Override
             public void discoveryFailed(final Throwable cause) {
@@ -228,7 +231,8 @@ class DnsServiceDiscovererObserverTest {
         Throwable cause = ee.getCause();
         assertThat(cause, instanceOf(UnknownHostException.class));
         assertThat("Unexpected number of calls to discoveryFailed(t)", discoveryFailures, hasSize(1));
-        assertThat("Unexpected name for discoveryFailed(t)", discoveryFailures, hasItem(sameInstance(cause)));
+        assertThat("Unexpected cause for discoveryFailed(t)", discoveryFailures, hasItem(sameInstance(cause)));
+        assertThat("Cancellation called unexpectedly", discoveryCanceledCalled.get(), is(false));
     }
 
     @Test
