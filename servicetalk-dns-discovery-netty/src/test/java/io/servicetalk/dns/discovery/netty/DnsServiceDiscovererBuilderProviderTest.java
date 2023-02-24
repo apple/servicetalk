@@ -40,10 +40,12 @@ class DnsServiceDiscovererBuilderProviderTest {
     void appliesBuilderProvider() {
         assertEquals(0, buildCounter.get());
         final ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>> disco =
-                DnsServiceDiscoverers.builder("test").ttlJitter(Duration.ofSeconds(5)).buildARecordDiscoverer();
+                DnsServiceDiscoverers.builder(getClass().getSimpleName())
+                        .ttlJitter(Duration.ofSeconds(5))
+                        .buildARecordDiscoverer();
         assertNotNull(disco);
         assertEquals(1, buildCounter.get());
-        assertEquals("test", buildId.get());
+        assertEquals(getClass().getSimpleName(), buildId.get());
         assertEquals(5000, ttlJitterIntercept.get());
     }
 
@@ -51,6 +53,9 @@ class DnsServiceDiscovererBuilderProviderTest {
             implements DnsServiceDiscovererBuilderProvider {
         @Override
         public DnsServiceDiscovererBuilder newBuilder(final String id, final DnsServiceDiscovererBuilder builder) {
+            if (!DnsServiceDiscovererBuilderProviderTest.class.getSimpleName().equals(id)) {
+                return builder;
+            }
             buildCounter.incrementAndGet();
             buildId.set(id);
             return new DelegatingDnsServiceDiscovererBuilder(builder) {
