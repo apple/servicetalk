@@ -25,24 +25,29 @@ import io.grpc.examples.helloworld.HelloRequest;
 import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.http.netty.HttpClients.DiscoveryStrategy.ON_NEW_CONNECTION;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
 
-class GrpcClientResolvesOnDemandTest {
+class GrpcClientResolvesOnNewConnectionTest {
 
     @Test
     void test() throws Exception {
         String greetingPrefix = "Hello ";
         String name = "foo";
-        String expectedResponse = greetingPrefix + name;
         try (GrpcServerContext serverContext = GrpcServers.forAddress(localAddress(0))
                 .listenAndAwait((GreeterService) (ctx, request) ->
                         succeeded(HelloReply.newBuilder().setMessage(greetingPrefix + request.getName()).build()));
-             BlockingGreeterClient client = GrpcClients.forAddressResolveOnDemand(serverHostAndPort(serverContext))
+             // Use "localhost" to demonstrate that the address will be resolved.
+             BlockingGreeterClient client = GrpcClients.forAddress("localhost",
+                             serverHostAndPort(serverContext).port(), ON_NEW_CONNECTION)
                      .buildBlocking(new ClientFactory())) {
-            assertEquals(expectedResponse,
-                                    client.sayHello(HelloRequest.newBuilder().setName(name).build()).getMessage());
+            HelloRequest request = HelloRequest.newBuilder().setName(name).build();
+            HelloReply response = client.sayHello(request);
+            assertThat(response.getMessage(), is(equalTo(greetingPrefix + name)));
         }
     }
 }

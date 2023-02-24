@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019, 2022 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2022-2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import io.servicetalk.grpc.api.GrpcClientBuilder;
 import io.servicetalk.grpc.api.GrpcProviders.GrpcClientBuilderProvider;
 import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.netty.HttpClients;
+import io.servicetalk.http.netty.HttpClients.DiscoveryStrategy;
 import io.servicetalk.transport.api.HostAndPort;
 
 import org.slf4j.Logger;
@@ -62,7 +63,7 @@ public final class GrpcClients {
 
     /**
      * Creates a {@link GrpcClientBuilder} for an address with default {@link LoadBalancer} and DNS
-     * {@link ServiceDiscoverer}.
+     * {@link ServiceDiscoverer} using {@link DiscoveryStrategy#BACKGROUND background} discovery strategy.
      * <p>
      * The returned builder can be customized using {@link GrpcClientBuilderProvider}.
      *
@@ -77,7 +78,7 @@ public final class GrpcClients {
 
     /**
      * Creates a {@link GrpcClientBuilder} for an address with default {@link LoadBalancer} and DNS
-     * {@link ServiceDiscoverer}.
+     * {@link ServiceDiscoverer} using {@link DiscoveryStrategy#BACKGROUND background} discovery strategy.
      * <p>
      * The returned builder can be customized using {@link GrpcClientBuilderProvider}.
      *
@@ -92,54 +93,37 @@ public final class GrpcClients {
 
     /**
      * Creates a {@link GrpcClientBuilder} for an address with default {@link LoadBalancer} and DNS
-     * {@link ServiceDiscoverer} that will run resolutions before creating a new connection.
-     * <p>
-     * Important side effects to take into account:
-     * <ol>
-     *     <li>The total latency for opening a new connection will be increased by a latency of DNS resolution.</li>
-     *     <li>If the target host has more than one resolved address, created clients loose ability to load balance for
-     *     each request. Instead, the balancing will happen only for every new created connection.</li>
-     *     <li>Created clients won't be able to move/shift traffic based on changes in DNS records until the remote
-     *     server closes existing connections.</li>
-     * </ol>
+     * {@link ServiceDiscoverer} using the specified {@link DiscoveryStrategy}.
      * <p>
      * The returned builder can be customized using {@link GrpcClientBuilderProvider}.
      *
-     * @param host host to connect to, resolved by default using a DNS {@link ServiceDiscoverer} for every new
-     * connection.
+     * @param host host to connect to, resolved by default using a DNS {@link ServiceDiscoverer}.
      * @param port port to connect to
+     * @param discoveryStrategy {@link DiscoveryStrategy} to use
      * @return new builder for the address
      * @see GrpcClientBuilderProvider
      */
-    public static GrpcClientBuilder<HostAndPort, InetSocketAddress> forAddressResolveOnDemand(
-            final String host, final int port) {
-        return forAddressResolveOnDemand(HostAndPort.of(host, port));
+    public static GrpcClientBuilder<HostAndPort, InetSocketAddress> forAddress(
+            final String host, final int port, final DiscoveryStrategy discoveryStrategy) {
+        return forAddress(HostAndPort.of(host, port), discoveryStrategy);
     }
 
     /**
      * Creates a {@link GrpcClientBuilder} for an address with default {@link LoadBalancer} and DNS
-     * {@link ServiceDiscoverer} that will run resolutions before creating a new connection.
-     * <p>
-     * Important side effects to take into account:
-     * <ol>
-     *     <li>The total latency for opening a new connection will be increased by a latency of DNS resolution.</li>
-     *     <li>If the target host has more than one resolved address, created clients loose ability to load balance for
-     *     each request. Instead, the balancing will happen only for every new created connection.</li>
-     *     <li>Created clients won't be able to move/shift traffic based on changes in DNS records until the remote
-     *     server closes existing connections.</li>
-     * </ol>
+     * {@link ServiceDiscoverer} using the specified {@link DiscoveryStrategy}.
      * <p>
      * The returned builder can be customized using {@link GrpcClientBuilderProvider}.
      *
-     * @param address the {@code UnresolvedAddress} to connect to, resolved using a DNS {@link ServiceDiscoverer} for
-     * every new connection.
+     * @param address the {@code UnresolvedAddress} to connect to, resolved by default using a DNS
+     * {@link ServiceDiscoverer}.
+     * @param discoveryStrategy {@link DiscoveryStrategy} to use
      * @return new builder for the address
      * @see GrpcClientBuilderProvider
      */
-    public static GrpcClientBuilder<HostAndPort, InetSocketAddress> forAddressResolveOnDemand(
-            final HostAndPort address) {
+    public static GrpcClientBuilder<HostAndPort, InetSocketAddress> forAddress(
+            final HostAndPort address, final DiscoveryStrategy discoveryStrategy) {
         return applyProviders(address,
-                new DefaultGrpcClientBuilder<>(() -> HttpClients.forSingleAddressResolveOnDemand(address)));
+                new DefaultGrpcClientBuilder<>(() -> HttpClients.forSingleAddress(address, discoveryStrategy)));
     }
 
     /**

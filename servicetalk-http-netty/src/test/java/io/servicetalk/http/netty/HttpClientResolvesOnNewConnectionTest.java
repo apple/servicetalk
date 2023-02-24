@@ -23,12 +23,13 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
+import static io.servicetalk.http.netty.HttpClients.DiscoveryStrategy.ON_NEW_CONNECTION;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-class HttpClientResolvesOnDemandTest {
+class HttpClientResolvesOnNewConnectionTest {
 
     @ParameterizedTest(name = "{displayName} [{index}]: protocol={0}")
     @EnumSource(HttpProtocol.class)
@@ -36,7 +37,9 @@ class HttpClientResolvesOnDemandTest {
         try (HttpServerContext serverContext = HttpServers.forAddress(localAddress(0))
                 .protocols(protocol.config)
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok());
-             BlockingHttpClient client = HttpClients.forSingleAddressResolveOnDemand(serverHostAndPort(serverContext))
+             // Use "localhost" to demonstrate that the address will be resolved.
+             BlockingHttpClient client = HttpClients.forSingleAddress("localhost",
+                             serverHostAndPort(serverContext).port(), ON_NEW_CONNECTION)
                      .protocols(protocol.config)
                      .buildBlocking()) {
             HttpResponse response = client.request(client.get("/"));

@@ -24,7 +24,6 @@ import io.grpc.examples.helloworld.Greeter.GreeterService;
 import io.grpc.examples.helloworld.HelloReply;
 import io.grpc.examples.helloworld.HelloRequest;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -36,7 +35,10 @@ import static io.servicetalk.grpc.netty.GrpcClients.forResolvedAddress;
 import static io.servicetalk.grpc.netty.GrpcServers.forAddress;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.AddressUtils.newSocketAddress;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 class GrpcUdsTest {
     @Nullable
@@ -54,18 +56,18 @@ class GrpcUdsTest {
 
     @Test
     void udsRoundTrip() throws Exception {
-        Assumptions.assumeTrue(ioExecutor.isUnixDomainSocketSupported());
+        assumeTrue(ioExecutor.isUnixDomainSocketSupported());
         String greetingPrefix = "Hello ";
         String name = "foo";
-        String expectedResponse = greetingPrefix + name;
         try (ServerContext serverContext = forAddress(newSocketAddress())
                 .initializeHttp(builder -> builder.ioExecutor(ioExecutor))
                 .listenAndAwait((GreeterService) (ctx, request) ->
                         succeeded(HelloReply.newBuilder().setMessage(greetingPrefix + request.getName()).build()));
              BlockingGreeterClient client = forResolvedAddress(serverContext.listenAddress())
                      .buildBlocking(new ClientFactory())) {
-            assertEquals(expectedResponse,
-                                    client.sayHello(HelloRequest.newBuilder().setName(name).build()).getMessage());
+            HelloRequest request = HelloRequest.newBuilder().setName(name).build();
+            HelloReply response = client.sayHello(request);
+            assertThat(response.getMessage(), is(equalTo(greetingPrefix + name)));
         }
     }
 }
