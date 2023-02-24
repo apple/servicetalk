@@ -44,6 +44,7 @@ import io.netty.handler.codec.dns.DnsRecord;
 import io.netty.resolver.dns.DefaultDnsCache;
 import io.netty.resolver.dns.DnsNameResolver;
 import io.netty.resolver.dns.DnsNameResolverBuilder;
+import io.netty.resolver.dns.NoopDnsCache;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
@@ -115,6 +116,7 @@ final class DefaultDnsClient implements DnsClient {
     private final DnsNameResolver resolver;
     private final MinTtlCache ttlCache;
     private final long maxTTLNanos;
+    private final long ttlJitterNanos;
     private final ListenableAsyncCloseable asyncCloseable;
     @Nullable
     private final DnsServiceDiscovererObserver observer;
@@ -123,13 +125,13 @@ final class DefaultDnsClient implements DnsClient {
     private final int srvConcurrency;
     private final boolean srvFilterDuplicateEvents;
     private final boolean inactiveEventsOnError;
-    private final long ttlJitterNanos;
     private final DnsResolverAddressTypes addressTypes;
     private final String id;
     private boolean closed;
 
-    DefaultDnsClient(final IoExecutor ioExecutor, final int minTTL, final long ttlJitterNanos,
-                     final int srvConcurrency, final boolean inactiveEventsOnError,
+    DefaultDnsClient(final String id, final IoExecutor ioExecutor,
+                     final int minTTL, final int maxTTL, final int minCacheTTL, final int maxCacheTTL,
+                     final long ttlJitterNanos, final int srvConcurrency, final boolean inactiveEventsOnError,
                      final boolean completeOncePreferredResolved, final boolean srvFilterDuplicateEvents,
                      Duration srvHostNameRepeatInitialDelay, Duration srvHostNameRepeatJitter,
                      @Nullable Integer maxUdpPayloadSize, @Nullable final Integer ndots,
@@ -137,12 +139,7 @@ final class DefaultDnsClient implements DnsClient {
                      final DnsResolverAddressTypes dnsResolverAddressTypes,
                      @Nullable final DnsServerAddressStreamProvider dnsServerAddressStreamProvider,
                      @Nullable final DnsServiceDiscovererObserver observer,
-                     final ServiceDiscovererEvent.Status missingRecordStatus,
-                     final int maxTTL, final String id) {
-        if (srvConcurrency <= 0) {
-            throw new IllegalArgumentException("srvConcurrency: " + srvConcurrency + " (expected >0)");
-        }
-        this.maxTTLNanos = SECONDS.toNanos(maxTTL);
+                     final ServiceDiscovererEvent.Status missingRecordStatus) {
         this.srvConcurrency = srvConcurrency;
         this.srvFilterDuplicateEvents = srvFilterDuplicateEvents;
         this.inactiveEventsOnError = inactiveEventsOnError;
@@ -151,8 +148,10 @@ final class DefaultDnsClient implements DnsClient {
         // We must use nettyIoExecutor for the repeater for thread safety!
         srvHostNameRepeater = repeatWithConstantBackoffDeltaJitter(
                 srvHostNameRepeatInitialDelay, srvHostNameRepeatJitter, nettyIoExecutor);
-        this.ttlCache = new MinTtlCache(new DefaultDnsCache(minTTL, maxTTL, minTTL), minTTL,
-                nettyIoExecutor);
+        this.ttlCache = new MinTtlCache(
+                maxCacheTTL == 0 ? NoopDnsCache.INSTANCE : new DefaultDnsCache(minCacheTTL, maxCacheTTL, 0),
+                minTTL, nettyIoExecutor);
+        this.maxTTLNanos = SECONDS.toNanos(maxTTL);
         this.ttlJitterNanos = ttlJitterNanos;
         this.observer = observer;
         this.missingRecordStatus = missingRecordStatus;
@@ -337,7 +336,7 @@ final class DefaultDnsClient implements DnsClient {
                 final Subscriber<? super List<ServiceDiscovererEvent<HostAndPort>>> subscriber) {
             return new AbstractDnsSubscription(subscriber) {
                 @Override
-                protected Future<DnsAnswer<HostAndPort>> doDnsQuery() {
+                protected Future<DnsAnswer<HostAndPort>> doDnsQuery(final boolean scheduledQuery) {
                     Promise<DnsAnswer<HostAndPort>> promise = nettyIoExecutor.eventLoopGroup().next().newPromise();
                     resolver.resolveAll(new DefaultDnsQuestion(name, SRV))
                             .addListener((Future<? super List<DnsRecord>> completedFuture) -> {
@@ -368,9 +367,9 @@ final class DefaultDnsClient implements DnsClient {
                                             final int port = content.readUnsignedShort();
                                             hostAndPorts.add(HostAndPort.of(decodeName(content), port));
                                         }
-                                        LOGGER.trace("{} original result for {}: {}, minTTL: {} second(s).",
+                                        LOGGER.trace("{} original result for {} (size={}, TTL={}s): {}.",
                                                 DefaultDnsClient.this, SrvRecordPublisher.this,
-                                                completedFuture.getNow(), minTTLSeconds);
+                                                toRelease.size(), minTTLSeconds, toRelease);
                                         dnsAnswer = new DnsAnswer<>(hostAndPorts, SECONDS.toNanos(minTTLSeconds));
                                     } catch (Throwable cause2) {
                                         promise.tryFailure(cause2);
@@ -411,8 +410,10 @@ final class DefaultDnsClient implements DnsClient {
                 final Subscriber<? super List<ServiceDiscovererEvent<InetAddress>>> subscriber) {
             return new AbstractDnsSubscription(subscriber) {
                 @Override
-                protected Future<DnsAnswer<InetAddress>> doDnsQuery() {
-                    ttlCache.prepareForResolution(name);
+                protected Future<DnsAnswer<InetAddress>> doDnsQuery(final boolean scheduledQuery) {
+                    if (scheduledQuery) {
+                        ttlCache.prepareForResolution(name);
+                    }
                     Promise<DnsAnswer<InetAddress>> dnsAnswerPromise =
                             nettyIoExecutor.eventLoopGroup().next().newPromise();
                     resolver.resolveAll(name).addListener(completedFuture -> {
@@ -421,13 +422,14 @@ final class DefaultDnsClient implements DnsClient {
                             dnsAnswerPromise.tryFailure(cause);
                         } else {
                             final DnsAnswer<InetAddress> dnsAnswer;
+                            @SuppressWarnings("unchecked")
+                            final List<InetAddress> original = (List<InetAddress>) completedFuture.getNow();
                             final long minTTLSeconds = ttlCache.minTtl(name);
-                            LOGGER.trace("{} original result for {}: {}, minTTL: {} second(s).",
+                            LOGGER.trace("{} original result for {} (size={}, TTL={}s): {}.",
                                     DefaultDnsClient.this, ARecordPublisher.this,
-                                    completedFuture.getNow(), minTTLSeconds);
+                                    original.size(), minTTLSeconds, original);
                             try {
-                                dnsAnswer = new DnsAnswer<>(toAddresses(completedFuture),
-                                        SECONDS.toNanos(minTTLSeconds));
+                                dnsAnswer = new DnsAnswer<>(toAddresses(original), SECONDS.toNanos(minTTLSeconds));
                             } catch (Throwable cause2) {
                                 dnsAnswerPromise.tryFailure(cause2);
                                 return;
@@ -443,9 +445,7 @@ final class DefaultDnsClient implements DnsClient {
                     return INET_ADDRESS_COMPARATOR;
                 }
 
-                private List<InetAddress> toAddresses(Future<? super List<InetAddress>> completedFuture) {
-                    @SuppressWarnings("unchecked")
-                    final List<InetAddress> original = (List<InetAddress>) completedFuture.getNow();
+                private List<InetAddress> toAddresses(final List<InetAddress> original) {
                     if (addressTypes == IPV4_PREFERRED || addressTypes == IPV6_PREFERRED) {
                         // Filter out addresses to keep only preferred if both available.
                         int ipv4Cnt = 0;
@@ -581,9 +581,10 @@ final class DefaultDnsClient implements DnsClient {
             /**
              * Performs DNS query.
              *
+             * @param scheduledQuery indicates when query was scheduled
              * @return a {@link Future} that will be notified when {@link DnsAnswer} is available
              */
-            protected abstract Future<DnsAnswer<T>> doDnsQuery();
+            protected abstract Future<DnsAnswer<T>> doDnsQuery(boolean scheduledQuery);
 
             /**
              * Returns a {@link Comparator} for the resolved address type.
@@ -631,20 +632,24 @@ final class DefaultDnsClient implements DnsClient {
                 pendingRequests = addWithOverflowProtection(pendingRequests, n);
                 if (cancellableForQuery == null) {
                     if (ttlNanos < 0) {
-                        doQuery0();
+                        doQuery0(false);
                     } else {
                         final long durationNs =
                                 nettyIoExecutor.currentTime(NANOSECONDS) - resolveDoneNoScheduleTime;
                         if (durationNs > ttlNanos) {
-                            doQuery0();
+                            doQuery0(false);
                         } else {
-                            scheduleQuery0(ttlNanos - durationNs);
+                            scheduleQuery0(ttlNanos - durationNs, ttlNanos);
                         }
                     }
                 }
             }
 
-            private void doQuery0() {
+            private void executeScheduledQuery0() {
+                doQuery0(true);
+            }
+
+            private void doQuery0(final boolean scheduledQuery) {
                 assertInEventloop();
 
                 if (closed) {
@@ -652,8 +657,8 @@ final class DefaultDnsClient implements DnsClient {
                     handleTerminalError0(new ClosedDnsServiceDiscovererException());
                 } else {
                     final DnsResolutionObserver resolutionObserver = newResolutionObserver();
-                    LOGGER.trace("{} querying DNS for {}", DefaultDnsClient.this, AbstractDnsPublisher.this);
-                    final Future<DnsAnswer<T>> addressFuture = doDnsQuery();
+                    LOGGER.trace("{} querying DNS for {}.", DefaultDnsClient.this, AbstractDnsPublisher.this);
+                    final Future<DnsAnswer<T>> addressFuture = doDnsQuery(scheduledQuery);
                     cancellableForQuery = () -> addressFuture.cancel(true);
                     if (addressFuture.isDone()) {
                         handleResolveDone0(addressFuture, resolutionObserver);
@@ -681,6 +686,7 @@ final class DefaultDnsClient implements DnsClient {
 
             private void cancel0() {
                 assertInEventloop();
+                LOGGER.debug("{} subscription for {} is cancelled.", DefaultDnsClient.this, AbstractDnsPublisher.this);
                 Cancellable oldCancellable = cancellableForQuery;
                 cancellableForQuery = TERMINATED;
                 if (oldCancellable != null) {
@@ -696,18 +702,22 @@ final class DefaultDnsClient implements DnsClient {
                 }
             }
 
-            private void scheduleQuery0(final long nanos) {
+            private void scheduleQuery0(final long remainingTtlNanos) {
+                scheduleQuery0(remainingTtlNanos, remainingTtlNanos);
+            }
+
+            private void scheduleQuery0(final long remainingTtlNanos, final long originalTtlNanos) {
                 assertInEventloop();
 
                 final long delay = ThreadLocalRandom.current()
-                        .nextLong(nanos, addWithOverflowProtection(nanos, ttlJitterNanos));
-                LOGGER.debug("{} scheduling DNS query for {} after {}ms, original TTL: {}ms.",
+                        .nextLong(remainingTtlNanos, addWithOverflowProtection(remainingTtlNanos, ttlJitterNanos));
+                LOGGER.debug("{} scheduling DNS query for {} after {}ms (TTL={}s, jitter={}ms).",
                         DefaultDnsClient.this, AbstractDnsPublisher.this, NANOSECONDS.toMillis(delay),
-                        NANOSECONDS.toMillis(nanos));
+                        NANOSECONDS.toSeconds(originalTtlNanos), NANOSECONDS.toMillis(ttlJitterNanos));
 
                 // This value is coming from DNS TTL for which the unit is seconds and the minimum value we accept
                 // in the builder is 1 second.
-                cancellableForQuery = nettyIoExecutor.schedule(this::doQuery0, delay, NANOSECONDS);
+                cancellableForQuery = nettyIoExecutor.schedule(this::executeScheduledQuery0, delay, NANOSECONDS);
             }
 
             private void handleResolveDone0(final Future<DnsAnswer<T>> addressFuture,
@@ -747,18 +757,19 @@ final class DefaultDnsClient implements DnsClient {
                             cancellableForQuery = null;
                         }
                         try {
-                            LOGGER.debug("{} sending events for {} (size={}, ttl={}ms) {}.",
+                            LOGGER.debug("{} sending events for {} (size={}, TTL={}s): {}.",
                                     DefaultDnsClient.this, AbstractDnsPublisher.this, events.size(),
-                                    NANOSECONDS.toMillis(ttlNanos), events);
+                                    NANOSECONDS.toSeconds(ttlNanos), events);
 
                             subscriber.onNext(events);
                         } catch (final Throwable error) {
                             handleTerminalError0(error);
                         }
                     } else {
-                        LOGGER.trace("{} resolution done but no changes for {} (size={}, ttl={}ms) {}.",
+                        LOGGER.trace("{} resolution is complete but no changes detected for {} based on result " +
+                                        "(size={}, TTL={}s) {}.",
                                 DefaultDnsClient.this, AbstractDnsPublisher.this, activeAddresses.size(),
-                                NANOSECONDS.toMillis(ttlNanos), activeAddresses);
+                                NANOSECONDS.toSeconds(ttlNanos), activeAddresses);
 
                         scheduleQuery0(ttlNanos);
                     }

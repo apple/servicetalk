@@ -52,14 +52,15 @@ public class DelegatingDnsServiceDiscovererBuilder implements DnsServiceDiscover
     }
 
     @Override
-    public DnsServiceDiscovererBuilder minTTL(final int minTTLSeconds) {
-        delegate = delegate.minTTL(minTTLSeconds);
+    public DnsServiceDiscovererBuilder ttl(final int minSeconds, final int maxSeconds) {
+        delegate = delegate.ttl(minSeconds, maxSeconds);
         return this;
     }
 
     @Override
-    public DnsServiceDiscovererBuilder maxTTL(final int maxTTLSeconds) {
-        delegate = delegate.maxTTL(maxTTLSeconds);
+    public DnsServiceDiscovererBuilder ttl(final int minSeconds, final int maxSeconds,
+                                           final int minCacheSeconds, final int maxCacheSeconds) {
+        delegate = delegate.ttl(minSeconds, maxSeconds, minCacheSeconds, maxCacheSeconds);
         return this;
     }
 

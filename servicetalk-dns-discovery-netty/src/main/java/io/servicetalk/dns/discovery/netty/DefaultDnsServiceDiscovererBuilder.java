@@ -61,6 +61,8 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
     private Duration queryTimeout;
     private int minTTLSeconds = 10;
     private int maxTTLSeconds = (int) TimeUnit.MINUTES.toSeconds(5);
+    private int minTTLCacheSeconds;
+    private int maxTTLCacheSeconds;
     private Duration ttlJitter = ofSeconds(4);
     private int srvConcurrency = 2048;
     private boolean inactiveEventsOnError;
@@ -85,10 +87,20 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
     }
 
     DefaultDnsServiceDiscovererBuilder(final String id) {
-        this.id = requireNonNull(id);
+        if (id.isEmpty()) {
+            throw new IllegalArgumentException("id can not be empty");
+        }
+        this.id = id;
     }
 
-    @Override
+    /**
+     * The minimum allowed TTL. This will be the minimum poll interval.
+     *
+     * @param minTTLSeconds The minimum amount of time a cache entry will be considered valid (in seconds).
+     * @return {@code this}.
+     * @deprecated Use {@link #ttl(int, int)}.
+     */
+    @Deprecated
     public DefaultDnsServiceDiscovererBuilder minTTL(final int minTTLSeconds) {
         if (minTTLSeconds <= 0) {
             throw new IllegalArgumentException("minTTLSeconds: " + minTTLSeconds + " (expected > 0)");
@@ -98,11 +110,32 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
     }
 
     @Override
-    public DefaultDnsServiceDiscovererBuilder maxTTL(final int maxTTLSeconds) {
-        if (minTTLSeconds <= 0) {
-            throw new IllegalArgumentException("maxTTLSeconds: " + maxTTLSeconds + " (expected > 0)");
+    public DefaultDnsServiceDiscovererBuilder ttl(final int minSeconds, final int maxSeconds) {
+        ttl(minSeconds, maxSeconds, 0, 0);
+        return this;
+    }
+
+    @Override
+    public DefaultDnsServiceDiscovererBuilder ttl(final int minSeconds, final int maxSeconds,
+                                                  final int minCacheSeconds, final int maxCacheSeconds) {
+        if (minSeconds <= 0 || maxSeconds < minSeconds) {
+            throw new IllegalArgumentException("minSeconds: " + minSeconds + ", maxSeconds: " + maxSeconds +
+                    " (expected: 0 < minSeconds <= maxSeconds)");
         }
-        this.maxTTLSeconds = maxTTLSeconds;
+        if (minCacheSeconds < 0 || maxCacheSeconds < minCacheSeconds) {
+            throw new IllegalArgumentException("minCacheSeconds: " + minCacheSeconds + ", maxCacheSeconds: " +
+                    maxCacheSeconds + " (expected: 0 <= minCacheSeconds <= maxCacheSeconds)");
+        }
+        if (minCacheSeconds > minSeconds || maxCacheSeconds > maxSeconds) {
+            throw new IllegalArgumentException("minCacheSeconds: " + minCacheSeconds +
+                    ", maxCacheSeconds: " + maxCacheSeconds +
+                    " (expected: 0 <= minCacheSeconds <= minSeconds(" + minSeconds +
+                    ") <= maxCacheSeconds <= maxSeconds(" + maxSeconds + "))");
+        }
+        this.minTTLSeconds = minSeconds;
+        this.maxTTLSeconds = maxSeconds;
+        this.minTTLCacheSeconds = minCacheSeconds;
+        this.maxTTLCacheSeconds = maxCacheSeconds;
         return this;
     }
 
@@ -256,18 +289,12 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
      * @return a new instance of {@link DnsClient}.
      */
     DnsClient build() {
-        if (minTTLSeconds > maxTTLSeconds) {
-            throw new IllegalArgumentException("minTTLSeconds (" + minTTLSeconds + ") must not be larger " +
-                    "than maxTTLSeconds (" + maxTTLSeconds + ")");
-        }
-
-        final DnsClient rawClient = new DefaultDnsClient(
-                ioExecutor == null ? globalExecutionContext().ioExecutor() : ioExecutor, minTTLSeconds,
-                ttlJitter.toNanos(), srvConcurrency,
-                inactiveEventsOnError, completeOncePreferredResolved, srvFilterDuplicateEvents,
+        final DnsClient rawClient = new DefaultDnsClient(id,
+                ioExecutor == null ? globalExecutionContext().ioExecutor() : ioExecutor,
+                minTTLSeconds, maxTTLSeconds, minTTLCacheSeconds, maxTTLCacheSeconds, ttlJitter.toNanos(),
+                srvConcurrency, inactiveEventsOnError, completeOncePreferredResolved, srvFilterDuplicateEvents,
                 srvHostNameRepeatInitialDelay, srvHostNameRepeatJitter, maxUdpPayloadSize, ndots, optResourceEnabled,
-                queryTimeout, dnsResolverAddressTypes, dnsServerAddressStreamProvider, observer, missingRecordStatus,
-                maxTTLSeconds, id);
+                queryTimeout, dnsResolverAddressTypes, dnsServerAddressStreamProvider, observer, missingRecordStatus);
         return filterFactory == null ? rawClient : filterFactory.create(rawClient);
     }
 }
