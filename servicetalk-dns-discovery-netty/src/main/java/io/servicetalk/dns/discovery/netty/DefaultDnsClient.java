@@ -266,7 +266,7 @@ final class DefaultDnsClient implements DnsClient {
                         assertInEventloop();
                         // If this error is because the SRV entry was detected as inactive, then propagate the error and
                         // don't retry. Otherwise this is a resolution exception (e.g. UnknownHostException), and retry.
-                        return cause == SrvAddressRemovedException.DNS_SRV_ADDR_REMOVED ||
+                        return cause.getClass().equals(SrvAddressRemovedException.class) ||
                                 aRecordMap.remove(srvEvent.address().hostName()) == null ?
                                 Completable.failed(cause) : srvHostNameRepeater.apply(i);
                     }).onErrorComplete(); // retryWhen will propagate onError, but we don't want this.
@@ -276,7 +276,8 @@ final class DefaultDnsClient implements DnsClient {
                 } else {
                     final ARecordPublisher aPublisher = aRecordMap.remove(srvEvent.address().hostName());
                     if (aPublisher != null) {
-                        aPublisher.cancelAndFail0(SrvAddressRemovedException.DNS_SRV_ADDR_REMOVED);
+                        aPublisher.cancelAndFail0(
+                                SrvAddressRemovedException.newInstance(DefaultDnsClient.class, "dnsSrvQuery"));
                     }
                     return empty();
                 }
@@ -1001,10 +1002,12 @@ final class DefaultDnsClient implements DnsClient {
 
     private static final class SrvAddressRemovedException extends RuntimeException {
         private static final long serialVersionUID = -4083873869084533456L;
-        private static final SrvAddressRemovedException DNS_SRV_ADDR_REMOVED =
-                unknownStackTrace(new SrvAddressRemovedException(), DefaultDnsClient.class, "dnsSrvQuery");
 
         private SrvAddressRemovedException() {
+        }
+
+        static SrvAddressRemovedException newInstance(Class<?> clazz, String method) {
+            return unknownStackTrace(new SrvAddressRemovedException(), clazz, method);
         }
     }
 }
