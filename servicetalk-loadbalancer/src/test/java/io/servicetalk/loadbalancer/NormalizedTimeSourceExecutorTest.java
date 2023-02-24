@@ -36,6 +36,7 @@ class NormalizedTimeSourceExecutorTest {
 
     @AfterEach
     void tearDown() throws Exception {
+        testExecutor.closeAsync().toFuture().get();
         executor.closeAsync().toFuture().get();
     }
 

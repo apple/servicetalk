@@ -77,7 +77,7 @@ public final class DurationUtils {
      * @throws IllegalArgumentException if the passed duration is not greater or equal to {@link Duration#ZERO}
      */
     public static Duration ensureNonNegative(final Duration duration, final String name) {
-        if (duration.isNegative()) {
+        if (requireNonNull(duration, name).isNegative()) {
             throw new IllegalArgumentException(name + ": " + duration + " (expected >= 0)");
         }
         return duration;
