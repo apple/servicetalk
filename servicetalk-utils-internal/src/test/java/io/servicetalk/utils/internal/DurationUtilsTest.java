@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 
+import static io.servicetalk.utils.internal.DurationUtils.ensureNonNegative;
 import static io.servicetalk.utils.internal.DurationUtils.ensurePositive;
 import static io.servicetalk.utils.internal.DurationUtils.isInfinite;
 import static io.servicetalk.utils.internal.DurationUtils.isPositive;
@@ -26,6 +27,7 @@ import static java.time.Duration.ofNanos;
 import static java.time.Duration.ofSeconds;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class DurationUtilsTest {
@@ -49,9 +51,21 @@ class DurationUtilsTest {
     @Test
     void testEnsurePositive() {
         assertThrows(NullPointerException.class, () -> ensurePositive(null, "duration"));
-        assertThrows(IllegalArgumentException.class, () -> ensurePositive(Duration.ZERO, "duration"));
-        assertThrows(IllegalArgumentException.class, () -> ensurePositive(ofNanos(1L).negated(), "duration"));
         assertThrows(IllegalArgumentException.class, () -> ensurePositive(ofSeconds(1L).negated(), "duration"));
+        assertThrows(IllegalArgumentException.class, () -> ensurePositive(ofNanos(1L).negated(), "duration"));
+        assertThrows(IllegalArgumentException.class, () -> ensurePositive(Duration.ZERO, "duration"));
+        assertDoesNotThrow(() -> ensureNonNegative(ofNanos(1L), "duration"));
+        assertDoesNotThrow(() -> ensureNonNegative(ofSeconds(1L), "duration"));
+    }
+
+    @Test
+    void testEnsureNonNegative() {
+        assertThrows(NullPointerException.class, () -> ensureNonNegative(null, "duration"));
+        assertThrows(IllegalArgumentException.class, () -> ensureNonNegative(ofSeconds(1L).negated(), "duration"));
+        assertThrows(IllegalArgumentException.class, () -> ensureNonNegative(ofNanos(1L).negated(), "duration"));
+        assertDoesNotThrow(() -> ensureNonNegative(Duration.ZERO, "duration"));
+        assertDoesNotThrow(() -> ensureNonNegative(ofNanos(1L), "duration"));
+        assertDoesNotThrow(() -> ensureNonNegative(ofSeconds(1L), "duration"));
     }
 
     @Test

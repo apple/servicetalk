@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
@@ -32,6 +33,7 @@ public final class SequentialPublisherSubscriberFunction<T>
         implements Function<Subscriber<? super T>, Subscriber<? super T>> {
 
     private final AtomicBoolean subscribed = new AtomicBoolean();
+    private final AtomicInteger numberOfSubscribersSeen = new AtomicInteger();
     @Nullable
     private volatile Subscriber<? super T> subscriber;
 
@@ -41,6 +43,7 @@ public final class SequentialPublisherSubscriberFunction<T>
             throw new IllegalStateException("Duplicate subscriber: " + subscriber);
         }
         this.subscriber = subscriber;
+        numberOfSubscribersSeen.incrementAndGet();
         return new DelegatingPublisherSubscriber<T>(subscriber) {
             @Override
             public void onSubscribe(final Subscription s) {
@@ -98,5 +101,14 @@ public final class SequentialPublisherSubscriberFunction<T>
      */
     public boolean isSubscribed() {
         return subscribed.get();
+    }
+
+    /**
+     * Returns total number of observed {@link Subscriber}s.
+     *
+     * @return total number of observed {@link Subscriber}s.
+     */
+    public int numberOfSubscribersSeen() {
+        return numberOfSubscribersSeen.get();
     }
 }

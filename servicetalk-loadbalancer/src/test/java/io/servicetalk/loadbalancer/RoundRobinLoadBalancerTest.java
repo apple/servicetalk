@@ -32,6 +32,7 @@ import io.servicetalk.concurrent.api.ExecutorExtension;
 import io.servicetalk.concurrent.api.LegacyTestSingle;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.SequentialPublisherSubscriberFunction;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestExecutor;
 import io.servicetalk.concurrent.api.TestPublisher;
@@ -52,6 +53,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -93,12 +95,17 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.TestTimeoutConstants.DEFAULT_TIMEOUT_SECONDS;
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory.DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD;
+import static io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory.DEFAULT_HEALTH_CHECK_RESUBSCRIBE_INTERVAL;
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancerTest.UnhealthyHostConnectionFactory.UNHEALTHY_HOST_EXCEPTION;
+import static java.lang.Long.MAX_VALUE;
+import static java.time.Duration.ZERO;
 import static java.time.Duration.ofMillis;
+import static java.time.Duration.ofNanos;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
@@ -132,8 +139,12 @@ abstract class RoundRobinLoadBalancerTest {
             new TestSingleSubscriber<>();
     private final List<TestLoadBalancedConnection> connectionsCreated = new CopyOnWriteArrayList<>();
     private final Queue<Runnable> connectionRealizers = new ConcurrentLinkedQueue<>();
-
-    final TestPublisher<Collection<ServiceDiscovererEvent<String>>> serviceDiscoveryPublisher = new TestPublisher<>();
+    private final SequentialPublisherSubscriberFunction<Collection<ServiceDiscovererEvent<String>>>
+            sequentialPublisherSubscriberFunction = new SequentialPublisherSubscriberFunction<>();
+    final TestPublisher<Collection<ServiceDiscovererEvent<String>>> serviceDiscoveryPublisher =
+            new TestPublisher.Builder<Collection<ServiceDiscovererEvent<String>>>()
+                    .sequentialSubscribers(sequentialPublisherSubscriberFunction)
+                    .build();
     private DelegatingConnectionFactory connectionFactory =
             new DelegatingConnectionFactory(this::newRealizedConnectionSingle);
 
@@ -394,7 +405,7 @@ abstract class RoundRobinLoadBalancerTest {
         assertTrue(connectionFactory.isClosed(), "ConnectionFactory not closed.");
     }
 
-    @ParameterizedTest(name = "closeFromLb={0}")
+    @ParameterizedTest(name = "{displayName} [{index}]: closeFromLb={0}")
     @ValueSource(booleans = {true, false})
     void closeGracefulThenClose(boolean closeFromLb)
             throws ExecutionException, InterruptedException {
@@ -504,18 +515,14 @@ abstract class RoundRobinLoadBalancerTest {
         sendServiceDiscoveryEvents(upEvent("address-1"));
 
         for (int i = 0; i < DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD; ++i) {
-            Exception e = assertThrows(ExecutionException.class, () -> lb.selectConnection(any(), null)
-                    .toFuture().get());
-            assertThat(e.getCause(), is(UNHEALTHY_HOST_EXCEPTION));
+            assertSelectThrows(is(UNHEALTHY_HOST_EXCEPTION));
         }
 
         assertThat(testExecutor.scheduledTasksPending(), equalTo(0));
 
         for (int i = 0; i < timeAdvancementsTillHealthy - 1; ++i) {
             unhealthyHostConnectionFactory.advanceTime(testExecutor);
-            Exception e = assertThrows(ExecutionException.class, () -> lb.selectConnection(any(), null)
-                    .toFuture().get());
-            assertThat(e.getCause(), is(UNHEALTHY_HOST_EXCEPTION));
+            assertSelectThrows(is(UNHEALTHY_HOST_EXCEPTION));
         }
 
         unhealthyHostConnectionFactory.advanceTime(testExecutor);
@@ -541,17 +548,13 @@ abstract class RoundRobinLoadBalancerTest {
         sendServiceDiscoveryEvents(upEvent("address-1"));
 
         for (int i = 0; i < DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD; ++i) {
-            Exception e = assertThrows(ExecutionException.class, () -> lb.selectConnection(any(), null)
-                    .toFuture().get());
-            assertThat(e.getCause(), is(exception));
+            assertSelectThrows(is(exception));
         }
         assertThat(testExecutor.scheduledTasksPending(), equalTo(0));
 
         for (int i = 0; i < timeAdvancementsTillHealthy - 1; ++i) {
             unhealthyHostConnectionFactory.advanceTime(testExecutor);
-            Exception e = assertThrows(ExecutionException.class, () -> lb.selectConnection(any(), null)
-                    .toFuture().get());
-            assertThat(e.getCause(), is(exception));
+            assertSelectThrows(is(exception));
         }
 
         unhealthyHostConnectionFactory.advanceTime(testExecutor);
@@ -575,9 +578,7 @@ abstract class RoundRobinLoadBalancerTest {
         sendServiceDiscoveryEvents(upEvent("address-1"));
 
         for (int i = 0; i < DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD; ++i) {
-            Exception e = assertThrows(ExecutionException.class, () -> lb.selectConnection(any(), null)
-                    .toFuture().get());
-            assertThat(e.getCause(), is(UNHEALTHY_HOST_EXCEPTION));
+            assertSelectThrows(is(UNHEALTHY_HOST_EXCEPTION));
         }
 
         for (int i = 0; i < timeAdvancementsTillHealthy; ++i) {
@@ -622,8 +623,7 @@ abstract class RoundRobinLoadBalancerTest {
         sendServiceDiscoveryEvents(upEvent("address-1"));
 
         // Trigger first health check:
-        Exception e = assertThrows(ExecutionException.class, () -> lb.selectConnection(any(), null).toFuture().get());
-        assertThat(e.getCause(), is(UNHEALTHY_HOST_EXCEPTION));
+        assertSelectThrows(is(UNHEALTHY_HOST_EXCEPTION));
         // Execute two health checks: first will fail due to connectionFactory,
         // second - due to an unexpected error from executor:
         for (int i = 0; i < 2; ++i) {
@@ -631,8 +631,7 @@ abstract class RoundRobinLoadBalancerTest {
         }
 
         // Trigger yet another health check:
-        e = assertThrows(ExecutionException.class, () -> lb.selectConnection(any(), null).toFuture().get());
-        assertThat(e.getCause(), is(UNHEALTHY_HOST_EXCEPTION));
+        assertSelectThrows(is(UNHEALTHY_HOST_EXCEPTION));
         // Execute two health checks: first will fail due to connectionFactory, second succeeds:
         for (int i = 0; i < 2; ++i) {
             unhealthyHostConnectionFactory.advanceTime(testExecutor);
@@ -662,9 +661,7 @@ abstract class RoundRobinLoadBalancerTest {
         // Imitate concurrency by running multiple threads attempting to establish connections.
         ExecutorService executor = Executors.newFixedThreadPool(3);
         try {
-            final Runnable runnable = () ->
-                    assertThrows(ExecutionException.class, () -> lb.selectConnection(any(), null).toFuture().get());
-
+            final Runnable runnable = () -> assertSelectThrows(is(UNHEALTHY_HOST_EXCEPTION));
             for (int i = 0; i < 1000; i++) {
                 executor.submit(runnable);
             }
@@ -694,9 +691,7 @@ abstract class RoundRobinLoadBalancerTest {
                 unhealthyHostConnectionFactory.advanceTime(testExecutor);
 
                 // Assert still unhealthy
-                Exception e = assertThrows(ExecutionException.class, () -> lb.selectConnection(any(), null)
-                        .toFuture().get());
-                assertThat(e.getCause(), instanceOf(NoAvailableHostException.class));
+                assertSelectThrows(instanceOf(NoAvailableHostException.class));
             }
         } finally {
             // Shutdown the concurrent validation of unhealthiness.
@@ -708,6 +703,101 @@ abstract class RoundRobinLoadBalancerTest {
 
         final TestLoadBalancedConnection selectedConnection = lb.selectConnection(any(), null).toFuture().get();
         assertThat(selectedConnection, equalTo(properConnection.toFuture().get()));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}]: sdReturnsDelta={0}")
+    @ValueSource(booleans = {false, true})
+    void resubscribeToEventsWhenAllHostsAreUnhealthy(boolean sdReturnsDelta) throws Exception {
+        serviceDiscoveryPublisher.onComplete();
+        assertThat(sequentialPublisherSubscriberFunction.isSubscribed(), is(false));
+        assertThat(sequentialPublisherSubscriberFunction.numberOfSubscribersSeen(), is(1));
+
+        DelegatingConnectionFactory alwaysFail12ConnectionFactory = new DelegatingConnectionFactory(address -> {
+            switch (address) {
+                case "address-1":
+                case "address-2":
+                    return Single.failed(UNHEALTHY_HOST_EXCEPTION);
+                default:
+                    return Single.succeeded(newConnection(address));
+            }
+        });
+        lb = defaultLb(alwaysFail12ConnectionFactory);
+
+        assertThat(sequentialPublisherSubscriberFunction.isSubscribed(), is(true));
+        assertThat(sequentialPublisherSubscriberFunction.numberOfSubscribersSeen(), is(2));
+
+        assertAddresses(lb.usedAddresses(), EMPTY_ARRAY);
+        sendServiceDiscoveryEvents(upEvent("address-1"));
+        sendServiceDiscoveryEvents(upEvent("address-2"));
+        assertAddresses(lb.usedAddresses(), "address-1", "address-2");
+
+        // Force all usedAddresses into UNHEALTHY state
+        for (int i = 0; i < DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD * lb.usedAddresses().size(); ++i) {
+            assertSelectThrows(is(UNHEALTHY_HOST_EXCEPTION));
+        }
+        assertThat(sequentialPublisherSubscriberFunction.numberOfSubscribersSeen(), is(2));
+        // Assert the next select attempt after resubscribe internal triggers re-subscribe
+        testExecutor.advanceTimeBy(DEFAULT_HEALTH_CHECK_RESUBSCRIBE_INTERVAL.toMillis() * 2, MILLISECONDS);
+        assertThat(sequentialPublisherSubscriberFunction.numberOfSubscribersSeen(), is(2));
+        assertSelectThrows(instanceOf(NoAvailableHostException.class));
+        assertThat(sequentialPublisherSubscriberFunction.numberOfSubscribersSeen(), is(3));
+
+        // Verify state after re-subscribe
+        assertAddresses(lb.usedAddresses(), "address-1", "address-2");
+        if (sdReturnsDelta) {
+            sendServiceDiscoveryEvents(upEvent("address-3"), upEvent("address-4"), downEvent("address-1"));
+            assertAddresses(lb.usedAddresses(), "address-2", "address-3", "address-4");
+            sendServiceDiscoveryEvents(downEvent("address-2"));
+        } else {
+            sendServiceDiscoveryEvents(upEvent("address-3"), upEvent("address-4"));
+        }
+        assertAddresses(lb.usedAddresses(), "address-3", "address-4");
+
+        // Verify the LB is recovered
+        Map<String, Matcher<? super String>> expected = new HashMap<>();
+        expected.put("address-3", is("address-3"));
+        expected.put("address-4", is("address-4"));
+        String selected1 = lb.selectConnection(any(), null).toFuture().get().address();
+        assertThat(selected1, is(anyOf(expected.values())));
+        expected.remove(selected1);
+        assertThat(lb.selectConnection(any(), null).toFuture().get().address(), is(anyOf(expected.values())));
+        assertConnectionCount(lb.usedAddresses(), connectionsCount("address-3", 1), connectionsCount("address-4", 1));
+    }
+
+    @Test
+    void resubscribeToEventsNotTriggeredWhenDisabled() throws Exception {
+        serviceDiscoveryPublisher.onComplete();
+        assertThat(sequentialPublisherSubscriberFunction.isSubscribed(), is(false));
+        assertThat(sequentialPublisherSubscriberFunction.numberOfSubscribersSeen(), is(1));
+
+        DelegatingConnectionFactory alwaysFailConnectionFactory =
+                new DelegatingConnectionFactory(address -> Single.failed(UNHEALTHY_HOST_EXCEPTION));
+        lb = (RoundRobinLoadBalancer<String, TestLoadBalancedConnection>)
+                new RoundRobinLoadBalancerFactory.Builder<String, TestLoadBalancedConnection>()
+                        .healthCheckInterval(ofMillis(50), ofMillis(10))
+                        // Set resubscribe interval to very large number
+                        .healthCheckResubscribeInterval(ofNanos(MAX_VALUE), ZERO)
+                        .backgroundExecutor(testExecutor)
+                        .build()
+                        .newLoadBalancer(serviceDiscoveryPublisher, alwaysFailConnectionFactory, "test-service");
+
+        assertThat(sequentialPublisherSubscriberFunction.isSubscribed(), is(true));
+        assertThat(sequentialPublisherSubscriberFunction.numberOfSubscribersSeen(), is(2));
+
+        assertAddresses(lb.usedAddresses(), EMPTY_ARRAY);
+        sendServiceDiscoveryEvents(upEvent("address-1"));
+        sendServiceDiscoveryEvents(upEvent("address-2"));
+        assertAddresses(lb.usedAddresses(), "address-1", "address-2");
+
+        // Force all usedAddresses into UNHEALTHY state
+        for (int i = 0; i < DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD * lb.usedAddresses().size(); ++i) {
+            assertSelectThrows(is(UNHEALTHY_HOST_EXCEPTION));
+        }
+        assertThat(sequentialPublisherSubscriberFunction.numberOfSubscribersSeen(), is(2));
+        testExecutor.advanceTimeBy(DEFAULT_HEALTH_CHECK_RESUBSCRIBE_INTERVAL.toMillis() * 2, MILLISECONDS);
+        assertThat(sequentialPublisherSubscriberFunction.numberOfSubscribersSeen(), is(2));
+        assertSelectThrows(instanceOf(NoAvailableHostException.class));
+        assertThat(sequentialPublisherSubscriberFunction.numberOfSubscribersSeen(), is(2));
     }
 
     @Test
@@ -830,6 +920,11 @@ abstract class RoundRobinLoadBalancerTest {
         final Matcher<Iterable<? extends T>> iterableMatcher =
                 addressAndConnCount.length == 0 ? emptyIterable() : contains(args);
         assertThat(addresses, iterableMatcher);
+    }
+
+    private void assertSelectThrows(Matcher<Throwable> matcher) {
+        Exception e = assertThrows(ExecutionException.class, () -> lb.selectConnection(any(), null).toFuture().get());
+        assertThat(e.getCause(), matcher);
     }
 
     Map.Entry<String, Integer> connectionsCount(String addr, int count) {
