@@ -25,9 +25,11 @@ import io.servicetalk.transport.api.ServerSslConfigBuilder;
 import org.junit.jupiter.api.Test;
 
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
+import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.mappingServiceDiscoverer;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.startsWith;
@@ -86,7 +88,9 @@ class DefaultSingleAddressHttpClientBuilderTest {
              BlockingHttpClient client =
                      new DefaultSingleAddressHttpClientBuilder<>(
                              hostNamePrefix + hostName + hostNameSuffix + (port == null ? "" : port),
-                             GlobalDnsServiceDiscoverer.mappingServiceDiscoverer(u -> serverCtx.listenAddress()))
+                             mappingServiceDiscoverer(u -> serverCtx.listenAddress(),
+                                     "from " + String.class.getSimpleName() + " to a resolved " +
+                                             SocketAddress.class.getSimpleName()))
                              .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                                      .hostnameVerificationAlgorithm("").build())
                              .buildBlocking()) {

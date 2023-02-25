@@ -205,6 +205,9 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer(
                 HttpExecutionContext executionContext) {
             BiIntFunction<Throwable, ? extends Completable> sdRetryStrategy = serviceDiscovererRetryStrategy;
+            if (sdRetryStrategy == HttpClients.NoRetriesStrategy.INSTANCE) {
+                return sd;
+            }
             if (sdRetryStrategy == null) {
                 sdRetryStrategy = retryWithConstantBackoffDeltaJitter(__ -> true, SD_RETRY_STRATEGY_INIT_DURATION,
                         SD_RETRY_STRATEGY_JITTER, executionContext.executor());
@@ -757,7 +760,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
             this.delegate = requireNonNull(delegate);
         }
 
-        ServiceDiscoverer<U, R, E> delegate() {
+        final ServiceDiscoverer<U, R, E> delegate() {
             return delegate;
         }
 
@@ -779,6 +782,11 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         @Override
         public Completable closeAsyncGracefully() {
             return delegate.closeAsyncGracefully();
+        }
+
+        @Override
+        public String toString() {
+            return this.getClass().getSimpleName() + "{delegate=" + delegate() + '}';
         }
     }
 

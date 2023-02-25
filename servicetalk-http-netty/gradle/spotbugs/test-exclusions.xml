@@ -80,4 +80,9 @@
     <Source name="~.*Test\.java"/>
     <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_THROWABLE"/>
   </Match>
+  <!-- Test intentionally returns null to verify the null-check -->
+  <Match>
+    <Class name="io.servicetalk.http.netty.HttpClientResolvesOnNewConnectionTest$FailureCase$1"/>
+    <Bug pattern="NP_NONNULL_RETURN_VIOLATION"/>
+  </Match>
 </FindBugsFilter>

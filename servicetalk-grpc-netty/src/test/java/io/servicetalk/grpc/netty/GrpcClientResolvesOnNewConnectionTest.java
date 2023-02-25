@@ -15,7 +15,11 @@
  */
 package io.servicetalk.grpc.netty;
 
+import io.servicetalk.client.api.ServiceDiscoverer;
+import io.servicetalk.client.api.ServiceDiscovererEvent;
+import io.servicetalk.dns.discovery.netty.DnsServiceDiscoverers;
 import io.servicetalk.grpc.api.GrpcServerContext;
+import io.servicetalk.transport.api.HostAndPort;
 
 import io.grpc.examples.helloworld.Greeter.BlockingGreeterClient;
 import io.grpc.examples.helloworld.Greeter.ClientFactory;
@@ -23,6 +27,10 @@ import io.grpc.examples.helloworld.Greeter.GreeterService;
 import io.grpc.examples.helloworld.HelloReply;
 import io.grpc.examples.helloworld.HelloRequest;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+
+import java.net.InetSocketAddress;
+import java.time.Duration;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.netty.HttpClients.DiscoveryStrategy.ON_NEW_CONNECTION;
@@ -31,11 +39,13 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAnd
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 
 class GrpcClientResolvesOnNewConnectionTest {
 
     @Test
-    void test() throws Exception {
+    void forAddress() throws Exception {
         String greetingPrefix = "Hello ";
         String name = "foo";
         try (GrpcServerContext serverContext = GrpcServers.forAddress(localAddress(0))
@@ -48,6 +58,30 @@ class GrpcClientResolvesOnNewConnectionTest {
             HelloRequest request = HelloRequest.newBuilder().setName(name).build();
             HelloReply response = client.sayHello(request);
             assertThat(response.getMessage(), is(equalTo(greetingPrefix + name)));
+        }
+    }
+
+    @Test
+    void withCustomDnsConfig() throws Exception {
+        ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>> spyDnsSd =
+                Mockito.spy(DnsServiceDiscoverers.builder(getClass().getSimpleName())
+                        .ttlJitter(Duration.ofSeconds(1))
+                        .buildARecordDiscoverer());
+        String greetingPrefix = "Hello ";
+        String name = "foo";
+        try (GrpcServerContext serverContext = GrpcServers.forAddress(localAddress(0))
+                .listenAndAwait((GreeterService) (ctx, request) ->
+                        succeeded(HelloReply.newBuilder().setMessage(greetingPrefix + request.getName()).build()));
+             // Use "localhost" to demonstrate that the address will be resolved.
+             BlockingGreeterClient client = GrpcClients.forAddress(spyDnsSd,
+                             HostAndPort.of("localhost", serverHostAndPort(serverContext).port()), ON_NEW_CONNECTION)
+                     .buildBlocking(new ClientFactory())) {
+            HelloRequest request = HelloRequest.newBuilder().setName(name).build();
+            HelloReply response = client.sayHello(request);
+            assertThat(response.getMessage(), is(equalTo(greetingPrefix + name)));
+            verify(spyDnsSd).discover(any());
+        } finally {
+            spyDnsSd.closeAsync().toFuture().get();
         }
     }
 }

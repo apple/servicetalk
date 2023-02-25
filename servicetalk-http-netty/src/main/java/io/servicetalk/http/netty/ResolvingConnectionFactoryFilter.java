@@ -30,72 +30,110 @@ import io.servicetalk.transport.api.TransportObserver;
 
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.AVAILABLE;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalDnsServiceDiscoverer;
+import static java.util.Objects.requireNonNull;
 
 /**
  * A {@link ConnectionFactoryFilter} that will resolve the passed unresolved {@link InetSocketAddress} on each attempt
  * to create a {@link ConnectionFactory#newConnection(Object, ContextMap, TransportObserver) new connection} using
  * {@link GlobalDnsServiceDiscoverer#globalDnsServiceDiscoverer()}.
+ *
+ * @param <U> the type of address before resolution (unresolved address)
+ * @param <R> the type of address after resolution (resolved address)
  */
-final class ResolvingConnectionFactoryFilter
-        implements ConnectionFactoryFilter<InetSocketAddress, FilterableStreamingHttpConnection> {
+final class ResolvingConnectionFactoryFilter<U, R>
+        implements ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> {
 
-    static final ConnectionFactoryFilter<InetSocketAddress, FilterableStreamingHttpConnection> INSTANCE =
-            new ResolvingConnectionFactoryFilter();
+    private final Function<R, U> toUnresolvedAddressMapper;
+    private final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer;
 
-    private final ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>> sd =
-            globalDnsServiceDiscoverer();
-
-    private ResolvingConnectionFactoryFilter() {
-        // Singleton
+    ResolvingConnectionFactoryFilter(
+            final Function<R, U> toUnresolvedAddressMapper,
+            final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer) {
+        this.toUnresolvedAddressMapper = requireNonNull(toUnresolvedAddressMapper);
+        this.serviceDiscoverer = requireNonNull(serviceDiscoverer);
     }
 
     @Override
-    public ConnectionFactory<InetSocketAddress, FilterableStreamingHttpConnection> create(
-            final ConnectionFactory<InetSocketAddress, FilterableStreamingHttpConnection> original) {
-        return new DelegatingConnectionFactory<InetSocketAddress, FilterableStreamingHttpConnection>(original) {
+    public ConnectionFactory<R, FilterableStreamingHttpConnection> create(
+            final ConnectionFactory<R, FilterableStreamingHttpConnection> original) {
+        return new DelegatingConnectionFactory<R, FilterableStreamingHttpConnection>(original) {
 
             @Override
-            public Single<FilterableStreamingHttpConnection> newConnection(final InetSocketAddress address,
-                                                                           @Nullable final ContextMap context,
-                                                                           @Nullable final TransportObserver observer) {
-                assert address.isUnresolved();
-                return sd.discover(HostAndPort.of(address)).takeAtMost(1).firstOrError()
+            @SuppressWarnings("unchecked")
+            public Single<FilterableStreamingHttpConnection> newConnection(final R address,
+                                           @Nullable final ContextMap context,
+                                           @Nullable final TransportObserver observer) {
+                final U unresolvedAddress = toUnresolvedAddressMapper.apply(address);
+                return serviceDiscoverer.discover(unresolvedAddress).takeAtMost(1).firstOrError()
                         .flatMap(resolvedAddresses -> {
-                            if (resolvedAddresses.size() > 1) {
-                                // In case DNS server returns multiple IPs, it's recommended to shuffle the result to
-                                // make sure the client balances load between all available IPs.
-                                List<ServiceDiscovererEvent<InetSocketAddress>> list =
-                                        resolvedAddresses instanceof List ?
-                                                (List<ServiceDiscovererEvent<InetSocketAddress>>) resolvedAddresses :
-                                                new ArrayList<>(resolvedAddresses);
-                                Collections.shuffle(list);
-                                resolvedAddresses = list;
-                            }
                             @Nullable
-                            ServiceDiscovererEvent<InetSocketAddress> resolved = resolvedAddresses.stream()
-                                    .filter(event -> event.status() == AVAILABLE).findFirst().orElse(null);
-                            if (resolved == null) {
-                                return Single.<FilterableStreamingHttpConnection>failed(
-                                        new UnknownHostException(sd + " didn't return any available record for " +
-                                                address.getHostString()))
-                                        .shareContextOnSubscribe();
+                            ServiceDiscovererEvent<R> resolved;
+                            if (resolvedAddresses.isEmpty()) {
+                                resolved = null;
+                            } else if (resolvedAddresses.size() == 1) {
+                                resolved = resolvedAddresses instanceof List ?
+                                        ((List<ServiceDiscovererEvent<R>>) resolvedAddresses).get(0) :
+                                        resolvedAddresses.stream().findFirst().orElse(null);
+                                if (!AVAILABLE.equals(resolved.status())) {
+                                    resolved = null;
+                                }
+                            } else {
+                                // In case DNS server returns multiple IPs, it's recommended to pick a random one to
+                                // make sure the client balances load between all available IPs.
+                                final List<ServiceDiscovererEvent<R>> list = resolvedAddresses.stream()
+                                        .filter(event -> AVAILABLE.equals(event.status()))
+                                        .collect(Collectors.toList());
+                                resolved = list.isEmpty() ? null :
+                                        list.get(ThreadLocalRandom.current().nextInt(0, list.size()));
                             }
-                            return delegate().newConnection(resolved.address(), context, observer)
+                            return (resolved == null ? unknownHostException(unresolvedAddress, resolvedAddresses) :
+                                    delegate().newConnection(resolved.address(), context, observer))
                                     .shareContextOnSubscribe();
                         });
             }
         };
     }
 
+    private Single<FilterableStreamingHttpConnection> unknownHostException(
+            final U unresolvedAddress, final Collection<? extends ServiceDiscovererEvent<R>> resolvedAddresses) {
+        return Single.<FilterableStreamingHttpConnection>failed(
+                new UnknownHostException(serviceDiscoverer + " didn't return any available record for "
+                        + unresolvedAddress + ", resolved addresses: " + resolvedAddresses));
+    }
+
     @Override
     public ExecutionStrategy requiredOffloads() {
         return ConnectExecutionStrategy.offloadNone();
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() +
+                "{toUnresolvedAddressMapper=" + toUnresolvedAddressMapper +
+                ", serviceDiscoverer=" + serviceDiscoverer +
+                '}';
+    }
+
+    static ResolvingConnectionFactoryFilter<HostAndPort, InetSocketAddress> withGlobalDnsServiceDiscoverer() {
+        return DefaultResolvingConnectionFactoryFilterInitializer.INSTANCE;
+    }
+
+    private static final class DefaultResolvingConnectionFactoryFilterInitializer {
+
+        static final ResolvingConnectionFactoryFilter<HostAndPort, InetSocketAddress> INSTANCE =
+                new ResolvingConnectionFactoryFilter<>(HostAndPort::of, globalDnsServiceDiscoverer());
+
+        private DefaultResolvingConnectionFactoryFilterInitializer() {
+            // Singleton
+        }
     }
 }

@@ -27,6 +27,7 @@ import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.http.api.DelegatingSingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.HttpProviders.MultiAddressHttpClientBuilderProvider;
@@ -49,6 +50,7 @@ import java.net.SocketAddress;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.Publisher.failed;
@@ -56,7 +58,6 @@ import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalDnsServ
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalSrvDnsServiceDiscoverer;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.mappingServiceDiscoverer;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.resolvedServiceDiscoverer;
-import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.unresolvedServiceDiscoverer;
 import static io.servicetalk.utils.internal.ServiceLoaderUtils.loadProviders;
 import static java.util.function.Function.identity;
 
@@ -238,20 +239,9 @@ public final class HttpClients {
      */
     public static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forSingleAddress(
             final HostAndPort address, final DiscoveryStrategy discoveryStrategy) {
-        switch (discoveryStrategy) {
-            case BACKGROUND:
-                return forSingleAddress(globalDnsServiceDiscoverer(), address);
-            case ON_NEW_CONNECTION:
-                return applyProviders(address,
-                        // Use a special ServiceDiscoverer that will propagate unresolved address to LB and CF.
-                        new DefaultSingleAddressHttpClientBuilder<>(address, unresolvedServiceDiscoverer()))
-                        // Apply after providers to let them see these customizations and allow installing
-                        // TransportObserverConnectionFactoryFilter before discovery.
-                        .appendConnectionFactoryFilter(ResolvingConnectionFactoryFilter.INSTANCE)
-                        .retryServiceDiscoveryErrors(NoRetriesStrategy.INSTANCE);
-            default:
-                throw new IllegalArgumentException("Unsupported strategy: " + discoveryStrategy);
-        }
+        return forSingleAddress(globalDnsServiceDiscoverer(), address, discoveryStrategy,
+                GlobalDnsServiceDiscoverer::unresolvedServiceDiscoverer,
+                ResolvingConnectionFactoryFilter::withGlobalDnsServiceDiscoverer);
     }
 
     /**
@@ -268,8 +258,13 @@ public final class HttpClients {
      */
     public static SingleAddressHttpClientBuilder<String, InetSocketAddress> forServiceAddress(
             final String serviceName) {
+        final ServiceDiscoverer<String, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>> sd =
+                globalSrvDnsServiceDiscoverer();
         return applyProviders(serviceName,
-                new DefaultSingleAddressHttpClientBuilder<>(serviceName, globalSrvDnsServiceDiscoverer()));
+                new DefaultSingleAddressHttpClientBuilder<>(serviceName, sd))
+                // We need to pass SD into constructor to align types, but providers won't see that.
+                // Invoke a builder method only to notify providers what SD is actually used.
+                .serviceDiscoverer(sd);
     }
 
     /**
@@ -314,9 +309,11 @@ public final class HttpClients {
      */
     public static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forResolvedAddress(
             final HostAndPort address) {
-        return applyProviders(address, new DefaultSingleAddressHttpClientBuilder<>(address,
-                resolvedServiceDiscoverer()))
+        final ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>> sd =
+                resolvedServiceDiscoverer();
+        return applyProviders(address, new DefaultSingleAddressHttpClientBuilder<>(address, sd))
                 // Apply after providers to let them see these customizations.
+                .serviceDiscoverer(sd)
                 .retryServiceDiscoveryErrors(NoRetriesStrategy.INSTANCE);
     }
 
@@ -334,9 +331,11 @@ public final class HttpClients {
      * @see SingleAddressHttpClientBuilderProvider
      */
     public static <R extends SocketAddress> SingleAddressHttpClientBuilder<R, R> forResolvedAddress(final R address) {
-        return applyProviders(address,
-                new DefaultSingleAddressHttpClientBuilder<>(address, mappingServiceDiscoverer(identity())))
+        final ServiceDiscoverer<R, R, ServiceDiscovererEvent<R>> sd =
+                mappingServiceDiscoverer(identity(), "identity for " + address.getClass().getSimpleName());
+        return applyProviders(address, new DefaultSingleAddressHttpClientBuilder<>(address, sd))
                 // Apply after providers to let them see these customizations.
+                .serviceDiscoverer(sd)
                 .retryServiceDiscoveryErrors(NoRetriesStrategy.INSTANCE);
     }
 
@@ -360,7 +359,67 @@ public final class HttpClients {
     public static <U, R> SingleAddressHttpClientBuilder<U, R> forSingleAddress(
             final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer,
             final U address) {
-        return applyProviders(address, new DefaultSingleAddressHttpClientBuilder<>(address, serviceDiscoverer));
+        return forSingleAddress(serviceDiscoverer, address, DiscoveryStrategy.BACKGROUND);
+    }
+
+    /**
+     * Creates a {@link SingleAddressHttpClientBuilder} for a custom address type with default {@link LoadBalancer} and
+     * user provided {@link ServiceDiscoverer} using the specified {@link DiscoveryStrategy}.
+     * <p>
+     * The returned builder can be customized using {@link SingleAddressHttpClientBuilderProvider}.
+     *
+     * @param serviceDiscoverer The {@link ServiceDiscoverer} to resolve addresses of remote servers to connect to.
+     * The lifecycle of the provided {@link ServiceDiscoverer} should be managed by the caller.
+     * @param address the {@code UnresolvedAddress} to connect to resolved using the provided {@code serviceDiscoverer}.
+     * This address will also be used for the {@link HttpHeaderNames#HOST} using a best effort conversion. Use {@link
+     * SingleAddressHttpClientBuilder#unresolvedAddressToHost(Function)} if you want to override that value or
+     * {@link SingleAddressHttpClientBuilder#hostHeaderFallback(boolean)} if you want to disable this behavior.
+     * @param discoveryStrategy {@link DiscoveryStrategy} to use
+     * @param <U> the type of address before resolution (unresolved address)
+     * @param <R> the type of address after resolution (resolved address)
+     * @return new builder with provided configuration
+     * @see SingleAddressHttpClientBuilderProvider
+     */
+    @SuppressWarnings("unchecked")
+    public static <U, R> SingleAddressHttpClientBuilder<U, R> forSingleAddress(
+            final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer,
+            final U address,
+            final DiscoveryStrategy discoveryStrategy) {
+        return forSingleAddress(serviceDiscoverer, address, discoveryStrategy,
+                // Because the mapping is unknown, the unchecked cast here is required to fool the compiler but won't
+                // cause issues at runtime because all parametrized types are translated into Object type by javac.
+                () -> mappingServiceDiscoverer(u -> (R) u,
+                        "from " + address.getClass().getSimpleName() + " to an " + Object.class.getSimpleName()),
+                // Propagate unresolved address directly to the CF if we cannot map/unmap U and R.
+                () -> new ResolvingConnectionFactoryFilter<>(__ -> address, serviceDiscoverer));
+    }
+
+    private static <U, R> SingleAddressHttpClientBuilder<U, R> forSingleAddress(
+            final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer,
+            final U address,
+            final DiscoveryStrategy discoveryStrategy,
+            final Supplier<ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>>> unresolvedServiceDiscoverer,
+            final Supplier<ResolvingConnectionFactoryFilter<U, R>> resolvingConnectionFactory) {
+        switch (discoveryStrategy) {
+            case BACKGROUND:
+                return applyProviders(address, new DefaultSingleAddressHttpClientBuilder<>(address, serviceDiscoverer))
+                        // Apply after providers to let them see these customizations.
+                        .serviceDiscoverer(serviceDiscoverer);
+            case ON_NEW_CONNECTION:
+                // Use a special ServiceDiscoverer that will propagate the unresolved address to LB and CF,
+                // then append a ConnectionFactory that will run resolve the address.
+                final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> usd =
+                        unresolvedServiceDiscoverer.get();
+                return applyProviders(address,
+                        withUnmodifiableServiceDiscoverer(new DefaultSingleAddressHttpClientBuilder<>(address, usd),
+                                usd, address + " with " + discoveryStrategy.name() + " discovery strategy"))
+                        // Apply after providers to let them see these customizations.
+                        .serviceDiscoverer(usd)
+                        .retryServiceDiscoveryErrors(NoRetriesStrategy.INSTANCE)
+                        .appendConnectionFactoryFilter(resolvingConnectionFactory.get());
+            default:
+                throw new IllegalArgumentException("Unsupported strategy: " + discoveryStrategy);
+        }
     }
 
     /**
@@ -420,10 +479,30 @@ public final class HttpClients {
                         }, address), serviceDiscoverer, partitionAttributesBuilderFactory);
     }
 
+    // Prevents users from overriding a ServiceDiscoverer when it's not expected based on the used client factory.
+    private static <U, R> SingleAddressHttpClientBuilder<U, R> withUnmodifiableServiceDiscoverer(
+            final SingleAddressHttpClientBuilder<U, R> delegate,
+            final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> preConfiguredSd,
+            final String description) {
+        return new DelegatingSingleAddressHttpClientBuilder<U, R>(delegate) {
+            @Override
+            public SingleAddressHttpClientBuilder<U, R> serviceDiscoverer(
+                    final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer) {
+                if (serviceDiscoverer != preConfiguredSd) {
+                    throw new IllegalArgumentException("Builder for a client for " + description +
+                            " doesn't allow changing ServiceDiscoverer to any other instance except the pre-configured "
+                            + preConfiguredSd + ", passed argument: " + serviceDiscoverer);
+                }
+                delegate().serviceDiscoverer(serviceDiscoverer);
+                return this;
+            }
+        };
+    }
+
     /**
      * A retry strategy that never retries. Useful for {@link ServiceDiscoverer} instances that are known to never fail.
      */
-    private static final class NoRetriesStrategy implements BiIntFunction<Throwable, Completable> {
+    static final class NoRetriesStrategy implements BiIntFunction<Throwable, Completable> {
 
         static final BiIntFunction<Throwable, Completable> INSTANCE = new NoRetriesStrategy();
 
@@ -490,6 +569,11 @@ public final class HttpClients {
          *     balancing for every request.</li>
          *     <li>Created clients won't be able to move/shift traffic based on changes observed by a
          *     {@link ServiceDiscoverer} until the remote server closes existing connections.</li>
+         *     <li>The only way to change or customize a {@link ServiceDiscoverer} for this strategy is to use
+         *     {@link #forSingleAddress(ServiceDiscoverer, Object, DiscoveryStrategy)} client factory. Setting a
+         *     different {@link ServiceDiscoverer} instance via
+         *     {@link SingleAddressHttpClientBuilder#serviceDiscoverer(ServiceDiscoverer)} method later will throw an
+         *     exception.</li>
          *     <li>Currently, {@link TransportObserver} won't be able to take {@link ServiceDiscoverer} latency into
          *     account because {@link TransportObserver#onNewConnection(Object, Object) onNewConnection} callback is
          *     invoked later. Users need to use observability features provided by a {@link ServiceDiscoverer}

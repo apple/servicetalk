@@ -54,6 +54,7 @@ dependencies {
   testImplementation project(":servicetalk-grpc-protobuf")
   testImplementation project(":servicetalk-http-utils")
   testImplementation project(":servicetalk-data-protobuf")
+  testImplementation project(":servicetalk-dns-discovery-netty")
   testImplementation project(":servicetalk-grpc-protoc")
   testImplementation project(":servicetalk-router-utils-internal")
   testImplementation project(":servicetalk-test-resources")

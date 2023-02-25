@@ -205,7 +205,7 @@ public final class GrpcClients {
 
     /**
      * Creates a {@link GrpcClientBuilder} for a custom address type with default {@link LoadBalancer} and user
-     * provided {@link ServiceDiscoverer}.
+     * provided {@link ServiceDiscoverer} using {@link DiscoveryStrategy#BACKGROUND background} discovery strategy.
      * <p>
      * The returned builder can be customized using {@link GrpcClientBuilderProvider}.
      *
@@ -222,5 +222,28 @@ public final class GrpcClients {
             final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer, final U address) {
         return applyProviders(address,
                 new DefaultGrpcClientBuilder<>(() -> HttpClients.forSingleAddress(serviceDiscoverer, address)));
+    }
+
+    /**
+     * Creates a {@link GrpcClientBuilder} for a custom address type with default {@link LoadBalancer} and user
+     * provided {@link ServiceDiscoverer} using the specified {@link DiscoveryStrategy}.
+     * <p>
+     * The returned builder can be customized using {@link GrpcClientBuilderProvider}.
+     *
+     * @param serviceDiscoverer The {@link ServiceDiscoverer} to resolve addresses of remote servers to connect to.
+     * The lifecycle of the provided {@link ServiceDiscoverer} should be managed by the caller.
+     * @param address the {@code UnresolvedAddress} to connect to resolved using the provided {@code serviceDiscoverer}.
+     * @param discoveryStrategy {@link DiscoveryStrategy} to use
+     * @param <U> the type of address before resolution (unresolved address)
+     * @param <R> the type of address after resolution (resolved address)
+     * @return new builder with provided configuration
+     * @see GrpcClientBuilderProvider
+     */
+    public static <U, R>
+    GrpcClientBuilder<U, R> forAddress(
+            final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer,
+            final U address, final DiscoveryStrategy discoveryStrategy) {
+        return applyProviders(address, new DefaultGrpcClientBuilder<>(
+                () -> HttpClients.forSingleAddress(serviceDiscoverer, address, discoveryStrategy)));
     }
 }

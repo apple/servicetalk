@@ -98,13 +98,15 @@ final class GlobalDnsServiceDiscoverer {
      * Get the {@link ServiceDiscoverer} that uses the passed function to transform an unresolved to resolved address.
      *
      * @param toResolvedAddressMapper {@link Function} to transform an unresolved to resolved address
+     * @param description of the mapping function
      * @param <U> the type of address before resolution (unresolved address)
      * @param <R> the type of address after resolution (resolved address)
      * @return {@link ServiceDiscoverer} that uses the passed function to transform an unresolved to resolved address
      */
     static <U, R> ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> mappingServiceDiscoverer(
-            final Function<U, R> toResolvedAddressMapper) {
-        return new MappingServiceDiscoverer<>(toResolvedAddressMapper);
+            final Function<U, R> toResolvedAddressMapper,
+            final String description) {
+        return new MappingServiceDiscoverer<>(toResolvedAddressMapper, description);
     }
 
     private static final class HostAndPortClientInitializer {
@@ -137,7 +139,9 @@ final class GlobalDnsServiceDiscoverer {
 
         static final ServiceDiscoverer<HostAndPort, InetSocketAddress,
                 ServiceDiscovererEvent<InetSocketAddress>> RESOLVED_SD =
-                mappingServiceDiscoverer(BuilderUtils::toResolvedInetSocketAddress);
+                mappingServiceDiscoverer(BuilderUtils::toResolvedInetSocketAddress, "from " +
+                        HostAndPort.class.getSimpleName() + " to a resolved " +
+                        InetSocketAddress.class.getSimpleName());
 
         static {
             LOGGER.debug("Initialized {}", ResolvedServiceDiscovererInitializer.class);
@@ -152,7 +156,8 @@ final class GlobalDnsServiceDiscoverer {
 
         static final ServiceDiscoverer<HostAndPort, InetSocketAddress,
                 ServiceDiscovererEvent<InetSocketAddress>> UNRESOLVED_SD = mappingServiceDiscoverer(hostAndPort ->
-                InetSocketAddress.createUnresolved(hostAndPort.hostName(), hostAndPort.port()));
+                InetSocketAddress.createUnresolved(hostAndPort.hostName(), hostAndPort.port()), "from " +
+                HostAndPort.class.getSimpleName() + " to an unresolved " + InetSocketAddress.class.getSimpleName());
 
         static {
             LOGGER.debug("Initialized {}", UnresolvedServiceDiscovererInitializer.class);
@@ -167,10 +172,13 @@ final class GlobalDnsServiceDiscoverer {
             implements ServiceDiscoverer<UnresolvedAddress, ResolvedAddress, ServiceDiscovererEvent<ResolvedAddress>> {
 
         private final Function<UnresolvedAddress, ResolvedAddress> toResolvedAddressMapper;
+        private final String description;
         private final ListenableAsyncCloseable closeable = emptyAsyncCloseable();
 
-        private MappingServiceDiscoverer(final Function<UnresolvedAddress, ResolvedAddress> toResolvedAddressMapper) {
+        private MappingServiceDiscoverer(final Function<UnresolvedAddress, ResolvedAddress> toResolvedAddressMapper,
+                                         final String description) {
             this.toResolvedAddressMapper = requireNonNull(toResolvedAddressMapper);
+            this.description = requireNonNull(description);
         }
 
         @Override
@@ -201,6 +209,11 @@ final class GlobalDnsServiceDiscoverer {
         @Override
         public Completable closeAsyncGracefully() {
             return closeable.closeAsyncGracefully();
+        }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName() + '{' + description + '}';
         }
     }
 }
