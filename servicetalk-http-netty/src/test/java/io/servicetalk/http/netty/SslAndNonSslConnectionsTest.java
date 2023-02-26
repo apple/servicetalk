@@ -162,7 +162,7 @@ class SslAndNonSslConnectionsTest {
 
     @Test
     void defaultMultiAddressClientToNonSecureServer() throws Exception {
-        try (BlockingHttpClient client = HttpClients.forMultiAddressUrl().buildBlocking()) {
+        try (BlockingHttpClient client = HttpClients.forMultiAddressUrl(getClass().getSimpleName()).buildBlocking()) {
             testRequestResponse(client, requestTarget, false);
         }
     }
@@ -223,7 +223,7 @@ class SslAndNonSslConnectionsTest {
 
     @Test
     void multiAddressClientWithSslToSecureServer() throws Exception {
-        try (BlockingHttpClient client = HttpClients.forMultiAddressUrl()
+        try (BlockingHttpClient client = HttpClients.forMultiAddressUrl(getClass().getSimpleName())
                 .initializer((scheme, address, builder) ->
                         builder.sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
                                 .peerHost(serverPemHostname()).build()).buildStreaming())
@@ -234,7 +234,7 @@ class SslAndNonSslConnectionsTest {
 
     @Test
     void multiAddressClientToSecureServerThenToNonSecureServer() throws Exception {
-        try (BlockingHttpClient client = HttpClients.forMultiAddressUrl()
+        try (BlockingHttpClient client = HttpClients.forMultiAddressUrl(getClass().getSimpleName())
                 .initializer((scheme, address, builder) -> {
                     if (scheme.equalsIgnoreCase("https")) {
                         builder.sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
@@ -249,7 +249,7 @@ class SslAndNonSslConnectionsTest {
 
     @Test
     void multiAddressClientToNonSecureServerThenToSecureServer() throws Exception {
-        try (BlockingHttpClient client = HttpClients.forMultiAddressUrl()
+        try (BlockingHttpClient client = HttpClients.forMultiAddressUrl(getClass().getSimpleName())
                 .initializer((scheme, address, builder) -> {
                     if (scheme.equalsIgnoreCase("https")) {
                         builder.sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)

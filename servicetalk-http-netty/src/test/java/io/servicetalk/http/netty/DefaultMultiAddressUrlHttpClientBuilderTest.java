@@ -70,7 +70,7 @@ class DefaultMultiAddressUrlHttpClientBuilderTest {
 
     @Test
     void buildWithDefaults() throws Exception {
-        StreamingHttpRequester newRequester = HttpClients.forMultiAddressUrl()
+        StreamingHttpRequester newRequester = HttpClients.forMultiAddressUrl(getClass().getSimpleName())
                 .ioExecutor(CTX.ioExecutor())
                 .executor(CTX.executor())
                 .buildStreaming();
@@ -80,7 +80,7 @@ class DefaultMultiAddressUrlHttpClientBuilderTest {
 
     @Test
     void buildAggregatedWithDefaults() throws Exception {
-        HttpRequester newAggregatedRequester = HttpClients.forMultiAddressUrl()
+        HttpRequester newAggregatedRequester = HttpClients.forMultiAddressUrl(getClass().getSimpleName())
                 .ioExecutor(CTX.ioExecutor())
                 .executor(CTX.executor())
                 .executionStrategy(defaultStrategy())
@@ -91,7 +91,7 @@ class DefaultMultiAddressUrlHttpClientBuilderTest {
 
     @Test
     void buildBlockingWithDefaults() throws Exception {
-        BlockingStreamingHttpRequester newBlockingRequester = HttpClients.forMultiAddressUrl()
+        BlockingStreamingHttpRequester newBlockingRequester = HttpClients.forMultiAddressUrl(getClass().getSimpleName())
                 .ioExecutor(CTX.ioExecutor())
                 .executor(CTX.executor())
                 .buildBlockingStreaming();
@@ -101,7 +101,8 @@ class DefaultMultiAddressUrlHttpClientBuilderTest {
 
     @Test
     void buildBlockingAggregatedWithDefaults() throws Exception {
-        BlockingHttpRequester newBlockingAggregatedRequester = HttpClients.forMultiAddressUrl()
+        BlockingHttpRequester newBlockingAggregatedRequester =
+                HttpClients.forMultiAddressUrl(getClass().getSimpleName())
                 .ioExecutor(CTX.ioExecutor())
                 .executor(CTX.executor())
                 .buildBlocking();
@@ -123,7 +124,7 @@ class DefaultMultiAddressUrlHttpClientBuilderTest {
 
     @Test
     void buildWithCustomHeadersFactory() throws Exception {
-        try (BlockingHttpClient client = HttpClients.forMultiAddressUrl()
+        try (BlockingHttpClient client = HttpClients.forMultiAddressUrl(getClass().getSimpleName())
                 .headersFactory(new DelegatingHttpHeadersFactory(DefaultHttpHeadersFactory.INSTANCE) {
                     @Override
                     public HttpHeaders newHeaders() {
@@ -149,7 +150,7 @@ class DefaultMultiAddressUrlHttpClientBuilderTest {
         try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
                 .executionStrategy(offloadNone())
                 .listenStreamingAndAwait((ctx, request, responseFactory) -> succeeded(responseFactory.ok()));
-             BlockingHttpClient blockingHttpClient = HttpClients.forMultiAddressUrl()
+             BlockingHttpClient blockingHttpClient = HttpClients.forMultiAddressUrl(getClass().getSimpleName())
                      .initializer((scheme, address, builder) ->
                              builder.appendClientFilter(client -> {
                                  actualInternalCtx.set(client.executionContext());
@@ -193,7 +194,7 @@ class DefaultMultiAddressUrlHttpClientBuilderTest {
         try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
                 .executionStrategy(offloadNone())
                 .listenStreamingAndAwait((ctx, request, responseFactory) -> succeeded(responseFactory.ok()));
-             BlockingHttpClient blockingHttpClient = HttpClients.forMultiAddressUrl()
+             BlockingHttpClient blockingHttpClient = HttpClients.forMultiAddressUrl(getClass().getSimpleName())
                      .initializer((scheme, address, builder) ->
                              builder.executionStrategy(internalCtx.executionStrategy())
                                      .executor(internalCtx.executor())

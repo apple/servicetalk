@@ -152,7 +152,8 @@ class HttpProvidersTest {
                 .listenStreamingAndAwait(new TestServiceStreaming())) {
             HostAndPort serverAddress = serverHostAndPort(serverContext);
             TestSingleAddressHttpClientBuilderProvider.MODIFY_FOR_ADDRESS.set(serverAddress);
-            try (BlockingHttpClient client = HttpClients.forMultiAddressUrl().buildBlocking()) {
+            try (BlockingHttpClient client = HttpClients.forMultiAddressUrl(getClass().getSimpleName())
+                    .buildBlocking()) {
                 assertThat(TestMultiAddressHttpClientBuilderProvider.BUILD_COUNTER.get(), is(1));
                 HttpResponse response = client.request(client.get("http://" + serverAddress + SVC_ECHO));
                 assertThat(response.status(), is(OK));
@@ -296,14 +297,21 @@ class HttpProvidersTest {
 
         @Override
         public <U, R> MultiAddressHttpClientBuilder<U, R> newBuilder(MultiAddressHttpClientBuilder<U, R> builder) {
-            return ACTIVATED.get() ? new DelegatingMultiAddressHttpClientBuilder<U, R>(builder) {
+            throw new UnsupportedOperationException();
+        }
 
-                @Override
-                public BlockingHttpClient buildBlocking() {
-                    BUILD_COUNTER.incrementAndGet();
-                    return delegate().buildBlocking();
-                }
-            } : builder;
+        @Override
+        public <U, R> MultiAddressHttpClientBuilder<U, R> newBuilder(String id,
+                                                                     MultiAddressHttpClientBuilder<U, R> builder) {
+            return id.equals(HttpProvidersTest.class.getSimpleName()) && ACTIVATED.get() ?
+                    new DelegatingMultiAddressHttpClientBuilder<U, R>(builder) {
+
+                        @Override
+                        public BlockingHttpClient buildBlocking() {
+                            BUILD_COUNTER.incrementAndGet();
+                            return delegate().buildBlocking();
+                        }
+                    } : builder;
         }
     }
 

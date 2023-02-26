@@ -75,7 +75,7 @@ class HttpClientResolvesOnNewConnectionTest {
         try (HttpServerContext serverContext = HttpServers.forAddress(localAddress(0))
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok());
              // Use "localhost" to demonstrate that the address will be resolved.
-             BlockingHttpClient client = HttpClients.forMultiAddressUrl(ON_NEW_CONNECTION)
+             BlockingHttpClient client = HttpClients.forMultiAddressUrl(getClass().getSimpleName(), ON_NEW_CONNECTION)
                      .buildBlocking()) {
             HttpResponse response = client.request(
                     client.get("http://localhost:" + serverHostAndPort(serverContext).port() + '/'));

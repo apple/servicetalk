@@ -49,6 +49,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -59,6 +60,7 @@ import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalSrvDnsS
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.mappingServiceDiscoverer;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.resolvedServiceDiscoverer;
 import static io.servicetalk.utils.internal.ServiceLoaderUtils.loadProviders;
+import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
 
 /**
@@ -90,9 +92,10 @@ public final class HttpClients {
     }
 
     private static <U, R> MultiAddressHttpClientBuilder<U, R> applyProviders(
-            MultiAddressHttpClientBuilder<U, R> builder) {
+            final String id, MultiAddressHttpClientBuilder<U, R> builder) {
+        requireNonNull(id, "id");
         for (MultiAddressHttpClientBuilderProvider provider : MULTI_ADDRESS_PROVIDERS) {
-            builder = provider.newBuilder(builder);
+            builder = provider.newBuilder(id, builder);
         }
         return builder;
     }
@@ -111,9 +114,34 @@ public final class HttpClients {
      *
      * @return new builder with default configuration
      * @see MultiAddressHttpClientBuilderProvider
+     * @deprecated Use {@link #forMultiAddressUrl(String)}
      */
+    @Deprecated // FIXME: 0.43 - remove deprecated method
     public static MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forMultiAddressUrl() {
-        return applyProviders(new DefaultMultiAddressUrlHttpClientBuilder(HttpClients::forSingleAddress));
+        return forMultiAddressUrl(UUID.randomUUID().toString());
+    }
+
+    /**
+     * Creates a {@link MultiAddressHttpClientBuilder} for clients capable of parsing an <a
+     * href="https://tools.ietf.org/html/rfc7230#section-5.3.2">absolute-form URL</a>, connecting to multiple addresses
+     * with default {@link LoadBalancer} and DNS {@link ServiceDiscoverer} using
+     * {@link DiscoveryStrategy#BACKGROUND background} discovery strategy.
+     * <p>
+     * When a <a href="https://tools.ietf.org/html/rfc3986#section-4.2">relative URL</a> is passed in the {@link
+     * StreamingHttpRequest#requestTarget(String)} this client requires a {@link HttpHeaderNames#HOST} present in
+     * order to infer the remote address.
+     * <p>
+     * The returned builder can be customized using {@link MultiAddressHttpClientBuilderProvider}.
+     *
+     * @param id a (unique) ID to identify the created {@link MultiAddressHttpClientBuilder}, like a name or a purpose
+     * of the future client that will be built. This helps  {@link MultiAddressHttpClientBuilderProvider} to distinguish
+     * this builder from others.
+     * @return new builder with default configuration
+     * @see MultiAddressHttpClientBuilderProvider
+     */
+    public static MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forMultiAddressUrl(
+            final String id) {
+        return applyProviders(id, new DefaultMultiAddressUrlHttpClientBuilder(HttpClients::forSingleAddress));
     }
 
     /**
@@ -128,13 +156,16 @@ public final class HttpClients {
      * <p>
      * The returned builder can be customized using {@link MultiAddressHttpClientBuilderProvider}.
      *
+     * @param id a (unique) ID to identify the created {@link MultiAddressHttpClientBuilder}, like a name or a purpose
+     * of the future client that will be built. This helps  {@link MultiAddressHttpClientBuilderProvider} to distinguish
+     * this builder from others.
      * @param discoveryStrategy {@link DiscoveryStrategy} to use
      * @return new builder with default configuration
      * @see MultiAddressHttpClientBuilderProvider
      */
     public static MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forMultiAddressUrl(
-            final DiscoveryStrategy discoveryStrategy) {
-        return applyProviders(new DefaultMultiAddressUrlHttpClientBuilder(
+            final String id, final DiscoveryStrategy discoveryStrategy) {
+        return applyProviders(id, new DefaultMultiAddressUrlHttpClientBuilder(
                 hostAndPort -> forSingleAddress(hostAndPort, discoveryStrategy)));
     }
 
@@ -153,7 +184,7 @@ public final class HttpClients {
      * The lifecycle of the provided {@link ServiceDiscoverer} should be managed by the caller.
      * @return new builder with default configuration
      * @see MultiAddressHttpClientBuilderProvider
-     * @deprecated Use {@link #forMultiAddressUrl()} to create {@link MultiAddressHttpClientBuilder}, then use
+     * @deprecated Use {@link #forMultiAddressUrl(String)} to create {@link MultiAddressHttpClientBuilder}, then use
      * {@link MultiAddressHttpClientBuilder#initializer(SingleAddressInitializer)} to override {@link ServiceDiscoverer}
      * using {@link SingleAddressHttpClientBuilder#serviceDiscoverer(ServiceDiscoverer)} for all or some of the internal
      * clients.
@@ -162,7 +193,7 @@ public final class HttpClients {
     public static MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forMultiAddressUrl(
             final ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>>
                     serviceDiscoverer) {
-        return applyProviders(
+        return applyProviders(UUID.randomUUID().toString(),
                 new DefaultMultiAddressUrlHttpClientBuilder(address -> forSingleAddress(serviceDiscoverer, address)));
     }
 
@@ -554,10 +585,10 @@ public final class HttpClients {
          * new connection is required. This behavior may be beneficial for the following scenarios:
          * <ol>
          *     <li>Client has a low rate of opening new connections.</li>
-         *     <li>Application creates many clients (or uses a {@link #forMultiAddressUrl() multi-address} client) that
-         *     talk to many different hosts. the default {@link #BACKGROUND} strategy introduces a risk to overload the
-         *     discovery system. The impact might be more visible when {@link ServiceDiscoverer} uses polling to receive
-         *     updated, like DNS.</li>
+         *     <li>Application creates many clients (or uses a {@link #forMultiAddressUrl(String) multi-address} client)
+         *     that talk to many different hosts. the default {@link #BACKGROUND} strategy introduces a risk to overload
+         *     the discovery system. The impact might be more visible when {@link ServiceDiscoverer} uses polling to
+         *     receive updated, like DNS.</li>
          *     <li>To mimic behavior of other HTTP client implementations, like default Java HttpClient or
          *     {@link HttpURLConnection}.</li>
          * </ol>

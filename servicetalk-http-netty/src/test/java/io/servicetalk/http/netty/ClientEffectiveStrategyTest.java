@@ -299,7 +299,7 @@ class ClientEffectiveStrategyTest {
             case MULTI_OFFLOAD_NONE_SINGLE_BUILDER:
                 requestTarget = SCHEME + "://" + serverHostAndPort(context) + PATH;
                 MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> multiClientBuilder =
-                        HttpClients.forMultiAddressUrl()
+                        HttpClients.forMultiAddressUrl(getClass().getSimpleName())
                                 .initializer(initializer)
                                 .ioExecutor(CLIENT_CTX.ioExecutor())
                                 .executor(CLIENT_CTX.executor());
