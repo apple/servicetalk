@@ -70,6 +70,19 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 class HttpClientResolvesOnNewConnectionTest {
 
+    @Test
+    void forMultiAddressUrl() throws Exception {
+        try (HttpServerContext serverContext = HttpServers.forAddress(localAddress(0))
+                .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok());
+             // Use "localhost" to demonstrate that the address will be resolved.
+             BlockingHttpClient client = HttpClients.forMultiAddressUrl(ON_NEW_CONNECTION)
+                     .buildBlocking()) {
+            HttpResponse response = client.request(
+                    client.get("http://localhost:" + serverHostAndPort(serverContext).port() + '/'));
+            assertThat(response.status(), is(OK));
+        }
+    }
+
     @ParameterizedTest(name = "{displayName} [{index}]: protocol={0}")
     @EnumSource(HttpProtocol.class)
     void forHostAndPort(HttpProtocol protocol) throws Exception {
