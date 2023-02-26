@@ -735,11 +735,6 @@ final class DefaultDnsClient implements DnsClient {
                     // DNS lookup can return duplicate InetAddress
                     final DnsAnswer<T> dnsAnswer = addressFuture.getNow();
                     final List<T> addresses = dnsAnswer.answer();
-                    final List<ServiceDiscovererEvent<T>> events = calculateDifference(activeAddresses, addresses,
-                            comparator(), resolutionObserver == null ? null : (nAvailable, nMissing) ->
-                                    reportResolutionResult(resolutionObserver, dnsAnswer, nAvailable, nMissing),
-                            missingRecordStatus);
-
                     ttlNanos = dnsAnswer.ttlNanos();
                     if (ttlNanos > maxTTLNanos) {
                         LOGGER.info("{} result for {} has a high TTL={}s which is larger than configured maxTTL={}s.",
@@ -747,6 +742,12 @@ final class DefaultDnsClient implements DnsClient {
                                 NANOSECONDS.toSeconds(ttlNanos), NANOSECONDS.toSeconds(maxTTLNanos));
                         ttlNanos = maxTTLNanos;
                     }
+                    final List<ServiceDiscovererEvent<T>> events = calculateDifference(activeAddresses, addresses,
+                            comparator(), resolutionObserver == null ? null : (nAvailable, nMissing) ->
+                                    reportResolutionResult(resolutionObserver, new DefaultResolutionResult(
+                                            addresses.size(), (int) NANOSECONDS.toSeconds(ttlNanos),
+                                            nAvailable, nMissing)),
+                            missingRecordStatus);
 
                     if (events != null) {
                         activeAddresses = addresses;
@@ -791,10 +792,7 @@ final class DefaultDnsClient implements DnsClient {
             }
 
             private void reportResolutionResult(final DnsResolutionObserver resolutionObserver,
-                                                final DnsAnswer<T> dnsAnswer,
-                                                final int nAvailable, final int nMissing) {
-                final ResolutionResult result = new DefaultResolutionResult(dnsAnswer.answer().size(),
-                        (int) NANOSECONDS.toSeconds(dnsAnswer.ttlNanos()), nAvailable, nMissing);
+                                                final ResolutionResult result) {
                 try {
                     resolutionObserver.resolutionCompleted(result);
                 } catch (Throwable unexpected) {

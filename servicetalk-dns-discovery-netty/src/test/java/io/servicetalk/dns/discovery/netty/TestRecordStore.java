@@ -36,6 +36,7 @@ import javax.annotation.Nullable;
 import static org.apache.directory.server.dns.messages.RecordType.A;
 import static org.apache.directory.server.dns.messages.RecordType.AAAA;
 import static org.apache.directory.server.dns.messages.RecordType.CNAME;
+import static org.apache.directory.server.dns.messages.RecordType.SRV;
 
 final class TestRecordStore implements RecordStore {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestRecordStore.class);
@@ -51,8 +52,12 @@ final class TestRecordStore implements RecordStore {
     public synchronized void addSrv(final String domain, String targetDomain, final int port, final int ttl,
                                     final int weight, final int priority) {
         Map<RecordType, List<ResourceRecord>> typeMap = getTypeMap(domain);
-        List<ResourceRecord> recordList = getRecordList(typeMap, RecordType.SRV);
+        List<ResourceRecord> recordList = getRecordList(typeMap, SRV);
         recordList.add(createSrvRecord(domain, targetDomain, port, ttl, weight, priority));
+    }
+
+    public synchronized boolean removeSrv(final String domain) {
+        return removeAddresses(domain, SRV);
     }
 
     public synchronized boolean removeSrv(final String domain, String targetDomain, final int port, final int ttl) {
@@ -62,7 +67,7 @@ final class TestRecordStore implements RecordStore {
     public synchronized boolean removeSrv(final String domain, String targetDomain, final int port, final int ttl,
                                           final int weight, final int priority) {
         Map<RecordType, List<ResourceRecord>> typeMap = getTypeMap(domain);
-        List<ResourceRecord> recordList = getRecordList(typeMap, RecordType.SRV);
+        List<ResourceRecord> recordList = getRecordList(typeMap, SRV);
         return removeRecords(createSrvRecord(domain, targetDomain, port, ttl, weight, priority), recordList, typeMap);
     }
 
@@ -112,8 +117,8 @@ final class TestRecordStore implements RecordStore {
         return recordsToReturnByDomain.computeIfAbsent(domain, d -> new HashMap<>());
     }
 
-    private List<ResourceRecord> getRecordList(Map<RecordType, List<ResourceRecord>> typeMap,
-                                               final RecordType recordType) {
+    private static List<ResourceRecord> getRecordList(Map<RecordType, List<ResourceRecord>> typeMap,
+                                                      final RecordType recordType) {
         return typeMap.computeIfAbsent(recordType, t -> new ArrayList<>());
     }
 
@@ -197,7 +202,7 @@ final class TestRecordStore implements RecordStore {
         attributes.put(DnsAttribute.SERVICE_WEIGHT, weight);
         attributes.put(DnsAttribute.SERVICE_PORT, port);
         attributes.put(DnsAttribute.DOMAIN_NAME, targetDomain);
-        return new TestResourceRecord(domain, RecordType.SRV, RecordClass.IN, ttl, attributes);
+        return new TestResourceRecord(domain, SRV, RecordClass.IN, ttl, attributes);
     }
 
     static ResourceRecord createAddressRecord(final String domain, final RecordType recordType, final int ttl,

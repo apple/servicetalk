@@ -25,6 +25,8 @@ import io.servicetalk.dns.discovery.netty.DnsServiceDiscovererObserver.Resolutio
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.net.UnknownHostException;
 import java.util.Map;
@@ -38,6 +40,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.dns.discovery.netty.DnsTestUtils.nextIp;
+import static java.lang.Math.min;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.equalTo;
@@ -62,6 +65,7 @@ class DnsServiceDiscovererObserverTest {
     private static final String SERVICE_NAME = "servicetalk";
     private static final String INVALID = "invalid.";
     private static final int DEFAULT_TTL = 1;
+    private static final int MAX_TTL = 2;
 
     private final TestRecordStore recordStore = new TestRecordStore();
     private final TestDnsServer dnsServer = new TestDnsServer(recordStore);
@@ -90,7 +94,7 @@ class DnsServiceDiscovererObserverTest {
                 .optResourceEnabled(false)
                 .dnsServerAddressStreamProvider(new SingletonDnsServerAddressStreamProvider(dnsServer.localAddress()))
                 .ndots(1)
-                .minTTL(1)
+                .ttl(DEFAULT_TTL, MAX_TTL)
                 .build());
     }
 
@@ -239,6 +243,13 @@ class DnsServiceDiscovererObserverTest {
         });
     }
 
+    @Test
+    void aQueryResolutionResultReportsMaxTtl() throws Exception {
+        recordStore.removeIPv4Addresses(HOST_NAME);
+        recordStore.addIPv4Address(HOST_NAME, 3, nextIp(), nextIp(), nextIp());
+        aQueryResolutionResult(results -> assertResolutionResult(results.take(), 3, 2, 3, 0));
+    }
+
     private void aQueryResolutionResult(ResultsVerifier<BlockingQueue<ResolutionResult>> verifier) throws Exception {
         BlockingQueue<ResolutionResult> results = new LinkedBlockingDeque<>();
         DnsClient client = dnsClient(__ -> name -> new NoopDnsResolutionObserver() {
@@ -259,15 +270,27 @@ class DnsServiceDiscovererObserverTest {
 
     private static void assertResolutionResult(@Nullable ResolutionResult result,
                                                int resolvedRecords, int nAvailable, int nMissing) {
+        assertResolutionResult(result, resolvedRecords, DEFAULT_TTL, nAvailable, nMissing);
+    }
+
+    private static void assertResolutionResult(@Nullable ResolutionResult result,
+                                               int resolvedRecords, int ttl, int nAvailable, int nMissing) {
         assertThat("Unexpected null ResolutionResult", result, is(notNullValue()));
         assertThat("Unexpected number of resolvedRecords", result.resolvedRecords(), is(resolvedRecords));
-        assertThat("Unexpected TTL value", result.ttl(), is(DEFAULT_TTL));
+        assertThat("Unexpected TTL value", result.ttl(), is(ttl));
         assertThat("Unexpected number of nAvailable records", result.nAvailable(), is(nAvailable));
         assertThat("Unexpected number of nMissing records", result.nMissing(), is(nMissing));
     }
 
-    @Test
-    void srvQueryResolutionResult() throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] ttl={0}")
+    @ValueSource(ints = {1, 3})
+    void srvQueryResolutionResult(int ttl) throws Exception {
+        if (ttl > DEFAULT_TTL) {
+            recordStore.removeIPv4Addresses(HOST_NAME);
+            recordStore.removeSrv(SERVICE_NAME);
+            recordStore.addIPv4Address(HOST_NAME, ttl, nextIp(), nextIp());
+            recordStore.addSrv(SERVICE_NAME, HOST_NAME, 443, ttl);
+        }
         Map<String, ResolutionResult> results = new ConcurrentHashMap<>();
         DnsClient client = dnsClient(__ -> name -> new NoopDnsResolutionObserver() {
             @Override
@@ -282,8 +305,8 @@ class DnsServiceDiscovererObserverTest {
         publisher.takeAtMost(1).ignoreElements().toFuture().get();
         assertThat("Unexpected number of calls to resolutionCompleted", results.entrySet(), hasSize(2));
 
-        assertResolutionResult(results.get(SERVICE_NAME), 1, 1, 0);
-        assertResolutionResult(results.get(HOST_NAME + '.'), 2, 2, 0);
+        assertResolutionResult(results.get(SERVICE_NAME), 1, min(ttl, MAX_TTL), 1, 0);
+        assertResolutionResult(results.get(HOST_NAME + '.'), 2, min(ttl, MAX_TTL), 2, 0);
     }
 
     @Test
