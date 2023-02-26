@@ -15,9 +15,10 @@
  */
 package io.servicetalk.grpc.netty;
 
+import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
-import io.servicetalk.dns.discovery.netty.DnsServiceDiscoverers;
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.grpc.api.GrpcServerContext;
 import io.servicetalk.transport.api.HostAndPort;
 
@@ -27,20 +28,22 @@ import io.grpc.examples.helloworld.Greeter.GreeterService;
 import io.grpc.examples.helloworld.HelloReply;
 import io.grpc.examples.helloworld.HelloRequest;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import java.net.InetSocketAddress;
-import java.time.Duration;
 
+import static io.servicetalk.client.api.ServiceDiscovererEvent.Status.AVAILABLE;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.netty.HttpClients.DiscoveryStrategy.ON_NEW_CONNECTION;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
+import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 class GrpcClientResolvesOnNewConnectionTest {
 
@@ -62,26 +65,30 @@ class GrpcClientResolvesOnNewConnectionTest {
     }
 
     @Test
-    void withCustomDnsConfig() throws Exception {
-        ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>> spyDnsSd =
-                Mockito.spy(DnsServiceDiscoverers.builder(getClass().getSimpleName())
-                        .ttlJitter(Duration.ofSeconds(1))
-                        .buildARecordDiscoverer());
+    void withCustomSd() throws Exception {
         String greetingPrefix = "Hello ";
         String name = "foo";
         try (GrpcServerContext serverContext = GrpcServers.forAddress(localAddress(0))
                 .listenAndAwait((GreeterService) (ctx, request) ->
-                        succeeded(HelloReply.newBuilder().setMessage(greetingPrefix + request.getName()).build()));
-             // Use "localhost" to demonstrate that the address will be resolved.
-             BlockingGreeterClient client = GrpcClients.forAddress(spyDnsSd,
-                             HostAndPort.of("localhost", serverHostAndPort(serverContext).port()), ON_NEW_CONNECTION)
-                     .buildBlocking(new ClientFactory())) {
-            HelloRequest request = HelloRequest.newBuilder().setName(name).build();
-            HelloReply response = client.sayHello(request);
-            assertThat(response.getMessage(), is(equalTo(greetingPrefix + name)));
-            verify(spyDnsSd).discover(any());
-        } finally {
-            spyDnsSd.closeAsync().toFuture().get();
+                        succeeded(HelloReply.newBuilder().setMessage(greetingPrefix + request.getName()).build()))) {
+            // Use "localhost" to demonstrate that the address will be resolved.
+            HostAndPort hostAndPort = HostAndPort.of("localhost", serverHostAndPort(serverContext).port());
+            @SuppressWarnings("unchecked")
+            ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>> mockSd =
+                    mock(ServiceDiscoverer.class);
+            when(mockSd.discover(hostAndPort)).thenReturn(Publisher.from(singletonList(
+                    new DefaultServiceDiscovererEvent<>((InetSocketAddress) serverContext.listenAddress(),
+                            AVAILABLE))));
+            try (BlockingGreeterClient client = GrpcClients.forAddress(mockSd,
+                            hostAndPort, ON_NEW_CONNECTION)
+                         .buildBlocking(new ClientFactory())) {
+
+                HelloRequest request = HelloRequest.newBuilder().setName(name).build();
+                HelloReply response = client.sayHello(request);
+                assertThat(response.getMessage(), is(equalTo(greetingPrefix + name)));
+                verify(mockSd).discover(hostAndPort);
+                verifyNoMoreInteractions(mockSd);
+            }
         }
     }
 }
