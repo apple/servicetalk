@@ -311,7 +311,9 @@ public final class HttpClients {
             final HostAndPort address) {
         final ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>> sd =
                 resolvedServiceDiscoverer();
-        return applyProviders(address, new DefaultSingleAddressHttpClientBuilder<>(address, sd))
+        return applyProviders(address,
+                withUnmodifiableServiceDiscoverer(new DefaultSingleAddressHttpClientBuilder<>(address, sd),
+                        sd, "resolved address " + address))
                 // Apply after providers to let them see these customizations.
                 .serviceDiscoverer(sd)
                 .retryServiceDiscoveryErrors(NoRetriesStrategy.INSTANCE);
@@ -333,7 +335,9 @@ public final class HttpClients {
     public static <R extends SocketAddress> SingleAddressHttpClientBuilder<R, R> forResolvedAddress(final R address) {
         final ServiceDiscoverer<R, R, ServiceDiscovererEvent<R>> sd =
                 mappingServiceDiscoverer(identity(), "identity for " + address.getClass().getSimpleName());
-        return applyProviders(address, new DefaultSingleAddressHttpClientBuilder<>(address, sd))
+        return applyProviders(address,
+                withUnmodifiableServiceDiscoverer(new DefaultSingleAddressHttpClientBuilder<>(address, sd),
+                        sd, "resolved address " + address))
                 // Apply after providers to let them see these customizations.
                 .serviceDiscoverer(sd)
                 .retryServiceDiscoveryErrors(NoRetriesStrategy.INSTANCE);
