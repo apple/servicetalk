@@ -125,7 +125,8 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
      * @param <ResolvedAddress> The resolved address type.
      * @param <C> The type of connection.
      */
-    public static final class Builder<ResolvedAddress, C extends LoadBalancedConnection> {
+    public static final class Builder<ResolvedAddress, C extends LoadBalancedConnection>
+            implements RoundRobinLoadBalancerBuilder<ResolvedAddress, C> {
         private int linearSearchSpace = 16;
         @Nullable
         private Executor backgroundExecutor;
@@ -157,6 +158,7 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
          * selection all the time.
          * @return {@code this}.
          */
+        @Override
         public RoundRobinLoadBalancerFactory.Builder<ResolvedAddress, C> linearSearchSpace(int linearSearchSpace) {
             if (linearSearchSpace < 0) {
                 throw new IllegalArgumentException("linearSearchSpace: " + linearSearchSpace + " (expected >=0)");
@@ -180,6 +182,7 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
          * @return {@code this}.
          * @see #healthCheckFailedConnectionsThreshold(int)
          */
+        @Override
         public RoundRobinLoadBalancerFactory.Builder<ResolvedAddress, C> backgroundExecutor(
                 Executor backgroundExecutor) {
             this.backgroundExecutor = new NormalizedTimeSourceExecutor(backgroundExecutor);
@@ -217,6 +220,7 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
          * @return {@code this}.
          * @see #healthCheckFailedConnectionsThreshold(int)
          */
+        @Override
         public RoundRobinLoadBalancerFactory.Builder<ResolvedAddress, C> healthCheckInterval(Duration interval,
                                                                                              Duration jitter) {
             validate(interval, jitter);
@@ -241,6 +245,7 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
          * @return {@code this}.
          * @see #healthCheckFailedConnectionsThreshold(int)
          */
+        @Override
         public RoundRobinLoadBalancerFactory.Builder<ResolvedAddress, C> healthCheckResubscribeInterval(
                 Duration interval, Duration jitter) {
             validate(interval, jitter);
@@ -279,6 +284,7 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
          * @see #backgroundExecutor(Executor)
          * @see #healthCheckInterval(Duration)
          */
+        @Override
         public RoundRobinLoadBalancerFactory.Builder<ResolvedAddress, C> healthCheckFailedConnectionsThreshold(
                 int threshold) {
             if (threshold == 0) {
@@ -293,6 +299,7 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
          *
          * @return a new instance of {@link RoundRobinLoadBalancerFactory} with settings from this builder.
          */
+        @Override
         public RoundRobinLoadBalancerFactory<ResolvedAddress, C> build() {
             if (this.healthCheckFailedConnectionsThreshold < 0) {
                 return new RoundRobinLoadBalancerFactory<>(linearSearchSpace, null);
