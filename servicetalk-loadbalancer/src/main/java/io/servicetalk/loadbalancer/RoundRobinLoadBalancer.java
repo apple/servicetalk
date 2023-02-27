@@ -667,7 +667,7 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
 
         Host(String targetResource, Addr address, @Nullable HealthCheckConfig healthCheckConfig) {
             this.targetResource = targetResource;
-            this.address = requireNonNull(address);
+            this.address = address;
             this.healthCheckConfig = healthCheckConfig;
             this.closeable = toAsyncCloseable(graceful ->
                     graceful ? doClose(AsyncCloseable::closeAsyncGracefully) : doClose(AsyncCloseable::closeAsync));

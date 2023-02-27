@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019, 2022 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019, 2022-2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import io.servicetalk.grpc.api.GrpcClientBuilder;
 import io.servicetalk.grpc.api.GrpcProviders.GrpcClientBuilderProvider;
 import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.netty.HttpClients;
+import io.servicetalk.http.netty.HttpClients.DiscoveryStrategy;
 import io.servicetalk.transport.api.HostAndPort;
 
 import org.slf4j.Logger;
@@ -62,7 +63,7 @@ public final class GrpcClients {
 
     /**
      * Creates a {@link GrpcClientBuilder} for an address with default {@link LoadBalancer} and DNS
-     * {@link ServiceDiscoverer}.
+     * {@link ServiceDiscoverer} using {@link DiscoveryStrategy#BACKGROUND background} discovery strategy.
      * <p>
      * The returned builder can be customized using {@link GrpcClientBuilderProvider}.
      *
@@ -77,7 +78,7 @@ public final class GrpcClients {
 
     /**
      * Creates a {@link GrpcClientBuilder} for an address with default {@link LoadBalancer} and DNS
-     * {@link ServiceDiscoverer}.
+     * {@link ServiceDiscoverer} using {@link DiscoveryStrategy#BACKGROUND background} discovery strategy.
      * <p>
      * The returned builder can be customized using {@link GrpcClientBuilderProvider}.
      *
@@ -88,6 +89,41 @@ public final class GrpcClients {
      */
     public static GrpcClientBuilder<HostAndPort, InetSocketAddress> forAddress(final HostAndPort address) {
         return applyProviders(address, new DefaultGrpcClientBuilder<>(() -> HttpClients.forSingleAddress(address)));
+    }
+
+    /**
+     * Creates a {@link GrpcClientBuilder} for an address with default {@link LoadBalancer} and DNS
+     * {@link ServiceDiscoverer} using the specified {@link DiscoveryStrategy}.
+     * <p>
+     * The returned builder can be customized using {@link GrpcClientBuilderProvider}.
+     *
+     * @param host host to connect to, resolved by default using a DNS {@link ServiceDiscoverer}.
+     * @param port port to connect to
+     * @param discoveryStrategy {@link DiscoveryStrategy} to use
+     * @return new builder for the address
+     * @see GrpcClientBuilderProvider
+     */
+    public static GrpcClientBuilder<HostAndPort, InetSocketAddress> forAddress(
+            final String host, final int port, final DiscoveryStrategy discoveryStrategy) {
+        return forAddress(HostAndPort.of(host, port), discoveryStrategy);
+    }
+
+    /**
+     * Creates a {@link GrpcClientBuilder} for an address with default {@link LoadBalancer} and DNS
+     * {@link ServiceDiscoverer} using the specified {@link DiscoveryStrategy}.
+     * <p>
+     * The returned builder can be customized using {@link GrpcClientBuilderProvider}.
+     *
+     * @param address the {@code UnresolvedAddress} to connect to, resolved by default using a DNS
+     * {@link ServiceDiscoverer}.
+     * @param discoveryStrategy {@link DiscoveryStrategy} to use
+     * @return new builder for the address
+     * @see GrpcClientBuilderProvider
+     */
+    public static GrpcClientBuilder<HostAndPort, InetSocketAddress> forAddress(
+            final HostAndPort address, final DiscoveryStrategy discoveryStrategy) {
+        return applyProviders(address,
+                new DefaultGrpcClientBuilder<>(() -> HttpClients.forSingleAddress(address, discoveryStrategy)));
     }
 
     /**
@@ -169,7 +205,7 @@ public final class GrpcClients {
 
     /**
      * Creates a {@link GrpcClientBuilder} for a custom address type with default {@link LoadBalancer} and user
-     * provided {@link ServiceDiscoverer}.
+     * provided {@link ServiceDiscoverer} using {@link DiscoveryStrategy#BACKGROUND background} discovery strategy.
      * <p>
      * The returned builder can be customized using {@link GrpcClientBuilderProvider}.
      *
@@ -186,5 +222,28 @@ public final class GrpcClients {
             final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer, final U address) {
         return applyProviders(address,
                 new DefaultGrpcClientBuilder<>(() -> HttpClients.forSingleAddress(serviceDiscoverer, address)));
+    }
+
+    /**
+     * Creates a {@link GrpcClientBuilder} for a custom address type with default {@link LoadBalancer} and user
+     * provided {@link ServiceDiscoverer} using the specified {@link DiscoveryStrategy}.
+     * <p>
+     * The returned builder can be customized using {@link GrpcClientBuilderProvider}.
+     *
+     * @param serviceDiscoverer The {@link ServiceDiscoverer} to resolve addresses of remote servers to connect to.
+     * The lifecycle of the provided {@link ServiceDiscoverer} should be managed by the caller.
+     * @param address the {@code UnresolvedAddress} to connect to resolved using the provided {@code serviceDiscoverer}.
+     * @param discoveryStrategy {@link DiscoveryStrategy} to use
+     * @param <U> the type of address before resolution (unresolved address)
+     * @param <R> the type of address after resolution (resolved address)
+     * @return new builder with provided configuration
+     * @see GrpcClientBuilderProvider
+     */
+    public static <U, R>
+    GrpcClientBuilder<U, R> forAddress(
+            final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer,
+            final U address, final DiscoveryStrategy discoveryStrategy) {
+        return applyProviders(address, new DefaultGrpcClientBuilder<>(
+                () -> HttpClients.forSingleAddress(serviceDiscoverer, address, discoveryStrategy)));
     }
 }
