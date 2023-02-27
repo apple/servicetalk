@@ -330,8 +330,9 @@ class DnsServiceDiscovererObserverTest {
     @Test
     void aQueryResolutionResultReportsMaxTtl() throws Exception {
         recordStore.removeIPv4Addresses(HOST_NAME);
-        recordStore.addIPv4Address(HOST_NAME, 3, nextIp(), nextIp(), nextIp());
-        aQueryResolutionResult(results -> assertResolutionResult(results.take(), 3, 2, 3, 0));
+        int highTTL = MAX_TTL + 1;
+        recordStore.addIPv4Address(HOST_NAME, highTTL, nextIp(), nextIp(), nextIp());
+        aQueryResolutionResult(results -> assertResolutionResult(results.take(), 3, MAX_TTL, 3, 0));
     }
 
     private void aQueryResolutionResult(ResultsVerifier<BlockingQueue<ResolutionResult>> verifier) throws Exception {
