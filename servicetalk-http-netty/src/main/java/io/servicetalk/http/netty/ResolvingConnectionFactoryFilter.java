@@ -83,7 +83,7 @@ final class ResolvingConnectionFactoryFilter<U, R>
                                 resolved = resolvedAddresses instanceof List ?
                                         ((List<ServiceDiscovererEvent<R>>) resolvedAddresses).get(0) :
                                         resolvedAddresses.stream().findFirst().orElse(null);
-                                if (!AVAILABLE.equals(resolved.status())) {
+                                if (resolved != null && !AVAILABLE.equals(resolved.status())) {
                                     resolved = null;
                                 }
                             } else {
