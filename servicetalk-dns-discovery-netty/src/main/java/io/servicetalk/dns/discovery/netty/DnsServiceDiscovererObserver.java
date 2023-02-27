@@ -54,8 +54,7 @@ public interface DnsServiceDiscovererObserver {
      * An observer that provides visibility into individual DNS discoveries.
      * <p>
      * The discovery is considered complete when one of the terminal events is invoked. It's guaranteed only one
-     * terminal event will be invoked per request (either {@link #discoveryCancelled()} or
-     * {@link #discoveryFailed(Throwable)}).
+     * terminal event will be invoked per request.
      * <p>
      * In case of an SRV lookup, there might be multiple {@link DnsResolutionObserver DNS resolutions} observed for one
      * discovery.
@@ -92,8 +91,7 @@ public interface DnsServiceDiscovererObserver {
      * An observer that provides visibility into DNS resolution results.
      * <p>
      * The resolution is considered complete when one of the terminal events is invoked. It's guaranteed only one
-     * terminal event will be invoked per request (either {@link #resolutionFailed(Throwable)} or
-     * {@link #resolutionCompleted(ResolutionResult)}).
+     * terminal event will be invoked per request.
      */
     interface DnsResolutionObserver {
 
