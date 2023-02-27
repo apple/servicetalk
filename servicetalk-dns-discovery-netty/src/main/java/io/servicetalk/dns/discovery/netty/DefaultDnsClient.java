@@ -96,6 +96,7 @@ import static io.servicetalk.transport.netty.internal.BuilderUtils.socketChannel
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
 import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
 import static java.lang.Integer.toHexString;
+import static java.lang.System.identityHashCode;
 import static java.nio.ByteBuffer.wrap;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
@@ -156,7 +157,7 @@ final class DefaultDnsClient implements DnsClient {
         this.ttlJitterNanos = ttlJitterNanos;
         this.observer = observer;
         this.missingRecordStatus = missingRecordStatus;
-        this.id = id;
+        this.id = id + " (instance @" + toHexString(identityHashCode(this)) + ')';
         asyncCloseable = toAsyncCloseable(graceful -> {
             if (nettyIoExecutor.isCurrentThreadEventLoop()) {
                 closeAsync0();
@@ -200,7 +201,7 @@ final class DefaultDnsClient implements DnsClient {
 
     @Override
     public String toString() {
-        return id + " (instance @" + toHexString(hashCode()) + ')';
+        return id;
     }
 
     // visible for testing
@@ -241,17 +242,20 @@ final class DefaultDnsClient implements DnsClient {
                     public void onError(final Throwable cause) {
                         try {
                             discoveryObserver.discoveryFailed(cause);
-                        } catch (Throwable err) {
-                            LOGGER.warn("Unexpected exception from observer while reporting error event", err);
+                        } catch (Throwable unexpected) {
+                            addSuppressed(unexpected, cause);
+                            LOGGER.warn("{} Unexpected exception from observer while reporting discovery failure",
+                                    DefaultDnsClient.this, unexpected);
                         }
                     }
 
                     @Override
                     public void cancel() {
                         try {
-                            discoveryObserver.discoveryCanceled();
-                        } catch (Throwable err) {
-                            LOGGER.warn("Unexpected exception from observer while reporting cancel event", err);
+                            discoveryObserver.discoveryCancelled();
+                        } catch (Throwable unexpected) {
+                            LOGGER.warn("{} Unexpected exception from observer while reporting discovery cancellation",
+                                    DefaultDnsClient.this, unexpected);
                         }
                     }
                 });
@@ -323,17 +327,20 @@ final class DefaultDnsClient implements DnsClient {
                 public void onError(final Throwable cause) {
                     try {
                         discoveryObserver.discoveryFailed(cause);
-                    } catch (Throwable err) {
-                        LOGGER.warn("Unexpected exception from observer while reporting error event", err);
+                    } catch (Throwable unexpected) {
+                        addSuppressed(unexpected, cause);
+                        LOGGER.warn("{} Unexpected exception from observer while reporting discovery failure",
+                                DefaultDnsClient.this, unexpected);
                     }
                 }
 
                 @Override
                 public void cancel() {
                     try {
-                        discoveryObserver.discoveryCanceled();
-                    } catch (Throwable err) {
-                        LOGGER.warn("Unexpected exception from observer while reporting cancel event", err);
+                        discoveryObserver.discoveryCancelled();
+                    } catch (Throwable unexpected) {
+                        LOGGER.warn("{} Unexpected exception from observer while reporting discovery cancellation",
+                                DefaultDnsClient.this, unexpected);
                     }
                 }
             });
