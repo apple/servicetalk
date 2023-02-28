@@ -132,14 +132,20 @@ implements <a href="../Cancellable.html" title="interface in io.servicetalk.conc
 <div class="block">Sends a hint to the producer of the associated asynchronous execution that the consumer related to this
  <code>Cancellable</code> is not interested in the outcome of the execution.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isCancelled()" class="member-name-link">isCancelled</a>()</code></div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#cancelCurrent()" class="member-name-link">cancelCurrent</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Cancels only the <a href="../Cancellable.html" title="interface in io.servicetalk.concurrent"><code>Cancellable</code></a> that is currently held without side effect for any
+ <a href="#nextCancellable(io.servicetalk.concurrent.Cancellable)"><code>nextCancellable(Cancellable)</code></a>.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isCancelled()" class="member-name-link">isCancelled</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns <code>true</code> if this <a href="../Cancellable.html" title="interface in io.servicetalk.concurrent"><code>Cancellable</code></a> is cancelled.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#nextCancellable(io.servicetalk.concurrent.Cancellable)" class="member-name-link">nextCancellable</a><wbr>(<a href="../Cancellable.html" title="interface in io.servicetalk.concurrent">Cancellable</a>&nbsp;next)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>final void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#nextCancellable(io.servicetalk.concurrent.Cancellable)" class="member-name-link">nextCancellable</a><wbr>(<a href="../Cancellable.html" title="interface in io.servicetalk.concurrent">Cancellable</a>&nbsp;next)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Sets the current <a href="../Cancellable.html" title="interface in io.servicetalk.concurrent"><code>Cancellable</code></a>.</div>
 </div>
 </div>
@@ -207,6 +213,14 @@ implements <a href="../Cancellable.html" title="interface in io.servicetalk.conc
 <dt>Specified by:</dt>
 <dd><code><a href="../Cancellable.html#cancel()">cancel</a></code>&nbsp;in interface&nbsp;<code><a href="../Cancellable.html" title="interface in io.servicetalk.concurrent">Cancellable</a></code></dd>
 </dl>
+</section>
+</li>
+<li>
+<section class="detail" id="cancelCurrent()">
+<h3>cancelCurrent</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">cancelCurrent</span>()</div>
+<div class="block">Cancels only the <a href="../Cancellable.html" title="interface in io.servicetalk.concurrent"><code>Cancellable</code></a> that is currently held without side effect for any
+ <a href="#nextCancellable(io.servicetalk.concurrent.Cancellable)"><code>nextCancellable(Cancellable)</code></a>.</div>
 </section>
 </li>
 <li>

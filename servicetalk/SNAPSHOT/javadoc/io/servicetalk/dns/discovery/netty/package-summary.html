@@ -78,38 +78,55 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-first">Class</div>
 <div class="table-header col-last">Description</div>
 <div class="col-first even-row-color class-summary class-summary-tab2"><a href="DefaultDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty">DefaultDnsServiceDiscovererBuilder</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab2">
-<div class="block">Builder for <a href="https://tools.ietf.org/html/rfc1035">DNS</a> <a href="../../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> which will attempt to
- resolve <code>A</code>, <code>AAAA</code>, <code>CNAME</code>, and  <code>SRV</code> type queries.</div>
+<div class="col-last even-row-color class-summary class-summary-tab2">Deprecated.
+<div class="deprecation-comment">this class will be made package-private in the future, rely on the <a href="DnsServiceDiscovererBuilder.html" title="interface in io.servicetalk.dns.discovery.netty"><code>DnsServiceDiscovererBuilder</code></a>
+ instead.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab3"><a href="DnsResolverAddressTypes.html" title="enum class in io.servicetalk.dns.discovery.netty">DnsResolverAddressTypes</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab3">
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="DelegatingDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty">DelegatingDnsServiceDiscovererBuilder</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="block">A <a href="DnsServiceDiscovererBuilder.html" title="interface in io.servicetalk.dns.discovery.netty"><code>DnsServiceDiscovererBuilder</code></a> that delegates all methods to another <a href="DnsServiceDiscovererBuilder.html" title="interface in io.servicetalk.dns.discovery.netty"><code>DnsServiceDiscovererBuilder</code></a>.</div>
+</div>
+<div class="col-first even-row-color class-summary class-summary-tab3"><a href="DnsResolverAddressTypes.html" title="enum class in io.servicetalk.dns.discovery.netty">DnsResolverAddressTypes</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab3">
 <div class="block">Defined resolved address types.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab1"><a href="DnsServerAddressStream.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServerAddressStream</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab1">
+<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="DnsServerAddressStream.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServerAddressStream</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab1">
 <div class="block">An infinite stream of DNS server addresses.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="DnsServerAddressStreamProvider.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServerAddressStreamProvider</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab1">
+<div class="col-first even-row-color class-summary class-summary-tab1"><a href="DnsServerAddressStreamProvider.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServerAddressStreamProvider</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab1">
 <div class="block">Provides an opportunity to override which <a href="DnsServerAddressStream.html" title="interface in io.servicetalk.dns.discovery.netty"><code>DnsServerAddressStream</code></a> is used to resolve a specific hostname.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab1"><a href="DnsServiceDiscovererObserver.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererObserver</a></div>
-<div class="col-last even-row-color class-summary class-summary-tab1">
-<div class="block">An observer that provides visibility into <a href="https://tools.ietf.org/html/rfc1034">DNS</a>
- <a href="../../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> built by <a href="DefaultDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty"><code>DefaultDnsServiceDiscovererBuilder</code></a>.</div>
-</div>
-<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="DnsServiceDiscovererObserver.DnsDiscoveryObserver.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererObserver.DnsDiscoveryObserver</a></div>
+<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="DnsServiceDiscovererBuilder.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererBuilder</a></div>
 <div class="col-last odd-row-color class-summary class-summary-tab1">
-<div class="block">An observer that provides visibility into individual DNS resolutions.</div>
+<div class="block">Builder for <a href="https://tools.ietf.org/html/rfc1035">DNS</a> <a href="../../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> which will attempt to
+ resolve <code>A</code>, <code>AAAA</code>, <code>CNAME</code>, and <code>SRV</code> type queries.</div>
 </div>
-<div class="col-first even-row-color class-summary class-summary-tab1"><a href="DnsServiceDiscovererObserver.DnsResolutionObserver.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererObserver.DnsResolutionObserver</a></div>
+<div class="col-first even-row-color class-summary class-summary-tab1"><a href="DnsServiceDiscovererBuilderProvider.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererBuilderProvider</a></div>
 <div class="col-last even-row-color class-summary class-summary-tab1">
+<div class="block">Provider for <a href="DnsServiceDiscovererBuilder.html" title="interface in io.servicetalk.dns.discovery.netty"><code>DnsServiceDiscovererBuilder</code></a>.</div>
+</div>
+<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="DnsServiceDiscovererObserver.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererObserver</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab1">
+<div class="block">An observer that provides visibility into <a href="https://tools.ietf.org/html/rfc1034">DNS</a>
+ <a href="../../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> built by <a href="DnsServiceDiscovererBuilder.html" title="interface in io.servicetalk.dns.discovery.netty"><code>DnsServiceDiscovererBuilder</code></a>.</div>
+</div>
+<div class="col-first even-row-color class-summary class-summary-tab1"><a href="DnsServiceDiscovererObserver.DnsDiscoveryObserver.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererObserver.DnsDiscoveryObserver</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab1">
+<div class="block">An observer that provides visibility into individual DNS discoveries.</div>
+</div>
+<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="DnsServiceDiscovererObserver.DnsResolutionObserver.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererObserver.DnsResolutionObserver</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab1">
 <div class="block">An observer that provides visibility into DNS resolution results.</div>
 </div>
-<div class="col-first odd-row-color class-summary class-summary-tab1"><a href="DnsServiceDiscovererObserver.ResolutionResult.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererObserver.ResolutionResult</a></div>
-<div class="col-last odd-row-color class-summary class-summary-tab1">
+<div class="col-first even-row-color class-summary class-summary-tab1"><a href="DnsServiceDiscovererObserver.ResolutionResult.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererObserver.ResolutionResult</a></div>
+<div class="col-last even-row-color class-summary class-summary-tab1">
 <div class="block">Results of the current DNS resolution.</div>
+</div>
+<div class="col-first odd-row-color class-summary class-summary-tab2"><a href="DnsServiceDiscoverers.html" title="class in io.servicetalk.dns.discovery.netty">DnsServiceDiscoverers</a></div>
+<div class="col-last odd-row-color class-summary class-summary-tab2">
+<div class="block">A factory to create DNS <a href="../../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverers</code></a>.</div>
 </div>
 <div class="col-first even-row-color class-summary class-summary-tab2"><a href="SequentialDnsServerAddressStreamProvider.html" title="class in io.servicetalk.dns.discovery.netty">SequentialDnsServerAddressStreamProvider</a></div>
 <div class="col-last even-row-color class-summary class-summary-tab2">

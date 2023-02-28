@@ -78,7 +78,10 @@ loadScripts(document, 'script');</script>
 </dl>
 <hr>
 <div class="type-signature"><span class="modifiers">public static interface </span><span class="element-name type-name-label">DnsServiceDiscovererObserver.DnsResolutionObserver</span></div>
-<div class="block">An observer that provides visibility into DNS resolution results.</div>
+<div class="block">An observer that provides visibility into DNS resolution results.
+ <p>
+ The resolution is considered complete when one of the terminal events is invoked. It's guaranteed only one
+ terminal event will be invoked per request.</div>
 </section>
 <section class="summary">
 <ul class="summary-list">
@@ -121,7 +124,9 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="resolutionFailed(java.lang.Throwable)">
 <h3>resolutionFailed</h3>
 <div class="member-signature"><span class="return-type">void</span>&nbsp;<span class="element-name">resolutionFailed</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&nbsp;cause)</span></div>
-<div class="block">Notifies that the current DNS resolution failed.</div>
+<div class="block">Notifies that the current DNS resolution failed.
+ <p>
+ This is one of the possible terminal events.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>cause</code> - <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link"><code>Throwable</code></a> as a cause for the failure</dd>
@@ -132,7 +137,9 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="resolutionCompleted(io.servicetalk.dns.discovery.netty.DnsServiceDiscovererObserver.ResolutionResult)">
 <h3>resolutionCompleted</h3>
 <div class="member-signature"><span class="return-type">void</span>&nbsp;<span class="element-name">resolutionCompleted</span><wbr><span class="parameters">(<a href="DnsServiceDiscovererObserver.ResolutionResult.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererObserver.ResolutionResult</a>&nbsp;result)</span></div>
-<div class="block">Notifies that the current DNS resolution completed successfully.</div>
+<div class="block">Notifies that the current DNS resolution completed successfully.
+ <p>
+ This is one of the possible terminal events.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>result</code> - the <a href="DnsServiceDiscovererObserver.ResolutionResult.html" title="interface in io.servicetalk.dns.discovery.netty"><code>DnsServiceDiscovererObserver.ResolutionResult</code></a></dd>

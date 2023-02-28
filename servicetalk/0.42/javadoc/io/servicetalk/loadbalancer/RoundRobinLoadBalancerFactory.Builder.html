@@ -81,12 +81,22 @@ loadScripts(document, 'script');</script>
 <dd><code>C</code> - The type of connection.</dd>
 </dl>
 <dl class="notes">
+<dt>All Implemented Interfaces:</dt>
+<dd><code><a href="RoundRobinLoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">RoundRobinLoadBalancerBuilder</a>&lt;ResolvedAddress,<wbr>C&gt;</code></dd>
+</dl>
+<dl class="notes">
 <dt>Enclosing class:</dt>
 <dd><a href="RoundRobinLoadBalancerFactory.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancerFactory</a>&lt;<a href="RoundRobinLoadBalancerFactory.html" title="type parameter in RoundRobinLoadBalancerFactory">ResolvedAddress</a>,<wbr><a href="RoundRobinLoadBalancerFactory.html" title="type parameter in RoundRobinLoadBalancerFactory">C</a> extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</dd>
 </dl>
 <hr>
-<div class="type-signature"><span class="modifiers">public static final class </span><span class="element-name type-name-label">RoundRobinLoadBalancerFactory.Builder&lt;ResolvedAddress,<wbr>C extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</span>
-<span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></span></div>
+<div class="type-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">public static final class </span><span class="element-name type-name-label">RoundRobinLoadBalancerFactory.Builder&lt;ResolvedAddress,<wbr>C extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</span>
+<span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>
+implements <a href="RoundRobinLoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">RoundRobinLoadBalancerBuilder</a>&lt;ResolvedAddress,<wbr>C&gt;</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">this class will be made package-private in the future, rely on the
+ <a href="RoundRobinLoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer"><code>RoundRobinLoadBalancerBuilder</code></a> instead.</div>
+</div>
 <div class="block">Builder for <a href="RoundRobinLoadBalancerFactory.html" title="class in io.servicetalk.loadbalancer"><code>RoundRobinLoadBalancerFactory</code></a>.</div>
 </section>
 <section class="summary">
@@ -101,7 +111,9 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-last">Description</div>
 <div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E()" class="member-name-link">Builder</a>()</code></div>
 <div class="col-last even-row-color">
-<div class="block">Creates a new instance with default settings.</div>
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">use <a href="RoundRobinLoadBalancers.html#builder(java.lang.String)"><code>RoundRobinLoadBalancers.builder(String)</code></a> instead.</div>
+</div>
 </div>
 </div>
 </section>
@@ -117,20 +129,23 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RoundRobinLoadBalancerFactory.Builder.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancerFactory.Builder</a>&lt;<a href="RoundRobinLoadBalancerFactory.Builder.html" title="type parameter in RoundRobinLoadBalancerFactory.Builder">ResolvedAddress</a>,<wbr><a href="RoundRobinLoadBalancerFactory.Builder.html" title="type parameter in RoundRobinLoadBalancerFactory.Builder">C</a>&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#backgroundExecutor(io.servicetalk.concurrent.api.Executor)" class="member-name-link">backgroundExecutor</a><wbr>(<a href="../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;backgroundExecutor)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="RoundRobinLoadBalancerFactory.Builder.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancerFactory.Builder</a>&lt;<a href="RoundRobinLoadBalancerFactory.Builder.html" title="type parameter in RoundRobinLoadBalancerFactory.Builder">ResolvedAddress</a>,<wbr><a href="RoundRobinLoadBalancerFactory.Builder.html" title="type parameter in RoundRobinLoadBalancerFactory.Builder">C</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#backgroundExecutor(io.servicetalk.concurrent.api.Executor)" class="member-name-link">backgroundExecutor</a><wbr>(<a href="../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;backgroundExecutor)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">This <a href="../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> may monitor hosts to which connection establishment has failed
  using health checks that run in the background.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RoundRobinLoadBalancerFactory.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancerFactory</a>&lt;<a href="RoundRobinLoadBalancerFactory.Builder.html" title="type parameter in RoundRobinLoadBalancerFactory.Builder">ResolvedAddress</a>,<wbr><a href="RoundRobinLoadBalancerFactory.Builder.html" title="type parameter in RoundRobinLoadBalancerFactory.Builder">C</a>&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#build()" class="member-name-link">build</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Builds the <a href="RoundRobinLoadBalancerFactory.html" title="class in io.servicetalk.loadbalancer"><code>RoundRobinLoadBalancerFactory</code></a> configured by this builder.</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="RoundRobinLoadBalancerFactory.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancerFactory</a>&lt;<a href="RoundRobinLoadBalancerFactory.Builder.html" title="type parameter in RoundRobinLoadBalancerFactory.Builder">ResolvedAddress</a>,<wbr><a href="RoundRobinLoadBalancerFactory.Builder.html" title="type parameter in RoundRobinLoadBalancerFactory.Builder">C</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#build()" class="member-name-link">build</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
+<div class="block">Builds the <a href="../client/api/LoadBalancerFactory.html" title="interface in io.servicetalk.client.api"><code>LoadBalancerFactory</code></a> configured by this builder.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RoundRobinLoadBalancerFactory.Builder.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancerFactory.Builder</a>&lt;<a href="RoundRobinLoadBalancerFactory.Builder.html" title="type parameter in RoundRobinLoadBalancerFactory.Builder">ResolvedAddress</a>,<wbr><a href="RoundRobinLoadBalancerFactory.Builder.html" title="type parameter in RoundRobinLoadBalancerFactory.Builder">C</a>&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#healthCheckFailedConnectionsThreshold(int)" class="member-name-link">healthCheckFailedConnectionsThreshold</a><wbr>(int&nbsp;threshold)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="RoundRobinLoadBalancerFactory.Builder.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancerFactory.Builder</a>&lt;<a href="RoundRobinLoadBalancerFactory.Builder.html" title="type parameter in RoundRobinLoadBalancerFactory.Builder">ResolvedAddress</a>,<wbr><a href="RoundRobinLoadBalancerFactory.Builder.html" title="type parameter in RoundRobinLoadBalancerFactory.Builder">C</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#healthCheckFailedConnectionsThreshold(int)" class="member-name-link">healthCheckFailedConnectionsThreshold</a><wbr>(int&nbsp;threshold)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Configure a threshold for consecutive connection failures to a host.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="RoundRobinLoadBalancerFactory.Builder.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancerFactory.Builder</a>&lt;<a href="RoundRobinLoadBalancerFactory.Builder.html" title="type parameter in RoundRobinLoadBalancerFactory.Builder">ResolvedAddress</a>,<wbr><a href="RoundRobinLoadBalancerFactory.Builder.html" title="type parameter in RoundRobinLoadBalancerFactory.Builder">C</a>&gt;</code></div>
@@ -140,15 +155,25 @@ loadScripts(document, 'script');</script>
 <div class="deprecation-comment">Use <a href="#healthCheckInterval(java.time.Duration,java.time.Duration)"><code>healthCheckInterval(Duration, Duration)</code></a>.</div>
 </div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RoundRobinLoadBalancerFactory.Builder.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancerFactory.Builder</a>&lt;<a href="RoundRobinLoadBalancerFactory.Builder.html" title="type parameter in RoundRobinLoadBalancerFactory.Builder">ResolvedAddress</a>,<wbr><a href="RoundRobinLoadBalancerFactory.Builder.html" title="type parameter in RoundRobinLoadBalancerFactory.Builder">C</a>&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#healthCheckInterval(java.time.Duration,java.time.Duration)" class="member-name-link">healthCheckInterval</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;interval,
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="RoundRobinLoadBalancerFactory.Builder.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancerFactory.Builder</a>&lt;<a href="RoundRobinLoadBalancerFactory.Builder.html" title="type parameter in RoundRobinLoadBalancerFactory.Builder">ResolvedAddress</a>,<wbr><a href="RoundRobinLoadBalancerFactory.Builder.html" title="type parameter in RoundRobinLoadBalancerFactory.Builder">C</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#healthCheckInterval(java.time.Duration,java.time.Duration)" class="member-name-link">healthCheckInterval</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;interval,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;jitter)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Configure an interval for health checking a host that failed to open connections.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RoundRobinLoadBalancerFactory.Builder.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancerFactory.Builder</a>&lt;<a href="RoundRobinLoadBalancerFactory.Builder.html" title="type parameter in RoundRobinLoadBalancerFactory.Builder">ResolvedAddress</a>,<wbr><a href="RoundRobinLoadBalancerFactory.Builder.html" title="type parameter in RoundRobinLoadBalancerFactory.Builder">C</a>&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#linearSearchSpace(int)" class="member-name-link">linearSearchSpace</a><wbr>(int&nbsp;linearSearchSpace)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="RoundRobinLoadBalancerFactory.Builder.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancerFactory.Builder</a>&lt;<a href="RoundRobinLoadBalancerFactory.Builder.html" title="type parameter in RoundRobinLoadBalancerFactory.Builder">ResolvedAddress</a>,<wbr><a href="RoundRobinLoadBalancerFactory.Builder.html" title="type parameter in RoundRobinLoadBalancerFactory.Builder">C</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#healthCheckResubscribeInterval(java.time.Duration,java.time.Duration)" class="member-name-link">healthCheckResubscribeInterval</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;interval,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;jitter)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
+<div class="block">Configure an interval for re-subscribing to the original events stream in case all existing hosts become
+ unhealthy.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="RoundRobinLoadBalancerFactory.Builder.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancerFactory.Builder</a>&lt;<a href="RoundRobinLoadBalancerFactory.Builder.html" title="type parameter in RoundRobinLoadBalancerFactory.Builder">ResolvedAddress</a>,<wbr><a href="RoundRobinLoadBalancerFactory.Builder.html" title="type parameter in RoundRobinLoadBalancerFactory.Builder">C</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#linearSearchSpace(int)" class="member-name-link">linearSearchSpace</a><wbr>(int&nbsp;linearSearchSpace)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Sets the linear search space to find an available connection for the next host.</div>
 </div>
 </div>
@@ -171,7 +196,11 @@ loadScripts(document, 'script');</script>
 <li>
 <section class="detail" id="&lt;init&gt;()">
 <h3>Builder</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">Builder</span>()</div>
+<div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">public</span>&nbsp;<span class="element-name">Builder</span>()</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">use <a href="RoundRobinLoadBalancers.html#builder(java.lang.String)"><code>RoundRobinLoadBalancers.builder(String)</code></a> instead.</div>
+</div>
 <div class="block">Creates a new instance with default settings.</div>
 </section>
 </li>
@@ -187,6 +216,8 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="linearSearchSpace(int)">
 <h3>linearSearchSpace</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="RoundRobinLoadBalancerFactory.Builder.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancerFactory.Builder</a>&lt;<a href="RoundRobinLoadBalancerFactory.Builder.html" title="type parameter in RoundRobinLoadBalancerFactory.Builder">ResolvedAddress</a>,<wbr><a href="RoundRobinLoadBalancerFactory.Builder.html" title="type parameter in RoundRobinLoadBalancerFactory.Builder">C</a>&gt;</span>&nbsp;<span class="element-name">linearSearchSpace</span><wbr><span class="parameters">(int&nbsp;linearSearchSpace)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="RoundRobinLoadBalancerBuilder.html#linearSearchSpace(int)">RoundRobinLoadBalancerBuilder</a></code></span></div>
 <div class="block">Sets the linear search space to find an available connection for the next host.
  <p>
  When the next host has already opened connections, this <a href="../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> will perform a linear search for
@@ -196,6 +227,8 @@ loadScripts(document, 'script');</script>
  Higher linear search space may help to better identify excess connections in highly concurrent environments,
  but may result in slightly increased selection time.</div>
 <dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="RoundRobinLoadBalancerBuilder.html#linearSearchSpace(int)">linearSearchSpace</a></code>&nbsp;in interface&nbsp;<code><a href="RoundRobinLoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">RoundRobinLoadBalancerBuilder</a>&lt;<a href="RoundRobinLoadBalancerFactory.Builder.html" title="type parameter in RoundRobinLoadBalancerFactory.Builder">ResolvedAddress</a>,<wbr><a href="RoundRobinLoadBalancerFactory.Builder.html" title="type parameter in RoundRobinLoadBalancerFactory.Builder">C</a> extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</code></dd>
 <dt>Parameters:</dt>
 <dd><code>linearSearchSpace</code> - the number of attempts for a linear search space, <code>0</code> enforces random
  selection all the time.</dd>
@@ -208,6 +241,8 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="backgroundExecutor(io.servicetalk.concurrent.api.Executor)">
 <h3>backgroundExecutor</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="RoundRobinLoadBalancerFactory.Builder.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancerFactory.Builder</a>&lt;<a href="RoundRobinLoadBalancerFactory.Builder.html" title="type parameter in RoundRobinLoadBalancerFactory.Builder">ResolvedAddress</a>,<wbr><a href="RoundRobinLoadBalancerFactory.Builder.html" title="type parameter in RoundRobinLoadBalancerFactory.Builder">C</a>&gt;</span>&nbsp;<span class="element-name">backgroundExecutor</span><wbr><span class="parameters">(<a href="../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api">Executor</a>&nbsp;backgroundExecutor)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="RoundRobinLoadBalancerBuilder.html#backgroundExecutor(io.servicetalk.concurrent.api.Executor)">RoundRobinLoadBalancerBuilder</a></code></span></div>
 <div class="block">This <a href="../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> may monitor hosts to which connection establishment has failed
  using health checks that run in the background. The health check tries to establish a new connection
  and if it succeeds, the host is returned to the load balancing pool. As long as the connection
@@ -215,9 +250,11 @@ loadScripts(document, 'script');</script>
  If an <a href="../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> is not provided using this method, a default shared instance is used
  for all <a href="../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancers</code></a> created by this factory.
  <p>
- <a href="#healthCheckFailedConnectionsThreshold(int)"><code>healthCheckFailedConnectionsThreshold(int)</code></a> can be used to disable this mechanism and always
+ <a href="RoundRobinLoadBalancerBuilder.html#healthCheckFailedConnectionsThreshold(int)"><code>RoundRobinLoadBalancerBuilder.healthCheckFailedConnectionsThreshold(int)</code></a> can be used to disable this mechanism and always
  consider all hosts for establishing new connections.</div>
 <dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="RoundRobinLoadBalancerBuilder.html#backgroundExecutor(io.servicetalk.concurrent.api.Executor)">backgroundExecutor</a></code>&nbsp;in interface&nbsp;<code><a href="RoundRobinLoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">RoundRobinLoadBalancerBuilder</a>&lt;<a href="RoundRobinLoadBalancerFactory.Builder.html" title="type parameter in RoundRobinLoadBalancerFactory.Builder">ResolvedAddress</a>,<wbr><a href="RoundRobinLoadBalancerFactory.Builder.html" title="type parameter in RoundRobinLoadBalancerFactory.Builder">C</a> extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</code></dd>
 <dt>Parameters:</dt>
 <dd><code>backgroundExecutor</code> - <a href="../concurrent/api/Executor.html" title="interface in io.servicetalk.concurrent.api"><code>Executor</code></a> on which to schedule health checking.</dd>
 <dt>Returns:</dt>
@@ -225,7 +262,7 @@ loadScripts(document, 'script');</script>
 <dt>See Also:</dt>
 <dd>
 <ul class="see-list-long">
-<li><a href="#healthCheckFailedConnectionsThreshold(int)"><code>healthCheckFailedConnectionsThreshold(int)</code></a></li>
+<li><a href="RoundRobinLoadBalancerBuilder.html#healthCheckFailedConnectionsThreshold(int)"><code>RoundRobinLoadBalancerBuilder.healthCheckFailedConnectionsThreshold(int)</code></a></li>
 </ul>
 </dd>
 </dl>
@@ -263,12 +300,16 @@ loadScripts(document, 'script');</script>
 <h3>healthCheckInterval</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="RoundRobinLoadBalancerFactory.Builder.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancerFactory.Builder</a>&lt;<a href="RoundRobinLoadBalancerFactory.Builder.html" title="type parameter in RoundRobinLoadBalancerFactory.Builder">ResolvedAddress</a>,<wbr><a href="RoundRobinLoadBalancerFactory.Builder.html" title="type parameter in RoundRobinLoadBalancerFactory.Builder">C</a>&gt;</span>&nbsp;<span class="element-name">healthCheckInterval</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;interval,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;jitter)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="RoundRobinLoadBalancerBuilder.html#healthCheckInterval(java.time.Duration,java.time.Duration)">RoundRobinLoadBalancerBuilder</a></code></span></div>
 <div class="block">Configure an interval for health checking a host that failed to open connections. If no interval is provided
  using this method, a default value will be used.
  <p>
- <a href="#healthCheckFailedConnectionsThreshold(int)"><code>healthCheckFailedConnectionsThreshold(int)</code></a> can be used to disable the health checking mechanism
+ <a href="RoundRobinLoadBalancerBuilder.html#healthCheckFailedConnectionsThreshold(int)"><code>RoundRobinLoadBalancerBuilder.healthCheckFailedConnectionsThreshold(int)</code></a> can be used to disable the health checking mechanism
  and always consider all hosts for establishing new connections.</div>
 <dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="RoundRobinLoadBalancerBuilder.html#healthCheckInterval(java.time.Duration,java.time.Duration)">healthCheckInterval</a></code>&nbsp;in interface&nbsp;<code><a href="RoundRobinLoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">RoundRobinLoadBalancerBuilder</a>&lt;<a href="RoundRobinLoadBalancerFactory.Builder.html" title="type parameter in RoundRobinLoadBalancerFactory.Builder">ResolvedAddress</a>,<wbr><a href="RoundRobinLoadBalancerFactory.Builder.html" title="type parameter in RoundRobinLoadBalancerFactory.Builder">C</a> extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</code></dd>
 <dt>Parameters:</dt>
 <dd><code>interval</code> - interval at which a background health check will be scheduled.</dd>
 <dd><code>jitter</code> - the amount of jitter to apply to each retry <code>interval</code>.</dd>
@@ -277,7 +318,40 @@ loadScripts(document, 'script');</script>
 <dt>See Also:</dt>
 <dd>
 <ul class="see-list-long">
-<li><a href="#healthCheckFailedConnectionsThreshold(int)"><code>healthCheckFailedConnectionsThreshold(int)</code></a></li>
+<li><a href="RoundRobinLoadBalancerBuilder.html#healthCheckFailedConnectionsThreshold(int)"><code>RoundRobinLoadBalancerBuilder.healthCheckFailedConnectionsThreshold(int)</code></a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="healthCheckResubscribeInterval(java.time.Duration,java.time.Duration)">
+<h3>healthCheckResubscribeInterval</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="RoundRobinLoadBalancerFactory.Builder.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancerFactory.Builder</a>&lt;<a href="RoundRobinLoadBalancerFactory.Builder.html" title="type parameter in RoundRobinLoadBalancerFactory.Builder">ResolvedAddress</a>,<wbr><a href="RoundRobinLoadBalancerFactory.Builder.html" title="type parameter in RoundRobinLoadBalancerFactory.Builder">C</a>&gt;</span>&nbsp;<span class="element-name">healthCheckResubscribeInterval</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;interval,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;jitter)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="RoundRobinLoadBalancerBuilder.html#healthCheckResubscribeInterval(java.time.Duration,java.time.Duration)">RoundRobinLoadBalancerBuilder</a></code></span></div>
+<div class="block">Configure an interval for re-subscribing to the original events stream in case all existing hosts become
+ unhealthy.
+ <p>
+ In situations when there is a latency between <a href="../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> propagating the updated state and all
+ known hosts become unhealthy, which could happen due to intermediate caching layers, re-subscribe to the
+ events stream can help to exit from a dead state.
+ <p>
+ <a href="RoundRobinLoadBalancerBuilder.html#healthCheckFailedConnectionsThreshold(int)"><code>RoundRobinLoadBalancerBuilder.healthCheckFailedConnectionsThreshold(int)</code></a> can be used to disable the health checking mechanism
+ and always consider all hosts for establishing new connections.</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="RoundRobinLoadBalancerBuilder.html#healthCheckResubscribeInterval(java.time.Duration,java.time.Duration)">healthCheckResubscribeInterval</a></code>&nbsp;in interface&nbsp;<code><a href="RoundRobinLoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">RoundRobinLoadBalancerBuilder</a>&lt;<a href="RoundRobinLoadBalancerFactory.Builder.html" title="type parameter in RoundRobinLoadBalancerFactory.Builder">ResolvedAddress</a>,<wbr><a href="RoundRobinLoadBalancerFactory.Builder.html" title="type parameter in RoundRobinLoadBalancerFactory.Builder">C</a> extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</code></dd>
+<dt>Parameters:</dt>
+<dd><code>interval</code> - interval at which re-subscribes will be scheduled.</dd>
+<dd><code>jitter</code> - the amount of jitter to apply to each re-subscribe <code>interval</code>.</dd>
+<dt>Returns:</dt>
+<dd><code>this</code>.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="RoundRobinLoadBalancerBuilder.html#healthCheckFailedConnectionsThreshold(int)"><code>RoundRobinLoadBalancerBuilder.healthCheckFailedConnectionsThreshold(int)</code></a></li>
 </ul>
 </dd>
 </dl>
@@ -287,6 +361,8 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="healthCheckFailedConnectionsThreshold(int)">
 <h3>healthCheckFailedConnectionsThreshold</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="RoundRobinLoadBalancerFactory.Builder.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancerFactory.Builder</a>&lt;<a href="RoundRobinLoadBalancerFactory.Builder.html" title="type parameter in RoundRobinLoadBalancerFactory.Builder">ResolvedAddress</a>,<wbr><a href="RoundRobinLoadBalancerFactory.Builder.html" title="type parameter in RoundRobinLoadBalancerFactory.Builder">C</a>&gt;</span>&nbsp;<span class="element-name">healthCheckFailedConnectionsThreshold</span><wbr><span class="parameters">(int&nbsp;threshold)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="RoundRobinLoadBalancerBuilder.html#healthCheckFailedConnectionsThreshold(int)">RoundRobinLoadBalancerBuilder</a></code></span></div>
 <div class="block">Configure a threshold for consecutive connection failures to a host. When the <a href="../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>
  consecutively fails to open connections in the amount greater or equal to the specified value,
  the host will be marked as unhealthy and connection establishment will take place in the background
@@ -295,6 +371,8 @@ loadScripts(document, 'script');</script>
  <p>
  Use a negative value of the argument to disable health checking.</div>
 <dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="RoundRobinLoadBalancerBuilder.html#healthCheckFailedConnectionsThreshold(int)">healthCheckFailedConnectionsThreshold</a></code>&nbsp;in interface&nbsp;<code><a href="RoundRobinLoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">RoundRobinLoadBalancerBuilder</a>&lt;<a href="RoundRobinLoadBalancerFactory.Builder.html" title="type parameter in RoundRobinLoadBalancerFactory.Builder">ResolvedAddress</a>,<wbr><a href="RoundRobinLoadBalancerFactory.Builder.html" title="type parameter in RoundRobinLoadBalancerFactory.Builder">C</a> extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</code></dd>
 <dt>Parameters:</dt>
 <dd><code>threshold</code> - number of consecutive connection failures to consider a host unhealthy and eligible for
  background health checking. Use negative value to disable the health checking mechanism.</dd>
@@ -302,9 +380,8 @@ loadScripts(document, 'script');</script>
 <dd><code>this</code>.</dd>
 <dt>See Also:</dt>
 <dd>
-<ul class="see-list">
-<li><a href="#backgroundExecutor(io.servicetalk.concurrent.api.Executor)"><code>backgroundExecutor(Executor)</code></a></li>
-<li><a href="#healthCheckInterval(java.time.Duration)"><code>healthCheckInterval(Duration)</code></a></li>
+<ul class="see-list-long">
+<li><a href="RoundRobinLoadBalancerBuilder.html#backgroundExecutor(io.servicetalk.concurrent.api.Executor)"><code>RoundRobinLoadBalancerBuilder.backgroundExecutor(Executor)</code></a></li>
 </ul>
 </dd>
 </dl>
@@ -314,10 +391,14 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="build()">
 <h3>build</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="RoundRobinLoadBalancerFactory.html" title="class in io.servicetalk.loadbalancer">RoundRobinLoadBalancerFactory</a>&lt;<a href="RoundRobinLoadBalancerFactory.Builder.html" title="type parameter in RoundRobinLoadBalancerFactory.Builder">ResolvedAddress</a>,<wbr><a href="RoundRobinLoadBalancerFactory.Builder.html" title="type parameter in RoundRobinLoadBalancerFactory.Builder">C</a>&gt;</span>&nbsp;<span class="element-name">build</span>()</div>
-<div class="block">Builds the <a href="RoundRobinLoadBalancerFactory.html" title="class in io.servicetalk.loadbalancer"><code>RoundRobinLoadBalancerFactory</code></a> configured by this builder.</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="RoundRobinLoadBalancerBuilder.html#build()">RoundRobinLoadBalancerBuilder</a></code></span></div>
+<div class="block">Builds the <a href="../client/api/LoadBalancerFactory.html" title="interface in io.servicetalk.client.api"><code>LoadBalancerFactory</code></a> configured by this builder.</div>
 <dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="RoundRobinLoadBalancerBuilder.html#build()">build</a></code>&nbsp;in interface&nbsp;<code><a href="RoundRobinLoadBalancerBuilder.html" title="interface in io.servicetalk.loadbalancer">RoundRobinLoadBalancerBuilder</a>&lt;<a href="RoundRobinLoadBalancerFactory.Builder.html" title="type parameter in RoundRobinLoadBalancerFactory.Builder">ResolvedAddress</a>,<wbr><a href="RoundRobinLoadBalancerFactory.Builder.html" title="type parameter in RoundRobinLoadBalancerFactory.Builder">C</a> extends <a href="../client/api/LoadBalancedConnection.html" title="interface in io.servicetalk.client.api">LoadBalancedConnection</a>&gt;</code></dd>
 <dt>Returns:</dt>
-<dd>a new instance of <a href="RoundRobinLoadBalancerFactory.html" title="class in io.servicetalk.loadbalancer"><code>RoundRobinLoadBalancerFactory</code></a> with settings from this builder.</dd>
+<dd>a new instance of <a href="../client/api/LoadBalancerFactory.html" title="interface in io.servicetalk.client.api"><code>LoadBalancerFactory</code></a> with settings from this builder.</dd>
 </dl>
 </section>
 </li>

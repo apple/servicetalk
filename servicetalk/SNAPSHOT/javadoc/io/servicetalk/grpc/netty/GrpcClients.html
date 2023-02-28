@@ -99,45 +99,69 @@ R&gt;&nbsp;<a href="../api/GrpcClientBuilder.html" title="interface in io.servic
  U&nbsp;address)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Creates a <a href="../api/GrpcClientBuilder.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClientBuilder</code></a> for a custom address type with default <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> and user
- provided <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>.</div>
+ provided <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> using <a href="../../http/netty/HttpClients.DiscoveryStrategy.html#BACKGROUND"><code>background</code></a> discovery strategy.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static &lt;U,<wbr>
+R&gt;&nbsp;<a href="../api/GrpcClientBuilder.html" title="interface in io.servicetalk.grpc.api">GrpcClientBuilder</a>&lt;U,<wbr>R&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#forAddress(io.servicetalk.client.api.ServiceDiscoverer,U,io.servicetalk.http.netty.HttpClients.DiscoveryStrategy)" class="member-name-link">forAddress</a><wbr>(<a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api">ServiceDiscoverer</a>&lt;U,<wbr>R,<wbr>? extends <a href="../../client/api/ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;R&gt;&gt;&nbsp;serviceDiscoverer,
+ U&nbsp;address,
+ <a href="../../http/netty/HttpClients.DiscoveryStrategy.html" title="enum class in io.servicetalk.http.netty">HttpClients.DiscoveryStrategy</a>&nbsp;discoveryStrategy)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">Creates a <a href="../api/GrpcClientBuilder.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClientBuilder</code></a> for a custom address type with default <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> and user
+ provided <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> using the specified <a href="../../http/netty/HttpClients.DiscoveryStrategy.html" title="enum class in io.servicetalk.http.netty"><code>HttpClients.DiscoveryStrategy</code></a>.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="../api/GrpcClientBuilder.html" title="interface in io.servicetalk.grpc.api">GrpcClientBuilder</a>&lt;<a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#forAddress(io.servicetalk.transport.api.HostAndPort)" class="member-name-link">forAddress</a><wbr>(<a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>&nbsp;address)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">Creates a <a href="../api/GrpcClientBuilder.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClientBuilder</code></a> for an address with default <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> and DNS
+ <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> using <a href="../../http/netty/HttpClients.DiscoveryStrategy.html#BACKGROUND"><code>background</code></a> discovery strategy.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="../api/GrpcClientBuilder.html" title="interface in io.servicetalk.grpc.api">GrpcClientBuilder</a>&lt;<a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#forAddress(io.servicetalk.transport.api.HostAndPort)" class="member-name-link">forAddress</a><wbr>(<a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>&nbsp;address)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#forAddress(io.servicetalk.transport.api.HostAndPort,io.servicetalk.http.netty.HttpClients.DiscoveryStrategy)" class="member-name-link">forAddress</a><wbr>(<a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>&nbsp;address,
+ <a href="../../http/netty/HttpClients.DiscoveryStrategy.html" title="enum class in io.servicetalk.http.netty">HttpClients.DiscoveryStrategy</a>&nbsp;discoveryStrategy)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Creates a <a href="../api/GrpcClientBuilder.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClientBuilder</code></a> for an address with default <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> and DNS
- <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>.</div>
+ <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> using the specified <a href="../../http/netty/HttpClients.DiscoveryStrategy.html" title="enum class in io.servicetalk.http.netty"><code>HttpClients.DiscoveryStrategy</code></a>.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="../api/GrpcClientBuilder.html" title="interface in io.servicetalk.grpc.api">GrpcClientBuilder</a>&lt;<a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>&gt;</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#forAddress(java.lang.String,int)" class="member-name-link">forAddress</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;host,
  int&nbsp;port)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Creates a <a href="../api/GrpcClientBuilder.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClientBuilder</code></a> for an address with default <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> and DNS
- <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>.</div>
+ <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> using <a href="../../http/netty/HttpClients.DiscoveryStrategy.html#BACKGROUND"><code>background</code></a> discovery strategy.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="../api/GrpcClientBuilder.html" title="interface in io.servicetalk.grpc.api">GrpcClientBuilder</a>&lt;<a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#forResolvedAddress(io.servicetalk.transport.api.HostAndPort)" class="member-name-link">forResolvedAddress</a><wbr>(<a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>&nbsp;address)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#forAddress(java.lang.String,int,io.servicetalk.http.netty.HttpClients.DiscoveryStrategy)" class="member-name-link">forAddress</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;host,
+ int&nbsp;port,
+ <a href="../../http/netty/HttpClients.DiscoveryStrategy.html" title="enum class in io.servicetalk.http.netty">HttpClients.DiscoveryStrategy</a>&nbsp;discoveryStrategy)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
-<div class="block">Creates a <a href="../api/GrpcClientBuilder.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClientBuilder</code></a> for an address with default <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>.</div>
+<div class="block">Creates a <a href="../api/GrpcClientBuilder.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClientBuilder</code></a> for an address with default <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> and DNS
+ <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> using the specified <a href="../../http/netty/HttpClients.DiscoveryStrategy.html" title="enum class in io.servicetalk.http.netty"><code>HttpClients.DiscoveryStrategy</code></a>.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="../api/GrpcClientBuilder.html" title="interface in io.servicetalk.grpc.api">GrpcClientBuilder</a>&lt;<a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#forResolvedAddress(java.lang.String,int)" class="member-name-link">forResolvedAddress</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;host,
- int&nbsp;port)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#forResolvedAddress(io.servicetalk.transport.api.HostAndPort)" class="member-name-link">forResolvedAddress</a><wbr>(<a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>&nbsp;address)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">Creates a <a href="../api/GrpcClientBuilder.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClientBuilder</code></a> for an address with default <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="../api/GrpcClientBuilder.html" title="interface in io.servicetalk.grpc.api">GrpcClientBuilder</a>&lt;<a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#forResolvedAddress(java.lang.String,int)" class="member-name-link">forResolvedAddress</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;host,
+ int&nbsp;port)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Creates a <a href="../api/GrpcClientBuilder.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClientBuilder</code></a> for a resolved address with default <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="../api/GrpcClientBuilder.html" title="interface in io.servicetalk.grpc.api">GrpcClientBuilder</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#forResolvedAddress(java.net.InetSocketAddress)" class="member-name-link">forResolvedAddress</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>&nbsp;address)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
-<div class="block">Creates a <a href="../api/GrpcClientBuilder.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClientBuilder</code></a> for an address with default <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>.</div>
-</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static &lt;T extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/SocketAddress.html" title="class or interface in java.net" class="external-link">SocketAddress</a>&gt;<br><a href="../api/GrpcClientBuilder.html" title="interface in io.servicetalk.grpc.api">GrpcClientBuilder</a>&lt;T,<wbr>T&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#forResolvedAddress(T)" class="member-name-link">forResolvedAddress</a><wbr>(T&nbsp;address)</code></div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="../api/GrpcClientBuilder.html" title="interface in io.servicetalk.grpc.api">GrpcClientBuilder</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#forResolvedAddress(java.net.InetSocketAddress)" class="member-name-link">forResolvedAddress</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>&nbsp;address)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Creates a <a href="../api/GrpcClientBuilder.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClientBuilder</code></a> for an address with default <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="../api/GrpcClientBuilder.html" title="interface in io.servicetalk.grpc.api">GrpcClientBuilder</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#forServiceAddress(java.lang.String)" class="member-name-link">forServiceAddress</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;serviceName)</code></div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static &lt;T extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/SocketAddress.html" title="class or interface in java.net" class="external-link">SocketAddress</a>&gt;<br><a href="../api/GrpcClientBuilder.html" title="interface in io.servicetalk.grpc.api">GrpcClientBuilder</a>&lt;T,<wbr>T&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#forResolvedAddress(T)" class="member-name-link">forResolvedAddress</a><wbr>(T&nbsp;address)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">Creates a <a href="../api/GrpcClientBuilder.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClientBuilder</code></a> for an address with default <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a>.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="../api/GrpcClientBuilder.html" title="interface in io.servicetalk.grpc.api">GrpcClientBuilder</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#forServiceAddress(java.lang.String)" class="member-name-link">forServiceAddress</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;serviceName)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Creates a <a href="../api/GrpcClientBuilder.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClientBuilder</code></a> for the passed <code>serviceName</code> with default <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> and a
  DNS <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> using <a href="https://tools.ietf.org/html/rfc2782">SRV record</a> lookups.</div>
 </div>
@@ -164,7 +188,7 @@ R&gt;&nbsp;<a href="../api/GrpcClientBuilder.html" title="interface in io.servic
 <div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="../api/GrpcClientBuilder.html" title="interface in io.servicetalk.grpc.api">GrpcClientBuilder</a>&lt;<a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>&gt;</span>&nbsp;<span class="element-name">forAddress</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;host,
  int&nbsp;port)</span></div>
 <div class="block">Creates a <a href="../api/GrpcClientBuilder.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClientBuilder</code></a> for an address with default <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> and DNS
- <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>.
+ <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> using <a href="../../http/netty/HttpClients.DiscoveryStrategy.html#BACKGROUND"><code>background</code></a> discovery strategy.
  <p>
  The returned builder can be customized using <a href="../api/GrpcProviders.GrpcClientBuilderProvider.html" title="interface in io.servicetalk.grpc.api"><code>GrpcProviders.GrpcClientBuilderProvider</code></a>.</div>
 <dl class="notes">
@@ -187,13 +211,64 @@ R&gt;&nbsp;<a href="../api/GrpcClientBuilder.html" title="interface in io.servic
 <h3>forAddress</h3>
 <div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="../api/GrpcClientBuilder.html" title="interface in io.servicetalk.grpc.api">GrpcClientBuilder</a>&lt;<a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>&gt;</span>&nbsp;<span class="element-name">forAddress</span><wbr><span class="parameters">(<a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>&nbsp;address)</span></div>
 <div class="block">Creates a <a href="../api/GrpcClientBuilder.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClientBuilder</code></a> for an address with default <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> and DNS
- <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>.
+ <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> using <a href="../../http/netty/HttpClients.DiscoveryStrategy.html#BACKGROUND"><code>background</code></a> discovery strategy.
  <p>
  The returned builder can be customized using <a href="../api/GrpcProviders.GrpcClientBuilderProvider.html" title="interface in io.servicetalk.grpc.api"><code>GrpcProviders.GrpcClientBuilderProvider</code></a>.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
 <dd><code>address</code> - the <code>UnresolvedAddress</code> to connect to, resolved by default using a DNS
  <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>.</dd>
+<dt>Returns:</dt>
+<dd>new builder for the address</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="../api/GrpcProviders.GrpcClientBuilderProvider.html" title="interface in io.servicetalk.grpc.api"><code>GrpcProviders.GrpcClientBuilderProvider</code></a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="forAddress(java.lang.String,int,io.servicetalk.http.netty.HttpClients.DiscoveryStrategy)">
+<h3>forAddress</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="../api/GrpcClientBuilder.html" title="interface in io.servicetalk.grpc.api">GrpcClientBuilder</a>&lt;<a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>&gt;</span>&nbsp;<span class="element-name">forAddress</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;host,
+ int&nbsp;port,
+ <a href="../../http/netty/HttpClients.DiscoveryStrategy.html" title="enum class in io.servicetalk.http.netty">HttpClients.DiscoveryStrategy</a>&nbsp;discoveryStrategy)</span></div>
+<div class="block">Creates a <a href="../api/GrpcClientBuilder.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClientBuilder</code></a> for an address with default <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> and DNS
+ <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> using the specified <a href="../../http/netty/HttpClients.DiscoveryStrategy.html" title="enum class in io.servicetalk.http.netty"><code>HttpClients.DiscoveryStrategy</code></a>.
+ <p>
+ The returned builder can be customized using <a href="../api/GrpcProviders.GrpcClientBuilderProvider.html" title="interface in io.servicetalk.grpc.api"><code>GrpcProviders.GrpcClientBuilderProvider</code></a>.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>host</code> - host to connect to, resolved by default using a DNS <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>.</dd>
+<dd><code>port</code> - port to connect to</dd>
+<dd><code>discoveryStrategy</code> - <a href="../../http/netty/HttpClients.DiscoveryStrategy.html" title="enum class in io.servicetalk.http.netty"><code>HttpClients.DiscoveryStrategy</code></a> to use</dd>
+<dt>Returns:</dt>
+<dd>new builder for the address</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="../api/GrpcProviders.GrpcClientBuilderProvider.html" title="interface in io.servicetalk.grpc.api"><code>GrpcProviders.GrpcClientBuilderProvider</code></a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="forAddress(io.servicetalk.transport.api.HostAndPort,io.servicetalk.http.netty.HttpClients.DiscoveryStrategy)">
+<h3>forAddress</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="../api/GrpcClientBuilder.html" title="interface in io.servicetalk.grpc.api">GrpcClientBuilder</a>&lt;<a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>&gt;</span>&nbsp;<span class="element-name">forAddress</span><wbr><span class="parameters">(<a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>&nbsp;address,
+ <a href="../../http/netty/HttpClients.DiscoveryStrategy.html" title="enum class in io.servicetalk.http.netty">HttpClients.DiscoveryStrategy</a>&nbsp;discoveryStrategy)</span></div>
+<div class="block">Creates a <a href="../api/GrpcClientBuilder.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClientBuilder</code></a> for an address with default <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> and DNS
+ <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> using the specified <a href="../../http/netty/HttpClients.DiscoveryStrategy.html" title="enum class in io.servicetalk.http.netty"><code>HttpClients.DiscoveryStrategy</code></a>.
+ <p>
+ The returned builder can be customized using <a href="../api/GrpcProviders.GrpcClientBuilderProvider.html" title="interface in io.servicetalk.grpc.api"><code>GrpcProviders.GrpcClientBuilderProvider</code></a>.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>address</code> - the <code>UnresolvedAddress</code> to connect to, resolved by default using a DNS
+ <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>.</dd>
+<dd><code>discoveryStrategy</code> - <a href="../../http/netty/HttpClients.DiscoveryStrategy.html" title="enum class in io.servicetalk.http.netty"><code>HttpClients.DiscoveryStrategy</code></a> to use</dd>
 <dt>Returns:</dt>
 <dd>new builder for the address</dd>
 <dt>See Also:</dt>
@@ -329,7 +404,7 @@ R&gt;&nbsp;<a href="../api/GrpcClientBuilder.html" title="interface in io.servic
 R&gt;</span>&nbsp;<span class="return-type"><a href="../api/GrpcClientBuilder.html" title="interface in io.servicetalk.grpc.api">GrpcClientBuilder</a>&lt;U,<wbr>R&gt;</span>&nbsp;<span class="element-name">forAddress</span><wbr><span class="parameters">(<a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api">ServiceDiscoverer</a>&lt;U,<wbr>R,<wbr>? extends <a href="../../client/api/ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;R&gt;&gt;&nbsp;serviceDiscoverer,
  U&nbsp;address)</span></div>
 <div class="block">Creates a <a href="../api/GrpcClientBuilder.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClientBuilder</code></a> for a custom address type with default <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> and user
- provided <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>.
+ provided <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> using <a href="../../http/netty/HttpClients.DiscoveryStrategy.html#BACKGROUND"><code>background</code></a> discovery strategy.
  <p>
  The returned builder can be customized using <a href="../api/GrpcProviders.GrpcClientBuilderProvider.html" title="interface in io.servicetalk.grpc.api"><code>GrpcProviders.GrpcClientBuilderProvider</code></a>.</div>
 <dl class="notes">
@@ -340,6 +415,37 @@ R&gt;</span>&nbsp;<span class="return-type"><a href="../api/GrpcClientBuilder.ht
 <dd><code>serviceDiscoverer</code> - The <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> to resolve addresses of remote servers to connect to.
  The lifecycle of the provided <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> should be managed by the caller.</dd>
 <dd><code>address</code> - the <code>UnresolvedAddress</code> to connect to resolved using the provided <code>serviceDiscoverer</code>.</dd>
+<dt>Returns:</dt>
+<dd>new builder with provided configuration</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="../api/GrpcProviders.GrpcClientBuilderProvider.html" title="interface in io.servicetalk.grpc.api"><code>GrpcProviders.GrpcClientBuilderProvider</code></a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="forAddress(io.servicetalk.client.api.ServiceDiscoverer,U,io.servicetalk.http.netty.HttpClients.DiscoveryStrategy)">
+<h3 id="forAddress(io.servicetalk.client.api.ServiceDiscoverer,java.lang.Object,io.servicetalk.http.netty.HttpClients.DiscoveryStrategy)">forAddress</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="type-parameters">&lt;U,<wbr>
+R&gt;</span>&nbsp;<span class="return-type"><a href="../api/GrpcClientBuilder.html" title="interface in io.servicetalk.grpc.api">GrpcClientBuilder</a>&lt;U,<wbr>R&gt;</span>&nbsp;<span class="element-name">forAddress</span><wbr><span class="parameters">(<a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api">ServiceDiscoverer</a>&lt;U,<wbr>R,<wbr>? extends <a href="../../client/api/ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;R&gt;&gt;&nbsp;serviceDiscoverer,
+ U&nbsp;address,
+ <a href="../../http/netty/HttpClients.DiscoveryStrategy.html" title="enum class in io.servicetalk.http.netty">HttpClients.DiscoveryStrategy</a>&nbsp;discoveryStrategy)</span></div>
+<div class="block">Creates a <a href="../api/GrpcClientBuilder.html" title="interface in io.servicetalk.grpc.api"><code>GrpcClientBuilder</code></a> for a custom address type with default <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> and user
+ provided <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> using the specified <a href="../../http/netty/HttpClients.DiscoveryStrategy.html" title="enum class in io.servicetalk.http.netty"><code>HttpClients.DiscoveryStrategy</code></a>.
+ <p>
+ The returned builder can be customized using <a href="../api/GrpcProviders.GrpcClientBuilderProvider.html" title="interface in io.servicetalk.grpc.api"><code>GrpcProviders.GrpcClientBuilderProvider</code></a>.</div>
+<dl class="notes">
+<dt>Type Parameters:</dt>
+<dd><code>U</code> - the type of address before resolution (unresolved address)</dd>
+<dd><code>R</code> - the type of address after resolution (resolved address)</dd>
+<dt>Parameters:</dt>
+<dd><code>serviceDiscoverer</code> - The <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> to resolve addresses of remote servers to connect to.
+ The lifecycle of the provided <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> should be managed by the caller.</dd>
+<dd><code>address</code> - the <code>UnresolvedAddress</code> to connect to resolved using the provided <code>serviceDiscoverer</code>.</dd>
+<dd><code>discoveryStrategy</code> - <a href="../../http/netty/HttpClients.DiscoveryStrategy.html" title="enum class in io.servicetalk.http.netty"><code>HttpClients.DiscoveryStrategy</code></a> to use</dd>
 <dt>Returns:</dt>
 <dd>new builder with provided configuration</dd>
 <dt>See Also:</dt>

@@ -44,7 +44,7 @@ loadScripts(document, 'script');</script>
 <div>
 <ul class="sub-nav-list">
 <li>Summary:&nbsp;</li>
-<li>Nested&nbsp;|&nbsp;</li>
+<li><a href="#nested-class-summary">Nested</a>&nbsp;|&nbsp;</li>
 <li>Field&nbsp;|&nbsp;</li>
 <li>Constr&nbsp;|&nbsp;</li>
 <li><a href="#method-summary">Method</a></li>
@@ -82,6 +82,23 @@ loadScripts(document, 'script');</script>
 </section>
 <section class="summary">
 <ul class="summary-list">
+<!-- ======== NESTED CLASS SUMMARY ======== -->
+<li>
+<section class="nested-class-summary" id="nested-class-summary">
+<h2>Nested Class Summary</h2>
+<div class="caption"><span>Nested Classes</span></div>
+<div class="summary-table three-column-summary">
+<div class="table-header col-first">Modifier and Type</div>
+<div class="table-header col-second">Class</div>
+<div class="table-header col-last">Description</div>
+<div class="col-first even-row-color"><code>static enum&nbsp;</code></div>
+<div class="col-second even-row-color"><code><a href="HttpClients.DiscoveryStrategy.html" class="type-name-link" title="enum class in io.servicetalk.http.netty">HttpClients.DiscoveryStrategy</a></code></div>
+<div class="col-last even-row-color">
+<div class="block">Defines <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> will be used.</div>
+</div>
+</div>
+</section>
+</li>
 <!-- ========== METHOD SUMMARY =========== -->
 <li>
 <section class="method-summary" id="method-summary">
@@ -97,7 +114,8 @@ loadScripts(document, 'script');</script>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#forMultiAddressUrl()" class="member-name-link">forMultiAddressUrl</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Creates a <a href="../api/MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api"><code>MultiAddressHttpClientBuilder</code></a> for clients capable of parsing an <a href="https://tools.ietf.org/html/rfc7230#section-5.3.2">absolute-form URL</a>, connecting to multiple addresses
- with default <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> and DNS <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>.</div>
+ with default <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> and DNS <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> using
+ <a href="HttpClients.DiscoveryStrategy.html#BACKGROUND"><code>background</code></a> discovery strategy.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code>static <a href="../api/MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>&gt;</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#forMultiAddressUrl(io.servicetalk.client.api.ServiceDiscoverer)" class="member-name-link">forMultiAddressUrl</a><wbr>(<a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api">ServiceDiscoverer</a>&lt;<a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>,<wbr><a href="../../client/api/ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>&gt;&gt;&nbsp;serviceDiscoverer)</code></div>
@@ -108,6 +126,21 @@ loadScripts(document, 'script');</script>
  using <a href="../api/SingleAddressHttpClientBuilder.html#serviceDiscoverer(io.servicetalk.client.api.ServiceDiscoverer)"><code>SingleAddressHttpClientBuilder.serviceDiscoverer(ServiceDiscoverer)</code></a> for all or some of the internal
  clients.</div>
 </div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="../api/MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#forMultiAddressUrl(java.lang.String)" class="member-name-link">forMultiAddressUrl</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;id)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">Creates a <a href="../api/MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api"><code>MultiAddressHttpClientBuilder</code></a> for clients capable of parsing an <a href="https://tools.ietf.org/html/rfc7230#section-5.3.2">absolute-form URL</a>, connecting to multiple addresses
+ with default <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> and DNS <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> using
+ <a href="HttpClients.DiscoveryStrategy.html#BACKGROUND"><code>background</code></a> discovery strategy.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="../api/MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#forMultiAddressUrl(java.lang.String,io.servicetalk.http.netty.HttpClients.DiscoveryStrategy)" class="member-name-link">forMultiAddressUrl</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;id,
+ <a href="HttpClients.DiscoveryStrategy.html" title="enum class in io.servicetalk.http.netty">HttpClients.DiscoveryStrategy</a>&nbsp;discoveryStrategy)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">Creates a <a href="../api/MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api"><code>MultiAddressHttpClientBuilder</code></a> for clients capable of parsing an <a href="https://tools.ietf.org/html/rfc7230#section-5.3.2">absolute-form URL</a>, connecting to multiple addresses
+ with default <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> and DNS <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> using the specified
+ <a href="HttpClients.DiscoveryStrategy.html" title="enum class in io.servicetalk.http.netty"><code>HttpClients.DiscoveryStrategy</code></a>.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4 method-summary-table-tab6"><code>static &lt;U,<wbr>
 R&gt;&nbsp;<a href="../api/PartitionedHttpClientBuilder.html" title="interface in io.servicetalk.http.api">PartitionedHttpClientBuilder</a>&lt;U,<wbr>R&gt;</code></div>
@@ -140,7 +173,8 @@ R&gt;&nbsp;<a href="../api/PartitionedHttpClientBuilder.html" title="interface i
 <div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Creates a <a href="../api/SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api"><code>SingleAddressHttpClientBuilder</code></a> for the passed <code>serviceName</code> with default
  <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> and a DNS <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> using
- <a href="https://tools.ietf.org/html/rfc2782">SRV record</a> lookups.</div>
+ <a href="https://tools.ietf.org/html/rfc2782">SRV record</a> lookups with
+ <a href="HttpClients.DiscoveryStrategy.html#BACKGROUND"><code>background</code></a> discovery strategy.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static &lt;U,<wbr>
 R&gt;&nbsp;<a href="../api/SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;U,<wbr>R&gt;</code></div>
@@ -148,18 +182,40 @@ R&gt;&nbsp;<a href="../api/SingleAddressHttpClientBuilder.html" title="interface
  U&nbsp;address)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
 <div class="block">Creates a <a href="../api/SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api"><code>SingleAddressHttpClientBuilder</code></a> for a custom address type with default <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> and
- user provided <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>.</div>
+ user provided <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> using <a href="HttpClients.DiscoveryStrategy.html#BACKGROUND"><code>background</code></a> discovery strategy.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static &lt;U,<wbr>
+R&gt;&nbsp;<a href="../api/SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;U,<wbr>R&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#forSingleAddress(io.servicetalk.client.api.ServiceDiscoverer,U,io.servicetalk.http.netty.HttpClients.DiscoveryStrategy)" class="member-name-link">forSingleAddress</a><wbr>(<a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api">ServiceDiscoverer</a>&lt;U,<wbr>R,<wbr>? extends <a href="../../client/api/ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;R&gt;&gt;&nbsp;serviceDiscoverer,
+ U&nbsp;address,
+ <a href="HttpClients.DiscoveryStrategy.html" title="enum class in io.servicetalk.http.netty">HttpClients.DiscoveryStrategy</a>&nbsp;discoveryStrategy)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">Creates a <a href="../api/SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api"><code>SingleAddressHttpClientBuilder</code></a> for a custom address type with default <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> and
+ user provided <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> using the specified <a href="HttpClients.DiscoveryStrategy.html" title="enum class in io.servicetalk.http.netty"><code>HttpClients.DiscoveryStrategy</code></a>.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="../api/SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#forSingleAddress(io.servicetalk.transport.api.HostAndPort)" class="member-name-link">forSingleAddress</a><wbr>(<a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>&nbsp;address)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">Creates a <a href="../api/SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api"><code>SingleAddressHttpClientBuilder</code></a> for an address with default <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> and DNS <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> using <a href="HttpClients.DiscoveryStrategy.html#BACKGROUND"><code>background</code></a> discovery strategy.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="../api/SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#forSingleAddress(io.servicetalk.transport.api.HostAndPort)" class="member-name-link">forSingleAddress</a><wbr>(<a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>&nbsp;address)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#forSingleAddress(io.servicetalk.transport.api.HostAndPort,io.servicetalk.http.netty.HttpClients.DiscoveryStrategy)" class="member-name-link">forSingleAddress</a><wbr>(<a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>&nbsp;address,
+ <a href="HttpClients.DiscoveryStrategy.html" title="enum class in io.servicetalk.http.netty">HttpClients.DiscoveryStrategy</a>&nbsp;discoveryStrategy)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
-<div class="block">Creates a <a href="../api/SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api"><code>SingleAddressHttpClientBuilder</code></a> for an address with default <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> and DNS <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>.</div>
+<div class="block">Creates a <a href="../api/SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api"><code>SingleAddressHttpClientBuilder</code></a> for an address with default <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> and DNS <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> using the specified <a href="HttpClients.DiscoveryStrategy.html" title="enum class in io.servicetalk.http.netty"><code>HttpClients.DiscoveryStrategy</code></a>.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="../api/SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>&gt;</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#forSingleAddress(java.lang.String,int)" class="member-name-link">forSingleAddress</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;host,
  int&nbsp;port)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
-<div class="block">Creates a <a href="../api/SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api"><code>SingleAddressHttpClientBuilder</code></a> for an address with default <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> and DNS <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>.</div>
+<div class="block">Creates a <a href="../api/SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api"><code>SingleAddressHttpClientBuilder</code></a> for an address with default <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> and DNS <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> using <a href="HttpClients.DiscoveryStrategy.html#BACKGROUND"><code>background</code></a> discovery strategy.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code>static <a href="../api/SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4"><code><a href="#forSingleAddress(java.lang.String,int,io.servicetalk.http.netty.HttpClients.DiscoveryStrategy)" class="member-name-link">forSingleAddress</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;host,
+ int&nbsp;port,
+ <a href="HttpClients.DiscoveryStrategy.html" title="enum class in io.servicetalk.http.netty">HttpClients.DiscoveryStrategy</a>&nbsp;discoveryStrategy)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab1 method-summary-table-tab4">
+<div class="block">Creates a <a href="../api/SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api"><code>SingleAddressHttpClientBuilder</code></a> for an address with default <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> and DNS <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> using the specified <a href="HttpClients.DiscoveryStrategy.html" title="enum class in io.servicetalk.http.netty"><code>HttpClients.DiscoveryStrategy</code></a>.</div>
 </div>
 </div>
 </div>
@@ -183,13 +239,72 @@ R&gt;&nbsp;<a href="../api/SingleAddressHttpClientBuilder.html" title="interface
 <h3>forMultiAddressUrl</h3>
 <div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="../api/MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>&gt;</span>&nbsp;<span class="element-name">forMultiAddressUrl</span>()</div>
 <div class="block">Creates a <a href="../api/MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api"><code>MultiAddressHttpClientBuilder</code></a> for clients capable of parsing an <a href="https://tools.ietf.org/html/rfc7230#section-5.3.2">absolute-form URL</a>, connecting to multiple addresses
- with default <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> and DNS <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>.
+ with default <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> and DNS <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> using
+ <a href="HttpClients.DiscoveryStrategy.html#BACKGROUND"><code>background</code></a> discovery strategy.
  <p>
  When a <a href="https://tools.ietf.org/html/rfc3986#section-4.2">relative URL</a> is passed in the <a href="../api/StreamingHttpRequest.html#requestTarget(java.lang.String)"><code>StreamingHttpRequest.requestTarget(String)</code></a> this client requires a <a href="../api/HttpHeaderNames.html#HOST"><code>HttpHeaderNames.HOST</code></a> present in
  order to infer the remote address.
  <p>
  The returned builder can be customized using <a href="../api/HttpProviders.MultiAddressHttpClientBuilderProvider.html" title="interface in io.servicetalk.http.api"><code>HttpProviders.MultiAddressHttpClientBuilderProvider</code></a>.</div>
 <dl class="notes">
+<dt>Returns:</dt>
+<dd>new builder with default configuration</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="../api/HttpProviders.MultiAddressHttpClientBuilderProvider.html" title="interface in io.servicetalk.http.api"><code>HttpProviders.MultiAddressHttpClientBuilderProvider</code></a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="forMultiAddressUrl(java.lang.String)">
+<h3>forMultiAddressUrl</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="../api/MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>&gt;</span>&nbsp;<span class="element-name">forMultiAddressUrl</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;id)</span></div>
+<div class="block">Creates a <a href="../api/MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api"><code>MultiAddressHttpClientBuilder</code></a> for clients capable of parsing an <a href="https://tools.ietf.org/html/rfc7230#section-5.3.2">absolute-form URL</a>, connecting to multiple addresses
+ with default <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> and DNS <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> using
+ <a href="HttpClients.DiscoveryStrategy.html#BACKGROUND"><code>background</code></a> discovery strategy.
+ <p>
+ When a <a href="https://tools.ietf.org/html/rfc3986#section-4.2">relative URL</a> is passed in the <a href="../api/StreamingHttpRequest.html#requestTarget(java.lang.String)"><code>StreamingHttpRequest.requestTarget(String)</code></a> this client requires a <a href="../api/HttpHeaderNames.html#HOST"><code>HttpHeaderNames.HOST</code></a> present in
+ order to infer the remote address.
+ <p>
+ The returned builder can be customized using <a href="../api/HttpProviders.MultiAddressHttpClientBuilderProvider.html" title="interface in io.servicetalk.http.api"><code>HttpProviders.MultiAddressHttpClientBuilderProvider</code></a>.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>id</code> - a (unique) ID to identify the created <a href="../api/MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api"><code>MultiAddressHttpClientBuilder</code></a>, like a name or a purpose
+ of the future client that will be built. This helps  <a href="../api/HttpProviders.MultiAddressHttpClientBuilderProvider.html" title="interface in io.servicetalk.http.api"><code>HttpProviders.MultiAddressHttpClientBuilderProvider</code></a> to distinguish
+ this builder from others.</dd>
+<dt>Returns:</dt>
+<dd>new builder with default configuration</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="../api/HttpProviders.MultiAddressHttpClientBuilderProvider.html" title="interface in io.servicetalk.http.api"><code>HttpProviders.MultiAddressHttpClientBuilderProvider</code></a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="forMultiAddressUrl(java.lang.String,io.servicetalk.http.netty.HttpClients.DiscoveryStrategy)">
+<h3>forMultiAddressUrl</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="../api/MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>&gt;</span>&nbsp;<span class="element-name">forMultiAddressUrl</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;id,
+ <a href="HttpClients.DiscoveryStrategy.html" title="enum class in io.servicetalk.http.netty">HttpClients.DiscoveryStrategy</a>&nbsp;discoveryStrategy)</span></div>
+<div class="block">Creates a <a href="../api/MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api"><code>MultiAddressHttpClientBuilder</code></a> for clients capable of parsing an <a href="https://tools.ietf.org/html/rfc7230#section-5.3.2">absolute-form URL</a>, connecting to multiple addresses
+ with default <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> and DNS <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> using the specified
+ <a href="HttpClients.DiscoveryStrategy.html" title="enum class in io.servicetalk.http.netty"><code>HttpClients.DiscoveryStrategy</code></a>.
+ <p>
+ When a <a href="https://tools.ietf.org/html/rfc3986#section-4.2">relative URL</a> is passed in the <a href="../api/StreamingHttpRequest.html#requestTarget(java.lang.String)"><code>StreamingHttpRequest.requestTarget(String)</code></a> this client requires a <a href="../api/HttpHeaderNames.html#HOST"><code>HttpHeaderNames.HOST</code></a> present in
+ order to infer the remote address.
+ <p>
+ The returned builder can be customized using <a href="../api/HttpProviders.MultiAddressHttpClientBuilderProvider.html" title="interface in io.servicetalk.http.api"><code>HttpProviders.MultiAddressHttpClientBuilderProvider</code></a>.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>id</code> - a (unique) ID to identify the created <a href="../api/MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api"><code>MultiAddressHttpClientBuilder</code></a>, like a name or a purpose
+ of the future client that will be built. This helps  <a href="../api/HttpProviders.MultiAddressHttpClientBuilderProvider.html" title="interface in io.servicetalk.http.api"><code>HttpProviders.MultiAddressHttpClientBuilderProvider</code></a> to distinguish
+ this builder from others.</dd>
+<dd><code>discoveryStrategy</code> - <a href="HttpClients.DiscoveryStrategy.html" title="enum class in io.servicetalk.http.netty"><code>HttpClients.DiscoveryStrategy</code></a> to use</dd>
 <dt>Returns:</dt>
 <dd>new builder with default configuration</dd>
 <dt>See Also:</dt>
@@ -239,7 +354,7 @@ R&gt;&nbsp;<a href="../api/SingleAddressHttpClientBuilder.html" title="interface
 <h3>forSingleAddress</h3>
 <div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="../api/SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>&gt;</span>&nbsp;<span class="element-name">forSingleAddress</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;host,
  int&nbsp;port)</span></div>
-<div class="block">Creates a <a href="../api/SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api"><code>SingleAddressHttpClientBuilder</code></a> for an address with default <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> and DNS <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>.
+<div class="block">Creates a <a href="../api/SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api"><code>SingleAddressHttpClientBuilder</code></a> for an address with default <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> and DNS <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> using <a href="HttpClients.DiscoveryStrategy.html#BACKGROUND"><code>background</code></a> discovery strategy.
  <p>
  The returned builder can be customized using <a href="../api/HttpProviders.SingleAddressHttpClientBuilderProvider.html" title="interface in io.servicetalk.http.api"><code>HttpProviders.SingleAddressHttpClientBuilderProvider</code></a>.</div>
 <dl class="notes">
@@ -264,7 +379,7 @@ R&gt;&nbsp;<a href="../api/SingleAddressHttpClientBuilder.html" title="interface
 <section class="detail" id="forSingleAddress(io.servicetalk.transport.api.HostAndPort)">
 <h3>forSingleAddress</h3>
 <div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="../api/SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>&gt;</span>&nbsp;<span class="element-name">forSingleAddress</span><wbr><span class="parameters">(<a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>&nbsp;address)</span></div>
-<div class="block">Creates a <a href="../api/SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api"><code>SingleAddressHttpClientBuilder</code></a> for an address with default <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> and DNS <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>.
+<div class="block">Creates a <a href="../api/SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api"><code>SingleAddressHttpClientBuilder</code></a> for an address with default <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> and DNS <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> using <a href="HttpClients.DiscoveryStrategy.html#BACKGROUND"><code>background</code></a> discovery strategy.
  <p>
  The returned builder can be customized using <a href="../api/HttpProviders.SingleAddressHttpClientBuilderProvider.html" title="interface in io.servicetalk.http.api"><code>HttpProviders.SingleAddressHttpClientBuilderProvider</code></a>.</div>
 <dl class="notes">
@@ -284,12 +399,66 @@ R&gt;&nbsp;<a href="../api/SingleAddressHttpClientBuilder.html" title="interface
 </section>
 </li>
 <li>
+<section class="detail" id="forSingleAddress(java.lang.String,int,io.servicetalk.http.netty.HttpClients.DiscoveryStrategy)">
+<h3>forSingleAddress</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="../api/SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>&gt;</span>&nbsp;<span class="element-name">forSingleAddress</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;host,
+ int&nbsp;port,
+ <a href="HttpClients.DiscoveryStrategy.html" title="enum class in io.servicetalk.http.netty">HttpClients.DiscoveryStrategy</a>&nbsp;discoveryStrategy)</span></div>
+<div class="block">Creates a <a href="../api/SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api"><code>SingleAddressHttpClientBuilder</code></a> for an address with default <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> and DNS <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> using the specified <a href="HttpClients.DiscoveryStrategy.html" title="enum class in io.servicetalk.http.netty"><code>HttpClients.DiscoveryStrategy</code></a>.
+ <p>
+ The returned builder can be customized using <a href="../api/HttpProviders.SingleAddressHttpClientBuilderProvider.html" title="interface in io.servicetalk.http.api"><code>HttpProviders.SingleAddressHttpClientBuilderProvider</code></a>.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>host</code> - host to connect to, resolved by default using a DNS <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>. This will also be
+ used for the <a href="../api/HttpHeaderNames.html#HOST"><code>HttpHeaderNames.HOST</code></a> together with the <code>port</code>. Use
+ <a href="../api/SingleAddressHttpClientBuilder.html#unresolvedAddressToHost(java.util.function.Function)"><code>SingleAddressHttpClientBuilder.unresolvedAddressToHost(Function)</code></a> if you want to override that value
+ or <a href="../api/SingleAddressHttpClientBuilder.html#hostHeaderFallback(boolean)"><code>SingleAddressHttpClientBuilder.hostHeaderFallback(boolean)</code></a> if you want to disable this behavior.</dd>
+<dd><code>port</code> - port to connect to</dd>
+<dd><code>discoveryStrategy</code> - <a href="HttpClients.DiscoveryStrategy.html" title="enum class in io.servicetalk.http.netty"><code>HttpClients.DiscoveryStrategy</code></a> to use</dd>
+<dt>Returns:</dt>
+<dd>new builder for the address</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="../api/HttpProviders.SingleAddressHttpClientBuilderProvider.html" title="interface in io.servicetalk.http.api"><code>HttpProviders.SingleAddressHttpClientBuilderProvider</code></a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="forSingleAddress(io.servicetalk.transport.api.HostAndPort,io.servicetalk.http.netty.HttpClients.DiscoveryStrategy)">
+<h3>forSingleAddress</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="../api/SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>&gt;</span>&nbsp;<span class="element-name">forSingleAddress</span><wbr><span class="parameters">(<a href="../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>&nbsp;address,
+ <a href="HttpClients.DiscoveryStrategy.html" title="enum class in io.servicetalk.http.netty">HttpClients.DiscoveryStrategy</a>&nbsp;discoveryStrategy)</span></div>
+<div class="block">Creates a <a href="../api/SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api"><code>SingleAddressHttpClientBuilder</code></a> for an address with default <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> and DNS <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> using the specified <a href="HttpClients.DiscoveryStrategy.html" title="enum class in io.servicetalk.http.netty"><code>HttpClients.DiscoveryStrategy</code></a>.
+ <p>
+ The returned builder can be customized using <a href="../api/HttpProviders.SingleAddressHttpClientBuilderProvider.html" title="interface in io.servicetalk.http.api"><code>HttpProviders.SingleAddressHttpClientBuilderProvider</code></a>.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>address</code> - the <code>UnresolvedAddress</code> to connect to, resolved by default using a DNS <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>. This address will also be used for the <a href="../api/HttpHeaderNames.html#HOST"><code>HttpHeaderNames.HOST</code></a>.
+ Use <a href="../api/SingleAddressHttpClientBuilder.html#unresolvedAddressToHost(java.util.function.Function)"><code>SingleAddressHttpClientBuilder.unresolvedAddressToHost(Function)</code></a> if you want to override that
+ value or <a href="../api/SingleAddressHttpClientBuilder.html#hostHeaderFallback(boolean)"><code>SingleAddressHttpClientBuilder.hostHeaderFallback(boolean)</code></a> if you want to disable this behavior.</dd>
+<dd><code>discoveryStrategy</code> - <a href="HttpClients.DiscoveryStrategy.html" title="enum class in io.servicetalk.http.netty"><code>HttpClients.DiscoveryStrategy</code></a> to use</dd>
+<dt>Returns:</dt>
+<dd>new builder for the address</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="../api/HttpProviders.SingleAddressHttpClientBuilderProvider.html" title="interface in io.servicetalk.http.api"><code>HttpProviders.SingleAddressHttpClientBuilderProvider</code></a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
 <section class="detail" id="forServiceAddress(java.lang.String)">
 <h3>forServiceAddress</h3>
 <div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="return-type"><a href="../api/SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>&gt;</span>&nbsp;<span class="element-name">forServiceAddress</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;serviceName)</span></div>
 <div class="block">Creates a <a href="../api/SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api"><code>SingleAddressHttpClientBuilder</code></a> for the passed <code>serviceName</code> with default
  <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> and a DNS <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> using
- <a href="https://tools.ietf.org/html/rfc2782">SRV record</a> lookups.
+ <a href="https://tools.ietf.org/html/rfc2782">SRV record</a> lookups with
+ <a href="HttpClients.DiscoveryStrategy.html#BACKGROUND"><code>background</code></a> discovery strategy.
  <p>
  The returned builder can be customized using <a href="../api/HttpProviders.SingleAddressHttpClientBuilderProvider.html" title="interface in io.servicetalk.http.api"><code>HttpProviders.SingleAddressHttpClientBuilderProvider</code></a>.</div>
 <dl class="notes">
@@ -399,7 +568,7 @@ R&gt;</span>
 <span class="return-type"><a href="../api/SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;U,<wbr>R&gt;</span>&nbsp;<span class="element-name">forSingleAddress</span><wbr><span class="parameters">(<a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api">ServiceDiscoverer</a>&lt;U,<wbr>R,<wbr>? extends <a href="../../client/api/ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;R&gt;&gt;&nbsp;serviceDiscoverer,
  U&nbsp;address)</span></div>
 <div class="block">Creates a <a href="../api/SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api"><code>SingleAddressHttpClientBuilder</code></a> for a custom address type with default <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> and
- user provided <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>.
+ user provided <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> using <a href="HttpClients.DiscoveryStrategy.html#BACKGROUND"><code>background</code></a> discovery strategy.
  <p>
  The returned builder can be customized using <a href="../api/HttpProviders.SingleAddressHttpClientBuilderProvider.html" title="interface in io.servicetalk.http.api"><code>HttpProviders.SingleAddressHttpClientBuilderProvider</code></a>.</div>
 <dl class="notes">
@@ -412,6 +581,40 @@ R&gt;</span>
 <dd><code>address</code> - the <code>UnresolvedAddress</code> to connect to resolved using the provided <code>serviceDiscoverer</code>.
  This address will also be used for the <a href="../api/HttpHeaderNames.html#HOST"><code>HttpHeaderNames.HOST</code></a> using a best effort conversion. Use <a href="../api/SingleAddressHttpClientBuilder.html#unresolvedAddressToHost(java.util.function.Function)"><code>SingleAddressHttpClientBuilder.unresolvedAddressToHost(Function)</code></a> if you want to override that value or
  <a href="../api/SingleAddressHttpClientBuilder.html#hostHeaderFallback(boolean)"><code>SingleAddressHttpClientBuilder.hostHeaderFallback(boolean)</code></a> if you want to disable this behavior.</dd>
+<dt>Returns:</dt>
+<dd>new builder with provided configuration</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="../api/HttpProviders.SingleAddressHttpClientBuilderProvider.html" title="interface in io.servicetalk.http.api"><code>HttpProviders.SingleAddressHttpClientBuilderProvider</code></a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="forSingleAddress(io.servicetalk.client.api.ServiceDiscoverer,U,io.servicetalk.http.netty.HttpClients.DiscoveryStrategy)">
+<h3 id="forSingleAddress(io.servicetalk.client.api.ServiceDiscoverer,java.lang.Object,io.servicetalk.http.netty.HttpClients.DiscoveryStrategy)">forSingleAddress</h3>
+<div class="member-signature"><span class="modifiers">public static</span>&nbsp;<span class="type-parameters">&lt;U,<wbr>
+R&gt;</span>
+<span class="return-type"><a href="../api/SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">SingleAddressHttpClientBuilder</a>&lt;U,<wbr>R&gt;</span>&nbsp;<span class="element-name">forSingleAddress</span><wbr><span class="parameters">(<a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api">ServiceDiscoverer</a>&lt;U,<wbr>R,<wbr>? extends <a href="../../client/api/ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;R&gt;&gt;&nbsp;serviceDiscoverer,
+ U&nbsp;address,
+ <a href="HttpClients.DiscoveryStrategy.html" title="enum class in io.servicetalk.http.netty">HttpClients.DiscoveryStrategy</a>&nbsp;discoveryStrategy)</span></div>
+<div class="block">Creates a <a href="../api/SingleAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api"><code>SingleAddressHttpClientBuilder</code></a> for a custom address type with default <a href="../../client/api/LoadBalancer.html" title="interface in io.servicetalk.client.api"><code>LoadBalancer</code></a> and
+ user provided <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> using the specified <a href="HttpClients.DiscoveryStrategy.html" title="enum class in io.servicetalk.http.netty"><code>HttpClients.DiscoveryStrategy</code></a>.
+ <p>
+ The returned builder can be customized using <a href="../api/HttpProviders.SingleAddressHttpClientBuilderProvider.html" title="interface in io.servicetalk.http.api"><code>HttpProviders.SingleAddressHttpClientBuilderProvider</code></a>.</div>
+<dl class="notes">
+<dt>Type Parameters:</dt>
+<dd><code>U</code> - the type of address before resolution (unresolved address)</dd>
+<dd><code>R</code> - the type of address after resolution (resolved address)</dd>
+<dt>Parameters:</dt>
+<dd><code>serviceDiscoverer</code> - The <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> to resolve addresses of remote servers to connect to.
+ The lifecycle of the provided <a href="../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> should be managed by the caller.</dd>
+<dd><code>address</code> - the <code>UnresolvedAddress</code> to connect to resolved using the provided <code>serviceDiscoverer</code>.
+ This address will also be used for the <a href="../api/HttpHeaderNames.html#HOST"><code>HttpHeaderNames.HOST</code></a> using a best effort conversion. Use <a href="../api/SingleAddressHttpClientBuilder.html#unresolvedAddressToHost(java.util.function.Function)"><code>SingleAddressHttpClientBuilder.unresolvedAddressToHost(Function)</code></a> if you want to override that value or
+ <a href="../api/SingleAddressHttpClientBuilder.html#hostHeaderFallback(boolean)"><code>SingleAddressHttpClientBuilder.hostHeaderFallback(boolean)</code></a> if you want to disable this behavior.</dd>
+<dd><code>discoveryStrategy</code> - <a href="HttpClients.DiscoveryStrategy.html" title="enum class in io.servicetalk.http.netty"><code>HttpClients.DiscoveryStrategy</code></a> to use</dd>
 <dt>Returns:</dt>
 <dd>new builder with provided configuration</dd>
 <dt>See Also:</dt>

@@ -92,16 +92,25 @@ loadScripts(document, 'script');</script>
 <section class="method-summary" id="method-summary">
 <h2>Method Summary</h2>
 <div id="method-summary-table">
-<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab3" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab3', 3)" class="table-tab">Abstract Methods</button></div>
+<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab3" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab3', 3)" class="table-tab">Abstract Methods</button><button id="method-summary-table-tab5" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab5', 3)" class="table-tab">Default Methods</button><button id="method-summary-table-tab6" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab6', 3)" class="table-tab">Deprecated Methods</button></div>
 <div id="method-summary-table.tabpanel" role="tabpanel">
 <div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>&lt;U,<wbr>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code>&lt;U,<wbr>
 R&gt;&nbsp;<a href="MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;U,<wbr>R&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#newBuilder(io.servicetalk.http.api.MultiAddressHttpClientBuilder)" class="member-name-link">newBuilder</a><wbr>(<a href="MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;U,<wbr>R&gt;&nbsp;builder)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code><a href="#newBuilder(io.servicetalk.http.api.MultiAddressHttpClientBuilder)" class="member-name-link">newBuilder</a><wbr>(<a href="MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;U,<wbr>R&gt;&nbsp;builder)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="#newBuilder(java.lang.String,io.servicetalk.http.api.MultiAddressHttpClientBuilder)"><code>newBuilder(String, MultiAddressHttpClientBuilder)</code></a>.</div>
+</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default &lt;U,<wbr>
+R&gt;&nbsp;<a href="MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;U,<wbr>R&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#newBuilder(java.lang.String,io.servicetalk.http.api.MultiAddressHttpClientBuilder)" class="member-name-link">newBuilder</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;id,
+ <a href="MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;U,<wbr>R&gt;&nbsp;builder)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
 <div class="block">Returns a <a href="MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api"><code>MultiAddressHttpClientBuilder</code></a> based on the pre-initialized
  <a href="MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api"><code>MultiAddressHttpClientBuilder</code></a>.</div>
 </div>
@@ -122,8 +131,15 @@ R&gt;&nbsp;<a href="MultiAddressHttpClientBuilder.html" title="interface in io.s
 <li>
 <section class="detail" id="newBuilder(io.servicetalk.http.api.MultiAddressHttpClientBuilder)">
 <h3>newBuilder</h3>
-<div class="member-signature"><span class="type-parameters">&lt;U,<wbr>
+<div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="type-parameters">&lt;U,<wbr>
 R&gt;</span>&nbsp;<span class="return-type"><a href="MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;U,<wbr>R&gt;</span>&nbsp;<span class="element-name">newBuilder</span><wbr><span class="parameters">(<a href="MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;U,<wbr>R&gt;&nbsp;builder)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="#newBuilder(java.lang.String,io.servicetalk.http.api.MultiAddressHttpClientBuilder)"><code>newBuilder(String, MultiAddressHttpClientBuilder)</code></a>. To avoid breaking changes, all
+ current implementations must implement both methods. In the next version the default implementation will
+ swap. Then users will be able to keep implementation only for the new method. In the release after, the
+ deprecated method will be removed.</div>
+</div>
 <div class="block">Returns a <a href="MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api"><code>MultiAddressHttpClientBuilder</code></a> based on the pre-initialized
  <a href="MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api"><code>MultiAddressHttpClientBuilder</code></a>.
  <p>
@@ -134,6 +150,36 @@ R&gt;</span>&nbsp;<span class="return-type"><a href="MultiAddressHttpClientBuild
 <dd><code>U</code> - the type of address before resolution (unresolved address)</dd>
 <dd><code>R</code> - the type of address after resolution (resolved address)</dd>
 <dt>Parameters:</dt>
+<dd><code>builder</code> - pre-initialized <a href="MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api"><code>MultiAddressHttpClientBuilder</code></a></dd>
+<dt>Returns:</dt>
+<dd>a <a href="MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api"><code>MultiAddressHttpClientBuilder</code></a> based on the pre-initialized
+ <a href="MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api"><code>MultiAddressHttpClientBuilder</code></a>.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="DelegatingMultiAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api"><code>DelegatingMultiAddressHttpClientBuilder</code></a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="newBuilder(java.lang.String,io.servicetalk.http.api.MultiAddressHttpClientBuilder)">
+<h3>newBuilder</h3>
+<div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="type-parameters">&lt;U,<wbr>
+R&gt;</span>&nbsp;<span class="return-type"><a href="MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;U,<wbr>R&gt;</span>&nbsp;<span class="element-name">newBuilder</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;id,
+ <a href="MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;U,<wbr>R&gt;&nbsp;builder)</span></div>
+<div class="block">Returns a <a href="MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api"><code>MultiAddressHttpClientBuilder</code></a> based on the pre-initialized
+ <a href="MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api"><code>MultiAddressHttpClientBuilder</code></a>.
+ <p>
+ This method may return the pre-initialized <code>builder</code> as-is, or apply custom builder settings before
+ returning it, or wrap it (<a href="DelegatingMultiAddressHttpClientBuilder.html" title="class in io.servicetalk.http.api"><code>DelegatingMultiAddressHttpClientBuilder</code></a> may be helpful).</div>
+<dl class="notes">
+<dt>Type Parameters:</dt>
+<dd><code>U</code> - the type of address before resolution (unresolved address)</dd>
+<dd><code>R</code> - the type of address after resolution (resolved address)</dd>
+<dt>Parameters:</dt>
+<dd><code>id</code> - identification of the <a href="MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api"><code>builder</code></a></dd>
 <dd><code>builder</code> - pre-initialized <a href="MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api"><code>MultiAddressHttpClientBuilder</code></a></dd>
 <dt>Returns:</dt>
 <dd>a <a href="MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api"><code>MultiAddressHttpClientBuilder</code></a> based on the pre-initialized

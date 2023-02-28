@@ -75,7 +75,7 @@ loadScripts(document, 'script');</script>
 <hr>
 <div class="type-signature"><span class="modifiers">public interface </span><span class="element-name type-name-label">DnsServiceDiscovererObserver</span></div>
 <div class="block">An observer that provides visibility into <a href="https://tools.ietf.org/html/rfc1034">DNS</a>
- <a href="../../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> built by <a href="DefaultDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty"><code>DefaultDnsServiceDiscovererBuilder</code></a>.</div>
+ <a href="../../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> built by <a href="DnsServiceDiscovererBuilder.html" title="interface in io.servicetalk.dns.discovery.netty"><code>DnsServiceDiscovererBuilder</code></a>.</div>
 </section>
 <section class="summary">
 <ul class="summary-list">
@@ -91,7 +91,7 @@ loadScripts(document, 'script');</script>
 <div class="col-first even-row-color"><code>static interface&nbsp;</code></div>
 <div class="col-second even-row-color"><code><a href="DnsServiceDiscovererObserver.DnsDiscoveryObserver.html" class="type-name-link" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererObserver.DnsDiscoveryObserver</a></code></div>
 <div class="col-last even-row-color">
-<div class="block">An observer that provides visibility into individual DNS resolutions.</div>
+<div class="block">An observer that provides visibility into individual DNS discoveries.</div>
 </div>
 <div class="col-first odd-row-color"><code>static interface&nbsp;</code></div>
 <div class="col-second odd-row-color"><code><a href="DnsServiceDiscovererObserver.DnsResolutionObserver.html" class="type-name-link" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererObserver.DnsResolutionObserver</a></code></div>
@@ -111,15 +111,23 @@ loadScripts(document, 'script');</script>
 <section class="method-summary" id="method-summary">
 <h2>Method Summary</h2>
 <div id="method-summary-table">
-<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab3" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab3', 3)" class="table-tab">Abstract Methods</button></div>
+<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab3" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab3', 3)" class="table-tab">Abstract Methods</button><button id="method-summary-table-tab5" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab5', 3)" class="table-tab">Default Methods</button><button id="method-summary-table-tab6" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab6', 3)" class="table-tab">Deprecated Methods</button></div>
 <div id="method-summary-table.tabpanel" role="tabpanel">
 <div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="DnsServiceDiscovererObserver.DnsDiscoveryObserver.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererObserver.DnsDiscoveryObserver</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#onNewDiscovery(java.lang.String)" class="member-name-link">onNewDiscovery</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;name)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code><a href="DnsServiceDiscovererObserver.DnsDiscoveryObserver.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererObserver.DnsDiscoveryObserver</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6"><code><a href="#onNewDiscovery(java.lang.String)" class="member-name-link">onNewDiscovery</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;name)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">use <a href="#onNewDiscovery(java.lang.String,java.lang.String)"><code>onNewDiscovery(String, String)</code></a> instead.</div>
+</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code>default <a href="DnsServiceDiscovererObserver.DnsDiscoveryObserver.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererObserver.DnsDiscoveryObserver</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5"><code><a href="#onNewDiscovery(java.lang.String,java.lang.String)" class="member-name-link">onNewDiscovery</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;serviceDiscovererId,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;name)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab5">
 <div class="block">Notifies that a new <a href="../../../client/api/ServiceDiscoverer.html#discover(UnresolvedAddress)"><code>discovery</code></a> started.</div>
 </div>
 </div>
@@ -139,10 +147,33 @@ loadScripts(document, 'script');</script>
 <li>
 <section class="detail" id="onNewDiscovery(java.lang.String)">
 <h3>onNewDiscovery</h3>
-<div class="member-signature"><span class="return-type"><a href="DnsServiceDiscovererObserver.DnsDiscoveryObserver.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererObserver.DnsDiscoveryObserver</a></span>&nbsp;<span class="element-name">onNewDiscovery</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;name)</span></div>
+<div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="return-type"><a href="DnsServiceDiscovererObserver.DnsDiscoveryObserver.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererObserver.DnsDiscoveryObserver</a></span>&nbsp;<span class="element-name">onNewDiscovery</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;name)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">use <a href="#onNewDiscovery(java.lang.String,java.lang.String)"><code>onNewDiscovery(String, String)</code></a> instead. To avoid breaking changes, all
+ current implementations must implement both methods. In the next version the default implementation will
+ swap. Then users will be able to keep implementation only for the new method. In the release after, the
+ deprecated method will be removed.</div>
+</div>
 <div class="block">Notifies that a new <a href="../../../client/api/ServiceDiscoverer.html#discover(UnresolvedAddress)"><code>discovery</code></a> started.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
+<dd><code>name</code> - the name of DNS record to be discovered</dd>
+<dt>Returns:</dt>
+<dd><a href="DnsServiceDiscovererObserver.DnsDiscoveryObserver.html" title="interface in io.servicetalk.dns.discovery.netty"><code>DnsServiceDiscovererObserver.DnsDiscoveryObserver</code></a> that provides visibility into individual DNS resolutions behind the
+ associated discovery</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="onNewDiscovery(java.lang.String,java.lang.String)">
+<h3>onNewDiscovery</h3>
+<div class="member-signature"><span class="modifiers">default</span>&nbsp;<span class="return-type"><a href="DnsServiceDiscovererObserver.DnsDiscoveryObserver.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererObserver.DnsDiscoveryObserver</a></span>&nbsp;<span class="element-name">onNewDiscovery</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;serviceDiscovererId,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;name)</span></div>
+<div class="block">Notifies that a new <a href="../../../client/api/ServiceDiscoverer.html#discover(UnresolvedAddress)"><code>discovery</code></a> started.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>serviceDiscovererId</code> - the ID of the <a href="../../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a>.</dd>
 <dd><code>name</code> - the name of DNS record to be discovered</dd>
 <dt>Returns:</dt>
 <dd><a href="DnsServiceDiscovererObserver.DnsDiscoveryObserver.html" title="interface in io.servicetalk.dns.discovery.netty"><code>DnsServiceDiscovererObserver.DnsDiscoveryObserver</code></a> that provides visibility into individual DNS resolutions behind the

@@ -75,11 +75,21 @@ loadScripts(document, 'script');</script>
 <div class="inheritance">io.servicetalk.dns.discovery.netty.DefaultDnsServiceDiscovererBuilder</div>
 </div>
 <section class="class-description" id="class-description">
+<dl class="notes">
+<dt>All Implemented Interfaces:</dt>
+<dd><code><a href="DnsServiceDiscovererBuilder.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererBuilder</a></code></dd>
+</dl>
 <hr>
-<div class="type-signature"><span class="modifiers">public final class </span><span class="element-name type-name-label">DefaultDnsServiceDiscovererBuilder</span>
-<span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></span></div>
+<div class="type-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">public final class </span><span class="element-name type-name-label">DefaultDnsServiceDiscovererBuilder</span>
+<span class="extends-implements">extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>
+implements <a href="DnsServiceDiscovererBuilder.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererBuilder</a></span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">this class will be made package-private in the future, rely on the <a href="DnsServiceDiscovererBuilder.html" title="interface in io.servicetalk.dns.discovery.netty"><code>DnsServiceDiscovererBuilder</code></a>
+ instead.</div>
+</div>
 <div class="block">Builder for <a href="https://tools.ietf.org/html/rfc1035">DNS</a> <a href="../../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> which will attempt to
- resolve <code>A</code>, <code>AAAA</code>, <code>CNAME</code>, and  <code>SRV</code> type queries.</div>
+ resolve <code>A</code>, <code>AAAA</code>, <code>CNAME</code>, and <code>SRV</code> type queries.</div>
 </section>
 <section class="summary">
 <ul class="summary-list">
@@ -92,7 +102,11 @@ loadScripts(document, 'script');</script>
 <div class="table-header col-first">Constructor</div>
 <div class="table-header col-last">Description</div>
 <div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E()" class="member-name-link">DefaultDnsServiceDiscovererBuilder</a>()</code></div>
-<div class="col-last even-row-color">&nbsp;</div>
+<div class="col-last even-row-color">
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">use <a href="DnsServiceDiscoverers.html#builder(java.lang.String)"><code>DnsServiceDiscoverers.builder(String)</code></a> instead.</div>
+</div>
+</div>
 </div>
 </section>
 </li>
@@ -101,81 +115,111 @@ loadScripts(document, 'script');</script>
 <section class="method-summary" id="method-summary">
 <h2>Method Summary</h2>
 <div id="method-summary-table">
-<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button></div>
+<div class="table-tabs" role="tablist" aria-orientation="horizontal"><button id="method-summary-table-tab0" role="tab" aria-selected="true" aria-controls="method-summary-table.tabpanel" tabindex="0" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table', 3)" class="active-table-tab">All Methods</button><button id="method-summary-table-tab2" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab2', 3)" class="table-tab">Instance Methods</button><button id="method-summary-table-tab4" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab4', 3)" class="table-tab">Concrete Methods</button><button id="method-summary-table-tab6" role="tab" aria-selected="false" aria-controls="method-summary-table.tabpanel" tabindex="-1" onkeydown="switchTab(event)" onclick="show('method-summary-table', 'method-summary-table-tab6', 3)" class="table-tab">Deprecated Methods</button></div>
 <div id="method-summary-table.tabpanel" role="tabpanel">
 <div class="summary-table three-column-summary" aria-labelledby="method-summary-table-tab0">
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api">ServiceDiscoverer</a>&lt;<a href="../../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>,<wbr><a href="../../../client/api/ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>&gt;&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#buildARecordDiscoverer()" class="member-name-link">buildARecordDiscoverer</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="../../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api">ServiceDiscoverer</a>&lt;<a href="../../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>,<wbr><a href="../../../client/api/ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>&gt;&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#buildARecordDiscoverer()" class="member-name-link">buildARecordDiscoverer</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Build a new <a href="../../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> which targets
  <a href="https://tools.ietf.org/html/rfc1035">host addresses</a> (e.g.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="../../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api">ServiceDiscoverer</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>,<wbr><a href="../../../client/api/ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>&gt;&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#buildSrvDiscoverer()" class="member-name-link">buildSrvDiscoverer</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="../../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api">ServiceDiscoverer</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>,<wbr><a href="../../../client/api/ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>&gt;&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#buildSrvDiscoverer()" class="member-name-link">buildSrvDiscoverer</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Build a new <a href="../../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> which queries
  <a href="https://tools.ietf.org/html/rfc2782">SRV Resource Records</a> corresponding to <code>serviceName</code>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="DefaultDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty">DefaultDnsServiceDiscovererBuilder</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#dnsResolverAddressTypes(io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes)" class="member-name-link">dnsResolverAddressTypes</a><wbr>(<a href="DnsResolverAddressTypes.html" title="enum class in io.servicetalk.dns.discovery.netty">DnsResolverAddressTypes</a>&nbsp;dnsResolverAddressTypes)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="DefaultDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty">DefaultDnsServiceDiscovererBuilder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#dnsResolverAddressTypes(io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes)" class="member-name-link">dnsResolverAddressTypes</a><wbr>(<a href="DnsResolverAddressTypes.html" title="enum class in io.servicetalk.dns.discovery.netty">DnsResolverAddressTypes</a>&nbsp;dnsResolverAddressTypes)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Sets the list of the protocol families of the address resolved.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="DefaultDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty">DefaultDnsServiceDiscovererBuilder</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#dnsServerAddressStreamProvider(io.servicetalk.dns.discovery.netty.DnsServerAddressStreamProvider)" class="member-name-link">dnsServerAddressStreamProvider</a><wbr>(<a href="DnsServerAddressStreamProvider.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServerAddressStreamProvider</a>&nbsp;dnsServerAddressStreamProvider)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="DefaultDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty">DefaultDnsServiceDiscovererBuilder</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#dnsServerAddressStreamProvider(io.servicetalk.dns.discovery.netty.DnsServerAddressStreamProvider)" class="member-name-link">dnsServerAddressStreamProvider</a><wbr>(<a href="DnsServerAddressStreamProvider.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServerAddressStreamProvider</a>&nbsp;dnsServerAddressStreamProvider)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Set the <a href="DnsServerAddressStreamProvider.html" title="interface in io.servicetalk.dns.discovery.netty"><code>DnsServerAddressStreamProvider</code></a> which determines which DNS server should be used per query.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="DefaultDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty">DefaultDnsServiceDiscovererBuilder</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#ioExecutor(io.servicetalk.transport.api.IoExecutor)" class="member-name-link">ioExecutor</a><wbr>(<a href="../../../transport/api/IoExecutor.html" title="interface in io.servicetalk.transport.api">IoExecutor</a>&nbsp;ioExecutor)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="DefaultDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty">DefaultDnsServiceDiscovererBuilder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#ioExecutor(io.servicetalk.transport.api.IoExecutor)" class="member-name-link">ioExecutor</a><wbr>(<a href="../../../transport/api/IoExecutor.html" title="interface in io.servicetalk.transport.api">IoExecutor</a>&nbsp;ioExecutor)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Sets the <a href="../../../transport/api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="DefaultDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty">DefaultDnsServiceDiscovererBuilder</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#maxUdpPayloadSize(int)" class="member-name-link">maxUdpPayloadSize</a><wbr>(int&nbsp;maxUdpPayloadSize)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="DefaultDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty">DefaultDnsServiceDiscovererBuilder</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#maxUdpPayloadSize(int)" class="member-name-link">maxUdpPayloadSize</a><wbr>(int&nbsp;maxUdpPayloadSize)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Set the maximum size of the receiving UDP datagram (in bytes).</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="DefaultDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty">DefaultDnsServiceDiscovererBuilder</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#minTTL(int)" class="member-name-link">minTTL</a><wbr>(int&nbsp;minTTLSeconds)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">The minimum allowed TTL.</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="DefaultDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty">DefaultDnsServiceDiscovererBuilder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#minTTL(int)" class="member-name-link">minTTL</a><wbr>(int&nbsp;minTTLSeconds)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="#ttl(int,int)"><code>ttl(int, int)</code></a>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="DefaultDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty">DefaultDnsServiceDiscovererBuilder</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#missingRecordStatus(io.servicetalk.client.api.ServiceDiscovererEvent.Status)" class="member-name-link">missingRecordStatus</a><wbr>(<a href="../../../client/api/ServiceDiscovererEvent.Status.html" title="class in io.servicetalk.client.api">ServiceDiscovererEvent.Status</a>&nbsp;status)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="DefaultDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty">DefaultDnsServiceDiscovererBuilder</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#missingRecordStatus(io.servicetalk.client.api.ServiceDiscovererEvent.Status)" class="member-name-link">missingRecordStatus</a><wbr>(<a href="../../../client/api/ServiceDiscovererEvent.Status.html" title="class in io.servicetalk.client.api">ServiceDiscovererEvent.Status</a>&nbsp;status)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Sets which <a href="../../../client/api/ServiceDiscovererEvent.Status.html" title="class in io.servicetalk.client.api"><code>ServiceDiscovererEvent.Status</code></a> to use in <a href="../../../client/api/ServiceDiscovererEvent.html#status()"><code>ServiceDiscovererEvent.status()</code></a> when a record
  for a previously seen address is missing in the response.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="DefaultDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty">DefaultDnsServiceDiscovererBuilder</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#ndots(int)" class="member-name-link">ndots</a><wbr>(int&nbsp;ndots)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="DefaultDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty">DefaultDnsServiceDiscovererBuilder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#ndots(int)" class="member-name-link">ndots</a><wbr>(int&nbsp;ndots)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Set the number of dots which must appear in a name before an initial absolute query is made.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="DefaultDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty">DefaultDnsServiceDiscovererBuilder</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#observer(io.servicetalk.dns.discovery.netty.DnsServiceDiscovererObserver)" class="member-name-link">observer</a><wbr>(<a href="DnsServiceDiscovererObserver.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererObserver</a>&nbsp;observer)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="DefaultDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty">DefaultDnsServiceDiscovererBuilder</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#observer(io.servicetalk.dns.discovery.netty.DnsServiceDiscovererObserver)" class="member-name-link">observer</a><wbr>(<a href="DnsServiceDiscovererObserver.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererObserver</a>&nbsp;observer)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Sets a <a href="DnsServiceDiscovererObserver.html" title="interface in io.servicetalk.dns.discovery.netty"><code>DnsServiceDiscovererObserver</code></a> that provides visibility into
  <a href="https://tools.ietf.org/html/rfc1034">DNS</a> <a href="../../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> built by this builder.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="DefaultDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty">DefaultDnsServiceDiscovererBuilder</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#optResourceEnabled(boolean)" class="member-name-link">optResourceEnabled</a><wbr>(boolean&nbsp;optResourceEnabled)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="DefaultDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty">DefaultDnsServiceDiscovererBuilder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#optResourceEnabled(boolean)" class="member-name-link">optResourceEnabled</a><wbr>(boolean&nbsp;optResourceEnabled)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Enable the automatic inclusion of a optional records that tries to give the remote DNS server a hint about
  how much data the resolver can read per response.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="DefaultDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty">DefaultDnsServiceDiscovererBuilder</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#queryTimeout(java.time.Duration)" class="member-name-link">queryTimeout</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;queryTimeout)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="DefaultDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty">DefaultDnsServiceDiscovererBuilder</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#queryTimeout(java.time.Duration)" class="member-name-link">queryTimeout</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;queryTimeout)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
 <div class="block">Sets the timeout of each DNS query performed by this service discoverer.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="DefaultDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty">DefaultDnsServiceDiscovererBuilder</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#ttlJitter(java.time.Duration)" class="member-name-link">ttlJitter</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;ttlJitter)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">The jitter to apply to schedule the next query after TTL.</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="DefaultDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty">DefaultDnsServiceDiscovererBuilder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#ttl(int,int)" class="member-name-link">ttl</a><wbr>(int&nbsp;minSeconds,
+ int&nbsp;maxSeconds)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
+<div class="block">Controls min/max TTL values that will influence polling intervals.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="DefaultDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty">DefaultDnsServiceDiscovererBuilder</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#ttl(int,int,int,int)" class="member-name-link">ttl</a><wbr>(int&nbsp;minSeconds,
+ int&nbsp;maxSeconds,
+ int&nbsp;minCacheSeconds,
+ int&nbsp;maxCacheSeconds)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
+<div class="block">Controls min/max TTL values that will affect polling intervals and local caching.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="DefaultDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty">DefaultDnsServiceDiscovererBuilder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6"><code><a href="#ttlJitter(java.time.Duration)" class="member-name-link">ttlJitter</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;ttlJitter)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4 method-summary-table-tab6">
+<div class="block"><span class="deprecated-label">Deprecated.</span></div>
+<div class="block">The jitter to apply for scheduling the next query after TTL to help spread out subsequent DNS queries.</div>
 </div>
 </div>
 </div>
@@ -197,7 +241,12 @@ loadScripts(document, 'script');</script>
 <li>
 <section class="detail" id="&lt;init&gt;()">
 <h3>DefaultDnsServiceDiscovererBuilder</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">DefaultDnsServiceDiscovererBuilder</span>()</div>
+<div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">public</span>&nbsp;<span class="element-name">DefaultDnsServiceDiscovererBuilder</span>()</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">use <a href="DnsServiceDiscoverers.html#builder(java.lang.String)"><code>DnsServiceDiscoverers.builder(String)</code></a> instead.</div>
+</div>
+<div class="block">Creates a new <a href="DefaultDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty"><code>DefaultDnsServiceDiscovererBuilder</code></a>.</div>
 </section>
 </li>
 </ul>
@@ -211,7 +260,11 @@ loadScripts(document, 'script');</script>
 <li>
 <section class="detail" id="minTTL(int)">
 <h3>minTTL</h3>
-<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="DefaultDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty">DefaultDnsServiceDiscovererBuilder</a></span>&nbsp;<span class="element-name">minTTL</span><wbr><span class="parameters">(int&nbsp;minTTLSeconds)</span></div>
+<div class="member-signature"><span class="annotations"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Deprecated.html" title="class or interface in java.lang" class="external-link">@Deprecated</a>
+</span><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="DefaultDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty">DefaultDnsServiceDiscovererBuilder</a></span>&nbsp;<span class="element-name">minTTL</span><wbr><span class="parameters">(int&nbsp;minTTLSeconds)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span>
+<div class="deprecation-comment">Use <a href="#ttl(int,int)"><code>ttl(int, int)</code></a>.</div>
+</div>
 <div class="block">The minimum allowed TTL. This will be the minimum poll interval.</div>
 <dl class="notes">
 <dt>Parameters:</dt>
@@ -222,14 +275,94 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
+<section class="detail" id="ttl(int,int)">
+<h3>ttl</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="DefaultDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty">DefaultDnsServiceDiscovererBuilder</a></span>&nbsp;<span class="element-name">ttl</span><wbr><span class="parameters">(int&nbsp;minSeconds,
+ int&nbsp;maxSeconds)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="DnsServiceDiscovererBuilder.html#ttl(int,int)">DnsServiceDiscovererBuilder</a></code></span></div>
+<div class="block">Controls min/max TTL values that will influence polling intervals.
+ <p>
+ The created <a href="../../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> polls DNS server based on TTL value of the resolved records. Min/max values
+ help to make sure polling stays within reasonable boundaries. Too frequent DNS queries may generate too much load
+ for the DNS server, too rare DNS queries may lead to incorrect state if the remote servers changed IPs before
+ original TTL expired.
+ <p>
+ With this overload, there will be no local caching for resolved records.</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="DnsServiceDiscovererBuilder.html#ttl(int,int)">ttl</a></code>&nbsp;in interface&nbsp;<code><a href="DnsServiceDiscovererBuilder.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererBuilder</a></code></dd>
+<dt>Parameters:</dt>
+<dd><code>minSeconds</code> - The minimum about of time the result will be considered valid (in seconds), must be greater
+ than <code>0</code>.</dd>
+<dd><code>maxSeconds</code> - The maximum about of time the result will be considered valid (in seconds), must be greater
+ than or equal to <code>minSeconds</code>.</dd>
+<dt>Returns:</dt>
+<dd><code>this</code>.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="DnsServiceDiscovererBuilder.html#ttl(int,int,int,int)"><code>DnsServiceDiscovererBuilder.ttl(int, int, int, int)</code></a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="ttl(int,int,int,int)">
+<h3>ttl</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="DefaultDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty">DefaultDnsServiceDiscovererBuilder</a></span>&nbsp;<span class="element-name">ttl</span><wbr><span class="parameters">(int&nbsp;minSeconds,
+ int&nbsp;maxSeconds,
+ int&nbsp;minCacheSeconds,
+ int&nbsp;maxCacheSeconds)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="DnsServiceDiscovererBuilder.html#ttl(int,int,int,int)">DnsServiceDiscovererBuilder</a></code></span></div>
+<div class="block">Controls min/max TTL values that will affect polling intervals and local caching.
+ <p>
+ The created <a href="../../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> polls DNS server based on TTL value of the resolved records. Min/max values
+ help to make sure polling stays within reasonable boundaries. Too frequent DNS queries may generate too much load
+ for the DNS server, too rare DNS queries may lead to incorrect state if the remote servers changed IPs before
+ original TTL expired.
+ <p>
+ The second min/max pair controls for how long the resolved records should be cached locally. Cache is helpful in
+ scenarios when multiple concurrent resolutions are possible for the same address: either an application runs
+ multiple client instances for the same hostname or clients perform DNS resolutions per new connection instead of
+ background polling.</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="DnsServiceDiscovererBuilder.html#ttl(int,int,int,int)">ttl</a></code>&nbsp;in interface&nbsp;<code><a href="DnsServiceDiscovererBuilder.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererBuilder</a></code></dd>
+<dt>Parameters:</dt>
+<dd><code>minSeconds</code> - The minimum about of time the result will be considered valid (in seconds), must be greater
+ than <code>0</code>.</dd>
+<dd><code>maxSeconds</code> - The maximum about of time the result will be considered valid (in seconds), must be greater
+ than or equal to <code>minSeconds</code>.</dd>
+<dd><code>minCacheSeconds</code> - The minimum about of time the result will be cached locally (in seconds), must be greater
+ than or equal to <code>0</code>, and less than or equal to <code>minSeconds</code>.</dd>
+<dd><code>maxCacheSeconds</code> - The maximum about of time the result will be cached locally (in seconds), must be greater
+ than or equal to <code>minCacheSeconds</code>, and less than or equal to <code>maxSeconds</code>.</dd>
+<dt>Returns:</dt>
+<dd><code>this</code>.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="DnsServiceDiscovererBuilder.html#ttl(int,int)"><code>DnsServiceDiscovererBuilder.ttl(int, int)</code></a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
 <section class="detail" id="ttlJitter(java.time.Duration)">
 <h3>ttlJitter</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="DefaultDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty">DefaultDnsServiceDiscovererBuilder</a></span>&nbsp;<span class="element-name">ttlJitter</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;ttlJitter)</span></div>
-<div class="block">The jitter to apply to schedule the next query after TTL.
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="DnsServiceDiscovererBuilder.html#ttlJitter(java.time.Duration)">DnsServiceDiscovererBuilder</a></code></span></div>
+<div class="block">The jitter to apply for scheduling the next query after TTL to help spread out subsequent DNS queries.
  <p>
- The jitter value will be added on top of the TTL value returned from the DNS server to help spread out
- subsequent DNS queries.</div>
+ The jitter value will be added on top of the TTL value returned from the DNS server to avoid hitting the cache.</div>
 <dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="DnsServiceDiscovererBuilder.html#ttlJitter(java.time.Duration)">ttlJitter</a></code>&nbsp;in interface&nbsp;<code><a href="DnsServiceDiscovererBuilder.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererBuilder</a></code></dd>
 <dt>Parameters:</dt>
 <dd><code>ttlJitter</code> - The jitter to apply to schedule the next query after TTL.</dd>
 <dt>Returns:</dt>
@@ -242,8 +375,12 @@ loadScripts(document, 'script');</script>
 <h3>dnsServerAddressStreamProvider</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="DefaultDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty">DefaultDnsServiceDiscovererBuilder</a></span>&nbsp;<span class="element-name">dnsServerAddressStreamProvider</span><wbr><span class="parameters">(@Nullable
  <a href="DnsServerAddressStreamProvider.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServerAddressStreamProvider</a>&nbsp;dnsServerAddressStreamProvider)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="DnsServiceDiscovererBuilder.html#dnsServerAddressStreamProvider(io.servicetalk.dns.discovery.netty.DnsServerAddressStreamProvider)">DnsServiceDiscovererBuilder</a></code></span></div>
 <div class="block">Set the <a href="DnsServerAddressStreamProvider.html" title="interface in io.servicetalk.dns.discovery.netty"><code>DnsServerAddressStreamProvider</code></a> which determines which DNS server should be used per query.</div>
 <dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="DnsServiceDiscovererBuilder.html#dnsServerAddressStreamProvider(io.servicetalk.dns.discovery.netty.DnsServerAddressStreamProvider)">dnsServerAddressStreamProvider</a></code>&nbsp;in interface&nbsp;<code><a href="DnsServiceDiscovererBuilder.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererBuilder</a></code></dd>
 <dt>Parameters:</dt>
 <dd><code>dnsServerAddressStreamProvider</code> - the <a href="DnsServerAddressStreamProvider.html" title="interface in io.servicetalk.dns.discovery.netty"><code>DnsServerAddressStreamProvider</code></a> which determines which DNS
  server should be used per query.</dd>
@@ -256,10 +393,14 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="optResourceEnabled(boolean)">
 <h3>optResourceEnabled</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="DefaultDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty">DefaultDnsServiceDiscovererBuilder</a></span>&nbsp;<span class="element-name">optResourceEnabled</span><wbr><span class="parameters">(boolean&nbsp;optResourceEnabled)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="DnsServiceDiscovererBuilder.html#optResourceEnabled(boolean)">DnsServiceDiscovererBuilder</a></code></span></div>
 <div class="block">Enable the automatic inclusion of a optional records that tries to give the remote DNS server a hint about
  how much data the resolver can read per response. Some DNSServer may not support this and so fail to answer
  queries. If you find problems you may want to disable this.</div>
 <dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="DnsServiceDiscovererBuilder.html#optResourceEnabled(boolean)">optResourceEnabled</a></code>&nbsp;in interface&nbsp;<code><a href="DnsServiceDiscovererBuilder.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererBuilder</a></code></dd>
 <dt>Parameters:</dt>
 <dd><code>optResourceEnabled</code> - if optional records inclusion is enabled.</dd>
 <dt>Returns:</dt>
@@ -271,10 +412,14 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="maxUdpPayloadSize(int)">
 <h3>maxUdpPayloadSize</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="DefaultDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty">DefaultDnsServiceDiscovererBuilder</a></span>&nbsp;<span class="element-name">maxUdpPayloadSize</span><wbr><span class="parameters">(int&nbsp;maxUdpPayloadSize)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="DnsServiceDiscovererBuilder.html#maxUdpPayloadSize(int)">DnsServiceDiscovererBuilder</a></code></span></div>
 <div class="block">Set the maximum size of the receiving UDP datagram (in bytes).
  <p>
  If the DNS response exceeds this amount the request will be automatically retried via TCP.</div>
 <dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="DnsServiceDiscovererBuilder.html#maxUdpPayloadSize(int)">maxUdpPayloadSize</a></code>&nbsp;in interface&nbsp;<code><a href="DnsServiceDiscovererBuilder.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererBuilder</a></code></dd>
 <dt>Parameters:</dt>
 <dd><code>maxUdpPayloadSize</code> - the maximum size of the receiving UDP datagram (in bytes)</dd>
 <dt>Returns:</dt>
@@ -286,8 +431,12 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="ndots(int)">
 <h3>ndots</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="DefaultDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty">DefaultDnsServiceDiscovererBuilder</a></span>&nbsp;<span class="element-name">ndots</span><wbr><span class="parameters">(int&nbsp;ndots)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="DnsServiceDiscovererBuilder.html#ndots(int)">DnsServiceDiscovererBuilder</a></code></span></div>
 <div class="block">Set the number of dots which must appear in a name before an initial absolute query is made.</div>
 <dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="DnsServiceDiscovererBuilder.html#ndots(int)">ndots</a></code>&nbsp;in interface&nbsp;<code><a href="DnsServiceDiscovererBuilder.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererBuilder</a></code></dd>
 <dt>Parameters:</dt>
 <dd><code>ndots</code> - the ndots value.</dd>
 <dt>Returns:</dt>
@@ -299,8 +448,12 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="queryTimeout(java.time.Duration)">
 <h3>queryTimeout</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="DefaultDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty">DefaultDnsServiceDiscovererBuilder</a></span>&nbsp;<span class="element-name">queryTimeout</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html" title="class or interface in java.time" class="external-link">Duration</a>&nbsp;queryTimeout)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="DnsServiceDiscovererBuilder.html#queryTimeout(java.time.Duration)">DnsServiceDiscovererBuilder</a></code></span></div>
 <div class="block">Sets the timeout of each DNS query performed by this service discoverer.</div>
 <dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="DnsServiceDiscovererBuilder.html#queryTimeout(java.time.Duration)">queryTimeout</a></code>&nbsp;in interface&nbsp;<code><a href="DnsServiceDiscovererBuilder.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererBuilder</a></code></dd>
 <dt>Parameters:</dt>
 <dd><code>queryTimeout</code> - the query timeout value</dd>
 <dt>Returns:</dt>
@@ -313,8 +466,12 @@ loadScripts(document, 'script');</script>
 <h3>dnsResolverAddressTypes</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="DefaultDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty">DefaultDnsServiceDiscovererBuilder</a></span>&nbsp;<span class="element-name">dnsResolverAddressTypes</span><wbr><span class="parameters">(@Nullable
  <a href="DnsResolverAddressTypes.html" title="enum class in io.servicetalk.dns.discovery.netty">DnsResolverAddressTypes</a>&nbsp;dnsResolverAddressTypes)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="DnsServiceDiscovererBuilder.html#dnsResolverAddressTypes(io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes)">DnsServiceDiscovererBuilder</a></code></span></div>
 <div class="block">Sets the list of the protocol families of the address resolved.</div>
 <dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="DnsServiceDiscovererBuilder.html#dnsResolverAddressTypes(io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes)">dnsResolverAddressTypes</a></code>&nbsp;in interface&nbsp;<code><a href="DnsServiceDiscovererBuilder.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererBuilder</a></code></dd>
 <dt>Parameters:</dt>
 <dd><code>dnsResolverAddressTypes</code> - the address types or <code>null</code> to use the default value, based on "java.net"
  system properties: <code>java.net.preferIPv4Stack</code> and <code>java.net.preferIPv6Stack</code>.</dd>
@@ -327,8 +484,12 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="ioExecutor(io.servicetalk.transport.api.IoExecutor)">
 <h3>ioExecutor</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="DefaultDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty">DefaultDnsServiceDiscovererBuilder</a></span>&nbsp;<span class="element-name">ioExecutor</span><wbr><span class="parameters">(<a href="../../../transport/api/IoExecutor.html" title="interface in io.servicetalk.transport.api">IoExecutor</a>&nbsp;ioExecutor)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="DnsServiceDiscovererBuilder.html#ioExecutor(io.servicetalk.transport.api.IoExecutor)">DnsServiceDiscovererBuilder</a></code></span></div>
 <div class="block">Sets the <a href="../../../transport/api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a>.</div>
 <dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="DnsServiceDiscovererBuilder.html#ioExecutor(io.servicetalk.transport.api.IoExecutor)">ioExecutor</a></code>&nbsp;in interface&nbsp;<code><a href="DnsServiceDiscovererBuilder.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererBuilder</a></code></dd>
 <dt>Parameters:</dt>
 <dd><code>ioExecutor</code> - <a href="../../../transport/api/IoExecutor.html" title="interface in io.servicetalk.transport.api"><code>IoExecutor</code></a> to use.</dd>
 <dt>Returns:</dt>
@@ -340,9 +501,13 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="observer(io.servicetalk.dns.discovery.netty.DnsServiceDiscovererObserver)">
 <h3>observer</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="DefaultDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty">DefaultDnsServiceDiscovererBuilder</a></span>&nbsp;<span class="element-name">observer</span><wbr><span class="parameters">(<a href="DnsServiceDiscovererObserver.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererObserver</a>&nbsp;observer)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="DnsServiceDiscovererBuilder.html#observer(io.servicetalk.dns.discovery.netty.DnsServiceDiscovererObserver)">DnsServiceDiscovererBuilder</a></code></span></div>
 <div class="block">Sets a <a href="DnsServiceDiscovererObserver.html" title="interface in io.servicetalk.dns.discovery.netty"><code>DnsServiceDiscovererObserver</code></a> that provides visibility into
  <a href="https://tools.ietf.org/html/rfc1034">DNS</a> <a href="../../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> built by this builder.</div>
 <dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="DnsServiceDiscovererBuilder.html#observer(io.servicetalk.dns.discovery.netty.DnsServiceDiscovererObserver)">observer</a></code>&nbsp;in interface&nbsp;<code><a href="DnsServiceDiscovererBuilder.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererBuilder</a></code></dd>
 <dt>Parameters:</dt>
 <dd><code>observer</code> - a <a href="DnsServiceDiscovererObserver.html" title="interface in io.servicetalk.dns.discovery.netty"><code>DnsServiceDiscovererObserver</code></a> that provides visibility into
  <a href="https://tools.ietf.org/html/rfc1034">DNS</a> <a href="../../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> built by this builder</dd>
@@ -355,9 +520,13 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="missingRecordStatus(io.servicetalk.client.api.ServiceDiscovererEvent.Status)">
 <h3>missingRecordStatus</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="DefaultDnsServiceDiscovererBuilder.html" title="class in io.servicetalk.dns.discovery.netty">DefaultDnsServiceDiscovererBuilder</a></span>&nbsp;<span class="element-name">missingRecordStatus</span><wbr><span class="parameters">(<a href="../../../client/api/ServiceDiscovererEvent.Status.html" title="class in io.servicetalk.client.api">ServiceDiscovererEvent.Status</a>&nbsp;status)</span></div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="DnsServiceDiscovererBuilder.html#missingRecordStatus(io.servicetalk.client.api.ServiceDiscovererEvent.Status)">DnsServiceDiscovererBuilder</a></code></span></div>
 <div class="block">Sets which <a href="../../../client/api/ServiceDiscovererEvent.Status.html" title="class in io.servicetalk.client.api"><code>ServiceDiscovererEvent.Status</code></a> to use in <a href="../../../client/api/ServiceDiscovererEvent.html#status()"><code>ServiceDiscovererEvent.status()</code></a> when a record
  for a previously seen address is missing in the response.</div>
 <dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="DnsServiceDiscovererBuilder.html#missingRecordStatus(io.servicetalk.client.api.ServiceDiscovererEvent.Status)">missingRecordStatus</a></code>&nbsp;in interface&nbsp;<code><a href="DnsServiceDiscovererBuilder.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererBuilder</a></code></dd>
 <dt>Parameters:</dt>
 <dd><code>status</code> - a <a href="../../../client/api/ServiceDiscovererEvent.Status.html" title="class in io.servicetalk.client.api"><code>ServiceDiscovererEvent.Status</code></a> for missing records.</dd>
 <dt>Returns:</dt>
@@ -369,10 +538,14 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="buildSrvDiscoverer()">
 <h3>buildSrvDiscoverer</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="../../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api">ServiceDiscoverer</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>,<wbr><a href="../../../client/api/ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>&gt;&gt;</span>&nbsp;<span class="element-name">buildSrvDiscoverer</span>()</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="DnsServiceDiscovererBuilder.html#buildSrvDiscoverer()">DnsServiceDiscovererBuilder</a></code></span></div>
 <div class="block">Build a new <a href="../../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> which queries
  <a href="https://tools.ietf.org/html/rfc2782">SRV Resource Records</a> corresponding to <code>serviceName</code>. For
  each SRV answer capture the <strong>Port</strong> and resolve the <strong>Target</strong>.</div>
 <dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="DnsServiceDiscovererBuilder.html#buildSrvDiscoverer()">buildSrvDiscoverer</a></code>&nbsp;in interface&nbsp;<code><a href="DnsServiceDiscovererBuilder.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererBuilder</a></code></dd>
 <dt>Returns:</dt>
 <dd>a new <a href="../../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> which queries
  <a href="https://tools.ietf.org/html/rfc2782">SRV Resource Records</a> corresponding to <code>serviceName</code>. For
@@ -384,10 +557,14 @@ loadScripts(document, 'script');</script>
 <section class="detail" id="buildARecordDiscoverer()">
 <h3>buildARecordDiscoverer</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="../../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api">ServiceDiscoverer</a>&lt;<a href="../../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api">HostAndPort</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>,<wbr><a href="../../../client/api/ServiceDiscovererEvent.html" title="interface in io.servicetalk.client.api">ServiceDiscovererEvent</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/InetSocketAddress.html" title="class or interface in java.net" class="external-link">InetSocketAddress</a>&gt;&gt;</span>&nbsp;<span class="element-name">buildARecordDiscoverer</span>()</div>
+<div class="deprecation-block"><span class="deprecated-label">Deprecated.</span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="DnsServiceDiscovererBuilder.html#buildARecordDiscoverer()">DnsServiceDiscovererBuilder</a></code></span></div>
 <div class="block">Build a new <a href="../../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> which targets
  <a href="https://tools.ietf.org/html/rfc1035">host addresses</a> (e.g. A or AAAA records) and uses
  a fixed port derived from the <a href="../../../transport/api/HostAndPort.html" title="interface in io.servicetalk.transport.api"><code>HostAndPort</code></a>.</div>
 <dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="DnsServiceDiscovererBuilder.html#buildARecordDiscoverer()">buildARecordDiscoverer</a></code>&nbsp;in interface&nbsp;<code><a href="DnsServiceDiscovererBuilder.html" title="interface in io.servicetalk.dns.discovery.netty">DnsServiceDiscovererBuilder</a></code></dd>
 <dt>Returns:</dt>
 <dd>a new <a href="../../../client/api/ServiceDiscoverer.html" title="interface in io.servicetalk.client.api"><code>ServiceDiscoverer</code></a> which targets
  <a href="https://tools.ietf.org/html/rfc1035">host addresses</a> (e.g. A or AAAA records) and uses
