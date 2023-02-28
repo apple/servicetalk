@@ -157,7 +157,7 @@ final class DefaultDnsClient implements DnsClient {
         this.ttlJitterNanos = ttlJitterNanos;
         this.observer = observer;
         this.missingRecordStatus = missingRecordStatus;
-        this.id = id + " (instance @" + toHexString(identityHashCode(this)) + ')';
+        this.id = id + '@' + toHexString(identityHashCode(this));
         asyncCloseable = toAsyncCloseable(graceful -> {
             if (nettyIoExecutor.isCurrentThreadEventLoop()) {
                 closeAsync0();
