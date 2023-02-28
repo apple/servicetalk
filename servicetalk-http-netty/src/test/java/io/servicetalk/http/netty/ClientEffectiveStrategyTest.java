@@ -577,7 +577,7 @@ class ClientEffectiveStrategyTest {
                         eventPublisher,
                 final ConnectionFactory<InetSocketAddress, T> connectionFactory) {
             return RoundRobinLoadBalancers.<InetSocketAddress, FilterableStreamingHttpLoadBalancedConnection>builder(
-                    getClass().getSimpleName()).build()
+                    ClientEffectiveStrategyTest.class.getSimpleName()).build()
                     .newLoadBalancer(targetResource, eventPublisher, connectionFactory);
         }
 
@@ -589,7 +589,7 @@ class ClientEffectiveStrategyTest {
                         connectionFactory,
                 final String targetResource) {
             return RoundRobinLoadBalancers.<InetSocketAddress, FilterableStreamingHttpLoadBalancedConnection>builder(
-                    getClass().getSimpleName()).build()
+                    ClientEffectiveStrategyTest.class.getSimpleName()).build()
                     .newLoadBalancer(eventPublisher, connectionFactory, targetResource);
         }
 
