@@ -507,7 +507,7 @@ abstract class RoundRobinLoadBalancerTest {
         final DelegatingConnectionFactory connectionFactory = unhealthyHostConnectionFactory.createFactory();
 
         lb = (RoundRobinLoadBalancer<String, TestLoadBalancedConnection>)
-                new RoundRobinLoadBalancerFactory.Builder<String, TestLoadBalancedConnection>()
+                RoundRobinLoadBalancers.<String, TestLoadBalancedConnection>builder(getClass().getSimpleName())
                         .healthCheckFailedConnectionsThreshold(-1)
                         .build()
                         .newLoadBalancer(serviceDiscoveryPublisher, connectionFactory, "test-service");
@@ -604,7 +604,7 @@ abstract class RoundRobinLoadBalancerTest {
 
         final AtomicInteger scheduleCnt = new AtomicInteger();
         lb = (RoundRobinLoadBalancer<String, TestLoadBalancedConnection>)
-                new RoundRobinLoadBalancerFactory.Builder<String, TestLoadBalancedConnection>()
+                RoundRobinLoadBalancers.<String, TestLoadBalancedConnection>builder(getClass().getSimpleName())
                         .healthCheckInterval(ofMillis(50), ofMillis(10))
                         .healthCheckFailedConnectionsThreshold(1)
                         .backgroundExecutor(new DelegatingExecutor(testExecutor) {
@@ -773,7 +773,7 @@ abstract class RoundRobinLoadBalancerTest {
         DelegatingConnectionFactory alwaysFailConnectionFactory =
                 new DelegatingConnectionFactory(address -> Single.failed(UNHEALTHY_HOST_EXCEPTION));
         lb = (RoundRobinLoadBalancer<String, TestLoadBalancedConnection>)
-                new RoundRobinLoadBalancerFactory.Builder<String, TestLoadBalancedConnection>()
+                RoundRobinLoadBalancers.<String, TestLoadBalancedConnection>builder(getClass().getSimpleName())
                         .healthCheckInterval(ofMillis(50), ofMillis(10))
                         // Set resubscribe interval to very large number
                         .healthCheckResubscribeInterval(ofNanos(MAX_VALUE), ZERO)
@@ -805,7 +805,7 @@ abstract class RoundRobinLoadBalancerTest {
         serviceDiscoveryPublisher.onComplete();
 
         lb = (RoundRobinLoadBalancer<String, TestLoadBalancedConnection>)
-                new RoundRobinLoadBalancerFactory.Builder<String, TestLoadBalancedConnection>()
+                RoundRobinLoadBalancers.<String, TestLoadBalancedConnection>builder(getClass().getSimpleName())
                         .healthCheckInterval(ofMillis(50), ofMillis(10))
                         .backgroundExecutor(testExecutor)
                         .build()
@@ -901,7 +901,7 @@ abstract class RoundRobinLoadBalancerTest {
         final TestPublisher<Collection<ServiceDiscovererEvent<String>>> serviceDiscoveryPublisher,
         final DelegatingConnectionFactory connectionFactory) {
         return (RoundRobinLoadBalancer<String, TestLoadBalancedConnection>)
-                new RoundRobinLoadBalancerFactory.Builder<String, TestLoadBalancedConnection>()
+                RoundRobinLoadBalancers.<String, TestLoadBalancedConnection>builder(getClass().getSimpleName())
                         .healthCheckInterval(ofMillis(50), ofMillis(10))
                         .backgroundExecutor(testExecutor)
                         .build()

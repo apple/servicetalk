@@ -24,7 +24,7 @@ import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.utils.CacheConnectionHttpLoadBalanceFactory;
-import io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory;
+import io.servicetalk.loadbalancer.RoundRobinLoadBalancers;
 import io.servicetalk.logging.api.LogLevel;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ClientSslConfigBuilder;
@@ -90,9 +90,9 @@ final class CacheConnectionHttpLoadBalanceFactoryTest {
                      .enableWireLogging("servicetalk-tests-h2-frame-logger", LogLevel.TRACE, () -> false)
                      .appendConnectionFactoryFilter(new TransportObserverConnectionFactoryFilter<>(connectionObserver))
                      .loadBalancerFactory(new CacheConnectionHttpLoadBalanceFactory<>(
-                             DefaultHttpLoadBalancerFactory.Builder.from(
-                                     new RoundRobinLoadBalancerFactory.Builder<InetSocketAddress,
-                                             FilterableStreamingHttpLoadBalancedConnection>().build()).build(),
+                             DefaultHttpLoadBalancerFactory.Builder.from(RoundRobinLoadBalancers.<InetSocketAddress,
+                                     FilterableStreamingHttpLoadBalancedConnection>builder(getClass().getSimpleName())
+                                     .build()).build(),
                              a -> maxConcurrency))
                      // The accounting for connection caching and the ConcurrencyController are done at different layers
                      // so it is possible the connection caching will give a connection to the load balancer that fails
