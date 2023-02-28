@@ -82,7 +82,7 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
      */
     @Deprecated // FIXME: 0.43 - remove deprecated constructor
     public DefaultDnsServiceDiscovererBuilder() {
-        this("unknown");
+        this("undefined");
     }
 
     DefaultDnsServiceDiscovererBuilder(final String id) {

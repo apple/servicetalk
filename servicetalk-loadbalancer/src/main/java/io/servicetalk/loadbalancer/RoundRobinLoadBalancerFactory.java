@@ -29,7 +29,6 @@ import io.servicetalk.transport.api.ExecutionStrategy;
 
 import java.time.Duration;
 import java.util.Collection;
-import java.util.UUID;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import javax.annotation.Nullable;
@@ -128,7 +127,7 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
          */
         @Deprecated // FIXME: 0.43 - remove deprecated constructor
         public Builder() {
-            this(UUID.randomUUID().toString());
+            this("undefined");
         }
 
         Builder(final String id) {

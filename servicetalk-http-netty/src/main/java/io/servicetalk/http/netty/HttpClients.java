@@ -59,7 +59,6 @@ import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalSrvDnsS
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.mappingServiceDiscoverer;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.resolvedServiceDiscoverer;
 import static io.servicetalk.utils.internal.ServiceLoaderUtils.loadProviders;
-import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
 
 /**
@@ -71,7 +70,7 @@ public final class HttpClients {
 
     private static final List<SingleAddressHttpClientBuilderProvider> SINGLE_ADDRESS_PROVIDERS;
     private static final List<MultiAddressHttpClientBuilderProvider> MULTI_ADDRESS_PROVIDERS;
-    private static final String UNKNOWN = "unknown";
+    private static final String UNDEFINED = "undefined";
 
     static {
         final ClassLoader classLoader = HttpClients.class.getClassLoader();
@@ -93,7 +92,9 @@ public final class HttpClients {
 
     private static <U, R> MultiAddressHttpClientBuilder<U, R> applyProviders(
             final String id, MultiAddressHttpClientBuilder<U, R> builder) {
-        requireNonNull(id, "id");
+        if (id.isEmpty()) {
+            throw new IllegalArgumentException("ID can not be empty");
+        }
         for (MultiAddressHttpClientBuilderProvider provider : MULTI_ADDRESS_PROVIDERS) {
             builder = provider.newBuilder(id, builder);
         }
@@ -116,7 +117,7 @@ public final class HttpClients {
      * @see MultiAddressHttpClientBuilderProvider
      */
     public static MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forMultiAddressUrl() {
-        return forMultiAddressUrl(UNKNOWN);
+        return forMultiAddressUrl(UNDEFINED);
     }
 
     /**
@@ -191,7 +192,7 @@ public final class HttpClients {
     public static MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forMultiAddressUrl(
             final ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>>
                     serviceDiscoverer) {
-        return applyProviders(UNKNOWN,
+        return applyProviders(UNDEFINED,
                 new DefaultMultiAddressUrlHttpClientBuilder(address -> forSingleAddress(serviceDiscoverer, address)));
     }
 
