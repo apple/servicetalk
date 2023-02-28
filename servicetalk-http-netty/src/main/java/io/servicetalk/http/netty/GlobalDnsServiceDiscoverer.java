@@ -21,9 +21,11 @@ import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.dns.discovery.netty.DnsServiceDiscoverers;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.HostAndPort;
+import io.servicetalk.transport.netty.internal.BuilderUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,16 +74,39 @@ final class GlobalDnsServiceDiscoverer {
     }
 
     /**
+     * Get the {@link ServiceDiscoverer} transforming a {@link HostAndPort} into a resolved {@link InetSocketAddress}.
+     *
+     * @return the singleton instance
+     */
+    static ServiceDiscoverer<HostAndPort, InetSocketAddress,
+            ServiceDiscovererEvent<InetSocketAddress>> resolvedServiceDiscoverer() {
+        return ResolvedServiceDiscovererInitializer.RESOLVED_SD;
+    }
+
+    /**
+     * Get the {@link ServiceDiscoverer} transforming a {@link HostAndPort} into an unresolved
+     * {@link InetSocketAddress}.
+     *
+     * @return the singleton instance
+     */
+    static ServiceDiscoverer<HostAndPort, InetSocketAddress,
+            ServiceDiscovererEvent<InetSocketAddress>> unresolvedServiceDiscoverer() {
+        return UnresolvedServiceDiscovererInitializer.UNRESOLVED_SD;
+    }
+
+    /**
      * Get the {@link ServiceDiscoverer} that uses the passed function to transform an unresolved to resolved address.
      *
      * @param toResolvedAddressMapper {@link Function} to transform an unresolved to resolved address
+     * @param description of the mapping function
      * @param <U> the type of address before resolution (unresolved address)
      * @param <R> the type of address after resolution (resolved address)
      * @return {@link ServiceDiscoverer} that uses the passed function to transform an unresolved to resolved address
      */
     static <U, R> ServiceDiscoverer<U, R, ServiceDiscovererEvent<R>> mappingServiceDiscoverer(
-            final Function<U, R> toResolvedAddressMapper) {
-        return new MappingServiceDiscoverer<>(toResolvedAddressMapper);
+            final Function<U, R> toResolvedAddressMapper,
+            final String description) {
+        return new MappingServiceDiscoverer<>(toResolvedAddressMapper, description);
     }
 
     private static final class HostAndPortClientInitializer {
@@ -89,11 +114,11 @@ final class GlobalDnsServiceDiscoverer {
                 HOST_PORT_SD = DnsServiceDiscoverers.builder("global-a").buildARecordDiscoverer();
 
         static {
-            LOGGER.debug("Initialized HostAndPortClientInitializer");
+            LOGGER.debug("Initialized {}", HostAndPortClientInitializer.class);
         }
 
         private HostAndPortClientInitializer() {
-            // No instances
+            // Singleton
         }
     }
 
@@ -102,28 +127,64 @@ final class GlobalDnsServiceDiscoverer {
                 DnsServiceDiscoverers.builder("global-srv").buildSrvDiscoverer();
 
         static {
-            LOGGER.debug("Initialized SrvClientInitializer");
+            LOGGER.debug("Initialized {}", SrvClientInitializer.class);
         }
 
         private SrvClientInitializer() {
-            // No instances
+            // Singleton
         }
     }
 
-    static final class MappingServiceDiscoverer<UnresolvedAddress, ResolvedAddress>
+    private static final class ResolvedServiceDiscovererInitializer {
+
+        static final ServiceDiscoverer<HostAndPort, InetSocketAddress,
+                ServiceDiscovererEvent<InetSocketAddress>> RESOLVED_SD =
+                mappingServiceDiscoverer(BuilderUtils::toResolvedInetSocketAddress, "from " +
+                        HostAndPort.class.getSimpleName() + " to a resolved " +
+                        InetSocketAddress.class.getSimpleName());
+
+        static {
+            LOGGER.debug("Initialized {}", ResolvedServiceDiscovererInitializer.class);
+        }
+
+        private ResolvedServiceDiscovererInitializer() {
+            // Singleton
+        }
+    }
+
+    private static final class UnresolvedServiceDiscovererInitializer {
+
+        static final ServiceDiscoverer<HostAndPort, InetSocketAddress,
+                ServiceDiscovererEvent<InetSocketAddress>> UNRESOLVED_SD = mappingServiceDiscoverer(hostAndPort ->
+                InetSocketAddress.createUnresolved(hostAndPort.hostName(), hostAndPort.port()), "from " +
+                HostAndPort.class.getSimpleName() + " to an unresolved " + InetSocketAddress.class.getSimpleName());
+
+        static {
+            LOGGER.debug("Initialized {}", UnresolvedServiceDiscovererInitializer.class);
+        }
+
+        private UnresolvedServiceDiscovererInitializer() {
+            // Singleton
+        }
+    }
+
+    private static final class MappingServiceDiscoverer<UnresolvedAddress, ResolvedAddress>
             implements ServiceDiscoverer<UnresolvedAddress, ResolvedAddress, ServiceDiscovererEvent<ResolvedAddress>> {
 
         private final Function<UnresolvedAddress, ResolvedAddress> toResolvedAddressMapper;
+        private final String description;
         private final ListenableAsyncCloseable closeable = emptyAsyncCloseable();
 
-        private MappingServiceDiscoverer(final Function<UnresolvedAddress, ResolvedAddress> toResolvedAddressMapper) {
+        private MappingServiceDiscoverer(final Function<UnresolvedAddress, ResolvedAddress> toResolvedAddressMapper,
+                                         final String description) {
             this.toResolvedAddressMapper = requireNonNull(toResolvedAddressMapper);
+            this.description = requireNonNull(description);
         }
 
         @Override
         public Publisher<Collection<ServiceDiscovererEvent<ResolvedAddress>>> discover(
                 final UnresolvedAddress address) {
-            return Publisher.<Collection<ServiceDiscovererEvent<ResolvedAddress>>>from(
+            return Single.<Collection<ServiceDiscovererEvent<ResolvedAddress>>>succeeded(
                             singletonList(new DefaultServiceDiscovererEvent<>(
                                     requireNonNull(toResolvedAddressMapper.apply(address)), AVAILABLE)))
                     // LoadBalancer will flag a termination of service discoverer Publisher as unexpected.
@@ -148,6 +209,11 @@ final class GlobalDnsServiceDiscoverer {
         @Override
         public Completable closeAsyncGracefully() {
             return closeable.closeAsyncGracefully();
+        }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName() + '{' + description + '}';
         }
     }
 }

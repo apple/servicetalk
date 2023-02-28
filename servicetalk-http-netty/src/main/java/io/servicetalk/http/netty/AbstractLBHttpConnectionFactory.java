@@ -81,8 +81,8 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
                             final ResolvedAddress ra, @Nullable final ContextMap context,
                             @Nullable final TransportObserver observer) {
                         Single<FilterableStreamingHttpConnection> connection =
-                                newFilterableConnection(ra, observer == null ? NoopTransportObserver.INSTANCE :
-                                asSafeObserver(observer));
+                                newFilterableConnection(requireNonNull(ra, "Resolved address cannot be null"),
+                                        observer == null ? NoopTransportObserver.INSTANCE : asSafeObserver(observer));
                         return connectStrategy instanceof ConnectExecutionStrategy &&
                                 ((ConnectExecutionStrategy) connectStrategy).isConnectOffloaded() ?
                                 connection.publishOn(executionContext.executor(),

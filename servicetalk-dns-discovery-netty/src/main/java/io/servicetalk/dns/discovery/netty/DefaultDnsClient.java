@@ -24,6 +24,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.PublisherOperator;
+import io.servicetalk.concurrent.api.TerminalSignalConsumer;
 import io.servicetalk.concurrent.api.internal.SubscribablePublisher;
 import io.servicetalk.concurrent.internal.CancelImmediatelySubscriber;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
@@ -156,7 +157,7 @@ final class DefaultDnsClient implements DnsClient {
         this.ttlJitterNanos = ttlJitterNanos;
         this.observer = observer;
         this.missingRecordStatus = missingRecordStatus;
-        this.id = id;
+        this.id = id + " (instance @" + toHexString(identityHashCode(this)) + ')';
         asyncCloseable = toAsyncCloseable(graceful -> {
             if (nettyIoExecutor.isCurrentThreadEventLoop()) {
                 closeAsync0();
@@ -200,7 +201,7 @@ final class DefaultDnsClient implements DnsClient {
 
     @Override
     public String toString() {
-        return id + '@' + toHexString(identityHashCode(this));
+        return id;
     }
 
     // visible for testing
@@ -214,7 +215,7 @@ final class DefaultDnsClient implements DnsClient {
             return null;
         }
         try {
-            return observer.onNewDiscovery(address);
+            return observer.onNewDiscovery(id, address);
         } catch (Throwable unexpected) {
             LOGGER.warn("{} unexpected exception from {} while reporting new DNS discovery for {}",
                     DefaultDnsClient.this, observer, address, unexpected);
@@ -226,8 +227,38 @@ final class DefaultDnsClient implements DnsClient {
     public Publisher<Collection<ServiceDiscovererEvent<InetAddress>>> dnsQuery(final String address) {
         requireNonNull(address);
         return defer(() -> {
-            ARecordPublisher pub = new ARecordPublisher(address, newDiscoveryObserver(address));
-            return inactiveEventsOnError ? recoverWithInactiveEvents(pub, false) : pub;
+            final DnsDiscoveryObserver discoveryObserver = newDiscoveryObserver(address);
+            ARecordPublisher pub = new ARecordPublisher(address, discoveryObserver);
+            Publisher<? extends Collection<ServiceDiscovererEvent<InetAddress>>> events = inactiveEventsOnError ?
+                    recoverWithInactiveEvents(pub, false) :
+                    pub;
+            return discoveryObserver == null ? events : events.beforeFinally(new TerminalSignalConsumer() {
+                    @Override
+                    public void onComplete() {
+                        // this event will never be triggered
+                    }
+
+                    @Override
+                    public void onError(final Throwable cause) {
+                        try {
+                            discoveryObserver.discoveryFailed(cause);
+                        } catch (Throwable unexpected) {
+                            addSuppressed(unexpected, cause);
+                            LOGGER.warn("{} Unexpected exception from observer while reporting discovery failure",
+                                    DefaultDnsClient.this, unexpected);
+                        }
+                    }
+
+                    @Override
+                    public void cancel() {
+                        try {
+                            discoveryObserver.discoveryCancelled();
+                        } catch (Throwable unexpected) {
+                            LOGGER.warn("{} Unexpected exception from observer while reporting discovery cancellation",
+                                    DefaultDnsClient.this, unexpected);
+                        }
+                    }
+                });
         });
     }
 
@@ -243,7 +274,8 @@ final class DefaultDnsClient implements DnsClient {
         // We "recover" unconditionally to force inactive events to propagate to all mapped A* publishers to cancel
         // any pending scheduled tasks. SrvInactiveCombinerOperator is used to filter the aggregated collection of
         // inactive events if necessary.
-        return recoverWithInactiveEvents(new SrvRecordPublisher(serviceName, discoveryObserver), true)
+        Publisher<Collection<ServiceDiscovererEvent<InetSocketAddress>>> events =
+                recoverWithInactiveEvents(new SrvRecordPublisher(serviceName, discoveryObserver), true)
                 .flatMapConcatIterable(identity())
                 .flatMapMerge(srvEvent -> {
                 assertInEventloop();
@@ -261,7 +293,7 @@ final class DefaultDnsClient implements DnsClient {
                                 recoverWithInactiveEvents(aPublisher, false);
                         return srvFilterDuplicateEvents ?
                                 srvFilterDups(returnPub, availableAddresses, srvEvent.address().port()) :
-                                returnPub.map(events -> mapEventList(events, inetAddress ->
+                                returnPub.map(ev -> mapEventList(ev, inetAddress ->
                                         new InetSocketAddress(inetAddress, srvEvent.address().port())));
                     }).retryWhen((i, cause) -> {
                         assertInEventloop();
@@ -284,6 +316,34 @@ final class DefaultDnsClient implements DnsClient {
                 }
             }, srvConcurrency)
             .liftSync(inactiveEventsOnError ? SrvInactiveCombinerOperator.EMIT : SrvInactiveCombinerOperator.NO_EMIT);
+
+            return discoveryObserver == null ? events : events.beforeFinally(new TerminalSignalConsumer() {
+                @Override
+                public void onComplete() {
+                    // this event will never be triggered
+                }
+
+                @Override
+                public void onError(final Throwable cause) {
+                    try {
+                        discoveryObserver.discoveryFailed(cause);
+                    } catch (Throwable unexpected) {
+                        addSuppressed(unexpected, cause);
+                        LOGGER.warn("{} Unexpected exception from observer while reporting discovery failure",
+                                DefaultDnsClient.this, unexpected);
+                    }
+                }
+
+                @Override
+                public void cancel() {
+                    try {
+                        discoveryObserver.discoveryCancelled();
+                    } catch (Throwable unexpected) {
+                        LOGGER.warn("{} Unexpected exception from observer while reporting discovery cancellation",
+                                DefaultDnsClient.this, unexpected);
+                    }
+                }
+            });
         });
     }
 
@@ -736,11 +796,6 @@ final class DefaultDnsClient implements DnsClient {
                     // DNS lookup can return duplicate InetAddress
                     final DnsAnswer<T> dnsAnswer = addressFuture.getNow();
                     final List<T> addresses = dnsAnswer.answer();
-                    final List<ServiceDiscovererEvent<T>> events = calculateDifference(activeAddresses, addresses,
-                            comparator(), resolutionObserver == null ? null : (nAvailable, nMissing) ->
-                                    reportResolutionResult(resolutionObserver, dnsAnswer, nAvailable, nMissing),
-                            missingRecordStatus);
-
                     ttlNanos = dnsAnswer.ttlNanos();
                     if (ttlNanos > maxTTLNanos) {
                         LOGGER.info("{} result for {} has a high TTL={}s which is larger than configured maxTTL={}s.",
@@ -748,6 +803,12 @@ final class DefaultDnsClient implements DnsClient {
                                 NANOSECONDS.toSeconds(ttlNanos), NANOSECONDS.toSeconds(maxTTLNanos));
                         ttlNanos = maxTTLNanos;
                     }
+                    final List<ServiceDiscovererEvent<T>> events = calculateDifference(activeAddresses, addresses,
+                            comparator(), resolutionObserver == null ? null : (nAvailable, nMissing) ->
+                                    reportResolutionResult(resolutionObserver, new DefaultResolutionResult(
+                                            addresses.size(), (int) NANOSECONDS.toSeconds(ttlNanos),
+                                            nAvailable, nMissing)),
+                            missingRecordStatus);
 
                     if (events != null) {
                         activeAddresses = addresses;
@@ -792,10 +853,7 @@ final class DefaultDnsClient implements DnsClient {
             }
 
             private void reportResolutionResult(final DnsResolutionObserver resolutionObserver,
-                                                final DnsAnswer<T> dnsAnswer,
-                                                final int nAvailable, final int nMissing) {
-                final ResolutionResult result = new DefaultResolutionResult(dnsAnswer.answer().size(),
-                        (int) NANOSECONDS.toSeconds(dnsAnswer.ttlNanos()), nAvailable, nMissing);
+                                                final ResolutionResult result) {
                 try {
                     resolutionObserver.resolutionCompleted(result);
                 } catch (Throwable unexpected) {

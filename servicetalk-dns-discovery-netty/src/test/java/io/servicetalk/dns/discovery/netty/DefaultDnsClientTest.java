@@ -141,11 +141,11 @@ class DefaultDnsClientTest {
         dnsServer2.stop();
     }
 
-    private void advanceTime() throws Exception {
+    private static void advanceTime() throws Exception {
         advanceTime(DEFAULT_TTL);
     }
 
-    private void advanceTime(int ttl) throws Exception {
+    private static void advanceTime(int ttl) throws Exception {
         // To make sure that the time is advanced after all prior work on the EvenLoop is complete, we advance it from
         // the EventLoop too.
         ioExecutor.executor().submit(() -> {
