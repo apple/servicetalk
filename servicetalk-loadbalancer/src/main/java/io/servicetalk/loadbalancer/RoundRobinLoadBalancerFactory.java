@@ -24,7 +24,6 @@ import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.loadbalancer.RoundRobinLoadBalancer.HealthCheckConfig;
 import io.servicetalk.transport.api.ExecutionStrategy;
 
@@ -33,7 +32,6 @@ import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.utils.internal.DurationUtils.ensureNonNegative;
@@ -43,39 +41,15 @@ import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
- * {@link LoadBalancerFactory} that creates {@link LoadBalancer} instances which use a round robin strategy
- * for selecting connections from a pool of addresses. The addresses are provided via the {@link Publisher published}
- * {@link ServiceDiscovererEvent events} that signal the host's {@link ServiceDiscovererEvent.Status status}.
- * Instances returned handle {@link ServiceDiscovererEvent.Status#AVAILABLE},
- * {@link ServiceDiscovererEvent.Status#EXPIRED}, and {@link ServiceDiscovererEvent.Status#UNAVAILABLE} event statuses.
- * <p>The created instances have the following behaviour:
- * <ul>
- * <li>Round robining is done at address level.</li>
- * <li>Connections are created lazily, without any concurrency control on their creation.
- * This can lead to over-provisioning connections when dealing with a requests surge.</li>
- * <li>Existing connections are reused unless a selector passed to
- * {@link LoadBalancer#selectConnection(Predicate, ContextMap)} suggests otherwise. This can lead to situations where
- * connections will be used to their maximum capacity (for example in the context of pipelining) before new connections
- * are created.</li>
- * <li>Closed connections are automatically pruned.</li>
- * <li>When {@link Publisher}&lt;{@link ServiceDiscovererEvent}&gt; delivers events with
- * {@link ServiceDiscovererEvent#status()} of value {@link ServiceDiscovererEvent.Status#UNAVAILABLE}, connections
- * are immediately closed for the associated {@link ServiceDiscovererEvent#address()}. In case of
- * {@link ServiceDiscovererEvent.Status#EXPIRED}, already established connections to
- * {@link ServiceDiscovererEvent#address()} are used for requests, but no new connections are created.
- * In case the address' connections are busy, another host is tried. If all hosts are busy, selection fails with a
- * {@link io.servicetalk.client.api.ConnectionRejectedException}.</li>
- * <li>For hosts to which consecutive connection attempts fail, a background health checking task is created and
- * the host is not considered for opening new connections until the background check succeeds to create a connection.
- * Upon such event, the connection can immediately be reused and future attempts will again consider this host.
- * This behaviour can be disabled using a negative argument for
- * {@link Builder#healthCheckFailedConnectionsThreshold(int)} and the failing host will take part in the regular
- * round robin cycle for trying to establish a connection on the request path.</li>
- * </ul>
+ * {@link LoadBalancerFactory} that creates {@link LoadBalancer} instances which use a round-robin strategy
+ * for selecting connections from a pool of addresses.
+ * <p>
+ * For more information, see javadoc for {@link RoundRobinLoadBalancerBuilder}.
  *
  * @param <ResolvedAddress> The resolved address type.
  * @param <C> The type of connection.
- * @deprecated this class will be made package-private in the future, rely on {@link RoundRobinLoadBalancers} instead.
+ * @deprecated this class will be made package-private in the future, use {@link RoundRobinLoadBalancers} to create
+ * {@link RoundRobinLoadBalancerBuilder}.
  */
 @Deprecated // FIXME: 0.43 - make package private
 public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends LoadBalancedConnection>
