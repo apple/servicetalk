@@ -70,6 +70,7 @@ public final class HttpClients {
 
     private static final List<SingleAddressHttpClientBuilderProvider> SINGLE_ADDRESS_PROVIDERS;
     private static final List<MultiAddressHttpClientBuilderProvider> MULTI_ADDRESS_PROVIDERS;
+    private static final String UNDEFINED = "undefined";
 
     static {
         final ClassLoader classLoader = HttpClients.class.getClassLoader();
@@ -90,9 +91,12 @@ public final class HttpClients {
     }
 
     private static <U, R> MultiAddressHttpClientBuilder<U, R> applyProviders(
-            MultiAddressHttpClientBuilder<U, R> builder) {
+            final String id, MultiAddressHttpClientBuilder<U, R> builder) {
+        if (id.isEmpty()) {
+            throw new IllegalArgumentException("ID can not be empty");
+        }
         for (MultiAddressHttpClientBuilderProvider provider : MULTI_ADDRESS_PROVIDERS) {
-            builder = provider.newBuilder(builder);
+            builder = provider.newBuilder(id, builder);
         }
         return builder;
     }
@@ -113,7 +117,30 @@ public final class HttpClients {
      * @see MultiAddressHttpClientBuilderProvider
      */
     public static MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forMultiAddressUrl() {
-        return applyProviders(new DefaultMultiAddressUrlHttpClientBuilder(HttpClients::forSingleAddress));
+        return forMultiAddressUrl(UNDEFINED);
+    }
+
+    /**
+     * Creates a {@link MultiAddressHttpClientBuilder} for clients capable of parsing an <a
+     * href="https://tools.ietf.org/html/rfc7230#section-5.3.2">absolute-form URL</a>, connecting to multiple addresses
+     * with default {@link LoadBalancer} and DNS {@link ServiceDiscoverer} using
+     * {@link DiscoveryStrategy#BACKGROUND background} discovery strategy.
+     * <p>
+     * When a <a href="https://tools.ietf.org/html/rfc3986#section-4.2">relative URL</a> is passed in the {@link
+     * StreamingHttpRequest#requestTarget(String)} this client requires a {@link HttpHeaderNames#HOST} present in
+     * order to infer the remote address.
+     * <p>
+     * The returned builder can be customized using {@link MultiAddressHttpClientBuilderProvider}.
+     *
+     * @param id a (unique) ID to identify the created {@link MultiAddressHttpClientBuilder}, like a name or a purpose
+     * of the future client that will be built. This helps  {@link MultiAddressHttpClientBuilderProvider} to distinguish
+     * this builder from others.
+     * @return new builder with default configuration
+     * @see MultiAddressHttpClientBuilderProvider
+     */
+    public static MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forMultiAddressUrl(
+            final String id) {
+        return applyProviders(id, new DefaultMultiAddressUrlHttpClientBuilder(HttpClients::forSingleAddress));
     }
 
     /**
@@ -128,13 +155,16 @@ public final class HttpClients {
      * <p>
      * The returned builder can be customized using {@link MultiAddressHttpClientBuilderProvider}.
      *
+     * @param id a (unique) ID to identify the created {@link MultiAddressHttpClientBuilder}, like a name or a purpose
+     * of the future client that will be built. This helps  {@link MultiAddressHttpClientBuilderProvider} to distinguish
+     * this builder from others.
      * @param discoveryStrategy {@link DiscoveryStrategy} to use
      * @return new builder with default configuration
      * @see MultiAddressHttpClientBuilderProvider
      */
     public static MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forMultiAddressUrl(
-            final DiscoveryStrategy discoveryStrategy) {
-        return applyProviders(new DefaultMultiAddressUrlHttpClientBuilder(
+            final String id, final DiscoveryStrategy discoveryStrategy) {
+        return applyProviders(id, new DefaultMultiAddressUrlHttpClientBuilder(
                 hostAndPort -> forSingleAddress(hostAndPort, discoveryStrategy)));
     }
 
@@ -162,7 +192,7 @@ public final class HttpClients {
     public static MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forMultiAddressUrl(
             final ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>>
                     serviceDiscoverer) {
-        return applyProviders(
+        return applyProviders(UNDEFINED,
                 new DefaultMultiAddressUrlHttpClientBuilder(address -> forSingleAddress(serviceDiscoverer, address)));
     }
 

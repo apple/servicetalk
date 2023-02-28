@@ -22,7 +22,6 @@ import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.InetSocketAddress;
 import java.time.Duration;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 
@@ -83,7 +82,7 @@ public final class DefaultDnsServiceDiscovererBuilder implements DnsServiceDisco
      */
     @Deprecated // FIXME: 0.43 - remove deprecated constructor
     public DefaultDnsServiceDiscovererBuilder() {
-        this(UUID.randomUUID().toString());
+        this("undefined");
     }
 
     DefaultDnsServiceDiscovererBuilder(final String id) {

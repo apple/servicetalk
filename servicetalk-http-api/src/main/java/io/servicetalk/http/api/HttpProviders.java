@@ -71,8 +71,33 @@ public final class HttpProviders {
          * @return a {@link MultiAddressHttpClientBuilder} based on the pre-initialized
          * {@link MultiAddressHttpClientBuilder}.
          * @see DelegatingMultiAddressHttpClientBuilder
+         * @deprecated Use {@link #newBuilder(String, MultiAddressHttpClientBuilder)}. To avoid breaking changes, all
+         * current implementations must implement both methods. In the next version the default implementation will
+         * swap. Then users will be able to keep implementation only for the new method. In the release after, the
+         * deprecated method will be removed.
          */
+        @Deprecated // FIXME: 0.43 - swap default impl
         <U, R> MultiAddressHttpClientBuilder<U, R> newBuilder(MultiAddressHttpClientBuilder<U, R> builder);
+
+        /**
+         * Returns a {@link MultiAddressHttpClientBuilder} based on the pre-initialized
+         * {@link MultiAddressHttpClientBuilder}.
+         * <p>
+         * This method may return the pre-initialized {@code builder} as-is, or apply custom builder settings before
+         * returning it, or wrap it ({@link DelegatingMultiAddressHttpClientBuilder} may be helpful).
+         *
+         * @param id identification of the {@link MultiAddressHttpClientBuilder builder}
+         * @param builder pre-initialized {@link MultiAddressHttpClientBuilder}
+         * @param <U> the type of address before resolution (unresolved address)
+         * @param <R> the type of address after resolution (resolved address)
+         * @return a {@link MultiAddressHttpClientBuilder} based on the pre-initialized
+         * {@link MultiAddressHttpClientBuilder}.
+         * @see DelegatingMultiAddressHttpClientBuilder
+         */
+        default <U, R> MultiAddressHttpClientBuilder<U, R> newBuilder(String id,
+                                                                      MultiAddressHttpClientBuilder<U, R> builder) {
+            return newBuilder(builder);
+        }
     }
 
     /**

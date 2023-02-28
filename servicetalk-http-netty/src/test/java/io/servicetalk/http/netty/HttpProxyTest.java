@@ -76,7 +76,7 @@ class HttpProxyTest {
     }
 
     void startProxy() throws Exception {
-        proxyClient = HttpClients.forMultiAddressUrl().build();
+        proxyClient = HttpClients.forMultiAddressUrl(getClass().getSimpleName()).build();
         proxyContext = HttpServers.forAddress(localAddress(0))
                 .listenAndAwait((ctx, request, responseFactory) -> {
                     proxyRequestCount.incrementAndGet();
@@ -129,7 +129,7 @@ class HttpProxyTest {
                 HttpClients.forSingleAddress(serverAddress);
         final BlockingHttpClient client = builder.proxyAddress(proxyAddress).buildBlocking();
 
-        final HttpClient otherProxyClient = HttpClients.forMultiAddressUrl().build();
+        final HttpClient otherProxyClient = HttpClients.forMultiAddressUrl(getClass().getSimpleName()).build();
         final AtomicInteger otherProxyRequestCount = new AtomicInteger();
         try (ServerContext otherProxyContext = HttpServers.forAddress(localAddress(0))
                 .listenAndAwait((ctx, request, responseFactory) -> {
