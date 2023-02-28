@@ -25,7 +25,7 @@ import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
 public final class BlockingHelloWorldStreamingUrlClient {
 
     public static void main(String[] args) throws Exception {
-        try (BlockingStreamingHttpClient client = HttpClients.forMultiAddressUrl("example").buildBlockingStreaming()) {
+        try (BlockingStreamingHttpClient client = HttpClients.forMultiAddressUrl().buildBlockingStreaming()) {
             BlockingStreamingHttpResponse response = client.request(client.get("http://localhost:8080/sayHello"));
             System.out.println(response.toString((name, value) -> value));
             // While it's also possible to use for-each, it's recommended to use try-with-resources to make sure that

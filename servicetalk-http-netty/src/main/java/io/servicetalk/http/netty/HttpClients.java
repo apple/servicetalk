@@ -49,7 +49,6 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.Collection;
 import java.util.List;
-import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -72,6 +71,7 @@ public final class HttpClients {
 
     private static final List<SingleAddressHttpClientBuilderProvider> SINGLE_ADDRESS_PROVIDERS;
     private static final List<MultiAddressHttpClientBuilderProvider> MULTI_ADDRESS_PROVIDERS;
+    private static final String UNKNOWN = "unknown";
 
     static {
         final ClassLoader classLoader = HttpClients.class.getClassLoader();
@@ -114,11 +114,9 @@ public final class HttpClients {
      *
      * @return new builder with default configuration
      * @see MultiAddressHttpClientBuilderProvider
-     * @deprecated Use {@link #forMultiAddressUrl(String)}
      */
-    @Deprecated // FIXME: 0.43 - remove deprecated method
     public static MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forMultiAddressUrl() {
-        return forMultiAddressUrl(UUID.randomUUID().toString());
+        return forMultiAddressUrl(UNKNOWN);
     }
 
     /**
@@ -184,7 +182,7 @@ public final class HttpClients {
      * The lifecycle of the provided {@link ServiceDiscoverer} should be managed by the caller.
      * @return new builder with default configuration
      * @see MultiAddressHttpClientBuilderProvider
-     * @deprecated Use {@link #forMultiAddressUrl(String)} to create {@link MultiAddressHttpClientBuilder}, then use
+     * @deprecated Use {@link #forMultiAddressUrl()} to create {@link MultiAddressHttpClientBuilder}, then use
      * {@link MultiAddressHttpClientBuilder#initializer(SingleAddressInitializer)} to override {@link ServiceDiscoverer}
      * using {@link SingleAddressHttpClientBuilder#serviceDiscoverer(ServiceDiscoverer)} for all or some of the internal
      * clients.
@@ -193,7 +191,7 @@ public final class HttpClients {
     public static MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forMultiAddressUrl(
             final ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>>
                     serviceDiscoverer) {
-        return applyProviders(UUID.randomUUID().toString(),
+        return applyProviders(UNKNOWN,
                 new DefaultMultiAddressUrlHttpClientBuilder(address -> forSingleAddress(serviceDiscoverer, address)));
     }
 
@@ -585,10 +583,10 @@ public final class HttpClients {
          * new connection is required. This behavior may be beneficial for the following scenarios:
          * <ol>
          *     <li>Client has a low rate of opening new connections.</li>
-         *     <li>Application creates many clients (or uses a {@link #forMultiAddressUrl(String) multi-address} client)
-         *     that talk to many different hosts. the default {@link #BACKGROUND} strategy introduces a risk to overload
-         *     the discovery system. The impact might be more visible when {@link ServiceDiscoverer} uses polling to
-         *     receive updated, like DNS.</li>
+         *     <li>Application creates many clients (or uses a {@link #forMultiAddressUrl() multi-address} client) that
+         *     talk to many different hosts. the default {@link #BACKGROUND} strategy introduces a risk to overload the
+         *     discovery system. The impact might be more visible when {@link ServiceDiscoverer} uses polling to receive
+         *     updated, like DNS.</li>
          *     <li>To mimic behavior of other HTTP client implementations, like default Java HttpClient or
          *     {@link HttpURLConnection}.</li>
          * </ol>

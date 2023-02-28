@@ -22,7 +22,7 @@ import static io.servicetalk.http.api.HttpSerializers.appSerializerUtf8FixLen;
 
 public final class HelloWorldStreamingUrlClient {
     public static void main(String[] args) throws Exception {
-        try (StreamingHttpClient client = HttpClients.forMultiAddressUrl("example").buildStreaming()) {
+        try (StreamingHttpClient client = HttpClients.forMultiAddressUrl().buildStreaming()) {
             client.request(client.get("http://localhost:8080/sayHello"))
                     .beforeOnSuccess(response -> System.out.println(response.toString((name, value) -> value)))
                     .flatMapPublisher(resp -> resp.payloadBody(appSerializerUtf8FixLen()))

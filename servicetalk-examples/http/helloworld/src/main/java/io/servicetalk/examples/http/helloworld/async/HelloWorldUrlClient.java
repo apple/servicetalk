@@ -22,7 +22,7 @@ import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 
 public final class HelloWorldUrlClient {
     public static void main(String[] args) throws Exception {
-        try (HttpClient client = HttpClients.forMultiAddressUrl("example").build()) {
+        try (HttpClient client = HttpClients.forMultiAddressUrl().build()) {
             client.request(client.get("http://localhost:8080/sayHello"))
                     .whenOnSuccess(resp -> {
                         System.out.println(resp.toString((name, value) -> value));

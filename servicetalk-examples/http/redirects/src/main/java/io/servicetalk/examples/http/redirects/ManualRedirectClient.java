@@ -41,8 +41,8 @@ import static io.servicetalk.http.api.HttpSerializers.textSerializerAscii;
  *     <li>Preserve payload body while redirecting.</li>
  * </ol>
  * This is a specialized use-case. For simplification, consider using one
- * {@link HttpClients#forMultiAddressUrl(String) multi-address} client, demonstrated in
- * {@link MultiAddressUrlRedirectClient} example.
+ * {@link HttpClients#forMultiAddressUrl() multi-address} client, demonstrated in {@link MultiAddressUrlRedirectClient}
+ * example.
  */
 public final class ManualRedirectClient {
     public static void main(String... args) throws Exception {

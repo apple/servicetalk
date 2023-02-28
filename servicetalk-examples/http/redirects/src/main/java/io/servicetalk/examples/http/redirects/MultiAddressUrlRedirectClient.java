@@ -34,8 +34,8 @@ import static io.servicetalk.http.api.HttpSerializers.textSerializerAscii;
 
 /**
  * Async `Hello World` example that demonstrates how redirects can be handled automatically by a
- * {@link HttpClients#forMultiAddressUrl(String) multi-address} client. It demonstrates how users can preserve headers
- * and payload body of the original request while redirecting to non-relative locations.
+ * {@link HttpClients#forMultiAddressUrl() multi-address} client. It demonstrates how users can preserve headers and
+ * payload body of the original request while redirecting to non-relative locations.
  * <p>
  * For security reasons, request methods other than {@link HttpRequestMethod#GET GET} or
  * {@link HttpRequestMethod#HEAD HEAD}, headers and message body are not automatically redirected for non-relative
@@ -47,7 +47,7 @@ import static io.servicetalk.http.api.HttpSerializers.textSerializerAscii;
 public final class MultiAddressUrlRedirectClient {
 
     public static void main(String... args) throws Exception {
-        try (HttpClient client = HttpClients.forMultiAddressUrl("example")
+        try (HttpClient client = HttpClients.forMultiAddressUrl()
                 // Enables redirection:
                 .followRedirects(new RedirectConfigBuilder()
                         // All following config options are optional:
