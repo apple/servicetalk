@@ -29,6 +29,7 @@ public interface RoundRobinLoadBalancerBuilderProvider {
      * This method may return the pre-initialized {@code builder} as-is, or apply custom builder settings before
      * returning it, or wrap it ({@link DelegatingRoundRobinLoadBalancerBuilder} may be helpful).
      *
+     * @param id a (unique) identifier used to identify the underlying {@link RoundRobinLoadBalancer}.
      * @param builder pre-initialized {@link RoundRobinLoadBalancerBuilder}.
      * @return a {@link RoundRobinLoadBalancerBuilder} based on the pre-initialized
      * {@link RoundRobinLoadBalancerBuilder}.
@@ -36,5 +37,5 @@ public interface RoundRobinLoadBalancerBuilderProvider {
      * @param <C> The type of connection.
      */
     <ResolvedAddress, C extends LoadBalancedConnection> RoundRobinLoadBalancerBuilder<ResolvedAddress, C>
-    newBuilder(RoundRobinLoadBalancerBuilder<ResolvedAddress, C> builder);
+    newBuilder(String id, RoundRobinLoadBalancerBuilder<ResolvedAddress, C> builder);
 }

@@ -17,6 +17,7 @@ package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.client.api.LoadBalancer;
+import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.concurrent.api.Executor;
 
@@ -113,9 +114,9 @@ public interface RoundRobinLoadBalancerBuilder<ResolvedAddress, C extends LoadBa
     RoundRobinLoadBalancerBuilder<ResolvedAddress, C> healthCheckFailedConnectionsThreshold(int threshold);
 
     /**
-     * Builds the {@link RoundRobinLoadBalancerFactory} configured by this builder.
+     * Builds the {@link LoadBalancerFactory} configured by this builder.
      *
-     * @return a new instance of {@link RoundRobinLoadBalancerFactory} with settings from this builder.
+     * @return a new instance of {@link LoadBalancerFactory} with settings from this builder.
      */
-    RoundRobinLoadBalancerFactory<ResolvedAddress, C> build();
+    LoadBalancerFactory<ResolvedAddress, C> build();
 }

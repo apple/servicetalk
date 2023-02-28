@@ -19,7 +19,6 @@ import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
-import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executor;
@@ -31,6 +30,7 @@ import io.servicetalk.transport.api.ExecutionStrategy;
 
 import java.time.Duration;
 import java.util.Collection;
+import java.util.UUID;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.function.Predicate;
@@ -124,9 +124,13 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
      *
      * @param <ResolvedAddress> The resolved address type.
      * @param <C> The type of connection.
+     * @deprecated this class will be made package-private in the future, rely on the
+     * {@link RoundRobinLoadBalancerBuilder} instead.
      */
+    @Deprecated // FIXME: 0.43 - make package private
     public static final class Builder<ResolvedAddress, C extends LoadBalancedConnection>
             implements RoundRobinLoadBalancerBuilder<ResolvedAddress, C> {
+        private final String id;
         private int linearSearchSpace = 16;
         @Nullable
         private Executor backgroundExecutor;
@@ -140,24 +144,18 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
 
         /**
          * Creates a new instance with default settings.
+         *
+         * @deprecated use {@link RoundRobinLoadBalancers#builder(String)} instead.
          */
+        @Deprecated // FIXME: 0.43 - remove deprecated constructor
         public Builder() {
+            this(UUID.randomUUID().toString());
         }
 
-        /**
-         * Sets the linear search space to find an available connection for the next host.
-         * <p>
-         * When the next host has already opened connections, this {@link LoadBalancer} will perform a linear search for
-         * a connection that can serve the next request up to a specified number of attempts. If there are more open
-         * connections, selection of remaining connections will be attempted randomly.
-         * <p>
-         * Higher linear search space may help to better identify excess connections in highly concurrent environments,
-         * but may result in slightly increased selection time.
-         *
-         * @param linearSearchSpace the number of attempts for a linear search space, {@code 0} enforces random
-         * selection all the time.
-         * @return {@code this}.
-         */
+        Builder(final String id) {
+            this.id = id;
+        }
+
         @Override
         public RoundRobinLoadBalancerFactory.Builder<ResolvedAddress, C> linearSearchSpace(int linearSearchSpace) {
             if (linearSearchSpace < 0) {
@@ -167,21 +165,6 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
             return this;
         }
 
-        /**
-         * This {@link LoadBalancer} may monitor hosts to which connection establishment has failed
-         * using health checks that run in the background. The health check tries to establish a new connection
-         * and if it succeeds, the host is returned to the load balancing pool. As long as the connection
-         * establishment fails, the host is not considered for opening new connections for processed requests.
-         * If an {@link Executor} is not provided using this method, a default shared instance is used
-         * for all {@link LoadBalancer LoadBalancers} created by this factory.
-         * <p>
-         * {@link #healthCheckFailedConnectionsThreshold(int)} can be used to disable this mechanism and always
-         * consider all hosts for establishing new connections.
-         *
-         * @param backgroundExecutor {@link Executor} on which to schedule health checking.
-         * @return {@code this}.
-         * @see #healthCheckFailedConnectionsThreshold(int)
-         */
         @Override
         public RoundRobinLoadBalancerFactory.Builder<ResolvedAddress, C> backgroundExecutor(
                 Executor backgroundExecutor) {
@@ -208,18 +191,6 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
                             DEFAULT_HEALTH_CHECK_JITTER);
         }
 
-        /**
-         * Configure an interval for health checking a host that failed to open connections. If no interval is provided
-         * using this method, a default value will be used.
-         * <p>
-         * {@link #healthCheckFailedConnectionsThreshold(int)} can be used to disable the health checking mechanism
-         * and always consider all hosts for establishing new connections.
-         *
-         * @param interval interval at which a background health check will be scheduled.
-         * @param jitter the amount of jitter to apply to each retry {@code interval}.
-         * @return {@code this}.
-         * @see #healthCheckFailedConnectionsThreshold(int)
-         */
         @Override
         public RoundRobinLoadBalancerFactory.Builder<ResolvedAddress, C> healthCheckInterval(Duration interval,
                                                                                              Duration jitter) {
@@ -229,22 +200,6 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
             return this;
         }
 
-        /**
-         * Configure an interval for re-subscribing to the original events stream in case all existing hosts become
-         * unhealthy.
-         * <p>
-         * In situations when there is a latency between {@link ServiceDiscoverer} propagating the updated state and all
-         * known hosts become unhealthy, which could happen due to intermediate caching layers, re-subscribe to the
-         * events stream can help to exit from a dead state.
-         * <p>
-         * {@link #healthCheckFailedConnectionsThreshold(int)} can be used to disable the health checking mechanism
-         * and always consider all hosts for establishing new connections.
-         *
-         * @param interval interval at which re-subscribes will be scheduled.
-         * @param jitter the amount of jitter to apply to each re-subscribe {@code interval}.
-         * @return {@code this}.
-         * @see #healthCheckFailedConnectionsThreshold(int)
-         */
         @Override
         public RoundRobinLoadBalancerFactory.Builder<ResolvedAddress, C> healthCheckResubscribeInterval(
                 Duration interval, Duration jitter) {
@@ -269,21 +224,6 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
             }
         }
 
-        /**
-         * Configure a threshold for consecutive connection failures to a host. When the {@link LoadBalancer}
-         * consecutively fails to open connections in the amount greater or equal to the specified value,
-         * the host will be marked as unhealthy and connection establishment will take place in the background
-         * repeatedly until a connection is established. During that time, the host will not take part in
-         * load balancing selection.
-         * <p>
-         * Use a negative value of the argument to disable health checking.
-         *
-         * @param threshold number of consecutive connection failures to consider a host unhealthy and eligible for
-         * background health checking. Use negative value to disable the health checking mechanism.
-         * @return {@code this}.
-         * @see #backgroundExecutor(Executor)
-         * @see #healthCheckInterval(Duration)
-         */
         @Override
         public RoundRobinLoadBalancerFactory.Builder<ResolvedAddress, C> healthCheckFailedConnectionsThreshold(
                 int threshold) {
@@ -294,11 +234,6 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
             return this;
         }
 
-        /**
-         * Builds the {@link RoundRobinLoadBalancerFactory} configured by this builder.
-         *
-         * @return a new instance of {@link RoundRobinLoadBalancerFactory} with settings from this builder.
-         */
         @Override
         public RoundRobinLoadBalancerFactory<ResolvedAddress, C> build() {
             if (this.healthCheckFailedConnectionsThreshold < 0) {

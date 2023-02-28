@@ -43,9 +43,9 @@ public final class RoundRobinLoadBalancers {
 
     private static <ResolvedAddress, C extends LoadBalancedConnection>
     RoundRobinLoadBalancerBuilder<ResolvedAddress, C> applyProviders(
-            RoundRobinLoadBalancerBuilder<ResolvedAddress, C> builder) {
+            String id, RoundRobinLoadBalancerBuilder<ResolvedAddress, C> builder) {
         for (RoundRobinLoadBalancerBuilderProvider provider : PROVIDERS) {
-            builder = provider.newBuilder(builder);
+            builder = provider.newBuilder(id, builder);
         }
         return builder;
     }
@@ -55,12 +55,14 @@ public final class RoundRobinLoadBalancers {
      * <p>
      * The returned builder can be customized using {@link RoundRobinLoadBalancerBuilderProvider}.
      *
+     * @param id a (unique) ID to identify the created {@link RoundRobinLoadBalancer}.
      * @param <ResolvedAddress> The resolved address type.
      * @param <C> The type of connection.
      * @return a new {@link RoundRobinLoadBalancerBuilder}.
      */
+    @SuppressWarnings("deprecation")
     public static <ResolvedAddress, C extends LoadBalancedConnection> RoundRobinLoadBalancerBuilder<ResolvedAddress, C>
-    builder() {
-        return applyProviders(new RoundRobinLoadBalancerFactory.Builder<>());
+    builder(final String id) {
+        return applyProviders(id, new RoundRobinLoadBalancerFactory.Builder<>(id));
     }
 }

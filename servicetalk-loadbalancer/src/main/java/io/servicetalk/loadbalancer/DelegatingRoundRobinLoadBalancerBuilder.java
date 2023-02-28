@@ -16,6 +16,7 @@
 package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.LoadBalancedConnection;
+import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.concurrent.api.Executor;
 
 import java.time.Duration;
@@ -85,7 +86,7 @@ public class DelegatingRoundRobinLoadBalancerBuilder<ResolvedAddress, C extends 
     }
 
     @Override
-    public RoundRobinLoadBalancerFactory<ResolvedAddress, C> build() {
+    public LoadBalancerFactory<ResolvedAddress, C> build() {
         return delegate.build();
     }
 }

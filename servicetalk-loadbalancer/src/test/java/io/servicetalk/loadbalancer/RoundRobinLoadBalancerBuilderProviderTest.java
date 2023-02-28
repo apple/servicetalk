@@ -16,35 +16,63 @@
 package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.LoadBalancedConnection;
+import io.servicetalk.client.api.LoadBalancerFactory;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 class RoundRobinLoadBalancerBuilderProviderTest {
 
-    private static final AtomicInteger buildCounter = new AtomicInteger();
-    private static final AtomicLong linearSearchSpaceIntercept = new AtomicLong();
+    @BeforeEach
+    void reset() {
+        TestRoundRobinLoadBalancerBuilderProvider.reset();
+    }
+
+    @AfterEach
+    void deactivate() {
+        TestRoundRobinLoadBalancerBuilderProvider.activated.set(false);
+    }
 
     @Test
     void appliesBuilderProvider() {
-        final RoundRobinLoadBalancerFactory<Object, LoadBalancedConnection> loadBalancerFactory =
-                RoundRobinLoadBalancers.builder().linearSearchSpace(1234).build();
-        assertThat("TestRoundRobinLoadBalancerBuilderProvider not called", buildCounter.get(), is(1));
-        assertThat("Builder method not intercepted", linearSearchSpaceIntercept.get(), is(1234L));
+        RoundRobinLoadBalancers.builder("test").linearSearchSpace(1234).build();
+        assertThat("TestRoundRobinLoadBalancerBuilderProvider not called",
+                TestRoundRobinLoadBalancerBuilderProvider.buildCounter.get(), is(1));
+        assertThat("Builder method not intercepted",
+                TestRoundRobinLoadBalancerBuilderProvider.linearSearchSpaceIntercept.get(), is(1234L));
+        assertThat("Unexpected builder ID", TestRoundRobinLoadBalancerBuilderProvider.buildId.get(),
+                is("test"));
     }
 
     public static final class TestRoundRobinLoadBalancerBuilderProvider
             implements RoundRobinLoadBalancerBuilderProvider {
+
+        // Used to prevent applying this provider for other test classes:
+        static final AtomicBoolean activated = new AtomicBoolean();
+        static final AtomicInteger buildCounter = new AtomicInteger();
+        static final AtomicLong linearSearchSpaceIntercept = new AtomicLong();
+        static final AtomicReference<String> buildId = new AtomicReference<>();
+
+        static void reset() {
+            activated.set(true);
+            buildCounter.set(0);
+            linearSearchSpaceIntercept.set(0);
+            buildId.set(null);
+        }
+
         @Override
         public <ResolvedAddress, C extends LoadBalancedConnection> RoundRobinLoadBalancerBuilder<ResolvedAddress, C>
-        newBuilder(final RoundRobinLoadBalancerBuilder<ResolvedAddress, C> builder) {
-            buildCounter.incrementAndGet();
-            return new DelegatingRoundRobinLoadBalancerBuilder<ResolvedAddress, C>(builder) {
+        newBuilder(final String id, final RoundRobinLoadBalancerBuilder<ResolvedAddress, C> builder) {
+            return activated.get() ? new DelegatingRoundRobinLoadBalancerBuilder<ResolvedAddress, C>(builder) {
                 @Override
                 public RoundRobinLoadBalancerBuilder<ResolvedAddress, C> linearSearchSpace(
                         final int linearSearchSpace) {
@@ -52,7 +80,14 @@ class RoundRobinLoadBalancerBuilderProviderTest {
                     delegate().linearSearchSpace(linearSearchSpace);
                     return this;
                 }
-            };
+
+                @Override
+                public LoadBalancerFactory<ResolvedAddress, C> build() {
+                    buildId.set(id);
+                    buildCounter.incrementAndGet();
+                    return delegate().build();
+                }
+            } : builder;
         }
     }
 }
