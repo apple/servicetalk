@@ -151,6 +151,7 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
     /**
      * Creates a new instance.
      *
+     * @param id a (unique) ID to identify the created {@link RoundRobinLoadBalancer}.
      * @param targetResourceName {@link String} representation of the target resource for which this instance
      * is performing load balancing.
      * @param eventPublisher provides a stream of addresses to connect to.
