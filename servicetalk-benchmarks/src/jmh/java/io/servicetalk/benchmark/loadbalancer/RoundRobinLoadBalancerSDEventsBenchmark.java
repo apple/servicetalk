@@ -23,7 +23,7 @@ import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.context.api.ContextMap;
-import io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory;
+import io.servicetalk.loadbalancer.RoundRobinLoadBalancers;
 import io.servicetalk.transport.api.TransportObserver;
 
 import org.openjdk.jmh.annotations.Benchmark;
@@ -80,15 +80,15 @@ public class RoundRobinLoadBalancerSDEventsBenchmark {
     @Benchmark
     public LoadBalancer<LoadBalancedConnection> mixed() {
         // RR load balancer synchronously subscribes and will consume all events during construction.
-        return new RoundRobinLoadBalancerFactory.Builder<InetSocketAddress, LoadBalancedConnection>().build()
+        return RoundRobinLoadBalancers.<InetSocketAddress, LoadBalancedConnection>builder("mixed").build()
                 .newLoadBalancer(from(mixedEvents), ConnFactory.INSTANCE, "benchmark");
     }
 
     @Benchmark
     public LoadBalancer<LoadBalancedConnection> available() {
         // RR load balancer synchronously subscribes and will consume all events during construction.
-        return new RoundRobinLoadBalancerFactory.Builder<InetSocketAddress, LoadBalancedConnection>().build()
-                        .newLoadBalancer(from(availableEvents), ConnFactory.INSTANCE, "benchmark");
+        return RoundRobinLoadBalancers.<InetSocketAddress, LoadBalancedConnection>builder("available").build()
+                .newLoadBalancer(from(availableEvents), ConnFactory.INSTANCE, "benchmark");
     }
 
     private static final class ConnFactory implements ConnectionFactory<InetSocketAddress, LoadBalancedConnection> {

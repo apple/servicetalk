@@ -24,7 +24,6 @@ import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -44,13 +43,13 @@ class RoundRobinLoadBalancerBuilderProviderTest {
 
     @Test
     void appliesBuilderProvider() {
-        RoundRobinLoadBalancers.builder("test").linearSearchSpace(1234).build();
+        RoundRobinLoadBalancers.builder(getClass().getSimpleName()).linearSearchSpace(1234).build();
         assertThat("TestRoundRobinLoadBalancerBuilderProvider not called",
                 TestRoundRobinLoadBalancerBuilderProvider.buildCounter.get(), is(1));
         assertThat("Builder method not intercepted",
-                TestRoundRobinLoadBalancerBuilderProvider.linearSearchSpaceIntercept.get(), is(1234L));
+                TestRoundRobinLoadBalancerBuilderProvider.linearSearchSpaceIntercept.get(), is(1234));
         assertThat("Unexpected builder ID", TestRoundRobinLoadBalancerBuilderProvider.buildId.get(),
-                is("test"));
+                is(getClass().getSimpleName()));
     }
 
     public static final class TestRoundRobinLoadBalancerBuilderProvider
@@ -59,7 +58,7 @@ class RoundRobinLoadBalancerBuilderProviderTest {
         // Used to prevent applying this provider for other test classes:
         static final AtomicBoolean activated = new AtomicBoolean();
         static final AtomicInteger buildCounter = new AtomicInteger();
-        static final AtomicLong linearSearchSpaceIntercept = new AtomicLong();
+        static final AtomicInteger linearSearchSpaceIntercept = new AtomicInteger();
         static final AtomicReference<String> buildId = new AtomicReference<>();
 
         static void reset() {

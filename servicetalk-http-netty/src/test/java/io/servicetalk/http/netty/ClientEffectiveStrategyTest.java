@@ -45,7 +45,7 @@ import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory;
+import io.servicetalk.loadbalancer.RoundRobinLoadBalancers;
 import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoThreadFactory;
@@ -576,8 +576,8 @@ class ClientEffectiveStrategyTest {
                 final Publisher<? extends Collection<? extends ServiceDiscovererEvent<InetSocketAddress>>>
                         eventPublisher,
                 final ConnectionFactory<InetSocketAddress, T> connectionFactory) {
-            return new RoundRobinLoadBalancerFactory
-                    .Builder<InetSocketAddress, FilterableStreamingHttpLoadBalancedConnection>().build()
+            return RoundRobinLoadBalancers.<InetSocketAddress, FilterableStreamingHttpLoadBalancedConnection>builder(
+                    getClass().getSimpleName()).build()
                     .newLoadBalancer(targetResource, eventPublisher, connectionFactory);
         }
 
@@ -588,8 +588,8 @@ class ClientEffectiveStrategyTest {
                 final ConnectionFactory<InetSocketAddress, FilterableStreamingHttpLoadBalancedConnection>
                         connectionFactory,
                 final String targetResource) {
-            return new RoundRobinLoadBalancerFactory
-                    .Builder<InetSocketAddress, FilterableStreamingHttpLoadBalancedConnection>().build()
+            return RoundRobinLoadBalancers.<InetSocketAddress, FilterableStreamingHttpLoadBalancedConnection>builder(
+                    getClass().getSimpleName()).build()
                     .newLoadBalancer(eventPublisher, connectionFactory, targetResource);
         }
 

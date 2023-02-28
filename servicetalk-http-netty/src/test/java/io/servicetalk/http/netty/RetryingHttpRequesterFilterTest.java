@@ -33,7 +33,7 @@ import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.loadbalancer.RoundRobinLoadBalancerFactory;
+import io.servicetalk.loadbalancer.RoundRobinLoadBalancers;
 import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.RetryableException;
@@ -221,7 +221,7 @@ class RetryingHttpRequesterFilterTest {
             implements LoadBalancerFactory<InetSocketAddress, C> {
 
         private final LoadBalancerFactory<InetSocketAddress, C> rr =
-                new RoundRobinLoadBalancerFactory.Builder<InetSocketAddress, C>().build();
+                RoundRobinLoadBalancers.<InetSocketAddress, C>builder(getClass().getSimpleName()).build();
 
         @SuppressWarnings("deprecation")
         @Override

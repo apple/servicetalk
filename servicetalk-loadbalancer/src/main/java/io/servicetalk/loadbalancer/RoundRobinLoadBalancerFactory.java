@@ -40,7 +40,6 @@ import static io.servicetalk.utils.internal.DurationUtils.ensureNonNegative;
 import static io.servicetalk.utils.internal.DurationUtils.ensurePositive;
 import static io.servicetalk.utils.internal.DurationUtils.isPositive;
 import static java.time.Duration.ofSeconds;
-import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
@@ -87,12 +86,15 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
     static final Duration DEFAULT_HEALTH_CHECK_RESUBSCRIBE_INTERVAL = ofSeconds(10);
     static final int DEFAULT_HEALTH_CHECK_FAILED_CONNECTIONS_THRESHOLD = 5; // higher than default for AutoRetryStrategy
 
+    private final String id;
     private final int linearSearchSpace;
     @Nullable
     private final HealthCheckConfig healthCheckConfig;
 
-    private RoundRobinLoadBalancerFactory(final int linearSearchSpace,
+    private RoundRobinLoadBalancerFactory(final String id,
+                                          final int linearSearchSpace,
                                           @Nullable final HealthCheckConfig healthCheckConfig) {
+        this.id = id;
         this.linearSearchSpace = linearSearchSpace;
         this.healthCheckConfig = healthCheckConfig;
     }
@@ -103,7 +105,7 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
             final String targetResource,
             final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
             final ConnectionFactory<ResolvedAddress, T> connectionFactory) {
-        return new RoundRobinLoadBalancer<>(targetResource, eventPublisher, connectionFactory,
+        return new RoundRobinLoadBalancer<>(id, targetResource, eventPublisher, connectionFactory,
                 linearSearchSpace, healthCheckConfig);
     }
 
@@ -112,7 +114,7 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
             final Publisher<? extends Collection<? extends ServiceDiscovererEvent<ResolvedAddress>>> eventPublisher,
             final ConnectionFactory<ResolvedAddress, C> connectionFactory,
             final String targetResource) {
-        return new RoundRobinLoadBalancer<>(targetResource, eventPublisher, connectionFactory,
+        return new RoundRobinLoadBalancer<>(id, targetResource, eventPublisher, connectionFactory,
                 linearSearchSpace, healthCheckConfig);
     }
 
@@ -156,7 +158,10 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
         }
 
         Builder(final String id) {
-            this.id = requireNonNull(id);
+            if (id.isEmpty()) {
+                throw new IllegalArgumentException("ID can not be empty");
+            }
+            this.id = id;
         }
 
         @Override
@@ -240,7 +245,7 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
         @Override
         public RoundRobinLoadBalancerFactory<ResolvedAddress, C> build() {
             if (this.healthCheckFailedConnectionsThreshold < 0) {
-                return new RoundRobinLoadBalancerFactory<>(linearSearchSpace, null);
+                return new RoundRobinLoadBalancerFactory<>(id, linearSearchSpace, null);
             }
 
             HealthCheckConfig healthCheckConfig = new HealthCheckConfig(
@@ -248,7 +253,7 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
                     healthCheckInterval, healthCheckJitter, healthCheckFailedConnectionsThreshold,
                     healthCheckResubscribeLowerBound, healthCheckResubscribeUpperBound);
 
-            return new RoundRobinLoadBalancerFactory<>(linearSearchSpace, healthCheckConfig);
+            return new RoundRobinLoadBalancerFactory<>(id, linearSearchSpace, healthCheckConfig);
         }
     }
 
