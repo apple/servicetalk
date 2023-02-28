@@ -40,6 +40,7 @@ import static io.servicetalk.utils.internal.DurationUtils.ensureNonNegative;
 import static io.servicetalk.utils.internal.DurationUtils.ensurePositive;
 import static io.servicetalk.utils.internal.DurationUtils.isPositive;
 import static java.time.Duration.ofSeconds;
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
@@ -75,7 +76,9 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  *
  * @param <ResolvedAddress> The resolved address type.
  * @param <C> The type of connection.
+ * @deprecated this class will be made package-private in the future, rely on {@link RoundRobinLoadBalancers} instead.
  */
+@Deprecated // FIXME: 0.43 - make package private
 public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends LoadBalancedConnection>
         implements LoadBalancerFactory<ResolvedAddress, C> {
 
@@ -153,7 +156,7 @@ public final class RoundRobinLoadBalancerFactory<ResolvedAddress, C extends Load
         }
 
         Builder(final String id) {
-            this.id = id;
+            this.id = requireNonNull(id);
         }
 
         @Override
