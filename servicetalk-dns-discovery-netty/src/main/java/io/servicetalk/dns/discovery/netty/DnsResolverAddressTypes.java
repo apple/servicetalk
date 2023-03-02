@@ -15,6 +15,7 @@
  */
 package io.servicetalk.dns.discovery.netty;
 
+import io.netty.channel.socket.InternetProtocolFamily;
 import io.netty.resolver.ResolvedAddressTypes;
 import io.netty.resolver.dns.DnsNameResolverBuilder;
 
@@ -92,6 +93,20 @@ public enum DnsResolverAddressTypes {
             default:
                 throw new IllegalArgumentException("Unknown value for " + DnsResolverAddressTypes.class.getName() +
                         ": " + dnsResolverAddressType);
+        }
+    }
+
+    static InternetProtocolFamily preferredAddressType(ResolvedAddressTypes resolvedAddressTypes) {
+        switch (resolvedAddressTypes) {
+            case IPV4_ONLY:
+            case IPV4_PREFERRED:
+                return InternetProtocolFamily.IPv4;
+            case IPV6_ONLY:
+            case IPV6_PREFERRED:
+                return InternetProtocolFamily.IPv6;
+            default:
+                throw new IllegalArgumentException("Unknown value for " + ResolvedAddressTypes.class.getName() +
+                        ": " + resolvedAddressTypes);
         }
     }
 }

@@ -42,10 +42,16 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.dns.DefaultDnsQuestion;
 import io.netty.handler.codec.dns.DnsRawRecord;
 import io.netty.handler.codec.dns.DnsRecord;
+import io.netty.resolver.ResolvedAddressTypes;
+import io.netty.resolver.dns.DefaultAuthoritativeDnsServerCache;
 import io.netty.resolver.dns.DefaultDnsCache;
+import io.netty.resolver.dns.DefaultDnsCnameCache;
 import io.netty.resolver.dns.DnsNameResolver;
 import io.netty.resolver.dns.DnsNameResolverBuilder;
+import io.netty.resolver.dns.NameServerComparator;
+import io.netty.resolver.dns.NoopAuthoritativeDnsServerCache;
 import io.netty.resolver.dns.NoopDnsCache;
+import io.netty.resolver.dns.NoopDnsCnameCache;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
@@ -90,6 +96,7 @@ import static io.servicetalk.concurrent.internal.ThrowableUtils.unknownStackTrac
 import static io.servicetalk.dns.discovery.netty.DnsClients.mapEventList;
 import static io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes.IPV4_PREFERRED;
 import static io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes.IPV6_PREFERRED;
+import static io.servicetalk.dns.discovery.netty.DnsResolverAddressTypes.preferredAddressType;
 import static io.servicetalk.dns.discovery.netty.ServiceDiscovererUtils.calculateDifference;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.datagramChannel;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.socketChannel;
@@ -155,6 +162,7 @@ final class DefaultDnsClient implements DnsClient {
                 minTTL, nettyIoExecutor);
         this.maxTTLNanos = SECONDS.toNanos(maxTTL);
         this.ttlJitterNanos = ttlJitterNanos;
+        this.addressTypes = dnsResolverAddressTypes;
         this.observer = observer;
         this.missingRecordStatus = missingRecordStatus;
         this.id = id + '@' + toHexString(identityHashCode(this));
@@ -169,15 +177,25 @@ final class DefaultDnsClient implements DnsClient {
         @SuppressWarnings("unchecked")
         final Class<? extends SocketChannel> socketChannelClass =
                 (Class<? extends SocketChannel>) socketChannel(eventLoop, InetSocketAddress.class);
+        final ResolvedAddressTypes resolvedAddressTypes = DnsResolverAddressTypes.toNettyType(addressTypes);
         final DnsNameResolverBuilder builder = new DnsNameResolverBuilder(eventLoop)
-                .resolveCache(ttlCache)
                 .channelType(datagramChannel(eventLoop))
+                .resolvedAddressTypes(resolvedAddressTypes)
                 // Enable TCP fallback to be able to handle truncated responses.
                 // https://tools.ietf.org/html/rfc7766
                 .socketChannelType(socketChannelClass)
                 // We should complete once the preferred address types could be resolved to ensure we always
                 // respond as fast as possible.
-                .completeOncePreferredResolved(completeOncePreferredResolved);
+                .completeOncePreferredResolved(completeOncePreferredResolved)
+                // Configure caches. Because we wrap DnsCache to intercept TTL values, we have to configure the same
+                // TTL limits for the other two caches (DnsCnameCache & AuthoritativeDnsServerCache).
+                .resolveCache(ttlCache)
+                .cnameCache(maxCacheTTL == 0 ? NoopDnsCnameCache.INSTANCE :
+                        new DefaultDnsCnameCache(minCacheTTL, maxCacheTTL))
+                .authoritativeDnsServerCache(maxCacheTTL == 0 ? NoopAuthoritativeDnsServerCache.INSTANCE :
+                        new DefaultAuthoritativeDnsServerCache(minCacheTTL, maxCacheTTL,
+                                // Use the same comparator as Netty uses by default.
+                                new NameServerComparator(preferredAddressType(resolvedAddressTypes).addressType())));
         if (queryTimeout != null) {
             builder.queryTimeoutMillis(queryTimeout.toMillis());
         }
@@ -193,9 +211,6 @@ final class DefaultDnsClient implements DnsClient {
         if (dnsServerAddressStreamProvider != null) {
             builder.nameServerProvider(toNettyType(dnsServerAddressStreamProvider));
         }
-        builder.resolvedAddressTypes(
-                DnsResolverAddressTypes.toNettyType(this.addressTypes = dnsResolverAddressTypes));
-
         resolver = builder.build();
     }
 
