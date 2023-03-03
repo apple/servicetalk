@@ -17,7 +17,6 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.BlockingHttpService;
-import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.ReservedBlockingHttpConnection;
@@ -26,109 +25,128 @@ import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServerSslConfig;
 import io.servicetalk.transport.api.ServerSslConfigBuilder;
+import io.servicetalk.transport.api.SslProvider;
+import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
-import java.util.stream.Stream;
 import javax.annotation.Nullable;
+import javax.net.ssl.ExtendedSSLSession;
+import javax.net.ssl.SNIHostName;
 import javax.net.ssl.SSLHandshakeException;
+import javax.net.ssl.SSLSession;
 
-import static io.servicetalk.http.netty.HttpProtocol.HTTP_1;
-import static io.servicetalk.http.netty.HttpProtocol.HTTP_2;
+import static io.servicetalk.http.netty.BuilderUtils.newClientBuilder;
+import static io.servicetalk.http.netty.BuilderUtils.newServerBuilder;
+import static io.servicetalk.http.netty.MutualSslTest.SSL_PROVIDERS;
 import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
-import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.net.InetAddress.getLoopbackAddress;
-import static java.util.Collections.singletonList;
+import static java.util.Arrays.asList;
 import static java.util.Collections.singletonMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class SniTest {
+
+    @RegisterExtension
+    static final ExecutionContextExtension SERVER_CTX =
+            ExecutionContextExtension.cached("server-io", "server-executor")
+                    .setClassLevel(true);
+    @RegisterExtension
+    static final ExecutionContextExtension CLIENT_CTX =
+            ExecutionContextExtension.cached("client-io", "client-executor")
+                    .setClassLevel(true);
+
     private static final String SNI_HOSTNAME = serverPemHostname();
 
-    @ParameterizedTest(name = "protocols={0}, alpn={1}")
-    @MethodSource("protocolsAndAlpn")
-    void sniSuccess(List<HttpProtocol> protocols, boolean useALPN) throws Exception {
-        try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
-                .protocols(protocolConfigs(protocols))
-                .sslConfig(untrustedServerConfig(alpnIds(protocols, useALPN)),
-                        singletonMap(SNI_HOSTNAME, trustedServerConfig(alpnIds(protocols, useALPN))))
+    @ParameterizedTest(name = "serverSslProvider={0} clientSslProvider={1} protocol={2} useALPN={3}")
+    @MethodSource("params")
+    void sniSuccess(SslProvider serverSslProvider, SslProvider clientSslProvider,
+                    HttpProtocol protocol, boolean useALPN) throws Exception {
+        try (ServerContext serverContext = newServerBuilder(SERVER_CTX, protocol)
+                .sslConfig(untrustedServerConfig(serverSslProvider, alpnIds(protocol, useALPN)),
+                        singletonMap(SNI_HOSTNAME, trustedServerConfig(serverSslProvider, alpnIds(protocol, useALPN))))
                 .listenBlockingAndAwait(newSslVerifyService());
-             BlockingHttpClient client = newClient(serverContext, protocols, useALPN)) {
+             BlockingHttpClient client = newClient(serverContext, clientSslProvider, protocol, useALPN)) {
             assertEquals(HttpResponseStatus.OK, client.request(client.get("/")).status());
         }
     }
 
-    @ParameterizedTest(name = "protocols={0}, alpn={1}")
-    @MethodSource("protocolsAndAlpn")
-    void sniDefaultFallbackSuccess(List<HttpProtocol> protocols, boolean useALPN) throws Exception {
-        try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
-                .protocols(protocolConfigs(protocols))
-                .sslConfig(trustedServerConfig(alpnIds(protocols, useALPN)),
-                        singletonMap("no_match" + SNI_HOSTNAME, untrustedServerConfig()))
+    @ParameterizedTest(name = "serverSslProvider={0} clientSslProvider={1} protocol={2} useALPN={3}")
+    @MethodSource("params")
+    void sniDefaultFallbackSuccess(SslProvider serverSslProvider, SslProvider clientSslProvider,
+                                   HttpProtocol protocol, boolean useALPN) throws Exception {
+        try (ServerContext serverContext = newServerBuilder(SERVER_CTX, protocol)
+                .sslConfig(trustedServerConfig(serverSslProvider, alpnIds(protocol, useALPN)),
+                        singletonMap("no_match" + SNI_HOSTNAME, untrustedServerConfig(serverSslProvider)))
                 .listenBlockingAndAwait(newSslVerifyService());
-             BlockingHttpClient client = newClient(serverContext, protocols, useALPN)) {
+             BlockingHttpClient client = newClient(serverContext, clientSslProvider, protocol, useALPN)) {
             assertEquals(HttpResponseStatus.OK, client.request(client.get("/")).status());
         }
     }
 
-    @ParameterizedTest(name = "protocols={0}, alpn={1}")
-    @MethodSource("protocolsAndAlpn")
-    void sniFailExpected(List<HttpProtocol> protocols, boolean useALPN) throws Exception {
-        try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
-                .protocols(protocolConfigs(protocols))
-                .sslConfig(trustedServerConfig(alpnIds(protocols, useALPN)),
-                        singletonMap(SNI_HOSTNAME, untrustedServerConfig(alpnIds(protocols, useALPN))))
+    @ParameterizedTest(name = "serverSslProvider={0} clientSslProvider={1} protocol={2} useALPN={3}")
+    @MethodSource("params")
+    void sniFailExpected(SslProvider serverSslProvider, SslProvider clientSslProvider,
+                         HttpProtocol protocol, boolean useALPN) throws Exception {
+        try (ServerContext serverContext = newServerBuilder(SERVER_CTX, protocol)
+                .sslConfig(trustedServerConfig(serverSslProvider, alpnIds(protocol, useALPN)),
+                        singletonMap(SNI_HOSTNAME,
+                                untrustedServerConfig(serverSslProvider, alpnIds(protocol, useALPN))))
                 .listenBlockingAndAwait(newSslVerifyService());
-             BlockingHttpClient client = newClient(serverContext, protocols, useALPN)) {
+             BlockingHttpClient client = newClient(serverContext, clientSslProvider, protocol, useALPN)) {
             assertThrows(SSLHandshakeException.class, () -> client.request(client.get("/")));
         }
     }
 
-    @ParameterizedTest(name = "protocols={0}, alpn={1}")
-    @MethodSource("protocolsAndAlpn")
-    void sniDefaultFallbackFailExpected(List<HttpProtocol> protocols, boolean useALPN) throws Exception {
-        try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
-                .protocols(protocolConfigs(protocols))
-                .sslConfig(untrustedServerConfig(alpnIds(protocols, useALPN)),
-                        singletonMap("no_match" + SNI_HOSTNAME, trustedServerConfig(alpnIds(protocols, useALPN))))
+    @ParameterizedTest(name = "serverSslProvider={0} clientSslProvider={1} protocol={2} useALPN={3}")
+    @MethodSource("params")
+    void sniDefaultFallbackFailExpected(SslProvider serverSslProvider, SslProvider clientSslProvider,
+                                        HttpProtocol protocol, boolean useALPN) throws Exception {
+        try (ServerContext serverContext = newServerBuilder(SERVER_CTX, protocol)
+                .sslConfig(untrustedServerConfig(serverSslProvider, alpnIds(protocol, useALPN)),
+                        singletonMap("no_match" + SNI_HOSTNAME,
+                                trustedServerConfig(serverSslProvider, alpnIds(protocol, useALPN))))
                 .listenBlockingAndAwait(newSslVerifyService());
-             BlockingHttpClient client = newClient(serverContext, protocols, useALPN)) {
+             BlockingHttpClient client = newClient(serverContext, clientSslProvider, protocol, useALPN)) {
             assertThrows(SSLHandshakeException.class, () -> client.request(client.get("/")));
         }
     }
 
-    @ParameterizedTest(name = "protocols={0}, alpn={1}")
-    @MethodSource("protocolsAndAlpn")
-    void sniClientDefaultServerSuccess(List<HttpProtocol> protocols, boolean useALPN) throws Exception {
-        try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
-                .protocols(protocolConfigs(protocols))
-                .sslConfig(trustedServerConfig(alpnIds(protocols, useALPN)))
+    @ParameterizedTest(name = "serverSslProvider={0} clientSslProvider={1} protocol={2} useALPN={3}")
+    @MethodSource("params")
+    void sniClientDefaultServerSuccess(SslProvider serverSslProvider, SslProvider clientSslProvider,
+                                       HttpProtocol protocol, boolean useALPN) throws Exception {
+        try (ServerContext serverContext = newServerBuilder(SERVER_CTX, protocol)
+                .sslConfig(trustedServerConfig(serverSslProvider, alpnIds(protocol, useALPN)))
                 .listenBlockingAndAwait(newSslVerifyService());
-             BlockingHttpClient client = newClient(serverContext, protocols, useALPN)) {
+             BlockingHttpClient client = newClient(serverContext, clientSslProvider, protocol, useALPN)) {
             assertEquals(HttpResponseStatus.OK, client.request(client.get("/")).status());
         }
     }
 
-    @ParameterizedTest(name = "protocols={0}, alpn={1}")
-    @MethodSource("protocolsAndAlpn")
-    void noSniClientDefaultServerFallbackSuccess(List<HttpProtocol> protocols, boolean useALPN) throws Exception {
-        try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
-                .protocols(protocolConfigs(protocols))
-                .sslConfig(trustedServerConfig(alpnIds(protocols, useALPN)),
-                        singletonMap("no_match" + SNI_HOSTNAME, untrustedServerConfig()))
+    @ParameterizedTest(name = "serverSslProvider={0} clientSslProvider={1} protocol={2} useALPN={3}")
+    @MethodSource("params")
+    void noSniClientDefaultServerFallbackSuccess(SslProvider serverSslProvider, SslProvider clientSslProvider,
+                                                 HttpProtocol protocol, boolean useALPN) throws Exception {
+        try (ServerContext serverContext = newServerBuilder(SERVER_CTX, protocol)
+                .sslConfig(trustedServerConfig(serverSslProvider, alpnIds(protocol, useALPN)),
+                        singletonMap("no_match" + SNI_HOSTNAME, untrustedServerConfig(serverSslProvider)))
                 .listenBlockingAndAwait(newSslVerifyService());
              BlockingHttpClient client = HttpClients.forSingleAddress(
                      getLoopbackAddress().getHostName(),
                      serverHostAndPort(serverContext).port())
-                     .protocols(protocolConfigs(protocols))
+                     .protocols(protocol.config)
                      .sslConfig(configureAlpn(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
-                             .peerHost(serverPemHostname()), protocols, useALPN).build())
+                             .peerHost(serverPemHostname()).provider(clientSslProvider), protocol, useALPN).build())
                      .inferSniHostname(false)
                      .buildBlocking()) {
             HttpRequest request = client.get("/");
@@ -139,20 +157,20 @@ class SniTest {
         }
     }
 
-    @ParameterizedTest(name = "protocols={0}, alpn={1}")
-    @MethodSource("protocolsAndAlpn")
-    void noSniClientDefaultServerFallbackFailExpected(List<HttpProtocol> protocols, boolean useALPN) throws Exception {
-        try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
-                .protocols(protocolConfigs(protocols))
-                .sslConfig(untrustedServerConfig(alpnIds(protocols, useALPN)),
+    @ParameterizedTest(name = "serverSslProvider={0} clientSslProvider={1} protocol={2} useALPN={3}")
+    @MethodSource("params")
+    void noSniClientDefaultServerFallbackFailExpected(SslProvider serverSslProvider, SslProvider clientSslProvider,
+                                                      HttpProtocol protocol, boolean useALPN) throws Exception {
+        try (ServerContext serverContext = newServerBuilder(SERVER_CTX, protocol)
+                .sslConfig(untrustedServerConfig(serverSslProvider, alpnIds(protocol, useALPN)),
                         singletonMap(getLoopbackAddress().getHostName(),
-                                trustedServerConfig(alpnIds(protocols, useALPN))))
+                                trustedServerConfig(serverSslProvider, alpnIds(protocol, useALPN))))
                 .listenBlockingAndAwait(newSslVerifyService());
              BlockingHttpClient client = HttpClients.forSingleAddress(getLoopbackAddress().getHostName(),
                         serverHostAndPort(serverContext).port())
-                     .protocols(protocolConfigs(protocols))
-                     .sslConfig(configureAlpn(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem),
-                             protocols, useALPN).build())
+                     .protocols(protocol.config)
+                     .sslConfig(configureAlpn(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
+                                     .provider(clientSslProvider), protocol, useALPN).build())
                      .inferPeerHost(false)
                      .inferSniHostname(false)
                      .buildBlocking()) {
@@ -160,40 +178,48 @@ class SniTest {
         }
     }
 
-    @SuppressWarnings("unused")
-    private static Stream<Arguments> protocolsAndAlpn() {
-        return Stream.of(Arguments.of(singletonList(HTTP_2), false),
-                Arguments.of(singletonList(HTTP_2), true),
-                Arguments.of(singletonList(HTTP_1), false),
-                Arguments.of(singletonList(HTTP_1), true)
-        );
+    private static Collection<Arguments> params() {
+        List<Arguments> params = new ArrayList<>();
+        for (SslProvider serverSslProvider : SSL_PROVIDERS) {
+            for (SslProvider clientSslProvider : SSL_PROVIDERS) {
+                for (HttpProtocol protocol : HttpProtocol.values()) {
+                    for (boolean useAlpn : asList(false, true)) {
+                        params.add(Arguments.of(serverSslProvider, clientSslProvider, protocol, useAlpn));
+                    }
+                }
+            }
+        }
+        return params;
     }
 
-    private static BlockingHttpClient newClient(ServerContext serverContext,
-                                                List<HttpProtocol> protocols, boolean useALPN) {
-        return HttpClients.forSingleAddress(serverHostAndPort(serverContext))
-                .protocols(protocolConfigs(protocols))
+    private static BlockingHttpClient newClient(ServerContext serverContext, SslProvider provider,
+                                                HttpProtocol protocol, boolean useALPN) {
+        return newClientBuilder(serverContext, CLIENT_CTX, protocol)
                 .sslConfig(configureAlpn(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
-                        .sniHostname(SNI_HOSTNAME).peerHost(serverPemHostname()), protocols, useALPN).build())
+                        .provider(provider)
+                        .sniHostname(SNI_HOSTNAME)
+                        .peerHost(serverPemHostname()),
+                        protocol, useALPN)
+                        .build())
                 .buildBlocking();
     }
 
-    private static ClientSslConfigBuilder configureAlpn(ClientSslConfigBuilder builder, List<HttpProtocol> protocols,
+    private static ClientSslConfigBuilder configureAlpn(ClientSslConfigBuilder builder, HttpProtocol protocol,
                                                         boolean useALPN) {
         if (useALPN) {
-            builder.alpnProtocols(alpnIds(protocols));
+            builder.alpnProtocols(protocol.config.alpnId());
         }
         return builder;
     }
 
-    private static ServerSslConfig untrustedServerConfig() {
-        return untrustedServerConfig((String[]) null);
+    private static ServerSslConfig untrustedServerConfig(SslProvider provider) {
+        return untrustedServerConfig(provider, (String[]) null);
     }
 
-    private static ServerSslConfig untrustedServerConfig(@Nullable String... alpn) {
+    private static ServerSslConfig untrustedServerConfig(SslProvider provider, @Nullable String... alpn) {
         // Need a key that won't be trusted by the client, just use the client's key.
         ServerSslConfigBuilder builder = new ServerSslConfigBuilder(DefaultTestCerts::loadClientPem,
-                DefaultTestCerts::loadClientKey);
+                DefaultTestCerts::loadClientKey).provider(provider);
         if (alpn != null) {
             builder.alpnProtocols(alpn);
         }
@@ -201,37 +227,32 @@ class SniTest {
     }
 
     @Nullable
-    private static String[] alpnIds(List<HttpProtocol> protocols, boolean useALPN) {
-        return useALPN ? alpnIds(protocols) : null;
+    private static String[] alpnIds(HttpProtocol protocol, boolean useALPN) {
+        return useALPN ? new String[] {protocol.config.alpnId()} : null;
     }
 
-    private static String[] alpnIds(List<HttpProtocol> protocols) {
-        String[] ids = new String[protocols.size()];
-        for (int i = 0; i < ids.length; ++i) {
-            ids[i] = protocols.get(i).config.alpnId();
-        }
-        return ids;
-    }
-
-    private static ServerSslConfig trustedServerConfig(@Nullable String... alpn) {
+    private static ServerSslConfig trustedServerConfig(SslProvider provider, @Nullable String... alpn) {
         ServerSslConfigBuilder builder = new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem,
-                DefaultTestCerts::loadServerKey);
+                DefaultTestCerts::loadServerKey).provider(provider);
         if (alpn != null) {
             builder.alpnProtocols(alpn);
         }
         return builder.build();
     }
 
-    private static HttpProtocolConfig[] protocolConfigs(List<HttpProtocol> protocols) {
-        HttpProtocolConfig[] configs = new HttpProtocolConfig[protocols.size()];
-        for (int i = 0; i < configs.length; ++i) {
-            configs[i] = protocols.get(i).config;
-        }
-        return configs;
-    }
-
     private static BlockingHttpService newSslVerifyService() {
-        return (ctx, request, responseFactory) ->
-                ctx.sslSession() != null ? responseFactory.ok() : responseFactory.internalServerError();
+        return (ctx, request, responseFactory) -> {
+            SSLSession session = ctx.sslSession();
+            if (!(session instanceof ExtendedSSLSession)) {
+                return responseFactory.internalServerError();
+            }
+            long matched = ((ExtendedSSLSession) session).getRequestedServerNames().stream()
+                    .filter(sni -> sni instanceof SNIHostName)
+                    .map(SNIHostName.class::cast)
+                    .map(SNIHostName::getAsciiName)
+                    .filter(SNI_HOSTNAME::equals)
+                    .count();
+            return matched == 1 ? responseFactory.ok() : responseFactory.internalServerError();
+        };
     }
 }
