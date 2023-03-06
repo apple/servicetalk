@@ -15,6 +15,8 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.TimeSource;
+
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
@@ -253,5 +255,24 @@ public final class Executors {
                                 ScheduledExecutorService scheduledExecutorService, boolean mayInterruptOnCancel) {
         return EXECUTOR_PLUGINS.wrapExecutor(
                 new DefaultExecutor(jdkExecutor, scheduledExecutorService, mayInterruptOnCancel));
+    }
+
+    /**
+     * Wraps the given {@link Executor} with the provided {@link TimeSource}.
+     * <p>
+     * The given {@link Executor} is wrapped into a {@link DelegatingExecutor} which delegates all calls but
+     * {@link Executor#currentTime(TimeUnit)} which will go to the provided {@link TimeSource}.
+     *
+     * @param delegate the {@link Executor} which should use the provided time source.
+     * @param timeSource the {@link TimeSource} that should be used when calling {@link Executor#currentTime(TimeUnit)}.
+     * @return The wrapped {@link Executor} with a custom {@link TimeSource}.
+     */
+    public static Executor withTimeSource(final Executor delegate, final TimeSource timeSource) {
+        return new DelegatingExecutor(delegate) {
+            @Override
+            public long currentTime(final TimeUnit unit) {
+                return timeSource.currentTime(unit);
+            }
+        };
     }
 }
