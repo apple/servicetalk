@@ -43,6 +43,7 @@ import static io.servicetalk.concurrent.internal.ConcurrentUtils.releaseLock;
 import static io.servicetalk.concurrent.internal.ConcurrentUtils.tryAcquireLock;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateSubscription;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.concurrent.internal.TerminalNotification.error;
 import static io.servicetalk.utils.internal.PlatformDependent.newUnboundedMpscQueue;
@@ -161,6 +162,10 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
                 }
             } else {
                 subscription.request(n);
+                // If the upstream source has already sent an onComplete signal, it won't be able to send an error.
+                // We propagate invalid demand upstream to clean-up upstream (if necessary) and force an error here to
+                // ensure we see an error.
+                enqueueAndDrain(error(newExceptionForInvalidRequestN(n)));
             }
         }
 
