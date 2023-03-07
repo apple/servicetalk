@@ -267,7 +267,7 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
      * @param s The {@link Single} to merge.
      * @return The result of the merge operation.
      */
-    private static Publisher<?> merge(Publisher<?> p, Single<HttpHeaders> s) {
+    private static Publisher<Object> merge(Publisher<?> p, Single<HttpHeaders> s) {
         // We filter null from the Single in case the publisher completes and we didn't find trailers.
         return from(p, s.toPublisher().filter(Objects::nonNull)).flatMapMerge(identity(), 2);
     }

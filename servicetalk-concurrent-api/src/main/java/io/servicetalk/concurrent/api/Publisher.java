@@ -1551,7 +1551,7 @@ public abstract class Publisher<T> {
      * @see #mergeWithDelayError(Publisher)
      * @see #merge(Publisher[])
      */
-    public final Publisher<T> mergeWith(Publisher<T> other) {
+    public final Publisher<T> mergeWith(Publisher<? extends T> other) {
         return from(this, other).flatMapMerge(identity(), 2);
     }
 
@@ -1590,7 +1590,7 @@ public abstract class Publisher<T> {
      * @see #mergeWith(Publisher)
      * @see #mergeDelayError(Publisher[])
      */
-    public final Publisher<T> mergeWithDelayError(Publisher<T> other) {
+    public final Publisher<T> mergeWithDelayError(Publisher<? extends T> other) {
         return from(this, other).flatMapMergeDelayError(identity(), 2, 2);
     }
 
@@ -4117,7 +4117,7 @@ public abstract class Publisher<T> {
      * @see #mergeDelayError(Publisher[])
      */
     @SafeVarargs
-    public static <T> Publisher<T> merge(Publisher<T>... publishers) {
+    public static <T> Publisher<T> merge(Publisher<? extends T>... publishers) {
         return from(publishers).flatMapMerge(identity(), publishers.length);
     }
 
@@ -4158,7 +4158,7 @@ public abstract class Publisher<T> {
      * @see #merge(Publisher[])
      */
     @SafeVarargs
-    public static <T> Publisher<T> mergeDelayError(Publisher<T>... publishers) {
+    public static <T> Publisher<T> mergeDelayError(Publisher<? extends T>... publishers) {
         return from(publishers).flatMapMergeDelayError(identity(), publishers.length, publishers.length);
     }
 
