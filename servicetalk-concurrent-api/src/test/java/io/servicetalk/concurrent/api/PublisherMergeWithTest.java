@@ -25,8 +25,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.util.ArrayList;
 import java.util.List;
 
-import static io.servicetalk.concurrent.api.Publisher.merge;
-import static io.servicetalk.concurrent.api.Publisher.mergeDelayError;
+import static io.servicetalk.concurrent.api.Publisher.mergeAll;
+import static io.servicetalk.concurrent.api.Publisher.mergeAllDelayError;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.Arrays.asList;
@@ -66,7 +66,7 @@ final class PublisherMergeWithTest {
     @ParameterizedTest(name = "inOrderOnNext={0} inOrderTerminate={1} firstOnError={2} delayError={3}")
     @MethodSource("completeSource")
     void bothComplete(boolean inOrderOnNext, boolean inOrderTerminate, boolean firstOnError, boolean delayError) {
-        toSource(delayError ? first.mergeWithDelayError(second) : first.mergeWith(second)).subscribe(subscriber);
+        toSource(delayError ? first.mergeDelayError(second) : first.merge(second)).subscribe(subscriber);
         subscriber.awaitSubscription().request(2);
         int i = 3;
         int j = 4;
@@ -115,7 +115,7 @@ final class PublisherMergeWithTest {
     @ParameterizedTest(name = "inOrderOnNext={0} inOrderTerminate={1} firstOnError={2} delayError={3}")
     @MethodSource("completeSource")
     void allComplete(boolean inOrderOnNext, boolean inOrderTerminate, boolean firstOnError, boolean delayError) {
-        toSource(delayError ? mergeDelayError(first, second, third) : merge(first, second, third))
+        toSource(delayError ? mergeAllDelayError(first, second, third) : mergeAll(first, second, third))
                 .subscribe(subscriber);
         subscriber.awaitSubscription().request(3);
         int i = 3;
