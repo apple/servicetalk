@@ -65,6 +65,7 @@ import static io.servicetalk.concurrent.api.PublisherDoOnUtils.doOnSubscribeSupp
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverErrorFromSource;
 import static io.servicetalk.utils.internal.DurationUtils.toNanos;
 import static java.util.Objects.requireNonNull;
+import static java.util.function.Function.identity;
 
 /**
  * An asynchronous computation that produces 0, 1 or more elements and may or may not terminate successfully or with
@@ -1519,6 +1520,78 @@ public abstract class Publisher<T> {
      */
     public final <R> Publisher<R> flatMapConcatIterable(Function<? super T, ? extends Iterable<? extends R>> mapper) {
         return new PublisherConcatMapIterable<>(this, mapper);
+    }
+
+    /**
+     * Merge two {@link Publisher}s together. There is no guaranteed ordering of events emitted from the returned
+     * {@link Publisher}.
+     * <p>
+     * This method provides similar capabilities as expanding each result into a collection and concatenating each
+     * collection in sequential programming:
+     * <pre>{@code
+     *     List<T> mergedResults = ...; // concurrent safe list
+     *     for (T t : resultOfThisPublisher()) {
+     *         futures.add(e.submit(() -> {
+     *             return mergedResults.add(t);
+     *         }));
+     *     }
+     *     for (T t : resultOfOtherPublisher()) {
+     *         futures.add(e.submit(() -> {
+     *             return mergedResults.add(t);
+     *         }));
+     *     }
+     *     for (Future<R> future : futures) {
+     *         future.get(); // Throws if the processing for this item failed.
+     *     }
+     *     return mergedResults;
+     * }</pre>
+     * @param other The {@link Publisher} to merge with.
+     * @return A {@link Publisher} which is the result of this {@link Publisher} and {@code other} merged together.
+     * @see <a href="https://reactivex.io/documentation/operators/merge.html">ReactiveX merge operator</a>
+     * @see #mergeWithDelayError(Publisher)
+     * @see #merge(Publisher[])
+     */
+    public final Publisher<T> mergeWith(Publisher<T> other) {
+        return from(this, other).flatMapMerge(identity(), 2);
+    }
+
+    /**
+     * Merge two {@link Publisher}s together. There is no guaranteed ordering of events emitted from the returned
+     * {@link Publisher}. If either {@link Publisher} fails the error propagation will be delayed until both terminate.
+     * <p>
+     * This method provides similar capabilities as expanding each result into a collection and concatenating each
+     * collection in sequential programming:
+     * <pre>{@code
+     *     List<T> mergedResults = ...; // concurrent safe list
+     *     for (T t : resultOfThisPublisher()) {
+     *         futures.add(e.submit(() -> {
+     *             return mergedResults.add(t);
+     *         }));
+     *     }
+     *     for (T t : resultOfOtherPublisher()) {
+     *         futures.add(e.submit(() -> {
+     *             return mergedResults.add(t);
+     *         }));
+     *     }
+     *     List<Throwable> errors = ...;
+     *     for (Future<R> future : futures) {
+     *         try {
+     *           future.get(); // Throws if the processing for this item failed.
+     *         } catch (Throwable cause) {
+     *           errors.add(cause);
+     *         }
+     *     }
+     *     throwExceptionIfNotEmpty(errors);
+     *     return mergedResults;
+     * }</pre>
+     * @param other The {@link Publisher} to merge with,
+     * @return A {@link Publisher} which is the result of this {@link Publisher} and {@code other} merged together.
+     * @see <a href="https://reactivex.io/documentation/operators/merge.html">ReactiveX merge operator</a>
+     * @see #mergeWith(Publisher)
+     * @see #mergeDelayError(Publisher[])
+     */
+    public final Publisher<T> mergeWithDelayError(Publisher<T> other) {
+        return from(this, other).flatMapMergeDelayError(identity(), 2, 2);
     }
 
     /**
@@ -4012,6 +4085,81 @@ public abstract class Publisher<T> {
      */
     public static <T> Publisher<T> defer(Supplier<? extends Publisher<? extends T>> publisherSupplier) {
         return new PublisherDefer<>(publisherSupplier);
+    }
+
+    /**
+     * Merge all {@link Publisher}s together. There is no guaranteed ordering of events emitted from the returned
+     * {@link Publisher}.
+     * <p>
+     * This method provides similar capabilities as expanding each result into a collection and concatenating each
+     * collection in sequential programming:
+     * <pre>{@code
+     *     List<T> mergedResults = ...; // concurrent safe list
+     *     for (T t : resultOfPublisher1()) {
+     *         futures.add(e.submit(() -> {
+     *             return mergedResults.add(t);
+     *         }));
+     *     }
+     *     for (T t : resultOfOtherPublisher()) {
+     *         futures.add(e.submit(() -> {
+     *             return mergedResults.add(t);
+     *         }));
+     *     }
+     *     for (Future<R> future : futures) {
+     *        future.get(); // Throws if the processing for this item failed.
+     *     }
+     *     return mergedResults;
+     * }</pre>
+     * @param publishers The {@link Publisher}s to merge together.
+     * @param <T> Type of items emitted by the returned {@link Publisher}.
+     * @return A {@link Publisher} which is the result of this {@link Publisher} and {@code other} merged together.
+     * @see <a href="https://reactivex.io/documentation/operators/merge.html">ReactiveX merge operator</a>
+     * @see #mergeDelayError(Publisher[])
+     */
+    @SafeVarargs
+    public static <T> Publisher<T> merge(Publisher<T>... publishers) {
+        return from(publishers).flatMapMerge(identity(), publishers.length);
+    }
+
+    /**
+     * Merge all {@link Publisher}s together. There is no guaranteed ordering of events emitted from the returned
+     * {@link Publisher}. If any {@link Publisher} terminates in an error, the error propagation will be delayed until
+     * all terminate.
+     * <p>
+     * This method provides similar capabilities as expanding each result into a collection and concatenating each
+     * collection in sequential programming:
+     * <pre>{@code
+     *     List<T> mergedResults = ...; // concurrent safe list
+     *     for (T t : resultOfPublisher1()) {
+     *         futures.add(e.submit(() -> {
+     *             return mergedResults.add(t);
+     *         }));
+     *     }
+     *     for (T t : resultOfOtherPublisher()) {
+     *         futures.add(e.submit(() -> {
+     *             return mergedResults.add(t);
+     *         }));
+     *     }
+     *     List<Throwable> errors = ...;
+     *     for (Future<R> future : futures) {
+     *         try {
+     *           future.get(); // Throws if the processing for this item failed.
+     *         } catch (Throwable cause) {
+     *           errors.add(cause);
+     *         }
+     *     }
+     *     throwExceptionIfNotEmpty(errors);
+     *     return mergedResults;
+     * }</pre>
+     * @param publishers The {@link Publisher}s to merge together.
+     * @param <T> Type of items emitted by the returned {@link Publisher}.
+     * @return A {@link Publisher} which is the result of this {@link Publisher} and {@code other} merged together.
+     * @see <a href="https://reactivex.io/documentation/operators/merge.html">ReactiveX merge operator</a>
+     * @see #merge(Publisher[])
+     */
+    @SafeVarargs
+    public static <T> Publisher<T> mergeDelayError(Publisher<T>... publishers) {
+        return from(publishers).flatMapMergeDelayError(identity(), publishers.length, publishers.length);
     }
 
     //
