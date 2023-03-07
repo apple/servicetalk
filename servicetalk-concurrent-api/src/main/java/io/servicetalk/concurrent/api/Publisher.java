@@ -4230,6 +4230,8 @@ public abstract class Publisher<T> {
      *     throwExceptionIfNotEmpty(errors);
      *     return mergedResults;
      * }</pre>
+     * @param maxConcurrency The maximum amount of {@link Publisher}s from {@code publishers} to subscribe to
+     * concurrently.
      * @param publishers The {@link Publisher}s to merge together.
      * @param <T> Type of items emitted by the returned {@link Publisher}.
      * @return A {@link Publisher} which is the result of this {@link Publisher} and {@code other} merged together.
