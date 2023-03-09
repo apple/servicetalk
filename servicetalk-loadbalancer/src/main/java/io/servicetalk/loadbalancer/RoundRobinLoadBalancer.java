@@ -204,20 +204,25 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
         // This method is invoked only when we are in RESUBSCRIBING state. Only one thread can own this state.
         assert nextResubscribeTime == RESUBSCRIBING;
         if (resubscribe) {
+            LOGGER.debug("{}: resubscribing to the ServiceDiscoverer event publisher.", this);
             discoveryCancellable.cancelCurrent();
         }
         toSource(eventPublisher).subscribe(new EventSubscriber(resubscribe));
         if (healthCheckConfig != null) {
             assert healthCheckConfig.executor instanceof NormalizedTimeSourceExecutor;
-            nextResubscribeTime = nextResubscribeTime(healthCheckConfig);
+            nextResubscribeTime = nextResubscribeTime(healthCheckConfig, this);
         }
     }
 
-    private static long nextResubscribeTime(final HealthCheckConfig config) {
+    private static <R, C extends LoadBalancedConnection> long nextResubscribeTime(
+            final HealthCheckConfig config, final RoundRobinLoadBalancer<R, C> lb) {
         final long lower = config.healthCheckResubscribeLowerBound;
         final long upper = config.healthCheckResubscribeUpperBound;
-        return config.executor.currentTime(NANOSECONDS) +
-                (lower == upper ? lower : ThreadLocalRandom.current().nextLong(lower, upper));
+        final long currentTime = config.executor.currentTime(NANOSECONDS);
+        final long result = currentTime + (lower == upper ? lower : ThreadLocalRandom.current().nextLong(lower, upper));
+        LOGGER.debug("{}: current time {}, next resubscribe attempt can be performed at {}.",
+                lb, currentTime, result);
+        return result;
     }
 
     private static <ResolvedAddress, C extends LoadBalancedConnection> boolean allUnhealthy(
