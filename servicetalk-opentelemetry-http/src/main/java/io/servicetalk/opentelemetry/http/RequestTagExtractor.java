@@ -21,6 +21,8 @@ import io.servicetalk.http.api.HttpRequestMetaData;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
 
+import java.util.Optional;
+
 final class RequestTagExtractor {
 
     private RequestTagExtractor() {
@@ -32,15 +34,22 @@ final class RequestTagExtractor {
     }
 
     private static String getHttpUrl(HttpRequestMetaData req) {
-        return (req.scheme() == null ? "http" : req.scheme()) + "://" +
-            (req.effectiveHostAndPort() == null ? "localhost:8080" : req.effectiveHostAndPort())
-            + req.rawPath()
+        return req.path()
             + (req.rawQuery() == null ? "" : "?" + req.rawQuery());
     }
 
     static Span reportTagsAndStart(SpanBuilder span, HttpRequestMetaData httpRequestMetaData) {
         span.setAttribute("http.url", getHttpUrl(httpRequestMetaData));
         span.setAttribute("http.method", getRequestMethod(httpRequestMetaData));
+        span.setAttribute("http.target", getHttpUrl(httpRequestMetaData));
+        span.setAttribute("http.route", httpRequestMetaData.rawPath());
+        span.setAttribute("http.flavor", httpRequestMetaData.version().major() + "."
+            + httpRequestMetaData.version().minor());
+        Optional.ofNullable(httpRequestMetaData.userInfo())
+            .map(userInfo -> span.setAttribute("http.user_agent", userInfo));
+        Optional.ofNullable(httpRequestMetaData.scheme()).map(scheme -> span.setAttribute("http.scheme", scheme));
+        Optional.ofNullable(httpRequestMetaData.host()).map(host -> span.setAttribute("net.host.name", host));
+        span.setAttribute("net.host.port", httpRequestMetaData.port());
         return span.startSpan();
     }
 }

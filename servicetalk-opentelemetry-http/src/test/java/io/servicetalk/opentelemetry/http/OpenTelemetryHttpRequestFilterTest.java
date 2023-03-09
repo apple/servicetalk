@@ -99,14 +99,14 @@ class OpenTelemetryHttpRequestFilterTest {
                 otelTesting.assertTraces()
                     .hasTracesSatisfyingExactly(ta ->
                         assertThat(ta.getSpan(0).getAttributes().get(SemanticAttributes.HTTP_URL))
-                            .startsWith("http://localhost:8080"));
+                            .isEqualTo("/"));
             }
         }
     }
 
     @Test
     void testInjectWithAParent() throws Exception {
-        final String requestUrl = "/";
+        final String requestUrl = "/path";
         OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
         try (ServerContext context = buildServer(openTelemetry, true)) {
             try (HttpClient client = forSingleAddress(serverHostAndPort(context))
@@ -130,14 +130,14 @@ class OpenTelemetryHttpRequestFilterTest {
                 otelTesting.assertTraces()
                     .hasTracesSatisfyingExactly(ta ->
                         assertThat(ta.getSpan(0).getAttributes().get(SemanticAttributes.HTTP_URL))
-                            .startsWith("http://localhost:8080"));
+                            .isEqualTo("/path"));
             }
         }
     }
 
     @Test
     void testInjectWithAParentCreated() throws Exception {
-        final String requestUrl = "/";
+        final String requestUrl = "/path/to/resource";
         OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
         try (ServerContext context = buildServer(openTelemetry, true)) {
             try (HttpClient client = forSingleAddress(serverHostAndPort(context))
@@ -172,7 +172,7 @@ class OpenTelemetryHttpRequestFilterTest {
                     otelTesting.assertTraces()
                         .hasTracesSatisfyingExactly(ta ->
                             assertThat(ta.getSpan(1).getAttributes().get(SemanticAttributes.HTTP_URL))
-                                .startsWith("http://localhost:8080"));
+                                .isEqualTo("/path/to/resource"));
                         otelTesting.assertTraces()
                         .hasTracesSatisfyingExactly(ta ->
                             assertThat(ta.getSpan(0).getAttributes().get(AttributeKey.stringKey("component")))

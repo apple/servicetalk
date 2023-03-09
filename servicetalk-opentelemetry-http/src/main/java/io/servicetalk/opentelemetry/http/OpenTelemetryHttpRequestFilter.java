@@ -36,8 +36,9 @@ import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 
-import java.util.Objects;
+import java.util.Optional;
 import java.util.function.UnaryOperator;
+import javax.annotation.Nullable;
 
 /**
  * An HTTP filter that supports <a href="https://opentelemetry.io/docs/instrumentation/java/">open telemetry</a>.
@@ -54,6 +55,7 @@ import java.util.function.UnaryOperator;
 public final class OpenTelemetryHttpRequestFilter extends AbstractOpenTelemetryFilter
     implements StreamingHttpClientFilterFactory, StreamingHttpConnectionFilterFactory {
 
+    @Nullable
     private final String componentName;
 
     /**
@@ -62,9 +64,9 @@ public final class OpenTelemetryHttpRequestFilter extends AbstractOpenTelemetryF
      * @param openTelemetry the {@link OpenTelemetry}.
      * @param componentName The component name used during building new spans.
      */
-    public OpenTelemetryHttpRequestFilter(final OpenTelemetry openTelemetry, String componentName) {
+    public OpenTelemetryHttpRequestFilter(final OpenTelemetry openTelemetry, @Nullable String componentName) {
         super(openTelemetry);
-        this.componentName = Objects.requireNonNull(componentName);
+        this.componentName = componentName;
     }
 
     /**
@@ -72,8 +74,16 @@ public final class OpenTelemetryHttpRequestFilter extends AbstractOpenTelemetryF
      *
      * @param componentName The component name used during building new spans.
      */
-    public OpenTelemetryHttpRequestFilter(String componentName) {
+    public OpenTelemetryHttpRequestFilter(@Nullable String componentName) {
         this(GlobalOpenTelemetry.get(), componentName);
+    }
+
+    /**
+     * Create a new instance, searching for any instance of an opentelemetry available,
+     * using the hostname as the component name.
+     */
+    public OpenTelemetryHttpRequestFilter() {
+        this(GlobalOpenTelemetry.get(), null);
     }
 
     @Override
@@ -102,7 +112,7 @@ public final class OpenTelemetryHttpRequestFilter extends AbstractOpenTelemetryF
                                                        final StreamingHttpRequest request) {
         Context context = Context.current();
         final Span span = RequestTagExtractor.reportTagsAndStart(tracer
-            .spanBuilder(componentName)
+            .spanBuilder(getSpanName(request))
             .setParent(context)
             .setSpanKind(SpanKind.CLIENT), request);
 
@@ -111,12 +121,19 @@ public final class OpenTelemetryHttpRequestFilter extends AbstractOpenTelemetryF
         Single<StreamingHttpResponse> response;
         try {
             propagators.getTextMapPropagator().inject(Context.current(), request.headers(),
-                    HeadersPropagatorSetter.INSTANCE);
+                HeadersPropagatorSetter.INSTANCE);
             response = delegate.request(request);
         } catch (Throwable t) {
             tracker.onError(t);
             return Single.failed(t);
         }
         return tracker.track(response);
+    }
+
+    private String getSpanName(StreamingHttpRequest request) {
+        if (componentName != null && !componentName.trim().isEmpty()) {
+            return componentName;
+        }
+        return Optional.ofNullable(request.host()).orElse(request.requestTarget());
     }
 }
