@@ -21,8 +21,6 @@ import io.servicetalk.http.api.HttpRequestMetaData;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
 
-import java.util.Optional;
-
 final class RequestTagExtractor {
 
     private RequestTagExtractor() {
@@ -45,10 +43,18 @@ final class RequestTagExtractor {
         span.setAttribute("http.route", httpRequestMetaData.rawPath());
         span.setAttribute("http.flavor", httpRequestMetaData.version().major() + "."
             + httpRequestMetaData.version().minor());
-        Optional.ofNullable(httpRequestMetaData.userInfo())
-            .map(userInfo -> span.setAttribute("http.user_agent", userInfo));
-        Optional.ofNullable(httpRequestMetaData.scheme()).map(scheme -> span.setAttribute("http.scheme", scheme));
-        Optional.ofNullable(httpRequestMetaData.host()).map(host -> span.setAttribute("net.host.name", host));
+        String userInfo = httpRequestMetaData.userInfo();
+        if (userInfo != null) {
+            span.setAttribute("http.user_agent", userInfo);
+        }
+        String scheme = httpRequestMetaData.scheme();
+        if (scheme != null) {
+            span.setAttribute("http.scheme", scheme);
+        }
+        String hostName = httpRequestMetaData.host();
+        if (hostName != null) {
+            span.setAttribute("net.host.name", hostName);
+        }
         span.setAttribute("net.host.port", httpRequestMetaData.port());
         return span.startSpan();
     }

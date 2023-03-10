@@ -36,7 +36,6 @@ import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 
-import java.util.Optional;
 import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
@@ -134,6 +133,10 @@ public final class OpenTelemetryHttpRequestFilter extends AbstractOpenTelemetryF
         if (componentName != null && !componentName.trim().isEmpty()) {
             return componentName;
         }
-        return Optional.ofNullable(request.host()).orElse(request.requestTarget());
+        String host = request.host();
+        if (host != null) {
+            return host;
+        }
+        return request.requestTarget();
     }
 }
