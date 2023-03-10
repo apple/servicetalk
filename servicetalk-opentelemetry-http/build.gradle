@@ -23,7 +23,7 @@ dependencies {
   testRuntimeOnly enforcedPlatform(project(":servicetalk-dependencies"))
 
   api project(":servicetalk-http-api")
-  api "io.opentelemetry:opentelemetry-api"
+  api "io.opentelemetry:opentelemetry-api:$opentelemetryVersion"
 
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-http-utils")
@@ -35,7 +35,7 @@ dependencies {
   testImplementation project(":servicetalk-data-jackson")
   testImplementation project(":servicetalk-http-netty")
   testImplementation project(":servicetalk-test-resources")
-  testImplementation "io.opentelemetry:opentelemetry-sdk-testing"
+  testImplementation "io.opentelemetry:opentelemetry-sdk-testing:$opentelemetryVersion"
   testImplementation "io.opentelemetry.instrumentation:opentelemetry-log4j-2.13.2:$opentelemetryInstrumentationVersion"
   testImplementation "org.junit.jupiter:junit-jupiter-api"
   testImplementation "org.assertj:assertj-core:$assertJCore"
