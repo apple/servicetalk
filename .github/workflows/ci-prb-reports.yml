@@ -23,7 +23,7 @@ jobs:
           # File location set in ci-prb.yml and must be coordinated.
           name: test-results-${{ matrix.os }}-${{ matrix.java }}
       - name: Publish Test Report
-        uses: scacap/action-surefire-report@a2d14baac06028516812d93c36cb9c99aa50198e
+        uses: scacap/action-surefire-report@7263a78ba060b395c8a0a0e58fc897efb1bddb7c
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           report_paths: '**/build/test-results/test/TEST-*.xml'
