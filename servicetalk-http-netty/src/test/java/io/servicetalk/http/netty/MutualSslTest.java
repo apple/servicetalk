@@ -52,7 +52,7 @@ import static java.util.Collections.emptyMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class MutualSslTest {
-    private static final SslProvider[] SSL_PROVIDERS = {JDK, OPENSSL};
+    static final SslProvider[] SSL_PROVIDERS = {JDK, OPENSSL};
     @SuppressWarnings("rawtypes")
     private static final List<Map<SocketOption, Object>> SERVER_LISTEN_OPTIONS =
             asList(emptyMap(), serverTcpFastOpenOptions());
