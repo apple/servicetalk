@@ -27,6 +27,7 @@ import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.transport.api.HostAndPort;
 
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
@@ -128,12 +129,12 @@ public final class OpenTelemetryHttpRequestFilter extends AbstractOpenTelemetryF
     }
 
     private String getSpanName(StreamingHttpRequest request) {
-        if (componentName != null && !componentName.isEmpty()) {
+        if (!componentName.isEmpty()) {
             return componentName;
         }
-        String host = request.host();
-        if (host != null) {
-            return host;
+        HostAndPort hostAndPort = request.effectiveHostAndPort();
+        if (hostAndPort != null) {
+            return hostAndPort.hostName();
         }
         return request.requestTarget();
     }
