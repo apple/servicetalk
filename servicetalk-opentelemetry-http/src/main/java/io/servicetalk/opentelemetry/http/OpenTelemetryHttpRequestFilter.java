@@ -37,7 +37,6 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 
 import java.util.function.UnaryOperator;
-import javax.annotation.Nullable;
 
 /**
  * An HTTP filter that supports <a href="https://opentelemetry.io/docs/instrumentation/java/">open telemetry</a>.
@@ -54,7 +53,6 @@ import javax.annotation.Nullable;
 public final class OpenTelemetryHttpRequestFilter extends AbstractOpenTelemetryFilter
     implements StreamingHttpClientFilterFactory, StreamingHttpConnectionFilterFactory {
 
-    @Nullable
     private final String componentName;
 
     /**
@@ -63,9 +61,9 @@ public final class OpenTelemetryHttpRequestFilter extends AbstractOpenTelemetryF
      * @param openTelemetry the {@link OpenTelemetry}.
      * @param componentName The component name used during building new spans.
      */
-    public OpenTelemetryHttpRequestFilter(final OpenTelemetry openTelemetry, @Nullable String componentName) {
+    public OpenTelemetryHttpRequestFilter(final OpenTelemetry openTelemetry, String componentName) {
         super(openTelemetry);
-        this.componentName = componentName;
+        this.componentName = componentName.trim();
     }
 
     /**
@@ -73,7 +71,7 @@ public final class OpenTelemetryHttpRequestFilter extends AbstractOpenTelemetryF
      *
      * @param componentName The component name used during building new spans.
      */
-    public OpenTelemetryHttpRequestFilter(@Nullable String componentName) {
+    public OpenTelemetryHttpRequestFilter(String componentName) {
         this(GlobalOpenTelemetry.get(), componentName);
     }
 
@@ -82,7 +80,7 @@ public final class OpenTelemetryHttpRequestFilter extends AbstractOpenTelemetryF
      * using the hostname as the component name.
      */
     public OpenTelemetryHttpRequestFilter() {
-        this(GlobalOpenTelemetry.get(), null);
+        this(GlobalOpenTelemetry.get(), "");
     }
 
     @Override
@@ -130,7 +128,7 @@ public final class OpenTelemetryHttpRequestFilter extends AbstractOpenTelemetryF
     }
 
     private String getSpanName(StreamingHttpRequest request) {
-        if (componentName != null && !componentName.trim().isEmpty()) {
+        if (componentName != null && !componentName.isEmpty()) {
             return componentName;
         }
         String host = request.host();

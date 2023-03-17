@@ -17,9 +17,12 @@
 package io.servicetalk.opentelemetry.http;
 
 import io.servicetalk.http.api.HttpRequestMetaData;
+import io.servicetalk.transport.api.HostAndPort;
 
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
+
+import static io.servicetalk.http.api.HttpHeaderNames.USER_AGENT;
 
 final class RequestTagExtractor {
 
@@ -43,19 +46,19 @@ final class RequestTagExtractor {
         span.setAttribute("http.route", httpRequestMetaData.rawPath());
         span.setAttribute("http.flavor", httpRequestMetaData.version().major() + "."
             + httpRequestMetaData.version().minor());
-        String userInfo = httpRequestMetaData.userInfo();
-        if (userInfo != null) {
-            span.setAttribute("http.user_agent", userInfo);
+        CharSequence userAgent = httpRequestMetaData.headers().get(USER_AGENT);
+        if (userAgent != null) {
+            span.setAttribute("http.user_agent", userAgent.toString());
         }
         String scheme = httpRequestMetaData.scheme();
         if (scheme != null) {
             span.setAttribute("http.scheme", scheme);
         }
-        String hostName = httpRequestMetaData.host();
-        if (hostName != null) {
-            span.setAttribute("net.host.name", hostName);
+        HostAndPort hostAndPort = httpRequestMetaData.effectiveHostAndPort();
+        if (hostAndPort != null) {
+            span.setAttribute("net.host.name", hostAndPort.hostName());
+            span.setAttribute("net.host.port", hostAndPort.port());
         }
-        span.setAttribute("net.host.port", httpRequestMetaData.port());
         return span.startSpan();
     }
 }
