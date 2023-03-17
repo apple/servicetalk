@@ -16,6 +16,7 @@
 
 package io.servicetalk.opentelemetry.http;
 
+import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.transport.api.HostAndPort;
 
@@ -36,7 +37,7 @@ final class RequestTagExtractor {
 
     private static String getHttpUrl(HttpRequestMetaData req) {
         return req.path()
-            + (req.rawQuery() == null ? "" : "?" + req.rawQuery());
+            + (req.rawQuery() == null ? "" : '?' + req.rawQuery());
     }
 
     static Span reportTagsAndStart(SpanBuilder span, HttpRequestMetaData httpRequestMetaData) {
@@ -44,8 +45,7 @@ final class RequestTagExtractor {
         span.setAttribute("http.method", getRequestMethod(httpRequestMetaData));
         span.setAttribute("http.target", getHttpUrl(httpRequestMetaData));
         span.setAttribute("http.route", httpRequestMetaData.rawPath());
-        span.setAttribute("http.flavor", httpRequestMetaData.version().major() + "."
-            + httpRequestMetaData.version().minor());
+        span.setAttribute("http.flavor", getFlavor(httpRequestMetaData.version()));
         CharSequence userAgent = httpRequestMetaData.headers().get(USER_AGENT);
         if (userAgent != null) {
             span.setAttribute("http.user_agent", userAgent.toString());
@@ -60,5 +60,19 @@ final class RequestTagExtractor {
             span.setAttribute("net.host.port", hostAndPort.port());
         }
         return span.startSpan();
+    }
+
+    public static String getFlavor(final HttpProtocolVersion version) {
+        if (version.major() == 1) {
+            if (version.minor() == 1) {
+                return "1.1";
+            }
+            if (version.minor() == 0) {
+                return "1.0";
+            }
+        } else if (version.major() == 2 && version.minor() == 0) {
+            return "2.0";
+        }
+        return version.major() + "." + version.minor();
     }
 }
