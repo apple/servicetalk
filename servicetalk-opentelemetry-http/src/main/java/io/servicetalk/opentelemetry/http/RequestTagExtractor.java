@@ -16,10 +16,14 @@
 
 package io.servicetalk.opentelemetry.http;
 
+import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpRequestMetaData;
+import io.servicetalk.transport.api.HostAndPort;
 
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
+
+import static io.servicetalk.http.api.HttpHeaderNames.USER_AGENT;
 
 final class RequestTagExtractor {
 
@@ -32,15 +36,43 @@ final class RequestTagExtractor {
     }
 
     private static String getHttpUrl(HttpRequestMetaData req) {
-        return (req.scheme() == null ? "http" : req.scheme()) + "://" +
-            (req.effectiveHostAndPort() == null ? "localhost:8080" : req.effectiveHostAndPort())
-            + req.rawPath()
-            + (req.rawQuery() == null ? "" : "?" + req.rawQuery());
+        return req.path()
+            + (req.rawQuery() == null ? "" : '?' + req.rawQuery());
     }
 
     static Span reportTagsAndStart(SpanBuilder span, HttpRequestMetaData httpRequestMetaData) {
         span.setAttribute("http.url", getHttpUrl(httpRequestMetaData));
         span.setAttribute("http.method", getRequestMethod(httpRequestMetaData));
+        span.setAttribute("http.target", getHttpUrl(httpRequestMetaData));
+        span.setAttribute("http.route", httpRequestMetaData.rawPath());
+        span.setAttribute("http.flavor", getFlavor(httpRequestMetaData.version()));
+        CharSequence userAgent = httpRequestMetaData.headers().get(USER_AGENT);
+        if (userAgent != null) {
+            span.setAttribute("http.user_agent", userAgent.toString());
+        }
+        String scheme = httpRequestMetaData.scheme();
+        if (scheme != null) {
+            span.setAttribute("http.scheme", scheme);
+        }
+        HostAndPort hostAndPort = httpRequestMetaData.effectiveHostAndPort();
+        if (hostAndPort != null) {
+            span.setAttribute("net.host.name", hostAndPort.hostName());
+            span.setAttribute("net.host.port", hostAndPort.port());
+        }
         return span.startSpan();
+    }
+
+    private static String getFlavor(final HttpProtocolVersion version) {
+        if (version.major() == 1) {
+            if (version.minor() == 1) {
+                return "1.1";
+            }
+            if (version.minor() == 0) {
+                return "1.0";
+            }
+        } else if (version.major() == 2 && version.minor() == 0) {
+            return "2.0";
+        }
+        return version.major() + "." + version.minor();
     }
 }

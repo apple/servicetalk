@@ -27,6 +27,7 @@ import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.transport.api.HostAndPort;
 
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
@@ -36,7 +37,6 @@ import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 
-import java.util.Objects;
 import java.util.function.UnaryOperator;
 
 /**
@@ -64,7 +64,7 @@ public final class OpenTelemetryHttpRequestFilter extends AbstractOpenTelemetryF
      */
     public OpenTelemetryHttpRequestFilter(final OpenTelemetry openTelemetry, String componentName) {
         super(openTelemetry);
-        this.componentName = Objects.requireNonNull(componentName);
+        this.componentName = componentName.trim();
     }
 
     /**
@@ -74,6 +74,14 @@ public final class OpenTelemetryHttpRequestFilter extends AbstractOpenTelemetryF
      */
     public OpenTelemetryHttpRequestFilter(String componentName) {
         this(GlobalOpenTelemetry.get(), componentName);
+    }
+
+    /**
+     * Create a new instance, searching for any instance of an opentelemetry available,
+     * using the hostname as the component name.
+     */
+    public OpenTelemetryHttpRequestFilter() {
+        this(GlobalOpenTelemetry.get(), "");
     }
 
     @Override
@@ -102,7 +110,7 @@ public final class OpenTelemetryHttpRequestFilter extends AbstractOpenTelemetryF
                                                        final StreamingHttpRequest request) {
         Context context = Context.current();
         final Span span = RequestTagExtractor.reportTagsAndStart(tracer
-            .spanBuilder(componentName)
+            .spanBuilder(getSpanName(request))
             .setParent(context)
             .setSpanKind(SpanKind.CLIENT), request);
 
@@ -111,12 +119,23 @@ public final class OpenTelemetryHttpRequestFilter extends AbstractOpenTelemetryF
         Single<StreamingHttpResponse> response;
         try {
             propagators.getTextMapPropagator().inject(Context.current(), request.headers(),
-                    HeadersPropagatorSetter.INSTANCE);
+                HeadersPropagatorSetter.INSTANCE);
             response = delegate.request(request);
         } catch (Throwable t) {
             tracker.onError(t);
             return Single.failed(t);
         }
         return tracker.track(response);
+    }
+
+    private String getSpanName(StreamingHttpRequest request) {
+        if (!componentName.isEmpty()) {
+            return componentName;
+        }
+        HostAndPort hostAndPort = request.effectiveHostAndPort();
+        if (hostAndPort != null) {
+            return hostAndPort.hostName();
+        }
+        return request.requestTarget();
     }
 }

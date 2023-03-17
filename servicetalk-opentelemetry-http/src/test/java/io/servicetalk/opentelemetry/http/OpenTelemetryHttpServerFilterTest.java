@@ -33,6 +33,7 @@ import io.opentelemetry.context.propagation.ContextPropagators;
 import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.context.propagation.TextMapSetter;
 import io.opentelemetry.sdk.testing.junit5.OpenTelemetryExtension;
+import io.opentelemetry.sdk.trace.data.SpanData;
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -70,7 +71,7 @@ class OpenTelemetryHttpServerFilterTest {
 
     @Test
     void testInjectWithNoParent() throws Exception {
-        final String requestUrl = "/";
+        final String requestUrl = "/path";
         try (ServerContext context = buildServer(otelTesting.getOpenTelemetry())) {
             try (HttpClient client = forSingleAddress(serverHostAndPort(context)).build()) {
                 HttpResponse response = client.request(client.get(requestUrl)).toFuture().get();
@@ -88,16 +89,27 @@ class OpenTelemetryHttpServerFilterTest {
                     .hasTracesSatisfyingExactly(ta -> ta.hasTraceId(serverSpanState.getTraceId()));
 
                 otelTesting.assertTraces()
-                    .hasTracesSatisfyingExactly(ta ->
-                        assertThat(ta.getSpan(0).getAttributes().get(SemanticAttributes.HTTP_URL))
-                        .startsWith("http:/" + context.listenAddress()));
+                    .hasTracesSatisfyingExactly(ta -> {
+                        SpanData span = ta.getSpan(0);
+                        assertThat(span.getAttributes().get(SemanticAttributes.HTTP_URL))
+                            .isEqualTo("/path");
+                        assertThat(span.getAttributes().get(SemanticAttributes.HTTP_TARGET))
+                            .isEqualTo("/path");
+                        assertThat(span.getAttributes().get(SemanticAttributes.HTTP_ROUTE))
+                            .isEqualTo("/path");
+                        assertThat(span.getAttributes().get(SemanticAttributes.HTTP_FLAVOR))
+                            .isEqualTo("1.1");
+                        assertThat(span.getAttributes().get(SemanticAttributes.HTTP_METHOD))
+                            .isEqualTo("GET");
+                        assertThat(span.getName()).isEqualTo("GET /path");
+                    });
             }
         }
     }
 
     @Test
     void testInjectWithAParent() throws Exception {
-        final String requestUrl = "/";
+        final String requestUrl = "/path";
         OpenTelemetry openTelemetry = otelTesting.getOpenTelemetry();
         try (ServerContext context = buildServer(openTelemetry)) {
             try (HttpClient client = forSingleAddress(serverHostAndPort(context))
@@ -118,9 +130,12 @@ class OpenTelemetryHttpServerFilterTest {
                     .hasTracesSatisfyingExactly(ta -> ta.hasTraceId(serverSpanState.getTraceId()));
 
                 otelTesting.assertTraces()
-                    .hasTracesSatisfyingExactly(ta ->
+                    .hasTracesSatisfyingExactly(ta -> {
                         assertThat(ta.getSpan(0).getAttributes().get(SemanticAttributes.HTTP_URL))
-                        .startsWith("http://localhost:8080"));
+                            .isEqualTo("/path");
+                        assertThat(ta.getSpan(0).getAttributes().get(SemanticAttributes.HTTP_FLAVOR))
+                            .isEqualTo("1.1");
+                    });
             }
         }
     }
@@ -131,7 +146,7 @@ class OpenTelemetryHttpServerFilterTest {
         TextMapPropagator textMapPropagator = otelTesting.getOpenTelemetry().getPropagators().getTextMapPropagator();
         try (ServerContext context = buildServer(otelTesting.getOpenTelemetry())) {
 
-            URL url = new URL("http:/" + context.listenAddress() + "/");
+            URL url = new URL("http:/" + context.listenAddress() + "/path?query=this&foo=bar");
             Span span = otelTesting.getOpenTelemetry().getTracer("io.serviceTalk").spanBuilder("/")
                 .setSpanKind(SpanKind.CLIENT)
                 .setAttribute("component", "serviceTalk")
@@ -166,7 +181,7 @@ class OpenTelemetryHttpServerFilterTest {
                     assertThat(ta.getSpan(0).getAttributes().get(SemanticAttributes.HTTP_URL))
                         .startsWith(url.toString());
                     assertThat(ta.getSpan(1).getAttributes().get(SemanticAttributes.HTTP_URL))
-                        .startsWith(url.toString());
+                        .isEqualTo("/path?query=this&foo=bar");
                     assertThat(ta.getSpan(0).getAttributes().get(AttributeKey.stringKey("component")))
                         .isEqualTo("serviceTalk");
                 });

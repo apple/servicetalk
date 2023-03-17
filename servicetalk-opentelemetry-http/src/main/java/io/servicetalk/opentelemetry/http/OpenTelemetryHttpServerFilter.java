@@ -122,6 +122,6 @@ public final class OpenTelemetryHttpServerFilter extends AbstractOpenTelemetryFi
      * @return the operation name to build the span with.
      */
     private static String getOperationName(HttpRequestMetaData metaData) {
-        return metaData.method().name() + ' ' + metaData.requestTarget();
+        return metaData.method().name() + ' ' + metaData.path();
     }
 }
