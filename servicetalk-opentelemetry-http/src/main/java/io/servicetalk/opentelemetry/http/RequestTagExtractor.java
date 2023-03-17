@@ -62,7 +62,7 @@ final class RequestTagExtractor {
         return span.startSpan();
     }
 
-    public static String getFlavor(final HttpProtocolVersion version) {
+    private static String getFlavor(final HttpProtocolVersion version) {
         if (version.major() == 1) {
             if (version.minor() == 1) {
                 return "1.1";
