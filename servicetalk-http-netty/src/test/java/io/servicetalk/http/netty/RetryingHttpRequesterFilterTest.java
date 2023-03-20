@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.DelegatingConnectionFactory;
 import io.servicetalk.client.api.LoadBalancedConnection;
@@ -28,16 +29,25 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.BlockingHttpClient;
+import io.servicetalk.http.api.BlockingHttpService;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
+import io.servicetalk.http.api.HttpRequest;
+import io.servicetalk.http.api.HttpResponse;
+import io.servicetalk.http.api.HttpResponseFactory;
+import io.servicetalk.http.api.HttpResponseStatus;
+import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.loadbalancer.RoundRobinLoadBalancers;
+import io.servicetalk.test.resources.DefaultTestCerts;
+import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.RetryableException;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.api.ServerSslConfigBuilder;
 import io.servicetalk.transport.api.TransportObserver;
 
 import org.junit.jupiter.api.AfterEach;
@@ -52,6 +62,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SERVER_ERROR_5XX;
 import static io.servicetalk.http.netty.HttpClients.forResolvedAddress;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.http.netty.HttpServers.forAddress;
@@ -61,11 +72,14 @@ import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.BackOffPolic
 import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.Builder;
 import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.HttpResponseException;
 import static io.servicetalk.http.netty.RetryingHttpRequesterFilter.disableAutoRetries;
+import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.closeTo;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -112,6 +126,51 @@ class RetryingHttpRequesterFilterTest {
         }
         closeable.append(svcCtx);
         closeable.close();
+    }
+
+    @Test
+    void requestPayloadBodyIsDuplicated() throws Exception {
+        byte[] hello = "hello".getBytes(UTF_8);
+        byte[] world = "world".getBytes(UTF_8);
+        try (ServerContext serverCtx = forAddress(localAddress(0))
+                .sslConfig(new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
+                        .build())
+                .listenBlockingAndAwait(new BlockingHttpService() {
+                    private final AtomicInteger reqCount = new AtomicInteger();
+                    @Override
+                    public HttpResponse handle(final HttpServiceContext ctx, final HttpRequest request,
+                                               final HttpResponseFactory responseFactory) {
+                        int count = reqCount.incrementAndGet();
+                        final HttpResponse response;
+                        if (count > 1) {
+                            Buffer responseBuf = ctx.executionContext().bufferAllocator().newBuffer();
+                            responseBuf.writeBytes(request.payloadBody());
+                            responseBuf.writeBytes(world);
+                            response = responseFactory.ok().payloadBody(responseBuf);
+                        } else {
+                            response = responseFactory.serviceUnavailable();
+                        }
+                        return response;
+                    }
+                });
+             BlockingHttpClient client = forSingleAddress(serverHostAndPort(serverCtx))
+                     .sslConfig(new ClientSslConfigBuilder(DefaultTestCerts::loadServerCAPem)
+                             .peerHost(serverPemHostname())
+                             .build())
+                     .appendClientFilter(new Builder()
+                             .waitForLoadBalancer(true)
+                             .responseMapper(resp -> resp.status().statusClass().equals(SERVER_ERROR_5XX) ?
+                                     new HttpResponseException("failed", resp) : null)
+                             .retryResponses((requestMetaData, throwable) -> ofImmediate(Integer.MAX_VALUE - 1))
+                             .maxTotalRetries(Integer.MAX_VALUE)
+                             .build())
+                     .buildBlocking()) {
+            HttpResponse response = client.request(client.post("/").payloadBody(
+                    client.executionContext().bufferAllocator().wrap(hello)));
+            assertThat(response.status(), equalTo(HttpResponseStatus.OK));
+            assertThat(response.payloadBody().toString(UTF_8), equalTo(
+                    new String(hello, UTF_8) + new String(world, UTF_8)));
+        }
     }
 
     @Test
@@ -209,7 +268,7 @@ class RetryingHttpRequesterFilterTest {
         assertThat("Unexpected number of connections was created", newConnectionCreated.get(), is(1));
     }
 
-    @Test()
+    @Test
     void singleInstanceFilter() {
         Assertions.assertThrows(IllegalStateException.class, () -> forResolvedAddress(localAddress(8888))
                 .appendClientFilter(new Builder().build())

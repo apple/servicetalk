@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerReadyEvent;
 import io.servicetalk.client.api.NoAvailableHostException;
@@ -47,6 +48,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
@@ -221,7 +223,8 @@ public final class RetryingHttpRequesterFilter
         @Override
         protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                         final StreamingHttpRequest request) {
-            Single<StreamingHttpResponse> single = delegate.request(request);
+            final StreamingHttpRequest duplicatedRequest = request.transformMessageBody(messageBodyDuplicator());
+            Single<StreamingHttpResponse> single = delegate.request(duplicatedRequest);
             if (responseMapper != null) {
                 single = single.flatMap(resp -> {
                     final HttpResponseException exception = responseMapper.apply(resp);
@@ -232,7 +235,7 @@ public final class RetryingHttpRequesterFilter
                 });
             }
 
-            return single.retryWhen(retryStrategy(request, executionContext()));
+            return single.retryWhen(retryStrategy(duplicatedRequest, executionContext()));
         }
 
         @Override
@@ -334,6 +337,15 @@ public final class RetryingHttpRequesterFilter
             return super.toString() +
                     ", metaData=" + metaData.toString(DEFAULT_HEADER_FILTER);
         }
+    }
+
+    private static UnaryOperator<Publisher<?>> messageBodyDuplicator() {
+        return p -> p.map(item -> {
+            if (item instanceof Buffer) {
+                return ((Buffer) item).duplicate();
+            }
+            return item;
+        });
     }
 
     /**
