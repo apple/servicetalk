@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerReadyEvent;
 import io.servicetalk.client.api.NoAvailableHostException;
@@ -47,6 +48,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
@@ -85,25 +87,28 @@ public final class RetryingHttpRequesterFilter
         implements StreamingHttpClientFilterFactory, ExecutionStrategyInfluencer<HttpExecutionStrategy> {
     private static final int DEFAULT_MAX_TOTAL_RETRIES = 4;
     private static final RetryingHttpRequesterFilter DISABLE_AUTO_RETRIES =
-            new RetryingHttpRequesterFilter(true, false, 1, null,
+            new RetryingHttpRequesterFilter(true, false, false, 1, null,
                     (__, ___) -> NO_RETRIES);
     private static final RetryingHttpRequesterFilter DISABLE_ALL_RETRIES =
-            new RetryingHttpRequesterFilter(false, true, 0, null,
+            new RetryingHttpRequesterFilter(false, true, false, 0, null,
                     (__, ___) -> NO_RETRIES);
 
     private final boolean waitForLb;
     private final boolean ignoreSdErrors;
+    private final boolean mayReplayRequestPayload;
     private final int maxTotalRetries;
     @Nullable
     private final Function<HttpResponseMetaData, HttpResponseException> responseMapper;
     private final BiFunction<HttpRequestMetaData, Throwable, BackOffPolicy> retryFor;
 
     RetryingHttpRequesterFilter(
-            final boolean waitForLb, final boolean ignoreSdErrors, final int maxTotalRetries,
+            final boolean waitForLb, final boolean ignoreSdErrors, final boolean mayReplayRequestPayload,
+            final int maxTotalRetries,
             @Nullable final Function<HttpResponseMetaData, HttpResponseException> responseMapper,
             final BiFunction<HttpRequestMetaData, Throwable, BackOffPolicy> retryFor) {
         this.waitForLb = waitForLb;
         this.ignoreSdErrors = ignoreSdErrors;
+        this.mayReplayRequestPayload = mayReplayRequestPayload;
         this.maxTotalRetries = maxTotalRetries;
         this.responseMapper = responseMapper;
         this.retryFor = retryFor;
@@ -221,7 +226,9 @@ public final class RetryingHttpRequesterFilter
         @Override
         protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                         final StreamingHttpRequest request) {
-            Single<StreamingHttpResponse> single = delegate.request(request);
+            final StreamingHttpRequest duplicatedRequest = mayReplayRequestPayload ?
+                    request.transformMessageBody(messageBodyDuplicator()) : request;
+            Single<StreamingHttpResponse> single = delegate.request(duplicatedRequest);
             if (responseMapper != null) {
                 single = single.flatMap(resp -> {
                     final HttpResponseException exception = responseMapper.apply(resp);
@@ -232,7 +239,7 @@ public final class RetryingHttpRequesterFilter
                 });
             }
 
-            return single.retryWhen(retryStrategy(request, executionContext()));
+            return single.retryWhen(retryStrategy(duplicatedRequest, executionContext()));
         }
 
         @Override
@@ -334,6 +341,15 @@ public final class RetryingHttpRequesterFilter
             return super.toString() +
                     ", metaData=" + metaData.toString(DEFAULT_HEADER_FILTER);
         }
+    }
+
+    private static UnaryOperator<Publisher<?>> messageBodyDuplicator() {
+        return p -> p.map(item -> {
+            if (item instanceof Buffer) {
+                return ((Buffer) item).duplicate();
+            }
+            return item;
+        });
     }
 
     /**
@@ -863,6 +879,9 @@ public final class RetryingHttpRequesterFilter
             final BiFunction<HttpRequestMetaData, HttpResponseException, BackOffPolicy> retryResponses =
                     this.retryResponses;
             final BiFunction<HttpRequestMetaData, Throwable, BackOffPolicy> retryOther = this.retryOther;
+            // This assumes RetryableExceptions are never written/consumed.
+            final boolean mayReplayRequestPayload = retryIdempotentRequests != null || retryDelayedRetries != null ||
+                    retryResponses != null || retryOther != null;
 
             final BiFunction<HttpRequestMetaData, Throwable, BackOffPolicy> allPredicate =
                     (requestMetaData, throwable) -> {
@@ -911,8 +930,8 @@ public final class RetryingHttpRequesterFilter
 
                         return NO_RETRIES;
                     };
-            return new RetryingHttpRequesterFilter(waitForLb, ignoreSdErrors, maxTotalRetries, responseMapper,
-                    allPredicate);
+            return new RetryingHttpRequesterFilter(waitForLb, ignoreSdErrors, mayReplayRequestPayload,
+                    maxTotalRetries, responseMapper, allPredicate);
         }
     }
 }
