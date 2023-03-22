@@ -2169,7 +2169,7 @@ public abstract class Publisher<T> {
      *
      * @param predicate for evaluating whether to continue skipping items.
      * @return A {@link Publisher} that skips items until the predicate returns false {@code predicate}.
-     * @see <a href="https://reactivex.io/documentation/operators/skipwhile.html">ReactiveX filter operator.</a>
+     * @see <a href="https://reactivex.io/documentation/operators/skipwhile.html">ReactiveX SkipWhile operator.</a>
      */
     public final Publisher<T> skipWhile(Predicate<? super T> predicate) {
         return filter(FilterPublisher.skipWhileSupplier(predicate));
