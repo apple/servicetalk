@@ -1,9 +1,25 @@
+/*
+ * Copyright © 2018-2023 Apple Inc. and the ServiceTalk project authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.servicetalk.concurrent.api.publisher;
 
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
+
 import org.junit.jupiter.api.Test;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
@@ -13,12 +29,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class SkipWhileTest {
+class SkipWhileTest {
 
     private final TestPublisher<String> publisher = new TestPublisher<>();
     private final TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
     private final TestSubscription subscription = new TestSubscription();
-
 
     @Test
     void skipWhile() {
