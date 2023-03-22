@@ -2150,6 +2150,32 @@ public abstract class Publisher<T> {
     }
 
     /**
+     * Skip items emitted by this {@link Publisher} until the first time the predicate is not satisfied.
+     * <p>
+     * This method provides a data transformation in sequential programming similar to:
+     * <pre>{@code
+     *     List<T> results = ...;
+     *     boolean skipping = true;
+     *     for (T t : resultOfThisPublisher()) {
+     *         if (skipping) {
+     *             skipping = predicate.test(t);
+     *         }
+     *         if (!skipping) {
+     *             results.add(t);
+     *         }
+     *     }
+     *     return results;
+     * }</pre>
+     *
+     * @param predicate for evaluating whether to continue skipping items.
+     * @return A {@link Publisher} that skips items until the predicate returns false {@code predicate}.
+     * @see <a href="https://reactivex.io/documentation/operators/skipwhile.html">ReactiveX filter operator.</a>
+     */
+    public final Publisher<T> skipWhile(Predicate<? super T> predicate) {
+        return filter(FilterPublisher.skipWhileSupplier(predicate));
+    }
+
+    /**
      * Takes at most {@code numElements} elements from {@code this} {@link Publisher}.
      * <p>
      * If no terminal event is received before receiving {@code numElements} elements, {@link Subscription} for the
