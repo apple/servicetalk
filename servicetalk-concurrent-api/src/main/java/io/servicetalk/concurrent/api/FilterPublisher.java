@@ -44,6 +44,19 @@ final class FilterPublisher<T> extends AbstractSynchronousPublisherOperator<T, T
         };
     }
 
+    static <T> Supplier<? extends Predicate<? super T>> skipWhileSupplier(final Predicate<? super T> predicate) {
+        return () -> new Predicate<T>() {
+            private boolean skipping = true;
+            @Override
+            public boolean test(T t) {
+                if (skipping) {
+                    skipping = predicate.test(t);
+                }
+                return !skipping;
+            }
+        };
+    }
+
     @Override
     public Subscriber<? super T> apply(final Subscriber<? super T> subscriber) {
         return new Subscriber<T>() {
