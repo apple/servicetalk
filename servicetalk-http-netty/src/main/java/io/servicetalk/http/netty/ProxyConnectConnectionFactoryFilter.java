@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019-2020, 2022 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2020, 2022-2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.TransportObserver;
 import io.servicetalk.transport.netty.internal.DeferSslHandler;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
+import io.servicetalk.transport.netty.internal.StacklessClosedChannelException;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -86,7 +87,7 @@ final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C extends Filte
                 return delegate().newConnection(resolvedAddress, contextMap, observer).flatMap(c -> {
                     try {
                         return c.request(c.connect(connectAddress).addHeader(CONTENT_LENGTH, ZERO))
-                                .flatMap(response -> handleConnectResponse(c, response))
+                                .flatMap(response -> handleConnectResponse(c, response).shareContextOnSubscribe())
                                 // Close recently created connection in case of any error while it connects to the
                                 // proxy:
                                 .onErrorResume(t -> c.closeAsync().concat(failed(t)));
@@ -100,7 +101,7 @@ final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C extends Filte
 
         private Single<C> handleConnectResponse(final C connection, final StreamingHttpResponse response) {
             if (response.status().statusClass() != SUCCESSFUL_2XX) {
-                return failed(new ProxyResponseException("Non-successful response from proxy CONNECT " +
+                return failed(new ProxyResponseException(connection + " Non-successful response from proxy CONNECT " +
                         connectAddress, response.status()));
             }
 
@@ -123,7 +124,14 @@ final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C extends Filte
 
             final DeferSslHandler deferSslHandler = channel.pipeline().get(DeferSslHandler.class);
             if (deferSslHandler == null) {
-                return failed(new IllegalStateException("Failed to find a handler of type " +
+                if (!channel.isActive()) {
+                    LOGGER.info("{} is unexpectedly closed after receiving response: {}",
+                            connection, response.toString((name, value) -> value));
+                    return failed(StacklessClosedChannelException.newInstance(
+                            ProxyConnectConnectionFactoryFilter.class, "handleConnectResponse: " +
+                                    connection + " is unexpectedly closed. Check logs for more info."));
+                }
+                return failed(new IllegalStateException(connection + " Failed to find a handler of type " +
                         DeferSslHandler.class + " in channel pipeline."));
             }
             deferSslHandler.ready();
