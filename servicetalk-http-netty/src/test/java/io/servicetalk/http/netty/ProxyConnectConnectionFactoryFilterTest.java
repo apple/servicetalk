@@ -40,8 +40,11 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.handler.ssl.SslHandshakeCompletionEvent;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.stubbing.Answer;
 
+import java.nio.channels.ClosedChannelException;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Consumer;
@@ -85,7 +88,7 @@ class ProxyConnectConnectionFactoryFilterTest {
 
     ProxyConnectConnectionFactoryFilterTest() {
         HttpExecutionContext executionContext = new HttpExecutionContextBuilder().build();
-        HttpConnectionContext connectionContext = (mock(HttpConnectionContext.class));
+        HttpConnectionContext connectionContext = mock(HttpConnectionContext.class);
         when(connectionContext.executionContext()).thenReturn(executionContext);
         connection = mock(FilterableStreamingHttpConnection.class);
         when(connection.connectionContext()).thenReturn(connectionContext);
@@ -114,7 +117,7 @@ class ProxyConnectConnectionFactoryFilterTest {
         subscriber = new TestSingleSubscriber<>();
     }
 
-    private ChannelPipeline configurePipeline(@Nullable SslHandshakeCompletionEvent event) {
+    private static ChannelPipeline configurePipeline(@Nullable SslHandshakeCompletionEvent event) {
         ChannelPipeline pipeline = mock(ChannelPipeline.class);
         when(pipeline.addLast(any())).then((Answer<ChannelPipeline>) invocation -> {
             ChannelInboundHandler handshakeAwait = invocation.getArgument(0);
@@ -126,7 +129,7 @@ class ProxyConnectConnectionFactoryFilterTest {
         return pipeline;
     }
 
-    private void configureDeferSslHandler(ChannelPipeline pipeline) {
+    private static void configureDeferSslHandler(ChannelPipeline pipeline) {
         when(pipeline.get(DeferSslHandler.class)).thenReturn(mock(DeferSslHandler.class));
     }
 
@@ -138,6 +141,7 @@ class ProxyConnectConnectionFactoryFilterTest {
                                             final HttpExecutionStrategy executionStrategy) {
         Channel channel = mock(Channel.class);
         when(channel.pipeline()).thenReturn(pipeline);
+        when(pipeline.channel()).thenReturn(channel);
 
         HttpExecutionContext executionContext = new HttpExecutionContextBuilder()
                 .executionStrategy(executionStrategy).build();
@@ -217,7 +221,7 @@ class ProxyConnectConnectionFactoryFilterTest {
         // Does not implement NettyConnectionContext:
         HttpExecutionContext executionContext = new HttpExecutionContextBuilder().build();
 
-        HttpConnectionContext connectionContext = (mock(HttpConnectionContext.class));
+        HttpConnectionContext connectionContext = mock(HttpConnectionContext.class);
         when(connectionContext.executionContext()).thenReturn(executionContext);
 
         when(connection.connectionContext()).thenReturn(connectionContext);
@@ -231,19 +235,26 @@ class ProxyConnectConnectionFactoryFilterTest {
         assertConnectionClosed();
     }
 
-    @Test
-    void noDeferSslHandler() {
+    @ParameterizedTest(name = "{displayName} [{index}] ttl={0}")
+    @ValueSource(booleans = {true, false})
+    void noDeferSslHandler(boolean channelActive) {
         ChannelPipeline pipeline = configurePipeline(SslHandshakeCompletionEvent.SUCCESS);
         // Do not configureDeferSslHandler(pipeline);
         configureConnectionContext(pipeline);
+        Channel channel = pipeline.channel();
+        when(channel.isActive()).thenReturn(channelActive);
         configureRequestSend();
         configureConnectRequest();
         subscribeToProxyConnectionFactory();
 
         Throwable error = subscriber.awaitOnError();
         assertThat(error, is(notNullValue()));
-        assertThat(error, instanceOf(IllegalStateException.class));
-        assertThat(error.getMessage(), containsString(DeferSslHandler.class.getSimpleName()));
+        if (channelActive) {
+            assertThat(error, instanceOf(IllegalStateException.class));
+            assertThat(error.getMessage(), containsString(DeferSslHandler.class.getSimpleName()));
+        } else {
+            assertThat(error, instanceOf(ClosedChannelException.class));
+        }
         assertConnectPayloadConsumed(false);
         assertConnectionClosed();
     }
