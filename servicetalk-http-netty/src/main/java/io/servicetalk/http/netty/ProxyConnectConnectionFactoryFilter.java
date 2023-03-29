@@ -125,7 +125,8 @@ final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C extends Filte
             final DeferSslHandler deferSslHandler = channel.pipeline().get(DeferSslHandler.class);
             if (deferSslHandler == null) {
                 if (!channel.isActive()) {
-                    LOGGER.info("{} is unexpectedly closed after receiving response: {}",
+                    LOGGER.info("{} is unexpectedly closed after receiving response: {}. " +
+                                    "Investigate logs on a proxy side to identify the cause.",
                             connection, response.toString((name, value) -> value));
                     return failed(StacklessClosedChannelException.newInstance(
                             ProxyConnectConnectionFactoryFilter.class, "handleConnectResponse: " +
