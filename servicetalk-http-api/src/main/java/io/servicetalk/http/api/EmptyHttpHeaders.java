@@ -17,11 +17,16 @@ package io.servicetalk.http.api;
 
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
 import static java.util.Collections.emptyIterator;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.emptySet;
 
 /**
@@ -52,8 +57,23 @@ public final class EmptyHttpHeaders implements HttpHeaders {
     }
 
     @Override
+    public CharSequence getAndRemove(CharSequence name, CharSequence defaultValue) {
+        return defaultValue;
+    }
+
+    @Override
+    public Iterable<? extends CharSequence> values(final CharSequence name) {
+        return emptyList();
+    }
+
+    @Override
     public Iterator<? extends CharSequence> valuesIterator(CharSequence name) {
         return emptyIterator();
+    }
+
+    @Override
+    public boolean contains(final CharSequence name) {
+        return false;
     }
 
     @Override
@@ -92,6 +112,11 @@ public final class EmptyHttpHeaders implements HttpHeaders {
     }
 
     @Override
+    public HttpHeaders add(final CharSequence name, final Iterator<? extends CharSequence> valuesItr) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public HttpHeaders add(CharSequence name, CharSequence... values) {
         throw new UnsupportedOperationException();
     }
@@ -108,6 +133,11 @@ public final class EmptyHttpHeaders implements HttpHeaders {
 
     @Override
     public HttpHeaders set(CharSequence name, Iterable<? extends CharSequence> values) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public HttpHeaders set(final CharSequence name, final Iterator<? extends CharSequence> valueItr) {
         throw new UnsupportedOperationException();
     }
 
@@ -152,6 +182,16 @@ public final class EmptyHttpHeaders implements HttpHeaders {
     }
 
     @Override
+    public Spliterator<Map.Entry<CharSequence, CharSequence>> spliterator() {
+        return Spliterators.emptySpliterator();
+    }
+
+    @Override
+    public void forEach(final Consumer<? super Map.Entry<CharSequence, CharSequence>> action) {
+        Objects.requireNonNull(action);
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (!(o instanceof HttpHeaders)) {
             return false;
@@ -189,8 +229,18 @@ public final class EmptyHttpHeaders implements HttpHeaders {
     }
 
     @Override
+    public Iterable<? extends HttpCookiePair> getCookies() {
+        return emptyList();
+    }
+
+    @Override
     public Iterator<? extends HttpCookiePair> getCookiesIterator() {
         return emptyIterator();
+    }
+
+    @Override
+    public Iterable<? extends HttpCookiePair> getCookies(CharSequence name) {
+        return emptyList();
     }
 
     @Override
@@ -199,13 +249,29 @@ public final class EmptyHttpHeaders implements HttpHeaders {
     }
 
     @Override
+    public Iterable<? extends HttpSetCookie> getSetCookies() {
+        return emptyList();
+    }
+
+    @Override
     public Iterator<? extends HttpSetCookie> getSetCookiesIterator() {
         return emptyIterator();
     }
 
     @Override
+    public Iterable<? extends HttpSetCookie> getSetCookies(final CharSequence name) {
+        return emptyList();
+    }
+
+    @Override
     public Iterator<? extends HttpSetCookie> getSetCookiesIterator(final CharSequence name) {
         return emptyIterator();
+    }
+
+    @Override
+    public Iterable<? extends HttpSetCookie> getSetCookies(final CharSequence name, final CharSequence domain,
+                                                           final CharSequence path) {
+        return emptyList();
     }
 
     @Override
@@ -220,7 +286,17 @@ public final class EmptyHttpHeaders implements HttpHeaders {
     }
 
     @Override
+    public HttpHeaders addCookie(final CharSequence name, final CharSequence value) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public HttpHeaders addSetCookie(final HttpSetCookie cookie) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public HttpHeaders addSetCookie(final CharSequence name, final CharSequence value) {
         throw new UnsupportedOperationException();
     }
 
