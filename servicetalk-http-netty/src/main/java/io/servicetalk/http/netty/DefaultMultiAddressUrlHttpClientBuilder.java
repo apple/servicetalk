@@ -177,7 +177,11 @@ final class DefaultMultiAddressUrlHttpClientBuilder
                                                                   final String scheme, final String host) {
             final int fromIndex = scheme.length() + 3 + host.length();  // +3 because of "://" delimiter after scheme
             final int relativeReferenceIdx = requestTarget.indexOf('/', fromIndex);
-            return relativeReferenceIdx < 0 ? "/" : requestTarget.substring(relativeReferenceIdx);
+            if (relativeReferenceIdx >= 0) {
+                return requestTarget.substring(relativeReferenceIdx);
+            }
+            final int questionMarkIdx = requestTarget.indexOf('?', fromIndex);
+            return questionMarkIdx < 0 ? "/" : '/' + requestTarget.substring(questionMarkIdx);
         }
 
         @Override

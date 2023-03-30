@@ -209,6 +209,12 @@ class MultiAddressUrlHttpClientTest {
     }
 
     @Test
+    void requestWithAbsoluteFormRequestTargetWithoutPathWithParams() throws Exception {
+        StreamingHttpRequest request = client.get(format("http://%s?param=value", hostHeader));
+        requestAndValidate(request, BAD_REQUEST, "/?param=value");
+    }
+
+    @Test
     void requestWithAbsoluteFormRequestTargetWithInvalidHost() {
         // Verify it fails multiple times:
         requestWithInvalidHost();

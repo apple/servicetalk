@@ -204,7 +204,11 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
                                                                   final String scheme) {
             final int fromIndex = scheme.length() + 3;  // +3 because of "://" delimiter after scheme
             final int relativeReferenceIdx = requestTarget.indexOf('/', fromIndex);
-            return relativeReferenceIdx < 0 ? "/" : requestTarget.substring(relativeReferenceIdx);
+            if (relativeReferenceIdx >= 0) {
+                return requestTarget.substring(relativeReferenceIdx);
+            }
+            final int questionMarkIdx = requestTarget.indexOf('?', fromIndex);
+            return questionMarkIdx < 0 ? "/" : '/' + requestTarget.substring(questionMarkIdx);
         }
 
         @Override
