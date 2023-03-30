@@ -31,6 +31,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -143,7 +144,7 @@ final class DefaultExecutorTest {
             @Override
             Executor get() {
                 return from(new ThreadPoolExecutor(2, 2, 60, SECONDS,
-                        new SynchronousQueue<>()), newScheduledThreadPool(2));
+                        new LinkedBlockingQueue<>()), newScheduledThreadPool(2));
             }
 
             @Override
@@ -227,16 +228,19 @@ final class DefaultExecutorTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(ExecutorParam.class)
-    void executeRejection(ExecutorParam executorParam) {
+    void noExecuteRejection(ExecutorParam executorParam) throws Throwable {
         executor = executorParam.get();
         assumeTrue(executorParam.size() > 0,
                 () -> "Ignoring executor: " + executorParam + ", it has an unbounded thread pool.");
 
+        CountDownLatch latch = new CountDownLatch(1);
         for (int i = 0; i < executorParam.size(); i++) {
-            executor.execute(Task.newAwaitForeverTask());
+            executor.execute(Task.awaitFor(latch));
         }
-        Task reject = new Task();
-        assertThrows(RejectedExecutionException.class, () -> executor.execute(reject));
+        Task success = new Task();
+        executor.execute(success);
+        latch.countDown();
+        success.awaitDone();
     }
 
     @Test
