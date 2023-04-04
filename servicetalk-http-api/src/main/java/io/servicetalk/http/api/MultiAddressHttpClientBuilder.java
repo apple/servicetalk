@@ -20,6 +20,8 @@ import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.transport.api.IoExecutor;
 
+import javax.annotation.Nullable;
+
 /**
  * A builder of {@link StreamingHttpClient} instances which have a capacity to call any server based on the parsed
  * absolute-form URL address information from each {@link StreamingHttpRequest}.
@@ -136,13 +138,13 @@ public interface MultiAddressHttpClientBuilder<U, R> extends HttpClientBuilder<U
     MultiAddressHttpClientBuilder<U, R> initializer(SingleAddressInitializer<U, R> initializer);
 
     /**
-     * Enables <a href="https://datatracker.ietf.org/doc/html/rfc7231#section-6.4">redirection</a>.
+     * Configures <a href="https://datatracker.ietf.org/doc/html/rfc7231#section-6.4">redirection</a> behavior.
      *
      * @param config {@link RedirectConfig} to configure redirection behavior. It can be used to tune what requests
      * should follow redirects and which parts of the original request (headers/payload body/trailers) should be
-     * redirected to non-relative locations.
+     * redirected to non-relative locations. Use {@code null} to disable redirects.
      * @return {@code this}.
      * @see RedirectConfigBuilder
      */
-    MultiAddressHttpClientBuilder<U, R> followRedirects(RedirectConfig config);
+    MultiAddressHttpClientBuilder<U, R> followRedirects(@Nullable RedirectConfig config);
 }

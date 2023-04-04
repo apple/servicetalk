@@ -449,8 +449,8 @@ final class DefaultMultiAddressUrlHttpClientBuilder
 
     @Override
     public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> followRedirects(
-            final RedirectConfig config) {
-        this.redirectConfig = requireNonNull(config);
+            @Nullable final RedirectConfig config) {
+        this.redirectConfig = config;
         return this;
     }
 }
