@@ -12,7 +12,7 @@ jobs:
         java: [ 8, 11.0.16+8, 17, 19 ]
     steps:
       - name: Download Artifacts
-        uses: dawidd6/action-download-artifact@5e780fc7bbd0cac69fc73271ed86edf5dcb72d67
+        uses: dawidd6/action-download-artifact@7132ab516fba5f602fafae6fdd4822afa10db76f
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           workflow: ${{ github.event.workflow_run.workflow_id }}
@@ -35,7 +35,7 @@ jobs:
         java: [ 8, 11 ]
     steps:
       - name: Download Artifacts
-        uses: dawidd6/action-download-artifact@5e780fc7bbd0cac69fc73271ed86edf5dcb72d67
+        uses: dawidd6/action-download-artifact@7132ab516fba5f602fafae6fdd4822afa10db76f
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           workflow: ${{ github.event.workflow_run.workflow_id }}
@@ -58,7 +58,7 @@ jobs:
         java: [ 8, 11 ]
     steps:
       - name: Download Artifacts
-        uses: dawidd6/action-download-artifact@5e780fc7bbd0cac69fc73271ed86edf5dcb72d67
+        uses: dawidd6/action-download-artifact@7132ab516fba5f602fafae6fdd4822afa10db76f
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           workflow: ${{ github.event.workflow_run.workflow_id }}
