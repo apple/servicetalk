@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.annotation.Nullable;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLProtocolException;
@@ -65,8 +66,8 @@ final class SecureTcpTransportObserverErrorsTest extends AbstractTransportObserv
 
     private final CountDownLatch serverConnectionClosed = new CountDownLatch(1);
 
-    private void setUp(ErrorReason errorReason, SslProvider clientProvider, SslProvider serverProvider)
-            throws Exception {
+    private void setUp(ErrorReason errorReason, @Nullable SslProvider clientProvider,
+                       @Nullable SslProvider serverProvider) throws Exception {
         ClientSslConfigBuilder clientSslBuilder = defaultClientSslBuilder(clientProvider);
         ServerSslConfigBuilder serverSslBuilder = defaultServerSslBuilder(serverProvider);
         switch (errorReason) {
@@ -133,10 +134,18 @@ final class SecureTcpTransportObserverErrorsTest extends AbstractTransportObserv
     static Collection<Arguments> data() {
         Collection<Arguments> data = new ArrayList<>();
         for (ErrorReason reason : ErrorReason.values()) {
-            data.add(Arguments.of(reason, JDK, JDK));
-            data.add(Arguments.of(reason, JDK, OPENSSL));
-            data.add(Arguments.of(reason, OPENSSL, JDK));
-            data.add(Arguments.of(reason, OPENSSL, OPENSSL));
+            if (reason == ErrorReason.SECURE_CLIENT_TO_PLAIN_SERVER) {
+                data.add(Arguments.of(reason, JDK, null));
+                data.add(Arguments.of(reason, OPENSSL, null));
+            } else if (reason == ErrorReason.PLAIN_CLIENT_TO_SECURE_SERVER) {
+                data.add(Arguments.of(reason, null, JDK));
+                data.add(Arguments.of(reason, null, OPENSSL));
+            } else {
+                data.add(Arguments.of(reason, JDK, JDK));
+                data.add(Arguments.of(reason, JDK, OPENSSL));
+                data.add(Arguments.of(reason, OPENSSL, JDK));
+                data.add(Arguments.of(reason, OPENSSL, OPENSSL));
+            }
         }
         return data;
     }
@@ -154,8 +163,8 @@ final class SecureTcpTransportObserverErrorsTest extends AbstractTransportObserv
     @ParameterizedTest(name = "errorReason={0}, clientProvider={1}, serverProvider={2}")
     @MethodSource("data")
     void testSslErrors(ErrorReason errorReason,
-                       SslProvider clientProvider,
-                       SslProvider serverProvider) throws Exception {
+                       @Nullable SslProvider clientProvider,
+                       @Nullable SslProvider serverProvider) throws Exception {
         setUp(errorReason, clientProvider, serverProvider);
         CountDownLatch clientConnected = new CountDownLatch(1);
         AtomicReference<NettyConnection<Buffer, Buffer>> connection = new AtomicReference<>();
@@ -181,13 +190,8 @@ final class SecureTcpTransportObserverErrorsTest extends AbstractTransportObserv
                 verify(serverConnectionObserver, await()).onSecurityHandshake();
                 clientConnected.await();
                 connection.get().write(from(DEFAULT_ALLOCATOR.fromAscii("Hello"))).toFuture().get();
-                if (serverProvider == JDK) {
-                    verify(serverSecurityHandshakeObserver, await()).handshakeFailed(any(NotSslRecordException.class));
-                    verify(serverConnectionObserver, await()).connectionClosed(any(NotSslRecordException.class));
-                } else {
-                    verify(serverSecurityHandshakeObserver, await()).handshakeFailed(any(SSLHandshakeException.class));
-                    verify(serverConnectionObserver, await()).connectionClosed(any(SSLHandshakeException.class));
-                }
+                verify(serverSecurityHandshakeObserver, await()).handshakeFailed(any(NotSslRecordException.class));
+                verify(serverConnectionObserver, await()).connectionClosed(any(NotSslRecordException.class));
                 verify(clientConnectionObserver, await()).connectionClosed();
                 break;
             case WRONG_HOSTNAME_VERIFICATION:

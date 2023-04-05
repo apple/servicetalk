@@ -35,6 +35,8 @@ import org.mockito.verification.VerificationWithTimeout;
 import java.io.InputStream;
 import java.util.function.Supplier;
 
+import javax.annotation.Nullable;
+
 import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -90,17 +92,20 @@ public class AbstractTransportObserverTest extends AbstractTcpServerTest {
         return clientTransportObserver;
     }
 
-    static ClientSslConfigBuilder defaultClientSslBuilder(SslProvider provider) {
+    static ClientSslConfigBuilder defaultClientSslBuilder(@Nullable SslProvider provider) {
         return defaultClientSslBuilder(provider, DefaultTestCerts::loadServerCAPem);
     }
 
-    static ClientSslConfigBuilder defaultClientSslBuilder(SslProvider provider,
+    static ClientSslConfigBuilder defaultClientSslBuilder(@Nullable SslProvider provider,
                                                           Supplier<InputStream> trustCertSupplier) {
-        return new ClientSslConfigBuilder(trustCertSupplier)
+        ClientSslConfigBuilder builder = new ClientSslConfigBuilder(trustCertSupplier)
                 .peerHost(serverPemHostname())
                 .peerPort(-1)
-                .provider(provider)
                 .sslProtocols("TLSv1.2");
+        if (provider != null) {
+            builder.provider(provider);
+        }
+        return builder;
     }
 
     static ClientSslConfig defaultClientSslConfig(SslProvider provider) {
@@ -114,10 +119,14 @@ public class AbstractTransportObserverTest extends AbstractTcpServerTest {
         return config;
     }
 
-    static ServerSslConfigBuilder defaultServerSslBuilder(SslProvider provider) {
-        return new ServerSslConfigBuilder(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
-                .provider(provider)
+    static ServerSslConfigBuilder defaultServerSslBuilder(@Nullable SslProvider provider) {
+        ServerSslConfigBuilder builder = new ServerSslConfigBuilder(
+                DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
                 .sslProtocols("TLSv1.2");
+        if (provider != null) {
+            builder.provider(provider);
+        }
+        return builder;
     }
 
     static ServerSslConfig defaultServerSslConfig(SslProvider provider) {
