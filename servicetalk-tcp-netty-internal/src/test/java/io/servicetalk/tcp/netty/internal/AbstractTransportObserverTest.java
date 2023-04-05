@@ -34,7 +34,6 @@ import org.mockito.verification.VerificationWithTimeout;
 
 import java.io.InputStream;
 import java.util.function.Supplier;
-
 import javax.annotation.Nullable;
 
 import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
