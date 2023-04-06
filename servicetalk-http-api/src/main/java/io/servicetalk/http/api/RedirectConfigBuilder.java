@@ -24,13 +24,20 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.http.api.HttpHeaderNames.LOCATION;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static io.servicetalk.http.api.HttpResponseStatus.FOUND;
 import static io.servicetalk.http.api.HttpResponseStatus.MOVED_PERMANENTLY;
+import static io.servicetalk.http.api.HttpResponseStatus.MULTIPLE_CHOICES;
+import static io.servicetalk.http.api.HttpResponseStatus.PERMANENT_REDIRECT;
+import static io.servicetalk.http.api.HttpResponseStatus.SEE_OTHER;
+import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.REDIRECTION_3XX;
+import static io.servicetalk.http.api.HttpResponseStatus.TEMPORARY_REDIRECT;
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableSet;
 import static java.util.Objects.requireNonNull;
@@ -44,7 +51,14 @@ public final class RedirectConfigBuilder {
     // A user agent SHOULD NOT automatically redirect a request more than 5 times,
     // since such redirects usually indicate an infinite loop.
     private static final int DEFAULT_MAX_REDIRECTS = 5;
+    private static final Set<HttpResponseStatus> DEFAULT_ALLOWED_STATUSES = toSet(MULTIPLE_CHOICES, MOVED_PERMANENTLY,
+            FOUND, SEE_OTHER, TEMPORARY_REDIRECT, PERMANENT_REDIRECT);
     private static final Set<HttpRequestMethod> DEFAULT_ALLOWED_METHODS = toSet(GET, HEAD);
+    private static final BiFunction<HttpRequestMetaData, HttpResponseMetaData, String> DEFAULT_LOCATION_MAPPER =
+            (__, response) -> {
+                final CharSequence locationHeader = response.headers().get(LOCATION);
+                return locationHeader == null || locationHeader.length() == 0 ? null : locationHeader.toString();
+            };
     private static final RedirectPredicate DEFAULT_REDIRECT_PREDICATE =
             (relative, redirectCnt, previousRequest, redirectResponse) -> true;
     private static final CharSequence[] EMPTY_CHAR_SEQUENCE_ARRAY = {};
@@ -54,7 +68,10 @@ public final class RedirectConfigBuilder {
     private int maxRedirects = DEFAULT_MAX_REDIRECTS;
     private boolean allowNonRelativeRedirects;
     @Nullable
+    private HttpResponseStatus[] allowedStatuses;
+    @Nullable
     private HttpRequestMethod[] allowedMethods;
+    private BiFunction<HttpRequestMetaData, HttpResponseMetaData, String> locationMapper = DEFAULT_LOCATION_MAPPER;
     private RedirectPredicate redirectPredicate = DEFAULT_REDIRECT_PREDICATE;
     private boolean changePostToGet;
     private CharSequence[] headersToRedirect = EMPTY_CHAR_SEQUENCE_ARRAY;
@@ -77,13 +94,32 @@ public final class RedirectConfigBuilder {
     }
 
     /**
+     * Sets {@link HttpResponseStatus}es that are allowed to follow redirects.
+     * <p>
+     * All statuses must belong to {@link HttpResponseStatus.StatusClass#REDIRECTION_3XX REDIRECTION_3XX} status class.
+     *
+     * @param statuses {@link HttpResponseStatus}es that are allowed to follow redirects
+     * @return {@code this}
+     */
+    public RedirectConfigBuilder allowedStatuses(final HttpResponseStatus... statuses) {
+        for (HttpResponseStatus status : requireNonNull(statuses)) {
+            if (!REDIRECTION_3XX.contains(status)) {
+                throw new IllegalArgumentException("status: " + status + " belongs to " + status.statusClass() +
+                        " (expected: " + REDIRECTION_3XX + ')');
+            }
+        }
+        this.allowedStatuses = statuses.clone();
+        return this;
+    }
+
+    /**
      * Sets {@link HttpRequestMethod}s that are allowed to follow redirects.
      *
      * @param methods {@link HttpRequestMethod}s that are allowed to follow redirects
      * @return {@code this}
      */
     public RedirectConfigBuilder allowedMethods(final HttpRequestMethod... methods) {
-        this.allowedMethods = requireNonNull(methods);
+        this.allowedMethods = requireNonNull(methods).clone();
         return this;
     }
 
@@ -116,6 +152,25 @@ public final class RedirectConfigBuilder {
      */
     public RedirectConfigBuilder allowNonRelativeRedirects(final boolean allowNonRelativeRedirects) {
         this.allowNonRelativeRedirects = allowNonRelativeRedirects;
+        return this;
+    }
+
+    /**
+     * Sets a function to extract redirect location information from the redirect {@link HttpResponseMetaData response},
+     * optionally considering the previous {@link HttpRequestMetaData request} as well.
+     * <p>
+     * Per <a href="https://www.rfc-editor.org/rfc/rfc7231#section-7.1.2">RFC7231, section 7.1.2</a> 3xx (Redirection)
+     * responses use {@link HttpHeaderNames#LOCATION Location} header value as the preferred target resource for
+     * automatically redirecting the request. However, the target resource can be identified by a custom header or a
+     * combination of previous request and 3xx (Redirection) response meta-data.
+     *
+     * @param locationMapper A function to extract redirect location information. If the function returns {@code null},
+     * redirection response won't be followed
+     * @return {@code this}
+     */
+    public RedirectConfigBuilder locationMapper(
+            final BiFunction<HttpRequestMetaData, HttpResponseMetaData, String> locationMapper) {
+        this.locationMapper = requireNonNull(locationMapper);
         return this;
     }
 
@@ -175,7 +230,7 @@ public final class RedirectConfigBuilder {
      * @see #redirectRequestTransformer(RedirectConfig.RedirectRequestTransformer)
      */
     public RedirectConfigBuilder headersToRedirect(final CharSequence... headerNames) {
-        this.headersToRedirect = requireNonNull(headerNames);
+        this.headersToRedirect = requireNonNull(headerNames).clone();
         return this;
     }
 
@@ -220,7 +275,7 @@ public final class RedirectConfigBuilder {
      * @see #redirectRequestTransformer(RedirectConfig.RedirectRequestTransformer)
      */
     public RedirectConfigBuilder trailersToRedirect(final CharSequence... trailerNames) {
-        this.trailersToRedirect = requireNonNull(trailerNames);
+        this.trailersToRedirect = requireNonNull(trailerNames).clone();
         return this;
     }
 
@@ -242,10 +297,17 @@ public final class RedirectConfigBuilder {
 
     public RedirectConfig build() {
         return new DefaultRedirectConfig(maxRedirects,
+                allowedStatuses == null ? DEFAULT_ALLOWED_STATUSES : toSet(allowedStatuses),
                 allowedMethods == null ? DEFAULT_ALLOWED_METHODS : toSet(allowedMethods),
-                allowNonRelativeRedirects, redirectPredicate,
+                allowNonRelativeRedirects, locationMapper, redirectPredicate,
                 new DefaultRedirectRequestTransformer(changePostToGet, headersToRedirect, redirectPayloadBody,
                         trailersToRedirect, redirectRequestTransformer));
+    }
+
+    private static Set<HttpResponseStatus> toSet(final HttpResponseStatus... allowedStatuses) {
+        final Set<HttpResponseStatus> set = new HashSet<>((int) (allowedStatuses.length / 0.75f) + 1);
+        set.addAll(asList(allowedStatuses));
+        return unmodifiableSet(set);
     }
 
     private static Set<HttpRequestMethod> toSet(final HttpRequestMethod... allowedMethods) {
@@ -257,19 +319,26 @@ public final class RedirectConfigBuilder {
     private static final class DefaultRedirectConfig implements RedirectConfig {
 
         private final int maxRedirects;
+        private final Set<HttpResponseStatus> allowedStatuses;
         private final Set<HttpRequestMethod> allowedMethods;
         private final boolean allowNonRelativeRedirects;
+        private final BiFunction<HttpRequestMetaData, HttpResponseMetaData, String> locationMapper;
         private final RedirectPredicate redirectPredicate;
         private final RedirectRequestTransformer redirectRequestTransformer;
 
         private DefaultRedirectConfig(final int maxRedirects,
+                                      final Set<HttpResponseStatus> allowedStatuses,
                                       final Set<HttpRequestMethod> allowedMethods,
                                       final boolean allowNonRelativeRedirects,
+                                      final BiFunction<HttpRequestMetaData, HttpResponseMetaData, String>
+                                              locationMapper,
                                       final RedirectPredicate redirectPredicate,
                                       final RedirectRequestTransformer redirectRequestTransformer) {
             this.maxRedirects = maxRedirects;
+            this.allowedStatuses = allowedStatuses;
             this.allowedMethods = allowedMethods;
             this.allowNonRelativeRedirects = allowNonRelativeRedirects;
+            this.locationMapper = locationMapper;
             this.redirectPredicate = redirectPredicate;
             this.redirectRequestTransformer = redirectRequestTransformer;
         }
@@ -280,6 +349,11 @@ public final class RedirectConfigBuilder {
         }
 
         @Override
+        public Set<HttpResponseStatus> allowedStatuses() {
+            return allowedStatuses;
+        }
+
+        @Override
         public Set<HttpRequestMethod> allowedMethods() {
             return allowedMethods;
         }
@@ -287,6 +361,11 @@ public final class RedirectConfigBuilder {
         @Override
         public boolean allowNonRelativeRedirects() {
             return allowNonRelativeRedirects;
+        }
+
+        @Override
+        public BiFunction<HttpRequestMetaData, HttpResponseMetaData, String> locationMapper() {
+            return locationMapper;
         }
 
         @Override

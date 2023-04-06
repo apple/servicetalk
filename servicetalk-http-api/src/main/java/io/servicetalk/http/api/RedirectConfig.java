@@ -15,7 +15,10 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.http.api.HttpResponseStatus.StatusClass;
+
 import java.util.Set;
+import java.util.function.BiFunction;
 
 /**
  * Configuration options for <a href="https://datatracker.ietf.org/doc/html/rfc7231#section-6.4">redirection</a>.
@@ -77,6 +80,15 @@ public interface RedirectConfig {
     int maxRedirects();
 
     /**
+     * {@link HttpResponseStatus}es that are allowed to follow redirects.
+     * <p>
+     * All statuses in this set must belong to {@link StatusClass#REDIRECTION_3XX REDIRECTION_3XX} status class.
+     *
+     * @return {@link HttpResponseStatus}es that are allowed to follow redirects.
+     */
+    Set<HttpResponseStatus> allowedStatuses();
+
+    /**
      * {@link HttpRequestMethod}s that are allowed to follow redirects.
      *
      * @return {@link HttpRequestMethod}s that are allowed to follow redirects.
@@ -103,6 +115,15 @@ public interface RedirectConfig {
      * @see MultiAddressHttpClientBuilder#followRedirects(RedirectConfig)
      */
     boolean allowNonRelativeRedirects();
+
+    /**
+     * A function to extract redirect location information from the redirect {@link HttpResponseMetaData response},
+     * optionally considering the previous {@link HttpRequestMetaData request} as well.
+     *
+     * @return A function to extract redirect location information. If the function returns {@code null}, redirection
+     * response won't be followed.
+     */
+    BiFunction<HttpRequestMetaData, HttpResponseMetaData, String> locationMapper();
 
     /**
      * {@link RedirectPredicate} to make the final decision if redirect should be performed or not based on the
