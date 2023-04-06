@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020-2021 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020-2021, 2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,10 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.Executors.newCachedThreadPool;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-final class ProxyTunnel implements AutoCloseable {
+/**
+ * Imitates behavior of a secure HTTP CONNECT proxy.
+ */
+public final class ProxyTunnel implements AutoCloseable {
     private static final Logger LOGGER = LoggerFactory.getLogger(ProxyTunnel.class);
     private static final String CONNECT_PREFIX = "CONNECT ";
 
@@ -60,8 +63,14 @@ final class ProxyTunnel implements AutoCloseable {
         }
     }
 
+    /**
+     * Starts the proxy server and returns its {@link HostAndPort} to connect to.
+     *
+     * @return the {@link HostAndPort} to use to connect to the proxy
+     * @throws IOException In case of any I/O exception
+     */
     @SuppressWarnings("StatementWithEmptyBody")
-    HostAndPort startProxy() throws IOException {
+    public HostAndPort startProxy() throws IOException {
         serverSocket = new ServerSocket(0, 50, getLoopbackAddress());
         final InetSocketAddress serverSocketAddress = (InetSocketAddress) serverSocket.getLocalSocketAddress();
         executor.submit(() -> {
@@ -93,7 +102,10 @@ final class ProxyTunnel implements AutoCloseable {
         return HostAndPort.of(serverSocketAddress.getAddress().getHostAddress(), serverSocketAddress.getPort());
     }
 
-    void badResponseProxy() {
+    /**
+     * Changes the proxy handler to return 500 instead of 200.
+     */
+    public void badResponseProxy() {
         handler = (socket, initialLine) -> {
             final OutputStream os = socket.getOutputStream();
             os.write("HTTP/1.1 500 Internal Server Error\r\n\r\n".getBytes(UTF_8));
@@ -101,7 +113,12 @@ final class ProxyTunnel implements AutoCloseable {
         };
     }
 
-    int connectCount() {
+    /**
+     * Number of established connections to the proxy.
+     *
+     * @return Number of established connections to the proxy
+     */
+    public int connectCount() {
         return connectCount.get();
     }
 
