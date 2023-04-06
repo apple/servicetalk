@@ -25,6 +25,7 @@ import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseMetaData;
+import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.RedirectConfig;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -42,7 +43,7 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnError;
 import static io.servicetalk.http.api.HttpContextKeys.HTTP_EXECUTION_STRATEGY_KEY;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
-import static io.servicetalk.http.api.HttpHeaderNames.LOCATION;
+import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.REDIRECTION_3XX;
 
 /**
  * An operator, which implements redirect logic for {@link StreamingHttpClient}.
@@ -131,7 +132,7 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
 
             boolean terminalDelivered = false;
             try {
-                final String location = redirectLocation(redirectCount, request.method(), response);
+                final String location = redirectLocation(redirectCount, request, response);
                 if (location == null) {
                     terminalDelivered = true;
                     target.onSuccess(response);
@@ -220,24 +221,8 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
          * Returns a value of {@link HttpHeaderNames#LOCATION} header or {@code null} if we should not redirect.
          */
         @Nullable
-        private String redirectLocation(final int redirectCount, final HttpRequestMethod requestMethod,
+        private String redirectLocation(final int redirectCount, final HttpRequestMetaData requestMetaData,
                                         final HttpResponseMetaData responseMetaData) {
-            final int statusCode = responseMetaData.status().code();
-
-            if (statusCode < 300 || statusCode > 308 || (statusCode >= 304 && statusCode <= 306)) {
-                // We start without support for status codes outside of the standard range
-
-                // https://tools.ietf.org/html/rfc7232#section-4.1
-                // The 304 (Not Modified) status code indicates that the cache value is still fresh and can be used.
-
-                // https://tools.ietf.org/html/rfc7231#section-6.4.5
-                // The 305 (Use Proxy) status code has been deprecated due to security concerns regarding in-band
-                // configuration of a proxy.
-
-                // https://tools.ietf.org/html/rfc7231#section-6.4.6
-                // The 306 (Unused) status code is no longer used, and the code is reserved.
-                return null;
-            }
 
             final RedirectConfig config = redirectSingle.config;
             if (redirectCount >= config.maxRedirects()) {
@@ -246,18 +231,23 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
                 return null;
             }
 
+            final HttpResponseStatus status = responseMetaData.status();
+            if (!REDIRECTION_3XX.contains(status) || !config.allowedStatuses().contains(status)) {
+                LOGGER.debug("Configuration does not allow redirect for response status: {}", status);
+                return null;
+            }
+
+            final HttpRequestMethod requestMethod = requestMetaData.method();
             if (!config.allowedMethods().contains(requestMethod)) {
-                LOGGER.debug("Configuration does not allow redirect of method: {}", requestMethod);
+                LOGGER.debug("Configuration does not allow redirect for request method: {}", requestMethod);
                 return null;
             }
 
-            final CharSequence locationHeader = responseMetaData.headers().get(LOCATION);
-            if (locationHeader == null || locationHeader.length() == 0) {
-                LOGGER.debug("No location header in redirect response: {}", responseMetaData);
-                return null;
+            final String location = config.locationMapper().apply(requestMetaData, responseMetaData);
+            if (location == null) {
+                LOGGER.debug("No location identified for redirect response: {}", responseMetaData);
             }
-
-            return locationHeader.toString();
+            return location;
         }
 
         @Nullable

@@ -121,6 +121,9 @@ public final class RedirectingHttpRequesterFilter implements StreamingHttpClient
     private Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                   final StreamingHttpRequest request,
                                                   final boolean allowNonRelativeRedirects) {
+        if (config.maxRedirects() <= 0) {
+            return delegate.request(request);
+        }
         final Single<StreamingHttpResponse> response = delegate.request(
                 // Duplicate each payload buffer chunk to allow safely replaying it without worry that indexes can move
                 request.transformMessageBody(p -> p.map(item -> {
@@ -129,9 +132,6 @@ public final class RedirectingHttpRequesterFilter implements StreamingHttpClient
                     }
                     return item;
                 })));
-        if (config.maxRedirects() <= 0) {
-            return response;
-        }
         return new RedirectSingle(delegate, request, response, allowNonRelativeRedirects, config);
     }
 

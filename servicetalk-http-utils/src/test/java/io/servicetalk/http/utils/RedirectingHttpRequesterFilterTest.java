@@ -26,6 +26,7 @@ import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseStatus;
+import io.servicetalk.http.api.HttpResponseStatus.StatusClass;
 import io.servicetalk.http.api.RedirectConfig;
 import io.servicetalk.http.api.RedirectConfigBuilder;
 import io.servicetalk.http.api.StatelessTrailersTransformer;
@@ -41,12 +42,15 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
 
@@ -67,14 +71,9 @@ import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_0;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
-import static io.servicetalk.http.api.HttpRequestMethod.DELETE;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
-import static io.servicetalk.http.api.HttpRequestMethod.OPTIONS;
-import static io.servicetalk.http.api.HttpRequestMethod.PATCH;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
-import static io.servicetalk.http.api.HttpRequestMethod.PUT;
-import static io.servicetalk.http.api.HttpRequestMethod.TRACE;
 import static io.servicetalk.http.api.HttpResponseStatus.BAD_REQUEST;
 import static io.servicetalk.http.api.HttpResponseStatus.CONTINUE;
 import static io.servicetalk.http.api.HttpResponseStatus.FOUND;
@@ -90,6 +89,7 @@ import static io.servicetalk.http.api.HttpResponseStatus.USE_PROXY;
 import static io.servicetalk.http.api.TestStreamingHttpClient.from;
 import static java.lang.String.valueOf;
 import static java.nio.charset.StandardCharsets.US_ASCII;
+import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.emptyIterable;
 import static org.hamcrest.Matchers.endsWith;
@@ -190,59 +190,23 @@ class RedirectingHttpRequesterFilterTest {
         testNoRedirectWasDone(0, GET, MOVED_PERMANENTLY);
     }
 
-    @Test
-    void notModifiedStatusDoesntCauseRedirect() throws Exception {
-        testNoRedirectWasDone(MAX_REDIRECTS, GET, NOT_MODIFIED);
+    private static List<HttpResponseStatus> notAllowedStatusesByDefault() {
+        return asList(NOT_MODIFIED, USE_PROXY, HttpResponseStatus.of(306, "Switch Proxy"),
+                HttpResponseStatus.of(309, "Custom Min Range"),
+                HttpResponseStatus.of(399, "Custom Max Range"),
+                CONTINUE, OK, BAD_REQUEST, INTERNAL_SERVER_ERROR);
     }
 
-    @Test
-    void useProxyStatusDoesntCauseRedirect() throws Exception {
-        testNoRedirectWasDone(MAX_REDIRECTS, GET, USE_PROXY);
+    @ParameterizedTest(name = "{displayName} [{index}] status={0}")
+    @MethodSource("notAllowedStatusesByDefault")
+    void doesNotFollowRedirectForStatusByDefault(HttpResponseStatus status) throws Exception {
+        testNoRedirectWasDone(MAX_REDIRECTS, GET, status);
     }
 
-    @Test
-    void status306DoesntCauseRedirect() throws Exception {
-        testNoRedirectWasDone(MAX_REDIRECTS, GET, HttpResponseStatus.of(306, ""));
-    }
-
-    @Test
-    void status309DoesntCauseRedirect() throws Exception {
-        testNoRedirectWasDone(MAX_REDIRECTS, GET, HttpResponseStatus.of(309, ""));
-    }
-
-    @Test
-    void status399DoesntCauseRedirect() throws Exception {
-        testNoRedirectWasDone(MAX_REDIRECTS, GET, HttpResponseStatus.of(399, ""));
-    }
-
-    @Test
-    void continueStatusDoesntCauseRedirect() throws Exception {
-        testNoRedirectWasDone(MAX_REDIRECTS, GET, CONTINUE);
-    }
-
-    @Test
-    void okStatusDoesntCauseRedirect() throws Exception {
-        testNoRedirectWasDone(MAX_REDIRECTS, GET, OK);
-    }
-
-    @Test
-    void badRequestStatusDoesntCauseRedirect() throws Exception {
-        testNoRedirectWasDone(MAX_REDIRECTS, GET, BAD_REQUEST);
-    }
-
-    @Test
-    void internalServerErrorStatusDoesntCauseRedirect() throws Exception {
-        testNoRedirectWasDone(MAX_REDIRECTS, GET, INTERNAL_SERVER_ERROR);
-    }
-
-    @Test
-    void nonGetHeadMethodsDoNotRedirectByDefault() throws Exception {
-        testNoRedirectWasDone(MAX_REDIRECTS, POST, SEE_OTHER);
-        testNoRedirectWasDone(MAX_REDIRECTS, PUT, SEE_OTHER);
-        testNoRedirectWasDone(MAX_REDIRECTS, DELETE, SEE_OTHER);
-        testNoRedirectWasDone(MAX_REDIRECTS, PATCH, SEE_OTHER);
-        testNoRedirectWasDone(MAX_REDIRECTS, TRACE, SEE_OTHER);
-        testNoRedirectWasDone(MAX_REDIRECTS, OPTIONS, SEE_OTHER);
+    @ParameterizedTest(name = "{displayName} [{index}] method={0}")
+    @ValueSource(strings = {"POST", "PUT", "DELETE", "PATCH", "TRACE", "OPTIONS"})
+    void nonGetHeadMethodsDoNotRedirectByDefault(HttpRequestMethod method) throws Exception {
+        testNoRedirectWasDone(MAX_REDIRECTS, method, SEE_OTHER);
     }
 
     @Test
@@ -313,40 +277,15 @@ class RedirectingHttpRequesterFilterTest {
         verifyRedirected(client, request, true, false);
     }
 
-    @Test
-    void multipleChoicesRedirected() throws Exception {
-        testRedirected(GET, MULTIPLE_CHOICES);
-        testRedirected(HEAD, MULTIPLE_CHOICES);
+    private static List<HttpResponseStatus> allowedStatusesByDefault() {
+        return asList(MULTIPLE_CHOICES, MOVED_PERMANENTLY, FOUND, SEE_OTHER, TEMPORARY_REDIRECT, PERMANENT_REDIRECT);
     }
 
-    @Test
-    void movedPermanentlyRedirected() throws Exception {
-        testRedirected(GET, MOVED_PERMANENTLY);
-        testRedirected(HEAD, MOVED_PERMANENTLY);
-    }
-
-    @Test
-    void foundRedirected() throws Exception {
-        testRedirected(GET, FOUND);
-        testRedirected(HEAD, FOUND);
-    }
-
-    @Test
-    void seeOtherRedirected() throws Exception {
-        testRedirected(GET, SEE_OTHER);
-        testRedirected(HEAD, SEE_OTHER);
-    }
-
-    @Test
-    void temporaryRedirectRedirected() throws Exception {
-        testRedirected(GET, TEMPORARY_REDIRECT);
-        testRedirected(HEAD, TEMPORARY_REDIRECT);
-    }
-
-    @Test
-    void permanentRedirectRedirected() throws Exception {
-        testRedirected(GET, PERMANENT_REDIRECT);
-        testRedirected(HEAD, PERMANENT_REDIRECT);
+    @ParameterizedTest(name = "{displayName} [{index}] status={0}")
+    @MethodSource("allowedStatusesByDefault")
+    void followsRedirectForStatusByDefault(HttpResponseStatus status) throws Exception {
+        testRedirected(GET, status);
+        testRedirected(HEAD, status);
     }
 
     private void testRedirected(final HttpRequestMethod method,
@@ -485,6 +424,21 @@ class RedirectingHttpRequesterFilterTest {
     }
 
     @Test
+    void overrideAllowedStatuses() throws Exception {
+        HttpResponseStatus[] allowedStatuses = notAllowedStatusesByDefault().stream()
+                .filter(StatusClass.REDIRECTION_3XX::contains)
+                .toArray(HttpResponseStatus[]::new);
+
+        RedirectConfig config = new RedirectConfigBuilder().allowedStatuses(allowedStatuses).build();
+        for (HttpResponseStatus status : allowedStatuses) {
+            testRedirected(GET, status, config);
+        }
+        for (HttpResponseStatus status : allowedStatusesByDefault()) {
+            testNoRedirectWasDone(GET, status, config);
+        }
+    }
+
+    @Test
     void overrideAllowedMethods() throws Exception {
         RedirectConfig config = new RedirectConfigBuilder().allowedMethods(POST).build();
         testRedirected(POST, MOVED_PERMANENTLY, config);
@@ -493,7 +447,39 @@ class RedirectingHttpRequesterFilterTest {
     }
 
     @Test
-    void shouldRedirectReturnsFalse() throws Exception {
+    void customLocationMapper() throws Exception {
+        String customLocationHeader = "x-location";
+        when(httpClient.request(any())).thenReturn(
+                redirectResponse(MOVED_PERMANENTLY).map(response -> {
+                    CharSequence location = response.headers().get(LOCATION, "/");
+                    response.setHeader(customLocationHeader, location);
+                    response.headers().remove(LOCATION);
+                    return response;
+                }),
+                okResponse());
+        AtomicBoolean locationMapperInvoked = new AtomicBoolean();
+        StreamingHttpClient client = newClient(new RedirectConfigBuilder()
+                .locationMapper((req, resp) -> {
+                    locationMapperInvoked.set(true);
+                    return resp.headers().get(customLocationHeader, "").toString();
+                }).build());
+
+        StreamingHttpRequest request = newRequest(client, GET);
+        StreamingHttpRequest redirectedRequest = verifyResponse(client, request, OK, -1, 2, GET);
+        assertThat("Request didn't change", request, not(sameInstance(redirectedRequest)));
+        verifyHeadersAndMessageBodyRedirected(redirectedRequest);
+        verifyRedirectResponsePayloadsDrained(true);
+        assertThat("LocationMapper was not invoked", locationMapperInvoked.get(), is(true));
+    }
+
+    @Test
+    void locationMapperReturnsNull() throws Exception {
+        testNoRedirectWasDone(GET, MOVED_PERMANENTLY, new RedirectConfigBuilder()
+                .locationMapper((req, resp) -> null).build());
+    }
+
+    @Test
+    void redirectPredicateReturnsFalse() throws Exception {
         testNoRedirectWasDone(GET, MOVED_PERMANENTLY, new RedirectConfigBuilder()
                 .redirectPredicate((relative, cnt, req, resp) -> false).build());
     }
@@ -595,7 +581,7 @@ class RedirectingHttpRequesterFilterTest {
     }
 
     @Test
-    void prepareRequestThrows() {
+    void redirectRequestTransformerThrows() {
         when(httpClient.request(any())).thenReturn(redirectResponse(MOVED_PERMANENTLY), okResponse());
         StreamingHttpClient client = newClient(new RedirectConfigBuilder()
                 .redirectRequestTransformer((relative, original, response, redirect) -> {
@@ -608,10 +594,23 @@ class RedirectingHttpRequesterFilterTest {
     }
 
     @Test
-    void shouldRedirectThrows() {
+    void redirectPredicateThrows() {
         when(httpClient.request(any())).thenReturn(redirectResponse(MOVED_PERMANENTLY), okResponse());
         StreamingHttpClient client = newClient(new RedirectConfigBuilder()
                 .redirectPredicate((relative, count, request, response) -> {
+                    throw DELIBERATE_EXCEPTION;
+                }).build());
+
+        ExecutionException e = assertThrows(ExecutionException.class,
+                () -> client.request(newRequest(client, GET)).toFuture().get());
+        assertThat(e.getCause(), sameInstance(DELIBERATE_EXCEPTION));
+    }
+
+    @Test
+    void locationMapperThrows() {
+        when(httpClient.request(any())).thenReturn(redirectResponse(MOVED_PERMANENTLY), okResponse());
+        StreamingHttpClient client = newClient(new RedirectConfigBuilder()
+                .locationMapper((request, response) -> {
                     throw DELIBERATE_EXCEPTION;
                 }).build());
 
