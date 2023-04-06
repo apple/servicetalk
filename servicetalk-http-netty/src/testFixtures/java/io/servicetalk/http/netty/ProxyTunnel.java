@@ -32,7 +32,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.http.netty.HttpsProxyTest.safeClose;
 import static java.net.InetAddress.getLoopbackAddress;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.Executors.newCachedThreadPool;
@@ -56,7 +55,9 @@ public final class ProxyTunnel implements AutoCloseable {
     @Override
     public void close() throws Exception {
         try {
-            safeClose(serverSocket);
+            if (serverSocket != null) {
+                serverSocket.close();
+            }
         } finally {
             executor.shutdown();
             executor.awaitTermination(100, MILLISECONDS);
@@ -69,7 +70,6 @@ public final class ProxyTunnel implements AutoCloseable {
      * @return the {@link HostAndPort} to use to connect to the proxy
      * @throws IOException In case of any I/O exception
      */
-    @SuppressWarnings("StatementWithEmptyBody")
     public HostAndPort startProxy() throws IOException {
         serverSocket = new ServerSocket(0, 50, getLoopbackAddress());
         final InetSocketAddress serverSocketAddress = (InetSocketAddress) serverSocket.getLocalSocketAddress();
