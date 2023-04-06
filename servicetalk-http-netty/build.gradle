@@ -71,6 +71,8 @@ dependencies {
   testFixturesImplementation testFixtures(project(":servicetalk-transport-netty-internal"))
   testFixturesImplementation project(":servicetalk-http-utils")
   testFixturesImplementation project(":servicetalk-test-resources")
+  testFixturesImplementation "com.google.code.findbugs:jsr305"
+  testFixturesImplementation "org.slf4j:slf4j-api"
   testFixturesImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
   testFixturesRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
 }

@@ -19,4 +19,10 @@
     <Class name="io.servicetalk.http.netty.AsyncContextHttpFilterVerifier"/>
     <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
   </Match>
+  <!-- Not interested in returned values -->
+  <Match>
+    <Class name="io.servicetalk.http.netty.ProxyTunnel"/>
+    <Method name="startProxy"/>
+    <Bug pattern="RV_RETURN_VALUE_IGNORED_BAD_PRACTICE"/>
+  </Match>
 </FindBugsFilter>
