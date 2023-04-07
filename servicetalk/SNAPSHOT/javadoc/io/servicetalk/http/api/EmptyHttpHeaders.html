@@ -137,9 +137,22 @@ implements <a href="HttpHeaders.html" title="interface in io.servicetalk.http.ap
 <div class="block">Adds new headers with the specified <code>name</code> and <code>values</code>.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#addCookie(io.servicetalk.http.api.HttpCookiePair)" class="member-name-link">addCookie</a><wbr>(<a href="HttpCookiePair.html" title="interface in io.servicetalk.http.api">HttpCookiePair</a>&nbsp;cookie)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#add(java.lang.CharSequence,java.util.Iterator)" class="member-name-link">add</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Iterator.html" title="class or interface in java.util" class="external-link">Iterator</a>&lt;? extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&gt;&nbsp;valuesItr)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Adds new headers with the specified <code>name</code> and <code>values</code>.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#addCookie(io.servicetalk.http.api.HttpCookiePair)" class="member-name-link">addCookie</a><wbr>(<a href="HttpCookiePair.html" title="interface in io.servicetalk.http.api">HttpCookiePair</a>&nbsp;cookie)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Adds a <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a>.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#addCookie(java.lang.CharSequence,java.lang.CharSequence)" class="member-name-link">addCookie</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;value)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Adds a <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a> with the specified <code>name</code> and
+ <code>value</code>.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#addSetCookie(io.servicetalk.http.api.HttpSetCookie)" class="member-name-link">addSetCookie</a><wbr>(<a href="HttpSetCookie.html" title="interface in io.servicetalk.http.api">HttpSetCookie</a>&nbsp;cookie)</code></div>
@@ -147,9 +160,21 @@ implements <a href="HttpHeaders.html" title="interface in io.servicetalk.http.ap
 <div class="block">Adds a <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a>.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#clear()" class="member-name-link">clear</a>()</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#addSetCookie(java.lang.CharSequence,java.lang.CharSequence)" class="member-name-link">addSetCookie</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;value)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Adds a <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a> with the specified <code>name</code>
+ and <code>value</code>.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#clear()" class="member-name-link">clear</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Removes all headers.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#contains(java.lang.CharSequence)" class="member-name-link">contains</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Returns <code>true</code> if a header with the <code>name</code> exists, <code>false</code> otherwise.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#contains(java.lang.CharSequence,java.lang.CharSequence)" class="member-name-link">contains</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name,
@@ -166,19 +191,28 @@ implements <a href="HttpHeaders.html" title="interface in io.servicetalk.http.ap
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#equals(java.lang.Object)" class="member-name-link">equals</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&nbsp;o)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#get(java.lang.CharSequence)" class="member-name-link">get</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Returns the value of a header with the specified name.</div>
-</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#forEach(java.util.function.Consumer)" class="member-name-link">forEach</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Consumer.html" title="class or interface in java.util.function" class="external-link">Consumer</a>&lt;? super <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.Entry.html" title="class or interface in java.util" class="external-link">Map.Entry</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&gt;&gt;&nbsp;action)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#get(java.lang.CharSequence,java.lang.CharSequence)" class="member-name-link">get</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name,
- <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;defaultValue)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#get(java.lang.CharSequence)" class="member-name-link">get</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns the value of a header with the specified name.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getAndRemove(java.lang.CharSequence)" class="member-name-link">getAndRemove</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name)</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#get(java.lang.CharSequence,java.lang.CharSequence)" class="member-name-link">get</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;defaultValue)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Returns the value of a header with the specified name.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getAndRemove(java.lang.CharSequence)" class="member-name-link">getAndRemove</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Returns the value of a header with the specified name and removes it from this object.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getAndRemove(java.lang.CharSequence,java.lang.CharSequence)" class="member-name-link">getAndRemove</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;defaultValue)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns the value of a header with the specified name and removes it from this object.</div>
 </div>
@@ -186,6 +220,16 @@ implements <a href="HttpHeaders.html" title="interface in io.servicetalk.http.ap
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getCookie(java.lang.CharSequence)" class="member-name-link">getCookie</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Gets a <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a> identified by <code>name</code>.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link">Iterable</a>&lt;? extends <a href="HttpCookiePair.html" title="interface in io.servicetalk.http.api">HttpCookiePair</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getCookies()" class="member-name-link">getCookies</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Gets all the <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a>s.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link">Iterable</a>&lt;? extends <a href="HttpCookiePair.html" title="interface in io.servicetalk.http.api">HttpCookiePair</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getCookies(java.lang.CharSequence)" class="member-name-link">getCookies</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Gets the <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a>s with the same name.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Iterator.html" title="class or interface in java.util" class="external-link">Iterator</a>&lt;? extends <a href="HttpCookiePair.html" title="interface in io.servicetalk.http.api">HttpCookiePair</a>&gt;</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getCookiesIterator()" class="member-name-link">getCookiesIterator</a>()</code></div>
@@ -202,99 +246,122 @@ implements <a href="HttpHeaders.html" title="interface in io.servicetalk.http.ap
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Gets a <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a> identified by <code>name</code>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Iterator.html" title="class or interface in java.util" class="external-link">Iterator</a>&lt;? extends <a href="HttpSetCookie.html" title="interface in io.servicetalk.http.api">HttpSetCookie</a>&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getSetCookiesIterator()" class="member-name-link">getSetCookiesIterator</a>()</code></div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link">Iterable</a>&lt;? extends <a href="HttpSetCookie.html" title="interface in io.servicetalk.http.api">HttpSetCookie</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getSetCookies()" class="member-name-link">getSetCookies</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Gets all the <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a>s.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Iterator.html" title="class or interface in java.util" class="external-link">Iterator</a>&lt;? extends <a href="HttpSetCookie.html" title="interface in io.servicetalk.http.api">HttpSetCookie</a>&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getSetCookiesIterator(java.lang.CharSequence)" class="member-name-link">getSetCookiesIterator</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name)</code></div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link">Iterable</a>&lt;? extends <a href="HttpSetCookie.html" title="interface in io.servicetalk.http.api">HttpSetCookie</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getSetCookies(java.lang.CharSequence)" class="member-name-link">getSetCookies</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Gets the <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a>s with the same name.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link">Iterable</a>&lt;? extends <a href="HttpSetCookie.html" title="interface in io.servicetalk.http.api">HttpSetCookie</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getSetCookies(java.lang.CharSequence,java.lang.CharSequence,java.lang.CharSequence)" class="member-name-link">getSetCookies</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;domain,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;path)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Gets the <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a>s with the same name.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Iterator.html" title="class or interface in java.util" class="external-link">Iterator</a>&lt;? extends <a href="HttpSetCookie.html" title="interface in io.servicetalk.http.api">HttpSetCookie</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getSetCookiesIterator()" class="member-name-link">getSetCookiesIterator</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Gets all the <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a>s.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Iterator.html" title="class or interface in java.util" class="external-link">Iterator</a>&lt;? extends <a href="HttpSetCookie.html" title="interface in io.servicetalk.http.api">HttpSetCookie</a>&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getSetCookiesIterator(java.lang.CharSequence,java.lang.CharSequence,java.lang.CharSequence)" class="member-name-link">getSetCookiesIterator</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name,
- <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;domain,
- <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;path)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getSetCookiesIterator(java.lang.CharSequence)" class="member-name-link">getSetCookiesIterator</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Gets the <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a>s with the same name.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>int</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#hashCode()" class="member-name-link">hashCode</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isEmpty()" class="member-name-link">isEmpty</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Returns <code>true</code> if <a href="HttpHeaders.html#size()"><code>HttpHeaders.size()</code></a> equals <code>0</code>.</div>
-</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Iterator.html" title="class or interface in java.util" class="external-link">Iterator</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.Entry.html" title="class or interface in java.util" class="external-link">Map.Entry</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&gt;&gt;</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#iterator()" class="member-name-link">iterator</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Set.html" title="class or interface in java.util" class="external-link">Set</a>&lt;? extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&gt;</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#names()" class="member-name-link">names</a>()</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Returns a <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Set.html" title="class or interface in java.util" class="external-link"><code>Set</code></a> of all header names in this object.</div>
-</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#remove(java.lang.CharSequence)" class="member-name-link">remove</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Removes all headers with the specified <code>name</code>.</div>
-</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#remove(java.lang.CharSequence,java.lang.CharSequence)" class="member-name-link">remove</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name,
- <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;value)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Removes specific value(s) from the specified header <code>name</code>.</div>
-</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#removeCookies(java.lang.CharSequence)" class="member-name-link">removeCookies</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Removes all <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a> identified by <code>name</code>.</div>
-</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#removeIgnoreCase(java.lang.CharSequence,java.lang.CharSequence)" class="member-name-link">removeIgnoreCase</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name,
- <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;value)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Removes specific value(s) from the specified header <code>name</code>.</div>
-</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#removeSetCookies(java.lang.CharSequence)" class="member-name-link">removeSetCookies</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Removes all <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a> identified by <code>name</code>.</div>
-</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#removeSetCookies(java.lang.CharSequence,java.lang.CharSequence,java.lang.CharSequence)" class="member-name-link">removeSetCookies</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name,
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Iterator.html" title="class or interface in java.util" class="external-link">Iterator</a>&lt;? extends <a href="HttpSetCookie.html" title="interface in io.servicetalk.http.api">HttpSetCookie</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#getSetCookiesIterator(java.lang.CharSequence,java.lang.CharSequence,java.lang.CharSequence)" class="member-name-link">getSetCookiesIterator</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;domain,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;path)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Gets the <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a>s with the same name.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>int</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#hashCode()" class="member-name-link">hashCode</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#isEmpty()" class="member-name-link">isEmpty</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Returns <code>true</code> if <a href="HttpHeaders.html#size()"><code>HttpHeaders.size()</code></a> equals <code>0</code>.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Iterator.html" title="class or interface in java.util" class="external-link">Iterator</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.Entry.html" title="class or interface in java.util" class="external-link">Map.Entry</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&gt;&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#iterator()" class="member-name-link">iterator</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Set.html" title="class or interface in java.util" class="external-link">Set</a>&lt;? extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#names()" class="member-name-link">names</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Returns a <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Set.html" title="class or interface in java.util" class="external-link"><code>Set</code></a> of all header names in this object.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#remove(java.lang.CharSequence)" class="member-name-link">remove</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Removes all headers with the specified <code>name</code>.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#remove(java.lang.CharSequence,java.lang.CharSequence)" class="member-name-link">remove</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;value)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Removes specific value(s) from the specified header <code>name</code>.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#removeCookies(java.lang.CharSequence)" class="member-name-link">removeCookies</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Removes all <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a> identified by <code>name</code>.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#removeIgnoreCase(java.lang.CharSequence,java.lang.CharSequence)" class="member-name-link">removeIgnoreCase</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;value)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Removes specific value(s) from the specified header <code>name</code>.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#removeSetCookies(java.lang.CharSequence)" class="member-name-link">removeSetCookies</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Removes all <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a> identified by <code>name</code>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#replace(io.servicetalk.http.api.HttpHeaders)" class="member-name-link">replace</a><wbr>(<a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a>&nbsp;headers)</code></div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#removeSetCookies(java.lang.CharSequence,java.lang.CharSequence,java.lang.CharSequence)" class="member-name-link">removeSetCookies</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;domain,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;path)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Removes all <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a> identified by <code>name</code>.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#replace(io.servicetalk.http.api.HttpHeaders)" class="member-name-link">replace</a><wbr>(<a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a>&nbsp;headers)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Removes all header names contained in <code>headers</code> from this object, and then adds all headers contained in
  <code>headers</code>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#set(io.servicetalk.http.api.HttpHeaders)" class="member-name-link">set</a><wbr>(<a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a>&nbsp;headers)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#set(io.servicetalk.http.api.HttpHeaders)" class="member-name-link">set</a><wbr>(<a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a>&nbsp;headers)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Clears the current header entries and copies all header entries of the specified <code>headers</code> object.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#set(java.lang.CharSequence,java.lang.CharSequence)" class="member-name-link">set</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name,
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#set(java.lang.CharSequence,java.lang.CharSequence)" class="member-name-link">set</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;value)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Sets a header with the specified <code>name</code> and <code>value</code>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#set(java.lang.CharSequence,java.lang.CharSequence...)" class="member-name-link">set</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name,
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#set(java.lang.CharSequence,java.lang.CharSequence...)" class="member-name-link">set</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>...&nbsp;values)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Sets a header with the specified <code>name</code> and <code>values</code>.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#set(java.lang.CharSequence,java.lang.Iterable)" class="member-name-link">set</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name,
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#set(java.lang.CharSequence,java.lang.Iterable)" class="member-name-link">set</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link">Iterable</a>&lt;? extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&gt;&nbsp;values)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Sets a new header with the specified <code>name</code> and <code>values</code>.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#set(java.lang.CharSequence,java.util.Iterator)" class="member-name-link">set</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Iterator.html" title="class or interface in java.util" class="external-link">Iterator</a>&lt;? extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&gt;&nbsp;valueItr)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Sets a new header with the specified <code>name</code> and <code>values</code>.</div>
 </div>
@@ -303,16 +370,24 @@ implements <a href="HttpHeaders.html" title="interface in io.servicetalk.http.ap
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns the number of headers in this object.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toString()" class="member-name-link">toString</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Spliterator.html" title="class or interface in java.util" class="external-link">Spliterator</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.Entry.html" title="class or interface in java.util" class="external-link">Map.Entry</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&gt;&gt;</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#spliterator()" class="member-name-link">spliterator</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toString()" class="member-name-link">toString</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Returns a <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link"><code>String</code></a> representation of this <a href="HttpHeaders.html" title="interface in io.servicetalk.http.api"><code>HttpHeaders</code></a>.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toString(java.util.function.BiFunction)" class="member-name-link">toString</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/BiFunction.html" title="class or interface in java.util.function" class="external-link">BiFunction</a>&lt;? super <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>,<wbr>? super <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&gt;&nbsp;filter)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#toString(java.util.function.BiFunction)" class="member-name-link">toString</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/BiFunction.html" title="class or interface in java.util.function" class="external-link">BiFunction</a>&lt;? super <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>,<wbr>? super <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&gt;&nbsp;filter)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Builds a string which represents all the content in this <a href="HttpHeaders.html" title="interface in io.servicetalk.http.api"><code>HttpHeaders</code></a> in which sensitive headers can be
  filtered via <code>filter</code>.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link">Iterable</a>&lt;? extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#values(java.lang.CharSequence)" class="member-name-link">values</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Returns all values for the header with the specified name.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Iterator.html" title="class or interface in java.util" class="external-link">Iterator</a>&lt;? extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&gt;</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#valuesIterator(java.lang.CharSequence)" class="member-name-link">valuesIterator</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name)</code></div>
@@ -325,12 +400,6 @@ implements <a href="HttpHeaders.html" title="interface in io.servicetalk.http.ap
 <div class="inherited-list">
 <h3 id="methods-inherited-from-class-java.lang.Object">Methods inherited from class&nbsp;java.lang.<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a></h3>
 <code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#clone()" title="class or interface in java.lang" class="external-link">clone</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#finalize()" title="class or interface in java.lang" class="external-link">finalize</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#getClass()" title="class or interface in java.lang" class="external-link">getClass</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#notify()" title="class or interface in java.lang" class="external-link">notify</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#notifyAll()" title="class or interface in java.lang" class="external-link">notifyAll</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait()" title="class or interface in java.lang" class="external-link">wait</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait(long)" title="class or interface in java.lang" class="external-link">wait</a>, <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#wait(long,int)" title="class or interface in java.lang" class="external-link">wait</a></code></div>
-<div class="inherited-list">
-<h3 id="methods-inherited-from-class-io.servicetalk.http.api.HttpHeaders">Methods inherited from interface&nbsp;io.servicetalk.http.api.<a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></h3>
-<code><a href="HttpHeaders.html#add(java.lang.CharSequence,java.util.Iterator)">add</a>, <a href="HttpHeaders.html#addCookie(java.lang.CharSequence,java.lang.CharSequence)">addCookie</a>, <a href="HttpHeaders.html#addSetCookie(java.lang.CharSequence,java.lang.CharSequence)">addSetCookie</a>, <a href="HttpHeaders.html#contains(java.lang.CharSequence)">contains</a>, <a href="HttpHeaders.html#getAndRemove(java.lang.CharSequence,java.lang.CharSequence)">getAndRemove</a>, <a href="HttpHeaders.html#getCookies()">getCookies</a>, <a href="HttpHeaders.html#getCookies(java.lang.CharSequence)">getCookies</a>, <a href="HttpHeaders.html#getSetCookies()">getSetCookies</a>, <a href="HttpHeaders.html#getSetCookies(java.lang.CharSequence)">getSetCookies</a>, <a href="HttpHeaders.html#getSetCookies(java.lang.CharSequence,java.lang.CharSequence,java.lang.CharSequence)">getSetCookies</a>, <a href="HttpHeaders.html#set(java.lang.CharSequence,java.util.Iterator)">set</a>, <a href="HttpHeaders.html#spliterator()">spliterator</a>, <a href="HttpHeaders.html#values(java.lang.CharSequence)">values</a></code></div>
-<div class="inherited-list">
-<h3 id="methods-inherited-from-class-java.lang.Iterable">Methods inherited from interface&nbsp;java.lang.<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link">Iterable</a></h3>
-<code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html#forEach(java.util.function.Consumer)" title="class or interface in java.lang" class="external-link">forEach</a></code></div>
 </section>
 </li>
 </ul>
@@ -412,6 +481,47 @@ implements <a href="HttpHeaders.html" title="interface in io.servicetalk.http.ap
 </section>
 </li>
 <li>
+<section class="detail" id="getAndRemove(java.lang.CharSequence,java.lang.CharSequence)">
+<h3>getAndRemove</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a></span>&nbsp;<span class="element-name">getAndRemove</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;defaultValue)</span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="HttpHeaders.html#getAndRemove(java.lang.CharSequence,java.lang.CharSequence)">HttpHeaders</a></code></span></div>
+<div class="block">Returns the value of a header with the specified name and removes it from this object. If there is more than
+ one value for the specified name, the first value in insertion order is returned.</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="HttpHeaders.html#getAndRemove(java.lang.CharSequence,java.lang.CharSequence)">getAndRemove</a></code>&nbsp;in interface&nbsp;<code><a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></code></dd>
+<dt>Parameters:</dt>
+<dd><code>name</code> - the name of the header to retrieve.</dd>
+<dd><code>defaultValue</code> - the default value.</dd>
+<dt>Returns:</dt>
+<dd>the first header value or <code>defaultValue</code> if there is no such header.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="values(java.lang.CharSequence)">
+<h3>values</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link">Iterable</a>&lt;? extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&gt;</span>&nbsp;<span class="element-name">values</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name)</span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="HttpHeaders.html#values(java.lang.CharSequence)">HttpHeaders</a></code></span></div>
+<div class="block">Returns all values for the header with the specified name.</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="HttpHeaders.html#values(java.lang.CharSequence)">values</a></code>&nbsp;in interface&nbsp;<code><a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></code></dd>
+<dt>Parameters:</dt>
+<dd><code>name</code> - the name of the header to retrieve.</dd>
+<dt>Returns:</dt>
+<dd>a <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link"><code>Iterable</code></a> of header values or an empty <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link"><code>Iterable</code></a> if no values are found.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="HttpHeaders.html#valuesIterator(java.lang.CharSequence)"><code>if minimal object allocation is required.</code></a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
 <section class="detail" id="valuesIterator(java.lang.CharSequence)">
 <h3>valuesIterator</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Iterator.html" title="class or interface in java.util" class="external-link">Iterator</a>&lt;? extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&gt;</span>&nbsp;<span class="element-name">valuesIterator</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name)</span></div>
@@ -430,6 +540,22 @@ implements <a href="HttpHeaders.html" title="interface in io.servicetalk.http.ap
 <li><a href="HttpHeaders.html#values(java.lang.CharSequence)"><code>if Iterable is preferred, at the expense of more object allocation.</code></a></li>
 </ul>
 </dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="contains(java.lang.CharSequence)">
+<h3>contains</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">contains</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name)</span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="HttpHeaders.html#contains(java.lang.CharSequence)">HttpHeaders</a></code></span></div>
+<div class="block">Returns <code>true</code> if a header with the <code>name</code> exists, <code>false</code> otherwise.</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="HttpHeaders.html#contains(java.lang.CharSequence)">contains</a></code>&nbsp;in interface&nbsp;<code><a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></code></dd>
+<dt>Parameters:</dt>
+<dd><code>name</code> - the header name.</dd>
+<dt>Returns:</dt>
+<dd><code>true</code> if <code>name</code> exists.</dd>
 </dl>
 </section>
 </li>
@@ -556,6 +682,30 @@ implements <a href="HttpHeaders.html" title="interface in io.servicetalk.http.ap
 </section>
 </li>
 <li>
+<section class="detail" id="add(java.lang.CharSequence,java.util.Iterator)">
+<h3>add</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></span>&nbsp;<span class="element-name">add</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Iterator.html" title="class or interface in java.util" class="external-link">Iterator</a>&lt;? extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&gt;&nbsp;valuesItr)</span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="HttpHeaders.html#add(java.lang.CharSequence,java.util.Iterator)">HttpHeaders</a></code></span></div>
+<div class="block">Adds new headers with the specified <code>name</code> and <code>values</code>. This method is semantically equivalent to:
+
+ <pre>
+ while (valueItr.hasNext()) {
+     headers.add(name, valueItr.next());
+ }
+ </pre></div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="HttpHeaders.html#add(java.lang.CharSequence,java.util.Iterator)">add</a></code>&nbsp;in interface&nbsp;<code><a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></code></dd>
+<dt>Parameters:</dt>
+<dd><code>name</code> - the name of the header.</dd>
+<dd><code>valuesItr</code> - the values of the header.</dd>
+<dt>Returns:</dt>
+<dd><code>this</code>.</dd>
+</dl>
+</section>
+</li>
+<li>
 <section class="detail" id="add(java.lang.CharSequence,java.lang.CharSequence...)">
 <h3>add</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></span>&nbsp;<span class="element-name">add</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name,
@@ -634,6 +784,31 @@ implements <a href="HttpHeaders.html" title="interface in io.servicetalk.http.ap
 <dt>Parameters:</dt>
 <dd><code>name</code> - the name of the header.</dd>
 <dd><code>values</code> - the values of the header.</dd>
+<dt>Returns:</dt>
+<dd><code>this</code>.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="set(java.lang.CharSequence,java.util.Iterator)">
+<h3>set</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></span>&nbsp;<span class="element-name">set</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Iterator.html" title="class or interface in java.util" class="external-link">Iterator</a>&lt;? extends <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&gt;&nbsp;valueItr)</span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="HttpHeaders.html#set(java.lang.CharSequence,java.util.Iterator)">HttpHeaders</a></code></span></div>
+<div class="block">Sets a new header with the specified <code>name</code> and <code>values</code>. This method is equivalent to:
+
+ <pre>
+ headers.remove(name);
+ while (valueItr.hasNext()) {
+     headers.add(name, valueItr.next());
+ }
+ </pre></div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="HttpHeaders.html#set(java.lang.CharSequence,java.util.Iterator)">set</a></code>&nbsp;in interface&nbsp;<code><a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></code></dd>
+<dt>Parameters:</dt>
+<dd><code>name</code> - the name of the header.</dd>
+<dd><code>valueItr</code> - the values of the header.</dd>
 <dt>Returns:</dt>
 <dd><code>this</code>.</dd>
 </dl>
@@ -781,6 +956,28 @@ implements <a href="HttpHeaders.html" title="interface in io.servicetalk.http.ap
 </section>
 </li>
 <li>
+<section class="detail" id="spliterator()">
+<h3>spliterator</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Spliterator.html" title="class or interface in java.util" class="external-link">Spliterator</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.Entry.html" title="class or interface in java.util" class="external-link">Map.Entry</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&gt;&gt;</span>&nbsp;<span class="element-name">spliterator</span>()</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="HttpHeaders.html#spliterator()">spliterator</a></code>&nbsp;in interface&nbsp;<code><a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></code></dd>
+<dt>Specified by:</dt>
+<dd><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html#spliterator()" title="class or interface in java.lang" class="external-link">spliterator</a></code>&nbsp;in interface&nbsp;<code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link">Iterable</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.Entry.html" title="class or interface in java.util" class="external-link">Map.Entry</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&gt;&gt;</code></dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="forEach(java.util.function.Consumer)">
+<h3>forEach</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">forEach</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Consumer.html" title="class or interface in java.util.function" class="external-link">Consumer</a>&lt;? super <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.Entry.html" title="class or interface in java.util" class="external-link">Map.Entry</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&gt;&gt;&nbsp;action)</span></div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html#forEach(java.util.function.Consumer)" title="class or interface in java.lang" class="external-link">forEach</a></code>&nbsp;in interface&nbsp;<code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link">Iterable</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Map.Entry.html" title="class or interface in java.util" class="external-link">Map.Entry</a>&lt;<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&gt;&gt;</code></dd>
+</dl>
+</section>
+</li>
+<li>
 <section class="detail" id="equals(java.lang.Object)">
 <h3>equals</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">equals</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html" title="class or interface in java.lang" class="external-link">Object</a>&nbsp;o)</span></div>
@@ -874,6 +1071,26 @@ implements <a href="HttpHeaders.html" title="interface in io.servicetalk.http.ap
 </section>
 </li>
 <li>
+<section class="detail" id="getCookies()">
+<h3>getCookies</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link">Iterable</a>&lt;? extends <a href="HttpCookiePair.html" title="interface in io.servicetalk.http.api">HttpCookiePair</a>&gt;</span>&nbsp;<span class="element-name">getCookies</span>()</div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="HttpHeaders.html#getCookies()">HttpHeaders</a></code></span></div>
+<div class="block">Gets all the <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a>s.</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="HttpHeaders.html#getCookies()">getCookies</a></code>&nbsp;in interface&nbsp;<code><a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></code></dd>
+<dt>Returns:</dt>
+<dd>An <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link"><code>Iterable</code></a> with all the <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a>s.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="HttpHeaders.html#getCookiesIterator()"><code>if minimal object allocation is required.</code></a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
 <section class="detail" id="getCookiesIterator()">
 <h3>getCookiesIterator</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Iterator.html" title="class or interface in java.util" class="external-link">Iterator</a>&lt;? extends <a href="HttpCookiePair.html" title="interface in io.servicetalk.http.api">HttpCookiePair</a>&gt;</span>&nbsp;<span class="element-name">getCookiesIterator</span>()</div>
@@ -888,6 +1105,28 @@ implements <a href="HttpHeaders.html" title="interface in io.servicetalk.http.ap
 <dd>
 <ul class="see-list-long">
 <li><a href="HttpHeaders.html#getCookies()"><code>if Iterable is preferred, at the expense of more object allocation.</code></a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="getCookies(java.lang.CharSequence)">
+<h3>getCookies</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link">Iterable</a>&lt;? extends <a href="HttpCookiePair.html" title="interface in io.servicetalk.http.api">HttpCookiePair</a>&gt;</span>&nbsp;<span class="element-name">getCookies</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name)</span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="HttpHeaders.html#getCookies(java.lang.CharSequence)">HttpHeaders</a></code></span></div>
+<div class="block">Gets the <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a>s with the same name.</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="HttpHeaders.html#getCookies(java.lang.CharSequence)">getCookies</a></code>&nbsp;in interface&nbsp;<code><a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></code></dd>
+<dt>Parameters:</dt>
+<dd><code>name</code> - the cookie-name of the <a href="HttpSetCookie.html" title="interface in io.servicetalk.http.api"><code>HttpSetCookie</code></a>s to get.</dd>
+<dt>Returns:</dt>
+<dd>An <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link"><code>Iterable</code></a> where all the <a href="HttpSetCookie.html" title="interface in io.servicetalk.http.api"><code>HttpSetCookie</code></a>s have the same name.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="HttpHeaders.html#getCookiesIterator(java.lang.CharSequence)"><code>if minimal object allocation is required.</code></a></li>
 </ul>
 </dd>
 </dl>
@@ -916,6 +1155,27 @@ implements <a href="HttpHeaders.html" title="interface in io.servicetalk.http.ap
 </section>
 </li>
 <li>
+<section class="detail" id="getSetCookies()">
+<h3>getSetCookies</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link">Iterable</a>&lt;? extends <a href="HttpSetCookie.html" title="interface in io.servicetalk.http.api">HttpSetCookie</a>&gt;</span>&nbsp;<span class="element-name">getSetCookies</span>()</div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="HttpHeaders.html#getSetCookies()">HttpHeaders</a></code></span></div>
+<div class="block">Gets all the <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a>s.</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="HttpHeaders.html#getSetCookies()">getSetCookies</a></code>&nbsp;in interface&nbsp;<code><a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></code></dd>
+<dt>Returns:</dt>
+<dd>An <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link"><code>Iterable</code></a> with all the
+ <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a>s.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="HttpHeaders.html#getSetCookiesIterator()"><code>if minimal object allocation is required.</code></a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
 <section class="detail" id="getSetCookiesIterator()">
 <h3>getSetCookiesIterator</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Iterator.html" title="class or interface in java.util" class="external-link">Iterator</a>&lt;? extends <a href="HttpSetCookie.html" title="interface in io.servicetalk.http.api">HttpSetCookie</a>&gt;</span>&nbsp;<span class="element-name">getSetCookiesIterator</span>()</div>
@@ -931,6 +1191,28 @@ implements <a href="HttpHeaders.html" title="interface in io.servicetalk.http.ap
 <dd>
 <ul class="see-list-long">
 <li><a href="HttpHeaders.html#getSetCookies()"><code>if Iterable is preferred, at the expense of more object allocation.</code></a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="getSetCookies(java.lang.CharSequence)">
+<h3>getSetCookies</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link">Iterable</a>&lt;? extends <a href="HttpSetCookie.html" title="interface in io.servicetalk.http.api">HttpSetCookie</a>&gt;</span>&nbsp;<span class="element-name">getSetCookies</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name)</span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="HttpHeaders.html#getSetCookies(java.lang.CharSequence)">HttpHeaders</a></code></span></div>
+<div class="block">Gets the <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a>s with the same name.</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="HttpHeaders.html#getSetCookies(java.lang.CharSequence)">getSetCookies</a></code>&nbsp;in interface&nbsp;<code><a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></code></dd>
+<dt>Parameters:</dt>
+<dd><code>name</code> - the cookie-name of the <a href="HttpSetCookie.html" title="interface in io.servicetalk.http.api"><code>HttpSetCookie</code></a>s to get.</dd>
+<dt>Returns:</dt>
+<dd>An <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link"><code>Iterable</code></a> where all the <a href="HttpSetCookie.html" title="interface in io.servicetalk.http.api"><code>HttpSetCookie</code></a>s have the same name.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="HttpHeaders.html#getSetCookiesIterator(java.lang.CharSequence)"><code>if minimal object allocation is required.</code></a></li>
 </ul>
 </dd>
 </dl>
@@ -953,6 +1235,34 @@ implements <a href="HttpHeaders.html" title="interface in io.servicetalk.http.ap
 <dd>
 <ul class="see-list-long">
 <li><a href="HttpHeaders.html#getSetCookies(java.lang.CharSequence)"><code>if Iterable is preferred, at the expense of more object allocation.</code></a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="getSetCookies(java.lang.CharSequence,java.lang.CharSequence,java.lang.CharSequence)">
+<h3>getSetCookies</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link">Iterable</a>&lt;? extends <a href="HttpSetCookie.html" title="interface in io.servicetalk.http.api">HttpSetCookie</a>&gt;</span>&nbsp;<span class="element-name">getSetCookies</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;domain,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;path)</span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="HttpHeaders.html#getSetCookies(java.lang.CharSequence,java.lang.CharSequence,java.lang.CharSequence)">HttpHeaders</a></code></span></div>
+<div class="block">Gets the <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a>s with the same name.</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="HttpHeaders.html#getSetCookies(java.lang.CharSequence,java.lang.CharSequence,java.lang.CharSequence)">getSetCookies</a></code>&nbsp;in interface&nbsp;<code><a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></code></dd>
+<dt>Parameters:</dt>
+<dd><code>name</code> - the cookie-name of the <a href="HttpSetCookie.html" title="interface in io.servicetalk.http.api"><code>HttpSetCookie</code></a>s to get.</dd>
+<dd><code>domain</code> - the domain-value of the <a href="HttpSetCookie.html" title="interface in io.servicetalk.http.api"><code>HttpSetCookie</code></a>s to get. This value may be matched according
+ to the <a href="https://tools.ietf.org/html/rfc6265#section-5.1.3">Domain Matching</a> algorithm.</dd>
+<dd><code>path</code> - the path-av of the <a href="HttpSetCookie.html" title="interface in io.servicetalk.http.api"><code>HttpSetCookie</code></a>s to get. This value may be matched according
+ to the <a href="https://tools.ietf.org/html/rfc6265#section-5.1.4">Path Matching</a> algorithm.</dd>
+<dt>Returns:</dt>
+<dd>An <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html" title="class or interface in java.lang" class="external-link"><code>Iterable</code></a> where all the <a href="HttpSetCookie.html" title="interface in io.servicetalk.http.api"><code>HttpSetCookie</code></a>s match the parameter values.</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list-long">
+<li><a href="HttpHeaders.html#getSetCookiesIterator(java.lang.CharSequence,java.lang.CharSequence,java.lang.CharSequence)"><code>if minimal object allocation is required.</code></a></li>
 </ul>
 </dd>
 </dl>
@@ -1006,6 +1316,28 @@ implements <a href="HttpHeaders.html" title="interface in io.servicetalk.http.ap
 </section>
 </li>
 <li>
+<section class="detail" id="addCookie(java.lang.CharSequence,java.lang.CharSequence)">
+<h3>addCookie</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></span>&nbsp;<span class="element-name">addCookie</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;value)</span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="HttpHeaders.html#addCookie(java.lang.CharSequence,java.lang.CharSequence)">HttpHeaders</a></code></span></div>
+<div class="block">Adds a <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a> with the specified <code>name</code> and
+ <code>value</code>.
+ <p>
+ This may result in multiple <a href="HttpSetCookie.html" title="interface in io.servicetalk.http.api"><code>HttpSetCookie</code></a>s with same name. Added cookie will not be wrapped, not secure,
+ and not HTTP-only, with no path, domain, expire date and maximum age.</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="HttpHeaders.html#addCookie(java.lang.CharSequence,java.lang.CharSequence)">addCookie</a></code>&nbsp;in interface&nbsp;<code><a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></code></dd>
+<dt>Parameters:</dt>
+<dd><code>name</code> - the name of the cookie.</dd>
+<dd><code>value</code> - the value of the cookie.</dd>
+<dt>Returns:</dt>
+<dd><code>this</code>.</dd>
+</dl>
+</section>
+</li>
+<li>
 <section class="detail" id="addSetCookie(io.servicetalk.http.api.HttpSetCookie)">
 <h3>addSetCookie</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></span>&nbsp;<span class="element-name">addSetCookie</span><wbr><span class="parameters">(<a href="HttpSetCookie.html" title="interface in io.servicetalk.http.api">HttpSetCookie</a>&nbsp;cookie)</span></div>
@@ -1018,6 +1350,28 @@ implements <a href="HttpHeaders.html" title="interface in io.servicetalk.http.ap
 <dd><code><a href="HttpHeaders.html#addSetCookie(io.servicetalk.http.api.HttpSetCookie)">addSetCookie</a></code>&nbsp;in interface&nbsp;<code><a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></code></dd>
 <dt>Parameters:</dt>
 <dd><code>cookie</code> - the cookie to add.</dd>
+<dt>Returns:</dt>
+<dd><code>this</code>.</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="addSetCookie(java.lang.CharSequence,java.lang.CharSequence)">
+<h3>addSetCookie</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></span>&nbsp;<span class="element-name">addSetCookie</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;name,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>&nbsp;value)</span></div>
+<div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="HttpHeaders.html#addSetCookie(java.lang.CharSequence,java.lang.CharSequence)">HttpHeaders</a></code></span></div>
+<div class="block">Adds a <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a> with the specified <code>name</code>
+ and <code>value</code>.
+ <p>
+ This may result in multiple <a href="HttpSetCookie.html" title="interface in io.servicetalk.http.api"><code>HttpSetCookie</code></a>s with same name. Added cookie will not be wrapped, not secure,
+ and not HTTP-only, with no path, domain, expire date and maximum age.</div>
+<dl class="notes">
+<dt>Specified by:</dt>
+<dd><code><a href="HttpHeaders.html#addSetCookie(java.lang.CharSequence,java.lang.CharSequence)">addSetCookie</a></code>&nbsp;in interface&nbsp;<code><a href="HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></code></dd>
+<dt>Parameters:</dt>
+<dd><code>name</code> - the name of the cookie.</dd>
+<dd><code>value</code> - the value of the cookie.</dd>
 <dt>Returns:</dt>
 <dd><code>this</code>.</dd>
 </dl>

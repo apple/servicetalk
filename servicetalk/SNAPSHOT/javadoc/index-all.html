@@ -281,6 +281,8 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Adds new headers with the specified <code>name</code> and <code>values</code>.</div>
 </dd>
+<dt><a href="io/servicetalk/http/api/EmptyHttpHeaders.html#add(java.lang.CharSequence,java.util.Iterator)" class="member-name-link">add(CharSequence, Iterator&lt;? extends CharSequence&gt;)</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/EmptyHttpHeaders.html" title="class in io.servicetalk.http.api">EmptyHttpHeaders</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/api/HttpHeaders.html#add(java.lang.CharSequence,java.util.Iterator)" class="member-name-link">add(CharSequence, Iterator&lt;? extends CharSequence&gt;)</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></dt>
 <dd>
 <div class="block">Adds new headers with the specified <code>name</code> and <code>values</code>.</div>
@@ -422,6 +424,8 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/http/api/BlockingStreamingHttpResponse.html#addCookie(java.lang.CharSequence,java.lang.CharSequence)" class="member-name-link">addCookie(CharSequence, CharSequence)</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/BlockingStreamingHttpResponse.html" title="interface in io.servicetalk.http.api">BlockingStreamingHttpResponse</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/api/BlockingStreamingHttpServerResponse.html#addCookie(java.lang.CharSequence,java.lang.CharSequence)" class="member-name-link">addCookie(CharSequence, CharSequence)</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/BlockingStreamingHttpServerResponse.html" title="interface in io.servicetalk.http.api">BlockingStreamingHttpServerResponse</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/http/api/EmptyHttpHeaders.html#addCookie(java.lang.CharSequence,java.lang.CharSequence)" class="member-name-link">addCookie(CharSequence, CharSequence)</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/EmptyHttpHeaders.html" title="class in io.servicetalk.http.api">EmptyHttpHeaders</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/api/HttpHeaders.html#addCookie(java.lang.CharSequence,java.lang.CharSequence)" class="member-name-link">addCookie(CharSequence, CharSequence)</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></dt>
 <dd>
@@ -658,6 +662,8 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/http/api/BlockingStreamingHttpResponse.html#addSetCookie(java.lang.CharSequence,java.lang.CharSequence)" class="member-name-link">addSetCookie(CharSequence, CharSequence)</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/BlockingStreamingHttpResponse.html" title="interface in io.servicetalk.http.api">BlockingStreamingHttpResponse</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/api/BlockingStreamingHttpServerResponse.html#addSetCookie(java.lang.CharSequence,java.lang.CharSequence)" class="member-name-link">addSetCookie(CharSequence, CharSequence)</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/BlockingStreamingHttpServerResponse.html" title="interface in io.servicetalk.http.api">BlockingStreamingHttpServerResponse</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/http/api/EmptyHttpHeaders.html#addSetCookie(java.lang.CharSequence,java.lang.CharSequence)" class="member-name-link">addSetCookie(CharSequence, CharSequence)</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/EmptyHttpHeaders.html" title="class in io.servicetalk.http.api">EmptyHttpHeaders</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/api/HttpHeaders.html#addSetCookie(java.lang.CharSequence,java.lang.CharSequence)" class="member-name-link">addSetCookie(CharSequence, CharSequence)</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></dt>
 <dd>
@@ -994,6 +1000,14 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/http/api/RedirectConfigBuilder.html#allowedMethods(io.servicetalk.http.api.HttpRequestMethod...)" class="member-name-link">allowedMethods(HttpRequestMethod...)</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/RedirectConfigBuilder.html" title="class in io.servicetalk.http.api">RedirectConfigBuilder</a></dt>
 <dd>
 <div class="block">Sets <a href="io/servicetalk/http/api/HttpRequestMethod.html" title="class in io.servicetalk.http.api"><code>HttpRequestMethod</code></a>s that are allowed to follow redirects.</div>
+</dd>
+<dt><a href="io/servicetalk/http/api/RedirectConfig.html#allowedStatuses()" class="member-name-link">allowedStatuses()</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/RedirectConfig.html" title="interface in io.servicetalk.http.api">RedirectConfig</a></dt>
+<dd>
+<div class="block"><a href="io/servicetalk/http/api/HttpResponseStatus.html" title="class in io.servicetalk.http.api"><code>HttpResponseStatus</code></a>es that are allowed to follow redirects.</div>
+</dd>
+<dt><a href="io/servicetalk/http/api/RedirectConfigBuilder.html#allowedStatuses(io.servicetalk.http.api.HttpResponseStatus...)" class="member-name-link">allowedStatuses(HttpResponseStatus...)</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/RedirectConfigBuilder.html" title="class in io.servicetalk.http.api">RedirectConfigBuilder</a></dt>
+<dd>
+<div class="block">Sets <a href="io/servicetalk/http/api/HttpResponseStatus.html" title="class in io.servicetalk.http.api"><code>HttpResponseStatus</code></a>es that are allowed to follow redirects.</div>
 </dd>
 <dt><a href="io/servicetalk/http/netty/H1SpecExceptions.html#allowLFWithoutCR()" class="member-name-link">allowLFWithoutCR()</a> - Method in class io.servicetalk.http.netty.<a href="io/servicetalk/http/netty/H1SpecExceptions.html" title="class in io.servicetalk.http.netty">H1SpecExceptions</a></dt>
 <dd>
@@ -4325,6 +4339,8 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Determine if <code>status</code> code falls into this <a href="io/servicetalk/http/api/HttpResponseStatus.StatusClass.html" title="enum class in io.servicetalk.http.api"><code>HttpResponseStatus.StatusClass</code></a>.</div>
 </dd>
+<dt><a href="io/servicetalk/http/api/EmptyHttpHeaders.html#contains(java.lang.CharSequence)" class="member-name-link">contains(CharSequence)</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/EmptyHttpHeaders.html" title="class in io.servicetalk.http.api">EmptyHttpHeaders</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/api/HttpHeaders.html#contains(java.lang.CharSequence)" class="member-name-link">contains(CharSequence)</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></dt>
 <dd>
 <div class="block">Returns <code>true</code> if a header with the <code>name</code> exists, <code>false</code> otherwise.</div>
@@ -4752,6 +4768,8 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/http/utils/HostHeaderHttpRequesterFilter.html#create(io.servicetalk.http.api.FilterableStreamingHttpConnection)" class="member-name-link">create(FilterableStreamingHttpConnection)</a> - Method in class io.servicetalk.http.utils.<a href="io/servicetalk/http/utils/HostHeaderHttpRequesterFilter.html" title="class in io.servicetalk.http.utils">HostHeaderHttpRequesterFilter</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/utils/IdleTimeoutConnectionFilter.html#create(io.servicetalk.http.api.FilterableStreamingHttpConnection)" class="member-name-link">create(FilterableStreamingHttpConnection)</a> - Method in class io.servicetalk.http.utils.<a href="io/servicetalk/http/utils/IdleTimeoutConnectionFilter.html" title="class in io.servicetalk.http.utils">IdleTimeoutConnectionFilter</a></dt>
+<dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/http/utils/JavaNetSoTimeoutHttpConnectionFilter.html#create(io.servicetalk.http.api.FilterableStreamingHttpConnection)" class="member-name-link">create(FilterableStreamingHttpConnection)</a> - Method in class io.servicetalk.http.utils.<a href="io/servicetalk/http/utils/JavaNetSoTimeoutHttpConnectionFilter.html" title="class in io.servicetalk.http.utils">JavaNetSoTimeoutHttpConnectionFilter</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/utils/PayloadSizeLimitingHttpRequesterFilter.html#create(io.servicetalk.http.api.FilterableStreamingHttpConnection)" class="member-name-link">create(FilterableStreamingHttpConnection)</a> - Method in class io.servicetalk.http.utils.<a href="io/servicetalk/http/utils/PayloadSizeLimitingHttpRequesterFilter.html" title="class in io.servicetalk.http.utils">PayloadSizeLimitingHttpRequesterFilter</a></dt>
 <dd>&nbsp;</dd>
@@ -7327,7 +7345,7 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/api/MultiAddressHttpClientBuilder.html#followRedirects(io.servicetalk.http.api.RedirectConfig)" class="member-name-link">followRedirects(RedirectConfig)</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a></dt>
 <dd>
-<div class="block">Enables <a href="https://datatracker.ietf.org/doc/html/rfc7231#section-6.4">redirection</a>.</div>
+<div class="block">Configures <a href="https://datatracker.ietf.org/doc/html/rfc7231#section-6.4">redirection</a> behavior.</div>
 </dd>
 <dt><a href="io/servicetalk/grpc/netty/GrpcClients.html#forAddress(io.servicetalk.client.api.ServiceDiscoverer,U)" class="member-name-link">forAddress(ServiceDiscoverer&lt;U, R, ? extends ServiceDiscovererEvent&lt;R&gt;&gt;, U)</a> - Static method in class io.servicetalk.grpc.netty.<a href="io/servicetalk/grpc/netty/GrpcClients.html" title="class in io.servicetalk.grpc.netty">GrpcClients</a></dt>
 <dd>
@@ -7426,6 +7444,8 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Iterate over the entries contained in this <a href="io/servicetalk/context/api/ContextMap.html" title="interface in io.servicetalk.context.api"><code>ContextMap</code></a>.</div>
 </dd>
+<dt><a href="io/servicetalk/http/api/EmptyHttpHeaders.html#forEach(java.util.function.Consumer)" class="member-name-link">forEach(Consumer&lt;? super Map.Entry&lt;CharSequence, CharSequence&gt;&gt;)</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/EmptyHttpHeaders.html" title="class in io.servicetalk.http.api">EmptyHttpHeaders</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/concurrent/api/Publisher.html#forEach(java.util.function.Consumer)" class="member-name-link">forEach(Consumer&lt;? super T&gt;)</a> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a></dt>
 <dd>
 <div class="block">Subscribes to this <a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> and invokes <code>forEach</code> <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Consumer.html" title="class or interface in java.util.function" class="external-link"><code>Consumer</code></a> for each item emitted by this
@@ -8116,6 +8136,8 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns the value of a header with the specified name and removes it from this object.</div>
 </dd>
+<dt><a href="io/servicetalk/http/api/EmptyHttpHeaders.html#getAndRemove(java.lang.CharSequence,java.lang.CharSequence)" class="member-name-link">getAndRemove(CharSequence, CharSequence)</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/EmptyHttpHeaders.html" title="class in io.servicetalk.http.api">EmptyHttpHeaders</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/api/HttpHeaders.html#getAndRemove(java.lang.CharSequence,java.lang.CharSequence)" class="member-name-link">getAndRemove(CharSequence, CharSequence)</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></dt>
 <dd>
 <div class="block">Returns the value of a header with the specified name and removes it from this object.</div>
@@ -8220,10 +8242,14 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Gets a <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a> identified by <code>name</code>.</div>
 </dd>
+<dt><a href="io/servicetalk/http/api/EmptyHttpHeaders.html#getCookies()" class="member-name-link">getCookies()</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/EmptyHttpHeaders.html" title="class in io.servicetalk.http.api">EmptyHttpHeaders</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/api/HttpHeaders.html#getCookies()" class="member-name-link">getCookies()</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></dt>
 <dd>
 <div class="block">Gets all the <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a>s.</div>
 </dd>
+<dt><a href="io/servicetalk/http/api/EmptyHttpHeaders.html#getCookies(java.lang.CharSequence)" class="member-name-link">getCookies(CharSequence)</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/EmptyHttpHeaders.html" title="class in io.servicetalk.http.api">EmptyHttpHeaders</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/api/HttpHeaders.html#getCookies(java.lang.CharSequence)" class="member-name-link">getCookies(CharSequence)</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></dt>
 <dd>
 <div class="block">Gets the <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a>s with the same name.</div>
@@ -8508,14 +8534,20 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Gets a <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a> identified by <code>name</code>.</div>
 </dd>
+<dt><a href="io/servicetalk/http/api/EmptyHttpHeaders.html#getSetCookies()" class="member-name-link">getSetCookies()</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/EmptyHttpHeaders.html" title="class in io.servicetalk.http.api">EmptyHttpHeaders</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/api/HttpHeaders.html#getSetCookies()" class="member-name-link">getSetCookies()</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></dt>
 <dd>
 <div class="block">Gets all the <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a>s.</div>
 </dd>
+<dt><a href="io/servicetalk/http/api/EmptyHttpHeaders.html#getSetCookies(java.lang.CharSequence)" class="member-name-link">getSetCookies(CharSequence)</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/EmptyHttpHeaders.html" title="class in io.servicetalk.http.api">EmptyHttpHeaders</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/api/HttpHeaders.html#getSetCookies(java.lang.CharSequence)" class="member-name-link">getSetCookies(CharSequence)</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></dt>
 <dd>
 <div class="block">Gets the <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a>s with the same name.</div>
 </dd>
+<dt><a href="io/servicetalk/http/api/EmptyHttpHeaders.html#getSetCookies(java.lang.CharSequence,java.lang.CharSequence,java.lang.CharSequence)" class="member-name-link">getSetCookies(CharSequence, CharSequence, CharSequence)</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/EmptyHttpHeaders.html" title="class in io.servicetalk.http.api">EmptyHttpHeaders</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/api/HttpHeaders.html#getSetCookies(java.lang.CharSequence,java.lang.CharSequence,java.lang.CharSequence)" class="member-name-link">getSetCookies(CharSequence, CharSequence, CharSequence)</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></dt>
 <dd>
 <div class="block">Gets the <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a>s with the same name.</div>
@@ -11430,6 +11462,26 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Get the java method name corresponding to this method.</div>
 </dd>
+<dt><a href="io/servicetalk/http/utils/JavaNetSoTimeoutHttpConnectionFilter.html" class="type-name-link" title="class in io.servicetalk.http.utils">JavaNetSoTimeoutHttpConnectionFilter</a> - Class in <a href="io/servicetalk/http/utils/package-summary.html">io.servicetalk.http.utils</a></dt>
+<dd>
+<div class="block">A filter to mimics <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/SocketOptions.html#SO_TIMEOUT" title="class or interface in java.net" class="external-link"><code>SocketOptions.SO_TIMEOUT</code></a> behavior on the client-side.</div>
+</dd>
+<dt><a href="io/servicetalk/http/utils/JavaNetSoTimeoutHttpConnectionFilter.html#%3Cinit%3E(java.time.Duration)" class="member-name-link">JavaNetSoTimeoutHttpConnectionFilter(Duration)</a> - Constructor for class io.servicetalk.http.utils.<a href="io/servicetalk/http/utils/JavaNetSoTimeoutHttpConnectionFilter.html" title="class in io.servicetalk.http.utils">JavaNetSoTimeoutHttpConnectionFilter</a></dt>
+<dd>
+<div class="block">Creates a new instance.</div>
+</dd>
+<dt><a href="io/servicetalk/http/utils/JavaNetSoTimeoutHttpConnectionFilter.html#%3Cinit%3E(java.time.Duration,io.servicetalk.concurrent.api.Executor)" class="member-name-link">JavaNetSoTimeoutHttpConnectionFilter(Duration, Executor)</a> - Constructor for class io.servicetalk.http.utils.<a href="io/servicetalk/http/utils/JavaNetSoTimeoutHttpConnectionFilter.html" title="class in io.servicetalk.http.utils">JavaNetSoTimeoutHttpConnectionFilter</a></dt>
+<dd>
+<div class="block">Creates a new instance.</div>
+</dd>
+<dt><a href="io/servicetalk/http/utils/JavaNetSoTimeoutHttpConnectionFilter.html#%3Cinit%3E(java.util.function.BiFunction)" class="member-name-link">JavaNetSoTimeoutHttpConnectionFilter(BiFunction&lt;HttpRequestMetaData, TimeSource, Duration&gt;)</a> - Constructor for class io.servicetalk.http.utils.<a href="io/servicetalk/http/utils/JavaNetSoTimeoutHttpConnectionFilter.html" title="class in io.servicetalk.http.utils">JavaNetSoTimeoutHttpConnectionFilter</a></dt>
+<dd>
+<div class="block">Creates a new instance.</div>
+</dd>
+<dt><a href="io/servicetalk/http/utils/JavaNetSoTimeoutHttpConnectionFilter.html#%3Cinit%3E(java.util.function.BiFunction,io.servicetalk.concurrent.api.Executor)" class="member-name-link">JavaNetSoTimeoutHttpConnectionFilter(BiFunction&lt;HttpRequestMetaData, TimeSource, Duration&gt;, Executor)</a> - Constructor for class io.servicetalk.http.utils.<a href="io/servicetalk/http/utils/JavaNetSoTimeoutHttpConnectionFilter.html" title="class in io.servicetalk.http.utils">JavaNetSoTimeoutHttpConnectionFilter</a></dt>
+<dd>
+<div class="block">Creates a new instance.</div>
+</dd>
 <dt><a href="io/servicetalk/transport/api/SslProvider.html#JDK" class="member-name-link">JDK</a> - Enum constant in enum class io.servicetalk.transport.api.<a href="io/servicetalk/transport/api/SslProvider.html" title="enum class in io.servicetalk.transport.api">SslProvider</a></dt>
 <dd>
 <div class="block">Use the stock JDK implementation.</div>
@@ -11870,6 +11922,16 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block"><code>"location"</code></div>
 </dd>
+<dt><a href="io/servicetalk/http/api/RedirectConfig.html#locationMapper()" class="member-name-link">locationMapper()</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/RedirectConfig.html" title="interface in io.servicetalk.http.api">RedirectConfig</a></dt>
+<dd>
+<div class="block">A function to extract redirect location information from the redirect <a href="io/servicetalk/http/api/HttpResponseMetaData.html" title="interface in io.servicetalk.http.api"><code>response</code></a>,
+ optionally considering the previous <a href="io/servicetalk/http/api/HttpRequestMetaData.html" title="interface in io.servicetalk.http.api"><code>request</code></a> as well.</div>
+</dd>
+<dt><a href="io/servicetalk/http/api/RedirectConfigBuilder.html#locationMapper(java.util.function.BiFunction)" class="member-name-link">locationMapper(BiFunction&lt;HttpRequestMetaData, HttpResponseMetaData, String&gt;)</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/RedirectConfigBuilder.html" title="class in io.servicetalk.http.api">RedirectConfigBuilder</a></dt>
+<dd>
+<div class="block">Sets a function to extract redirect location information from the redirect <a href="io/servicetalk/http/api/HttpResponseMetaData.html" title="interface in io.servicetalk.http.api"><code>response</code></a>,
+ optionally considering the previous <a href="io/servicetalk/http/api/HttpRequestMetaData.html" title="interface in io.servicetalk.http.api"><code>request</code></a> as well.</div>
+</dd>
 <dt><a href="io/servicetalk/http/api/BlockingStreamingHttpResponseFactory.html#locked()" class="member-name-link">locked()</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/BlockingStreamingHttpResponseFactory.html" title="interface in io.servicetalk.http.api">BlockingStreamingHttpResponseFactory</a></dt>
 <dd>
 <div class="block">Create a new <a href="io/servicetalk/http/api/HttpResponseStatus.html#LOCKED"><code>HttpResponseStatus.LOCKED</code></a> response.</div>
@@ -12227,6 +12289,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Merges the passed <a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> with this <a href="io/servicetalk/concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a>.</div>
 </dd>
+<dt><a href="io/servicetalk/concurrent/api/Publisher.html#merge(io.servicetalk.concurrent.api.Publisher)" class="member-name-link">merge(Publisher&lt;? extends T&gt;)</a> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a></dt>
+<dd>
+<div class="block">Merge two <a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>s together.</div>
+</dd>
 <dt><a href="io/servicetalk/grpc/api/GrpcServiceFactory.html#merge(io.servicetalk.grpc.api.GrpcServiceFactory...)" class="member-name-link">merge(GrpcServiceFactory&lt;?&gt;...)</a> - Static method in class io.servicetalk.grpc.api.<a href="io/servicetalk/grpc/api/GrpcServiceFactory.html" title="class in io.servicetalk.grpc.api">GrpcServiceFactory</a></dt>
 <dd>
 <div class="block">Merges multiple <a href="io/servicetalk/grpc/api/GrpcServiceFactory.html" title="class in io.servicetalk.grpc.api"><code>factories</code></a> into a single instance.</div>
@@ -12262,6 +12328,10 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns a <a href="io/servicetalk/concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that terminates when all the passed <a href="io/servicetalk/concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> terminate.</div>
 </dd>
+<dt><a href="io/servicetalk/concurrent/api/Publisher.html#mergeAll(int,io.servicetalk.concurrent.api.Publisher...)" class="member-name-link">mergeAll(int, Publisher&lt;? extends T&gt;...)</a> - Static method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a></dt>
+<dd>
+<div class="block">Merge all <a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>s together.</div>
+</dd>
 <dt><a href="io/servicetalk/concurrent/api/CompositeCloseable.html#mergeAll(io.servicetalk.concurrent.api.AsyncCloseable...)" class="member-name-link">mergeAll(AsyncCloseable...)</a> - Method in interface io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/CompositeCloseable.html" title="interface in io.servicetalk.concurrent.api">CompositeCloseable</a></dt>
 <dd>
 <div class="block">Merges all the passed <a href="io/servicetalk/concurrent/api/AsyncCloseable.html" title="interface in io.servicetalk.concurrent.api"><code>AsyncCloseable</code></a>s with this <a href="io/servicetalk/concurrent/api/CompositeCloseable.html" title="interface in io.servicetalk.concurrent.api"><code>CompositeCloseable</code></a> such that when this <a href="io/servicetalk/concurrent/api/CompositeCloseable.html" title="interface in io.servicetalk.concurrent.api"><code>CompositeCloseable</code></a> is closed, all of these <a href="io/servicetalk/concurrent/api/AsyncCloseable.html" title="interface in io.servicetalk.concurrent.api"><code>AsyncCloseable</code></a>s are closed too.</div>
@@ -12269,6 +12339,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/concurrent/api/Completable.html#mergeAll(io.servicetalk.concurrent.api.Completable...)" class="member-name-link">mergeAll(Completable...)</a> - Static method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></dt>
 <dd>
 <div class="block">Returns a <a href="io/servicetalk/concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that terminates when all the passed <a href="io/servicetalk/concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> terminate.</div>
+</dd>
+<dt><a href="io/servicetalk/concurrent/api/Publisher.html#mergeAll(io.servicetalk.concurrent.api.Publisher...)" class="member-name-link">mergeAll(Publisher&lt;? extends T&gt;...)</a> - Static method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a></dt>
+<dd>
+<div class="block">Merge all <a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>s together.</div>
 </dd>
 <dt><a href="io/servicetalk/concurrent/api/CompositeCloseable.html#mergeAll(java.lang.Iterable)" class="member-name-link">mergeAll(Iterable&lt;? extends AsyncCloseable&gt;)</a> - Method in interface io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/CompositeCloseable.html" title="interface in io.servicetalk.concurrent.api">CompositeCloseable</a></dt>
 <dd>
@@ -12286,9 +12360,17 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Returns a <a href="io/servicetalk/concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that terminates when all the passed <a href="io/servicetalk/concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> terminate.</div>
 </dd>
+<dt><a href="io/servicetalk/concurrent/api/Publisher.html#mergeAllDelayError(int,io.servicetalk.concurrent.api.Publisher...)" class="member-name-link">mergeAllDelayError(int, Publisher&lt;? extends T&gt;...)</a> - Static method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a></dt>
+<dd>
+<div class="block">Merge all <a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>s together.</div>
+</dd>
 <dt><a href="io/servicetalk/concurrent/api/Completable.html#mergeAllDelayError(io.servicetalk.concurrent.api.Completable...)" class="member-name-link">mergeAllDelayError(Completable...)</a> - Static method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></dt>
 <dd>
 <div class="block">Returns a <a href="io/servicetalk/concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> that terminates when all the passed <a href="io/servicetalk/concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a> terminate.</div>
+</dd>
+<dt><a href="io/servicetalk/concurrent/api/Publisher.html#mergeAllDelayError(io.servicetalk.concurrent.api.Publisher...)" class="member-name-link">mergeAllDelayError(Publisher&lt;? extends T&gt;...)</a> - Static method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a></dt>
+<dd>
+<div class="block">Merge all <a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>s together.</div>
 </dd>
 <dt><a href="io/servicetalk/concurrent/api/Completable.html#mergeAllDelayError(java.lang.Iterable)" class="member-name-link">mergeAllDelayError(Iterable&lt;? extends Completable&gt;)</a> - Static method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></dt>
 <dd>
@@ -12311,6 +12393,10 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/concurrent/api/Completable.html#mergeDelayError(io.servicetalk.concurrent.api.Publisher)" class="member-name-link">mergeDelayError(Publisher&lt;? extends T&gt;)</a> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></dt>
 <dd>
 <div class="block">Merges the passed <a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> with this <a href="io/servicetalk/concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api"><code>Completable</code></a>.</div>
+</dd>
+<dt><a href="io/servicetalk/concurrent/api/Publisher.html#mergeDelayError(io.servicetalk.concurrent.api.Publisher)" class="member-name-link">mergeDelayError(Publisher&lt;? extends T&gt;)</a> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a></dt>
+<dd>
+<div class="block">Merge two <a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a>s together.</div>
 </dd>
 <dt><a href="io/servicetalk/concurrent/api/Completable.html#mergeDelayError(java.lang.Iterable)" class="member-name-link">mergeDelayError(Iterable&lt;? extends Completable&gt;)</a> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Completable.html" title="class in io.servicetalk.concurrent.api">Completable</a></dt>
 <dd>
@@ -14493,6 +14579,11 @@ loadScripts(document, 'script');</script>
 <dt><a href="io/servicetalk/opentelemetry/http/OpenTelemetryHttpRequestFilter.html" class="type-name-link" title="class in io.servicetalk.opentelemetry.http">OpenTelemetryHttpRequestFilter</a> - Class in <a href="io/servicetalk/opentelemetry/http/package-summary.html">io.servicetalk.opentelemetry.http</a></dt>
 <dd>
 <div class="block">An HTTP filter that supports <a href="https://opentelemetry.io/docs/instrumentation/java/">open telemetry</a>.</div>
+</dd>
+<dt><a href="io/servicetalk/opentelemetry/http/OpenTelemetryHttpRequestFilter.html#%3Cinit%3E()" class="member-name-link">OpenTelemetryHttpRequestFilter()</a> - Constructor for class io.servicetalk.opentelemetry.http.<a href="io/servicetalk/opentelemetry/http/OpenTelemetryHttpRequestFilter.html" title="class in io.servicetalk.opentelemetry.http">OpenTelemetryHttpRequestFilter</a></dt>
+<dd>
+<div class="block">Create a new instance, searching for any instance of an opentelemetry available,
+ using the hostname as the component name.</div>
 </dd>
 <dt><a href="io/servicetalk/opentelemetry/http/OpenTelemetryHttpRequestFilter.html#%3Cinit%3E(io.opentelemetry.api.OpenTelemetry,java.lang.String)" class="member-name-link">OpenTelemetryHttpRequestFilter(OpenTelemetry, String)</a> - Constructor for class io.servicetalk.opentelemetry.http.<a href="io/servicetalk/opentelemetry/http/OpenTelemetryHttpRequestFilter.html" title="class in io.servicetalk.opentelemetry.http">OpenTelemetryHttpRequestFilter</a></dt>
 <dd>
@@ -16865,6 +16956,8 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/utils/IdleTimeoutConnectionFilter.html#requiredOffloads()" class="member-name-link">requiredOffloads()</a> - Method in class io.servicetalk.http.utils.<a href="io/servicetalk/http/utils/IdleTimeoutConnectionFilter.html" title="class in io.servicetalk.http.utils">IdleTimeoutConnectionFilter</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/http/utils/JavaNetSoTimeoutHttpConnectionFilter.html#requiredOffloads()" class="member-name-link">requiredOffloads()</a> - Method in class io.servicetalk.http.utils.<a href="io/servicetalk/http/utils/JavaNetSoTimeoutHttpConnectionFilter.html" title="class in io.servicetalk.http.utils">JavaNetSoTimeoutHttpConnectionFilter</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/utils/PayloadSizeLimitingHttpRequesterFilter.html#requiredOffloads()" class="member-name-link">requiredOffloads()</a> - Method in class io.servicetalk.http.utils.<a href="io/servicetalk/http/utils/PayloadSizeLimitingHttpRequesterFilter.html" title="class in io.servicetalk.http.utils">PayloadSizeLimitingHttpRequesterFilter</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/utils/PayloadSizeLimitingHttpServiceFilter.html#requiredOffloads()" class="member-name-link">requiredOffloads()</a> - Method in class io.servicetalk.http.utils.<a href="io/servicetalk/http/utils/PayloadSizeLimitingHttpServiceFilter.html" title="class in io.servicetalk.http.utils">PayloadSizeLimitingHttpServiceFilter</a></dt>
@@ -18201,6 +18294,8 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">Sets a new header with the specified <code>name</code> and <code>values</code>.</div>
 </dd>
+<dt><a href="io/servicetalk/http/api/EmptyHttpHeaders.html#set(java.lang.CharSequence,java.util.Iterator)" class="member-name-link">set(CharSequence, Iterator&lt;? extends CharSequence&gt;)</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/EmptyHttpHeaders.html" title="class in io.servicetalk.http.api">EmptyHttpHeaders</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/api/HttpHeaders.html#set(java.lang.CharSequence,java.util.Iterator)" class="member-name-link">set(CharSequence, Iterator&lt;? extends CharSequence&gt;)</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></dt>
 <dd>
 <div class="block">Sets a new header with the specified <code>name</code> and <code>values</code>.</div>
@@ -18700,6 +18795,10 @@ loadScripts(document, 'script');</script>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/buffer/api/EmptyBuffer.html#skipBytes(int)" class="member-name-link">skipBytes(int)</a> - Method in class io.servicetalk.buffer.api.<a href="io/servicetalk/buffer/api/EmptyBuffer.html" title="class in io.servicetalk.buffer.api">EmptyBuffer</a></dt>
 <dd>&nbsp;</dd>
+<dt><a href="io/servicetalk/concurrent/api/Publisher.html#skipWhile(java.util.function.Predicate)" class="member-name-link">skipWhile(Predicate&lt;? super T&gt;)</a> - Method in class io.servicetalk.concurrent.api.<a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api">Publisher</a></dt>
+<dd>
+<div class="block">Skip items emitted by this <a href="io/servicetalk/concurrent/api/Publisher.html" title="class in io.servicetalk.concurrent.api"><code>Publisher</code></a> until the first time the predicate is not satisfied.</div>
+</dd>
 <dt><a href="io/servicetalk/logging/slf4j/internal/Slf4jFixedLevelLoggers.html" class="type-name-link" title="class in io.servicetalk.logging.slf4j.internal">Slf4jFixedLevelLoggers</a> - Class in <a href="io/servicetalk/logging/slf4j/internal/package-summary.html">io.servicetalk.logging.slf4j.internal</a></dt>
 <dd>
 <div class="block">SLF4J implementations of <a href="io/servicetalk/logging/slf4j/internal/FixedLevelLogger.html" title="interface in io.servicetalk.logging.slf4j.internal"><code>FixedLevelLogger</code></a>.</div>
@@ -18828,6 +18927,8 @@ loadScripts(document, 'script');</script>
 <dd>
 <div class="block">The same behavior as <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Iterable.html#spliterator()" title="class or interface in java.lang" class="external-link"><code>Iterable.spliterator()</code></a>, but returns a <a href="io/servicetalk/concurrent/BlockingSpliterator.html" title="interface in io.servicetalk.concurrent"><code>BlockingSpliterator</code></a> view.</div>
 </dd>
+<dt><a href="io/servicetalk/http/api/EmptyHttpHeaders.html#spliterator()" class="member-name-link">spliterator()</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/EmptyHttpHeaders.html" title="class in io.servicetalk.http.api">EmptyHttpHeaders</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/api/HttpHeaders.html#spliterator()" class="member-name-link">spliterator()</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/transport/netty/internal/SplittingFlushStrategy.html" class="type-name-link" title="class in io.servicetalk.transport.netty.internal">SplittingFlushStrategy</a> - Class in <a href="io/servicetalk/transport/netty/internal/package-summary.html">io.servicetalk.transport.netty.internal</a></dt>
@@ -21620,6 +21721,8 @@ the order they are declared.</div>
 <div class="block">Returns an array containing the constants of this enum class, in
 the order they are declared.</div>
 </dd>
+<dt><a href="io/servicetalk/http/api/EmptyHttpHeaders.html#values(java.lang.CharSequence)" class="member-name-link">values(CharSequence)</a> - Method in class io.servicetalk.http.api.<a href="io/servicetalk/http/api/EmptyHttpHeaders.html" title="class in io.servicetalk.http.api">EmptyHttpHeaders</a></dt>
+<dd>&nbsp;</dd>
 <dt><a href="io/servicetalk/http/api/HttpHeaders.html#values(java.lang.CharSequence)" class="member-name-link">values(CharSequence)</a> - Method in interface io.servicetalk.http.api.<a href="io/servicetalk/http/api/HttpHeaders.html" title="interface in io.servicetalk.http.api">HttpHeaders</a></dt>
 <dd>
 <div class="block">Returns all values for the header with the specified name.</div>

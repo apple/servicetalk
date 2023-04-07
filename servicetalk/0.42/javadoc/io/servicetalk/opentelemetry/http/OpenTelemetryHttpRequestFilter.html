@@ -104,13 +104,18 @@ implements <a href="../../http/api/StreamingHttpClientFilterFactory.html" title=
 <div class="summary-table two-column-summary">
 <div class="table-header col-first">Constructor</div>
 <div class="table-header col-last">Description</div>
-<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(io.opentelemetry.api.OpenTelemetry,java.lang.String)" class="member-name-link">OpenTelemetryHttpRequestFilter</a><wbr>(io.opentelemetry.api.OpenTelemetry&nbsp;openTelemetry,
- <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;componentName)</code></div>
+<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E()" class="member-name-link">OpenTelemetryHttpRequestFilter</a>()</code></div>
 <div class="col-last even-row-color">
+<div class="block">Create a new instance, searching for any instance of an opentelemetry available,
+ using the hostname as the component name.</div>
+</div>
+<div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(io.opentelemetry.api.OpenTelemetry,java.lang.String)" class="member-name-link">OpenTelemetryHttpRequestFilter</a><wbr>(io.opentelemetry.api.OpenTelemetry&nbsp;openTelemetry,
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;componentName)</code></div>
+<div class="col-last odd-row-color">
 <div class="block">Create a new instance.</div>
 </div>
-<div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(java.lang.String)" class="member-name-link">OpenTelemetryHttpRequestFilter</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;componentName)</code></div>
-<div class="col-last odd-row-color">
+<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(java.lang.String)" class="member-name-link">OpenTelemetryHttpRequestFilter</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;componentName)</code></div>
+<div class="col-last even-row-color">
 <div class="block">Create a new instance, searching for any instance of an opentelemetry available.</div>
 </div>
 </div>
@@ -184,6 +189,14 @@ implements <a href="../../http/api/StreamingHttpClientFilterFactory.html" title=
 <dt>Parameters:</dt>
 <dd><code>componentName</code> - The component name used during building new spans.</dd>
 </dl>
+</section>
+</li>
+<li>
+<section class="detail" id="&lt;init&gt;()">
+<h3>OpenTelemetryHttpRequestFilter</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="element-name">OpenTelemetryHttpRequestFilter</span>()</div>
+<div class="block">Create a new instance, searching for any instance of an opentelemetry available,
+ using the hostname as the component name.</div>
 </section>
 </li>
 </ul>

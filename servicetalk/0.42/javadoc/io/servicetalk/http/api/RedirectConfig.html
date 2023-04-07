@@ -117,10 +117,21 @@ loadScripts(document, 'script');</script>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block"><a href="HttpRequestMethod.html" title="class in io.servicetalk.http.api"><code>HttpRequestMethod</code></a>s that are allowed to follow redirects.</div>
 </div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>boolean</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#allowNonRelativeRedirects()" class="member-name-link">allowNonRelativeRedirects</a>()</code></div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Set.html" title="class or interface in java.util" class="external-link">Set</a>&lt;<a href="HttpResponseStatus.html" title="class in io.servicetalk.http.api">HttpResponseStatus</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#allowedStatuses()" class="member-name-link">allowedStatuses</a>()</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="block"><a href="HttpResponseStatus.html" title="class in io.servicetalk.http.api"><code>HttpResponseStatus</code></a>es that are allowed to follow redirects.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>boolean</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#allowNonRelativeRedirects()" class="member-name-link">allowNonRelativeRedirects</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
 <div class="block">Tells if redirection should follow non-relative redirects (if supported by the underlying client implementation).</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/BiFunction.html" title="class or interface in java.util.function" class="external-link">BiFunction</a>&lt;<a href="HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a>,<wbr><a href="HttpResponseMetaData.html" title="interface in io.servicetalk.http.api">HttpResponseMetaData</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#locationMapper()" class="member-name-link">locationMapper</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3">
+<div class="block">A function to extract redirect location information from the redirect <a href="HttpResponseMetaData.html" title="interface in io.servicetalk.http.api"><code>response</code></a>,
+ optionally considering the previous <a href="HttpRequestMetaData.html" title="interface in io.servicetalk.http.api"><code>request</code></a> as well.</div>
 </div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code>int</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab3"><code><a href="#maxRedirects()" class="member-name-link">maxRedirects</a>()</code></div>
@@ -165,6 +176,19 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
+<section class="detail" id="allowedStatuses()">
+<h3>allowedStatuses</h3>
+<div class="member-signature"><span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Set.html" title="class or interface in java.util" class="external-link">Set</a>&lt;<a href="HttpResponseStatus.html" title="class in io.servicetalk.http.api">HttpResponseStatus</a>&gt;</span>&nbsp;<span class="element-name">allowedStatuses</span>()</div>
+<div class="block"><a href="HttpResponseStatus.html" title="class in io.servicetalk.http.api"><code>HttpResponseStatus</code></a>es that are allowed to follow redirects.
+ <p>
+ All statuses in this set must belong to <a href="HttpResponseStatus.StatusClass.html#REDIRECTION_3XX"><code>REDIRECTION_3XX</code></a> status class.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd><a href="HttpResponseStatus.html" title="class in io.servicetalk.http.api"><code>HttpResponseStatus</code></a>es that are allowed to follow redirects.</dd>
+</dl>
+</section>
+</li>
+<li>
 <section class="detail" id="allowedMethods()">
 <h3>allowedMethods</h3>
 <div class="member-signature"><span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Set.html" title="class or interface in java.util" class="external-link">Set</a>&lt;<a href="HttpRequestMethod.html" title="class in io.servicetalk.http.api">HttpRequestMethod</a>&gt;</span>&nbsp;<span class="element-name">allowedMethods</span>()</div>
@@ -202,6 +226,19 @@ loadScripts(document, 'script');</script>
 <li><a href="MultiAddressHttpClientBuilder.html#followRedirects(io.servicetalk.http.api.RedirectConfig)"><code>MultiAddressHttpClientBuilder.followRedirects(RedirectConfig)</code></a></li>
 </ul>
 </dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="locationMapper()">
+<h3>locationMapper</h3>
+<div class="member-signature"><span class="return-type"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/BiFunction.html" title="class or interface in java.util.function" class="external-link">BiFunction</a>&lt;<a href="HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a>,<wbr><a href="HttpResponseMetaData.html" title="interface in io.servicetalk.http.api">HttpResponseMetaData</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;</span>&nbsp;<span class="element-name">locationMapper</span>()</div>
+<div class="block">A function to extract redirect location information from the redirect <a href="HttpResponseMetaData.html" title="interface in io.servicetalk.http.api"><code>response</code></a>,
+ optionally considering the previous <a href="HttpRequestMetaData.html" title="interface in io.servicetalk.http.api"><code>request</code></a> as well.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd>A function to extract redirect location information. If the function returns <code>null</code>, redirection
+ response won't be followed.</dd>
 </dl>
 </section>
 </li>

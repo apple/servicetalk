@@ -159,7 +159,7 @@ implements <a href="MultiAddressHttpClientBuilder.html" title="interface in io.s
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="DelegatingMultiAddressHttpClientBuilder.html" title="type parameter in DelegatingMultiAddressHttpClientBuilder">U</a>,<wbr><a href="DelegatingMultiAddressHttpClientBuilder.html" title="type parameter in DelegatingMultiAddressHttpClientBuilder">R</a>&gt;</code></div>
 <div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#followRedirects(io.servicetalk.http.api.RedirectConfig)" class="member-name-link">followRedirects</a><wbr>(<a href="RedirectConfig.html" title="interface in io.servicetalk.http.api">RedirectConfig</a>&nbsp;config)</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Enables <a href="https://datatracker.ietf.org/doc/html/rfc7231#section-6.4">redirection</a>.</div>
+<div class="block">Configures <a href="https://datatracker.ietf.org/doc/html/rfc7231#section-6.4">redirection</a> behavior.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="DelegatingMultiAddressHttpClientBuilder.html" title="type parameter in DelegatingMultiAddressHttpClientBuilder">U</a>,<wbr><a href="DelegatingMultiAddressHttpClientBuilder.html" title="type parameter in DelegatingMultiAddressHttpClientBuilder">R</a>&gt;</code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#headersFactory(io.servicetalk.http.api.HttpHeadersFactory)" class="member-name-link">headersFactory</a><wbr>(<a href="HttpHeadersFactory.html" title="interface in io.servicetalk.http.api">HttpHeadersFactory</a>&nbsp;headersFactory)</code></div>
@@ -357,14 +357,14 @@ implements <a href="MultiAddressHttpClientBuilder.html" title="interface in io.s
 <h3>followRedirects</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="DelegatingMultiAddressHttpClientBuilder.html" title="type parameter in DelegatingMultiAddressHttpClientBuilder">U</a>,<wbr><a href="DelegatingMultiAddressHttpClientBuilder.html" title="type parameter in DelegatingMultiAddressHttpClientBuilder">R</a>&gt;</span>&nbsp;<span class="element-name">followRedirects</span><wbr><span class="parameters">(<a href="RedirectConfig.html" title="interface in io.servicetalk.http.api">RedirectConfig</a>&nbsp;config)</span></div>
 <div class="block"><span class="descfrm-type-label">Description copied from interface:&nbsp;<code><a href="MultiAddressHttpClientBuilder.html#followRedirects(io.servicetalk.http.api.RedirectConfig)">MultiAddressHttpClientBuilder</a></code></span></div>
-<div class="block">Enables <a href="https://datatracker.ietf.org/doc/html/rfc7231#section-6.4">redirection</a>.</div>
+<div class="block">Configures <a href="https://datatracker.ietf.org/doc/html/rfc7231#section-6.4">redirection</a> behavior.</div>
 <dl class="notes">
 <dt>Specified by:</dt>
 <dd><code><a href="MultiAddressHttpClientBuilder.html#followRedirects(io.servicetalk.http.api.RedirectConfig)">followRedirects</a></code>&nbsp;in interface&nbsp;<code><a href="MultiAddressHttpClientBuilder.html" title="interface in io.servicetalk.http.api">MultiAddressHttpClientBuilder</a>&lt;<a href="DelegatingMultiAddressHttpClientBuilder.html" title="type parameter in DelegatingMultiAddressHttpClientBuilder">U</a>,<wbr><a href="DelegatingMultiAddressHttpClientBuilder.html" title="type parameter in DelegatingMultiAddressHttpClientBuilder">R</a>&gt;</code></dd>
 <dt>Parameters:</dt>
 <dd><code>config</code> - <a href="RedirectConfig.html" title="interface in io.servicetalk.http.api"><code>RedirectConfig</code></a> to configure redirection behavior. It can be used to tune what requests
  should follow redirects and which parts of the original request (headers/payload body/trailers) should be
- redirected to non-relative locations.</dd>
+ redirected to non-relative locations. Use <code>null</code> to disable redirects.</dd>
 <dt>Returns:</dt>
 <dd><code>this</code>.</dd>
 <dt>See Also:</dt>

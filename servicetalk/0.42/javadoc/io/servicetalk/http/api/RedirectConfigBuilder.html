@@ -112,25 +112,36 @@ loadScripts(document, 'script');</script>
 <div class="block">Sets <a href="HttpRequestMethod.html" title="class in io.servicetalk.http.api"><code>HttpRequestMethod</code></a>s that are allowed to follow redirects.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RedirectConfigBuilder.html" title="class in io.servicetalk.http.api">RedirectConfigBuilder</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#allowNonRelativeRedirects(boolean)" class="member-name-link">allowNonRelativeRedirects</a><wbr>(boolean&nbsp;allowNonRelativeRedirects)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#allowedStatuses(io.servicetalk.http.api.HttpResponseStatus...)" class="member-name-link">allowedStatuses</a><wbr>(<a href="HttpResponseStatus.html" title="class in io.servicetalk.http.api">HttpResponseStatus</a>...&nbsp;statuses)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Sets <a href="HttpResponseStatus.html" title="class in io.servicetalk.http.api"><code>HttpResponseStatus</code></a>es that are allowed to follow redirects.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RedirectConfigBuilder.html" title="class in io.servicetalk.http.api">RedirectConfigBuilder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#allowNonRelativeRedirects(boolean)" class="member-name-link">allowNonRelativeRedirects</a><wbr>(boolean&nbsp;allowNonRelativeRedirects)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Allows non-relative redirects (if supported by the underlying client implementation).</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RedirectConfig.html" title="interface in io.servicetalk.http.api">RedirectConfig</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#build()" class="member-name-link">build</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RedirectConfigBuilder.html" title="class in io.servicetalk.http.api">RedirectConfigBuilder</a></code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#changePostToGet(boolean)" class="member-name-link">changePostToGet</a><wbr>(boolean&nbsp;changePostToGet)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RedirectConfig.html" title="interface in io.servicetalk.http.api">RedirectConfig</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#build()" class="member-name-link">build</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">&nbsp;</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RedirectConfigBuilder.html" title="class in io.servicetalk.http.api">RedirectConfigBuilder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#changePostToGet(boolean)" class="member-name-link">changePostToGet</a><wbr>(boolean&nbsp;changePostToGet)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Enforces change of the request method from <a href="HttpRequestMethod.html#POST"><code>POST</code></a> to
  <a href="HttpRequestMethod.html#GET"><code>GET</code></a> for subsequent requests for
  <a href="HttpResponseStatus.html#MOVED_PERMANENTLY"><code>301 (Moved Permanently)</code></a> and
  <a href="HttpResponseStatus.html#FOUND"><code>302 (Found)</code></a> status codes.</div>
 </div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RedirectConfigBuilder.html" title="class in io.servicetalk.http.api">RedirectConfigBuilder</a></code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#headersToRedirect(java.lang.CharSequence...)" class="member-name-link">headersToRedirect</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>...&nbsp;headerNames)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RedirectConfigBuilder.html" title="class in io.servicetalk.http.api">RedirectConfigBuilder</a></code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#headersToRedirect(java.lang.CharSequence...)" class="member-name-link">headersToRedirect</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/CharSequence.html" title="class or interface in java.lang" class="external-link">CharSequence</a>...&nbsp;headerNames)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Configures headers that have to be copied from the original request on each non-relative redirect.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RedirectConfigBuilder.html" title="class in io.servicetalk.http.api">RedirectConfigBuilder</a></code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#locationMapper(java.util.function.BiFunction)" class="member-name-link">locationMapper</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/BiFunction.html" title="class or interface in java.util.function" class="external-link">BiFunction</a>&lt;<a href="HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a>,<wbr><a href="HttpResponseMetaData.html" title="interface in io.servicetalk.http.api">HttpResponseMetaData</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;locationMapper)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Sets a function to extract redirect location information from the redirect <a href="HttpResponseMetaData.html" title="interface in io.servicetalk.http.api"><code>response</code></a>,
+ optionally considering the previous <a href="HttpRequestMetaData.html" title="interface in io.servicetalk.http.api"><code>request</code></a> as well.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="RedirectConfigBuilder.html" title="class in io.servicetalk.http.api">RedirectConfigBuilder</a></code></div>
 <div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#maxRedirects(int)" class="member-name-link">maxRedirects</a><wbr>(int&nbsp;maxRedirects)</code></div>
@@ -203,6 +214,21 @@ loadScripts(document, 'script');</script>
 </section>
 </li>
 <li>
+<section class="detail" id="allowedStatuses(io.servicetalk.http.api.HttpResponseStatus...)">
+<h3>allowedStatuses</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="RedirectConfigBuilder.html" title="class in io.servicetalk.http.api">RedirectConfigBuilder</a></span>&nbsp;<span class="element-name">allowedStatuses</span><wbr><span class="parameters">(<a href="HttpResponseStatus.html" title="class in io.servicetalk.http.api">HttpResponseStatus</a>...&nbsp;statuses)</span></div>
+<div class="block">Sets <a href="HttpResponseStatus.html" title="class in io.servicetalk.http.api"><code>HttpResponseStatus</code></a>es that are allowed to follow redirects.
+ <p>
+ All statuses must belong to <a href="HttpResponseStatus.StatusClass.html#REDIRECTION_3XX"><code>REDIRECTION_3XX</code></a> status class.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>statuses</code> - <a href="HttpResponseStatus.html" title="class in io.servicetalk.http.api"><code>HttpResponseStatus</code></a>es that are allowed to follow redirects</dd>
+<dt>Returns:</dt>
+<dd><code>this</code></dd>
+</dl>
+</section>
+</li>
+<li>
 <section class="detail" id="allowedMethods(io.servicetalk.http.api.HttpRequestMethod...)">
 <h3>allowedMethods</h3>
 <div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="RedirectConfigBuilder.html" title="class in io.servicetalk.http.api">RedirectConfigBuilder</a></span>&nbsp;<span class="element-name">allowedMethods</span><wbr><span class="parameters">(<a href="HttpRequestMethod.html" title="class in io.servicetalk.http.api">HttpRequestMethod</a>...&nbsp;methods)</span></div>
@@ -250,6 +276,26 @@ loadScripts(document, 'script');</script>
 <li><a href="#redirectRequestTransformer(io.servicetalk.http.api.RedirectConfig.RedirectRequestTransformer)"><code>redirectRequestTransformer(RedirectConfig.RedirectRequestTransformer)</code></a></li>
 </ul>
 </dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="locationMapper(java.util.function.BiFunction)">
+<h3>locationMapper</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type"><a href="RedirectConfigBuilder.html" title="class in io.servicetalk.http.api">RedirectConfigBuilder</a></span>&nbsp;<span class="element-name">locationMapper</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/BiFunction.html" title="class or interface in java.util.function" class="external-link">BiFunction</a>&lt;<a href="HttpRequestMetaData.html" title="interface in io.servicetalk.http.api">HttpRequestMetaData</a>,<wbr><a href="HttpResponseMetaData.html" title="interface in io.servicetalk.http.api">HttpResponseMetaData</a>,<wbr><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&gt;&nbsp;locationMapper)</span></div>
+<div class="block">Sets a function to extract redirect location information from the redirect <a href="HttpResponseMetaData.html" title="interface in io.servicetalk.http.api"><code>response</code></a>,
+ optionally considering the previous <a href="HttpRequestMetaData.html" title="interface in io.servicetalk.http.api"><code>request</code></a> as well.
+ <p>
+ Per <a href="https://www.rfc-editor.org/rfc/rfc7231#section-7.1.2">RFC7231, section 7.1.2</a> 3xx (Redirection)
+ responses use <a href="HttpHeaderNames.html#LOCATION"><code>Location</code></a> header value as the preferred target resource for
+ automatically redirecting the request. However, the target resource can be identified by a custom header or a
+ combination of previous request and 3xx (Redirection) response meta-data.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>locationMapper</code> - A function to extract redirect location information. If the function returns <code>null</code>,
+ redirection response won't be followed</dd>
+<dt>Returns:</dt>
+<dd><code>this</code></dd>
 </dl>
 </section>
 </li>
