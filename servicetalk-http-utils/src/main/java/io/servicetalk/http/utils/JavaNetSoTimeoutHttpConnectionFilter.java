@@ -50,14 +50,15 @@ import static java.util.Objects.requireNonNull;
 /**
  * A filter to mimics {@link SocketOptions#SO_TIMEOUT} behavior on the client-side.
  * <p>
- * While {@link TimeoutHttpRequesterFilter} apples a timeout for the overall duration to receive either the response
+ * While {@link TimeoutHttpRequesterFilter} applies a timeout for the overall duration to receive either the response
  * metadata (headers) or the complete reception of the response (including headers, payload body, optional trailers, as
- * well as time to send the request), this filter applies timeout only to read operations. It means that time to send
- * the request is not accounted. Also, if the remote server is sending a large payload body, the timeout will be applied
- * on every chunk read, which may result in unpredictable time to read the full response if the remote slowly sends
- * 1 byte withing the timeout boundaries. Use this filter only for compatibility with classic blocking Java libraries.
- * To protect from the described use-cases, consider also using {@link TimeoutHttpRequesterFilter} before applying this
- * filter.
+ * well as time to send the request), this filter applies timeout to every independent read operation: read of 100
+ * (Continue) response, read of response headers, read of every response payload body chunk, read of optional trailers.
+ * Note that the <b>time to send the request is not accounted</b>. Also, if the remote server is sending a large payload
+ * body, the timeout will be applied on every chunk read, which may result in unpredictable time to read the full
+ * response if the remote slowly sends 1 byte within the timeout boundaries. Use this filter only for compatibility with
+ * classic blocking Java libraries. To protect from the described use-cases, consider also appending
+ * {@link TimeoutHttpRequesterFilter} before applying this filter in the filter chain.
  * <p>
  * This filter implements only {@link StreamingHttpConnectionFilterFactory} and therefore can be applied only at the
  * connection level. This restriction ensures that the timeout is applied only for the response read operations
@@ -137,6 +138,9 @@ public final class JavaNetSoTimeoutHttpConnectionFilter implements StreamingHttp
                     final boolean expectContinue = request.headers()
                             .contains(HttpHeaderNames.EXPECT, HttpHeaderValues.CONTINUE);
                     if (expectContinue) {
+                        // For "Expect: 100-continue" case we start the timer when we send request meta-data and cancel
+                        // it when transport subscribes to the request payload publisher, which indicates that we
+                        // received 100 (Continue) response from the server.
                         continueTimeout = timeoutExecutor.schedule(() ->
                                 requestProcessor.onError(newStacklessSocketTimeoutException("Read timed out after " +
                                         timeout.toMillis() + "ms waiting for 100 (Continue) response")), timeout);
@@ -144,6 +148,7 @@ public final class JavaNetSoTimeoutHttpConnectionFilter implements StreamingHttp
                         continueTimeout = null;
                     }
                     return delegate().request(request.transformMessageBody(p -> {
+                                // Signal when request is fully written to start "read timeout"
                                 Publisher<?> body = p.beforeFinally(requestProcessor::onComplete);
                                 if (continueTimeout != null) {
                                     // Subscribe to the request payload body indicates we received 100 (Continue)
