@@ -168,32 +168,36 @@ final class FormUrlEncodedHttpSerializer implements HttpSerializer<Map<String, L
         }
 
         final Buffer buffer = allocator.newBuffer();
-        // Null values may be omitted
-        // https://tools.ietf.org/html/rfc1866#section-8.2
+        // Null values may be omitted, but for more flexibility we choose to encode them if they are provided by the
+        // caller. See https://tools.ietf.org/html/rfc1866#section-8.2
         parameters.forEach((key, values) -> {
             if (key == null || key.isEmpty()) {
                 throw new SerializationException("Null or empty keys are not supported " +
                         "for x-www-form-urlencoded params");
             }
 
-            if (values == null) {
+            if (values == null || values.isEmpty()) {
+                // Received a key with no values, so just encode the key and return.
+                writeKey(buffer, isContinuation, key);
                 return;
             }
 
             values.forEach(value -> {
-                if (value == null) {
-                    return;
+                writeKey(buffer, isContinuation, key);
+                if (value != null) {
+                    buffer.writeBytes("=".getBytes(charset));
+                    buffer.writeBytes(urlEncode(value).getBytes(charset));
                 }
-
-                if (buffer.writerIndex() != 0 || isContinuation) {
-                    buffer.writeBytes("&".getBytes(charset));
-                }
-                buffer.writeBytes(urlEncode(key).getBytes(charset));
-                buffer.writeBytes("=".getBytes(charset));
-                buffer.writeBytes(urlEncode(value).getBytes(charset));
             });
         });
         return buffer;
+    }
+
+    private void writeKey(final Buffer buffer, boolean isContinuation, String key) {
+        if (buffer.writerIndex() != 0 || isContinuation) {
+            buffer.writeBytes("&".getBytes(charset));
+        }
+        buffer.writeBytes(urlEncode(key).getBytes(charset));
     }
 
     private String urlEncode(final String value) {

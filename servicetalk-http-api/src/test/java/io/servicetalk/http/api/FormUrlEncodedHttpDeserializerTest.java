@@ -21,6 +21,8 @@ import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.serialization.api.SerializationException;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.List;
 import java.util.Map;
@@ -33,22 +35,25 @@ import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.emptyString;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FormUrlEncodedHttpDeserializerTest {
 
+    private static final FormUrlEncodedHttpDeserializer deserializer = FormUrlEncodedHttpDeserializer.UTF8;
+
+    private static final HttpHeaders FE_HEADERS = DefaultHttpHeadersFactory.INSTANCE.newHeaders()
+            .set(CONTENT_TYPE, "application/x-www-form-urlencoded; charset=UTF-8");
+
     @Test
     void formParametersAreDeserialized() {
-        final FormUrlEncodedHttpDeserializer deserializer = FormUrlEncodedHttpDeserializer.UTF8;
-
-        final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
-        headers.set(CONTENT_TYPE, "application/x-www-form-urlencoded; charset=UTF-8");
         final String formParameters = "escape%26this%3D=and%26this%25&param2=bar+&param2=foo%20&emptyParam=";
-
-        final Map<String, List<String>> deserialized = deserializer.deserialize(headers, toBuffer(formParameters));
+        final Map<String, List<String>> deserialized = deserializer.deserialize(FE_HEADERS, toBuffer(formParameters));
 
         assertEquals(singletonList("and&this%"),
                 deserialized.get("escape&this="), "Unexpected parameter value.");
@@ -63,23 +68,15 @@ class FormUrlEncodedHttpDeserializerTest {
 
     @Test
     void deserializeEmptyBuffer() {
-        final FormUrlEncodedHttpDeserializer deserializer = FormUrlEncodedHttpDeserializer.UTF8;
-
-        final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
-        headers.set(CONTENT_TYPE, "application/x-www-form-urlencoded; charset=UTF-8");
-
-        final Map<String, List<String>> deserialized = deserializer.deserialize(headers, EMPTY_BUFFER);
-
+        final Map<String, List<String>> deserialized = deserializer.deserialize(FE_HEADERS, EMPTY_BUFFER);
         assertEquals(0, deserialized.size(), "Unexpected parameter count");
     }
 
     @Test
     void invalidContentTypeThrows() {
-        final FormUrlEncodedHttpDeserializer deserializer = FormUrlEncodedHttpDeserializer.UTF8;
-
-        final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         final String invalidContentType = "invalid/content/type";
-        headers.set(CONTENT_TYPE, invalidContentType);
+        final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders()
+                .set(CONTENT_TYPE, invalidContentType);
 
         SerializationException e = assertThrows(SerializationException.class,
                                                 () -> deserializer.deserialize(headers, EMPTY_BUFFER));
@@ -88,13 +85,11 @@ class FormUrlEncodedHttpDeserializerTest {
 
     @Test
     void invalidContentTypeThrowsAndMasksAdditionalHeadersValues() {
-        final FormUrlEncodedHttpDeserializer deserializer = FormUrlEncodedHttpDeserializer.UTF8;
-
-        final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         final String invalidContentType = "invalid/content/type";
         final String someHost = "some/host";
-        headers.set(CONTENT_TYPE, invalidContentType);
-        headers.set(HttpHeaderNames.HOST, someHost);
+        final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders()
+                .set(CONTENT_TYPE, invalidContentType)
+                .set(HttpHeaderNames.HOST, someHost);
 
         SerializationException e = assertThrows(SerializationException.class,
                                                 () -> deserializer.deserialize(headers, EMPTY_BUFFER));
@@ -105,8 +100,6 @@ class FormUrlEncodedHttpDeserializerTest {
 
     @Test
     void missingContentTypeThrows() {
-        final FormUrlEncodedHttpDeserializer deserializer = FormUrlEncodedHttpDeserializer.UTF8;
-
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         assertThrows(SerializationException.class,
                 () -> deserializer.deserialize(headers, EMPTY_BUFFER));
@@ -114,10 +107,6 @@ class FormUrlEncodedHttpDeserializerTest {
 
     @Test
     void iterableCloseIsPropagated() throws Exception {
-        final FormUrlEncodedHttpDeserializer deserializer = FormUrlEncodedHttpDeserializer.UTF8;
-        final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
-        headers.set(CONTENT_TYPE, "application/x-www-form-urlencoded; charset=UTF-8");
-
         final AtomicBoolean isClosed = new AtomicBoolean(false);
 
         final BlockingIterable<Buffer> formParametersIterable = () -> new BlockingIterator<Buffer>() {
@@ -148,10 +137,27 @@ class FormUrlEncodedHttpDeserializerTest {
         };
 
         final BlockingIterable<Map<String, List<String>>> deserialized = deserializer
-                .deserialize(headers, formParametersIterable);
+                .deserialize(FE_HEADERS, formParametersIterable);
         deserialized.iterator().close();
 
         assertTrue(isClosed.get(), "BlockingIterable was not closed.");
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] paramIsNull={0}")
+    @ValueSource(booleans = { true, false })
+    void deserializesNullOrEmptyValues(boolean paramIsNull) {
+        final String separator = paramIsNull ? "" : "=";
+        final String formParameters = String.format("key1%s&key2%s&key2%s", separator, separator, separator);
+
+        final Map<String, List<String>> deserialized = deserializer.deserialize(FE_HEADERS, toBuffer(formParameters));
+        assertThat(deserialized.size(), is(2));
+
+        assertThat(deserialized.get("key1").size(), is(1));
+        assertThat(deserialized.get("key2").size(), is(2));
+
+        assertThat(deserialized.get("key1").get(0), paramIsNull ? nullValue() : emptyString());
+        assertThat(deserialized.get("key2").get(0), paramIsNull ? nullValue() : emptyString());
+        assertThat(deserialized.get("key2").get(1), paramIsNull ? nullValue() : emptyString());
     }
 
     private Buffer toBuffer(final String value) {

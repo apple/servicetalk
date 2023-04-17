@@ -25,6 +25,8 @@ import io.servicetalk.serialization.api.SerializationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,7 +38,6 @@ import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
-import static java.util.Collections.EMPTY_MAP;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
@@ -62,6 +63,7 @@ class FormUrlEncodedHttpSerializerTest {
         MAP_B.put("key4", singletonList("val4"));
     }
 
+    private static final Map<String, List<String>> EMPTY_MAP = Collections.emptyMap();
     private static final Map<String, List<String>> MAP_NULL_KEY = new HashMap<>();
     static {
         MAP_NULL_KEY.put(null, singletonList("val1"));
@@ -109,7 +111,8 @@ class FormUrlEncodedHttpSerializerTest {
                 Publisher.from(MAP_A, MAP_B), DEFAULT_ALLOCATOR);
         String queryStr = queryStringFromPublisher(serialized);
 
-        assertEquals("key1=val1&key2=val2&key3=val3&key4=val4", queryStr, "Unexpected serialized content.");
+        assertEquals("key1=val1&key2=val2&key5&key6&key3=val3&key4=val4&key7",
+                queryStr, "Unexpected serialized content.");
     }
 
     @Test
@@ -141,7 +144,8 @@ class FormUrlEncodedHttpSerializerTest {
         String queryStr = queryStringFromPublisher(SERIALIZER.serialize(headers,
                 Publisher.from(MAP_A, EMPTY_MAP, EMPTY_MAP, MAP_B), DEFAULT_ALLOCATOR));
 
-        assertEquals("key1=val1&key2=val2&key3=val3&key4=val4", queryStr, "Unexpected serialized content.");
+        assertEquals("key1=val1&key2=val2&key5&key6&key3=val3&key4=val4&key7",
+                queryStr, "Unexpected serialized content.");
     }
 
     @Test
@@ -150,10 +154,12 @@ class FormUrlEncodedHttpSerializerTest {
                 Publisher.from(MAP_A, EMPTY_MAP, EMPTY_MAP, MAP_B), DEFAULT_ALLOCATOR);
 
         String queryStr = queryStringFromPublisher(pub);
-        assertEquals("key1=val1&key2=val2&key3=val3&key4=val4", queryStr, "Unexpected serialized content.");
+        assertEquals("key1=val1&key2=val2&key5&key6&key3=val3&key4=val4&key7",
+                queryStr, "Unexpected serialized content.");
 
         queryStr = queryStringFromPublisher(pub);
-        assertEquals("key1=val1&key2=val2&key3=val3&key4=val4", queryStr, "Unexpected serialized content.");
+        assertEquals("key1=val1&key2=val2&key5&key6&key3=val3&key4=val4&key7",
+                queryStr, "Unexpected serialized content.");
     }
 
     @Test
@@ -161,7 +167,8 @@ class FormUrlEncodedHttpSerializerTest {
         String queryStr = queryStringFromBlockingIterable(SERIALIZER.serialize(headers,
                 BlockingIterables.from(asList(MAP_A, MAP_B)), DEFAULT_ALLOCATOR));
 
-        assertEquals("key1=val1&key2=val2&key3=val3&key4=val4", queryStr, "Unexpected serialized content.");
+        assertEquals("key1=val1&key2=val2&key5&key6&key3=val3&key4=val4&key7",
+                queryStr, "Unexpected serialized content.");
     }
 
     @Test
@@ -193,7 +200,8 @@ class FormUrlEncodedHttpSerializerTest {
         String queryStr = queryStringFromBlockingIterable(SERIALIZER.serialize(headers,
                 BlockingIterables.from(asList(MAP_A, EMPTY_MAP, EMPTY_MAP, MAP_B)), DEFAULT_ALLOCATOR));
 
-        assertEquals("key1=val1&key2=val2&key3=val3&key4=val4", queryStr, "Unexpected serialized content.");
+        assertEquals("key1=val1&key2=val2&key5&key6&key3=val3&key4=val4&key7",
+                queryStr, "Unexpected serialized content.");
     }
 
     @Test
@@ -235,6 +243,27 @@ class FormUrlEncodedHttpSerializerTest {
         assertTrue(isClosed.get());
         assertTrue(headers.contains(CONTENT_TYPE,
                 "application/x-www-form-urlencoded; charset=UTF-8"), "Unexpected content type.");
+    }
+
+    @Test
+    void serializesKeysWithoutValue() {
+        final Map<String, List<String>> formParameters = new HashMap<>();
+        formParameters.put("key1", null);
+        formParameters.put("key2", Collections.singletonList(null));
+        formParameters.put("key3", Arrays.asList(null, null));
+
+        final Buffer serialized = SERIALIZER.serialize(headers, formParameters, DEFAULT_ALLOCATOR);
+        assertEquals("key1&key2&key3&key3", serialized.toString(UTF_8), "Unexpected serialized content.");
+    }
+
+    @Test
+    void serializesKeysWithEmptyValue() {
+        final Map<String, List<String>> formParameters = new HashMap<>();
+        formParameters.put("key1", Collections.singletonList(""));
+        formParameters.put("key2", Arrays.asList("", ""));
+        final Buffer serialized = SERIALIZER.serialize(headers, formParameters, DEFAULT_ALLOCATOR);
+
+        assertEquals("key1=&key2=&key2=", serialized.toString(UTF_8), "Unexpected serialized content.");
     }
 
     private String queryStringFromPublisher(Publisher<Buffer> serialized) throws Exception {
