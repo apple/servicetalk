@@ -36,6 +36,7 @@ import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.emptyString;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
@@ -152,15 +153,15 @@ class FormUrlEncodedHttpDeserializerTest {
         final Map<String, List<String>> deserialized = deserializer.deserialize(FE_HEADERS, toBuffer(formParameters));
         assertThat(deserialized.size(), is(2));
 
-        assertThat(deserialized.get("key1").size(), is(1));
-        assertThat(deserialized.get("key2").size(), is(2));
+        assertThat(deserialized.get("key1"), hasSize(1));
+        assertThat(deserialized.get("key2"), hasSize(2));
 
         assertThat(deserialized.get("key1").get(0), paramIsNull ? nullValue() : emptyString());
         assertThat(deserialized.get("key2").get(0), paramIsNull ? nullValue() : emptyString());
         assertThat(deserialized.get("key2").get(1), paramIsNull ? nullValue() : emptyString());
     }
 
-    private Buffer toBuffer(final String value) {
+    private static Buffer toBuffer(final String value) {
         return DEFAULT_ALLOCATOR.fromUtf8(value);
     }
 }

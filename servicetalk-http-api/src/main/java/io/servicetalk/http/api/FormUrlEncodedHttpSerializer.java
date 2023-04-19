@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -46,12 +47,17 @@ final class FormUrlEncodedHttpSerializer implements HttpSerializer<Map<String, L
     static final FormUrlEncodedHttpSerializer UTF8 = new FormUrlEncodedHttpSerializer(UTF_8,
             headers -> headers.set(CONTENT_TYPE, APPLICATION_X_WWW_FORM_URLENCODED_UTF_8));
 
+    private static final byte EQUALS_BYTE = '=';
+    private static final byte AMPERSAND_BYTE = '&';
+
     private final Charset charset;
+    private final boolean isOptimizedCharset;
     private final Consumer<HttpHeaders> addContentType;
 
     FormUrlEncodedHttpSerializer(final Charset charset, final Consumer<HttpHeaders> addContentType) {
         this.charset = charset;
         this.addContentType = addContentType;
+        this.isOptimizedCharset = charset == UTF_8 || charset == StandardCharsets.US_ASCII;
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -185,8 +191,14 @@ final class FormUrlEncodedHttpSerializer implements HttpSerializer<Map<String, L
             values.forEach(value -> {
                 writeKey(buffer, isContinuation, key);
                 if (value != null) {
-                    buffer.writeBytes("=".getBytes(charset));
-                    buffer.writeBytes(urlEncode(value).getBytes(charset));
+                    if (isOptimizedCharset) {
+                        buffer.writeByte(EQUALS_BYTE);
+                    } else {
+                        buffer.writeBytes("=".getBytes(charset));
+                    }
+                    if (!value.isEmpty()) {
+                        buffer.writeBytes(urlEncode(value).getBytes(charset));
+                    }
                 }
             });
         });
@@ -195,7 +207,11 @@ final class FormUrlEncodedHttpSerializer implements HttpSerializer<Map<String, L
 
     private void writeKey(final Buffer buffer, boolean isContinuation, String key) {
         if (buffer.writerIndex() != 0 || isContinuation) {
-            buffer.writeBytes("&".getBytes(charset));
+            if (isOptimizedCharset) {
+                buffer.writeByte(AMPERSAND_BYTE);
+            } else {
+                buffer.writeBytes("&".getBytes(charset));
+            }
         }
         buffer.writeBytes(urlEncode(key).getBytes(charset));
     }

@@ -25,6 +25,7 @@ import io.servicetalk.serialization.api.SerializationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -264,6 +265,33 @@ class FormUrlEncodedHttpSerializerTest {
         final Buffer serialized = SERIALIZER.serialize(headers, formParameters, DEFAULT_ALLOCATOR);
 
         assertEquals("key1=&key2=&key2=", serialized.toString(UTF_8), "Unexpected serialized content.");
+    }
+
+    @Test
+    void serializesMixOfNullEmptyAndActualValue() {
+        final Map<String, List<String>> formParameters = new HashMap<>();
+        formParameters.put("key1", null);
+        formParameters.put("key2", Collections.singletonList(""));
+        formParameters.put("key3", Collections.singletonList(null));
+        formParameters.put("key4", Arrays.asList("a"));
+        formParameters.put("key5", Arrays.asList(null, null));
+        formParameters.put("key6", Arrays.asList("", ""));
+        final Buffer serialized = SERIALIZER.serialize(headers, formParameters, DEFAULT_ALLOCATOR);
+
+        assertEquals("key1&key2=&key5&key5&key6=&key6=&key3&key4=a", serialized.toString(UTF_8),
+                "Unexpected serialized content.");
+    }
+
+    @Test
+    void serializesWithNonOptimizedCharset() {
+        final Map<String, List<String>> formParameters = new HashMap<>();
+        formParameters.put("key1", Collections.singletonList("a"));
+        formParameters.put("key2", Collections.singletonList("b"));
+
+        final Buffer serialized = new FormUrlEncodedHttpSerializer(StandardCharsets.ISO_8859_1, headers -> { })
+                .serialize(headers, formParameters, DEFAULT_ALLOCATOR);
+        assertEquals("key1=a&key2=b", serialized.toString(StandardCharsets.ISO_8859_1),
+                "Unexpected serialized content.");
     }
 
     private String queryStringFromPublisher(Publisher<Buffer> serialized) throws Exception {
