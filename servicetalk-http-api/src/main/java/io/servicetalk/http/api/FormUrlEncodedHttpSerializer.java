@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -46,12 +47,17 @@ final class FormUrlEncodedHttpSerializer implements HttpSerializer<Map<String, L
     static final FormUrlEncodedHttpSerializer UTF8 = new FormUrlEncodedHttpSerializer(UTF_8,
             headers -> headers.set(CONTENT_TYPE, APPLICATION_X_WWW_FORM_URLENCODED_UTF_8));
 
+    private static final byte EQUALS_BYTE = '=';
+    private static final byte AMPERSAND_BYTE = '&';
+
     private final Charset charset;
+    private final boolean isOptimizedCharset;
     private final Consumer<HttpHeaders> addContentType;
 
     FormUrlEncodedHttpSerializer(final Charset charset, final Consumer<HttpHeaders> addContentType) {
         this.charset = charset;
         this.addContentType = addContentType;
+        this.isOptimizedCharset = UTF_8.equals(charset) || StandardCharsets.US_ASCII.equals(charset);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -168,32 +174,46 @@ final class FormUrlEncodedHttpSerializer implements HttpSerializer<Map<String, L
         }
 
         final Buffer buffer = allocator.newBuffer();
-        // Null values may be omitted
-        // https://tools.ietf.org/html/rfc1866#section-8.2
+        // Null values may be omitted, but for more flexibility we choose to encode them if they are provided by the
+        // caller. See https://tools.ietf.org/html/rfc1866#section-8.2
         parameters.forEach((key, values) -> {
             if (key == null || key.isEmpty()) {
                 throw new SerializationException("Null or empty keys are not supported " +
                         "for x-www-form-urlencoded params");
             }
 
-            if (values == null) {
+            if (values == null || values.isEmpty()) {
+                // Received a key with no values, so just encode the key and return.
+                writeKey(buffer, isContinuation, key);
                 return;
             }
 
             values.forEach(value -> {
-                if (value == null) {
-                    return;
+                writeKey(buffer, isContinuation, key);
+                if (value != null) {
+                    if (isOptimizedCharset) {
+                        buffer.writeByte(EQUALS_BYTE);
+                    } else {
+                        buffer.writeBytes("=".getBytes(charset));
+                    }
+                    if (!value.isEmpty()) {
+                        buffer.writeBytes(urlEncode(value).getBytes(charset));
+                    }
                 }
-
-                if (buffer.writerIndex() != 0 || isContinuation) {
-                    buffer.writeBytes("&".getBytes(charset));
-                }
-                buffer.writeBytes(urlEncode(key).getBytes(charset));
-                buffer.writeBytes("=".getBytes(charset));
-                buffer.writeBytes(urlEncode(value).getBytes(charset));
             });
         });
         return buffer;
+    }
+
+    private void writeKey(final Buffer buffer, boolean isContinuation, String key) {
+        if (buffer.writerIndex() != 0 || isContinuation) {
+            if (isOptimizedCharset) {
+                buffer.writeByte(AMPERSAND_BYTE);
+            } else {
+                buffer.writeBytes("&".getBytes(charset));
+            }
+        }
+        buffer.writeBytes(urlEncode(key).getBytes(charset));
     }
 
     private String urlEncode(final String value) {

@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Spliterator;
 import java.util.stream.StreamSupport;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.HttpHeaderNames.AUTHORIZATION;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
@@ -654,17 +655,17 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
         createFixture("/foo?bar");
         assertEquals("/foo?bar", fixture.requestTarget());
         assertEquals("bar", fixture.rawQuery());
-        assertEquals("", fixture.queryParameter("bar"));
+        assertNull(fixture.queryParameter("bar"));
         assertNull(fixture.queryParameter("nothing"));
 
         assertEquals(singletonList("bar"), iteratorAsList(fixture.queryParametersKeys().iterator()));
         Iterator<Entry<String, String>> itr = fixture.queryParameters().iterator();
-        assertNext(itr, "bar", "");
+        assertNext(itr, "bar", null);
         assertFalse(itr.hasNext());
 
         List<Entry<String, String>> entries = iteratorAsList(fixture.queryParameters().iterator());
         assertThat(entries, hasSize(1));
-        assertEntry(entries.get(0), "bar", "");
+        assertEntry(entries.get(0), "bar", null);
     }
 
     @Test
@@ -861,17 +862,17 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
                 .collect(toList());
     }
 
-    private static void assertNext(Iterator<Entry<String, String>> itr, String key, String value) {
+    private static void assertNext(Iterator<Entry<String, String>> itr, String key, @Nullable String value) {
         assertTrue(itr.hasNext());
         assertEntry(itr.next(), key, value);
     }
 
-    private static void assertEntry(Entry<String, String> next, String key, String value) {
+    private static void assertEntry(Entry<String, String> next, String key, @Nullable String value) {
         assertEquals(key, next.getKey());
         assertEquals(value, next.getValue());
     }
 
-    private static String queryValue(String v) {
-        return v.isEmpty() ? "" : "=" + v;
+    private static String queryValue(@Nullable String v) {
+        return v == null ? "" : "=" + v;
     }
 }

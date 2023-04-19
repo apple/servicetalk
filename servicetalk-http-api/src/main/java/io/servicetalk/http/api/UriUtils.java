@@ -252,7 +252,9 @@ final class UriUtils {
         final String name;
         if (valueStart <= nameStart) {
             name = decoder.apply(s.substring(nameStart, valueEnd), charset);
-            value = "";
+            // If no value is present, it should be represented as null (and not an empty string) so we can distinguish
+            // the cases of "key1&..." and "key1=&..." (note the presence of the equals sign)
+            value = null;
         } else {
             name = decoder.apply(s.substring(nameStart, valueStart - 1), charset);
             value = decoder.apply(s.substring(valueStart, valueEnd), charset);
