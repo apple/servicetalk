@@ -57,7 +57,7 @@ final class FormUrlEncodedHttpSerializer implements HttpSerializer<Map<String, L
     FormUrlEncodedHttpSerializer(final Charset charset, final Consumer<HttpHeaders> addContentType) {
         this.charset = charset;
         this.addContentType = addContentType;
-        this.isOptimizedCharset = charset == UTF_8 || charset == StandardCharsets.US_ASCII;
+        this.isOptimizedCharset = UTF_8.equals(charset) || StandardCharsets.US_ASCII.equals(charset);
     }
 
     @SuppressWarnings("ConstantConditions")
