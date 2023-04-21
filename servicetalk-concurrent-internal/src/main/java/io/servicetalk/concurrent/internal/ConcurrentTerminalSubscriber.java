@@ -213,14 +213,64 @@ public final class ConcurrentTerminalSubscriber<T> implements Subscriber<T> {
     }
 
     /**
-     * Used to terminate the delegate {@link Subscriber} managed by this class externally. This method will mark the
-     * internal state of this class as terminated so no more signals are propagated by this class.
-     * @return the delegate {@link Subscriber} managed by this class if not already terminated, otherwise {@code null}.
+     * Indicate that a {@link #onComplete()} should be delivered after {@link #deliverDeferredTerminal()} is
+     * later called. {@link #deliverDeferredTerminal()} <b>MUST</b> be subsequently called or the terminal signal may
+     * never be delivered. This signal may also be delivered if {@link #onNext(Object)} is being concurrently invoked.
+     * @return {@code true} if the terminal signal was "queued" to be delivered and {@link #deliverDeferredTerminal()}
+     * <b>MUST</b> subsequently be called. {@code false} if another thread is concurrently terminating this
+     * {@link Subscriber} (this terminal signal may still be delivered).
+     * @see #deliverDeferredTerminal()
      */
-    @Nullable
-    public Subscriber<T> unwrapMarkTerminated() {
-        final int localState = stateUpdater.getAndSet(this, SUBSCRIBER_STATE_TERMINATED);
-        return localState == SUBSCRIBER_STATE_TERMINATED || localState == SUBSCRIBER_STATE_TERMINATING ?
-                null : delegate;
+    public boolean deferredOnComplete() {
+        return deferredTerminal(null);
+    }
+
+    /**
+     * Indicate that a {@link #onError(Throwable)} should be delivered after {@link #deliverDeferredTerminal()} is
+     * later called. {@link #deliverDeferredTerminal()} <b>MUST</b> be subsequently called or the terminal signal may
+     * never be delivered. This signal may also be delivered if {@link #onNext(Object)} is being concurrently invoked.
+     * @param cause The terminal error signal to be delivered later (either when {@link #deliverDeferredTerminal()} is
+     * called or if {@link #onNext(Object)} is being concurrently invoked).
+     * @return {@code true} if the terminal signal {@code cause} was "queued" to be delivered and
+     * {@link #deliverDeferredTerminal()} <b>MUST</b> subsequently be called. {@code false} if another thread is
+     * concurrently terminating this {@link Subscriber} (this terminal signal may still be delivered).
+     * @see #deliverDeferredTerminal()
+     */
+    public boolean deferredOnError(Throwable cause) {
+        return deferredTerminal(requireNonNull(cause));
+    }
+
+    /**
+     * Try to deliver a terminal signal typically set by {@link #deferredOnComplete()} or
+     * {@link #deferredOnError(Throwable)}.
+     */
+    public void deliverDeferredTerminal() {
+        for (;;) {
+            final int localState = state;
+            if (localState != SUBSCRIBER_STATE_TERMINATING) {
+                break;
+            } else if (stateUpdater.compareAndSet(this, localState, SUBSCRIBER_STATE_TERMINATED)) {
+                assert terminalNotification != null;
+                terminalNotification.terminate(delegate);
+                break;
+            }
+        }
+    }
+
+    private boolean deferredTerminal(@Nullable Throwable cause) {
+        for (;;) {
+            final int localState = state;
+            if (localState == SUBSCRIBER_STATE_TERMINATED || localState == SUBSCRIBER_STATE_TERMINATING) {
+                return false;
+            } else {
+                // We may overwrite the terminalNotification if there is concurrency on this method, but there is no
+                // guarantee about what terminal notification will be propagated in the event of concurrency anyways.
+                terminalNotification = cause == null ?
+                        TerminalNotification.complete() : TerminalNotification.error(cause);
+                if (stateUpdater.compareAndSet(this, localState, SUBSCRIBER_STATE_TERMINATING)) {
+                    return true;
+                }
+            }
+        }
     }
 }

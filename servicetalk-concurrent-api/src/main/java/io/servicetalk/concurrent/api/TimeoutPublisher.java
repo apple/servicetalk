@@ -282,17 +282,16 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
             // We need to deliver cancel upstream first (clear state for Publishers that
             // allow sequential resubscribe) but we always want to force a TimeoutException downstream (because this is
             // the source of the error, despite what any upstream operators/publishers may deliver).
-            final Subscriber<? super X> localTarget = target.unwrapMarkTerminated();
-            try {
-                // The timer is started before onSubscribe so the subscription may actually be null at this time.
-                if (subscription != null) {
-                    subscription.cancel();
-                } else if (localTarget != null) {
-                    localTarget.onSubscribe(EMPTY_SUBSCRIPTION);
-                }
-            } finally {
-                if (localTarget != null) {
-                    localTarget.onError(cause);
+            if (target.deferredOnError(cause)) {
+                try {
+                    // The timer is started before onSubscribe so the subscription may actually be null at this time.
+                    if (subscription != null) {
+                        subscription.cancel();
+                    } else {
+                        target.onSubscribe(EMPTY_SUBSCRIPTION);
+                    }
+                } finally {
+                    target.deliverDeferredTerminal();
                 }
             }
         }
