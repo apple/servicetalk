@@ -16,13 +16,14 @@
 package io.servicetalk.concurrent.api.single;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.DelegatingExecutor;
 import io.servicetalk.concurrent.api.ExecutorExtension;
-import io.servicetalk.concurrent.api.LegacyTestSingle;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestCancellable;
 import io.servicetalk.concurrent.api.TestExecutor;
+import io.servicetalk.concurrent.api.TestSingle;
 import io.servicetalk.concurrent.test.internal.TestSingleSubscriber;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -35,6 +36,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static java.time.Duration.ofNanos;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -49,15 +51,36 @@ import static org.mockito.Mockito.verify;
 
 class TimeoutSingleTest {
     @RegisterExtension
-    final ExecutorExtension<TestExecutor> executorExtension = ExecutorExtension.withTestExecutor();
-
-    private LegacyTestSingle<Integer> source = new LegacyTestSingle<>(false, false);
-    final TestSingleSubscriber<Integer> subscriber = new TestSingleSubscriber<>();
+    static final ExecutorExtension<TestExecutor> executorExtension = ExecutorExtension.withTestExecutor();
+    private final TestSingle<Integer> source = new TestSingle<>();
+    private final TestSingleSubscriber<Integer> subscriber = new TestSingleSubscriber<>();
     private TestExecutor testExecutor;
 
     @BeforeEach
     void setup() {
         testExecutor = executorExtension.executor();
+    }
+
+    @Test
+    void timeoutExceptionDeliveredBeforeUpstreamException() {
+        toSource(new Single<Integer>() {
+            @Override
+            protected void handleSubscribe(final SingleSource.Subscriber<? super Integer> subscriber) {
+                subscriber.onSubscribe(new Cancellable() {
+                    private boolean terminated;
+                    @Override
+                    public void cancel() {
+                        if (!terminated) {
+                            terminated = true;
+                            subscriber.onError(new AssertionError("unexpected error, should have seen timeout"));
+                        }
+                    }
+                });
+            }
+        }.timeout(ofNanos(1), testExecutor))
+                .subscribe(subscriber);
+        testExecutor.advanceTimeBy(1, NANOSECONDS);
+        assertThat(subscriber.awaitOnError(), instanceOf(TimeoutException.class));
     }
 
     @Test

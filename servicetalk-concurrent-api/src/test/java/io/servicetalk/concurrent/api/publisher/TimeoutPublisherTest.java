@@ -47,6 +47,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static java.time.Duration.ofNanos;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -93,6 +94,32 @@ class TimeoutPublisherTest {
     @BeforeEach
     void setup() {
         testExecutor = executorExtension.executor();
+    }
+
+    @Test
+    void timeoutExceptionDeliveredBeforeUpstreamException() {
+        toSource(new Publisher<Integer>() {
+            @Override
+            protected void handleSubscribe(final Subscriber<? super Integer> subscriber) {
+                subscriber.onSubscribe(new Subscription() {
+                    private boolean terminated;
+                    @Override
+                    public void request(final long n) {
+                    }
+
+                    @Override
+                    public void cancel() {
+                        if (!terminated) {
+                            terminated = true;
+                            subscriber.onError(new AssertionError("unexpected error, should have seen timeout"));
+                        }
+                    }
+                });
+            }
+        }.timeout(ofNanos(1), testExecutor))
+                .subscribe(subscriber);
+        testExecutor.advanceTimeBy(1, NANOSECONDS);
+        assertThat(subscriber.awaitOnError(), instanceOf(TimeoutException.class));
     }
 
     @Test
@@ -260,7 +287,7 @@ class TimeoutPublisherTest {
     void justSubscribeTimeout(TimerBehaviorParam params) {
         DelayedOnSubscribePublisher<Integer> delayedPublisher = new DelayedOnSubscribePublisher<>();
 
-        init(delayedPublisher, params, Duration.ofNanos(1), false);
+        init(delayedPublisher, params, ofNanos(1), false);
 
         testExecutor.advanceTimeBy(1, NANOSECONDS);
         assertThat(testExecutor.scheduledTasksPending(), is(0));
@@ -344,11 +371,11 @@ class TimeoutPublisherTest {
     }
 
     private void init(TimerBehaviorParam params) {
-        init(params, Duration.ofNanos(1));
+        init(params, ofNanos(1));
     }
 
     private void init(TimerBehaviorParam params, Duration duration) {
-            init(publisher, params, duration, true);
+        init(publisher, params, duration, true);
     }
 
     private void init(Publisher<Integer> publisher, TimerBehaviorParam params,

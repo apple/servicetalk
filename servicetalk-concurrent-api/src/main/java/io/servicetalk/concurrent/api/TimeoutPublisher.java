@@ -125,7 +125,8 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
                                   Subscriber<? super X> target,
                                   AsyncContextProvider contextProvider) {
             this.parent = parent;
-            this.target = new ConcurrentTerminalSubscriber<>(target);
+            // Concurrent onSubscribe is protected by subscriptionUpdater, no need to double protect.
+            this.target = new ConcurrentTerminalSubscriber<>(target, false);
             this.contextProvider = contextProvider;
         }
 
@@ -278,14 +279,22 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
 
         private void processTimeout(Throwable cause) {
             final Subscription subscription = subscriptionUpdater.getAndSet(this, EMPTY_SUBSCRIPTION);
-            // The timer is started before onSubscribe so the subscription may actually be null at this time.
-            if (subscription != null) {
-                subscription.cancel();
-                // onErrorFromTimeout will protect against concurrent access on the Subscriber.
-            } else {
-                target.onSubscribe(EMPTY_SUBSCRIPTION);
+            // We need to deliver cancel upstream first (clear state for Publishers that
+            // allow sequential resubscribe) but we always want to force a TimeoutException downstream (because this is
+            // the source of the error, despite what any upstream operators/publishers may deliver).
+            final Subscriber<? super X> localTarget = target.unwrapMarkTerminated();
+            try {
+                // The timer is started before onSubscribe so the subscription may actually be null at this time.
+                if (subscription != null) {
+                    subscription.cancel();
+                } else if (localTarget != null) {
+                    localTarget.onSubscribe(EMPTY_SUBSCRIPTION);
+                }
+            } finally {
+                if (localTarget != null) {
+                    localTarget.onError(cause);
+                }
             }
-            target.processOnError(cause);
         }
 
         private void stopTimer() {
