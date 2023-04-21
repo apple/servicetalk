@@ -814,7 +814,7 @@ final class DefaultDnsClient implements DnsClient {
                     ttlNanos = dnsAnswer.ttlNanos();
                     if (ttlNanos > maxTTLNanos) {
                         if (LOGGER.isDebugEnabled()) {
-                            LOGGER.debug("{} result for {} has TTL={}s > maxTTL={}s",
+                            LOGGER.debug("{} result for {} has TTL={} > maxTTL={}",
                                     DefaultDnsClient.this, AbstractDnsPublisher.this, NANOSECONDS.toSeconds(ttlNanos),
                                     NANOSECONDS.toSeconds(maxTTLNanos));
                         }
