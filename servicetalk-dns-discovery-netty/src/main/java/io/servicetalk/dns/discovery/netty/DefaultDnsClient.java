@@ -813,9 +813,11 @@ final class DefaultDnsClient implements DnsClient {
                     final List<T> addresses = dnsAnswer.answer();
                     ttlNanos = dnsAnswer.ttlNanos();
                     if (ttlNanos > maxTTLNanos) {
-                        LOGGER.info("{} result for {} has a high TTL={}s which is larger than configured maxTTL={}s.",
-                                DefaultDnsClient.this, AbstractDnsPublisher.this,
-                                NANOSECONDS.toSeconds(ttlNanos), NANOSECONDS.toSeconds(maxTTLNanos));
+                        if (LOGGER.isDebugEnabled()) {
+                            LOGGER.debug("{} result for {} has a high TTL={}s which is larger than configured maxTTL={}s.",
+                                    DefaultDnsClient.this, AbstractDnsPublisher.this,
+                                    NANOSECONDS.toSeconds(ttlNanos), NANOSECONDS.toSeconds(maxTTLNanos));
+                        }
                         ttlNanos = maxTTLNanos;
                     }
                     final List<ServiceDiscovererEvent<T>> events = calculateDifference(activeAddresses, addresses,
