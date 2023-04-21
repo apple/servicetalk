@@ -22,8 +22,10 @@ import io.servicetalk.concurrent.api.ExecutorExtension;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSubscription;
 
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
 
@@ -33,6 +35,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.Arrays.asList;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -50,67 +54,45 @@ class ConcurrentTerminalSubscriberTest {
             new TestPublisher.Builder<Integer>().disableAutoOnSubscribe().build();
     private final TestSubscription subscription = new TestSubscription();
 
-    @Test
-    void concurrentOnSubscribeWithOnNextAndOnComplete() throws Exception {
-        concurrentOnSubscribe(true, true);
+    @ParameterizedTest(name = "{displayName} [{index}] onComplete={0}")
+    @ValueSource(booleans = {true, false})
+    void deferredTerminal(boolean onComplete) {
+        AtomicReference<Subscription> subscriptionRef = new AtomicReference<>();
+        @SuppressWarnings("unchecked")
+        Subscriber<Integer> mockSubscriber = (Subscriber<Integer>) mock(Subscriber.class);
+        doAnswer((Answer<Void>) invocation -> {
+            Subscription s = invocation.getArgument(0);
+            subscriptionRef.set(s);
+            s.request(1);
+            return null;
+        }).when(mockSubscriber).onSubscribe(any());
+        doAnswer((Answer<Void>) invocation -> {
+            subscriptionRef.get().request(1);
+            return null;
+        }).when(mockSubscriber).onNext(any());
+
+        ConcurrentTerminalSubscriber<Integer> subscriber = new ConcurrentTerminalSubscriber<>(mockSubscriber);
+        publisher.subscribe(subscriber);
+        publisher.onSubscribe(subscription);
+
+        if (onComplete) {
+            assertThat(subscriber.deferredOnComplete(), equalTo(true));
+        } else {
+            assertThat(subscriber.deferredOnError(DELIBERATE_EXCEPTION), equalTo(true));
+        }
+
+        subscriber.deliverDeferredTerminal();
+
+        if (onComplete) {
+            verify(mockSubscriber).onComplete();
+        } else {
+            verify(mockSubscriber).onError(same(DELIBERATE_EXCEPTION));
+        }
     }
 
-    @Test
-    void concurrentOnSubscribeWithOnComplete() throws Exception {
-        concurrentOnSubscribe(true, false);
-    }
-
-    @Test
-    void concurrentOnSubscribeWithOnNextAndOnError() throws Exception {
-        concurrentOnSubscribe(false, true);
-    }
-
-    @Test
-    void concurrentOnSubscribeWithOnError() throws Exception {
-        concurrentOnSubscribe(false, false);
-    }
-
-    @Test
-    void concurrentOnNextWithOnComplete() throws Exception {
-        concurrentOnNext(true);
-    }
-
-    @Test
-    void concurrentOnNextWithOnError() throws Exception {
-        concurrentOnNext(false);
-    }
-
-    @Test
-    void concurrentOnCompleteWithOnComplete() throws Exception {
-        concurrentOnComplete(true, true);
-    }
-
-    @Test
-    void concurrentOnCompleteWithOnError() throws Exception {
-        concurrentOnComplete(true, false);
-    }
-
-    @Test
-    void concurrentOnErrorWithOnComplete() throws Exception {
-        concurrentOnComplete(false, true);
-    }
-
-    @Test
-    void concurrentOnErrorWithOnError() throws Exception {
-        concurrentOnComplete(false, false);
-    }
-
-    @Test
-    void reentrySynchronousOnNextAllowedOnComplete() {
-        reentrySynchronousOnNextAllowed(true);
-    }
-
-    @Test
-    void reentrySynchronousOnNextAllowedOnError() {
-        reentrySynchronousOnNextAllowed(false);
-    }
-
-    private void reentrySynchronousOnNextAllowed(boolean onComplete) {
+    @ParameterizedTest(name = "{displayName} [{index}] onComplete={0}")
+    @ValueSource(booleans = {true, false})
+    void reentrySynchronousOnNextAllowed(boolean onComplete) {
         AtomicReference<Subscription> subscriptionRef = new AtomicReference<>();
         @SuppressWarnings("unchecked")
         Subscriber<Integer> mockSubscriber = (Subscriber<Integer>) mock(Subscriber.class);
@@ -161,7 +143,9 @@ class ConcurrentTerminalSubscriberTest {
         }
     }
 
-    private void concurrentOnComplete(boolean firstOnComplete, boolean secondOnComplete) throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] firstOnComplete={0} secondOnComplete={1}")
+    @CsvSource(value = {"false,false", "false,true", "true,false", "true,true"})
+    void concurrentOnComplete(boolean firstOnComplete, boolean secondOnComplete) throws Exception {
         CyclicBarrier terminalEnterBarrier = new CyclicBarrier(2);
         CountDownLatch terminatedLatch = new CountDownLatch(1);
 
@@ -215,7 +199,9 @@ class ConcurrentTerminalSubscriberTest {
         }
     }
 
-    private void concurrentOnNext(boolean onComplete) throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] onComplete={0} deferred={1}")
+    @CsvSource(value = {"false,false", "false,true", "true,false", "true,true"})
+    void concurrentOnNext(boolean onComplete, boolean deferred) throws Exception {
         CountDownLatch onNextLatch = new CountDownLatch(1);
         CyclicBarrier onNextEnterBarrier = new CyclicBarrier(2);
         CountDownLatch terminatedLatch = new CountDownLatch(1);
@@ -253,11 +239,19 @@ class ConcurrentTerminalSubscriberTest {
         EXEC.executor().execute(() -> publisher.onNext(1));
         onNextEnterBarrier.await();
         if (onComplete) {
-            publisher.onComplete();
+            if (deferred) {
+                assertThat(subscriber.deferredOnComplete(), equalTo(true));
+            } else {
+                publisher.onComplete();
+            }
+        } else if (deferred) {
+            assertThat(subscriber.deferredOnError(DELIBERATE_EXCEPTION), equalTo(true));
         } else {
             publisher.onError(DELIBERATE_EXCEPTION);
         }
         onNextLatch.countDown();
+
+        // if deferred, don't invoke deliverDeferredTerminal() because we are testing onNext delivering the signal.
 
         terminatedLatch.await();
         verify(mockSubscriber).onNext(eq(1));
@@ -269,7 +263,9 @@ class ConcurrentTerminalSubscriberTest {
         }
     }
 
-    private void concurrentOnSubscribe(boolean onComplete, boolean onNext) throws Exception {
+    @ParameterizedTest(name = "{displayName} [{index}] onComplete={0} onNext={1}")
+    @CsvSource(value = {"false,false", "false,true", "true,false", "true,true"})
+    void concurrentOnSubscribe(boolean onComplete, boolean onNext) throws Exception {
         CountDownLatch onSubscribeLatch = new CountDownLatch(1);
         CountDownLatch terminatedLatch = new CountDownLatch(1);
 
