@@ -52,8 +52,10 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.MediaType.MULTIPART_FORM_DATA;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
+import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static javax.ws.rs.core.Response.accepted;
 import static javax.ws.rs.core.Response.ok;
+import static javax.ws.rs.core.Response.status;
 
 /**
  * JAX-RS resource class that demonstrates some of the features supported by ServiceTalk's Jersey HTTP router.
@@ -235,6 +237,32 @@ public class HelloWorldJaxRsResource {
         final GenericEntity<Publisher<Buffer>> entity = new GenericEntity<Publisher<Buffer>>(payload) { };
 
         return ok(entity).build();
+    }
+
+    /**
+     * Resource that relies on the {@link Single}/OIO adapters and Jackson to consume and produce JSON entities.
+     * This project uses ServiceTalk's Jackson provider for Jersey hence no OIO adaptation is involved.
+     * <p>
+     * Test with:
+     * <pre>
+     * curl -H 'content-type: application/json' -d '{}' http://localhost:8080/greetings/single-hello-status
+     * curl -H 'content-type: application/json' -d '{"who":"bob"}' http://localhost:8080/greetings/single-hello-status
+     * </pre>
+     *
+     * @param single a {@link Single} that provides a {@link Map} that provides salutation data.
+     * @return greetings as a {@link Map}.
+     */
+    @POST
+    @Path("single-hello-status")
+    @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
+    public Single<Response> helloStatus(final Single<Map<String, String>> single) {
+        return single.map(request -> {
+            final String name = request.get("who");
+            return name == null ?
+                    status(NOT_FOUND).entity(singletonMap("error", "key 'who' not found")).build() :
+                    ok(singletonMap("hello", name)).build();
+        });
     }
 
     /**
