@@ -37,6 +37,7 @@ public final class ConcurrentTerminalSubscriber<T> implements Subscriber<T> {
     private static final int SUBSCRIBER_STATE_TERMINATING = 2;
     private static final int SUBSCRIBER_STATE_TERMINATED = 3;
 
+    @SuppressWarnings("rawtypes")
     private static final AtomicIntegerFieldUpdater<ConcurrentTerminalSubscriber> stateUpdater =
             AtomicIntegerFieldUpdater.newUpdater(ConcurrentTerminalSubscriber.class, "state");
 
@@ -209,5 +210,17 @@ public final class ConcurrentTerminalSubscriber<T> implements Subscriber<T> {
                 }
             }
         }
+    }
+
+    /**
+     * Used to terminate the delegate {@link Subscriber} managed by this class externally. This method will mark the
+     * internal state of this class as terminated so no more signals are propagated by this class.
+     * @return the delegate {@link Subscriber} managed by this class if not already terminated, otherwise {@code null}.
+     */
+    @Nullable
+    public Subscriber<T> unwrapMarkTerminated() {
+        final int localState = stateUpdater.getAndSet(this, SUBSCRIBER_STATE_TERMINATED);
+        return localState == SUBSCRIBER_STATE_TERMINATED || localState == SUBSCRIBER_STATE_TERMINATING ?
+                null : delegate;
     }
 }
