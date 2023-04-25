@@ -224,6 +224,11 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
         private String redirectLocation(final int redirectCount, final HttpRequestMetaData requestMetaData,
                                         final HttpResponseMetaData responseMetaData) {
 
+            final HttpResponseStatus status = responseMetaData.status();
+            if (!REDIRECTION_3XX.contains(status)) {
+                return null;
+            }
+
             final RedirectConfig config = redirectSingle.config;
             if (redirectCount >= config.maxRedirects()) {
                 LOGGER.debug("Maximum number of redirects ({}) reached for original request: {}",
@@ -231,8 +236,7 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
                 return null;
             }
 
-            final HttpResponseStatus status = responseMetaData.status();
-            if (!REDIRECTION_3XX.contains(status) || !config.allowedStatuses().contains(status)) {
+            if (!config.allowedStatuses().contains(status)) {
                 LOGGER.debug("Configuration does not allow redirect for response status: {}", status);
                 return null;
             }
