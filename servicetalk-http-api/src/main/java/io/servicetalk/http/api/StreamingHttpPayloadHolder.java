@@ -201,6 +201,10 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
         return payloadInfo.isGenericTypeBuffer();
     }
 
+    DefaultPayloadInfo payloadInfo() {
+        return payloadInfo;
+    }
+
     BufferAllocator allocator() {
         return allocator;
     }

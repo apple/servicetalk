@@ -31,6 +31,10 @@ final class DefaultPayloadInfo implements PayloadInfo {
     }
 
     DefaultPayloadInfo(PayloadInfo from) {
+        setAll(from);
+    }
+
+    DefaultPayloadInfo setAll(PayloadInfo from) {
         if (from instanceof DefaultPayloadInfo) {
             this.flags = ((DefaultPayloadInfo) from).flags;
         } else {
@@ -39,6 +43,7 @@ final class DefaultPayloadInfo implements PayloadInfo {
             setMayHaveTrailers(from.mayHaveTrailers());
             setGenericTypeBuffer(from.isGenericTypeBuffer());
         }
+        return this;
     }
 
     @Override
