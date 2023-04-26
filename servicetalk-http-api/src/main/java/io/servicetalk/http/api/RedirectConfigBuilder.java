@@ -432,10 +432,18 @@ public final class RedirectConfigBuilder {
         private static void fullCopy(final StreamingHttpRequest originalRequest,
                                      final StreamingHttpRequest redirectRequest) {
             redirectRequest.setHeaders(originalRequest.headers());
-            redirectRequest.transformMessageBody(p -> p.ignoreElements().concat(originalRequest.messageBody()));
-            // Use `transform` to update PayloadInfo flags, assuming trailers may be included in the message body
-            redirectRequest.transform(NOOP_TRAILERS_TRANSFORMER);
-            // FIXME: instead of `transform`, preserve original PayloadInfo/FlushStrategy when it's API is available
+            preserveMessageBody(originalRequest, redirectRequest);
+            // Sync PayloadInfo
+            if (DefaultStreamingHttpRequest.class.equals(redirectRequest.getClass()) &&
+                    DefaultStreamingHttpRequest.class.equals(originalRequest.getClass())) {
+                ((DefaultStreamingHttpRequest) redirectRequest).payloadHolder().payloadInfo()
+                        .setAll((DefaultStreamingHttpRequest) originalRequest);
+            } else {
+                // Use `transform` to update PayloadInfo flags, pessimistically assuming that trailers may be included
+                // in the message body.
+                redirectRequest.transform(NOOP_TRAILERS_TRANSFORMER);
+                // FIXME: instead of `transform`, preserve original PayloadInfo/FlushStrategy when it's API is available
+            }
         }
 
         private void safeCopy(final StreamingHttpRequest request, final StreamingHttpRequest redirectRequest) {
@@ -447,14 +455,26 @@ public final class RedirectConfigBuilder {
                 if (trailersTransformer == null) {
                     redirectRequest.payloadBody(request.payloadBody());
                 } else {
-                    redirectRequest.transformMessageBody(p -> p.ignoreElements().concat(request.messageBody()))
-                            .transform(trailersTransformer);
+                    preserveMessageBody(request, redirectRequest).transform(trailersTransformer);
                 }
             } else if (trailersTransformer != null) {
-                redirectRequest.transformMessageBody(p -> p.ignoreElements().concat(request.messageBody()
-                                .filter(item -> item instanceof HttpHeaders)))
+                preserveMessageBody(request, redirectRequest)
+                        // Keep only trailers
+                        .transformMessageBody(p -> p.filter(item -> item instanceof HttpHeaders))
                         .transform(trailersTransformer);
             }
+        }
+
+        private static StreamingHttpRequest preserveMessageBody(final StreamingHttpRequest originalRequest,
+                                                                final StreamingHttpRequest redirectRequest) {
+            return redirectRequest.transformMessageBody(p -> {
+                if (p == Publisher.empty()) {
+                    // The most frequent case for a new request, it's safe to discard an empty publisher.
+                    return originalRequest.messageBody();
+                }
+                // If some operators were already applied for "p", we need to chain it to process them all.
+                return p.ignoreElements().concat(originalRequest.messageBody());
+            });
         }
 
         private void copyHeaders(final HttpHeaders requestHeaders, final HttpHeaders redirectHeaders) {
