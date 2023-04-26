@@ -164,6 +164,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
                     (HTTPS_SCHEME.equalsIgnoreCase(scheme) ? HTTPS : HTTP).port();
 
             metaData.requestTarget(absoluteToRelativeFormRequestTarget(metaData.requestTarget(), scheme, host));
+            // FIXME: preserve scheme
 
             final String key = scheme + ':' + host + ':' + port;
             final UrlKey urlKey = urlKeyCache.get(key);

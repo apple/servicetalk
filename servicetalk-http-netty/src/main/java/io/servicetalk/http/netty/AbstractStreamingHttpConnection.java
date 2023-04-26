@@ -81,12 +81,11 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
     private final boolean allowDropTrailersReadFromTransport;
 
     AbstractStreamingHttpConnection(final CC conn, final int maxPipelinedRequests,
-                                    final HttpExecutionContext executionContext,
                                     final StreamingHttpRequestResponseFactory reqRespFactory,
                                     final HttpHeadersFactory headersFactory,
                                     final boolean allowDropTrailersReadFromTransport) {
         this.connection = requireNonNull(conn);
-        this.connectionContext = new DefaultNettyHttpConnectionContext(conn, executionContext);
+        this.connectionContext = new DefaultNettyHttpConnectionContext(conn);
         this.reqRespFactory = requireNonNull(reqRespFactory);
         maxConcurrencySetting = from(new IgnoreConsumedEvent<>(maxPipelinedRequests))
                 .concat(connection.onClosing())

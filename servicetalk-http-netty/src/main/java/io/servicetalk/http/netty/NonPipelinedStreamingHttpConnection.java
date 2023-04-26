@@ -17,7 +17,6 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
@@ -29,11 +28,10 @@ final class NonPipelinedStreamingHttpConnection
         extends AbstractStreamingHttpConnection<NettyConnection<Object, Object>> {
 
     NonPipelinedStreamingHttpConnection(final NettyConnection<Object, Object> connection,
-                                        final HttpExecutionContext executionContext,
                                         final StreamingHttpRequestResponseFactory reqRespFactory,
                                         final HttpHeadersFactory headersFactory,
                                         final boolean allowDropTrailersReadFromTransport) {
-        super(connection, 1, executionContext, reqRespFactory, headersFactory, allowDropTrailersReadFromTransport);
+        super(connection, 1, reqRespFactory, headersFactory, allowDropTrailersReadFromTransport);
     }
 
     @Override

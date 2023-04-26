@@ -32,7 +32,6 @@ import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -50,7 +49,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 
 class PipelinedHttpConnectionTest {
@@ -77,12 +75,21 @@ class PipelinedHttpConnectionTest {
 
     private StreamingHttpConnection pipe;
 
-    @BeforeEach
-    void setup() {
+    private void commonSetup(NettyConnection<Object, Object> connection) {
         when(connection.onClose()).thenReturn(never());
         when(connection.onClosing()).thenReturn(never());
-        when(connection.executionContext()).thenReturn((ExecutionContext) ctx);
+        when(connection.executionContext())
+                .thenReturn((ExecutionContext) new ExecutionContextToHttpExecutionContext(ctx, defaultStrategy()));
         when(connection.protocol()).thenReturn(HTTP_1_1);
+        when(connection.updateFlushStrategy(any())).thenReturn(IGNORE_CANCEL);
+
+        pipe = TestStreamingHttpConnection.from(
+                new PipelinedStreamingHttpConnection(connection, h1().maxPipelinedRequests(2).build(),
+                        reqRespFactory, false));
+    }
+
+    private void fullSetup(NettyConnection<Object, Object> connection) {
+        commonSetup(connection);
         when(connection.write(any())).then(inv -> {
             Publisher<Object> publisher = inv.getArgument(0);
             return publisher.ignoreElements(); // simulate write consuming all
@@ -91,24 +98,16 @@ class PipelinedHttpConnectionTest {
             Publisher<Object> publisher = inv.getArgument(0);
             return publisher.ignoreElements(); // simulate write consuming all
         });
-        when(connection.updateFlushStrategy(any())).thenReturn(IGNORE_CANCEL);
         when(connection.read()).thenReturn(readPublisher1, readPublisher2);
-
-        pipe = TestStreamingHttpConnection.from(
-                new PipelinedStreamingHttpConnection(connection, h1().maxPipelinedRequests(2).build(),
-                        new ExecutionContextToHttpExecutionContext(ctx, defaultStrategy()),
-                        reqRespFactory, false));
     }
 
     @Test
     void http11RequestShouldCompleteSuccessfully() {
-        reset(connection); // Simplified mocking
-        when(connection.protocol()).thenReturn(HTTP_1_1);
-        when(connection.executionContext()).thenReturn((ExecutionContext) ctx);
+        commonSetup(connection);
         when(connection.write(any())).thenReturn(completed());
         when(connection.write(any(), any(), any())).thenReturn(completed());
         when(connection.read()).thenReturn(Publisher.from(reqRespFactory.ok(), emptyLastChunk));
-        when(connection.updateFlushStrategy(any())).thenReturn(IGNORE_CANCEL);
+
         Single<StreamingHttpResponse> request = pipe.request(reqRespFactory.get("/Foo"));
         toSource(request).subscribe(dataSubscriber1);
         assertNotNull(dataSubscriber1.awaitOnSuccess());
@@ -116,6 +115,7 @@ class PipelinedHttpConnectionTest {
 
     @Test
     void ensureRequestsArePipelined() {
+        fullSetup(connection);
         toSource(pipe.request(reqRespFactory.get("/foo").payloadBody(writePublisher1)))
                 .subscribe(dataSubscriber1);
         toSource(pipe.request(reqRespFactory.get("/bar").payloadBody(writePublisher2)))

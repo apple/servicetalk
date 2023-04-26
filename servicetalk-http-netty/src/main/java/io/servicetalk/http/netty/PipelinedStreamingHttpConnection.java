@@ -17,7 +17,6 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyConnection;
@@ -29,11 +28,10 @@ final class PipelinedStreamingHttpConnection
         extends AbstractStreamingHttpConnection<NettyPipelinedConnection<Object, Object>> {
     PipelinedStreamingHttpConnection(final NettyConnection<Object, Object> connection,
                                      final H1ProtocolConfig config,
-                                     final HttpExecutionContext executionContext,
                                      final StreamingHttpRequestResponseFactory reqRespFactory,
                                      final boolean allowDropTrailersReadFromTransport) {
         super(new NettyPipelinedConnection<>(connection, config.maxPipelinedRequests()),
-                config.maxPipelinedRequests(), executionContext, reqRespFactory, config.headersFactory(),
+                config.maxPipelinedRequests(), reqRespFactory, config.headersFactory(),
                 allowDropTrailersReadFromTransport);
     }
 

@@ -82,7 +82,7 @@ final class AlpnLBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpC
                     assert h1Config != null;
                     return StreamingConnectionFactory.createConnection(channel, executionContext, h1Config, tcpConfig,
                             NoopChannelInitializer.INSTANCE, connectionObserver)
-                            .map(conn -> new PipelinedStreamingHttpConnection(conn, h1Config, executionContext,
+                            .map(conn -> new PipelinedStreamingHttpConnection(conn, h1Config,
                                     reqRespFactoryFunc.apply(HttpProtocolVersion.HTTP_1_1),
                                     config.allowDropTrailersReadFromTransport()));
                 case HTTP_2:
