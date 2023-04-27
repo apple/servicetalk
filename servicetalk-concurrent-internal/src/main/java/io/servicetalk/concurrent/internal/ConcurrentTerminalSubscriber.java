@@ -155,27 +155,7 @@ public final class ConcurrentTerminalSubscriber<T> implements Subscriber<T> {
      * @return {@code true} if the terminal signal was propagated to the delegate {@link Subscriber}.
      */
     public boolean processOnError(final Throwable t) {
-        for (;;) {
-            final int localState = state;
-            if (localState == SUBSCRIBER_STATE_TERMINATED || localState == SUBSCRIBER_STATE_TERMINATING) {
-                return false;
-            } else {
-                // We may overwrite the terminalNotification if there is concurrency on this method, but there is no
-                // guarantee about what terminal notification will be propagated in the event of concurrency anyways.
-                terminalNotification = TerminalNotification.error(t);
-                if (stateUpdater.compareAndSet(this, localState, SUBSCRIBER_STATE_TERMINATING)) {
-                    // We only propagate the terminal event here if the localState was SUBSCRIBER_STATE_IDLE, because
-                    // otherwise this means we maybe interacting with the Subscriber on another thread.
-                    if (localState == SUBSCRIBER_STATE_IDLE &&
-                            stateUpdater.compareAndSet(this, SUBSCRIBER_STATE_TERMINATING,
-                                    SUBSCRIBER_STATE_TERMINATED)) {
-                        delegate.onError(t);
-                        return true;
-                    }
-                    return false;
-                }
-            }
-        }
+        return processTerminal(t);
     }
 
     @Override
@@ -189,21 +169,27 @@ public final class ConcurrentTerminalSubscriber<T> implements Subscriber<T> {
      * @return {@code true} if the terminal signal was propagated to the delegate {@link Subscriber}.
      */
     public boolean processOnComplete() {
+        return processTerminal(null);
+    }
+
+    private boolean processTerminal(@Nullable Throwable cause) {
         for (;;) {
             final int localState = state;
             if (localState == SUBSCRIBER_STATE_TERMINATED || localState == SUBSCRIBER_STATE_TERMINATING) {
                 return false;
             } else {
+                TerminalNotification terminalNotification = cause == null ?
+                        TerminalNotification.complete() : TerminalNotification.error(cause);
                 // We may overwrite the terminalNotification if there is concurrency on this method, but there is no
                 // guarantee about what terminal notification will be propagated in the event of concurrency anyways.
-                terminalNotification = TerminalNotification.complete();
+                this.terminalNotification = terminalNotification;
                 if (stateUpdater.compareAndSet(this, localState, SUBSCRIBER_STATE_TERMINATING)) {
                     // We only propagate the terminal event here if the localState was SUBSCRIBER_STATE_IDLE, because
                     // otherwise this means we maybe interacting with the Subscriber on another thread.
                     if (localState == SUBSCRIBER_STATE_IDLE &&
                             stateUpdater.compareAndSet(this, SUBSCRIBER_STATE_TERMINATING,
                                     SUBSCRIBER_STATE_TERMINATED)) {
-                        delegate.onComplete();
+                        terminalNotification.terminate(delegate);
                         return true;
                     }
                     return false;
