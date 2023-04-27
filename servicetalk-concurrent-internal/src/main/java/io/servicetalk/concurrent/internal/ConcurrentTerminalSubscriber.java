@@ -28,7 +28,10 @@ import static java.util.Objects.requireNonNull;
  * A {@link Subscriber} that allows for concurrent delivery of terminal events.
  *
  * @param <T> The type of {@link Subscriber}.
+ * @deprecated This internal class will be removed in the future releases without a replacement. If you depend on it,
+ * consider copying into your codebase.
  */
+@Deprecated // FIXME: 0.43 - move to concurrent-api as a pkg-private class
 public final class ConcurrentTerminalSubscriber<T> implements Subscriber<T> {
     private static final int SUBSCRIBER_STATE_INVALID = Integer.MIN_VALUE;
     private static final int SUBSCRIBER_STATE_WAITING_ON_SUBSCRIBE = -1;

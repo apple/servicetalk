@@ -19,7 +19,11 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * Utilities for arrays.
+ *
+ * @deprecated This internal class will be removed in the future releases without a replacement. If you depend on it,
+ * consider copying into your codebase.
  */
+@Deprecated // FIXME: 0.43 - move to concurrent-api as a pkg-private class
 public final class ArrayUtils {
     private ArrayUtils() {
         // no instances.

@@ -118,6 +118,7 @@ final class CacheSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
         void removeSubscriber(Subscriber<T> subscriber) {
             for (;;) {
                 final Subscriber<? super T>[] currSubs = subscribers;
+                @SuppressWarnings("deprecation")
                 final int i = ArrayUtils.indexOf(subscriber, currSubs);
                 if (i < 0) {
                     return;

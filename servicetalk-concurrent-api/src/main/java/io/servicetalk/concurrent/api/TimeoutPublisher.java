@@ -102,6 +102,7 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
         private static final AtomicReferenceFieldUpdater<TimeoutSubscriber, Subscription> subscriptionUpdater =
                 AtomicReferenceFieldUpdater.newUpdater(TimeoutSubscriber.class, Subscription.class, "subscription");
         private final TimeoutPublisher<X> parent;
+        @SuppressWarnings("deprecation")
         private final ConcurrentTerminalSubscriber<? super X> target;
         private final AsyncContextProvider contextProvider;
         @Nullable
@@ -121,6 +122,7 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
          */
         private volatile long lastStartNS;
 
+        @SuppressWarnings("deprecation")
         private TimeoutSubscriber(TimeoutPublisher<X> parent,
                                   Subscriber<? super X> target,
                                   AsyncContextProvider contextProvider) {
