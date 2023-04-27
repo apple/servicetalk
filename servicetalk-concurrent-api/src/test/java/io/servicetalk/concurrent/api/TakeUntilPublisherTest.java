@@ -21,19 +21,22 @@ import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.stubbing.Answer;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedTransferQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -44,74 +47,127 @@ class TakeUntilPublisherTest {
     private final TestPublisher<String> publisher = new TestPublisher<>();
     private final TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
     private final TestSubscription subscription = new TestSubscription();
+    private final TestCompletable completable = new TestCompletable();
+    private final TestCancellable cancellable = new TestCancellable();
 
-    @Test
-    void testUntilComplete() {
-        TestCompletable completable = new TestCompletable();
+    @ParameterizedTest(name = "{displayName} [{index}] withError={0}")
+    @ValueSource(booleans = {false, true})
+    void testUntil(boolean withError) {
         Publisher<String> p = publisher.takeUntil(completable);
         toSource(p).subscribe(subscriber);
         publisher.onSubscribe(subscription);
         subscriber.awaitSubscription().request(4);
         publisher.onNext("Hello1", "Hello2", "Hello3");
-        completable.onComplete();
-        assertThat(subscriber.takeOnNext(3), contains("Hello1", "Hello2", "Hello3"));
-        subscriber.awaitOnComplete();
-        assertTrue(subscription.isCancelled());
+        if (withError) {
+            completable.onError(DELIBERATE_EXCEPTION);
+            assertThat(subscriber.takeOnNext(3), contains("Hello1", "Hello2", "Hello3"));
+            assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
+        } else {
+            completable.onComplete();
+            assertThat(subscriber.takeOnNext(3), contains("Hello1", "Hello2", "Hello3"));
+            subscriber.awaitOnComplete();
+        }
+        assertThat(subscription.isCancelled(), is(true));
     }
 
-    @Test
-    void testUntilError() {
-        TestCompletable completable = new TestCompletable();
+    @ParameterizedTest(name = "{displayName} [{index}] withError={0}")
+    @ValueSource(booleans = {false, true})
+    void testTerminates(boolean withError) {
         Publisher<String> p = publisher.takeUntil(completable);
         toSource(p).subscribe(subscriber);
-        publisher.onSubscribe(subscription);
-        subscriber.awaitSubscription().request(4);
-        publisher.onNext("Hello1", "Hello2", "Hello3");
-        completable.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.takeOnNext(3), contains("Hello1", "Hello2", "Hello3"));
-        assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
-        assertTrue(subscription.isCancelled());
-    }
-
-    @Test
-    void testEmitsError() {
-        TestCompletable completable = new TestCompletable();
-        Publisher<String> p = publisher.takeUntil(completable);
-        toSource(p).subscribe(subscriber);
+        completable.onSubscribe(cancellable);
         subscriber.awaitSubscription().request(4);
         publisher.onNext("Hello1");
-        publisher.onError(DELIBERATE_EXCEPTION);
-        assertThat(subscriber.takeOnNext(), is("Hello1"));
-        assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
-    }
-
-    @Test
-    void testEmitsComplete() {
-        TestCompletable completable = new TestCompletable();
-        Publisher<String> p = publisher.takeUntil(completable);
-        toSource(p).subscribe(subscriber);
-        subscriber.awaitSubscription().request(4);
-        publisher.onNext("Hello1");
-        publisher.onComplete();
-        assertThat(subscriber.takeOnNext(), is("Hello1"));
+        if (withError) {
+            publisher.onError(DELIBERATE_EXCEPTION);
+            assertThat(subscriber.takeOnNext(), is("Hello1"));
+            assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
+        } else {
+            publisher.onComplete();
+            assertThat(subscriber.takeOnNext(), is("Hello1"));
+            subscriber.awaitOnComplete();
+        }
+        assertThat(cancellable.isCancelled(), is(true));
     }
 
     @Test
     void testSubCancelled() throws InterruptedException {
-        TestCancellable cancellable = new TestCancellable();
-        TestCompletable completable = new TestCompletable.Builder().disableAutoOnSubscribe().build(subscriber1 -> {
-            subscriber1.onSubscribe(cancellable);
-            return subscriber1;
-        });
         Publisher<String> p = publisher.takeUntil(completable);
         toSource(p).subscribe(subscriber);
         publisher.onSubscribe(subscription);
+        completable.onSubscribe(cancellable);
         subscriber.awaitSubscription().request(3);
         publisher.onNext("Hello1", "Hello2");
         assertThat(subscriber.takeOnNext(2), contains("Hello1", "Hello2"));
         subscriber.awaitSubscription().cancel();
-        assertTrue(subscription.isCancelled());
+        assertThat(subscription.isCancelled(), is(true));
         cancellable.awaitCancelled();
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] withError={0}")
+    @ValueSource(booleans = {false, true})
+    void testPublisherTerminalSignalWins(boolean withError) {
+        AtomicBoolean completableCancelled = new AtomicBoolean();
+        toSource(publisher.takeUntil(new Completable() {
+            @Override
+            protected void handleSubscribe(final CompletableSource.Subscriber subscriber) {
+                subscriber.onSubscribe(() -> {
+                    if (completableCancelled.compareAndSet(false, true)) {
+                        subscriber.onError(new AssertionError(
+                                "Unexpected error propagated before actual terminal signal"));
+                    }
+                });
+            }
+        })).subscribe(subscriber);
+        publisher.onSubscribe(subscription);
+        subscriber.awaitSubscription().request(4);
+        publisher.onNext("Hello1", "Hello2");
+        if (withError) {
+            publisher.onError(DELIBERATE_EXCEPTION);
+            assertThat(subscriber.pollAllOnNext(), contains("Hello1", "Hello2"));
+            assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
+        } else {
+            publisher.onComplete();
+            assertThat(subscriber.pollAllOnNext(), contains("Hello1", "Hello2"));
+            subscriber.awaitOnComplete();
+        }
+        assertThat(completableCancelled.get(), is(true));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}] withError={0}")
+    @ValueSource(booleans = {false, true})
+    void testCompletableTerminalSignalWins(boolean withError) {
+        AtomicBoolean publisherCancelled = new AtomicBoolean();
+        toSource(new Publisher<String>() {
+            @Override
+            protected void handleSubscribe(final Subscriber<? super String> subscriber) {
+                subscriber.onSubscribe(new Subscription() {
+                    @Override
+                    public void request(final long n) {
+                    }
+
+                    @Override
+                    public void cancel() {
+                        if (publisherCancelled.compareAndSet(false, true)) {
+                            subscriber.onError(new AssertionError(
+                                    "Unexpected error propagated before actual terminal signal"));
+                        }
+                    }
+                });
+            }
+        }.takeUntil(completable)).subscribe(subscriber);
+        completable.onSubscribe(cancellable);
+        subscriber.awaitSubscription().request(4);
+        if (withError) {
+            completable.onError(DELIBERATE_EXCEPTION);
+            assertThat(subscriber.pollAllOnNext(), is(empty()));
+            assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
+        } else {
+            completable.onComplete();
+            assertThat(subscriber.pollAllOnNext(), is(empty()));
+            subscriber.awaitOnComplete();
+        }
+        assertThat(publisherCancelled.get(), is(true));
     }
 
     @Test
