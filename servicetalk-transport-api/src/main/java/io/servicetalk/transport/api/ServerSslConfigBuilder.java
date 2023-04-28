@@ -108,8 +108,8 @@ public final class ServerSslConfigBuilder extends AbstractSslConfigBuilder<Serve
     public ServerSslConfig build() {
         return new DefaultServerSslConfig(clientAuthMode, trustManager(), trustCertChainSupplier(), keyManager(),
                 keyCertChainSupplier(), keySupplier(), keyPassword(), sslProtocols(), alpnProtocols(), ciphers(),
-                sessionCacheSize(), sessionTimeout(), provider(), certificateCompressionAlgorithms(),
-                handshakeTimeout());
+                sessionCacheSize(), sessionTimeout(), maxCertificateListBytes(), provider(),
+                certificateCompressionAlgorithms(), handshakeTimeout());
     }
 
     @Override
@@ -128,12 +128,13 @@ public final class ServerSslConfigBuilder extends AbstractSslConfigBuilder<Serve
                                @Nullable final Supplier<InputStream> keySupplier, @Nullable final String keyPassword,
                                @Nullable final List<String> sslProtocols, @Nullable final List<String> alpnProtocols,
                                @Nullable final List<String> ciphers, final long sessionCacheSize,
-                               final long sessionTimeout, @Nullable final SslProvider provider,
+                               final long sessionTimeout, final int maxCertificateListBytes,
+                               @Nullable final SslProvider provider,
                                @Nullable final List<CertificateCompressionAlgorithm> certificateCompressionAlgorithms,
                                final Duration handshakeTimeout) {
             super(trustManagerFactory, trustCertChainSupplier, keyManagerFactory, keyCertChainSupplier, keySupplier,
-                    keyPassword, sslProtocols, alpnProtocols, ciphers, sessionCacheSize, sessionTimeout, provider,
-                    certificateCompressionAlgorithms, handshakeTimeout);
+                    keyPassword, sslProtocols, alpnProtocols, ciphers, sessionCacheSize, sessionTimeout,
+                    maxCertificateListBytes, provider, certificateCompressionAlgorithms, handshakeTimeout);
             this.clientAuthMode = clientAuthMode;
         }
 
