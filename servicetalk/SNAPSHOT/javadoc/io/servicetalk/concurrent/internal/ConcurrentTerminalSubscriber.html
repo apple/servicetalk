@@ -122,34 +122,52 @@ implements <a href="../PublisherSource.Subscriber.html" title="interface in io.s
 <div class="table-header col-first">Modifier and Type</div>
 <div class="table-header col-second">Method</div>
 <div class="table-header col-last">Description</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onComplete()" class="member-name-link">onComplete</a>()</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Callback to signal completion of the <a href="../PublisherSource.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource</code></a> for this <code>Subscriber</code>.</div>
-</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onError(java.lang.Throwable)" class="member-name-link">onError</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&nbsp;t)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Callback to receive an <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link"><code>error</code></a> for this <code>Subscriber</code>.</div>
-</div>
-<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onNext(T)" class="member-name-link">onNext</a><wbr>(<a href="ConcurrentTerminalSubscriber.html" title="type parameter in ConcurrentTerminalSubscriber">T</a>&nbsp;t)</code></div>
-<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Callback to receive a <a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>data</code></a> element for this <code>Subscriber</code>.</div>
-</div>
-<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onSubscribe(io.servicetalk.concurrent.PublisherSource.Subscription)" class="member-name-link">onSubscribe</a><wbr>(<a href="../PublisherSource.Subscription.html" title="interface in io.servicetalk.concurrent">PublisherSource.Subscription</a>&nbsp;subscription)</code></div>
-<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Callback to receive a <a href="../PublisherSource.Subscription.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscription</code></a> for this <code>Subscriber</code>.</div>
-</div>
 <div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
-<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#processOnComplete()" class="member-name-link">processOnComplete</a>()</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#deferredOnComplete()" class="member-name-link">deferredOnComplete</a>()</code></div>
 <div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
-<div class="block">Attempt to process <a href="#onComplete()"><code>onComplete()</code></a>.</div>
+<div class="block">Indicate that a <a href="#onComplete()"><code>onComplete()</code></a> should be delivered after <a href="#deliverDeferredTerminal()"><code>deliverDeferredTerminal()</code></a> is
+ later called.</div>
 </div>
 <div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
-<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#processOnError(java.lang.Throwable)" class="member-name-link">processOnError</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&nbsp;t)</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#deferredOnError(java.lang.Throwable)" class="member-name-link">deferredOnError</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&nbsp;cause)</code></div>
 <div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Indicate that a <a href="#onError(java.lang.Throwable)"><code>onError(Throwable)</code></a> should be delivered after <a href="#deliverDeferredTerminal()"><code>deliverDeferredTerminal()</code></a> is
+ later called.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#deliverDeferredTerminal()" class="member-name-link">deliverDeferredTerminal</a>()</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Try to deliver a terminal signal typically set by <a href="#deferredOnComplete()"><code>deferredOnComplete()</code></a> or
+ <a href="#deferredOnError(java.lang.Throwable)"><code>deferredOnError(Throwable)</code></a>.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onComplete()" class="member-name-link">onComplete</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Callback to signal completion of the <a href="../PublisherSource.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource</code></a> for this <code>Subscriber</code>.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onError(java.lang.Throwable)" class="member-name-link">onError</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&nbsp;t)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Callback to receive an <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link"><code>error</code></a> for this <code>Subscriber</code>.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onNext(T)" class="member-name-link">onNext</a><wbr>(<a href="ConcurrentTerminalSubscriber.html" title="type parameter in ConcurrentTerminalSubscriber">T</a>&nbsp;t)</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Callback to receive a <a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>data</code></a> element for this <code>Subscriber</code>.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>void</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#onSubscribe(io.servicetalk.concurrent.PublisherSource.Subscription)" class="member-name-link">onSubscribe</a><wbr>(<a href="../PublisherSource.Subscription.html" title="interface in io.servicetalk.concurrent">PublisherSource.Subscription</a>&nbsp;subscription)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Callback to receive a <a href="../PublisherSource.Subscription.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscription</code></a> for this <code>Subscriber</code>.</div>
+</div>
+<div class="col-first odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
+<div class="col-second odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#processOnComplete()" class="member-name-link">processOnComplete</a>()</code></div>
+<div class="col-last odd-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
+<div class="block">Attempt to process <a href="#onComplete()"><code>onComplete()</code></a>.</div>
+</div>
+<div class="col-first even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code>boolean</code></div>
+<div class="col-second even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4"><code><a href="#processOnError(java.lang.Throwable)" class="member-name-link">processOnError</a><wbr>(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&nbsp;t)</code></div>
+<div class="col-last even-row-color method-summary-table method-summary-table-tab2 method-summary-table-tab4">
 <div class="block">Attempt to process <a href="#onError(java.lang.Throwable)"><code>onError(Throwable)</code></a>.</div>
 </div>
 </div>
@@ -297,6 +315,59 @@ implements <a href="../PublisherSource.Subscriber.html" title="interface in io.s
 <dt>Returns:</dt>
 <dd><code>true</code> if the terminal signal was propagated to the delegate <a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a>.</dd>
 </dl>
+</section>
+</li>
+<li>
+<section class="detail" id="deferredOnComplete()">
+<h3>deferredOnComplete</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">deferredOnComplete</span>()</div>
+<div class="block">Indicate that a <a href="#onComplete()"><code>onComplete()</code></a> should be delivered after <a href="#deliverDeferredTerminal()"><code>deliverDeferredTerminal()</code></a> is
+ later called. <a href="#deliverDeferredTerminal()"><code>deliverDeferredTerminal()</code></a> <b>MUST</b> be subsequently called or the terminal signal may
+ never be delivered. This signal may also be delivered if <a href="#onNext(T)"><code>onNext(Object)</code></a> is being concurrently invoked.</div>
+<dl class="notes">
+<dt>Returns:</dt>
+<dd><code>true</code> if the terminal signal was "queued" to be delivered and <a href="#deliverDeferredTerminal()"><code>deliverDeferredTerminal()</code></a>
+ <b>MUST</b> subsequently be called. <code>false</code> if another thread is concurrently terminating this
+ <a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a> (this terminal signal may still be delivered).</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list">
+<li><a href="#deliverDeferredTerminal()"><code>deliverDeferredTerminal()</code></a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="deferredOnError(java.lang.Throwable)">
+<h3>deferredOnError</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">boolean</span>&nbsp;<span class="element-name">deferredOnError</span><wbr><span class="parameters">(<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Throwable.html" title="class or interface in java.lang" class="external-link">Throwable</a>&nbsp;cause)</span></div>
+<div class="block">Indicate that a <a href="#onError(java.lang.Throwable)"><code>onError(Throwable)</code></a> should be delivered after <a href="#deliverDeferredTerminal()"><code>deliverDeferredTerminal()</code></a> is
+ later called. <a href="#deliverDeferredTerminal()"><code>deliverDeferredTerminal()</code></a> <b>MUST</b> be subsequently called or the terminal signal may
+ never be delivered. This signal may also be delivered if <a href="#onNext(T)"><code>onNext(Object)</code></a> is being concurrently invoked.</div>
+<dl class="notes">
+<dt>Parameters:</dt>
+<dd><code>cause</code> - The terminal error signal to be delivered later (either when <a href="#deliverDeferredTerminal()"><code>deliverDeferredTerminal()</code></a> is
+ called or if <a href="#onNext(T)"><code>onNext(Object)</code></a> is being concurrently invoked).</dd>
+<dt>Returns:</dt>
+<dd><code>true</code> if the terminal signal <code>cause</code> was "queued" to be delivered and
+ <a href="#deliverDeferredTerminal()"><code>deliverDeferredTerminal()</code></a> <b>MUST</b> subsequently be called. <code>false</code> if another thread is
+ concurrently terminating this <a href="../PublisherSource.Subscriber.html" title="interface in io.servicetalk.concurrent"><code>PublisherSource.Subscriber</code></a> (this terminal signal may still be delivered).</dd>
+<dt>See Also:</dt>
+<dd>
+<ul class="see-list">
+<li><a href="#deliverDeferredTerminal()"><code>deliverDeferredTerminal()</code></a></li>
+</ul>
+</dd>
+</dl>
+</section>
+</li>
+<li>
+<section class="detail" id="deliverDeferredTerminal()">
+<h3>deliverDeferredTerminal</h3>
+<div class="member-signature"><span class="modifiers">public</span>&nbsp;<span class="return-type">void</span>&nbsp;<span class="element-name">deliverDeferredTerminal</span>()</div>
+<div class="block">Try to deliver a terminal signal typically set by <a href="#deferredOnComplete()"><code>deferredOnComplete()</code></a> or
+ <a href="#deferredOnError(java.lang.Throwable)"><code>deferredOnError(Throwable)</code></a>.</div>
 </section>
 </li>
 </ul>
