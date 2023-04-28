@@ -379,8 +379,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
                     // pipelining on a stream so we can use the non-pipelined connection which is more light weight.
                     // https://tools.ietf.org/html/rfc7540#section-8.1
                     responseSingle = toSource(new NonPipelinedStreamingHttpConnection(nettyConnection,
-                            executionContext(), reqRespFactory, headersFactory, allowDropTrailersReadFromTransport)
-                            .request(request));
+                            reqRespFactory, headersFactory, allowDropTrailersReadFromTransport).request(request));
                 } catch (Throwable cause) {
                     if (streamChannel != null) {
                         try {
