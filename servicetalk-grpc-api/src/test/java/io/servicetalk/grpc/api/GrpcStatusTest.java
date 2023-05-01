@@ -16,8 +16,11 @@
 package io.servicetalk.grpc.api;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestClassOrder;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class GrpcStatusTest {
 
@@ -55,5 +58,17 @@ class GrpcStatusTest {
         final GrpcStatus grpcStatus = GrpcStatus.fromCodeValue(unknownCode);
         assertEquals(GrpcStatusCode.UNKNOWN, grpcStatus.code());
         assertEquals("Status code value not a number: " + unknownCode, grpcStatus.description());
+    }
+
+    @Test
+    void testGrpcStatusExceptionFromGrpcStatusCode() {
+        final String exceptionMessage = "denied!";
+        GrpcStatusException grpcStatusException = GrpcStatusCode.PERMISSION_DENIED.withDescription(exceptionMessage).asException();
+        Exception thrownGrpcStatusException = assertThrows(GrpcStatusException.class, () -> {
+            throw grpcStatusException;
+        });
+        final String expectedExceptionMessage = exceptionMessage;
+        final String actualMessage = thrownGrpcStatusException.getMessage();
+        assertTrue(actualMessage.contains(expectedExceptionMessage));
     }
 }
