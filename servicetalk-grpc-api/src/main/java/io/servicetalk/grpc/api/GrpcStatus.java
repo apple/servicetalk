@@ -166,7 +166,6 @@ public final class GrpcStatus {
         return exception == null ? null : exception.status();
     }
 
-
     /**
      * Returns the current status wrapped in a {@link GrpcStatusException}.
      *
