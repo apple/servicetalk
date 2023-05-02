@@ -178,6 +178,7 @@ final class ReservableRequestConcurrencyControllers {
                     assert event != null : "event can not be null in onNext.";
                     final int currentConcurrency = lastMaxConcurrency;
                     final int newConcurrency = event.event();
+                    assert newConcurrency >= 0;
                     if (currentConcurrency < newConcurrency) {
                         // When concurrency increases, consume event to notify Netty asap, then update the value to
                         // allow more requests to go through. Even if this event is offloaded, eventConsumed() will

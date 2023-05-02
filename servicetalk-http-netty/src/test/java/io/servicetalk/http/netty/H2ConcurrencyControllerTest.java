@@ -42,9 +42,9 @@ import io.netty.handler.codec.http2.Http2HeadersFrame;
 import io.netty.handler.codec.http2.Http2Settings;
 import io.netty.handler.codec.http2.Http2StreamChannel;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -61,6 +61,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
+import static io.netty.handler.codec.http2.Http2CodecUtil.MAX_UNSIGNED_INT;
 import static io.servicetalk.concurrent.api.internal.BlockingUtils.blockingInvocation;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
@@ -82,6 +83,7 @@ import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -89,7 +91,6 @@ import static org.junit.jupiter.api.Named.named;
 
 class H2ConcurrencyControllerTest {
 
-    private static final int SERVER_MAX_CONCURRENT_STREAMS_VALUE = 1;
     private static final int N_ITERATIONS = 3;
     private static final int STEP = 4;
     private static final int REPEATED_TEST_ITERATIONS = 16;
@@ -102,12 +103,14 @@ class H2ConcurrencyControllerTest {
     private final CountDownLatch[] latches = new CountDownLatch[N_ITERATIONS];
     private final AtomicReference<Channel> serverParentChannel = new AtomicReference<>();
     private final AtomicBoolean alwaysEcho = new AtomicBoolean(false);
+    @Nullable
     private EventLoopGroup serverEventLoopGroup;
+    @Nullable
     private Channel serverAcceptorChannel;
+    @Nullable
     private HostAndPort serverAddress;
 
-    @BeforeEach
-    void setUp() throws Exception {
+    private void setUp(long maxConcurrentStreams) throws Exception {
         serverEventLoopGroup = createIoExecutor(1, "server-io").eventLoopGroup();
         for (int i = 0; i < N_ITERATIONS; i++) {
             latches[i] = new CountDownLatch(1);
@@ -135,7 +138,7 @@ class H2ConcurrencyControllerTest {
         }, parentPipeline -> {
             serverParentChannel.set(parentPipeline.channel());
         }, h2Builder -> {
-            h2Builder.initialSettings().maxConcurrentStreams(SERVER_MAX_CONCURRENT_STREAMS_VALUE);
+            h2Builder.initialSettings().maxConcurrentStreams(maxConcurrentStreams);
             return h2Builder;
         });
 
@@ -144,12 +147,19 @@ class H2ConcurrencyControllerTest {
 
     @AfterEach
     void tearDown() throws Exception {
-        safeSync(() -> serverAcceptorChannel.close().sync());
-        safeSync(() -> serverEventLoopGroup.shutdownGracefully(0, 0, MILLISECONDS).sync());
+        if (serverAcceptorChannel != null) {
+            safeSync(() -> serverAcceptorChannel.close().sync());
+        }
+        if (serverEventLoopGroup != null) {
+            safeSync(() -> serverEventLoopGroup.shutdownGracefully(0, 0, MILLISECONDS).sync());
+        }
     }
 
     @RepeatedTest(REPEATED_TEST_ITERATIONS)
     void noMaxActiveStreamsViolatedErrorAfterCancel() throws Exception {
+        int serverMaxConcurrentStreams = 1;
+        setUp(serverMaxConcurrentStreams);
+        assert serverAddress != null;
         try (HttpClient client = newClientBuilder(serverAddress, CLIENT_CTX, HTTP_2)
                 .appendClientFilter(disableAutoRetries())   // All exceptions should be propagated
                 .appendConnectionFilter(MulticastTransportEventsStreamingHttpConnectionFilter.INSTANCE)
@@ -187,7 +197,7 @@ class H2ConcurrencyControllerTest {
                 return conn;
             }).toFuture().get()) {
                 awaitMaxConcurrentStreamsSettingsUpdate(connection, maxConcurrentStreams,
-                        SERVER_MAX_CONCURRENT_STREAMS_VALUE);
+                        serverMaxConcurrentStreams);
                 connection.releaseAsync().toFuture().get();
 
                 BlockingQueue<Throwable> exceptions = new LinkedBlockingDeque<>();
@@ -236,7 +246,10 @@ class H2ConcurrencyControllerTest {
 
     private void noMaxActiveStreamsViolatedErrorWhenLimitChanges(boolean increase,
                                                                  HttpExecutionStrategy strategy) throws Exception {
+        int serverMaxConcurrentStreams = 1;
+        setUp(serverMaxConcurrentStreams);
         alwaysEcho.set(true);   // server should always respond
+        assert serverAddress != null;
         try (HttpClient client = newClientBuilder(serverAddress, CLIENT_CTX, HTTP_2)
                 .executionStrategy(strategy)
                 .appendConnectionFilter(MulticastTransportEventsStreamingHttpConnectionFilter.INSTANCE)
@@ -263,7 +276,7 @@ class H2ConcurrencyControllerTest {
                 return conn;
             }).toFuture().get()) {
                 awaitMaxConcurrentStreamsSettingsUpdate(connection, maxConcurrentStreams,
-                        SERVER_MAX_CONCURRENT_STREAMS_VALUE);
+                        serverMaxConcurrentStreams);
                 connection.releaseAsync().toFuture().get();
 
                 final Channel serverParentChannel = this.serverParentChannel.get();
@@ -301,6 +314,28 @@ class H2ConcurrencyControllerTest {
                         }
                     }
                 }
+            }
+        }
+    }
+
+    @Test
+    void maxActiveStreamsOutsideIntRange() throws Exception {
+        setUp(MAX_UNSIGNED_INT);
+        assert serverAddress != null;
+        assertThat(MAX_UNSIGNED_INT, is(greaterThan((long) Integer.MAX_VALUE)));
+        try (HttpClient client = newClientBuilder(serverAddress, CLIENT_CTX, HTTP_2)
+                .appendConnectionFilter(MulticastTransportEventsStreamingHttpConnectionFilter.INSTANCE)
+                .protocols(HTTP_2.config)
+                .build()) {
+
+            BlockingQueue<Integer> maxConcurrentStreams = new LinkedBlockingDeque<>();
+            try (ReservedHttpConnection connection = client.reserveConnection(client.get("/")).map(conn -> {
+                conn.transportEventStream(MAX_CONCURRENCY_NO_OFFLOADING)
+                        .forEach(event -> maxConcurrentStreams.add(event.event()));
+                return conn;
+            }).toFuture().get()) {
+                // The value is expected to be adjusted to avoid int overflow
+                awaitMaxConcurrentStreamsSettingsUpdate(connection, maxConcurrentStreams, Integer.MAX_VALUE);
             }
         }
     }
