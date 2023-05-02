@@ -54,7 +54,7 @@ public final class H2ProtocolConfigBuilder {
     private static final int DEFAULT_FLOW_CONTROL_QUANTUM = 1024 * 16;
     private Http2Settings h2Settings = new Http2SettingsBuilder()
             .initialWindowSize(INITIAL_FLOW_CONTROL_WINDOW)
-            .maxHeaderListSize((int) DEFAULT_HEADER_LIST_SIZE)
+            .maxHeaderListSize(DEFAULT_HEADER_LIST_SIZE)
             .build();
     private HttpHeadersFactory headersFactory = H2HeadersFactory.INSTANCE;
     private BiPredicate<CharSequence, CharSequence> headersSensitivityDetector = DEFAULT_SENSITIVITY_DETECTOR;
