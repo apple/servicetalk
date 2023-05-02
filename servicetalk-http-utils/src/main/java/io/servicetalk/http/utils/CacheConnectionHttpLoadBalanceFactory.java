@@ -163,6 +163,7 @@ public final class CacheConnectionHttpLoadBalanceFactory<ResolvedAddress>
                         public void onNext(@Nullable final ConsumableEvent<Integer> integerConsumableEvent) {
                             if (integerConsumableEvent != null) {
                                 final int concurrency = integerConsumableEvent.event();
+                                assert concurrency >= 0;
                                 // Connections may set their max concurrency to 0 before shutting down.
                                 // Map cleanup is done in terminal method.
                                 if (concurrency > 0) {

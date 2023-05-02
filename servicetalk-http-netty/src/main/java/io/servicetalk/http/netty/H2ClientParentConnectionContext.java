@@ -93,6 +93,7 @@ import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.close;
 import static io.servicetalk.transport.netty.internal.ChannelSet.CHANNEL_CLOSEABLE_KEY;
 import static io.servicetalk.transport.netty.internal.CloseHandler.forNonPipelined;
 import static io.servicetalk.utils.internal.ThrowableUtils.addSuppressed;
+import static java.lang.Math.min;
 import static java.util.Objects.requireNonNull;
 
 final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
@@ -225,7 +226,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
             }
 
             maxConcurrencyProcessor.onNext(new MaxConcurrencyConsumableEvent(
-                    maxConcurrentStreams.intValue(), ctx.channel()));
+                    (int) min(maxConcurrentStreams, Integer.MAX_VALUE), ctx.channel()));
             return false;
         }
 
@@ -532,6 +533,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
         private final Channel channel;
 
         MaxConcurrencyConsumableEvent(final int maxConcurrentStreams, final Channel channel) {
+            assert maxConcurrentStreams >= 0;
             this.maxConcurrentStreams = maxConcurrentStreams;
             this.channel = channel;
         }
