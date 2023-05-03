@@ -17,24 +17,17 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.Executor;
-import io.servicetalk.concurrent.internal.ConcurrentSubscription;
-import io.servicetalk.concurrent.internal.ConcurrentTerminalSubscriber;
+import io.servicetalk.concurrent.api.TimeoutPublisher.AbstractTimeoutSubscriber;
 import io.servicetalk.concurrent.internal.FlowControlUtils;
 import io.servicetalk.context.api.ContextMap;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Executors.immediate;
-import static io.servicetalk.concurrent.api.PublishAndSubscribeOnPublishers.deliverOnSubscribeAndOnError;
-import static io.servicetalk.concurrent.internal.EmptySubscriptions.EMPTY_SUBSCRIPTION;
 import static java.lang.Math.max;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
-import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
 final class TimeoutDemandPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
     private final Publisher<T> original;
@@ -65,49 +58,24 @@ final class TimeoutDemandPublisher<T> extends AbstractNoHandleSubscribePublisher
                 contextMap, contextProvider);
     }
 
-    private static final class TimeoutDemandSubscriber<X> implements Subscriber<X>, Subscription {
-        /**
-         * Create a local instance because the instance is used as part of the local state machine.
-         */
-        private static final Cancellable LOCAL_IGNORE_CANCEL = () -> { };
+    private static final class TimeoutDemandSubscriber<X> extends AbstractTimeoutSubscriber<X> {
         /**
          * Use {@code -1} because {@link #onNext(Object)} unconditionally decrements and doesn't check for underflow.
          */
         private static final long DEMAND_TIMER_FIRED = -1;
 
         @SuppressWarnings("rawtypes")
-        private static final AtomicReferenceFieldUpdater<TimeoutDemandSubscriber, Cancellable>
-                timerCancellableUpdater = newUpdater(TimeoutDemandSubscriber.class, Cancellable.class,
-                "timerCancellable");
-        @SuppressWarnings("rawtypes")
-        private static final AtomicReferenceFieldUpdater<TimeoutDemandSubscriber, Subscription> subscriptionUpdater =
-                newUpdater(TimeoutDemandSubscriber.class, Subscription.class, "subscription");
-        @SuppressWarnings("rawtypes")
         private static final AtomicLongFieldUpdater<TimeoutDemandSubscriber>
                 demandUpdater = AtomicLongFieldUpdater.newUpdater(TimeoutDemandSubscriber.class, "demand");
 
         private final TimeoutDemandPublisher<X> parent;
-        private final ConcurrentTerminalSubscriber<? super X> target;
-        private final AsyncContextProvider contextProvider;
         private volatile long demand;
-        @Nullable
-        private volatile Subscription subscription;
-        /**
-         * <ul>
-         * <li>{@code null} - initialization only seen in the constructor and potentially on the first timer fire</li>
-         * <li>{@link #LOCAL_IGNORE_CANCEL} - a timeout occurred or normal termination. we don't need a timer.</li>
-         * </ul>
-         */
-        @Nullable
-        private volatile Cancellable timerCancellable;
 
         private TimeoutDemandSubscriber(TimeoutDemandPublisher<X> parent,
                                         Subscriber<? super X> target,
                                         AsyncContextProvider contextProvider) {
+            super(target, contextProvider);
             this.parent = parent;
-            // Concurrent onSubscribe is protected by subscriptionUpdater, no need to double protect.
-            this.target = new ConcurrentTerminalSubscriber<>(target, false);
-            this.contextProvider = contextProvider;
         }
 
         static <X> TimeoutDemandSubscriber<X> newInstance(TimeoutDemandPublisher<X> parent,
@@ -115,31 +83,8 @@ final class TimeoutDemandPublisher<T> extends AbstractNoHandleSubscribePublisher
                                                           ContextMap contextMap,
                                                           AsyncContextProvider contextProvider) {
             TimeoutDemandSubscriber<X> s = new TimeoutDemandSubscriber<>(parent, target, contextProvider);
-            try {
-                // CAS is just in case the timer fired, the timerFires method schedule a new timer before this thread is
-                // able to set the initial timer value. In this case we don't want to overwrite the active timer.
-                //
-                // We rely upon the timeoutExecutor to save/restore the current context when notifying when the timer
-                // fires. An alternative would be to also wrap the Subscriber to preserve the AsyncContext but that
-                // would result in duplicate wrapping.
-                // The only time this may cause issues if someone disables AsyncContext for the Executor and wants
-                // it enabled for the Subscriber, however the user explicitly specifies the Executor with this operator
-                // so they can wrap the Executor in this case.
-                timerCancellableUpdater.compareAndSet(s, null, requireNonNull(
-                        parent.timeoutExecutor.schedule(s::timerFires, parent.durationNs, NANOSECONDS)));
-            } catch (Throwable cause) {
-                handleConstructorException(s, contextMap, contextProvider, cause);
-            }
+            s.initTimer(parent.durationNs, parent.timeoutExecutor, contextMap);
             return s;
-        }
-
-        @Override
-        public void onSubscribe(final Subscription s) {
-            if (subscriptionUpdater.compareAndSet(this, null, ConcurrentSubscription.wrap(s))) {
-                target.onSubscribe(this);
-            } else {
-                s.cancel();
-            }
         }
 
         @Override
@@ -148,20 +93,6 @@ final class TimeoutDemandPublisher<T> extends AbstractNoHandleSubscribePublisher
             target.onNext(x);
             if (demandUpdater.decrementAndGet(this) == 0) {
                 startTimer();
-            }
-        }
-
-        @Override
-        public void onError(final Throwable t) {
-            if (target.processOnError(t)) {
-                stopTimer(true);
-            }
-        }
-
-        @Override
-        public void onComplete() {
-            if (target.processOnComplete()) {
-                stopTimer(true);
             }
         }
 
@@ -177,17 +108,7 @@ final class TimeoutDemandPublisher<T> extends AbstractNoHandleSubscribePublisher
         }
 
         @Override
-        public void cancel() {
-            final Subscription subscription = this.subscription;
-            assert subscription != null;
-            try {
-                stopTimer(true);
-            } finally {
-                subscription.cancel();
-            }
-        }
-
-        private void timerFires() {
+        void timerFires() {
             for (;;) {
                 final long currDemand = demand;
                 if (currDemand > 0) {
@@ -203,38 +124,9 @@ final class TimeoutDemandPublisher<T> extends AbstractNoHandleSubscribePublisher
                     } finally {
                         // Concurrent/multiple termination is protected by ConcurrentTerminalSubscriber.
                         offloadTimeout(new TimeoutException("timeout after " + NANOSECONDS.toMillis(parent.durationNs) +
-                                "ms"));
+                                "ms"), parent.timeoutExecutor);
                     }
                     break;
-                }
-            }
-        }
-
-        private void offloadTimeout(Throwable cause) {
-            if (immediate() == parent.timeoutExecutor) {
-                processTimeout(cause);
-            } else {
-                // We rely upon the timeout Executor to save/restore the context. so we just use
-                // contextProvider.contextMap() here.
-                contextProvider.wrapConsumer(this::processTimeout, contextProvider.context()).accept(cause);
-            }
-        }
-
-        private void processTimeout(Throwable cause) {
-            final Subscription subscription = subscriptionUpdater.getAndSet(this, EMPTY_SUBSCRIPTION);
-            // We need to deliver cancel upstream first (clear state for Publishers that
-            // allow sequential resubscribe) but we always want to force a TimeoutException downstream (because this is
-            // the source of the error, despite what any upstream operators/publishers may deliver).
-            if (target.deferredOnError(cause)) {
-                try {
-                    // The timer is started before onSubscribe so the subscription may actually be null at this time.
-                    if (subscription != null) {
-                        subscription.cancel();
-                    } else {
-                        target.onSubscribe(EMPTY_SUBSCRIPTION);
-                    }
-                } finally {
-                    target.deliverDeferredTerminal();
                 }
             }
         }
@@ -255,26 +147,14 @@ final class TimeoutDemandPublisher<T> extends AbstractNoHandleSubscribePublisher
             }
         }
 
-        private void stopTimer(boolean terminal) {
+        @Override
+        void stopTimer(boolean terminal) {
             // timerCancellable is known not to be null here based upon the current usage of this method.
             final Cancellable cancelable = timerCancellableUpdater.getAndSet(this,
                     terminal ? LOCAL_IGNORE_CANCEL : null);
             if (cancelable != null) {
                 cancelable.cancel();
             }
-        }
-
-        /**
-         * This is unlikely to occur, so we extract the code into a private method.
-         * @param cause The exception.
-         */
-        private static <X> void handleConstructorException(TimeoutDemandSubscriber<X> s,
-                                                           ContextMap contextMap,
-                                                           AsyncContextProvider contextProvider, Throwable cause) {
-            // We must set local state so there are no further interactions with Subscriber in the future.
-            s.timerCancellable = LOCAL_IGNORE_CANCEL;
-            s.subscription = EMPTY_SUBSCRIPTION;
-            deliverOnSubscribeAndOnError(s.target, contextMap, contextProvider, cause);
         }
     }
 }
