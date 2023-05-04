@@ -743,7 +743,7 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
         }
 
         void markHealthy(final HealthCheck<Addr, C> originalHealthCheckState) {
-            // Marking healthy is generally called from a successful health check, after a connection was added.
+            // Marking healthy is called when we need to recover from an unexpected error.
             // However, it is possible that in the meantime, the host entered an EXPIRED state, then ACTIVE, then failed
             // to open connections and entered the UNHEALTHY state before the original thread continues execution here.
             // In such case, the flipped state is not the same as the one that just succeeded to open a connection.
@@ -829,7 +829,9 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
                 Object[] newList = Arrays.copyOf(existing, existing.length + 1);
                 newList[existing.length] = connection;
 
-                Object newState = ActiveState.class.equals(previous.state.getClass()) ?
+                // If we were able to add a new connection to the list, we should mark the host as ACTIVE again and
+                // reset its failures counter.
+                Object newState = ActiveState.class.equals(previous.state.getClass()) || Host.isUnhealthy(previous) ?
                         STATE_ACTIVE_NO_FAILURES : previous.state;
 
                 if (connStateUpdater.compareAndSet(this,
@@ -1010,13 +1012,14 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
                                                 host.healthCheckConfig.executor)))
                                 .flatMapCompletable(newCnx -> {
                                     if (host.addConnection(newCnx)) {
-                                        host.markHealthy(this);
-                                        LOGGER.info("{}: health check passed for {}, marking this " +
+                                        assert !Host.isUnhealthy(host.connState);
+                                        LOGGER.info("{}: health check passed for {}, marked this " +
                                                         "host as ACTIVE for the selection algorithm.",
                                                 host.lbDescription, host);
                                         return completed();
                                     } else {
                                         // This happens only if the host is closed, no need to mark as healthy.
+                                        assert host.connState.state == State.CLOSED;
                                         LOGGER.debug("{}: health check passed for {}, but the " +
                                                         "host rejected a new connection {}. Closing it now.",
                                                 host.lbDescription, host, newCnx);
