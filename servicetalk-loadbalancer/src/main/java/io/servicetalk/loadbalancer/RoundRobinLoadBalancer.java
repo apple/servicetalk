@@ -592,9 +592,10 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
 
                         // Just in case the connection is not closed add it to the host so we don't lose track,
                         // duplicates will be filtered out.
-                        return host.addConnection(newCnx) ? failedSingle : newCnx.closeAsync().concat(failedSingle);
+                        return host.addConnection(newCnx, null) ?
+                                failedSingle : newCnx.closeAsync().concat(failedSingle);
                     }
-                    if (host.addConnection(newCnx)) {
+                    if (host.addConnection(newCnx, null)) {
                         return succeeded(newCnx);
                     }
                     return newCnx.closeAsync().concat(isClosedList(this.usedHosts) ? failedLBClosed(targetResource) :
@@ -809,7 +810,7 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
             return HealthCheck.class.equals(connState.state.getClass());
         }
 
-        boolean addConnection(C connection) {
+        boolean addConnection(final C connection, final @Nullable HealthCheck<Addr, C> currentHealthCheck) {
             int addAttempt = 0;
             for (;;) {
                 final ConnState previous = connStateUpdater.get(this);
@@ -836,6 +837,14 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
 
                 if (connStateUpdater.compareAndSet(this,
                         previous, new ConnState(newList, newState))) {
+                    // It could happen that the Host turned into UNHEALTHY state either concurrently with adding a new
+                    // connection or with passing a previous health-check (if SD turned it into ACTIVE state). In both
+                    // cases we have to cancel the "previous" ongoing health check. See "markHealthy" for more context.
+                    if (Host.isUnhealthy(previous) &&
+                            (currentHealthCheck == null || previous.state != currentHealthCheck)) {
+                        assert newState == STATE_ACTIVE_NO_FAILURES;
+                        cancelIfHealthCheck(previous);
+                    }
                     break;
                 }
             }
@@ -1021,7 +1030,7 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
                                                 host.healthCheckConfig.jitter,
                                                 host.healthCheckConfig.executor)))
                                 .flatMapCompletable(newCnx -> {
-                                    if (host.addConnection(newCnx)) {
+                                    if (host.addConnection(newCnx, this)) {
                                         LOGGER.info("{}: health check passed for {}, marked this " +
                                                         "host as ACTIVE for the selection algorithm.",
                                                 host.lbDescription, host);
