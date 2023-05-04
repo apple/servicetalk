@@ -907,9 +907,9 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
                 }
                 LOGGER.trace("{}: removed connection {} from {} after {} attempt(s).",
                         lbDescription, connection, this, removeAttempt);
-            // Use onErrorComplete instead of whenOnError to avoid double logging of an error inside subscribe():
-            // SimpleCompletableSubscriber.
             }).onErrorComplete(t -> {
+                // Use onErrorComplete instead of whenOnError to avoid double logging of an error inside subscribe():
+                // SimpleCompletableSubscriber.
                 LOGGER.error("{}: unexpected error while processing connection.onClose() for {}.",
                         lbDescription, connection, t);
                 return true;
