@@ -290,8 +290,9 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
                 final long currentTimeNs = parent.timeoutExecutor.currentTime(NANOSECONDS);
                 final long nextTimeoutNs = parent.durationNs - (currentTimeNs - lastStartNS);
                 if (nextTimeoutNs <= 0) { // Timeout!
-                    offloadTimeout(new TimeoutException("timeout after " + NANOSECONDS.toMillis(parent.durationNs) +
-                            "ms"), parent.timeoutExecutor);
+                    offloadTimeout(new TimeoutException((parent.restartAtOnNext ?
+                            "between onNext" : "until terminal") + " timeout after " +
+                            NANOSECONDS.toMillis(parent.durationNs) + "ms"), parent.timeoutExecutor);
                     return;
                 } else {
                     final Cancellable nextTimerCancellable;

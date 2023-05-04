@@ -89,7 +89,8 @@ final class TimeoutDemandPublisher<T> extends AbstractNoHandleSubscribePublisher
 
         @Override
         public void onNext(final X x) {
-            // Deliver before starting the timer in case processing takes time.
+            // Deliver before starting the timer in case processing takes time, and also the delivery of data may
+            // increase demand which saves starting/stopping the timer.
             target.onNext(x);
             if (demandUpdater.decrementAndGet(this) == 0) {
                 startTimer();
@@ -123,8 +124,8 @@ final class TimeoutDemandPublisher<T> extends AbstractNoHandleSubscribePublisher
                         stopTimer(true); // clear the reference and prevent future timers.
                     } finally {
                         // Concurrent/multiple termination is protected by ConcurrentTerminalSubscriber.
-                        offloadTimeout(new TimeoutException("timeout after " + NANOSECONDS.toMillis(parent.durationNs) +
-                                "ms"), parent.timeoutExecutor);
+                        offloadTimeout(new TimeoutException("no demand timeout after " +
+                                NANOSECONDS.toMillis(parent.durationNs) + "ms"), parent.timeoutExecutor);
                     }
                     break;
                 }
