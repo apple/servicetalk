@@ -373,13 +373,13 @@ class TimeoutPublisherTest {
                         publisher.timeoutTerminal(duration, executor);
     }
 
-   static void countDownToZero(CountDownLatch latch) {
+   private static void countDownToZero(CountDownLatch latch) {
         while (latch.getCount() > 0) {
             latch.countDown(); // count down an extra time to complete the test early.
         }
     }
 
-    static final class DelayedOnSubscribePublisher<T> extends Publisher<T> {
+    private static final class DelayedOnSubscribePublisher<T> extends Publisher<T> {
         @Nullable
         volatile Subscriber<? super T> subscriber;
         @Override
