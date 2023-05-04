@@ -767,7 +767,7 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
             for (;;) {
                 ConnState previous = connStateUpdater.get(this);
 
-                if (!ActiveState.class.equals(previous.state.getClass()) || previous.connections.length > 0
+                if (!Host.isActive(previous) || previous.connections.length > 0
                         || cause instanceof ConnectionLimitReachedException) {
                     LOGGER.debug("{}: failed to open a new connection to the host on address {}. {}.",
                             lbDescription, address, previous, cause);
@@ -803,6 +803,10 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
         }
 
         boolean isActiveAndHealthy() {
+            return isActive(connState);
+        }
+
+        static boolean isActive(final ConnState connState) {
             return ActiveState.class.equals(connState.state.getClass());
         }
 
@@ -832,7 +836,7 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
 
                 // If we were able to add a new connection to the list, we should mark the host as ACTIVE again and
                 // reset its failures counter.
-                Object newState = ActiveState.class.equals(previous.state.getClass()) || Host.isUnhealthy(previous) ?
+                final Object newState = Host.isActive(previous) || Host.isUnhealthy(previous) ?
                         STATE_ACTIVE_NO_FAILURES : previous.state;
 
                 if (connStateUpdater.compareAndSet(this,
@@ -874,7 +878,7 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
                         break;
                     } else if (connections.length == 1) {
                         assert !Host.isUnhealthy(currentConnState) : "Cannot be UNHEALTHY with #connections > 0";
-                        if (ActiveState.class.equals(currentConnState.state.getClass())) {
+                        if (Host.isActive(currentConnState)) {
                             if (connStateUpdater.compareAndSet(this, currentConnState,
                                     new ConnState(EMPTY_ARRAY, currentConnState.state))) {
                                 break;
@@ -906,10 +910,10 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
             // Use onErrorComplete instead of whenOnError to avoid double logging of an error inside subscribe():
             // SimpleCompletableSubscriber.
             }).onErrorComplete(t -> {
-                        LOGGER.error("{}: unexpected error while processing connection.onClose() for {}.",
-                                lbDescription, connection, t);
-                        return true;
-                    }).subscribe();
+                LOGGER.error("{}: unexpected error while processing connection.onClose() for {}.",
+                        lbDescription, connection, t);
+                return true;
+            }).subscribe();
             return true;
         }
 
