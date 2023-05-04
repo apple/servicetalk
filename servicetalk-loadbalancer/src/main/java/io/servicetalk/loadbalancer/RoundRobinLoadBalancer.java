@@ -850,17 +850,21 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
                     if (currentConnState.state == State.CLOSED) {
                         break;
                     }
+                    assert currentConnState.connections.length > 0;
                     ++removeAttempt;
                     int i = 0;
                     final Object[] connections = currentConnState.connections;
+                    // Search for the connection in the list.
                     for (; i < connections.length; ++i) {
                         if (connections[i].equals(connection)) {
                             break;
                         }
                     }
                     if (i == connections.length) {
+                        // Connection was already removed, nothing to do.
                         break;
                     } else if (connections.length == 1) {
+                        assert !Host.isUnhealthy(currentConnState) : "Cannot be UNHEALTHY with #connections > 0";
                         if (ActiveState.class.equals(currentConnState.state.getClass())) {
                             if (connStateUpdater.compareAndSet(this, currentConnState,
                                     new ConnState(EMPTY_ARRAY, currentConnState.state))) {
@@ -890,7 +894,13 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
                 }
                 LOGGER.trace("{}: removed connection {} from {} after {} attempt(s).",
                         lbDescription, connection, this, removeAttempt);
-            }).subscribe();
+            // Use onErrorComplete instead of whenOnError to avoid double logging of an error inside subscribe():
+            // SimpleCompletableSubscriber.
+            }).onErrorComplete(t -> {
+                        LOGGER.error("{}: unexpected error while processing connection.onClose() for {}.",
+                                lbDescription, connection, t);
+                        return true;
+                    }).subscribe();
             return true;
         }
 
@@ -1012,7 +1022,6 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
                                                 host.healthCheckConfig.executor)))
                                 .flatMapCompletable(newCnx -> {
                                     if (host.addConnection(newCnx)) {
-                                        assert !Host.isUnhealthy(host.connState);
                                         LOGGER.info("{}: health check passed for {}, marked this " +
                                                         "host as ACTIVE for the selection algorithm.",
                                                 host.lbDescription, host);
