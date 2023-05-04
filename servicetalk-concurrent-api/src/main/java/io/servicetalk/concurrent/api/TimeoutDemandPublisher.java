@@ -110,37 +110,27 @@ final class TimeoutDemandPublisher<T> extends AbstractNoHandleSubscribePublisher
 
         @Override
         void timerFires() {
-            for (;;) {
-                final long currDemand = demand;
-                if (currDemand > 0) {
-                    // The value we read maybe stale, force write to ensure demand is positive before break.
-                    // This also avoids ABA like scenarios where multiple timers are "set" and "cancelled" before
-                    // one actually fires.
-                    if (demandUpdater.compareAndSet(this, currDemand, currDemand)) {
-                        break;
-                    }
-                } else if (demandUpdater.compareAndSet(this, currDemand, DEMAND_TIMER_FIRED)) {
-                    try {
-                        stopTimer(true); // clear the reference and prevent future timers.
-                    } finally {
-                        // Concurrent/multiple termination is protected by ConcurrentTerminalSubscriber.
-                        offloadTimeout(new TimeoutException("no demand timeout after " +
-                                NANOSECONDS.toMillis(parent.durationNs) + "ms"), parent.timeoutExecutor);
-                    }
-                    break;
+            final long prevDemand = demandUpdater.getAndSet(this, DEMAND_TIMER_FIRED);
+            if (prevDemand >= 0) {
+                try {
+                    stopTimer(true); // clear the reference and prevent future timers.
+                } finally {
+                    // Concurrent/multiple termination is protected by ConcurrentTerminalSubscriber.
+                    offloadTimeout(new TimeoutException("no demand timeout after " +
+                            NANOSECONDS.toMillis(parent.durationNs) + "ms"), parent.timeoutExecutor);
                 }
             }
         }
 
         private void startTimer() {
             for (;;) {
-                final Cancellable currTimer = timerCancellable;
-                if (currTimer == LOCAL_IGNORE_CANCEL) {
+                final Cancellable cancellable = timerCancellable;
+                if (cancellable == LOCAL_IGNORE_CANCEL) {
                     break;
                 }
                 final Cancellable nextTimer = parent.timeoutExecutor.schedule(this::timerFires, parent.durationNs,
                         NANOSECONDS);
-                if (timerCancellableUpdater.compareAndSet(this, currTimer, nextTimer)) {
+                if (timerCancellableUpdater.compareAndSet(this, cancellable, nextTimer)) {
                     break;
                 } else {
                     nextTimer.cancel();
@@ -150,11 +140,17 @@ final class TimeoutDemandPublisher<T> extends AbstractNoHandleSubscribePublisher
 
         @Override
         void stopTimer(boolean terminal) {
-            // timerCancellable is known not to be null here based upon the current usage of this method.
-            final Cancellable cancelable = timerCancellableUpdater.getAndSet(this,
-                    terminal ? LOCAL_IGNORE_CANCEL : null);
-            if (cancelable != null) {
-                cancelable.cancel();
+            for (;;) {
+                final Cancellable cancellable = timerCancellable;
+                if (cancellable == LOCAL_IGNORE_CANCEL) {
+                    break;
+                } else if (timerCancellableUpdater.compareAndSet(this, cancellable,
+                        terminal ? LOCAL_IGNORE_CANCEL : null)) {
+                    if (cancellable != null) {
+                        cancellable.cancel();
+                    }
+                    break;
+                }
             }
         }
     }
