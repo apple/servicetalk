@@ -29,6 +29,7 @@ import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -36,6 +37,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -346,6 +348,19 @@ class TimeoutPublisherTest {
         latch.await();
         assertNull(causeRef.get());
         assertThat(subscriber.awaitOnError(), instanceOf(TimeoutException.class));
+    }
+
+    @Test
+    @RepeatedTest(100)
+    void timeoutDemandTimerCancellation() {
+        init(TimerBehaviorParam.DEMAND_TIMER, Duration.ofSeconds(1));
+        Subscription subscription = subscriber.awaitSubscription();
+        subscription.request(1);
+        assertThat(testExecutor.scheduledTasksPending(), is(0));
+        ForkJoinPool.commonPool().execute(() -> publisher.onNext(1));
+        assertThat(subscriber.takeOnNext(), is(1));
+        subscription.request(1);
+        assertThat(testExecutor.scheduledTasksPending(), is(0));
     }
 
     private void init(TimerBehaviorParam params) {
