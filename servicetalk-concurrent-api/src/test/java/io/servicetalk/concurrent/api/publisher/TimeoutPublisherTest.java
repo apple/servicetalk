@@ -350,14 +350,16 @@ class TimeoutPublisherTest {
         assertThat(subscriber.awaitOnError(), instanceOf(TimeoutException.class));
     }
 
-    @Test
-    @RepeatedTest(100)
+    @RepeatedTest(1000)
     void timeoutDemandTimerCancellation() {
         init(TimerBehaviorParam.DEMAND_TIMER, Duration.ofSeconds(1));
         Subscription subscription = subscriber.awaitSubscription();
         subscription.request(1);
         assertThat(testExecutor.scheduledTasksPending(), is(0));
         ForkJoinPool.commonPool().execute(() -> publisher.onNext(1));
+
+        // the `.takeOnNext()` call isn't strictly necessary but happens to entangle our racing threads
+        // in proximity to the window of the potential race condition which helps surface the bug.
         assertThat(subscriber.takeOnNext(), is(1));
         subscription.request(1);
         assertThat(testExecutor.scheduledTasksPending(), is(0));
