@@ -142,6 +142,16 @@ final class TimeoutDemandPublisher<T> extends AbstractNoHandleSubscribePublisher
         void stopTimer(boolean terminal) {
             for (;;) {
                 final Cancellable cancellable = timerCancellable;
+                if (cancellable == null && !terminal) {
+                    // We don't atomically manipulate the `demand` and set the timer so we can get the following race:
+                    // Thread1: `.onNext(..)` call decrements demand to 0 and enters the top of `startTimer()`, pauses.
+                    // Thread2: `.request(n > 0)`, increments demand from 0 -> n, enters `stopTimer(false)` and replaces
+                    // `null` with `null`.
+                    // Thread1: wakes and proceeds to successfully `startTimer()` despite demand being n > 0.
+                    // Because we know that if demand is 0 there must either be a timer set or we must be racing with a
+                    // thread in `.onNext` which is about to set a timer, we must spin until we get a non-null value.
+                    continue;
+                }
                 if (cancellable == LOCAL_IGNORE_CANCEL) {
                     break;
                 } else if (timerCancellableUpdater.compareAndSet(this, cancellable,
