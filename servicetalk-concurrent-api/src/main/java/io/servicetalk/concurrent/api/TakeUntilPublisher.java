@@ -79,19 +79,23 @@ final class TakeUntilPublisher<T> extends AbstractSynchronousPublisherOperator<T
 
                 @Override
                 public void onComplete() {
-                    try {
-                        cancelDownstreamSubscription();
-                    } finally {
-                        subscriber.processOnComplete();
+                    if (subscriber.deferredOnComplete()) {
+                        try {
+                            cancelDownstreamSubscription();
+                        } finally {
+                            subscriber.deliverDeferredTerminal();
+                        }
                     }
                 }
 
                 @Override
                 public void onError(Throwable t) {
-                    try {
-                        cancelDownstreamSubscription();
-                    } finally {
-                        subscriber.processOnError(t);
+                    if (subscriber.deferredOnError(t)) {
+                        try {
+                            cancelDownstreamSubscription();
+                        } finally {
+                            subscriber.deliverDeferredTerminal();
+                        }
                     }
                 }
 
@@ -110,19 +114,23 @@ final class TakeUntilPublisher<T> extends AbstractSynchronousPublisherOperator<T
 
         @Override
         public void onError(Throwable t) {
-            try {
-                cancelUntil();
-            } finally {
-                subscriber.processOnError(t);
+            if (subscriber.deferredOnError(t)) {
+                try {
+                    cancelUntil();
+                } finally {
+                    subscriber.deliverDeferredTerminal();
+                }
             }
         }
 
         @Override
         public void onComplete() {
-            try {
-                cancelUntil();
-            } finally {
-                subscriber.processOnComplete();
+            if (subscriber.deferredOnComplete()) {
+                try {
+                    cancelUntil();
+                } finally {
+                    subscriber.deliverDeferredTerminal();
+                }
             }
         }
 

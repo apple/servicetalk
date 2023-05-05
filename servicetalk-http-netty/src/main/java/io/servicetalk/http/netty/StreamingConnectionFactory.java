@@ -30,6 +30,7 @@ import io.servicetalk.transport.netty.internal.NettyConnection;
 
 import io.netty.channel.Channel;
 
+import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import javax.net.ssl.SNIHostName;
@@ -91,10 +92,10 @@ final class StreamingConnectionFactory {
             final String hostnameVerificationAlgorithm;
             if (sniHostname == null) {
                 if (peerHost == null) {
-                    newPeerHost = inetAddress.getHostAddress();
+                    newPeerHost = toHostAddress(inetAddress);
                     newSniHostname = hostnameVerificationAlgorithm = null;
                 } else {
-                    newPeerHost = peerHost + '-' + inetAddress.getHostAddress();
+                    newPeerHost = peerHost + '-' + toHostAddress(inetAddress);
                     // We are overriding the peerHost to make it qualified with the resolved address. If sniHostname is
                     // not set and the hostnameVerificationAlgorithm is set, the SSLEngine will take the peerHost value
                     // for validation, which will fail to match now that we have changed the value.
@@ -106,7 +107,7 @@ final class StreamingConnectionFactory {
                     }
                 }
             } else {
-                newPeerHost = sniHostname + '-' + inetAddress.getHostAddress();
+                newPeerHost = sniHostname + '-' + toHostAddress(inetAddress);
                 newSniHostname = sniHostname;
                 hostnameVerificationAlgorithm = sslConfig.hostnameVerificationAlgorithm();
             }
@@ -115,6 +116,12 @@ final class StreamingConnectionFactory {
                     hostnameVerificationAlgorithm);
         }
         return config;
+    }
+
+    private static String toHostAddress(final InetAddress address) {
+        final String hostAddress = address.getHostAddress();
+        // Replace colons with dots to satisfy SNIHostName validation
+        return address instanceof Inet6Address ? hostAddress.replace(':', '.') : hostAddress;
     }
 
     private static boolean isValidSniHostname(String peerHost) {

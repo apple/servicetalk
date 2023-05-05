@@ -30,6 +30,7 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.TestStreamingHttpConnection;
+import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.netty.internal.ExecutionContextExtension;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyConnection;
@@ -87,8 +88,7 @@ final class AbstractHttpConnectionTest {
             extends AbstractStreamingHttpConnection<NettyConnection<Object, Object>> {
         MockStreamingHttpConnection(final NettyConnection<Object, Object> connection,
                                     final int maxPipelinedRequests) {
-            super(connection, maxPipelinedRequests, new ExecutionContextToHttpExecutionContext(ctx, defaultStrategy()),
-                    reqRespFactory, headersFactory, false);
+            super(connection, maxPipelinedRequests, reqRespFactory, headersFactory, false);
         }
 
         @Override
@@ -105,6 +105,8 @@ final class AbstractHttpConnectionTest {
         when(conn.onClose()).thenReturn(never());
         when(conn.onClosing()).thenReturn(never());
         when(conn.transportError()).thenReturn(Single.never());
+        when(conn.executionContext())
+                .thenReturn((ExecutionContext) new ExecutionContextToHttpExecutionContext(ctx, defaultStrategy()));
         when(conn.protocol()).thenReturn(HTTP_1_1);
         http = TestStreamingHttpConnection.from(new MockStreamingHttpConnection(conn, 101));
     }

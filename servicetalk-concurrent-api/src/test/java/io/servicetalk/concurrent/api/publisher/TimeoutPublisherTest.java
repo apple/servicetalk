@@ -29,6 +29,7 @@ import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -36,17 +37,18 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofNanos;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -54,7 +56,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -72,9 +73,14 @@ class TimeoutPublisherTest {
                 return true;
             }
         },
-
         TERMINATION_TIMER {
             @Override // timeoutTerminal : termination
+            boolean restartAtOnNext() {
+                return false;
+            }
+        },
+        DEMAND_TIMER {
+            @Override
             boolean restartAtOnNext() {
                 return false;
             }
@@ -96,9 +102,10 @@ class TimeoutPublisherTest {
         testExecutor = executorExtension.executor();
     }
 
-    @Test
-    void timeoutExceptionDeliveredBeforeUpstreamException() {
-        toSource(new Publisher<Integer>() {
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(TimerBehaviorParam.class)
+    void timeoutExceptionDeliveredBeforeUpstreamException(TimerBehaviorParam params) {
+        toSource(initNoSubscribe(new Publisher<Integer>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super Integer> subscriber) {
                 subscriber.onSubscribe(new Subscription() {
@@ -116,34 +123,22 @@ class TimeoutPublisherTest {
                     }
                 });
             }
-        }.timeout(ofNanos(1), testExecutor))
+        }, params, ofNanos(1), testExecutor))
                 .subscribe(subscriber);
         testExecutor.advanceTimeBy(1, NANOSECONDS);
         assertThat(subscriber.awaitOnError(), instanceOf(TimeoutException.class));
     }
 
-    @Test
-    void executorScheduleThrowsTerminalTimeout() {
-        toSource(publisher.timeoutTerminal(1, NANOSECONDS, new DelegatingExecutor(testExecutor) {
-            @Override
-            public Cancellable schedule(final Runnable task, final long delay, final TimeUnit unit) {
-                throw DELIBERATE_EXCEPTION;
-            }
-        })).subscribe(subscriber);
-        publisher.onSubscribe(subscription);
-
-        assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
-        assertTrue(subscription.isCancelled());
-    }
-
-    @Test
-    void executorScheduleThrowsIdleTimeout() {
-        toSource(publisher.timeout(1, NANOSECONDS, new DelegatingExecutor(testExecutor) {
-            @Override
-            public Cancellable schedule(final Runnable task, final long delay, final TimeUnit unit) {
-                throw DELIBERATE_EXCEPTION;
-            }
-        })).subscribe(subscriber);
+    @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
+    @EnumSource(TimerBehaviorParam.class)
+    void executorScheduleThrows(TimerBehaviorParam params) {
+        toSource(initNoSubscribe(publisher, params, ofNanos(1), new DelegatingExecutor(testExecutor) {
+                    @Override
+                    public Cancellable schedule(final Runnable task, final long delay, final TimeUnit unit) {
+                        throw DELIBERATE_EXCEPTION;
+                    }
+                })
+        ).subscribe(subscriber);
         publisher.onSubscribe(subscription);
 
         assertThat(subscriber.awaitOnError(), sameInstance(DELIBERATE_EXCEPTION));
@@ -239,45 +234,30 @@ class TimeoutPublisherTest {
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
     @EnumSource(TimerBehaviorParam.class)
-    void dataAndTimeout(TimerBehaviorParam params) throws Exception {
+    void dataAndTimeout(TimerBehaviorParam params) {
         final long millisMultiplier = 100;
-        init(params, Duration.ofMillis(2 * millisMultiplier));
+        final long numItems = 3;
+        init(params, ofMillis(millisMultiplier + 1));
 
         assertThat(testExecutor.scheduledTasksPending(), is(1));
         assertThat(testExecutor.scheduledTasksExecuted(), is(0));
-        subscriber.awaitSubscription().request(10);
-        Supplier<Throwable> timedOut = null;
-        for (int x = 1; x <= 3; x++) {
-            assertThat(subscriber.pollOnNext(0, MILLISECONDS), is(nullValue()));
-            timedOut = subscriber.pollTerminal(0, MILLISECONDS);
-            if (null != timedOut) {
-                break;
-            }
-            publisher.onNext(x); // may reset timer
-            MILLISECONDS.sleep(millisMultiplier);
+        subscriber.awaitSubscription().request(numItems);
+        if (params == TimerBehaviorParam.TERMINATION_TIMER) {
             testExecutor.advanceTimeBy(millisMultiplier, MILLISECONDS);
-            assertThat(subscriber.takeOnNext(), is(x));
+            publisher.onNext(0);
+            assertThat(subscriber.takeOnNext(), is(0));
+        } else {
+            for (int x = 0; x < numItems; x++) {
+                testExecutor.advanceTimeBy(millisMultiplier, MILLISECONDS);
+                publisher.onNext(x);
+                assertThat(subscriber.takeOnNext(), is(x));
+            }
         }
 
-        // at this point the timer is either reset or expired.
-        Throwable timeout;
-        if (params.restartAtOnNext()) {
-            // The timer was reset so we should be able to get the last item
-            assertThat(timedOut, is(nullValue()));
-            assertThat(testExecutor.scheduledTasksPending(), is(1));
-            MILLISECONDS.sleep(2 * millisMultiplier);
-            testExecutor.advanceTimeBy(2 * millisMultiplier, MILLISECONDS);
-            assertThat(testExecutor.scheduledTasksPending(), is(0));
-            timeout = subscriber.awaitOnError();
-        } else {
-            // timer has already fired
-            assertThat(timedOut, not(nullValue()));
-            timeout = timedOut.get();
-        }
+        testExecutor.advanceTimeBy(millisMultiplier + 1, MILLISECONDS);
 
         // timer should have now fired.
-        assertThat(timeout, instanceOf(TimeoutException.class));
-
+        assertThat(subscriber.awaitOnError(), instanceOf(TimeoutException.class));
         assertThat(testExecutor.scheduledTasksPending(), is(0));
         assertThat(testExecutor.scheduledTasksExecuted(), is(params.restartAtOnNext() ? 3 : 1));
     }
@@ -370,6 +350,21 @@ class TimeoutPublisherTest {
         assertThat(subscriber.awaitOnError(), instanceOf(TimeoutException.class));
     }
 
+    @RepeatedTest(1000)
+    void timeoutDemandTimerCancellation() {
+        init(TimerBehaviorParam.DEMAND_TIMER, Duration.ofSeconds(1));
+        Subscription subscription = subscriber.awaitSubscription();
+        subscription.request(1);
+        assertThat(testExecutor.scheduledTasksPending(), is(0));
+        ForkJoinPool.commonPool().execute(() -> publisher.onNext(1));
+
+        // the `.takeOnNext()` call isn't strictly necessary but happens to entangle our racing threads
+        // in proximity to the window of the potential race condition which helps surface the bug.
+        assertThat(subscriber.takeOnNext(), is(1));
+        subscription.request(1);
+        assertThat(testExecutor.scheduledTasksPending(), is(0));
+    }
+
     private void init(TimerBehaviorParam params) {
         init(params, ofNanos(1));
     }
@@ -380,14 +375,19 @@ class TimeoutPublisherTest {
 
     private void init(Publisher<Integer> publisher, TimerBehaviorParam params,
                       Duration duration, boolean expectOnSubscribe) {
-        publisher = params.restartAtOnNext() ?
-                publisher.timeout(duration, testExecutor)
-                : publisher.timeoutTerminal(duration, testExecutor);
+        publisher = initNoSubscribe(publisher, params, duration, testExecutor);
         toSource(publisher).subscribe(subscriber);
         assertThat(testExecutor.scheduledTasksPending(), is(1));
         if (expectOnSubscribe) {
             subscriber.awaitSubscription();
         }
+    }
+
+    private Publisher<Integer> initNoSubscribe(Publisher<Integer> publisher, TimerBehaviorParam params,
+                                               Duration duration, io.servicetalk.concurrent.Executor executor) {
+        return params == TimerBehaviorParam.DEMAND_TIMER ? publisher.timeoutDemand(duration, executor) :
+                params.restartAtOnNext() ? publisher.timeout(duration, executor) :
+                        publisher.timeoutTerminal(duration, executor);
     }
 
    private static void countDownToZero(CountDownLatch latch) {

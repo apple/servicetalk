@@ -592,9 +592,10 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
 
                         // Just in case the connection is not closed add it to the host so we don't lose track,
                         // duplicates will be filtered out.
-                        return host.addConnection(newCnx) ? failedSingle : newCnx.closeAsync().concat(failedSingle);
+                        return host.addConnection(newCnx, null) ?
+                                failedSingle : newCnx.closeAsync().concat(failedSingle);
                     }
-                    if (host.addConnection(newCnx)) {
+                    if (host.addConnection(newCnx, null)) {
                         return succeeded(newCnx);
                     }
                     return newCnx.closeAsync().concat(isClosedList(this.usedHosts) ? failedLBClosed(targetResource) :
@@ -743,7 +744,7 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
         }
 
         void markHealthy(final HealthCheck<Addr, C> originalHealthCheckState) {
-            // Marking healthy is generally called from a successful health check, after a connection was added.
+            // Marking healthy is called when we need to recover from an unexpected error.
             // However, it is possible that in the meantime, the host entered an EXPIRED state, then ACTIVE, then failed
             // to open connections and entered the UNHEALTHY state before the original thread continues execution here.
             // In such case, the flipped state is not the same as the one that just succeeded to open a connection.
@@ -766,7 +767,7 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
             for (;;) {
                 ConnState previous = connStateUpdater.get(this);
 
-                if (!ActiveState.class.equals(previous.state.getClass()) || previous.connections.length > 0
+                if (!Host.isActive(previous) || previous.connections.length > 0
                         || cause instanceof ConnectionLimitReachedException) {
                     LOGGER.debug("{}: failed to open a new connection to the host on address {}. {}.",
                             lbDescription, address, previous, cause);
@@ -802,6 +803,10 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
         }
 
         boolean isActiveAndHealthy() {
+            return isActive(connState);
+        }
+
+        static boolean isActive(final ConnState connState) {
             return ActiveState.class.equals(connState.state.getClass());
         }
 
@@ -809,7 +814,7 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
             return HealthCheck.class.equals(connState.state.getClass());
         }
 
-        boolean addConnection(C connection) {
+        boolean addConnection(final C connection, final @Nullable HealthCheck<Addr, C> currentHealthCheck) {
             int addAttempt = 0;
             for (;;) {
                 final ConnState previous = connStateUpdater.get(this);
@@ -829,11 +834,21 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
                 Object[] newList = Arrays.copyOf(existing, existing.length + 1);
                 newList[existing.length] = connection;
 
-                Object newState = ActiveState.class.equals(previous.state.getClass()) ?
+                // If we were able to add a new connection to the list, we should mark the host as ACTIVE again and
+                // reset its failures counter.
+                final Object newState = Host.isActive(previous) || Host.isUnhealthy(previous) ?
                         STATE_ACTIVE_NO_FAILURES : previous.state;
 
                 if (connStateUpdater.compareAndSet(this,
                         previous, new ConnState(newList, newState))) {
+                    // It could happen that the Host turned into UNHEALTHY state either concurrently with adding a new
+                    // connection or with passing a previous health-check (if SD turned it into ACTIVE state). In both
+                    // cases we have to cancel the "previous" ongoing health check. See "markHealthy" for more context.
+                    if (Host.isUnhealthy(previous) &&
+                            (currentHealthCheck == null || previous.state != currentHealthCheck)) {
+                        assert newState == STATE_ACTIVE_NO_FAILURES;
+                        cancelIfHealthCheck(previous);
+                    }
                     break;
                 }
             }
@@ -848,18 +863,22 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
                     if (currentConnState.state == State.CLOSED) {
                         break;
                     }
+                    assert currentConnState.connections.length > 0;
                     ++removeAttempt;
                     int i = 0;
                     final Object[] connections = currentConnState.connections;
+                    // Search for the connection in the list.
                     for (; i < connections.length; ++i) {
                         if (connections[i].equals(connection)) {
                             break;
                         }
                     }
                     if (i == connections.length) {
+                        // Connection was already removed, nothing to do.
                         break;
                     } else if (connections.length == 1) {
-                        if (ActiveState.class.equals(currentConnState.state.getClass())) {
+                        assert !Host.isUnhealthy(currentConnState) : "Cannot be UNHEALTHY with #connections > 0";
+                        if (Host.isActive(currentConnState)) {
                             if (connStateUpdater.compareAndSet(this, currentConnState,
                                     new ConnState(EMPTY_ARRAY, currentConnState.state))) {
                                 break;
@@ -888,6 +907,12 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
                 }
                 LOGGER.trace("{}: removed connection {} from {} after {} attempt(s).",
                         lbDescription, connection, this, removeAttempt);
+            }).onErrorComplete(t -> {
+                // Use onErrorComplete instead of whenOnError to avoid double logging of an error inside subscribe():
+                // SimpleCompletableSubscriber.
+                LOGGER.error("{}: unexpected error while processing connection.onClose() for {}.",
+                        lbDescription, connection, t);
+                return true;
             }).subscribe();
             return true;
         }
@@ -1009,14 +1034,14 @@ final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnec
                                                 host.healthCheckConfig.jitter,
                                                 host.healthCheckConfig.executor)))
                                 .flatMapCompletable(newCnx -> {
-                                    if (host.addConnection(newCnx)) {
-                                        host.markHealthy(this);
-                                        LOGGER.info("{}: health check passed for {}, marking this " +
+                                    if (host.addConnection(newCnx, this)) {
+                                        LOGGER.info("{}: health check passed for {}, marked this " +
                                                         "host as ACTIVE for the selection algorithm.",
                                                 host.lbDescription, host);
                                         return completed();
                                     } else {
                                         // This happens only if the host is closed, no need to mark as healthy.
+                                        assert host.connState.state == State.CLOSED;
                                         LOGGER.debug("{}: health check passed for {}, but the " +
                                                         "host rejected a new connection {}. Closing it now.",
                                                 host.lbDescription, host, newCnx);

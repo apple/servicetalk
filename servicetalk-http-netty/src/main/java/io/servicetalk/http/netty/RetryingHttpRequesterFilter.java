@@ -232,10 +232,12 @@ public final class RetryingHttpRequesterFilter
             if (responseMapper != null) {
                 single = single.flatMap(resp -> {
                     final HttpResponseException exception = responseMapper.apply(resp);
-                    return exception != null ?
+                    return (exception != null ?
                             // Drain response payload body before discarding it:
-                            resp.payloadBody().ignoreElements().onErrorComplete().concat(Single.failed(exception)) :
-                            Single.succeeded(resp);
+                            resp.payloadBody().ignoreElements().onErrorComplete()
+                                    .concat(Single.<StreamingHttpResponse>failed(exception)) :
+                            Single.succeeded(resp))
+                            .shareContextOnSubscribe();
                 });
             }
 

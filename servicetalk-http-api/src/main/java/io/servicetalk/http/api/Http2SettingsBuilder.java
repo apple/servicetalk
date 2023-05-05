@@ -98,10 +98,24 @@ public final class Http2SettingsBuilder {
      *
      * @param value The value.
      * @return {@code this}.
+     * @deprecated Use {@link #initialWindowSize(int)}.
      */
+    @Deprecated
     public Http2SettingsBuilder initialWindowSize(long value) {
         validate31Unsigned(value);
-        settings.put(INITIAL_WINDOW_SIZE, value);
+        return initialWindowSize((int) value);
+    }
+
+    /**
+     * Set the value for
+     * <a href="https://datatracker.ietf.org/doc/html/rfc7540#section-6.5.2">SETTINGS_INITIAL_WINDOW_SIZE</a>.
+     *
+     * @param value The value.
+     * @return {@code this}.
+     */
+    public Http2SettingsBuilder initialWindowSize(int value) {
+        validate31Unsigned(value);
+        settings.put(INITIAL_WINDOW_SIZE, (long) value);
         return this;
     }
 
@@ -145,13 +159,19 @@ public final class Http2SettingsBuilder {
     }
 
     private static void validate32Unsigned(long value) {
-        if (value < 0 || value >= MAX_UNSIGNED_INT) {
+        if (value < 0 || value > MAX_UNSIGNED_INT) {
             throw new IllegalArgumentException("value: " + value + "(expected [0, " + MAX_UNSIGNED_INT + "]");
         }
     }
 
     private static void validate31Unsigned(long value) {
-        if (value < 0 || value >= Integer.MAX_VALUE) {
+        if (value < 0 || value > Integer.MAX_VALUE) {
+            throw new IllegalArgumentException("value: " + value + "(expected [0, " + Integer.MAX_VALUE + "]");
+        }
+    }
+
+    private static void validate31Unsigned(int value) {
+        if (value < 0) {
             throw new IllegalArgumentException("value: " + value + "(expected [0, " + Integer.MAX_VALUE + "]");
         }
     }
