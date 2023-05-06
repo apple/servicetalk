@@ -52,7 +52,7 @@ shadowJar {
   // includes javaPoet and Google protobufs
   configurations = [project.configurations.compileClasspath]
   archiveBaseName = project.name
-  classifier = 'all'
+  archiveExtension = 'all'
 }
 
 def grpcPluginUberJarName = project.name + "-" + project.version + "-all.jar"
