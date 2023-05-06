@@ -51,9 +51,11 @@ final class TakeUntilPublisher<T> extends AbstractSynchronousPublisherOperator<T
         @Nullable
         private volatile Cancellable untilCancellable;
 
+        @SuppressWarnings("deprecation")
         private final ConcurrentTerminalSubscriber<? super T> subscriber;
         private final Completable until;
 
+        @SuppressWarnings("deprecation")
         TakeUntilSubscriber(Subscriber<? super T> subscriber, Completable until) {
             this.subscriber = new ConcurrentTerminalSubscriber<>(subscriber, false);
             this.until = until;

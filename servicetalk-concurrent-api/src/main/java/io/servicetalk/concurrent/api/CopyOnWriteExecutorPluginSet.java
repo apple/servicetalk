@@ -15,9 +15,10 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.internal.ArrayUtils;
+
 import java.util.concurrent.atomic.AtomicReference;
 
-import static io.servicetalk.concurrent.internal.ArrayUtils.indexOf;
 import static java.lang.System.arraycopy;
 import static java.util.Arrays.copyOf;
 import static java.util.Objects.requireNonNull;
@@ -151,7 +152,8 @@ final class CopyOnWriteExecutorPluginSet implements ExecutorPlugin {
 
         @Override
         public CopyOnWriteSet add(final ExecutorPlugin plugin) {
-            int i = indexOf(plugin, plugins);
+            @SuppressWarnings("deprecation")
+            int i = ArrayUtils.indexOf(plugin, plugins);
             if (i >= 0) {
                 return this;
             }
@@ -162,7 +164,8 @@ final class CopyOnWriteExecutorPluginSet implements ExecutorPlugin {
 
         @Override
         public CopyOnWriteSet remove(final ExecutorPlugin plugin) {
-            int i = indexOf(plugin, plugins);
+            @SuppressWarnings("deprecation")
+            int i = ArrayUtils.indexOf(plugin, plugins);
             if (i < 0) {
                 return this;
             }

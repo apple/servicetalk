@@ -100,6 +100,7 @@ final class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> 
         boolean removeSubscriber(final MulticastFixedSubscriber<T> subscriber) {
             for (;;) {
                 final Subscriber<? super T>[] currSubs = subscribers;
+                @SuppressWarnings("deprecation")
                 final int i = ArrayUtils.indexOf(subscriber, currSubs);
                 if (i < 0) {
                     // terminated, demandQueue is not thread safe and isn't cleaned up on the Subscriber thread.

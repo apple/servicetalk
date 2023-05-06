@@ -94,6 +94,7 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
         static final AtomicReferenceFieldUpdater<AbstractTimeoutSubscriber, Subscription> subscriptionUpdater =
                 newUpdater(AbstractTimeoutSubscriber.class, Subscription.class, "subscription");
 
+        @SuppressWarnings("deprecation")
         final ConcurrentTerminalSubscriber<? super X> target;
         final AsyncContextProvider contextProvider;
         @Nullable
@@ -101,6 +102,7 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
         @Nullable
         volatile Cancellable timerCancellable;
 
+        @SuppressWarnings("deprecation")
         AbstractTimeoutSubscriber(Subscriber<? super X> target, AsyncContextProvider contextProvider) {
             // Concurrent onSubscribe is protected by subscriptionUpdater, no need to double protect.
             this.target = new ConcurrentTerminalSubscriber<>(target, false);

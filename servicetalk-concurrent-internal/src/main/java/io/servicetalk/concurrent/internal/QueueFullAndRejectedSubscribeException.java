@@ -17,7 +17,11 @@ package io.servicetalk.concurrent.internal;
 
 /**
  * Exception indicating a bounded queue is full, which also resulted in a rejected subscribe.
+ *
+ * @deprecated This class is no longer used by ServiceTalk and will be removed in the future releases. If you depend on
+ * it, consider copying into your codebase.
  */
+@Deprecated // FIXME: 0.43 - remove deprecated class
 public final class QueueFullAndRejectedSubscribeException extends QueueFullException implements RejectedSubscribeError {
     private static final long serialVersionUID = 2132623149199945728L;
 
