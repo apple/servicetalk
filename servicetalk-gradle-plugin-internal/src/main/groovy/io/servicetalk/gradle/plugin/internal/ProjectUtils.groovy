@@ -153,7 +153,7 @@ final class ProjectUtils {
       description = "Assembles a Jar archive containing the $sourceSet.name sources."
       group = JavaBasePlugin.DOCUMENTATION_GROUP
       archiveAppendix = sourceSet.name == "main" ? null : sourceSet.name
-      archiveExtension = "sources"
+      archiveClassifier = "sources"
       addManifestAttributes(project, manifest)
       from sourceSet.allSource
     }
@@ -184,7 +184,7 @@ final class ProjectUtils {
       description = "Assembles a Jar archive containing the $sourceSet.name Javadoc."
       group = JavaBasePlugin.DOCUMENTATION_GROUP
       archiveAppendix = sourceSet.name == "main" ? null : sourceSet.name
-      archiveExtension = "javadoc"
+      archiveClassifier = "javadoc"
       addManifestAttributes(project, manifest)
       from javadocTask
     }
