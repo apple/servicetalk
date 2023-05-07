@@ -286,7 +286,7 @@ public class TestExecutor implements Executor {
 
         // There maybe concurrent access to this Executor and other tasks schedule, so if in the mean time
         // someone inserts something into the queue we should attempt to add it back to the Map.
-        if (!removedQueue.isEmpty()) {
+        if (removedQueue != null && !removedQueue.isEmpty()) {
             final Queue<RunnableWrapper> existingQueue =
                     scheduledTasksByNano.putIfAbsent(scheduledNanos, removedQueue);
             if (existingQueue != null) {

@@ -22,12 +22,14 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.DelegatingExecutor;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ExecutorExtension;
+import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestExecutor;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.test.internal.TestPublisherSubscriber;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
@@ -37,7 +39,8 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -46,6 +49,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
+import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.time.Duration.ofMillis;
@@ -100,6 +104,11 @@ class TimeoutPublisherTest {
     @BeforeEach
     void setup() {
         testExecutor = executorExtension.executor();
+    }
+
+    @AfterEach
+    void teardown() throws Exception {
+        newCompositeCloseable().appendAll(testExecutor).close();
     }
 
     @ParameterizedTest(name = "{displayName} [{index}] {arguments}")
@@ -351,18 +360,37 @@ class TimeoutPublisherTest {
     }
 
     @RepeatedTest(1000)
-    void timeoutDemandTimerCancellation() {
-        init(TimerBehaviorParam.DEMAND_TIMER, Duration.ofSeconds(1));
-        Subscription subscription = subscriber.awaitSubscription();
-        subscription.request(1);
-        assertThat(testExecutor.scheduledTasksPending(), is(0));
-        ForkJoinPool.commonPool().execute(() -> publisher.onNext(1));
+    void timeoutDemandTimerCancellation() throws ExecutionException, InterruptedException {
+        final Duration timeoutDuration = ofMillis(1);
+        final Executor executor = Executors.newCachedThreadExecutor(); // ordering on publisher provided in test.
+        try {
+            init(TimerBehaviorParam.DEMAND_TIMER, timeoutDuration);
+            Subscription subscription = subscriber.awaitSubscription();
+            subscription.request(1);
+            assertThat(testExecutor.scheduledTasksPending(), is(0));
+            Future<Void> future = executor.submit(() -> publisher.onNext(1)).toFuture();
 
-        // the `.takeOnNext()` call isn't strictly necessary but happens to entangle our racing threads
-        // in proximity to the window of the potential race condition which helps surface the bug.
-        assertThat(subscriber.takeOnNext(), is(1));
-        subscription.request(1);
-        assertThat(testExecutor.scheduledTasksPending(), is(0));
+            // the `.takeOnNext()` call isn't strictly necessary but happens to entangle our racing threads
+            // in proximity to the window of the potential race condition which helps surface the bug.
+            assertThat(subscriber.takeOnNext(), is(1));
+            subscription.request(1);
+            // The timer is scheduled on the executor thread after the signal is delivered down stream. That means
+            // the takeOnNext isn't sufficient to ensure the timer is scheduled. If the timer is scheduled we want to
+            // do this AFTER the request call.
+            future.get();
+            assertThat(testExecutor.scheduledTasksPending(), is(0));
+            testExecutor.advanceTimeBy(timeoutDuration.toMillis(), MILLISECONDS);
+            assertThat(subscriber.pollTerminal(1, MILLISECONDS), nullValue());
+
+            future = executor.submit(() -> publisher.onNext(2)).toFuture();
+            assertThat(subscriber.takeOnNext(), is(2));
+            future.get();
+            assertThat(testExecutor.scheduledTasksPending(), is(1));
+            testExecutor.advanceTimeBy(timeoutDuration.toMillis(), MILLISECONDS);
+            assertThat(subscriber.awaitOnError(), instanceOf(TimeoutException.class));
+        } finally {
+            executor.closeAsync().subscribe();
+        }
     }
 
     private void init(TimerBehaviorParam params) {
