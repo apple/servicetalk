@@ -82,7 +82,6 @@ import static io.servicetalk.http.netty.HttpKeepAlive.shouldClose;
 import static java.lang.Character.isISOControl;
 import static java.lang.Character.isWhitespace;
 import static java.lang.Integer.parseUnsignedInt;
-import static java.lang.Long.parseUnsignedLong;
 import static java.lang.Math.min;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Objects.requireNonNull;
