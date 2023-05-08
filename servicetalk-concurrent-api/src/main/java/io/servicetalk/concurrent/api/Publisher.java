@@ -4062,6 +4062,13 @@ public abstract class Publisher<T> {
      * Create a new {@link Publisher} that when subscribed will emit all data from the {@link InputStream} to the
      * {@link Subscriber} and then {@link Subscriber#onComplete()}.
      * <p>
+     * The resulting publisher is not replayable and supports only a single {@link Subscriber}.
+     * <p>
+     * After a returned {@link Publisher} is subscribed, it owns the passed {@link InputStream}, meaning that the
+     * {@link InputStream} will be automatically closed when the {@link Publisher} is cancelled or terminated. Not
+     * necessary to close the {@link InputStream} after subscribe, but it should be closed when control flow never
+     * subscribes to the returned {@link Publisher}.
+     * <p>
      * The Reactive Streams specification provides two criteria (
      * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#3.4">3.4</a>, and
      * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#3.5">3.5</a>) stating
@@ -4082,6 +4089,13 @@ public abstract class Publisher<T> {
     /**
      * Create a new {@link Publisher} that when subscribed will emit all data from the {@link InputStream} to the
      * {@link Subscriber} and then {@link Subscriber#onComplete()}.
+     * <p>
+     * The resulting publisher is not replayable and supports only a single {@link Subscriber}.
+     * <p>
+     * After a returned {@link Publisher} is subscribed, it owns the passed {@link InputStream}, meaning that the
+     * {@link InputStream} will be automatically closed when the {@link Publisher} is cancelled or terminated. Not
+     * necessary to close the {@link InputStream} after subscribe, but it should be closed when control flow never
+     * subscribes to the returned {@link Publisher}.
      * <p>
      * The Reactive Streams specification provides two criteria (
      * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#3.4">3.4</a>, and
