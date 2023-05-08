@@ -144,17 +144,20 @@ final class TimeoutDemandPublisher<T> extends AbstractNoHandleSubscribePublisher
                     // Thread2: `.request(n > 0)`, increments demand from 0 -> n, enters `stopTimer(false)` and replaces
                     // `null` with `null`.
                     // Thread1: wakes and proceeds to successfully `startTimer()` despite demand being n > 0.
-                    // If we see demand > 0 here we know it is safe to stop the timer because this method is only called
-                    // on the Subscriber thread (no concurrency allowed), otherwise we let the timer stand.
                     for (;;) {
                         final long currDemand = demand;
                         if (currDemand > 0) {
+                            // If we see demand > 0 here it is safe to stop the timer because this method is only called
+                            // on the Subscriber thread (no concurrency allowed), otherwise we let the timer stand.
                             nextTimer.cancel();
                             // Try to reset the timerCancellableUpdater to the original state. If the CAS fails, no need
                             // to loop because the only other state is LOCAL_IGNORE_CANCEL which is a terminal state.
                             timerCancellableUpdater.compareAndSet(this, nextTimer, null);
                             break;
                         } else if (demandUpdater.compareAndSet(this, currDemand, currDemand)) {
+                            // The CAS confirmed any value written by another thread is visible to this thread and if
+                            // the value changes in the future (e.g. request(1+)) that thread will see the timer and try
+                            // to stop it.
                             break;
                         }
                     }
