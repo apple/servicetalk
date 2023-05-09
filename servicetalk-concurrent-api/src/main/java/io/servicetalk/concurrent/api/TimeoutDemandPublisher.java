@@ -110,14 +110,21 @@ final class TimeoutDemandPublisher<T> extends AbstractNoHandleSubscribePublisher
 
         @Override
         void timerFires() {
-            final long prevDemand = demandUpdater.getAndSet(this, DEMAND_TIMER_FIRED);
-            if (prevDemand >= 0) {
-                try {
-                    stopTimer(true); // clear the reference and prevent future timers.
-                } finally {
-                    // Concurrent/multiple termination is protected by ConcurrentTerminalSubscriber.
-                    offloadTimeout(new TimeoutException("no demand timeout after " +
-                            NANOSECONDS.toMillis(parent.durationNs) + "ms"), parent.timeoutExecutor);
+            for (;;) {
+                final long currDemand = demand;
+                if (currDemand != 0) {
+                    // demand and timer state are set independent, so it is possible the timer may fire while there is
+                    // demand due to race conditions. If this is the case just bail as it isn't a "real" timeout.
+                    break;
+                } else if (demandUpdater.compareAndSet(this, currDemand, DEMAND_TIMER_FIRED)) {
+                    try {
+                        stopTimer(true); // clear the reference and prevent future timers.
+                    } finally {
+                        // Concurrent/multiple termination is protected by ConcurrentTerminalSubscriber.
+                        offloadTimeout(new TimeoutException("no demand timeout after " +
+                                NANOSECONDS.toMillis(parent.durationNs) + "ms"), parent.timeoutExecutor);
+                    }
+                    break;
                 }
             }
         }
@@ -131,6 +138,31 @@ final class TimeoutDemandPublisher<T> extends AbstractNoHandleSubscribePublisher
                 final Cancellable nextTimer = parent.timeoutExecutor.schedule(this::timerFires, parent.durationNs,
                         NANOSECONDS);
                 if (timerCancellableUpdater.compareAndSet(this, cancellable, nextTimer)) {
+                    assert cancellable == null;
+                    // We don't atomically manipulate the `demand` and set the timer so we can get the following race:
+                    // Thread1: onNext(..), demand.DEC() to 0, startTimer(), read timerCancellable = null
+                    // Thread2: request(n > 0), demand.INC() to 1, stopTimer(false), timerCancellable.CAS(null, null)
+                    // Thread1: timerCancellable.CAS(null, cancellable) -> timer running even though demand != 0
+                    for (;;) {
+                        final long currDemand = demand;
+                        if (currDemand > 0) {
+                            // If we see demand > 0 here it is safe to stop the timer because this method is only called
+                            // on the Subscriber thread (no concurrency allowed), otherwise we let the timer stand.
+                            nextTimer.cancel();
+                            // Try to reset the timerCancellableUpdater to the original state. If the CAS fails, no need
+                            // to loop because the only other state is LOCAL_IGNORE_CANCEL which is a terminal state.
+                            timerCancellableUpdater.compareAndSet(this, nextTimer, null);
+                            break;
+                        } else if (demandUpdater.compareAndSet(this, currDemand, currDemand)) {
+                            // The CAS ensures if another thread changes demand concurrently, the value is visible.
+                            // Here is an example race condition we are preventing:
+                            // Thread 1: onNext(..), startTimer, read timerCancellable=null
+                            // Thread 2: request(1), demand.INC(), stopTimer, timerCancellable.CAS(null, null), return
+                            // Thread 1: timerCancellable.CAS(null, null), read demand=0 (STATE NOT VISIBLE YET!)
+                            // Thread 1: demand.CAS(0, 0) -> fail, re-read demand=1, nextTimer.cancel(), return
+                            break;
+                        }
+                    }
                     break;
                 } else {
                     nextTimer.cancel();
@@ -142,16 +174,6 @@ final class TimeoutDemandPublisher<T> extends AbstractNoHandleSubscribePublisher
         void stopTimer(boolean terminal) {
             for (;;) {
                 final Cancellable cancellable = timerCancellable;
-                if (cancellable == null && !terminal) {
-                    // We don't atomically manipulate the `demand` and set the timer so we can get the following race:
-                    // Thread1: `.onNext(..)` call decrements demand to 0 and enters the top of `startTimer()`, pauses.
-                    // Thread2: `.request(n > 0)`, increments demand from 0 -> n, enters `stopTimer(false)` and replaces
-                    // `null` with `null`.
-                    // Thread1: wakes and proceeds to successfully `startTimer()` despite demand being n > 0.
-                    // Because we know that if demand is 0 there must either be a timer set or we must be racing with a
-                    // thread in `.onNext` which is about to set a timer, we must spin until we get a non-null value.
-                    continue;
-                }
                 if (cancellable == LOCAL_IGNORE_CANCEL) {
                     break;
                 } else if (timerCancellableUpdater.compareAndSet(this, cancellable,
