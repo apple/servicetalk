@@ -155,9 +155,13 @@ final class TimeoutDemandPublisher<T> extends AbstractNoHandleSubscribePublisher
                             timerCancellableUpdater.compareAndSet(this, nextTimer, null);
                             break;
                         } else if (demandUpdater.compareAndSet(this, currDemand, currDemand)) {
-                            // The CAS confirmed any value written by another thread is visible to this thread and if
-                            // the value changes in the future (e.g. request(1+)) that thread will see the timer and try
-                            // to stop it.
+                            // The CAS ensures if another thread changes demand concurrently, the value is visible.
+                            // Here is an example race condition we are preventing:
+                            // Thread 1: `.onNext(..)`, startTimer, read timerCancellable as null
+                            // Thread 2: `.request(1)`, stopTimer, read timerCancellable as null
+                            // Thread 1: timerCancellable.CAS(null, null), read demand=0 (STATE NOT VISIBLE YET!)
+                            // Thread 2: timerCancellable.CAS(null, null), return
+                            // Thread 1: demand.CAS(0, 1) -> fail, re-read demand=1, nextTimer.cancel(), return
                             break;
                         }
                     }
