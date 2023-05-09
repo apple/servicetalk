@@ -140,10 +140,9 @@ final class TimeoutDemandPublisher<T> extends AbstractNoHandleSubscribePublisher
                 if (timerCancellableUpdater.compareAndSet(this, cancellable, nextTimer)) {
                     assert cancellable == null;
                     // We don't atomically manipulate the `demand` and set the timer so we can get the following race:
-                    // Thread1: `.onNext(..)` call decrements demand to 0 and enters the top of `startTimer()`, pauses.
-                    // Thread2: `.request(n > 0)`, increments demand from 0 -> n, enters `stopTimer(false)` and replaces
-                    // `null` with `null`.
-                    // Thread1: wakes and proceeds to successfully `startTimer()` despite demand being n > 0.
+                    // Thread1: onNext(..), demand.DEC() to 0, startTimer(), read timerCancellable = null
+                    // Thread2: request(n > 0), demand.INC() to 1, stopTimer(false), timerCancellable.CAS(null, null)
+                    // Thread1: timerCancellable.CAS(null, cancellable) -> timer running even though demand != 0
                     for (;;) {
                         final long currDemand = demand;
                         if (currDemand > 0) {
@@ -157,11 +156,10 @@ final class TimeoutDemandPublisher<T> extends AbstractNoHandleSubscribePublisher
                         } else if (demandUpdater.compareAndSet(this, currDemand, currDemand)) {
                             // The CAS ensures if another thread changes demand concurrently, the value is visible.
                             // Here is an example race condition we are preventing:
-                            // Thread 1: `.onNext(..)`, startTimer, read timerCancellable as null
-                            // Thread 2: `.request(1)`, stopTimer, read timerCancellable as null
+                            // Thread 1: onNext(..), startTimer, read timerCancellable=null
+                            // Thread 2: request(1), demand.INC(), stopTimer, timerCancellable.CAS(null, null), return
                             // Thread 1: timerCancellable.CAS(null, null), read demand=0 (STATE NOT VISIBLE YET!)
-                            // Thread 2: timerCancellable.CAS(null, null), return
-                            // Thread 1: demand.CAS(0, 1) -> fail, re-read demand=1, nextTimer.cancel(), return
+                            // Thread 1: demand.CAS(0, 0) -> fail, re-read demand=1, nextTimer.cancel(), return
                             break;
                         }
                     }
