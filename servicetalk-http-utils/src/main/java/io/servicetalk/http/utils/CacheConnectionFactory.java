@@ -94,7 +94,7 @@ final class CacheConnectionFactory<ResolvedAddress, C extends ListenableAsyncClo
                                         }
                                     } catch (Throwable cause) {
                                         if (result1 != null) {
-                                            LOGGER.debug("Unexpected error, closing connection={}", result1, cause);
+                                            LOGGER.debug("Unexpected error, closing connection='{}'", result1, cause);
                                             result1.closeAsync().subscribe();
                                         }
                                         subscriber.onError(cause);

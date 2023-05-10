@@ -187,7 +187,7 @@ final class LoggingHttpLifecycleObserver implements HttpLifecycleObserver {
             }
             assert responseResult != null;
             if (responseMetaData != null) {
-                logger.log("connection={} " +
+                logger.log("connection='{}' " +
                 "request=\"{} {} {}\" requestHeadersCount={} requestSize={} requestTrailersCount={} requestResult={} " +
                 "responseCode={} responseHeadersCount={} responseSize={} responseTrailersCount={} responseResult={} " +
                 "responseTime={}ms totalTime={}ms",
@@ -198,7 +198,7 @@ final class LoggingHttpLifecycleObserver implements HttpLifecycleObserver {
                 responseTrailersCount, unwrapResult(responseResult), responseTimeMs, durationMs(startTime),
                 combine(responseResult, requestResult));
             } else {
-                logger.log("connection={} " +
+                logger.log("connection='{}' " +
                 "request=\"{} {} {}\" requestHeadersCount={} requestSize={} requestTrailersCount={} requestResult={} " +
                 "responseResult={} responseTime={}ms totalTime={}ms",
                 connInfo == null ? "unknown" : connInfo,

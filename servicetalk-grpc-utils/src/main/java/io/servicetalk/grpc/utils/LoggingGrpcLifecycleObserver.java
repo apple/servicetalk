@@ -189,7 +189,7 @@ final class LoggingGrpcLifecycleObserver implements GrpcLifecycleObserver {
                 requestResult = Result.cancelled;
             }
             if (responseMetaData != null) {
-                logger.log("connection={} " +
+                logger.log("connection='{}' " +
                 "request=\"{} {} {}\" requestHeadersCount={} requestSize={} requestTrailersCount={} requestResult={} " +
                 "responseCode={} responseHeadersCount={} responseSize={} responseTrailersCount={} grpcStatus={} " +
                 "responseResult={} responseTime={}ms totalTime={}ms",
@@ -200,7 +200,7 @@ final class LoggingGrpcLifecycleObserver implements GrpcLifecycleObserver {
                 responseTrailersCount, grpcStatus, unwrapResult(responseResult), responseTimeMs, durationMs(startTime),
                 combine(responseResult, requestResult));
             } else {
-                logger.log("connection={} " +
+                logger.log("connection='{}' " +
                 "request=\"{} {} {}\" requestHeadersCount={} requestSize={} requestTrailersCount={} requestResult={} " +
                 "responseResult={} responseTime={}ms totalTime={}ms",
                 connInfo == null ? "unknown" : connInfo,

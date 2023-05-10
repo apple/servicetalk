@@ -76,18 +76,18 @@ public final class HttpExceptionMapperServiceFilter implements StreamingHttpServ
         final HttpResponseStatus status;
         if (cause instanceof RejectedExecutionException) {
             status = SERVICE_UNAVAILABLE;
-            LOGGER.error("Task rejected by service processing for connection={}, request='{} {} {}'. Returning: {}",
+            LOGGER.error("Task rejected by service processing for connection='{}', request='{} {} {}'. Returning: {}",
                     ctx, request.method(), request.requestTarget(), request.version(), status, cause);
         } else if (cause instanceof SerializationException) {
             // It is assumed that a failure occurred when attempting to deserialize the request.
             status = UNSUPPORTED_MEDIA_TYPE;
-            LOGGER.error("Failed to deserialize or serialize for connection={}, request='{} {} {}'. Returning: {}",
+            LOGGER.error("Failed to deserialize or serialize for connection='{}', request='{} {} {}'. Returning: {}",
                     ctx, request.method(), request.requestTarget(), request.version(), status, cause);
         } else if (cause instanceof PayloadTooLargeException) {
             status = PAYLOAD_TOO_LARGE;
         } else {
             status = INTERNAL_SERVER_ERROR;
-            LOGGER.error("Unexpected exception during service processing for connection={}, request='{} {} {}'. " +
+            LOGGER.error("Unexpected exception during service processing for connection='{}', request='{} {} {}'. " +
                             "Trying to return: {}", ctx, request.method(), request.requestTarget(), request.version(),
                     status, cause);
         }
