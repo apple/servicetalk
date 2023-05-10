@@ -54,13 +54,13 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.context.api.ContextMap.Key.newKey;
 import static io.servicetalk.http.api.HttpExecutionStrategies.offloadNone;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
+import static io.servicetalk.http.netty.AsyncContextHttpFilterVerifier.assertAsyncContext;
 import static io.servicetalk.http.netty.HttpClients.forResolvedAddress;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1;
+import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.lang.Thread.currentThread;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -151,13 +151,13 @@ abstract class AbstractHttpServiceAsyncContextTest {
              StreamingHttpConnection connection = client.reserveConnection(client.get("/")).toFuture().get()) {
 
             makeClientRequestWithId(connection, "1");
-            assertThat("Error queue is not empty!", errorQueue, empty());
+            assertNoAsyncErrors(errorQueue);
         }
     }
 
     private StreamingHttpServiceFilterFactory filterFactory(final boolean useImmediate,
-                                                                   final boolean asyncFilter,
-                                                                   final Queue<Throwable> errorQueue) {
+                                                            final boolean asyncFilter,
+                                                            final Queue<Throwable> errorQueue) {
         return service -> new StreamingHttpServiceFilter(service) {
             @Override
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
@@ -181,7 +181,7 @@ abstract class AbstractHttpServiceAsyncContextTest {
                 final StreamingHttpRequest filteredRequest = request.transformMessageBody(pub ->
                         pub.afterSubscriber(assertAsyncContextSubscriber(requestId, errorQueue)));
                 return delegate().handle(ctx, filteredRequest, factory).map(resp -> {
-                            assertAsyncContext(requestId, errorQueue);
+                            assertAsyncContext(K1, requestId, errorQueue);
                             return resp.transformMessageBody(pub ->
                                     pub.afterSubscriber(assertAsyncContextSubscriber(requestId, errorQueue)));
                         }
@@ -196,32 +196,24 @@ abstract class AbstractHttpServiceAsyncContextTest {
         return () -> new PublisherSource.Subscriber<Object>() {
             @Override
             public void onSubscribe(final PublisherSource.Subscription subscription) {
-                assertAsyncContext(requestId, errorQueue);
+                assertAsyncContext(K1, requestId, errorQueue);
             }
 
             @Override
             public void onNext(final Object o) {
-                assertAsyncContext(requestId, errorQueue);
+                assertAsyncContext(K1, requestId, errorQueue);
             }
 
             @Override
             public void onError(final Throwable throwable) {
-                assertAsyncContext(requestId, errorQueue);
+                assertAsyncContext(K1, requestId, errorQueue);
             }
 
             @Override
             public void onComplete() {
-                assertAsyncContext(requestId, errorQueue);
+                assertAsyncContext(K1, requestId, errorQueue);
             }
         };
-    }
-
-    private static void assertAsyncContext(@Nullable CharSequence requestId, Queue<Throwable> errorQueue) {
-        CharSequence k1Value = AsyncContext.get(K1);
-        if (requestId != null && !requestId.equals(k1Value)) {
-            errorQueue.add(new AssertionError("AsyncContext[" + K1 + "]=[" + k1Value +
-                    "], expected=[" + requestId + "]"));
-        }
     }
 
     @Test

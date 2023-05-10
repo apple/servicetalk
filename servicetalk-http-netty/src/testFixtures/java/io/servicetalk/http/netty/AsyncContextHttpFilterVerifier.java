@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.context.api.ContextMap.Key.newKey;
@@ -58,13 +59,13 @@ import static org.hamcrest.Matchers.is;
  */
 public final class AsyncContextHttpFilterVerifier {
 
-    private static final Key<String> K1 = newKey("k1", String.class);
-    private static final Key<String> K2 = newKey("k2", String.class);
-    private static final Key<String> K3 = newKey("k3", String.class);
+    public static final Key<String> K1 = newKey("k1", String.class);
+    public static final Key<String> K2 = newKey("k2", String.class);
+    public static final Key<String> K3 = newKey("k3", String.class);
 
-    private static final String V1 = "v1";
-    private static final String V2 = "v2";
-    private static final String V3 = "v3";
+    public static final String V1 = "v1";
+    public static final String V2 = "v2";
+    public static final String V3 = "v3";
 
     private AsyncContextHttpFilterVerifier() {
     }
@@ -81,7 +82,7 @@ public final class AsyncContextHttpFilterVerifier {
         final List<String> payload = singletonList("Hello World");
 
         final ServerContext serverContext = forAddress(localAddress(0))
-                .appendServiceFilter(asyncContextAssertionFilter(errors))
+                .appendServiceFilter(new AsyncContextAssertionFilter(errors))
                 .appendServiceFilter(filter)
                 .listenStreamingAndAwait(asyncContextRequestHandler(errors));
 
@@ -123,6 +124,7 @@ public final class AsyncContextHttpFilterVerifier {
                         public void onSubscribe(final PublisherSource.Subscription subscription) {
                             assertAsyncContext(K1, V1, errorQueue);
                             assertAsyncContext(K2, V2, errorQueue);
+                            assertAsyncContext(K3, null, errorQueue);
                         }
 
                         @Override
@@ -151,30 +153,87 @@ public final class AsyncContextHttpFilterVerifier {
         };
     }
 
-    private static <T> void assertAsyncContext(final Key<T> key, final T expectedValue,
-                                               final Queue<Throwable> errorQueue) {
+    /**
+     * Asserts that a certain {@link Key} is present in {@link AsyncContext} with the expected value.
+     *
+     * @param key {@link Key} to verify
+     * @param expectedValue value to expect or {@code null} if not expected
+     * @param errorQueue {@link Queue} to add an {@link AssertionError} in case the assertion fails
+     * @param <T> type of the {@link Key}
+     */
+    public static <T> void assertAsyncContext(final Key<T> key, @Nullable final T expectedValue,
+                                              final Queue<Throwable> errorQueue) {
         final T actualValue = AsyncContext.get(key);
-        if (!expectedValue.equals(actualValue)) {
+        if ((expectedValue == null && actualValue != null) ||
+                (expectedValue != null && !expectedValue.equals(actualValue))) {
             AssertionError e = new AssertionError("unexpected value for " + key + ": " +
                     actualValue + ", expected: " + expectedValue);
             errorQueue.add(e);
         }
     }
 
-    private static StreamingHttpServiceFilterFactory asyncContextAssertionFilter(
-            final BlockingQueue<Throwable> errorQueue) {
-        return service -> new StreamingHttpServiceFilter(service) {
-            @Override
-            public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
-                                                        final StreamingHttpRequest request,
-                                                        final StreamingHttpResponseFactory responseFactory) {
-                return super.handle(ctx, request, responseFactory).liftSync(
-                        new BeforeFinallyHttpOperator(() -> {
-                            assertAsyncContext(K1, V1, errorQueue);
-                            assertAsyncContext(K2, V2, errorQueue);
-                            assertAsyncContext(K3, V3, errorQueue);
-                        })).shareContextOnSubscribe();
-            }
-        };
+    /**
+     * A filter that asserts presense of {@link #K1}, {@link #K2}, and {@link #K3} in {@link AsyncContext}.
+     */
+    public static final class AsyncContextAssertionFilter implements StreamingHttpServiceFilterFactory {
+
+        final Queue<Throwable> errorQueue;
+        private final boolean lazyPayload;
+        private final boolean hasK2;
+        private final boolean hasK3;
+
+        /**
+         * Creates a new instance.
+         *
+         * @param errorQueue {@link Queue} to add an {@link AssertionError} in case an assertion fails
+         */
+        public AsyncContextAssertionFilter(final Queue<Throwable> errorQueue) {
+            this(errorQueue, true, true, true);
+        }
+
+        /**
+         * Creates a new instance.
+         *
+         * @param errorQueue {@link Queue} to add an {@link AssertionError} in case an assertion fails
+         * @param lazyPayload {@code true} if the target service consumes request payload body lazily
+         * @param hasK2 {@code true} if the target service sets {@link #K2} before completion of the response meta-data
+         * @param hasK3 {@code true} if the target service sets {@link #K3} before completion of the response payload
+         */
+        public AsyncContextAssertionFilter(final Queue<Throwable> errorQueue,
+                                           final boolean lazyPayload, final boolean hasK2, final boolean hasK3) {
+            this.errorQueue = errorQueue;
+            this.lazyPayload = lazyPayload;
+            this.hasK2 = hasK2;
+            this.hasK3 = hasK3;
+        }
+
+        @Override
+        public StreamingHttpServiceFilter create(StreamingHttpService service) {
+            return new StreamingHttpServiceFilter(service) {
+                @Override
+                public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
+                                                            final StreamingHttpRequest request,
+                                                            final StreamingHttpResponseFactory responseFactory) {
+                    assertAsyncContext(K1, null, errorQueue);
+                    assertAsyncContext(K2, null, errorQueue);
+                    assertAsyncContext(K3, null, errorQueue);
+                    return super.handle(ctx, request.transformMessageBody(p -> p.beforeFinally(() -> {
+                                assertAsyncContext(K1, lazyPayload ? V1 : null, errorQueue);
+                                assertAsyncContext(K2, null, errorQueue);
+                                assertAsyncContext(K3, null, errorQueue);
+                            })), responseFactory)
+                            .beforeOnSuccess(__ -> {
+                                assertAsyncContext(K1, V1, errorQueue);
+                                assertAsyncContext(K2, hasK2 ? V2 : null, errorQueue);
+                                assertAsyncContext(K3, null, errorQueue);
+                            })
+                            .liftSync(new BeforeFinallyHttpOperator(() -> {
+                                assertAsyncContext(K1, V1, errorQueue);
+                                assertAsyncContext(K2, hasK2 ? V2 : null, errorQueue);
+                                assertAsyncContext(K3, hasK3 ? V3 : null, errorQueue);
+                            })).shareContextOnSubscribe();
+                }
+            };
+        }
     }
 }

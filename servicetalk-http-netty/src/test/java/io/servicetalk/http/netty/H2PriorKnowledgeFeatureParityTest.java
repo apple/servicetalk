@@ -25,7 +25,6 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Processors;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.context.api.ContextMap;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.DefaultHttpCookiePair;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
@@ -140,7 +139,6 @@ import static io.servicetalk.concurrent.api.Processors.newPublisherProcessor;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.context.api.ContextMap.Key.newKey;
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
 import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
@@ -160,6 +158,10 @@ import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializers.textSerializerUtf8;
 import static io.servicetalk.http.netty.AbstractStreamingHttpConnection.MAX_CONCURRENCY_NO_OFFLOADING;
+import static io.servicetalk.http.netty.AsyncContextHttpFilterVerifier.K1;
+import static io.servicetalk.http.netty.AsyncContextHttpFilterVerifier.K2;
+import static io.servicetalk.http.netty.AsyncContextHttpFilterVerifier.K3;
+import static io.servicetalk.http.netty.AsyncContextHttpFilterVerifier.assertAsyncContext;
 import static io.servicetalk.http.netty.CloseUtils.onGracefulClosureStarted;
 import static io.servicetalk.http.netty.H2ToStH1Utils.COOKIE_STRICT_RFC_6265;
 import static io.servicetalk.http.netty.H2ToStH1Utils.PROXY_CONNECTION;
@@ -212,9 +214,6 @@ class H2PriorKnowledgeFeatureParityTest {
     private static final CharSequence[] CONNECTION_HEADERS = {CONNECTION_HEADER1, CONNECTION_HEADER2,
             CONNECTION_HEADER3, CONNECTION_HEADER4};
     private static final String EXPECT_FAIL_HEADER = "please_fail_expect";
-    private static final ContextMap.Key<String> K1 = newKey("k1", String.class);
-    private static final ContextMap.Key<String> K2 = newKey("k2", String.class);
-    private static final ContextMap.Key<String> K3 = newKey("k3", String.class);
     private EventLoopGroup serverEventLoopGroup;
     private HttpExecutionStrategy clientExecutionStrategy;
     private boolean h2PriorKnowledge;
@@ -2007,16 +2006,6 @@ class H2PriorKnowledgeFeatureParityTest {
                 });
             });
         });
-    }
-
-    private static <T> void assertAsyncContext(ContextMap.Key<T> key, T expectedValue,
-                                               Queue<Throwable> errorQueue) {
-        T actualValue = AsyncContext.get(key);
-        if (!expectedValue.equals(actualValue)) {
-            AssertionError e = new AssertionError("unexpected value for " + key + ": " +
-                    actualValue + " expected: " + expectedValue);
-            errorQueue.add(e);
-        }
     }
 
     private static final class TestConnectionFilter extends StreamingHttpConnectionFilter {

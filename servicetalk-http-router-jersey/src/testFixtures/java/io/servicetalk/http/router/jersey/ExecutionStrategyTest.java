@@ -80,7 +80,7 @@ final class ExecutionStrategyTest extends AbstractJerseyStreamingHttpServiceTest
     static final ExecutorExtension<Executor> ROUTE_EXEC =
             ExecutorExtension.withCachedExecutor("route").setClassLevel(true);
 
-    public static class TestApplication extends Application {
+    static class TestApplication extends Application {
         @Override
         public Set<Class<?>> getClasses() {
             // We load all test resources to ensure there's no unexpected interactions between different strategies
