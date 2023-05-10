@@ -40,6 +40,7 @@ import static java.lang.System.arraycopy;
 import static java.util.stream.IntStream.generate;
 import static java.util.stream.IntStream.of;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -80,6 +81,7 @@ class FromInputStreamPublisherTest {
 
         sub1.awaitSubscription().request(1);
         sub1.awaitOnComplete();
+        verify(inputStream).close();
     }
 
     @Test
@@ -92,6 +94,7 @@ class FromInputStreamPublisherTest {
 
         toSource(pub).subscribe(sub2);
         assertThat(sub2.awaitOnError(), instanceOf(DuplicateSubscribeException.class));
+        verify(inputStream).close();
     }
 
     @Test
@@ -104,6 +107,32 @@ class FromInputStreamPublisherTest {
 
         toSource(pub).subscribe(sub2);
         assertThat(sub2.awaitOnError(), instanceOf(DuplicateSubscribeException.class));
+        verify(inputStream).close();
+    }
+
+    @Test
+    void noDuplicateSubscriptionAfterCancel() throws Exception {
+        initEmptyStream();
+
+        toSource(pub).subscribe(sub1);
+        sub1.awaitSubscription().request(1);
+        sub1.awaitSubscription().cancel();
+
+        toSource(pub).subscribe(sub2);
+        assertThat(sub2.awaitOnError(), instanceOf(DuplicateSubscribeException.class));
+        verify(inputStream).close();
+    }
+
+    @Test
+    void closeStreamOnCompleteByDefault() throws Exception {
+        initEmptyStream();
+
+        toSource(pub).subscribe(sub1);
+        sub1.awaitSubscription().request(1);
+        assertThat(sub1.pollAllOnNext(), is(empty()));
+        sub1.awaitOnComplete();
+
+        verify(inputStream).close();
     }
 
     @Test
@@ -281,17 +310,18 @@ class FromInputStreamPublisherTest {
     }
 
     @Test
-    void consumeSimpleStream() {
+    void consumeSimpleStream() throws Exception {
         initChunkedStream(smallBuff, of(10, 0), of(10, 0));
         toSource(pub).subscribe(sub1);
         sub1.awaitSubscription().request(1); // smallBuff
         assertThat(sub1.takeOnNext(), is(smallBuff));
         sub1.awaitSubscription().request(1); // read EOF
         sub1.awaitOnComplete();
+        verify(inputStream).close();
     }
 
     @Test
-    void multiRequests() {
+    void multiRequests() throws Exception {
         initChunkedStream(smallBuff, of(8, 2, 0), of(8, 2, 0));
         byte[] first = new byte[8];
         arraycopy(smallBuff, 0, first, 0, 8);
@@ -306,6 +336,7 @@ class FromInputStreamPublisherTest {
         sub1.awaitSubscription().request(1);
         // read EOF
         sub1.awaitOnComplete();
+        verify(inputStream).close();
     }
 
     @Test

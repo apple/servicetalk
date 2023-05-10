@@ -99,6 +99,9 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
     /**
      * Returns a {@link BlockingStreamingHttpRequest} with its underlying payload set to {@code payloadBody}.
      * <p>
+     * After the request is sent, it owns the passed {@link InputStream}, meaning that the {@link InputStream} will be
+     * automatically closed when the request is finished.
+     * <p>
      * A best effort will be made to apply back pressure to the existing payload body which is being replaced. If this
      * default policy is not sufficient you can use {@link #transformPayloadBody(UnaryOperator)} for more fine grain
      * control.
