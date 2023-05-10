@@ -55,9 +55,12 @@ final class PublisherBuffer<T, B> extends AbstractAsynchronousPublisherOperator<
             return new Subscriber<T>() {
                 @Override
                 public void onSubscribe(final Subscription subscription) {
-                    subscription.cancel();
-                    deliverErrorFromSource(subscriber,
-                            new IllegalArgumentException("bufferSizeHint: " + bufferSizeHint + " (expected > 0)"));
+                    try {
+                        subscription.cancel();
+                    } finally {
+                        deliverErrorFromSource(subscriber,
+                                new IllegalArgumentException("bufferSizeHint: " + bufferSizeHint + " (expected > 0)"));
+                    }
                 }
 
                 @Override
@@ -211,19 +214,19 @@ final class PublisherBuffer<T, B> extends AbstractAsynchronousPublisherOperator<
         @Override
         public void onError(final Throwable t) {
             try {
-                state.boundariesTerminated(t, target);
-            } finally {
                 tSubscription.cancel();
+            } finally {
+                state.boundariesTerminated(t, target);
             }
         }
 
         @Override
         public void onComplete() {
             try {
+                tSubscription.cancel();
+            } finally {
                 state.boundariesTerminated(new IllegalStateException("Boundaries source completed unexpectedly."),
                         target);
-            } finally {
-                tSubscription.cancel();
             }
         }
     }

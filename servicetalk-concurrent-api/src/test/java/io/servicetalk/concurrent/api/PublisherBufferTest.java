@@ -45,6 +45,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -52,7 +53,6 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 
 class PublisherBufferTest {
-
     private static final int EMPTY_ACCUMULATOR_VAL = -1;
     static final int BUFFER_SIZE_HINT = 8;
     private final TestSubscription tSubscription = new TestSubscription("tSubscription");
@@ -575,6 +575,75 @@ class PublisherBufferTest {
         } finally {
             executor.closeAsync().toFuture().get();
         }
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void boundaryTerminalRetryRespectsSequential(boolean onError) throws InterruptedException {
+        final TestPublisherSubscriber<Integer> bufferSubscriber2 = new TestPublisherSubscriber<>();
+        final AtomicInteger subscribeCount1 = new AtomicInteger();
+        final TestSubscription tSubscription1 = new TestSubscription("tSubscription1");
+        final TestSubscription tSubscription2 = new TestSubscription("tSubscription2");
+        TestPublisher<Integer> testPublisher = new TestPublisher.Builder<Integer>()
+                .build(new SequentialPublisherSubscriberFunction<Integer>().andThen(
+                        sub -> {
+                            if (subscribeCount1.incrementAndGet() == 1) {
+                                sub.onSubscribe(tSubscription1);
+                            } else {
+                                sub.onSubscribe(tSubscription2);
+                            }
+                            return sub;
+                        }));
+
+        final TestSubscription bSubscription1 = new TestSubscription("bSubscription1");
+        final TestSubscription bSubscription2 = new TestSubscription("bSubscription2");
+        final TestPublisher<Accumulator<Integer, Integer>> boundaries1 =
+                new TestPublisher.Builder<Accumulator<Integer, Integer>>().disableAutoOnSubscribe().build(sub -> {
+                    sub.onSubscribe(bSubscription1);
+                    return sub;
+                });
+        final TestPublisher<Accumulator<Integer, Integer>> boundaries2 =
+                new TestPublisher.Builder<Accumulator<Integer, Integer>>().disableAutoOnSubscribe().build(sub -> {
+                    sub.onSubscribe(bSubscription2);
+                    return sub;
+                });
+
+        final AtomicInteger subscribeCount2 = new AtomicInteger();
+
+        toSource(defer(() ->
+                testPublisher.buffer(new TestBufferStrategy(
+                    subscribeCount2.incrementAndGet() == 1 ? boundaries1 : boundaries2, 1))
+            ).retry((count, cause) -> count <= 2)
+        ).subscribe(bufferSubscriber2);
+
+        bufferSubscriber2.awaitSubscription().request(1);
+        bSubscription1.awaitRequestN(1);
+        boundaries1.onNext(new SumAccumulator(boundaries1));
+        tSubscription1.awaitRequestN(1);
+        testPublisher.onNext(1);
+        assertThat(bufferSubscriber2.takeOnNext(), equalTo(1));
+
+        if (onError) {
+            boundaries1.onError(DELIBERATE_EXCEPTION);
+        } else {
+            boundaries1.onComplete();
+        }
+        tSubscription1.awaitCancelled();
+
+        bufferSubscriber2.awaitSubscription().request(3);
+        bSubscription2.awaitRequestN(3);
+        boundaries2.onNext(new SumAccumulator(boundaries2));
+        tSubscription2.awaitRequestN(1);
+        testPublisher.onNext(1);
+        assertThat(bufferSubscriber2.takeOnNext(), equalTo(1));
+        tSubscription2.awaitRequestN(2);
+        testPublisher.onNext(2);
+        assertThat(bufferSubscriber2.takeOnNext(), equalTo(2));
+        tSubscription2.awaitRequestN(3);
+        testPublisher.onNext(3);
+        assertThat(bufferSubscriber2.takeOnNext(), equalTo(3));
+        testPublisher.onComplete();
+        bufferSubscriber2.awaitOnComplete();
     }
 
     @Test
