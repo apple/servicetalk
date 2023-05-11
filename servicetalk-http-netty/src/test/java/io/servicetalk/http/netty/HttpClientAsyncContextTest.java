@@ -39,16 +39,15 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.CharSequences.newAsciiString;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.context.api.ContextMap.Key.newKey;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
+import static io.servicetalk.http.netty.AsyncContextHttpFilterVerifier.assertAsyncContext;
+import static io.servicetalk.test.resources.TestUtils.assertNoAsyncErrors;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class HttpClientAsyncContextTest {
@@ -69,7 +68,7 @@ class HttpClientAsyncContextTest {
                 .listenAndAwait((ctx, request, responseFactory) -> succeeded(responseFactory.ok()));
              StreamingHttpClient client = buildClient(useImmediate, errorQueue, serverContext).buildStreaming()) {
             makeClientRequestWithId(client, "1");
-            assertThat("Error queue is not empty!", errorQueue, empty());
+            assertNoAsyncErrors(errorQueue);
         }
     }
 
@@ -95,14 +94,6 @@ class HttpClientAsyncContextTest {
                 .toFuture().get();
     }
 
-    private static void assertAsyncContext(@Nullable CharSequence requestId, Queue<Throwable> errorQueue) {
-        CharSequence k1Value = AsyncContext.get(K1);
-        if (requestId != null && !requestId.equals(k1Value)) {
-            errorQueue.add(new AssertionError("AsyncContext[" + K1 + "]=[" + k1Value +
-                    "], expected=[" + requestId + "]"));
-        }
-    }
-
     private static final class TestStreamingHttpClientFilter extends StreamingHttpClientFilter {
         private final Queue<Throwable> errorQueue;
 
@@ -125,7 +116,7 @@ class HttpClientAsyncContextTest {
             } else {
                 hdrRequestId = request.headers().getAndRemove(CONSUMED_REQUEST_ID_HEADER);
                 if (hdrRequestId != null) {
-                    assertAsyncContext(hdrRequestId, errorQueue);
+                    assertAsyncContext(K1, hdrRequestId, errorQueue);
                 }
             }
             final CharSequence requestId = hdrRequestId;
@@ -133,46 +124,46 @@ class HttpClientAsyncContextTest {
                     pub.afterSubscriber(() -> new Subscriber<Object>() {
                         @Override
                         public void onSubscribe(final Subscription subscription) {
-                            assertAsyncContext(requestId, errorQueue);
+                            assertAsyncContext(K1, requestId, errorQueue);
                         }
 
                         @Override
                         public void onNext(final Object o) {
-                            assertAsyncContext(requestId, errorQueue);
+                            assertAsyncContext(K1, requestId, errorQueue);
                         }
 
                         @Override
                         public void onError(final Throwable throwable) {
-                            assertAsyncContext(requestId, errorQueue);
+                            assertAsyncContext(K1, requestId, errorQueue);
                         }
 
                         @Override
                         public void onComplete() {
-                            assertAsyncContext(requestId, errorQueue);
+                            assertAsyncContext(K1, requestId, errorQueue);
                         }
                     }));
             return delegate.request(requestWithPayloadAssert).map(resp -> {
-                assertAsyncContext(requestId, errorQueue);
+                assertAsyncContext(K1, requestId, errorQueue);
                 return resp.transformMessageBody(pub ->
                         pub.afterSubscriber(() -> new Subscriber<Object>() {
                             @Override
                             public void onSubscribe(final Subscription subscription) {
-                                assertAsyncContext(requestId, errorQueue);
+                                assertAsyncContext(K1, requestId, errorQueue);
                             }
 
                             @Override
                             public void onNext(final Object o) {
-                                assertAsyncContext(requestId, errorQueue);
+                                assertAsyncContext(K1, requestId, errorQueue);
                             }
 
                             @Override
                             public void onError(final Throwable throwable) {
-                                assertAsyncContext(requestId, errorQueue);
+                                assertAsyncContext(K1, requestId, errorQueue);
                             }
 
                             @Override
                             public void onComplete() {
-                                assertAsyncContext(requestId, errorQueue);
+                                assertAsyncContext(K1, requestId, errorQueue);
                             }
                         }));
             });

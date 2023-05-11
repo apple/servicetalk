@@ -41,9 +41,9 @@ import static java.util.stream.IntStream.range;
 import static javax.ws.rs.core.MediaType.SERVER_SENT_EVENTS;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.isEmptyString;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
@@ -59,7 +59,7 @@ class AsynchronousResourceTest extends AbstractResourceTest {
         setUp(serverNoOffloads, api);
         runTwiceToEnsureEndpointCache(() -> {
             StreamingHttpResponse res =
-                    sendAndAssertResponse(get("/completable"), NO_CONTENT, null, isEmptyString(), __ -> null);
+                    sendAndAssertResponse(get("/completable"), NO_CONTENT, null, is(emptyString()), __ -> null);
             assertThat(res.headers().get("X-Foo-Prop"), is(newAsciiString("barProp")));
 
             res = sendAndAssertResponse(get("/completable?fail=true"), INTERNAL_SERVER_ERROR, null, "");
@@ -85,7 +85,7 @@ class AsynchronousResourceTest extends AbstractResourceTest {
     void headStringSingle(final boolean serverNoOffloads, final RouterApi api) {
         setUp(serverNoOffloads, api);
         runTwiceToEnsureEndpointCache(() -> {
-            sendAndAssertResponse(head("/single-string"), OK, TEXT_PLAIN, isEmptyString(), 4);
+            sendAndAssertResponse(head("/single-string"), OK, TEXT_PLAIN, is(emptyString()), 4);
 
             sendAndAssertNoResponse(head("/single-string?fail=true"), INTERNAL_SERVER_ERROR);
         });
@@ -97,7 +97,7 @@ class AsynchronousResourceTest extends AbstractResourceTest {
         setUp(serverNoOffloads, api);
         runTwiceToEnsureEndpointCache(() -> {
             StreamingHttpResponse res =
-                    sendAndAssertResponse(head("/completable"), NO_CONTENT, null, isEmptyString(), __ -> null);
+                    sendAndAssertResponse(head("/completable"), NO_CONTENT, null, is(emptyString()), __ -> null);
             assertThat(res.headers().get("X-Foo-Prop"), is(newAsciiString("barProp")));
 
             res = sendAndAssertResponse(head("/completable?fail=true"), INTERNAL_SERVER_ERROR, null, "");
@@ -136,7 +136,7 @@ class AsynchronousResourceTest extends AbstractResourceTest {
     void headResponseSingle(final boolean serverNoOffloads, final RouterApi api) {
         setUp(serverNoOffloads, api);
         runTwiceToEnsureEndpointCache(() -> {
-            sendAndAssertResponse(head("/single-response"), ACCEPTED, TEXT_PLAIN, isEmptyString(), 4);
+            sendAndAssertResponse(head("/single-response"), ACCEPTED, TEXT_PLAIN, is(emptyString()), 4);
 
             sendAndAssertNoResponse(head("/single-response?fail=true"), INTERNAL_SERVER_ERROR);
         });
@@ -158,7 +158,7 @@ class AsynchronousResourceTest extends AbstractResourceTest {
         runTwiceToEnsureEndpointCache(
                 () -> sendAndAssertResponse(
                         head("/single-response-pub-entity?i=206"), PARTIAL_CONTENT, TEXT_PLAIN,
-                        isEmptyString(), 8));
+                        is(emptyString()), 8));
     }
 
     @ParameterizedTest(name = "{1} server-no-offloads = {0}")
@@ -178,7 +178,7 @@ class AsynchronousResourceTest extends AbstractResourceTest {
     void headMapSingle(final boolean serverNoOffloads, final RouterApi api) {
         setUp(serverNoOffloads, api);
         runTwiceToEnsureEndpointCache(() -> {
-            sendAndAssertResponse(head("/single-map"), OK, APPLICATION_JSON, isEmptyString(),
+            sendAndAssertResponse(head("/single-map"), OK, APPLICATION_JSON, is(emptyString()),
                     getJsonResponseContentLengthExtractor().andThen(i -> i != null ? 14 : null));
 
             sendAndAssertNoResponse(head("/single-map?fail=true"), INTERNAL_SERVER_ERROR);
@@ -202,7 +202,7 @@ class AsynchronousResourceTest extends AbstractResourceTest {
     void headPojoSingle(final boolean serverNoOffloads, final RouterApi api) {
         setUp(serverNoOffloads, api);
         runTwiceToEnsureEndpointCache(() -> {
-            sendAndAssertResponse(head("/single-pojo"), OK, APPLICATION_JSON, isEmptyString(),
+            sendAndAssertResponse(head("/single-pojo"), OK, APPLICATION_JSON, is(emptyString()),
                     getJsonResponseContentLengthExtractor().andThen(i -> i != null ? 29 : null));
 
             sendAndAssertNoResponse(head("/single-pojo?fail=true"), INTERNAL_SERVER_ERROR);
@@ -326,7 +326,7 @@ class AsynchronousResourceTest extends AbstractResourceTest {
         setUp(serverNoOffloads, api);
         assumeOffloads(AssumeOffloadsReason.COMPLETION_STAGE);
         runTwiceToEnsureEndpointCache(() -> {
-            sendAndAssertResponse(get("/void-completion"), NO_CONTENT, null, isEmptyString(), __ -> null);
+            sendAndAssertResponse(get("/void-completion"), NO_CONTENT, null, is(emptyString()), __ -> null);
             // Jersey is inconsistent: should be NO_CONTENT
             sendAndAssertNoResponse(get("/void-completion?defer=true"), OK);
 
@@ -521,7 +521,7 @@ class AsynchronousResourceTest extends AbstractResourceTest {
             // Jersey's OutboundEventWriter ignores the lack of a MessageBodyWriter for the event (an error is logged
             // but no feedback is provided to the client side)
             sendAndAssertResponse(get("/sse/unsupported"), OK, newAsciiString(SERVER_SENT_EVENTS),
-                    isEmptyString(), __ -> null);
+                    is(emptyString()), __ -> null);
         });
     }
 

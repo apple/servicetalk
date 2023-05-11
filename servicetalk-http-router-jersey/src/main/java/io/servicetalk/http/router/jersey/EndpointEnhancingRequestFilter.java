@@ -228,8 +228,8 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
                 throw new IllegalStateException("Failed to suspend request processing");
             }
 
-            final Single<Response> responseSingle = callOriginalEndpoint(requestProcessingCtx, effectiveRouteStrategy)
-                    .flatMap(this::handleContainerResponse)
+            Single<Response> responseSingle = callOriginalEndpoint(requestProcessingCtx, effectiveRouteStrategy)
+                    .flatMap(this::handleContainerResponseShareContext)
                     .liftSync(subscriber -> new SingleSource.Subscriber<Response>() {
                         @Override
                         public void onSubscribe(final Cancellable cancellable) {
@@ -258,16 +258,14 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
                         }
                     });
 
-            final Cancellable cancellable;
-            if (effectiveRouteStrategy != null) {
+            if (effectiveRouteStrategy != null && effectiveRouteStrategy.isSendOffloaded()) {
                 assert executor != null;
-                cancellable = (effectiveRouteStrategy.isSendOffloaded() ?
-                        responseSingle.subscribeOn(executor, IoThreadFactory.IoThread::currentThreadIsIoThread) :
-                        responseSingle)
-                        .subscribe(asyncContext::resume);
-            } else {
-                cancellable = responseSingle.subscribe(asyncContext::resume);
+                responseSingle = responseSingle
+                        .subscribeOn(executor, IoThreadFactory.IoThread::currentThreadIsIoThread);
             }
+            final Cancellable cancellable = responseSingle
+                    .shareContextOnSubscribe()
+                    .subscribe(asyncContext::resume);
             setRequestCancellable(cancellable, requestProcessingCtx.request());
 
             // Return null on current thread since response will be delivered asynchronously
@@ -347,6 +345,10 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
                     .beforeFinally(requestContext::release);
         }
 
+        private Single<Response> handleContainerResponseShareContext(final ContainerResponse res) {
+            return handleContainerResponse(res).shareContextOnSubscribe();
+        }
+
         protected Single<Response> handleContainerResponse(final ContainerResponse res) {
             return succeeded(new OutboundJaxrsResponse(res.getStatusInfo(), res.getWrappedMessageContext()));
         }
@@ -405,7 +407,7 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
 
         @Override
         protected Single<Response> handleSourceResponse(final Completable source, final ContainerResponse res) {
-            return source.concat(defer(() -> succeeded(noContent().build())));
+            return source.toSingle().map(__ -> noContent().build());
         }
     }
 

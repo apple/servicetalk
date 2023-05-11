@@ -40,7 +40,10 @@ import org.junit.platform.suite.api.SuiteDisplayName;
         // Execution strategy tests
         ExecutionStrategyConfigurationFailuresTest.class,
         ExecutionStrategyTest.class,
-        MixedModeResourceTest.class
+        MixedModeResourceTest.class,
+
+        // AsyncContext
+        AsyncContextTest.class
 })
 public abstract class BaseJerseyRouterTestSuite {
     // NOOP

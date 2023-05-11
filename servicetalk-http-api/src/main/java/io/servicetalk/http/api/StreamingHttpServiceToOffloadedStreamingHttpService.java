@@ -73,7 +73,8 @@ public class StreamingHttpServiceToOffloadedStreamingHttpService implements Stre
                 final StreamingHttpRequest r = request;
                 resp = useExecutor.submit(
                                 () -> delegate.handle(wrappedCtx, r, responseFactory).shareContextOnSubscribe())
-                        // exec.submit() returns a Single<Single<response>>, so flatten nested Single.
+                        // exec.submit() returns a Single<Single<StreamingHttpResponse>>, so flatten nested Single.
+                        // No need to apply shareContextOnSubscribe() again because unwrapped Single already shares ctx.
                         .flatMap(identity());
             } else {
                 resp = delegate.handle(wrappedCtx, request, responseFactory);
