@@ -81,7 +81,7 @@ import static io.servicetalk.http.netty.HeaderUtils.removeTransferEncodingChunke
 import static io.servicetalk.http.netty.HttpKeepAlive.shouldClose;
 import static java.lang.Character.isISOControl;
 import static java.lang.Character.isWhitespace;
-import static java.lang.Integer.parseUnsignedInt;
+import static java.lang.Long.parseUnsignedLong;
 import static java.lang.Math.min;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Objects.requireNonNull;
@@ -418,7 +418,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                 }
                 onDataSeen();
                 final int lfIndex = crlfIndex(longLFIndex);
-                int chunkSize = getChunkSize(buffer, lfIndex);
+                long chunkSize = getChunkSize(buffer, lfIndex);
                 consumeCRLF(buffer, lfIndex);
                 this.chunkSize = chunkSize;
                 if (chunkSize == 0) {
@@ -429,8 +429,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                 // fall-through
             }
             case READ_CHUNKED_CONTENT: {
-                assert chunkSize <= Integer.MAX_VALUE;
-                final int toRead = min((int) chunkSize, buffer.readableBytes());
+                final int toRead = min((int) min(Integer.MAX_VALUE, chunkSize), buffer.readableBytes());
                 if (toRead == 0) {
                     return;
                 }
@@ -799,7 +798,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         }
     }
 
-    private static int getChunkSize(final ByteBuf buffer, final int lfIndex) {
+    private static long getChunkSize(final ByteBuf buffer, final int lfIndex) {
         if (lfIndex - 2 < buffer.readerIndex()) {
             throw new DecoderException("Chunked encoding specified but chunk-size not found");
         }
@@ -807,7 +806,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                 lfIndex - 1 - buffer.readerIndex(), US_ASCII));
     }
 
-    private static int getChunkSize(String hex) {
+    private static long getChunkSize(String hex) {
         hex = hex.trim();
         for (int i = 0; i < hex.length(); ++i) {
             char c = hex.charAt(i);
@@ -818,7 +817,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         }
 
         try {
-            return parseUnsignedInt(hex, 16);
+            return parseUnsignedLong(hex, 16);
         } catch (NumberFormatException cause) {
             throw invalidChunkSize(hex, cause);
         }
