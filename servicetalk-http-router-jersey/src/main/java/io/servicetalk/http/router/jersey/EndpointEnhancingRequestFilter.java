@@ -20,7 +20,6 @@ import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.DelegatingConnectionContext;
@@ -56,11 +55,8 @@ import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 
-import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
-import static io.servicetalk.concurrent.api.Single.defer;
-import static io.servicetalk.concurrent.api.Single.failed;
+import static io.servicetalk.concurrent.api.Single.fromSupplier;
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.router.jersey.JerseyRouteExecutionStrategyUtils.getRouteExecutionStrategy;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.getRequestBufferPublisherInputStream;
@@ -286,13 +282,7 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
                 final RequestProcessingContext requestProcessingCtx,
                 @Nullable final HttpExecutionStrategy effectiveRouteStrategy) {
             if (effectiveRouteStrategy == null) {
-                return defer(() -> {
-                    try {
-                        return succeeded(delegate.apply(requestProcessingCtx));
-                    } catch (final Throwable t) {
-                        return failed(t);
-                    }
-                });
+                return fromSupplier(() -> delegate.apply(requestProcessingCtx));
             }
             final RequestContext requestContext = requestScope.referenceCurrent();
             final ContainerRequest request = requestProcessingCtx.request();
@@ -320,28 +310,7 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
 
             return (effectiveRouteStrategy.isMetadataReceiveOffloaded() ?
                     useExecutor.submit(() -> service.apply(useExecutor)) :
-                    new SubscribableSingle<ContainerResponse>() {
-
-                        @Override
-                        protected void handleSubscribe(
-                                final SingleSource.Subscriber<? super ContainerResponse> subscriber) {
-                            try {
-                                subscriber.onSubscribe(IGNORE_CANCEL);
-                            } catch (Throwable cause) {
-                                handleExceptionFromOnSubscribe(subscriber, cause);
-                                return;
-                            }
-
-                            final ContainerResponse result;
-                            try {
-                                result = service.apply(useExecutor);
-                            } catch (Throwable t) {
-                                subscriber.onError(t);
-                                return;
-                            }
-                            subscriber.onSuccess(result);
-                        }
-                    })
+                    fromSupplier(() -> service.apply(useExecutor)))
                     .beforeFinally(requestContext::release);
         }
 
