@@ -47,6 +47,7 @@ import java.util.function.IntFunction;
 import java.util.function.IntPredicate;
 import java.util.function.LongConsumer;
 import java.util.function.LongSupplier;
+import java.util.function.ObjLongConsumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
@@ -1799,6 +1800,57 @@ public abstract class Publisher<T> {
      */
     public final Publisher<T> whenCancel(Runnable onCancel) {
         return beforeCancel(onCancel);
+    }
+
+    /**
+     * Validate the outstanding demand ({@link Subscription#request(long)} minus
+     * {@link Subscriber#onNext(Object)}) does not go negative. This can be a useful diagnostic tool if custom operators
+     * or async sources are in use to ensure outstanding demand is always non-negative.
+     * <p>
+     * Invalid {@link Subscription#request(long)} maybe propagated by this operator, and is still the responsibility
+     * of upstream source to terminate in error.
+     * <p>
+     * Here is pseudo-code demonstrating the functionality of this operator:
+     * <pre>{@code
+     *   request(1);
+     *   onNext(t1);
+     *   onNext(t2); // throws an Exception because outstanding demand is 0
+     * }</pre>
+     * @return The new {@link Publisher}.
+     * @see #validateOutstandingDemand(ObjLongConsumer, LongBinaryConsumer)
+     */
+    public final Publisher<T> validateOutstandingDemand() {
+        return validateOutstandingDemand((next, demand) -> { }, (n, demand) -> { });
+    }
+
+    /**
+     * Validate the outstanding demand ({@link Subscription#request(long)} minus
+     * {@link Subscriber#onNext(Object)}) does not go negative. This can be a useful diagnostic tool if custom operators
+     * or async sources are in use to ensure outstanding demand is always non-negative.
+     * <p>
+     * ReactiveStreams specification allows {@link Subscriber} and {@link Subscription} to be concurrent, therefore the
+     * arguments of this function maybe invoked concurrently.
+     * <p>
+     * Invalid {@link Subscription#request(long)} maybe propagated by this operator, and is still the responsibility
+     * of upstream source to terminate in error.
+     * <p>
+     * Here is pseudo-code demonstrating the functionality of this operator:
+     * <pre>{@code
+     *   request(1); // calls requestConsumer(1, 1)
+     *   onNext(t1); // calls onNextConsumer(t1, 0)
+     *   onNext(t2); // calls onNextConsumer(t1, -1), throws an Exception because outstanding demand is 0
+     * }</pre>
+     * @param onNextConsumer Called when {@link Subscriber#onNext(Object)} is invoked with first argument is the signal
+     * and second argument is demand (after decrementing). This consumer is meant to be used for observability purposes,
+     * and is assumed to not throw.
+     * @param requestConsumer Called when {@link Subscription#request(long)} is invoked with first argument of {@code n}
+     * and second argument of current demand (after incrementing). This method may only be called if {@code n} is valid.
+     * This consumer is meant to be used for observability purposes, and is assumed to not throw.
+     * @return The new {@link Publisher}.
+     */
+    public final Publisher<T> validateOutstandingDemand(final ObjLongConsumer<T> onNextConsumer,
+                                                        final LongBinaryConsumer requestConsumer) {
+        return new ValidateDemandPublisher<>(this, onNextConsumer, requestConsumer);
     }
 
     /**
