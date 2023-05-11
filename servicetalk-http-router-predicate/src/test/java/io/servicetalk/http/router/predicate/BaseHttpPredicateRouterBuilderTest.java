@@ -39,7 +39,6 @@ import org.mockito.quality.Strictness;
 import org.mockito.stubbing.Answer;
 
 import java.util.Iterator;
-import java.util.Spliterator;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Executors.immediate;
@@ -117,10 +116,5 @@ public abstract class BaseHttpPredicateRouterBuilderTest {
     @SuppressWarnings("unchecked")
     <T> Answer<Iterator<T>> answerIteratorOf(final T... values) {
         return invocation -> asList(values).iterator();
-    }
-
-    @SuppressWarnings("unchecked")
-    <T> Answer<Spliterator<T>> answerSpliteratorOf(final T... values) {
-        return invocation -> asList(values).spliterator();
     }
 }

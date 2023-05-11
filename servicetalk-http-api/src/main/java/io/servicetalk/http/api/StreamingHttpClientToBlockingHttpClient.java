@@ -89,7 +89,6 @@ final class StreamingHttpClientToBlockingHttpClient implements BlockingHttpClien
     static final class ReservedStreamingHttpConnectionToReservedBlockingHttpConnection implements
                                                                                        ReservedBlockingHttpConnection {
         private final ReservedStreamingHttpConnection connection;
-        private final HttpExecutionStrategy strategy;
         private final HttpConnectionContext context;
         private final HttpExecutionContext executionContext;
         private final HttpRequestResponseFactory reqRespFactory;
@@ -105,7 +104,7 @@ final class StreamingHttpClientToBlockingHttpClient implements BlockingHttpClien
                 final HttpExecutionStrategy strategy,
                 final HttpRequestResponseFactory reqRespFactory) {
 
-            this.strategy = strategy;
+            requireNonNull(strategy);
             this.connection = requireNonNull(connection);
             final HttpConnectionContext originalCtx = connection.connectionContext();
             executionContext = new DelegatingHttpExecutionContext(connection.executionContext()) {

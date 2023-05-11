@@ -78,7 +78,6 @@ import static org.junit.jupiter.api.Assumptions.assumeFalse;
 class PredicateRouterOffloadingTest {
     private static final String IO_EXECUTOR_NAME_PREFIX = "io-executor";
     private static final String EXECUTOR_NAME_PREFIX = "router-executor";
-    private static final String GLOBAL_EXECUTOR_NAME_PREFIX = "servicetalk-global";
 
     @RegisterExtension
     final ExecutionContextExtension executionContextRule = new ExecutionContextExtension(() -> DEFAULT_ALLOCATOR,
