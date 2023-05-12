@@ -58,7 +58,7 @@
         <rect x="43.22302" y="985.1631" width="390" height="120" fill="white"/>
         <rect x="43.22302" y="985.1631" width="390" height="120" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
         <text transform="translate(48.22302 1034.1631)" fill="black">
-          <tspan font-family="Helvetica" font-size="18" fill="black" x="134.99805" y="18">Subscription</tspan>
+          <tspan font-family="Helvetica" font-size="18" fill="black" x="134.99805" y="18">Subscriber</tspan>
         </text>
       </g>
       <g id="Graphic_3" filter="url(#Shadow)">
@@ -132,7 +132,7 @@
         <rect x="820.4632" y="983.2047" width="390" height="120" fill="white"/>
         <rect x="820.4632" y="983.2047" width="390" height="120" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
         <text transform="translate(825.4632 1032.2047)" fill="black">
-          <tspan font-family="Helvetica" font-size="18" fill="black" x="142.98291" y="18">Subscriber</tspan>
+          <tspan font-family="Helvetica" font-size="18" fill="black" x="142.98291" y="18">Subscription</tspan>
         </text>
       </g>
       <g id="Graphic_80">
