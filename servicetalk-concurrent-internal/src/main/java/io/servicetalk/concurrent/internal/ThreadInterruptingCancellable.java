@@ -17,7 +17,8 @@ package io.servicetalk.concurrent.internal;
 
 import io.servicetalk.concurrent.Cancellable;
 
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import javax.annotation.Nullable;
 
 import static java.lang.Thread.interrupted;
 import static java.util.Objects.requireNonNull;
@@ -29,25 +30,38 @@ import static java.util.Objects.requireNonNull;
  * operation completes to avoid "spurious" thread interrupts.
  */
 public final class ThreadInterruptingCancellable implements Cancellable {
-    private static final AtomicIntegerFieldUpdater<ThreadInterruptingCancellable> statusUpdater =
-            AtomicIntegerFieldUpdater.newUpdater(ThreadInterruptingCancellable.class, "status");
-
-    @SuppressWarnings("unused")
-    private volatile int status;
-    private final Thread threadToInterrupt;
+    private static final AtomicReferenceFieldUpdater<ThreadInterruptingCancellable, Object> threadUpdater =
+            AtomicReferenceFieldUpdater.newUpdater(ThreadInterruptingCancellable.class, Object.class, "thread");
+    private static final Object CANCELLED = new Object();
+    private static final Object DONE = new Object();
+    @Nullable
+    private volatile Object thread;
 
     /**
      * Create a new instance.
      * @param threadToInterrupt The thread {@link Thread#interrupt() interrupt} in {@link #cancel()}.
      */
     public ThreadInterruptingCancellable(Thread threadToInterrupt) {
-        this.threadToInterrupt = requireNonNull(threadToInterrupt);
+        // thread is not final, so it is possible for the constructor to exit and this object to be used before
+        // thread state is initialized. To make this code safe we atomically set only if null.
+        // https://docs.oracle.com/javase/specs/jls/se8/html/jls-17.html#jls-17.5
+        if (!threadUpdater.compareAndSet(this, null, requireNonNull(threadToInterrupt))) {
+            handleInitFail(threadToInterrupt);
+        }
+    }
+
+    private void handleInitFail(Thread threadToInterrupt) {
+        if (thread == CANCELLED) {
+            threadToInterrupt.interrupt();
+        }
     }
 
     @Override
     public void cancel() {
-        if (statusUpdater.compareAndSet(this, 0, 1)) {
-            threadToInterrupt.interrupt();
+        final Object currThread = threadUpdater.getAndAccumulate(this, CANCELLED,
+                (prev, x) -> prev == DONE ? DONE : CANCELLED);
+        if (currThread instanceof Thread) {
+            ((Thread) currThread).interrupt();
         }
     }
 
@@ -56,7 +70,7 @@ public final class ThreadInterruptingCancellable implements Cancellable {
      * should be NOOPs.
      */
     public void setDone() {
-        status = 1;
+        thread = DONE;
     }
 
     /**
