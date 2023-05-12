@@ -206,7 +206,6 @@ class ProtocolCompatibilityTest {
         SIMPLE_IN_RESPONSE,
         STATUS,
         STATUS_IN_SERVER_FILTER,
-        STATUS_IN_SERVICE_FILTER,
         STATUS_IN_RESPONSE
     }
 
