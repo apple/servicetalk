@@ -56,6 +56,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.socketChannel;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.toNettyAddress;
+import static io.servicetalk.transport.netty.internal.ChannelCloseUtils.assignConnectionError;
 import static io.servicetalk.transport.netty.internal.CopyByteBufHandlerChannelInitializer.POOLED_ALLOCATOR;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
 import static java.util.Objects.requireNonNull;
@@ -113,6 +114,9 @@ public final class TcpConnector {
                                 cause = new io.servicetalk.client.api.ConnectTimeoutException(msg, cause);
                             } else if (cause instanceof ConnectException) {
                                 cause = new RetryableConnectException((ConnectException) cause);
+                            }
+                            if (f instanceof ChannelFuture) {
+                                assignConnectionError(((ChannelFuture) f).channel(), cause);
                             }
                             connectHandler.connectFailed(cause);
                         }
