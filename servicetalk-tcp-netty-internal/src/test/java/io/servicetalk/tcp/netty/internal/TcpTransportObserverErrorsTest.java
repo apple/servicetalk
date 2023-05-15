@@ -30,16 +30,21 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
 
+import java.net.ConnectException;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Completable.failed;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.transport.api.ServiceTalkSocketOptions.IDLE_TIMEOUT;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
@@ -50,6 +55,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 final class TcpTransportObserverErrorsTest extends AbstractTransportObserverTest {
 
     private enum ErrorSource {
+        CONNECTION_REFUSED,
         CONNECTION_ACCEPTOR,
         PIPELINE,
         CLIENT_WRITE,
@@ -63,6 +69,8 @@ final class TcpTransportObserverErrorsTest extends AbstractTransportObserverTest
 
     private void setUp(ErrorSource errorSource) throws Exception {
         switch (errorSource) {
+            case CONNECTION_REFUSED:
+                break;
             case CONNECTION_ACCEPTOR:
                 connectionAcceptor(ctx -> failed(DELIBERATE_EXCEPTION));
                 break;
@@ -87,6 +95,11 @@ final class TcpTransportObserverErrorsTest extends AbstractTransportObserverTest
         }
 
         setUp();
+
+        if (errorSource == ErrorSource.CONNECTION_REFUSED) {
+            // We shut down the server but still use "serverAddress" to test connection attempt failure
+            serverContext.close();
+        }
     }
 
     @Override
@@ -110,19 +123,39 @@ final class TcpTransportObserverErrorsTest extends AbstractTransportObserverTest
         return tcpServerConfig;
     }
 
+    @Nullable
+    private NettyConnection<Buffer, Buffer> connect() throws InterruptedException {
+        try {
+            return client.connectBlocking(CLIENT_CTX, serverAddress);
+        } catch (ExecutionException e) {
+            return null;
+        }
+    }
+
     @ParameterizedTest
     @EnumSource(ErrorSource.class)
     void testConnectionClosed(ErrorSource errorSource) throws Exception {
         setUp(errorSource);
 
-        NettyConnection<Buffer, Buffer> connection = client.connectBlocking(CLIENT_CTX, serverAddress);
+        NettyConnection<Buffer, Buffer> connection = connect();
         verify(clientTransportObserver).onNewConnection(any(), any());
-        verify(serverTransportObserver, await()).onNewConnection(any(), any());
-        verify(clientConnectionObserver).onTransportHandshakeComplete();
-        verify(clientConnectionObserver).connectionEstablished(any(ConnectionInfo.class));
-        verify(serverConnectionObserver, await()).onTransportHandshakeComplete();
-        verify(serverConnectionObserver, await()).connectionEstablished(any(ConnectionInfo.class));
+        if (errorSource != ErrorSource.CONNECTION_REFUSED) {
+            assertThat(connection, is(notNullValue()));
+            verify(serverTransportObserver, await()).onNewConnection(any(), any());
+            verify(clientConnectionObserver).onTransportHandshakeComplete();
+            verify(clientConnectionObserver).connectionEstablished(any(ConnectionInfo.class));
+            verify(serverConnectionObserver, await()).onTransportHandshakeComplete();
+            verify(serverConnectionObserver, await()).connectionEstablished(any(ConnectionInfo.class));
+        } else {
+            assertThat(connection, is(nullValue()));
+        }
+        ArgumentCaptor<Throwable> exceptionCaptor = forClass(Throwable.class);
         switch (errorSource) {
+            case CONNECTION_REFUSED:
+                verify(clientConnectionObserver, await()).connectionClosed(exceptionCaptor.capture());
+                assertThat(exceptionCaptor.getValue(), instanceOf(ConnectException.class));
+                assertThat(exceptionCaptor.getValue().getMessage(), containsString("refused"));
+                break;
             case CONNECTION_ACCEPTOR:
             case CLIENT_IDLE_TIMEOUT:
             case SERVER_IDLE_TIMEOUT:
@@ -141,7 +174,6 @@ final class TcpTransportObserverErrorsTest extends AbstractTransportObserverTest
                         Publisher.failed(DELIBERATE_EXCEPTION)).toFuture().get());
                 verify(clientDataObserver).onNewWrite();
                 verify(clientWriteObserver).requestedToWrite(anyLong());
-                ArgumentCaptor<Throwable> exceptionCaptor = forClass(Throwable.class);
                 verify(clientWriteObserver).writeFailed(exceptionCaptor.capture());
                 assertThat(exceptionCaptor.getValue(), instanceOf(RetryableException.class));
                 assertThat(exceptionCaptor.getValue().getCause(), is(DELIBERATE_EXCEPTION));
@@ -149,8 +181,12 @@ final class TcpTransportObserverErrorsTest extends AbstractTransportObserverTest
             default:
                 throw new IllegalArgumentException("Unsupported ErrorSource: " + errorSource);
         }
-        connection.onClose().toFuture().get();
+        if (connection != null) {
+            connection.onClose().toFuture().get();
+        }
         switch (errorSource) {
+            case CONNECTION_REFUSED:
+                break;
             case CONNECTION_ACCEPTOR:
             case PIPELINE:
                 verify(clientConnectionObserver).connectionClosed();
@@ -169,7 +205,7 @@ final class TcpTransportObserverErrorsTest extends AbstractTransportObserverTest
                 throw new IllegalArgumentException("Unsupported ErrorSource: " + errorSource);
         }
 
-        verifyNoMoreInteractions(clientTransportObserver, clientConnectionObserver,
-                serverTransportObserver, serverConnectionObserver);
+        verifyNoMoreInteractions(clientTransportObserver, clientConnectionObserver, clientSecurityHandshakeObserver,
+                serverTransportObserver, serverConnectionObserver, serverSecurityHandshakeObserver);
     }
 }
