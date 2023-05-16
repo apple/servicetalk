@@ -107,6 +107,13 @@ public interface H2ProtocolConfig extends HttpProtocolConfig {
         /**
          * {@link Duration} of time the connection has to be idle before a
          * <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a> is sent.
+         * <p>
+         * Too short ping durations can be used for testing but may cause unnecessarily high network traffic in real
+         * environments.
+         * <p>
+         * The returned value can be rounded to a full amount of {@link Duration#getSeconds() seconds} in this
+         * {@link Duration}. Too small values (less than 1 second) can either be rounded to 1-second or interpreted as
+         * <b>disabled</b> {@link KeepAlivePolicy} if protocol implementation uses seconds for time granularity.
          *
          * @return {@link Duration} of time the connection has to be idle before a
          * <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a> is sent.
@@ -117,6 +124,10 @@ public interface H2ProtocolConfig extends HttpProtocolConfig {
          * {@link Duration} to wait for acknowledgment from the peer after a
          * <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a> is sent. If no acknowledgment is received,
          * a closure of the connection will be initiated.
+         * <p>
+         * This duration can not be greater than {@link #idleDuration()}. The system expects to receive
+         * <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a> acknowledgment before it can send the
+         * following ping frames.
          *
          * @return {@link Duration} to wait for acknowledgment from the peer after a
          * <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a> is sent.

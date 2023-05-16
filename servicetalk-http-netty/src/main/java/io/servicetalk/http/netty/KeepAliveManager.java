@@ -43,6 +43,7 @@ import static io.netty.channel.ChannelOption.ALLOW_HALF_CLOSURE;
 import static io.netty.handler.codec.http2.Http2Error.NO_ERROR;
 import static io.servicetalk.http.netty.H2KeepAlivePolicies.DEFAULT_ACK_TIMEOUT;
 import static java.lang.Boolean.TRUE;
+import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
@@ -140,7 +141,7 @@ final class KeepAliveManager {
                     }, pingAckTimeoutNanos, NANOSECONDS);
                 }
             };
-            int idleInSeconds = (int) min(keepAlivePolicy.idleDuration().getSeconds(), Integer.MAX_VALUE);
+            int idleInSeconds = max((int) min(keepAlivePolicy.idleDuration().getSeconds(), Integer.MAX_VALUE), 1);
             idlenessDetector.configure(channel, idleInSeconds, this::channelIdle);
         } else {
             disallowKeepAliveWithoutActiveStreams = false;

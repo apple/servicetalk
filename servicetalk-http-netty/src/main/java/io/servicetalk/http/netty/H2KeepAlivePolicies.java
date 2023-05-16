@@ -18,10 +18,14 @@ package io.servicetalk.http.netty;
 import io.servicetalk.http.netty.H2ProtocolConfig.KeepAlivePolicy;
 
 import java.time.Duration;
+import javax.annotation.Nullable;
 
+import static io.servicetalk.http.netty.H2KeepAlivePolicies.KeepAlivePolicyBuilder.validateIdleDuration;
+import static io.servicetalk.http.netty.H2KeepAlivePolicies.KeepAlivePolicyBuilder.validateRelativeDurations;
+import static io.servicetalk.utils.internal.DurationUtils.ensurePositive;
+import static io.servicetalk.utils.internal.DurationUtils.min;
 import static java.time.Duration.ofDays;
 import static java.time.Duration.ofSeconds;
-import static java.util.Objects.requireNonNull;
 
 /**
  * A factory to create {@link KeepAlivePolicy} instances.
@@ -30,7 +34,7 @@ public final class H2KeepAlivePolicies {
     static final KeepAlivePolicy DISABLE_KEEP_ALIVE =
             new DefaultKeepAlivePolicy(ofDays(365), ofDays(365), false);
     static final Duration DEFAULT_IDLE_DURATION = ofSeconds(30);
-    static final Duration DEFAULT_ACK_TIMEOUT = ofSeconds(30);
+    static final Duration DEFAULT_ACK_TIMEOUT = ofSeconds(5);
 
     private H2KeepAlivePolicies() {
         // no instances.
@@ -48,7 +52,8 @@ public final class H2KeepAlivePolicies {
     /**
      * Returns a {@link KeepAlivePolicy} that sends a <a href="https://tools.ietf.org/html/rfc7540#section-6.7">
      * ping</a> if the channel is idle for the passed {@code idleDuration}. Default values are used for other parameters
-     * of the returned {@link KeepAlivePolicy}.
+     * of the returned {@link KeepAlivePolicy}. Default value for {@link KeepAlivePolicy#ackTimeout()} can be adjusted
+     * if the passed {@code idleDuration} is less.
      *
      * @param idleDuration {@link Duration} of idleness on a connection after which a
      * <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a> is sent.
@@ -82,12 +87,16 @@ public final class H2KeepAlivePolicies {
      */
     public static final class KeepAlivePolicyBuilder {
         private Duration idleDuration = DEFAULT_IDLE_DURATION;
-        private Duration ackTimeout = DEFAULT_ACK_TIMEOUT;
+        @Nullable
+        private Duration ackTimeout;
         private boolean withoutActiveStreams;
 
         /**
          * Set the {@link Duration} of idleness on a connection after which a
          * <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a> is sent.
+         * <p>
+         * Too short ping durations can be used for testing but may cause unnecessarily high network traffic in real
+         * environments. The minimum allowed value is 1 second.
          *
          * @param idleDuration {@link Duration} of idleness on a connection after which a
          * <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a> is sent.
@@ -95,7 +104,7 @@ public final class H2KeepAlivePolicies {
          * @see KeepAlivePolicy#idleDuration()
          */
         public KeepAlivePolicyBuilder idleDuration(final Duration idleDuration) {
-            this.idleDuration = requireNonNull(idleDuration);
+            this.idleDuration = validateIdleDuration(idleDuration);
             return this;
         }
 
@@ -110,7 +119,7 @@ public final class H2KeepAlivePolicies {
          * @see KeepAlivePolicy#ackTimeout()
          */
         public KeepAlivePolicyBuilder ackTimeout(final Duration ackTimeout) {
-            this.ackTimeout = requireNonNull(ackTimeout);
+            this.ackTimeout = ensurePositive(ackTimeout, "ackTimeout");
             return this;
         }
 
@@ -135,7 +144,37 @@ public final class H2KeepAlivePolicies {
          * @return new {@link KeepAlivePolicy}.
          */
         public KeepAlivePolicy build() {
+            Duration ackTimeout = this.ackTimeout;
+            if (ackTimeout == null) {
+                ackTimeout = min(idleDuration, DEFAULT_ACK_TIMEOUT);
+            }
+            validateRelativeDurations(idleDuration, ackTimeout);
             return new DefaultKeepAlivePolicy(idleDuration, ackTimeout, withoutActiveStreams);
         }
+
+        static Duration validateIdleDuration(final Duration idleDuration) {
+            if (idleDuration.getSeconds() < 1) {
+                throw new IllegalArgumentException("idleDuration: " + idleDuration + " (expected: >= 1 second)");
+            }
+            return idleDuration;
+        }
+
+        static void validateRelativeDurations(final Duration idleDuration, final Duration ackTimeout) {
+            if (idleDuration.compareTo(ackTimeout) < 0) {
+                throw new IllegalArgumentException("idleDuration can not be less than ackTimeout, idleDuration: " +
+                        idleDuration + ", ackTimeout: " + ackTimeout);
+            }
+        }
+    }
+
+    @Nullable
+    static KeepAlivePolicy validateKeepAlivePolicy(@Nullable final KeepAlivePolicy keepAlivePolicy) {
+        if (keepAlivePolicy == null) {
+            return null;
+        }
+        validateIdleDuration(keepAlivePolicy.idleDuration());
+        ensurePositive(keepAlivePolicy.ackTimeout(), "ackTimeout");
+        validateRelativeDurations(keepAlivePolicy.idleDuration(), keepAlivePolicy.ackTimeout());
+        return keepAlivePolicy;
     }
 }
