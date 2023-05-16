@@ -27,7 +27,7 @@ import static java.util.Objects.requireNonNull;
  * A factory to create {@link KeepAlivePolicy} instances.
  */
 public final class H2KeepAlivePolicies {
-    static final KeepAlivePolicy DISABLE_KEEP_ALIVE =
+    private static final KeepAlivePolicy DISABLE_KEEP_ALIVE =
             new DefaultKeepAlivePolicy(ofDays(365), ofDays(365), false);
     static final Duration DEFAULT_IDLE_DURATION = ofSeconds(30);
     static final Duration DEFAULT_ACK_TIMEOUT = ofSeconds(30);
@@ -40,8 +40,10 @@ public final class H2KeepAlivePolicies {
      * Returns a {@link KeepAlivePolicy} that disables all keep alive behaviors.
      *
      * @return A {@link KeepAlivePolicy} that disables all keep alive behaviors.
+     * @deprecated Use {@code null} for {@link H2ProtocolConfigBuilder#keepAlivePolicy(KeepAlivePolicy)} instead.
      */
-    public static KeepAlivePolicy disabled() {
+    @Deprecated
+    public static KeepAlivePolicy disabled() {  // FIXME: 0.43 - remove deprecated method
         return DISABLE_KEEP_ALIVE;
     }
 

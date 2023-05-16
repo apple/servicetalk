@@ -52,7 +52,6 @@ import static io.servicetalk.grpc.api.GrpcExecutionStrategies.defaultStrategy;
 import static io.servicetalk.grpc.netty.GrpcServers.forAddress;
 import static io.servicetalk.grpc.netty.TesterProto.TestRequest.newBuilder;
 import static io.servicetalk.grpc.netty.TesterProto.Tester.ClientFactory;
-import static io.servicetalk.http.netty.H2KeepAlivePolicies.disabled;
 import static io.servicetalk.http.netty.H2KeepAlivePolicies.whenIdleFor;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2;
 import static io.servicetalk.logging.api.LogLevel.TRACE;
@@ -124,7 +123,7 @@ class KeepAliveTest {
     private static H2ProtocolConfig h2Config(@Nullable final Duration keepAliveIdleFor) {
         return h2()
             .enableFrameLogging("servicetalk-tests-h2-frame-logger", TRACE, () -> true)
-            .keepAlivePolicy(keepAliveIdleFor == null ? disabled() : whenIdleFor(keepAliveIdleFor))
+            .keepAlivePolicy(keepAliveIdleFor == null ? null : whenIdleFor(keepAliveIdleFor))
             .build();
     }
 

@@ -29,7 +29,7 @@ import java.util.function.BooleanSupplier;
 import javax.annotation.Nullable;
 
 import static io.netty.handler.codec.http2.Http2CodecUtil.DEFAULT_HEADER_LIST_SIZE;
-import static io.servicetalk.http.netty.H2KeepAlivePolicies.DISABLE_KEEP_ALIVE;
+import static io.servicetalk.http.netty.H2KeepAlivePolicies.disabled;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -114,12 +114,13 @@ public final class H2ProtocolConfigBuilder {
     /**
      * Sets the {@link KeepAlivePolicy} to use.
      *
-     * @param policy {@link KeepAlivePolicy} to use.
+     * @param policy {@link KeepAlivePolicy} to use or {@link null} to disable it.
      * @return {@code this}
      * @see H2KeepAlivePolicies
      */
-    public H2ProtocolConfigBuilder keepAlivePolicy(final KeepAlivePolicy policy) {
-        this.keepAlivePolicy = policy == DISABLE_KEEP_ALIVE ? null : requireNonNull(policy);
+    @SuppressWarnings("deprecation")
+    public H2ProtocolConfigBuilder keepAlivePolicy(@Nullable final KeepAlivePolicy policy) {
+        this.keepAlivePolicy = policy == disabled() ? null : policy;
         return this;
     }
 
