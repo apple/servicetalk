@@ -59,6 +59,7 @@ public final class H2KeepAlivePolicies {
      * <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a> is sent.
      * @return A {@link KeepAlivePolicy} that sends a <a href="https://tools.ietf.org/html/rfc7540#section-6.7">
      * ping</a> if the channel is idle for the passed {@code idleDuration}.
+     * @see KeepAlivePolicy#idleDuration()
      */
     public static KeepAlivePolicy whenIdleFor(final Duration idleDuration) {
         return new KeepAlivePolicyBuilder().idleDuration(idleDuration).build();
@@ -72,11 +73,15 @@ public final class H2KeepAlivePolicies {
      *
      * @param idleDuration {@link Duration} of idleness on a connection after which a
      * <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a> is sent.
+     * This value must be greater than or equal to {@code ackTimeout}.
      * @param ackTimeout {@link Duration} to wait for an acknowledgment of a previously sent
      * <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a>.
+     * This value must be less than or equal to {@code idleDuration}.
      * @return A {@link KeepAlivePolicy} that sends a <a href="https://tools.ietf.org/html/rfc7540#section-6.7">
      * ping</a> if the channel is idle for the passed {@code idleDuration} and waits for {@code ackTimeout} for an ack
      * for that <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a>
+     * @see KeepAlivePolicy#idleDuration()
+     * @see KeepAlivePolicy#ackTimeout()
      */
     public static KeepAlivePolicy whenIdleFor(final Duration idleDuration, final Duration ackTimeout) {
         return new KeepAlivePolicyBuilder().idleDuration(idleDuration).ackTimeout(ackTimeout).build();
@@ -97,6 +102,10 @@ public final class H2KeepAlivePolicies {
          * <p>
          * Too short ping durations can be used for testing but may cause unnecessarily high network traffic in real
          * environments. The minimum allowed value is 1 second.
+         * <p>
+         * This duration can not be smaller than {@link #ackTimeout(Duration)}. The system expects to receive
+         * <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a> acknowledgment before it can send the
+         * following ping frames.
          *
          * @param idleDuration {@link Duration} of idleness on a connection after which a
          * <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a> is sent.
@@ -112,6 +121,10 @@ public final class H2KeepAlivePolicies {
          * Set the maximum {@link Duration} to wait for an acknowledgment of a previously sent
          * <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a>. If no acknowledgment is received, the
          * connection will be closed.
+         * <p>
+         * This duration can not be greater than {@link #idleDuration(Duration)}. The system expects to receive
+         * <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a> acknowledgment before it can send the
+         * following ping frames.
          *
          * @param ackTimeout {@link Duration} to wait for an acknowledgment of a previously sent
          * <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a>.

@@ -114,6 +114,10 @@ public interface H2ProtocolConfig extends HttpProtocolConfig {
          * The returned value can be rounded to a full amount of {@link Duration#getSeconds() seconds} in this
          * {@link Duration}. Too small values (less than 1 second) can either be rounded to 1-second or interpreted as
          * <b>disabled</b> {@link KeepAlivePolicy} if protocol implementation uses seconds for time granularity.
+         * <p>
+         * This duration can not be smaller than {@link #ackTimeout()}}. The system expects to receive
+         * <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a> acknowledgment before it can send the
+         * following ping frames.
          *
          * @return {@link Duration} of time the connection has to be idle before a
          * <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a> is sent.

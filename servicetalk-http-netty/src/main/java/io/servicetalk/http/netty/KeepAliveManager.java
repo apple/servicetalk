@@ -141,6 +141,8 @@ final class KeepAliveManager {
                     }, pingAckTimeoutNanos, NANOSECONDS);
                 }
             };
+            // Netty's `IdleStateHandler` treats 0 as disabled timeout. In case users passed a value less than 1-second,
+            // we round it up to 1 full second to make sure the idleness is detected.
             int idleInSeconds = max((int) min(keepAlivePolicy.idleDuration().getSeconds(), Integer.MAX_VALUE), 1);
             idlenessDetector.configure(channel, idleInSeconds, this::channelIdle);
         } else {
