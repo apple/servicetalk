@@ -56,9 +56,8 @@ public interface H2ProtocolConfig extends HttpProtocolConfig {
     /**
      * Configured {@link KeepAlivePolicy}.
      *
-     * @return configured {@link KeepAlivePolicy} or {@code null} if none is configured.
+     * @return configured {@link KeepAlivePolicy}.
      */
-    @Nullable
     KeepAlivePolicy keepAlivePolicy();
 
     /**
@@ -102,36 +101,41 @@ public interface H2ProtocolConfig extends HttpProtocolConfig {
 
     /**
      * A policy for sending <a href="https://tools.ietf.org/html/rfc7540#section-6.7">PING frames</a> to the peer.
+     * <p>
+     * While {@link #idleDuration()} and {@link #ackTimeout()}} can be configured independently, users should keep
+     * them reasonably aligned. When {@link #idleDuration() idle duration} is positive, the system expects to receive
+     * {@code PING} acknowledgment before it can send the following {@code PING} frames. A good practice is to keep
+     * {@link #ackTimeout()} less than or equal to {@link #idleDuration()}}. Otherwise, the following {@code PING}
+     * frames can be delayed awaiting acknowledgment of the previous one.
      */
     interface KeepAlivePolicy {
         /**
          * {@link Duration} of time the connection has to be idle before a
          * <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a> is sent.
          * <p>
-         * Too short ping durations can be used for testing but may cause unnecessarily high network traffic in real
-         * environments.
-         * <p>
-         * The returned value can be rounded to a full amount of {@link Duration#getSeconds() seconds} in this
-         * {@link Duration}. Too small values (less than 1 second) can either be rounded to 1-second or interpreted as
-         * <b>disabled</b> {@link KeepAlivePolicy} if protocol implementation uses seconds for time granularity.
-         * <p>
-         * This duration can not be smaller than {@link #ackTimeout()}}. The system expects to receive
-         * <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a> acknowledgment before it can send the
-         * following ping frames.
+         * Too short idle duration can be used for testing but may cause unnecessarily high network traffic in real
+         * environments. {@link Duration#ZERO} disables keep-alive {@code PING} frames. In this case,
+         * {@link #ackTimeout()} is still used for {@code PING} acknowledgment during graceful closure process between
+         * two <a href="https://datatracker.ietf.org/doc/html/rfc9113#section-6.8">GOAWAY</a> frames.
          *
          * @return {@link Duration} of time the connection has to be idle before a
-         * <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a> is sent.
+         * <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a> is sent or {@link Duration#ZERO} to
+         * disable keep-alive {@code PING} frames.
          */
         Duration idleDuration();
 
         /**
          * {@link Duration} to wait for acknowledgment from the peer after a
-         * <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a> is sent. If no acknowledgment is received,
-         * a closure of the connection will be initiated.
+         * <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a> is sent. If no acknowledgment is received
+         * within the configured timeout, a connection will be closed.
          * <p>
-         * This duration can not be greater than {@link #idleDuration()}. The system expects to receive
-         * <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a> acknowledgment before it can send the
-         * following ping frames.
+         * This duration must be positive. Too short ack timeout can cause undesirable connection closures. Too long ack
+         * timeout can add unnecessary delay when the remote peer is unresponsive or the network connection is broken,
+         * because under normal circumstances {@code PING} frames ara acknowledged immediately.
+         * <p>
+         * When {@link #idleDuration()} is {@link Duration#ZERO zero}, this timeout is still used for {@code PING}
+         * acknowledgment during graceful closure process between two
+         * <a href="https://datatracker.ietf.org/doc/html/rfc9113#section-6.8">GOAWAY</a> frames.
          *
          * @return {@link Duration} to wait for acknowledgment from the peer after a
          * <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a> is sent.

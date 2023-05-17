@@ -107,15 +107,4 @@ public final class DurationUtils {
                 (duration.compareTo(LONG_MIN_NANOS) > 0 ? duration.toNanos() : Long.MIN_VALUE)
                 : Long.MAX_VALUE;
     }
-
-    /**
-     * Returns the smaller of two {@link Duration} values.
-     *
-     * @param first first argument
-     * @param second second argument
-     * @return the smaller of two {@link Duration} values
-     */
-    public static Duration min(final Duration first, final Duration second) {
-        return first.compareTo(second) <= 0 ? first : second;
-    }
 }
