@@ -802,6 +802,52 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
     }
 
     @Test
+    void testGetFragment() {
+        createFixture("/some/path#fragment");
+        assertEquals("fragment", fixture.fragment());
+    }
+
+    @Test
+    void testSetFragment() {
+        createFixture("/some/path");
+        fixture.fragment("fragment");
+        assertEquals("fragment", fixture.fragment());
+        assertEquals("/some/path#fragment", fixture.requestTarget());
+    }
+
+    @Test
+    void testSetFragmentWithQuery() {
+        createFixture("/some/path?query=value");
+        fixture.fragment("fragment");
+        assertEquals("fragment", fixture.fragment());
+        assertEquals("/some/path?query=value#fragment", fixture.requestTarget());
+    }
+
+    @Test
+    void testSetFragmentAbsoluteForm() {
+        createFixture("http://my.site.com/some/path?foo=bar&abc=def&foo=baz");
+        fixture.fragment("fragment");
+        assertEquals("fragment", fixture.fragment());
+        assertEquals("http://my.site.com/some/path?foo=bar&abc=def&foo=baz#fragment", fixture.requestTarget());
+    }
+
+    @Test
+    void testOverwriteFragment() {
+        createFixture("/some/path?query=value#fragment");
+        fixture.fragment("overwrite");
+        assertEquals("overwrite", fixture.fragment());
+        assertEquals("/some/path?query=value#overwrite", fixture.requestTarget());
+    }
+
+    @Test
+    void testClearFragment() {
+        createFixture("/some/path?query=value#fragment");
+        fixture.fragment(null);
+        assertNull(fixture.fragment());
+        assertEquals("/some/path?query=value", fixture.requestTarget());
+    }
+
+    @Test
     void testToString() {
         createFixture("/some/path?a=query");
         fixture.headers().set(HOST, "some.site.com");

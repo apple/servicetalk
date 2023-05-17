@@ -407,6 +407,27 @@ public interface HttpRequestMetaData extends HttpMetaData {
     boolean removeQueryParameters(String key, String value);
 
     /**
+     * Returns the <a href="https://datatracker.ietf.org/doc/html/rfc3986#section-3.5">fragment</a> part of the request target.
+     *
+     * @return the fragment part of the request target.
+     */
+    @Nullable
+    default String fragment() {
+        throw new UnsupportedOperationException("HttpRequestMetaData#fragment() is not supported by " +
+                                                getClass());
+    }
+
+    /**
+     * Sets the <a href="https://datatracker.ietf.org/doc/html/rfc3986#section-3.5">fragment</a> part of the request target.
+     * @param fragment the fragment to set.
+     * @return {@code this}.
+     */
+    default HttpRequestMetaData fragment(@Nullable String fragment) {
+        throw new UnsupportedOperationException("HttpRequestMetaData#fragment(String) is not supported by " +
+                                                getClass());
+    }
+
+    /**
      * Get the <a href="https://tools.ietf.org/html/rfc3986#section-3.2.2">host</a> and
      * <a href="https://tools.ietf.org/html/rfc3986#section-3.2.3">port</a> components
      * of the <a href="https://tools.ietf.org/html/rfc7230#section-5.5">effective request URI</a>.

@@ -433,6 +433,33 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
         requestTarget(sb.toString());
     }
 
+    @Nullable
+    @Override
+    public String fragment() {
+      return lazyParseRequestTarget().fragment();
+    }
+
+    @Override
+    public HttpRequestMetaData fragment(@Nullable String fragment) {
+
+      if (fragment == null && fragment() == null) {
+        return this;
+      }
+
+      String originalRequestTarget = requestTarget();
+
+      if (lazyParseRequestTarget().fragment() != null) {
+        int fragmentLength = lazyParseRequestTarget().fragment().length() + 1;
+        // remove the existing fragment
+        originalRequestTarget = originalRequestTarget.substring(0, originalRequestTarget.length() - fragmentLength);
+      }
+
+      return requestTarget(fragment == null || fragment.isEmpty()
+              ? originalRequestTarget
+              : originalRequestTarget + "#" + fragment
+      );
+    }
+
     private void invalidateParsedUri() {
         requestTargetUri = null;
         httpQuery = null;
