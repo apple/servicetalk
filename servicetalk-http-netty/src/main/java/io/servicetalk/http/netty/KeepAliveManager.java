@@ -24,6 +24,7 @@ import io.netty.channel.socket.DuplexChannel;
 import io.netty.handler.codec.http2.DefaultHttp2GoAwayFrame;
 import io.netty.handler.codec.http2.DefaultHttp2PingFrame;
 import io.netty.handler.codec.http2.Http2PingFrame;
+import io.netty.handler.codec.http2.Http2StreamChannel;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
@@ -168,7 +169,7 @@ final class KeepAliveManager {
         }
     }
 
-    void trackActiveStream(final Channel streamChannel) {
+    void trackActiveStream(final Http2StreamChannel streamChannel) {
         activeChildChannelsUpdater.incrementAndGet(this);
         streamChannel.closeFuture().addListener(f -> {
             if (activeChildChannelsUpdater.decrementAndGet(this) == 0 &&

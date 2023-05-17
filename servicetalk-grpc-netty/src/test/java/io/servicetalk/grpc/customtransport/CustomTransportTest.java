@@ -78,8 +78,7 @@ class CustomTransportTest {
             assertThat(client.testBiDiStream(newReqStream("duplex")).toFuture().get(),
                     contains(newResp("hello duplexstream1"), newResp("hello duplexstream2")));
         } finally {
-            c.close();
-
+            c.close().sync();
             ioExecutor.closeAsync().toFuture().get();
         }
     }
