@@ -29,7 +29,8 @@ import java.util.function.BooleanSupplier;
 import javax.annotation.Nullable;
 
 import static io.netty.handler.codec.http2.Http2CodecUtil.DEFAULT_HEADER_LIST_SIZE;
-import static io.servicetalk.http.netty.H2KeepAlivePolicies.DISABLE_KEEP_ALIVE;
+import static io.servicetalk.http.netty.H2KeepAlivePolicies.disabled;
+import static io.servicetalk.http.netty.H2KeepAlivePolicies.validateKeepAlivePolicy;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -60,8 +61,7 @@ public final class H2ProtocolConfigBuilder {
     private BiPredicate<CharSequence, CharSequence> headersSensitivityDetector = DEFAULT_SENSITIVITY_DETECTOR;
     @Nullable
     private UserDataLoggerConfig frameLoggerConfig;
-    @Nullable
-    private KeepAlivePolicy keepAlivePolicy;
+    private KeepAlivePolicy keepAlivePolicy = disabled();
     private int flowControlQuantum = DEFAULT_FLOW_CONTROL_QUANTUM;
     private int flowControlIncrement = CONNECTION_STREAM_FLOW_CONTROL_INCREMENT;
 
@@ -119,7 +119,8 @@ public final class H2ProtocolConfigBuilder {
      * @see H2KeepAlivePolicies
      */
     public H2ProtocolConfigBuilder keepAlivePolicy(final KeepAlivePolicy policy) {
-        this.keepAlivePolicy = policy == DISABLE_KEEP_ALIVE ? null : requireNonNull(policy);
+        // Run validation in case someone passes a custom implementation of KeepAlivePolicy
+        this.keepAlivePolicy = validateKeepAlivePolicy(policy);
         return this;
     }
 
@@ -182,7 +183,6 @@ public final class H2ProtocolConfigBuilder {
         private final BiPredicate<CharSequence, CharSequence> headersSensitivityDetector;
         @Nullable
         private final UserDataLoggerConfig frameLoggerConfig;
-        @Nullable
         private final KeepAlivePolicy keepAlivePolicy;
         private final int flowControlQuantum;
         private final int flowControlIncrement;
@@ -191,7 +191,7 @@ public final class H2ProtocolConfigBuilder {
                                 final HttpHeadersFactory headersFactory,
                                 final BiPredicate<CharSequence, CharSequence> headersSensitivityDetector,
                                 @Nullable final UserDataLoggerConfig frameLoggerConfig,
-                                @Nullable final KeepAlivePolicy keepAlivePolicy,
+                                final KeepAlivePolicy keepAlivePolicy,
                                 final int flowControlQuantum,
                                 final int flowControlIncrement) {
             this.h2Settings = h2Settings;
@@ -219,7 +219,6 @@ public final class H2ProtocolConfigBuilder {
             return frameLoggerConfig;
         }
 
-        @Nullable
         @Override
         public KeepAlivePolicy keepAlivePolicy() {
             return keepAlivePolicy;

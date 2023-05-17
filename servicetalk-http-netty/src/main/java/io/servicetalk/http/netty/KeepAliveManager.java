@@ -43,7 +43,6 @@ import static io.netty.channel.ChannelOption.ALLOW_HALF_CLOSURE;
 import static io.netty.handler.codec.http2.Http2Error.NO_ERROR;
 import static io.servicetalk.http.netty.H2KeepAlivePolicies.DEFAULT_ACK_TIMEOUT;
 import static java.lang.Boolean.TRUE;
-import static java.lang.Math.min;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 /**
@@ -100,8 +99,8 @@ final class KeepAliveManager {
     KeepAliveManager(final Channel channel, @Nullable final KeepAlivePolicy keepAlivePolicy) {
         this(channel, keepAlivePolicy, (task, delay, unit) ->
                         channel.eventLoop().schedule(task, delay, unit),
-                (ch, idlenessThresholdSeconds, onIdle) -> ch.pipeline().addLast(
-                        new IdleStateHandler(idlenessThresholdSeconds, idlenessThresholdSeconds, 0) {
+                (ch, idlenessThresholdNanos, onIdle) -> ch.pipeline().addLast(
+                        new IdleStateHandler(0, 0, idlenessThresholdNanos, NANOSECONDS) {
                             @Override
                             protected void channelIdle(final ChannelHandlerContext ctx, final IdleStateEvent evt) {
                                 onIdle.run();
@@ -117,10 +116,15 @@ final class KeepAliveManager {
         }
         this.channel = channel;
         this.scheduler = scheduler;
-        if (keepAlivePolicy != null) {
+        // Before 0.42.30, H2ProtocolConfig.keepAlivePolicy() was @Nullable. For backward compatibility, we keep
+        // tolerance for null values.
+        if (keepAlivePolicy != null) {  // FIXME: 0.43.x - consider removing null check
+            // KeepAlivePolicy with idlenessThresholdNanos <= 0 disables PINGs, but allows configuring
+            // pingAckTimeoutNanos for graceful closure (GO_AWAY).
             disallowKeepAliveWithoutActiveStreams = !keepAlivePolicy.withoutActiveStreams();
             pingAckTimeoutNanos = keepAlivePolicy.ackTimeout().toNanos();
-            pingWriteCompletionListener = future -> {
+            final long idlenessThresholdNanos = keepAlivePolicy.idleDuration().toNanos();
+            pingWriteCompletionListener = idlenessThresholdNanos > 0 ? future -> {
                 if (future.isSuccess() && keepAliveState == KEEP_ALIVE_ACK_PENDING) {
                     // Schedule a task to verify ping ack within the pingAckTimeoutMillis
                     keepAliveState = scheduler.afterDuration(() -> {
@@ -139,9 +143,10 @@ final class KeepAliveManager {
                         }
                     }, pingAckTimeoutNanos, NANOSECONDS);
                 }
-            };
-            int idleInSeconds = (int) min(keepAlivePolicy.idleDuration().getSeconds(), Integer.MAX_VALUE);
-            idlenessDetector.configure(channel, idleInSeconds, this::channelIdle);
+            } : null;
+            if (idlenessThresholdNanos > 0) {
+                idlenessDetector.configure(channel, idlenessThresholdNanos, this::channelIdle);
+            }
         } else {
             disallowKeepAliveWithoutActiveStreams = false;
             pingAckTimeoutNanos = DEFAULT_ACK_TIMEOUT.toNanos();
@@ -245,11 +250,11 @@ final class KeepAliveManager {
          * Configure idleness detection for the passed {@code channel}.
          *
          * @param channel {@link Channel} for which idleness detection is to be configured.
-         * @param idlenessThresholdSeconds Seconds of idleness after which {@link Runnable#run()} should be called on
+         * @param idlenessThresholdNanos Nanoseconds of idleness after which {@link Runnable#run()} should be called on
          * the passed {@code onIdle}.
-         * @param onIdle {@link Runnable} to call when the channel is idle more than {@code idlenessThresholdSeconds}.
+         * @param onIdle {@link Runnable} to call when the channel is idle more than {@code idlenessThresholdNanos}.
          */
-        void configure(Channel channel, int idlenessThresholdSeconds, Runnable onIdle);
+        void configure(Channel channel, long idlenessThresholdNanos, Runnable onIdle);
     }
 
     private void channelHalfShutdown(Predicate<DuplexChannel> otherSideShutdown) {
