@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020, 2023 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,18 +49,21 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
  * An implementation of {@link KeepAlivePolicy} per {@link Channel}.
  */
 final class KeepAliveManager {
+    private enum State {
+        GRACEFUL_CLOSE_START,
+        GRACEFUL_CLOSE_SECOND_GO_AWAY_SENT,
+        KEEP_ALIVE_ACK_PENDING,
+        KEEP_ALIVE_ACK_TIMEDOUT,
+        CLOSED
+    }
+
     private static final Logger LOGGER = LoggerFactory.getLogger(KeepAliveManager.class);
-    private static final AtomicIntegerFieldUpdater<KeepAliveManager> activeChildChannelsUpdater =
-            AtomicIntegerFieldUpdater.newUpdater(KeepAliveManager.class, "activeChildChannels");
+    private static final AtomicIntegerFieldUpdater<KeepAliveManager> activeStreamsUpdater =
+            AtomicIntegerFieldUpdater.newUpdater(KeepAliveManager.class, "activeStreams");
     private static final long GRACEFUL_CLOSE_PING_CONTENT = ThreadLocalRandom.current().nextLong();
     private static final long KEEP_ALIVE_PING_CONTENT = ThreadLocalRandom.current().nextLong();
-    private static final Object CLOSED = new Object();
-    private static final Object GRACEFUL_CLOSE_START = new Object();
-    private static final Object GRACEFUL_CLOSE_SECOND_GO_AWAY_SENT = new Object();
-    private static final Object KEEP_ALIVE_ACK_PENDING = new Object();
-    private static final Object KEEP_ALIVE_ACK_TIMEDOUT = new Object();
 
-    private volatile int activeChildChannels;
+    private volatile int activeStreams;
 
     private final Channel channel;
     private final long pingAckTimeoutNanos;
@@ -72,10 +75,10 @@ final class KeepAliveManager {
      * This stores the following possible values:
      * <ul>
      *     <li>{@code null} if graceful close has not started.</li>
-     *     <li>{@link #GRACEFUL_CLOSE_START} if graceful close process has been initiated.</li>
+     *     <li>{@link State#GRACEFUL_CLOSE_START} if graceful close process has been initiated.</li>
      *     <li>{@link Future} instance to timeout ack of PING sent to measure RTT.</li>
-     *     <li>{@link #GRACEFUL_CLOSE_SECOND_GO_AWAY_SENT} if we have sent the second go away frame.</li>
-     *     <li>{@link #CLOSED} if the channel is closed.</li>
+     *     <li>{@link State#GRACEFUL_CLOSE_SECOND_GO_AWAY_SENT} if we have sent the second go away frame.</li>
+     *     <li>{@link State#CLOSED} if the channel is closed.</li>
      * </ul>
      */
     @Nullable
@@ -85,10 +88,10 @@ final class KeepAliveManager {
      * This stores the following possible values:
      * <ul>
      *     <li>{@code null} if keep-alive PING process is not started.</li>
-     *     <li>{@link #KEEP_ALIVE_ACK_PENDING} if a keep-alive PING has been sent but ack is not received.</li>
+     *     <li>{@link State#KEEP_ALIVE_ACK_PENDING} if a keep-alive PING has been sent but ack is not received.</li>
      *     <li>{@link Future} instance to timeout ack of PING sent.</li>
-     *     <li>{@link #KEEP_ALIVE_ACK_TIMEDOUT} if we fail to receive a PING ack for the configured timeout.</li>
-     *     <li>{@link #CLOSED} if the channel is closed.</li>
+     *     <li>{@link State#KEEP_ALIVE_ACK_TIMEDOUT} if we fail to receive a PING ack for the configured timeout.</li>
+     *     <li>{@link State#CLOSED} if the channel is closed.</li>
      * </ul>
      */
     @Nullable
@@ -125,18 +128,19 @@ final class KeepAliveManager {
             pingAckTimeoutNanos = keepAlivePolicy.ackTimeout().toNanos();
             final long idlenessThresholdNanos = keepAlivePolicy.idleDuration().toNanos();
             pingWriteCompletionListener = idlenessThresholdNanos > 0 ? future -> {
-                if (future.isSuccess() && keepAliveState == KEEP_ALIVE_ACK_PENDING) {
+                assert channel.eventLoop().inEventLoop();
+                if (future.isSuccess() && keepAliveState == State.KEEP_ALIVE_ACK_PENDING) {
                     // Schedule a task to verify ping ack within the pingAckTimeoutMillis
                     keepAliveState = scheduler.afterDuration(() -> {
                         if (keepAliveState != null) {
-                            keepAliveState = KEEP_ALIVE_ACK_TIMEDOUT;
+                            keepAliveState = State.KEEP_ALIVE_ACK_TIMEDOUT;
                             LOGGER.debug(
-                                    "channel={}, timeout {}ns waiting for keep-alive PING(ACK), writing GO_AWAY.",
-                                    this.channel, pingAckTimeoutNanos);
+                                    "{} Timeout after {}ms waiting for keep-alive PING(ACK), writing GO_AWAY and " +
+                                            "closing the channel",
+                                    this.channel, NANOSECONDS.toMillis(pingAckTimeoutNanos));
                             channel.writeAndFlush(new DefaultHttp2GoAwayFrame(NO_ERROR))
                                     .addListener(f -> {
                                         if (f.isSuccess()) {
-                                            LOGGER.debug("Closing channel={}, after keep-alive timeout.", this.channel);
                                             KeepAliveManager.this.close0();
                                         }
                                     });
@@ -152,6 +156,8 @@ final class KeepAliveManager {
             pingAckTimeoutNanos = DEFAULT_ACK_TIMEOUT.toNanos();
             pingWriteCompletionListener = null;
         }
+        LOGGER.debug("{} Configured for {}duplex channel with policy={}",
+                channel, channel instanceof DuplexChannel ? "" : "non-", keepAlivePolicy);
     }
 
     void pingReceived(final Http2PingFrame pingFrame) {
@@ -160,10 +166,12 @@ final class KeepAliveManager {
         if (pingFrame.ack()) {
             long pingAckContent = pingFrame.content();
             if (pingAckContent == GRACEFUL_CLOSE_PING_CONTENT) {
-                LOGGER.debug("channel={}, graceful close ping ack received.", channel);
+                LOGGER.debug("{} Graceful close PING(ACK) received, writing the second GO_AWAY, activeStreams={}",
+                        channel, activeStreams);
                 cancelIfStateIsAFuture(gracefulCloseState);
                 gracefulCloseWriteSecondGoAway();
             } else if (pingAckContent == KEEP_ALIVE_PING_CONTENT) {
+                LOGGER.trace("{} PING(ACK) received, activeStreams={}", channel, activeStreams);
                 cancelIfStateIsAFuture(keepAliveState);
                 keepAliveState = null;
             }
@@ -174,10 +182,10 @@ final class KeepAliveManager {
     }
 
     void trackActiveStream(final Channel streamChannel) {
-        activeChildChannelsUpdater.incrementAndGet(this);
+        activeStreamsUpdater.incrementAndGet(this);
         streamChannel.closeFuture().addListener(f -> {
-            if (activeChildChannelsUpdater.decrementAndGet(this) == 0 &&
-                    gracefulCloseState == GRACEFUL_CLOSE_SECOND_GO_AWAY_SENT) {
+            if (activeStreamsUpdater.decrementAndGet(this) == 0 &&
+                    gracefulCloseState == State.GRACEFUL_CLOSE_SECOND_GO_AWAY_SENT) {
                 close0();
             }
         });
@@ -185,11 +193,13 @@ final class KeepAliveManager {
 
     void channelClosed() {
         assert channel.eventLoop().inEventLoop();
+        LOGGER.debug("{} Channel closed with activeStreams={}, gracefulCloseState={}, keepAliveState={}",
+                channel, activeStreams, gracefulCloseState, keepAliveState);
 
         cancelIfStateIsAFuture(gracefulCloseState);
         cancelIfStateIsAFuture(keepAliveState);
-        gracefulCloseState = CLOSED;
-        keepAliveState = CLOSED;
+        gracefulCloseState = State.CLOSED;
+        keepAliveState = State.CLOSED;
     }
 
     void initiateGracefulClose(final Runnable whenInitiated) {
@@ -205,23 +215,24 @@ final class KeepAliveManager {
         assert channel.eventLoop().inEventLoop();
         assert pingWriteCompletionListener != null;
 
-        if (keepAliveState != null || disallowKeepAliveWithoutActiveStreams && activeChildChannels == 0) {
+        if (keepAliveState != null || disallowKeepAliveWithoutActiveStreams && activeStreams == 0) {
             return;
         }
+        LOGGER.debug("{}, Idleness detected with activeStreams={}", channel, activeStreams);
         // idleness detected for the first time, send a ping to detect closure, if any.
-        keepAliveState = KEEP_ALIVE_ACK_PENDING;
+        keepAliveState = State.KEEP_ALIVE_ACK_PENDING;
         channel.writeAndFlush(new DefaultHttp2PingFrame(KEEP_ALIVE_PING_CONTENT, false))
                 .addListener(pingWriteCompletionListener);
     }
 
     void channelOutputShutdown() {
         assert channel.eventLoop().inEventLoop();
-        channelHalfShutdown(DuplexChannel::isInputShutdown);
+        channelHalfShutdown("output", DuplexChannel::isInputShutdown);
     }
 
     void channelInputShutdown() {
         assert channel.eventLoop().inEventLoop();
-        channelHalfShutdown(DuplexChannel::isOutputShutdown);
+        channelHalfShutdown("input", DuplexChannel::isOutputShutdown);
     }
 
     /**
@@ -257,14 +268,22 @@ final class KeepAliveManager {
         void configure(Channel channel, long idlenessThresholdNanos, Runnable onIdle);
     }
 
-    private void channelHalfShutdown(Predicate<DuplexChannel> otherSideShutdown) {
+    private void channelHalfShutdown(String side, Predicate<DuplexChannel> otherSideShutdown) {
         if (channel instanceof DuplexChannel) {
             final DuplexChannel duplexChannel = (DuplexChannel) channel;
-            if (otherSideShutdown.test(duplexChannel) ||
-                    (gracefulCloseState != GRACEFUL_CLOSE_SECOND_GO_AWAY_SENT && gracefulCloseState != CLOSED)) {
+            if (otherSideShutdown.test(duplexChannel)) {
+                LOGGER.debug("{} Observed {} shutdown, other side is shutdown too, closing the channel with " +
+                                "activeStreams={}, gracefulCloseState={}, keepAliveState={}",
+                        channel, side, activeStreams, gracefulCloseState, keepAliveState);
+                channel.close();
+            } else if (gracefulCloseState != State.GRACEFUL_CLOSE_SECOND_GO_AWAY_SENT &&
+                    gracefulCloseState != State.CLOSED) {
                 // If we have not started the graceful close process, or waiting for ack/read to complete the graceful
                 // close process just force a close now because we will not read any more data.
-                duplexChannel.close();
+                LOGGER.debug("{} Observed {} shutdown, graceful close is not started or in progress, must force " +
+                                "channel closure with activeStreams={}, gracefulCloseState={}, keepAliveState={}",
+                        channel, side, activeStreams, gracefulCloseState, keepAliveState);
+                channel.close();
             }
         } else {
             channel.close();
@@ -278,13 +297,15 @@ final class KeepAliveManager {
             // either we are already closed or have already initiated graceful closure.
             return;
         }
+        LOGGER.debug("{} Close gracefully with activeStreams={}, keepAliveState={}",
+                channel, activeStreams, keepAliveState);
 
         whenInitiated.run();
 
         // Set the pingState before doing the write, because we will reference the state
         // when we receive the PING(ACK) to determine if action is necessary, and it is conceivable that the
         // write future may not be executed which sets the timer.
-        gracefulCloseState = GRACEFUL_CLOSE_START;
+        gracefulCloseState = State.GRACEFUL_CLOSE_START;
 
         // The graceful close process is described in [1]. It involves sending 2 GOAWAY frames. The first
         // GOAWAY has last-stream-id=<maximum stream ID> to indicate no new streams can be created, wait for 2 RTT
@@ -295,15 +316,17 @@ final class KeepAliveManager {
         goAwayFrame.setExtraStreamIds(Integer.MAX_VALUE);
         channel.write(goAwayFrame);
         channel.writeAndFlush(new DefaultHttp2PingFrame(GRACEFUL_CLOSE_PING_CONTENT)).addListener(future -> {
+            assert channel.eventLoop().inEventLoop();
             // If gracefulCloseState is not GRACEFUL_CLOSE_START that means we have already received the PING(ACK) and
             // there is no need to apply the timeout.
-            if (future.isSuccess() && gracefulCloseState == GRACEFUL_CLOSE_START) {
+            if (future.isSuccess() && gracefulCloseState == State.GRACEFUL_CLOSE_START) {
                 gracefulCloseState = scheduler.afterDuration(() -> {
                     // If the PING(ACK) times out we may have under estimated the 2RTT time so we
                     // optimistically keep the connection open and rely upon higher level timeouts to tear
                     // down the connection.
-                    LOGGER.debug("channel={} timeout {}ns waiting for PING(ACK) during graceful close.",
-                            channel, pingAckTimeoutNanos);
+                    LOGGER.debug(
+                            "{} Timeout after {}ms waiting for graceful close PING(ACK), writing the second GO_AWAY",
+                            channel, NANOSECONDS.toMillis(pingAckTimeoutNanos));
                     gracefulCloseWriteSecondGoAway();
                 }, pingAckTimeoutNanos, NANOSECONDS);
             }
@@ -313,14 +336,14 @@ final class KeepAliveManager {
     private void gracefulCloseWriteSecondGoAway() {
         assert channel.eventLoop().inEventLoop();
 
-        if (gracefulCloseState == GRACEFUL_CLOSE_SECOND_GO_AWAY_SENT) {
+        if (gracefulCloseState == State.GRACEFUL_CLOSE_SECOND_GO_AWAY_SENT) {
             return;
         }
 
-        gracefulCloseState = GRACEFUL_CLOSE_SECOND_GO_AWAY_SENT;
+        gracefulCloseState = State.GRACEFUL_CLOSE_SECOND_GO_AWAY_SENT;
 
         channel.writeAndFlush(new DefaultHttp2GoAwayFrame(NO_ERROR)).addListener(future -> {
-            if (activeChildChannels == 0) {
+            if (activeStreams == 0) {
                 close0();
             }
         });
@@ -329,11 +352,13 @@ final class KeepAliveManager {
     private void close0() {
         assert channel.eventLoop().inEventLoop();
 
-        if (gracefulCloseState == CLOSED && keepAliveState == CLOSED) {
+        if (gracefulCloseState == State.CLOSED && keepAliveState == State.CLOSED) {
             return;
         }
-        gracefulCloseState = CLOSED;
-        keepAliveState = CLOSED;
+        LOGGER.debug("{} Marking all states as CLOSED with activeStreams={}, gracefulCloseState={}, keepAliveState={}",
+                channel, activeStreams, gracefulCloseState, keepAliveState);
+        gracefulCloseState = State.CLOSED;
+        keepAliveState = State.CLOSED;
 
         // The way netty H2 stream state machine works, we may trigger stream closures during writes with flushes
         // pending behind the writes. In such cases, we may close too early ignoring the writes. Hence we flush before
@@ -354,6 +379,8 @@ final class KeepAliveManager {
             final DuplexChannel duplexChannel = (DuplexChannel) channel;
             duplexChannel.shutdownOutput().addListener(f -> {
                 if (duplexChannel.isInputShutdown()) {
+                    LOGGER.debug("{} input and output shutdown, closing the channel with activeStreams={}",
+                            channel, activeStreams);
                     channel.close();
                 }
             });
@@ -367,8 +394,8 @@ final class KeepAliveManager {
             try {
                 ((Future<?>) state).cancel(true);
             } catch (Throwable t) {
-                LOGGER.debug("Failed to cancel {} scheduled future.",
-                        state == keepAliveState ? "keep-alive" : "graceful close", t);
+                LOGGER.debug("{} Failed to cancel {} scheduled future",
+                        channel, state == keepAliveState ? "keep-alive" : "graceful close", t);
             }
         }
     }
