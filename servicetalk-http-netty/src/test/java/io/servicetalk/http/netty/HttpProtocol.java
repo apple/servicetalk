@@ -52,7 +52,7 @@ enum HttpProtocol {
         return Arrays.stream(protocols).map(p -> p.config).toArray(HttpProtocolConfig[]::new);
     }
 
-    private static H2ProtocolConfigBuilder applyFrameLogger(H2ProtocolConfigBuilder builder) {
+    static H2ProtocolConfigBuilder applyFrameLogger(H2ProtocolConfigBuilder builder) {
         return builder.enableFrameLogging("servicetalk-tests-h2-frame-logger", TRACE, () -> true);
     }
 }
