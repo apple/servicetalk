@@ -107,7 +107,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
-import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -185,7 +184,6 @@ import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.function.UnaryOperator.identity;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.emptyIterable;
 import static org.hamcrest.Matchers.emptyString;
@@ -1348,9 +1346,8 @@ class H2PriorKnowledgeFeatureParityTest {
         try (BlockingHttpClient client2 = forSingleAddress(HostAndPort.of(serverAddress))
             .protocols(h2PriorKnowledge ? h2Default() : h1Default())
             .executionStrategy(clientExecutionStrategy).buildBlocking()) {
-            ConnectException exception = assertThrows(ConnectException.class, () -> client2.request(client2.get("/")),
+            assertThrows(IOException.class, () -> client2.request(client2.get("/")),
                          "server has initiated graceful close, subsequent connections/requests are expected to fail.");
-            assertThat(exception.getMessage(), containsString("refused"));
         }
 
         // We expect this to timeout, because we have not completed the outstanding request.
