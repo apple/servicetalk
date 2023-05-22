@@ -92,6 +92,7 @@ import static io.servicetalk.http.netty.HttpProtocol.values;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2;
 import static io.servicetalk.http.netty.HttpServers.forAddress;
 import static io.servicetalk.http.netty.HttpsProxyTest.safeClose;
+import static io.servicetalk.logging.api.LogLevel.INFO;
 import static io.servicetalk.logging.api.LogLevel.TRACE;
 import static io.servicetalk.test.resources.DefaultTestCerts.serverPemHostname;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
@@ -183,7 +184,9 @@ class GracefulConnectionClosureHandlingTest {
                 .ioExecutor(SERVER_CTX.ioExecutor())
                 .executor(SERVER_CTX.executor())
                 .executionStrategy(defaultStrategy())
-                .enableWireLogging("servicetalk-tests-wire-logger", TRACE, () -> true)
+                // FIXME: revert debugging hooks
+                .enableWireLogging("servicetalk-tests-wire-logger",
+                        protocol == HTTP_2 && secure && withKeepAlive ? INFO : TRACE, () -> false)
                 .appendConnectionAcceptorFilter(original -> new DelegatingConnectionAcceptor(original) {
                     @Override
                     public Completable accept(final ConnectionContext context) {
@@ -256,7 +259,9 @@ class GracefulConnectionClosureHandlingTest {
                 .executor(CLIENT_CTX.executor())
                 .ioExecutor(CLIENT_CTX.ioExecutor())
                 .executionStrategy(defaultStrategy())
-                .enableWireLogging("servicetalk-tests-wire-logger", TRACE, Boolean.TRUE::booleanValue)
+                // FIXME: revert debugging hooks
+                .enableWireLogging("servicetalk-tests-wire-logger",
+                        protocol == HTTP_2 && secure && withKeepAlive ? INFO : TRACE, () -> false)
                 .appendConnectionFactoryFilter(ConnectionFactoryFilter.withStrategy(
                         cf -> initiateClosureFromClient ? new OnClosingConnectionFactoryFilter<>(cf, onClosing) : cf,
                         ExecutionStrategy.offloadNone()))
