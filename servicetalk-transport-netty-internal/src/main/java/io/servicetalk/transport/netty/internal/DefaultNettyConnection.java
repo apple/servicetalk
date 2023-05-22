@@ -878,7 +878,6 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
             final Throwable throwable = unwrapThrowable(cause);
             tryFailSubscriber(throwable);
-            connection.channelOutboundListener.channelClosed(throwable);
             connection.nettyChannelPublisher.channelOnError(throwable);
         }
 
