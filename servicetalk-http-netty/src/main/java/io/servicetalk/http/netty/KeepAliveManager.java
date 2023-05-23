@@ -224,7 +224,7 @@ final class KeepAliveManager {
         if (keepAliveState != null || disallowKeepAliveWithoutActiveStreams && activeStreams == 0) {
             return;
         }
-        LOGGER.debug("{}, Idleness detected with activeStreams={}", channel, activeStreams);
+        LOGGER.debug("{} Idleness detected with activeStreams={}", channel, activeStreams);
         // idleness detected for the first time, send a ping to detect closure, if any.
         keepAliveState = State.KEEP_ALIVE_ACK_PENDING;
         channel.writeAndFlush(new DefaultHttp2PingFrame(KEEP_ALIVE_PING_CONTENT, false))
@@ -398,7 +398,7 @@ final class KeepAliveManager {
             final DuplexChannel duplexChannel = (DuplexChannel) channel;
             duplexChannel.shutdownOutput().addListener(f -> {
                 if (duplexChannel.isInputShutdown()) {
-                    LOGGER.debug("{} input and output shutdown, closing the channel with activeStreams={}",
+                    LOGGER.debug("{} Input and output shutdown, closing the channel with activeStreams={}",
                             channel, activeStreams);
                     channel.close();
                 }
