@@ -19,7 +19,8 @@ import io.servicetalk.http.netty.H2ProtocolConfig.KeepAlivePolicy;
 
 import java.time.Duration;
 
-import static java.time.Duration.ofDays;
+import static io.servicetalk.utils.internal.DurationUtils.ensureNonNegative;
+import static io.servicetalk.utils.internal.DurationUtils.ensurePositive;
 import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
 
@@ -27,10 +28,10 @@ import static java.util.Objects.requireNonNull;
  * A factory to create {@link KeepAlivePolicy} instances.
  */
 public final class H2KeepAlivePolicies {
-    static final KeepAlivePolicy DISABLE_KEEP_ALIVE =
-            new DefaultKeepAlivePolicy(ofDays(365), ofDays(365), false);
     static final Duration DEFAULT_IDLE_DURATION = ofSeconds(30);
-    static final Duration DEFAULT_ACK_TIMEOUT = ofSeconds(30);
+    static final Duration DEFAULT_ACK_TIMEOUT = ofSeconds(5);
+    private static final KeepAlivePolicy DISABLE_KEEP_ALIVE =
+            new DefaultKeepAlivePolicy(Duration.ZERO, DEFAULT_ACK_TIMEOUT, false);
 
     private H2KeepAlivePolicies() {
         // no instances.
@@ -54,8 +55,13 @@ public final class H2KeepAlivePolicies {
      * <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a> is sent.
      * @return A {@link KeepAlivePolicy} that sends a <a href="https://tools.ietf.org/html/rfc7540#section-6.7">
      * ping</a> if the channel is idle for the passed {@code idleDuration}.
+     * @see KeepAlivePolicy#idleDuration()
      */
     public static KeepAlivePolicy whenIdleFor(final Duration idleDuration) {
+        ensureNonNegative(idleDuration, "idleDuration");
+        if (idleDuration.isZero()) {
+            return disabled();
+        }
         return new KeepAlivePolicyBuilder().idleDuration(idleDuration).build();
     }
 
@@ -67,11 +73,15 @@ public final class H2KeepAlivePolicies {
      *
      * @param idleDuration {@link Duration} of idleness on a connection after which a
      * <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a> is sent.
+     * This value is recommended to be greater than or equal to {@code ackTimeout}.
      * @param ackTimeout {@link Duration} to wait for an acknowledgment of a previously sent
      * <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a>.
+     * This value is recommended to be less than or equal to {@code idleDuration}.
      * @return A {@link KeepAlivePolicy} that sends a <a href="https://tools.ietf.org/html/rfc7540#section-6.7">
      * ping</a> if the channel is idle for the passed {@code idleDuration} and waits for {@code ackTimeout} for an ack
      * for that <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a>
+     * @see KeepAlivePolicy#idleDuration()
+     * @see KeepAlivePolicy#ackTimeout()
      */
     public static KeepAlivePolicy whenIdleFor(final Duration idleDuration, final Duration ackTimeout) {
         return new KeepAlivePolicyBuilder().idleDuration(idleDuration).ackTimeout(ackTimeout).build();
@@ -88,21 +98,29 @@ public final class H2KeepAlivePolicies {
         /**
          * Set the {@link Duration} of idleness on a connection after which a
          * <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a> is sent.
+         * <p>
+         * Too short ping durations can be used for testing but may cause unnecessarily high network traffic in real
+         * environments. {@link Duration#ZERO} disables keep-alive {@code PING} frames.
          *
          * @param idleDuration {@link Duration} of idleness on a connection after which a
-         * <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a> is sent.
+         * <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a> is sent or {@link Duration#ZERO} to
+         * disable keep-alive {@code PING} frames.
          * @return {@code this}.
          * @see KeepAlivePolicy#idleDuration()
          */
         public KeepAlivePolicyBuilder idleDuration(final Duration idleDuration) {
-            this.idleDuration = requireNonNull(idleDuration);
+            this.idleDuration = ensureNonNegative(idleDuration, "idleDuration");
             return this;
         }
 
         /**
          * Set the maximum {@link Duration} to wait for an acknowledgment of a previously sent
-         * <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a>. If no acknowledgment is received, the
-         * connection will be closed.
+         * <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a>. If no acknowledgment is received, within
+         * the configured timeout, a connection will be closed.
+         * <p>
+         * This duration must be positive. Too short ack timeout can cause undesirable connection closures. Too long ack
+         * timeout can add unnecessary delay when the remote peer is unresponsive or the network connection is broken,
+         * because under normal circumstances {@code PING} frames ara acknowledged immediately.
          *
          * @param ackTimeout {@link Duration} to wait for an acknowledgment of a previously sent
          * <a href="https://tools.ietf.org/html/rfc7540#section-6.7">ping</a>.
@@ -110,7 +128,7 @@ public final class H2KeepAlivePolicies {
          * @see KeepAlivePolicy#ackTimeout()
          */
         public KeepAlivePolicyBuilder ackTimeout(final Duration ackTimeout) {
-            this.ackTimeout = requireNonNull(ackTimeout);
+            this.ackTimeout = ensurePositive(ackTimeout, "ackTimeout");
             return this;
         }
 
@@ -137,5 +155,12 @@ public final class H2KeepAlivePolicies {
         public KeepAlivePolicy build() {
             return new DefaultKeepAlivePolicy(idleDuration, ackTimeout, withoutActiveStreams);
         }
+    }
+
+    static KeepAlivePolicy validateKeepAlivePolicy(final KeepAlivePolicy keepAlivePolicy) {
+        requireNonNull(keepAlivePolicy, "keepAlivePolicy");
+        ensureNonNegative(keepAlivePolicy.idleDuration(), "idleDuration");
+        ensurePositive(keepAlivePolicy.ackTimeout(), "ackTimeout");
+        return keepAlivePolicy;
     }
 }

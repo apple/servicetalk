@@ -16,7 +16,9 @@
 package io.servicetalk.concurrent.api;
 
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
@@ -78,7 +80,8 @@ public final class Executors {
      * @return A new {@link Executor} that will use the {@code size} number of threads.
      */
     public static Executor newFixedSizeExecutor(int size, ThreadFactory threadFactory) {
-        return EXECUTOR_PLUGINS.wrapExecutor(new DefaultExecutor(size, size, threadFactory));
+        return EXECUTOR_PLUGINS.wrapExecutor(
+                new DefaultExecutor(size, size, new LinkedBlockingQueue<>(), threadFactory));
     }
 
     /**
@@ -97,7 +100,8 @@ public final class Executors {
      * @return A new {@link Executor}.
      */
     public static Executor newCachedThreadExecutor(ThreadFactory threadFactory) {
-        return EXECUTOR_PLUGINS.wrapExecutor(new DefaultExecutor(1, Integer.MAX_VALUE, threadFactory));
+        return EXECUTOR_PLUGINS.wrapExecutor(
+                new DefaultExecutor(1, Integer.MAX_VALUE, new SynchronousQueue<>(), threadFactory));
     }
 
     /**

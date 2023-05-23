@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.Cancellable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
@@ -27,7 +28,6 @@ import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.ThreadPoolExecutor.AbortPolicy;
@@ -68,9 +68,9 @@ final class DefaultExecutor extends AbstractExecutor implements Consumer<Runnabl
         GLOBAL_SINGLE_THREADED_SCHEDULED_EXECUTOR.setRemoveOnCancelPolicy(true);
     }
 
-    DefaultExecutor(int coreSize, int maxSize, ThreadFactory threadFactory) {
+    DefaultExecutor(int coreSize, int maxSize, BlockingQueue<Runnable> workQueue, ThreadFactory threadFactory) {
         this(new ThreadPoolExecutor(coreSize, maxSize, DEFAULT_KEEP_ALIVE_TIME_SECONDS, SECONDS,
-                new SynchronousQueue<>(), threadFactory, DEFAULT_REJECTION_HANDLER));
+                workQueue, threadFactory, DEFAULT_REJECTION_HANDLER));
     }
 
     DefaultExecutor(java.util.concurrent.Executor jdkExecutor) {
