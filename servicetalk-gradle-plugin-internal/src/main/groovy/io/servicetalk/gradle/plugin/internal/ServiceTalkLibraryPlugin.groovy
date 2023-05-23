@@ -215,9 +215,8 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
         systemProperty "junit.jupiter.extensions.autodetection.enabled", "true"
 
         testLogging {
-          // FIXME: revert debugging hooks
-          events = [STARTED, FAILED]
-          showStandardStreams = true
+          events = [FAILED]
+          showStandardStreams = false
           exceptionFormat = FULL
 
           warn {
