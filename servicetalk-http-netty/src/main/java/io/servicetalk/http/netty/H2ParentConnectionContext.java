@@ -41,6 +41,7 @@ import io.netty.handler.codec.http2.Http2GoAwayFrame;
 import io.netty.handler.codec.http2.Http2PingFrame;
 import io.netty.handler.codec.http2.Http2SettingsAckFrame;
 import io.netty.handler.codec.http2.Http2SettingsFrame;
+import io.netty.handler.codec.http2.Http2StreamChannel;
 import io.netty.handler.ssl.SslCloseCompletionEvent;
 import io.netty.handler.ssl.SslHandshakeCompletionEvent;
 
@@ -164,7 +165,7 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
         notifyOnClosing();
     }
 
-    final void trackActiveStream(Channel streamChannel) {
+    final void trackActiveStream(Http2StreamChannel streamChannel) {
         keepAliveManager.trackActiveStream(streamChannel);
     }
 
