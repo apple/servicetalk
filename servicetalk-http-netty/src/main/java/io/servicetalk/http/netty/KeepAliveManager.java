@@ -130,7 +130,11 @@ final class KeepAliveManager {
             final long idlenessThresholdNanos = keepAlivePolicy.idleDuration().toNanos();
             pingWriteCompletionListener = idlenessThresholdNanos > 0 ? future -> {
                 assert channel.eventLoop().inEventLoop();
-                if (future.isSuccess() && keepAliveState == State.KEEP_ALIVE_ACK_PENDING) {
+                if (!future.isSuccess()) {
+                    LOGGER.debug("{} Failed to write a PING frame after idleness is detected, closing the channel",
+                            channel, future.cause());
+                    close0(future.cause());
+                } else if (keepAliveState == State.KEEP_ALIVE_ACK_PENDING) {
                     // Schedule a task to verify ping ack within the pingAckTimeoutMillis
                     keepAliveState = scheduler.afterDuration(() -> {
                         if (keepAliveState != null) {
@@ -141,9 +145,11 @@ final class KeepAliveManager {
                                     this.channel, NANOSECONDS.toMillis(pingAckTimeoutNanos));
                             channel.writeAndFlush(new DefaultHttp2GoAwayFrame(NO_ERROR))
                                     .addListener(f -> {
-                                        if (f.isSuccess()) {
-                                            KeepAliveManager.this.close0();
+                                        if (!f.isSuccess()) {
+                                            LOGGER.debug("{} Failed to write the last GO_AWAY after PING(ACK) " +
+                                                            "timeout, closing the channel", channel, f.cause());
                                         }
+                                        close0(f.cause());
                                     });
                         }
                     }, pingAckTimeoutNanos, NANOSECONDS);
@@ -187,7 +193,8 @@ final class KeepAliveManager {
         streamChannel.closeFuture().addListener(f -> {
             if (activeStreamsUpdater.decrementAndGet(this) == 0 &&
                     gracefulCloseState == State.GRACEFUL_CLOSE_SECOND_GO_AWAY_SENT) {
-                close0();
+                // close0 needs to know only about write failures, always pass null when closeFuture completes
+                close0(null);
             }
         });
     }
@@ -219,7 +226,7 @@ final class KeepAliveManager {
         if (keepAliveState != null || disallowKeepAliveWithoutActiveStreams && activeStreams == 0) {
             return;
         }
-        LOGGER.debug("{}, Idleness detected with activeStreams={}", channel, activeStreams);
+        LOGGER.debug("{} Idleness detected with activeStreams={}", channel, activeStreams);
         // idleness detected for the first time, send a ping to detect closure, if any.
         keepAliveState = State.KEEP_ALIVE_ACK_PENDING;
         channel.writeAndFlush(new DefaultHttp2PingFrame(KEEP_ALIVE_PING_CONTENT, false))
@@ -318,9 +325,13 @@ final class KeepAliveManager {
         channel.write(goAwayFrame);
         channel.writeAndFlush(new DefaultHttp2PingFrame(GRACEFUL_CLOSE_PING_CONTENT)).addListener(future -> {
             assert channel.eventLoop().inEventLoop();
-            // If gracefulCloseState is not GRACEFUL_CLOSE_START that means we have already received the PING(ACK) and
-            // there is no need to apply the timeout.
-            if (future.isSuccess() && gracefulCloseState == State.GRACEFUL_CLOSE_START) {
+            if (!future.isSuccess()) {
+                LOGGER.debug("{} Failed to write the first GO_AWAY and PING frames, closing the channel",
+                        channel, future.cause());
+                close0(future.cause());
+            } else if (gracefulCloseState == State.GRACEFUL_CLOSE_START) {
+                // If gracefulCloseState is not GRACEFUL_CLOSE_START that means we have already received the PING(ACK)
+                // and there is no need to apply the timeout.
                 gracefulCloseState = scheduler.afterDuration(() -> {
                     // If the PING(ACK) times out we may have under estimated the 2RTT time so we
                     // optimistically keep the connection open and rely upon higher level timeouts to tear
@@ -344,13 +355,16 @@ final class KeepAliveManager {
         gracefulCloseState = State.GRACEFUL_CLOSE_SECOND_GO_AWAY_SENT;
 
         channel.writeAndFlush(new DefaultHttp2GoAwayFrame(NO_ERROR)).addListener(future -> {
-            if (activeStreams == 0) {
-                close0();
+            if (!future.isSuccess()) {
+                LOGGER.debug("{} Failed to write the second GO_AWAY, closing the channel", channel, future.cause());
+                close0(future.cause());
+            } else if (activeStreams == 0) {
+                close0(null);
             }
         });
     }
 
-    private void close0() {
+    private void close0(@Nullable Throwable cause) {
         assert channel.eventLoop().inEventLoop();
 
         if (gracefulCloseState == State.CLOSED && keepAliveState == State.CLOSED) {
@@ -361,18 +375,25 @@ final class KeepAliveManager {
         gracefulCloseState = State.CLOSED;
         keepAliveState = State.CLOSED;
 
+        if (cause != null) {
+            // Previous write failed with an exception, close immediately.
+            closeNotifyAndShutdownOutput();
+            return;
+        }
         // The way netty H2 stream state machine works, we may trigger stream closures during writes with flushes
         // pending behind the writes. In such cases, we may close too early ignoring the writes. Hence we flush before
         // closure, if there is no write pending then flush is a noop.
-        channel.writeAndFlush(EMPTY_BUFFER).addListener(f -> {
-            SslHandler sslHandler = channel.pipeline().get(SslHandler.class);
-            if (sslHandler != null) {
-                // send close_notify: https://tools.ietf.org/html/rfc5246#section-7.2.1
-                sslHandler.closeOutbound().addListener(f2 -> doShutdownOutput());
-            } else {
-                doShutdownOutput();
-            }
-        });
+        channel.writeAndFlush(EMPTY_BUFFER).addListener(f -> closeNotifyAndShutdownOutput());
+    }
+
+    private void closeNotifyAndShutdownOutput() {
+        SslHandler sslHandler = channel.pipeline().get(SslHandler.class);
+        if (sslHandler != null) {
+            // send close_notify: https://tools.ietf.org/html/rfc5246#section-7.2.1
+            sslHandler.closeOutbound().addListener(f2 -> doShutdownOutput());
+        } else {
+            doShutdownOutput();
+        }
     }
 
     private void doShutdownOutput() {
@@ -380,7 +401,7 @@ final class KeepAliveManager {
             final DuplexChannel duplexChannel = (DuplexChannel) channel;
             duplexChannel.shutdownOutput().addListener(f -> {
                 if (duplexChannel.isInputShutdown()) {
-                    LOGGER.debug("{} input and output shutdown, closing the channel with activeStreams={}",
+                    LOGGER.debug("{} Input and output shutdown, closing the channel with activeStreams={}",
                             channel, activeStreams);
                     channel.close();
                 }

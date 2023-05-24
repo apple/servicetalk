@@ -211,7 +211,7 @@ class RequestResponseCloseHandlerTest {
                 {C, e(OB, OE, OB, OS, SR, IB, IE, FC), CCO, "outbound closed while not reading, 2 pending"},
                 {C, e(OB, OE, OB, OE, OB, OS, SR, IB, IE, IB, IE, FC), CCO, "outbound closed while not reading, >2 pending"},
                 {C, e(OB, OE, OB, OE, OB, IB, OS, SR, IE, IB, IE, FC), CCO, "outbound closed while reading, >2 pending"},
-                {C, e(OB, IB, IS, OE, FC), CCI, "inbound closed when reading, finish pending request"},
+                {C, e(OB, IB, IS, SR, FC), CCI, "inbound closed when reading, abort pending request"},
                 {S, e(IS, FC), CCI, "idle, inbound closed"},
                 {S, e(IB, OB, IE, IS, OE, FC), CCI, "continue resp, req completed, inbound closed"},
                 {S, e(IB, OB, OE, IS, SR, FC), CCI, "req aborted, resp completed, inbound closed"},

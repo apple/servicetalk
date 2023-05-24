@@ -359,16 +359,12 @@ final class RequestResponseCloseHandler extends CloseHandler {
             closeChannel(channel, evt);
         } else if (isClient) {
             if (evt == CHANNEL_CLOSED_INBOUND) {
+                // if inbound closed before we read the full response, no need to continue sending the request, abort
                 // pending > 0 + WRITE => next request for which we can't respond, abort
-                if (pending != 0) {
+                if (isAllSet(state, READ) || pending != 0) {
                     if (isAllSet(state, WRITE)) {
                         closeAndResetChannel(channel, evt);
                     } else {
-                        closeChannel(channel, evt);
-                    }
-                } else { // current request still ongoing, defer close, but unset READ flag
-                    state = unset(state, READ);
-                    if (isIdle(pending, state)) {
                         closeChannel(channel, evt);
                     }
                 }

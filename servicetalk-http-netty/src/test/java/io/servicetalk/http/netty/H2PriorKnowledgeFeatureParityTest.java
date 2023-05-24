@@ -1339,13 +1339,14 @@ class H2PriorKnowledgeFeatureParityTest {
         CountDownLatch onServerCloseLatch = new CountDownLatch(1);
         h1ServerContext.onClose().subscribe(onServerCloseLatch::countDown);
         h1ServerContext.closeAsyncGracefully().subscribe();
+        h1ServerContext.onClosing().toFuture().get();
 
         connectionOnClosingLatch.await();
 
         try (BlockingHttpClient client2 = forSingleAddress(HostAndPort.of(serverAddress))
             .protocols(h2PriorKnowledge ? h2Default() : h1Default())
             .executionStrategy(clientExecutionStrategy).buildBlocking()) {
-            assertThrows(Throwable.class, () -> client2.request(client2.get("/")),
+            assertThrows(IOException.class, () -> client2.request(client2.get("/")),
                          "server has initiated graceful close, subsequent connections/requests are expected to fail.");
         }
 
@@ -1379,12 +1380,13 @@ class H2PriorKnowledgeFeatureParityTest {
         StreamingHttpResponse response = client.request(request).toFuture().get();
 
         client.closeAsyncGracefully().subscribe();
+        client.onClosing().toFuture().get();
 
         // We expect this to timeout, because we have not completed the outstanding request.
         assertFalse(onCloseLatch.await(300, MILLISECONDS));
 
         requestBody.onComplete();
-        response.payloadBody().ignoreElements().toFuture();
+        response.payloadBody().ignoreElements().toFuture().get();
         onCloseLatch.await();
     }
 
