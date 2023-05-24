@@ -130,7 +130,8 @@ final class KeepAliveManager {
             pingWriteCompletionListener = idlenessThresholdNanos > 0 ? future -> {
                 assert channel.eventLoop().inEventLoop();
                 if (!future.isSuccess()) {
-                    LOGGER.debug("{} Failed writing a PING frame after idleness is detected", channel, future.cause());
+                    LOGGER.debug("{} Failed to write a PING frame after idleness is detected, closing the channel",
+                            channel, future.cause());
                     close0(future.cause());
                 } else if (keepAliveState == State.KEEP_ALIVE_ACK_PENDING) {
                     // Schedule a task to verify ping ack within the pingAckTimeoutMillis
@@ -144,8 +145,8 @@ final class KeepAliveManager {
                             channel.writeAndFlush(new DefaultHttp2GoAwayFrame(NO_ERROR))
                                     .addListener(f -> {
                                         if (!f.isSuccess()) {
-                                            LOGGER.debug("{} Failed writing the last GO_AWAY after PING(ACK) timeout",
-                                                    channel, f.cause());
+                                            LOGGER.debug("{} Failed to write the last GO_AWAY after PING(ACK) " +
+                                                            "timeout, closing the channel", channel, f.cause());
                                         }
                                         close0(f.cause());
                                     });
@@ -324,7 +325,8 @@ final class KeepAliveManager {
         channel.writeAndFlush(new DefaultHttp2PingFrame(GRACEFUL_CLOSE_PING_CONTENT)).addListener(future -> {
             assert channel.eventLoop().inEventLoop();
             if (!future.isSuccess()) {
-                LOGGER.debug("{} Failed writing the first GO_AWAY and PING frames", channel, future.cause());
+                LOGGER.debug("{} Failed to write the first GO_AWAY and PING frames, closing the channel",
+                        channel, future.cause());
                 close0(future.cause());
             } else if (gracefulCloseState == State.GRACEFUL_CLOSE_START) {
                 // If gracefulCloseState is not GRACEFUL_CLOSE_START that means we have already received the PING(ACK)
@@ -353,7 +355,7 @@ final class KeepAliveManager {
 
         channel.writeAndFlush(new DefaultHttp2GoAwayFrame(NO_ERROR)).addListener(future -> {
             if (!future.isSuccess()) {
-                LOGGER.debug("{} Failed writing the second GO_AWAY", channel, future.cause());
+                LOGGER.debug("{} Failed to write the second GO_AWAY, closing the channel", channel, future.cause());
                 close0(future.cause());
             } else if (activeStreams == 0) {
                 close0(null);

@@ -35,6 +35,7 @@ import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.netty.H2ProtocolConfig.KeepAlivePolicy;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.ConnectionContext;
@@ -175,8 +176,10 @@ class GracefulConnectionClosureHandlingTest {
                     "Client's IoExecutor does not support UnixDomainSocket");
             assumeFalse(viaProxy, "UDS cannot be used via proxy");
         }
-        assumeFalse(protocol == HTTP_2 && viaProxy, "Proxy is not supported with HTTP/2");
-        assumeFalse(viaProxy && !secure, "Proxy tunnel works only with secure connections");
+        if (viaProxy) {
+            assumeTrue(secure, "Proxy tunnel works only with secure connections");
+            assumeTrue(protocol != HTTP_2, "Proxy is not supported with HTTP/2");
+        }
 
         HttpServerBuilder serverBuilder = forAddress(useUds ? newSocketAddress() : localAddress(0))
                 .protocols(protocolConfig(protocol, withKeepAlive))
@@ -304,6 +307,10 @@ class GracefulConnectionClosureHandlingTest {
         return data;
     }
 
+    /**
+     * This is an equivalent of {@link #data()} that also adds a flag to enable HTTP/2 {@link KeepAlivePolicy} for
+     * all HTTP/2 use-cases.
+     */
     private static Collection<Arguments> dataWithKeepAlive() {
         Collection<Arguments> data = new ArrayList<>();
         for (Arguments args : data()) {
