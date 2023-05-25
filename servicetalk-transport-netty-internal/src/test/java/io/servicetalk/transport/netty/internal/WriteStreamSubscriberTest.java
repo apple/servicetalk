@@ -16,10 +16,15 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.PublisherSource.Subscription;
+import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.transport.netty.internal.NoopTransportObserver.NoopWriteObserver;
 import io.servicetalk.transport.netty.internal.WriteStreamSubscriber.AbortedFirstWriteException;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
+import io.netty.channel.WriteBufferWaterMark;
+import io.netty.util.internal.SystemPropertyUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -29,10 +34,12 @@ import java.nio.channels.ClosedChannelException;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.lang.Long.MAX_VALUE;
+import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.function.UnaryOperator.identity;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentCaptor.forClass;
@@ -48,16 +55,57 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 class WriteStreamSubscriberTest extends AbstractWriteTest {
-
+    static final int CHANNEL_OUTBOUND_BUFFER_ENTRY_OVERHEAD =
+            SystemPropertyUtil.getInt("io.netty.transport.outboundBufferEntrySizeOverhead", 96);
     private final Subscription subscription = mock(Subscription.class);
     private final CloseHandler closeHandler = mock(CloseHandler.class);
     private WriteStreamSubscriber subscriber;
 
     void setUp(boolean isClient, boolean shouldWait) {
-        subscriber = new WriteStreamSubscriber(channel, demandEstimator, completableSubscriber, closeHandler,
-                NoopWriteObserver.INSTANCE, identity(), isClient, __ -> shouldWait);
+        setUp(isClient, shouldWait, demandEstimator);
         when(demandEstimator.estimateRequestN(anyLong())).thenReturn(1L);
         subscriber.onSubscribe(subscription);
+    }
+
+    void setUp(boolean isClient, boolean shouldWait, WriteDemandEstimator writeDemandEstimator) {
+        subscriber = new WriteStreamSubscriber(channel, writeDemandEstimator, completableSubscriber, closeHandler,
+                NoopWriteObserver.INSTANCE, identity(), isClient, __ -> shouldWait);
+    }
+
+    @Test
+    void writabilityThresholdKeepsRequesting() throws InterruptedException {
+        String rawObj1 = "Hello";
+        // We need a ByteBuf to have Netty's size estimator detect the exact size in bytes.
+        ByteBuf obj1 = Unpooled.wrappedBuffer(rawObj1.getBytes(US_ASCII));
+        final int highWaterMark = obj1.readableBytes() + CHANNEL_OUTBOUND_BUFFER_ENTRY_OVERHEAD;
+        try {
+            TestSubscription subscription1 = new TestSubscription();
+            channel.config().setWriteBufferWaterMark(new WriteBufferWaterMark(highWaterMark / 2, highWaterMark));
+            setUp(false, false, new EWMAWriteDemandEstimator(highWaterMark));
+            subscriber.onSubscribe(subscription1);
+            subscription1.awaitRequestN(1);
+            subscriber.onNext(obj1.retainedDuplicate());
+
+            // Channel should still be writabile because we write exactly enough to match the high water mark.
+            assertThat(channel.isWritable(), equalTo(true));
+
+            // Since channel is still writable we should keep requesting more data.
+            subscription1.awaitRequestN(2);
+
+            // This should trigger a transition to unwritable, we should stop requesting until a writability change
+            // occurs.
+            subscriber.onNext(obj1.retainedDuplicate());
+            assertThat(channel.isWritable(), equalTo(false));
+            assertThat(subscription1.requested(), equalTo(2L));
+
+            // Force the writability change and simulate the writability change callback which should request more.
+            channel.flushOutbound();
+            assertThat(channel.isWritable(), equalTo(true));
+            subscriber.channelWritable();
+            subscription1.awaitRequestN(3);
+        } finally {
+            obj1.release();
+        }
     }
 
     @Test
