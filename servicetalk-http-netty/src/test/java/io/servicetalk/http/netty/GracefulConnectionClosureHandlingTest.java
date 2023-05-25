@@ -585,7 +585,6 @@ class GracefulConnectionClosureHandlingTest {
                                            boolean useUds,
                                            boolean viaProxy,
                                            boolean withKeepAlive) throws Exception {
-        assumeTrue(protocol != HTTP_2 || withKeepAlive, "https://github.com/netty/netty/pull/13394");
         setUp(protocol, secure, initiateClosureFromClient, useUds, viaProxy, withKeepAlive);
         serverSendResponse.countDown();
         CountDownLatch clientSendRequestPayload = new CountDownLatch(1);
@@ -616,7 +615,6 @@ class GracefulConnectionClosureHandlingTest {
                                                  boolean useUds,
                                                  boolean viaProxy,
                                                  boolean withKeepAlive) throws Exception {
-        assumeTrue(protocol != HTTP_2 || withKeepAlive, "https://github.com/netty/netty/pull/13394");
         assumeFalse(!secure && initiateClosureFromClient,
                 "Server must have either response or connection idle timeout to close its connection");
         setUp(protocol, secure, initiateClosureFromClient, useUds, viaProxy, withKeepAlive);
@@ -649,7 +647,6 @@ class GracefulConnectionClosureHandlingTest {
                                                   boolean useUds,
                                                   boolean viaProxy,
                                                   boolean withKeepAlive) throws Exception {
-        assumeTrue(protocol != HTTP_2 || withKeepAlive, "https://github.com/netty/netty/pull/13394");
         assumeFalse(!secure && !initiateClosureFromClient,
                 "Client must have either response or connection idle timeout to close its connection");
         setUp(protocol, secure, initiateClosureFromClient, useUds, viaProxy, withKeepAlive);
