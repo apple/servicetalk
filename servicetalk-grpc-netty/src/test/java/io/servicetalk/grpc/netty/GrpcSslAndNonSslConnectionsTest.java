@@ -25,13 +25,13 @@ import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.ServerSslConfig;
 import io.servicetalk.transport.api.ServerSslConfigBuilder;
 import io.servicetalk.transport.api.SslProvider;
-import io.servicetalk.transport.netty.internal.StacklessClosedChannelException;
 
 import io.netty.handler.ssl.NotSslRecordException;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
 import java.net.InetSocketAddress;
+import java.nio.channels.ClosedChannelException;
 import javax.net.ssl.SSLHandshakeException;
 
 import static io.servicetalk.grpc.netty.ExecutionStrategyTestServices.DEFAULT_STRATEGY_ASYNC_SERVICE;
@@ -141,7 +141,7 @@ class GrpcSslAndNonSslConnectionsTest {
         try (ServerContext serverContext = secureGrpcServer(provider);
              BlockingTesterClient client = nonSecureGrpcClient(serverContext)) {
             GrpcStatusException e = assertThrows(GrpcStatusException.class, () -> client.test(REQUEST));
-            assertThat(e.getCause(), instanceOf(StacklessClosedChannelException.class));
+            assertThat(e.getCause(), instanceOf(ClosedChannelException.class));
         }
     }
 
