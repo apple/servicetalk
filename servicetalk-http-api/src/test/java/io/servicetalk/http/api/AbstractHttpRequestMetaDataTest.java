@@ -848,6 +848,28 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
     }
 
     @Test
+    void testEmptyFragment() {
+        createFixture("/some/path?query=value#");
+        assertEquals("", fixture.fragment());
+    }
+
+    @Test
+    void testSetEmptyFragment() {
+        createFixture("/some/path?query=value");
+        fixture.fragment("");
+        assertEquals("/some/path?query=value#", fixture.requestTarget());
+        assertEquals("", fixture.fragment());
+    }
+
+    @Test
+    void testSetIdenticalFragment() {
+        createFixture("/some/path?query=value#fragment");
+        fixture.fragment("fragment");
+        assertEquals("/some/path?query=value#fragment", fixture.requestTarget());
+        assertEquals("fragment", fixture.fragment());
+    }
+
+    @Test
     void testToString() {
         createFixture("/some/path?a=query");
         fixture.headers().set(HOST, "some.site.com");

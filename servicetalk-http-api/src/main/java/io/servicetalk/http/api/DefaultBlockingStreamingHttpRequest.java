@@ -154,14 +154,8 @@ final class DefaultBlockingStreamingHttpRequest extends AbstractDelegatingHttpRe
         return this;
     }
 
-    @Nullable
     @Override
-    public String fragment() {
-        return original.fragment();
-    }
-
-    @Override
-    public HttpRequestMetaData fragment(@Nullable String fragment) {
+    public BlockingStreamingHttpRequest fragment(@Nullable String fragment) {
         original.fragment(fragment);
         return this;
     }

@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import javax.annotation.Nullable;
 
@@ -442,19 +443,21 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
     @Override
     public HttpRequestMetaData fragment(@Nullable String fragment) {
 
-      if (fragment == null && fragment() == null) {
+      String origFragment = fragment();
+
+      if ((fragment == null && origFragment == null) || Objects.equals(origFragment, fragment)) {
         return this;
       }
 
       String originalRequestTarget = requestTarget();
 
-      if (lazyParseRequestTarget().fragment() != null) {
-        int fragmentLength = lazyParseRequestTarget().fragment().length() + 1;
+      if (origFragment != null) {
+        int fragmentLength = origFragment.length() + 1;
         // remove the existing fragment
         originalRequestTarget = originalRequestTarget.substring(0, originalRequestTarget.length() - fragmentLength);
       }
 
-      return requestTarget(fragment == null || fragment.isEmpty()
+      return requestTarget(fragment == null
               ? originalRequestTarget
               : originalRequestTarget + "#" + fragment
       );

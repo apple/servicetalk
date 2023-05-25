@@ -293,6 +293,9 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
     @Override
     BlockingStreamingHttpRequest version(HttpProtocolVersion version);
 
+    @Override
+    BlockingStreamingHttpRequest fragment(@Nullable String fragment);
+
     @Deprecated
     @Override
     default BlockingStreamingHttpRequest encoding(ContentCodec encoding) {
